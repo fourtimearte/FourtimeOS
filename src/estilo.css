@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+
+/* Os tokens do Design System V7 entram no passo 3, em ds/tokens.css.
+   Por enquanto só o mínimo para a página não nascer com cara de rascunho. */
+:root {
+  color-scheme: light dark;
+}
+html,
+body,
+#raiz {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family:
+    'Urbanist',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

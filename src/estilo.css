@@ -1,22 +1,41 @@
 @import 'tailwindcss';
+@import './ds/tokens.css';
 
-/* Os tokens do Design System V7 entram no passo 3, em ds/tokens.css.
-   Por enquanto só o mínimo para a página não nascer com cara de rascunho. */
-:root {
-  color-scheme: light dark;
-}
 html,
 body,
 #raiz {
   height: 100%;
 }
+
 body {
   margin: 0;
-  font-family:
-    'Urbanist',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14.5px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* nenhum elemento padrao do navegador: o anel de foco e o nosso */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--on-ink);
 }

@@ -1,0 +1,183 @@
+/* ==========================================================================
+   Fourtime Design System V7 . tokens
+   Fonte unica de aparencia. Nenhum componente escreve cor literal, hex ou rgb.
+   Origem: claude/DESIGN-SYSTEM-V7.md e claude/DESIGN-SYSTEM-V7-CORES-DE-TECNICA.md
+   ========================================================================== */
+
+/* --- estrutura e medida -------------------------------------------------- */
+:root {
+  --font: 'Urbanist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-doc: 'Roboto', sans-serif;
+
+  --radius-xs: 5px;
+  --radius-sm: 7px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  --btn-h: 40px;
+  --btn-h-sm: 34px;
+  --gap-btn: 10px;
+  --row-h: 50px;
+  --icon: 22px;
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --bottomnav-h: 64px;
+  --gutter: 20px;
+
+  --t-fast: 150ms;
+  --t-base: 200ms;
+  --t-slow: 260ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.8, 0.2);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --row-h: 48px;
+    --icon: 20px;
+    --gutter: 32px;
+  }
+}
+
+/* --- Gelo (claro) -------------------------------------------------------- */
+[data-theme='light'] {
+  --bg: #ebedf1;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e0e3e9;
+  --border: #d8dce3;
+  --border-2: #c2c8d1;
+  --text: #1a1d23;
+  --text-2: #5c6470;
+  --text-3: #8b929d;
+  --brand: #c6161b;
+  --brand-hover: #ae1217;
+  --on-brand: #ffffff;
+  --brand-soft: #fdecec;
+  --brand-text: #b3121a;
+  --ink: #1a1d23;
+  --on-ink: #ffffff;
+  --ink-soft: #e4e7ec;
+  --icon-accent: #c6161b;
+  --ring: #1a1d23;
+  --shadow-card: 0 1px 2px rgba(26, 29, 35, 0.04), 0 1px 0 rgba(26, 29, 35, 0.05);
+  --shadow: 0 4px 12px -2px rgba(26, 29, 35, 0.1), 0 1px 2px rgba(26, 29, 35, 0.06);
+  --shadow-pop: 0 12px 32px -8px rgba(26, 29, 35, 0.22), 0 2px 6px rgba(26, 29, 35, 0.08);
+}
+
+/* --- Grafite (escuro) ---------------------------------------------------- */
+[data-theme='dark'] {
+  --bg: #131416;
+  --surface: #1c1e21;
+  --surface-2: #25282c;
+  --surface-3: #2e3237;
+  --border: #2b2f35;
+  --border-2: #3b4048;
+  --text: #edeef0;
+  --text-2: #a2a8b1;
+  --text-3: #6f7680;
+  --brand: #e0262e;
+  --brand-hover: #f03b43;
+  --on-brand: #ffffff;
+  --brand-soft: #3b1b1d;
+  --brand-text: #ff6b70;
+  --ink: #edeef0;
+  --on-ink: #131416;
+  --ink-soft: #2e3237;
+  --icon-accent: #e0262e;
+  --ring: #edeef0;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 16px 40px -8px rgba(0, 0, 0, 0.7);
+}
+
+/* --- cor com significado ------------------------------------------------- */
+:root {
+  --ok: #1f8a50;
+  --warn: #b7791f;
+  --info: #2f6fb8;
+  --wa: #25d366;
+}
+
+/* --- tecnicas: solido, vivo, soft, fg ------------------------------------ */
+/* O solido e identidade e nao muda entre os temas. Quem muda e o par soft/fg,
+   que se apoia na superficie, mais o Patch, que clareia no escuro. */
+[data-theme='light'] {
+  --tec-dtf: #147bb3;
+  --tec-dtf-vivo: #29aaef;
+  --tec-dtf-soft: #e7f4fb;
+  --tec-dtf-fg: #0b71a8;
+  --tec-subli: #1f8449;
+  --tec-subli-vivo: #28cc6d;
+  --tec-subli-soft: #eaf8f0;
+  --tec-subli-fg: #187c42;
+  --tec-silk: #af5e0d;
+  --tec-silk-vivo: #f68718;
+  --tec-silk-soft: #fbf1e7;
+  --tec-silk-fg: #a95705;
+  --tec-patch: #333a42;
+  --tec-patch-vivo: #566270;
+  --tec-patch-soft: #f0f1f2;
+  --tec-patch-fg: #4a545f;
+  --tec-bordado: #7b5ceb;
+  --tec-bordado-vivo: #967bf4;
+  --tec-bordado-soft: #ece8fa;
+  --tec-bordado-fg: #6b46f1;
+  --tec-gola: #ab6249;
+  --tec-gola-vivo: #cb8f7c;
+  --tec-gola-soft: #f6efec;
+  --tec-gola-fg: #a2583f;
+  --tec-ribana: #54799c;
+  --tec-ribana-vivo: #82a2bf;
+  --tec-ribana-soft: #edf1f5;
+  --tec-ribana-fg: #496f92;
+  --tec-etiqueta: #8b929d;
+  --tec-etiqueta-vivo: #c2c8d1;
+  --tec-etiqueta-soft: #f1f3f6;
+  --tec-etiqueta-fg: #5c6470;
+}
+
+[data-theme='dark'] {
+  --tec-dtf: #147bb3;
+  --tec-dtf-vivo: #29aaef;
+  --tec-dtf-soft: #172e3b;
+  --tec-dtf-fg: #289ddc;
+  --tec-subli: #1f8449;
+  --tec-subli-vivo: #28cc6d;
+  --tec-subli-soft: #1b3726;
+  --tec-subli-fg: #32af66;
+  --tec-silk: #af5e0d;
+  --tec-silk-vivo: #f68718;
+  --tec-silk-soft: #3c2916;
+  --tec-silk-fg: #de7d1c;
+  --tec-patch: #626d7a;
+  --tec-patch-vivo: #566270;
+  --tec-patch-soft: #26292b;
+  --tec-patch-fg: #88939f;
+  --tec-bordado: #7b5ceb;
+  --tec-bordado-vivo: #967bf4;
+  --tec-bordado-soft: #1f173a;
+  --tec-bordado-fg: #8d74e7;
+  --tec-gola: #ab6249;
+  --tec-gola-vivo: #cb8f7c;
+  --tec-gola-soft: #322420;
+  --tec-gola-fg: #bc8471;
+  --tec-ribana: #54799c;
+  --tec-ribana-vivo: #82a2bf;
+  --tec-ribana-soft: #222930;
+  --tec-ribana-fg: #7795b1;
+  --tec-etiqueta: #8b929d;
+  --tec-etiqueta-vivo: #c2c8d1;
+  --tec-etiqueta-soft: #26292b;
+  --tec-etiqueta-fg: #a2a8b1;
+}

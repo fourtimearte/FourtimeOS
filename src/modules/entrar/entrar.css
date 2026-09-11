@@ -1,0 +1,258 @@
+/* ==========================================================================
+   Tela de entrada. Foto da fabrica no fundo, cartao de acesso por cima.
+   Todo valor de aparencia vem de ds/tokens.css.
+   ========================================================================== */
+
+.ent {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  padding-block: max(var(--sp-6), env(safe-area-inset-top)) max(var(--sp-6), env(safe-area-inset-bottom));
+  overflow: auto;
+  background-color: #0b0c0e;
+}
+
+/* a foto e o escurecimento moram em camadas separadas, para o texto nunca
+   depender da sorte de onde caiu a luz da imagem */
+.ent-foto,
+.ent-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ent-foto {
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.04);
+  opacity: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+.ent-foto.pronta {
+  opacity: 1;
+}
+
+.ent-veu {
+  background:
+    radial-gradient(120% 90% at 50% 45%, rgba(11, 12, 14, 0.25) 0%, rgba(11, 12, 14, 0.82) 100%),
+    linear-gradient(180deg, rgba(11, 12, 14, 0.5) 0%, rgba(11, 12, 14, 0.2) 38%, rgba(11, 12, 14, 0.72) 100%);
+}
+
+/* --- o cartao ------------------------------------------------------------ */
+.ent-cartao {
+  position: relative;
+  width: 100%;
+  max-width: 396px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-pop);
+  padding: var(--sp-8);
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.ent-marca {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.ent-selo {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-lg);
+  background: var(--brand);
+  color: var(--on-brand);
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.ent-marca b {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.ent-titulo {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+.ent-linha {
+  margin: var(--sp-2) 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* --- campos -------------------------------------------------------------- */
+.ent-campos {
+  display: grid;
+  gap: var(--sp-4);
+}
+.ent-campo {
+  display: grid;
+  gap: var(--sp-2);
+}
+.ent-campo > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.ent-caixa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 48px;
+  padding: 0 var(--sp-2) 0 var(--sp-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+.ent-caixa:focus-within {
+  background: var(--surface);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+}
+.ent-caixa.errada {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.ent-caixa input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+.ent-caixa input::placeholder {
+  color: var(--text-3);
+}
+/* o amarelo do preenchimento automatico do navegador nao entra aqui */
+.ent-caixa input:-webkit-autofill,
+.ent-caixa input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 60px var(--surface-2) inset;
+  caret-color: var(--text);
+}
+
+.ent-olho {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+.ent-olho:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.ent-olho:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+/* --- recado de erro ------------------------------------------------------ */
+.ent-recado {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 38px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ent-recado i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* --- botao --------------------------------------------------------------- */
+.ent-botao {
+  height: 48px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out);
+}
+.ent-botao:hover {
+  opacity: 0.92;
+}
+.ent-botao:active {
+  transform: translateY(1px);
+}
+.ent-botao:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.ent-botao[disabled] {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+.ent-pe {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* --- celular ------------------------------------------------------------- */
+@media (max-width: 420px) {
+  .ent {
+    padding: var(--sp-4);
+  }
+  .ent-cartao {
+    padding: var(--sp-6);
+  }
+  .ent-titulo {
+    font-size: 22px;
+  }
+}

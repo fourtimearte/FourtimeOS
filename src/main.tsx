@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
-import { rotas } from '@shared/rotas'
+import { rotas } from './rotas'
 import './estilo.css'
 
 const raiz = document.getElementById('raiz')

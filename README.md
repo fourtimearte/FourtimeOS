@@ -16,7 +16,8 @@ Abre em http://localhost:5173
 | Comando | O que faz |
 |---|---|
 | `npm run dev` | servidor de desenvolvimento |
-| `npm run build` | conferência de tipos e build de produção |
+| `npm run build` | travas de arquitetura, conferência de tipos e build de produção |
+| `npm run arquitetura` | só as travas de arquitetura |
 | `npm run preview` | serve o build local |
 | `npm run lint` | ESLint |
 | `npm run fmt` | Prettier em tudo |
@@ -37,15 +38,22 @@ src/ds/          o Design System V7: tokens e componentes
 
 Três consequências, e são elas que evitam que mexer numa parte quebre outra:
 
-1. **Um módulo nunca importa outro módulo.** Se a cotação precisa de cliente, entra pela porta da
-   frente, o `index.ts` do módulo de clientes, e por nada mais. O que está dentro é privado.
+1. **Um módulo só entra em outro pela porta da frente.** Se a cotação precisa de cliente, ela
+   importa o `index.ts` do módulo de clientes, e nada mais. O que está dentro da pasta é privado,
+   então mexer por dentro do kanban nunca quebra o estoque: ninguém de fora estava olhando para
+   dentro. Quando dois módulos precisam da mesma regra, ela sobe para `dominio/`.
 2. **O `ds/` não conhece o domínio.** Ele não sabe o que é pedido, cliente ou fatia de produção. É
    isso que faz ser impossível mexer numa tela e torcer um botão.
 3. **Cada módulo tem um lugar só que fala com o banco**, o `api.ts` dele. Mudança de schema toca um
    arquivo.
 
-No passo 4 essa regra passa a ser cobrada pelo `dependency-cruiser` no CI, e um import proibido
-falha o build. Até lá ela vale por combinado.
+### A regra é cobrada, não combinada
+
+O `.dependency-cruiser.cjs` verifica tudo isso dentro do `npm run build`, que é o mesmo comando que
+o Cloudflare roda para publicar. Import na direção errada não vira aviso: vira build quebrado, e o
+site não sobe. Cada regra tem um texto explicando por que ela existe, então o erro diz o que fazer.
+
+Para conferir antes de subir: `npm run arquitetura`.
 
 ## Atalhos de importação
 
@@ -62,4 +70,10 @@ No projeto do Claude, em `claude/`:
 
 ## Estado
 
-Passo 2 de 22: repositório e esqueleto. O sistema abre com uma tela provisória.
+Passo 4 de 22. O que já existe:
+
+- tela de entrada em `/entrar`, com sessão provisória no navegador
+- os tokens do Design System V7 e a página viva em `/kit`, com Gelo e Grafite
+- as travas de arquitetura cobradas no build
+
+No ar em https://fourtimeos.arte-adc.workers.dev

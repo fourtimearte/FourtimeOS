@@ -1,0 +1,270 @@
+/* ==========================================================================
+   A rota /kit. Por enquanto ela mostra só os tokens, que é tudo o que o
+   Design System tem dentro do React. Os componentes entram no passo 5.
+   ========================================================================== */
+
+.kit {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.kit-topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  min-height: var(--topbar-h);
+  padding: var(--sp-3) var(--gutter);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.kit-selo {
+  height: var(--btn-h);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 15px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+.kit-topo h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.kit-topo p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.kit-empurra {
+  margin-left: auto;
+}
+
+/* --- controle de tema, desenhado aqui, sem elemento do navegador --------- */
+.kit-tema {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.kit-tema button {
+  height: 32px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+.kit-tema button:hover {
+  color: var(--text);
+}
+.kit-tema button.ligado {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+/* --- corpo --------------------------------------------------------------- */
+.kit-corpo {
+  padding: var(--sp-8) var(--gutter) 96px;
+  display: grid;
+  gap: var(--sp-8);
+  max-width: 1180px;
+}
+
+.kit-sec > h2 {
+  margin: 0 0 var(--sp-2);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kit-sec > p {
+  margin: 0 0 var(--sp-5);
+  font-size: 14px;
+  color: var(--text-2);
+  max-width: 62ch;
+}
+
+.kit-cartao {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--sp-6);
+}
+
+/* --- grade de cores ------------------------------------------------------ */
+.kit-cores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: var(--sp-4);
+}
+.kit-cor {
+  display: grid;
+  gap: var(--sp-2);
+}
+.kit-amostra {
+  height: 62px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.kit-cor b {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.kit-cor span {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- técnicas ------------------------------------------------------------ */
+.kit-tecs {
+  display: grid;
+  gap: var(--sp-3);
+}
+.kit-tec {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--tec);
+}
+.kit-pill {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 13px;
+  border-radius: var(--radius-pill);
+  background: var(--tec);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.kit-ponto {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tec-vivo);
+}
+.kit-chip {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: var(--tec-soft);
+  color: var(--tec-fg);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.kit-tec small {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- medidas ------------------------------------------------------------- */
+.kit-medidas {
+  display: grid;
+  gap: var(--sp-5);
+}
+.kit-fila {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.kit-medida {
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: center;
+}
+.kit-medida > i {
+  display: block;
+  background: var(--ink-soft);
+  border: 1px solid var(--border-2);
+}
+.kit-medida b {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.kit-medida span {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- tipografia ---------------------------------------------------------- */
+.kit-tipo {
+  display: grid;
+  gap: var(--sp-4);
+}
+.kit-tipo div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
+.kit-tipo small {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.kit-aviso {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 600;
+  max-width: 72ch;
+}
+.kit-aviso i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+@media (max-width: 560px) {
+  .kit-corpo {
+    padding: var(--sp-6) var(--sp-4) 80px;
+  }
+  .kit-cartao {
+    padding: var(--sp-4);
+  }
+}

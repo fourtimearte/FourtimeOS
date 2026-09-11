@@ -23,8 +23,11 @@
 
     "baseUrl": ".",
     "paths": {
+      "@ds": ["src/ds/index.ts"],
       "@ds/*": ["src/ds/*"],
+      "@dominio": ["src/dominio/index.ts"],
       "@dominio/*": ["src/dominio/*"],
+      "@shared": ["src/shared/index.ts"],
       "@shared/*": ["src/shared/*"],
       "@modules/*": ["src/modules/*"]
     }

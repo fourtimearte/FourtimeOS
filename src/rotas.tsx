@@ -3,6 +3,7 @@ import { App } from './app'
 import { Protegido } from '@dominio/sessao/protegido'
 import { TelaEntrar } from '@modules/entrar'
 import { Inicio } from '@shared/inicio'
+import { TelaKit } from '@ds'
 
 /* Este arquivo é o ponto de montagem do sistema: o único lugar que conhece
    todas as camadas ao mesmo tempo. É de propósito que ele fique na raiz de src
@@ -17,6 +18,9 @@ export const rotas = createBrowserRouter([
         <App />
       </Protegido>
     ),
-    children: [{ index: true, element: <Inicio /> }],
+    children: [
+      { index: true, element: <Inicio /> },
+      { path: 'kit', element: <TelaKit /> },
+    ],
   },
 ])

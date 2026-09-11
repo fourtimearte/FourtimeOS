@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom'
+
 /* Tela provisória. Some no passo 8, quando a casca do app entrar.
-   Por enquanto ela serve de prova de que o porteiro está funcionando. */
+   Por enquanto ela prova que o porteiro funciona e leva ao kit. */
 export function Inicio() {
   return (
     <main
@@ -10,7 +12,7 @@ export function Inicio() {
         padding: 'var(--sp-6)',
       }}
     >
-      <div style={{ textAlign: 'center', maxWidth: 420 }}>
+      <div style={{ textAlign: 'center', maxWidth: 440 }}>
         <div
           style={{
             width: 46,
@@ -28,9 +30,26 @@ export function Inicio() {
           F
         </div>
         <h1 style={{ fontSize: 24, fontWeight: 600, margin: '0 0 var(--sp-2)' }}>Fourtime OS</h1>
-        <p style={{ color: 'var(--text-2)', margin: 0 }}>
+        <p style={{ color: 'var(--text-2)', margin: '0 0 var(--sp-6)' }}>
           Você entrou. A casca do sistema, com menu e cabeçalho, entra no passo 8.
         </p>
+        <Link
+          to="/kit"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            height: 'var(--btn-h)',
+            padding: '0 var(--sp-5)',
+            borderRadius: 'var(--radius)',
+            background: 'var(--ink)',
+            color: 'var(--on-ink)',
+            fontSize: 14,
+            fontWeight: 700,
+            textDecoration: 'none',
+          }}
+        >
+          Abrir o Design System
+        </Link>
       </div>
     </main>
   )

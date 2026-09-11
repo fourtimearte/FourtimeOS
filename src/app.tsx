@@ -18,7 +18,7 @@ export function App() {
         style={{
           position: 'fixed',
           right: 'var(--sp-4)',
-          top: 'var(--sp-4)',
+          bottom: 'var(--sp-4)',
           height: 'var(--btn-h-sm)',
           padding: '0 var(--sp-4)',
           borderRadius: 'var(--radius)',

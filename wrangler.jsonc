@@ -4,7 +4,7 @@
   // endereco que nao seja arquivo precisa devolver o index.html em vez de 404.
   // E isso que "single-page-application" faz.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fourtime-os",
+  "name": "fourtimeos",
   "compatibility_date": "2026-09-11",
   "assets": {
     "directory": "./dist",

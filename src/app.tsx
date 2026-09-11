@@ -7,7 +7,7 @@ import { sair } from '@dominio/sessao'
 export function App() {
   const navegar = useNavigate()
   return (
-    <div style={{ minHeight: '100%', position: 'relative' }}>
+    <div style={{ minHeight: '100dvh', position: 'relative' }}>
       <Outlet />
       <button
         type="button"

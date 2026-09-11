@@ -15,10 +15,11 @@
 }
 
 /* a foto e o escurecimento moram em camadas separadas, para o texto nunca
-   depender da sorte de onde caiu a luz da imagem */
+   depender da sorte de onde caiu a luz da imagem. presas na viewport, nunca
+   dentro da caixa que rola, se nao elas nascem com barra de rolagem do sistema */
 .ent-foto,
 .ent-veu {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
 }
@@ -26,7 +27,6 @@
 .ent-foto {
   background-size: cover;
   background-position: center;
-  transform: scale(1.04);
   opacity: 0;
   transition: opacity var(--t-slow) var(--ease-out);
 }

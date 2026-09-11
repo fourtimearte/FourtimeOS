@@ -4,7 +4,7 @@ export function Inicio() {
   return (
     <main
       style={{
-        minHeight: '100%',
+        minHeight: '100dvh',
         display: 'grid',
         placeItems: 'center',
         padding: 'var(--sp-6)',

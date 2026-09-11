@@ -1,0 +1,13 @@
+{
+  // Configuracao da publicacao no Cloudflare.
+  // O sistema e uma pagina so com rotas no navegador (react-router), entao qualquer
+  // endereco que nao seja arquivo precisa devolver o index.html em vez de 404.
+  // E isso que "single-page-application" faz.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fourtime-os",
+  "compatibility_date": "2026-09-11",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

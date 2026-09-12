@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './ds/tokens.css';
 @import './ds/base.css';
+@import './ds/menus.css';
 
 html,
 body,

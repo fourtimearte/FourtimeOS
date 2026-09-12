@@ -1,0 +1,908 @@
+/* ==========================================================================
+   Os cinco menus do módulo de layout, mais a camada do topo que os carrega.
+   Portado do editor v3.375. Nenhum é <select>, nenhum é genérico: cada um
+   resolve um problema diferente de escolha.
+   ========================================================================== */
+
+:root {
+  --sw-borda: rgba(26, 29, 35, 0.16);
+  --gen-m: #2563eb;
+  --gen-f: #d4157e;
+  --gen-i: #1f8449;
+}
+[data-theme='dark'] {
+  --sw-borda: rgba(255, 255, 255, 0.22);
+}
+
+/* --- a caixa flutuante --------------------------------------------------- */
+.mn {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 2147483000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  overflow: hidden;
+  transform-origin: top left;
+  display: none;
+  flex-direction: column;
+  max-width: min(94vw, 420px);
+  padding: 0;
+}
+.mn.flutua {
+  display: flex;
+  animation: mn-abre 180ms var(--ease-out) both;
+}
+.mn.flutua[data-lado='cima'] {
+  transform-origin: bottom left;
+}
+.mn::backdrop {
+  background: transparent;
+}
+@keyframes mn-abre {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mn.flutua {
+    animation: none;
+  }
+}
+
+/* medindo: o menu se desenha invisível, com tudo aberto e nada cortado, só
+   para a régua passar. Uma vez por abertura, nunca a cada tecla. */
+.mn.medindo {
+  display: flex !important;
+  visibility: hidden !important;
+  left: -9999px !important;
+  top: 0 !important;
+  max-height: none !important;
+  width: auto !important;
+  max-width: none !important;
+}
+.mn.medindo .mn-ref .nm,
+.mn.medindo .mn-tec .nm,
+.mn.medindo .mn-grupo .nm {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* quando a lista não coube: barra de rolagem de volta e sombra nas bordas */
+.mn .mn-lista.rolavel,
+.mn .mn-grade.rolavel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
+  background:
+    linear-gradient(var(--surface) 30%, transparent) top / 100% 22px no-repeat local,
+    linear-gradient(transparent, var(--surface) 70%) bottom / 100% 22px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(26, 29, 35, 0.1), transparent) top / 100% 10px
+      no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(26, 29, 35, 0.1), transparent) bottom / 100%
+      10px no-repeat scroll;
+}
+.mn .mn-lista.rolavel::-webkit-scrollbar {
+  width: 9px;
+  display: block;
+}
+.mn .mn-lista.rolavel::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 999px;
+  border: 3px solid var(--surface);
+}
+
+/* --- cabeçalho fixo: abas e busca ---------------------------------------- */
+.mn-topo {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.mn-abas {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-3);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+.mn-abas button {
+  flex: 1;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease-out);
+}
+.mn-abas button.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+.mn-abas .pt {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--g);
+}
+.mn-busca {
+  position: relative;
+}
+.mn-busca > svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+.mn-busca input {
+  width: 100%;
+  height: 38px;
+  padding: 0 34px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  outline: none;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+.mn-busca input:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+  background: var(--surface);
+}
+.mn-busca input::placeholder {
+  color: var(--text-3);
+}
+.mn-limpa {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  display: none;
+  place-items: center;
+  color: var(--text-3);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease-out);
+}
+.mn-limpa:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.mn-busca.tem .mn-limpa {
+  display: grid;
+}
+
+/* --- corpo rolante ------------------------------------------------------- */
+.mn-lista {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+}
+.mn-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.mn-item:hover,
+.mn-item.cursor {
+  background: var(--surface-2);
+}
+.mn-item.on {
+  background: var(--ink-soft);
+  font-weight: 700;
+}
+.mn-item .nm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mn-item .ok {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--brand);
+  display: none;
+  flex-shrink: 0;
+}
+.mn-item.on .ok {
+  display: block;
+}
+.mn-novo {
+  border: 1px dashed var(--border-2);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.mn-novo:hover {
+  border-color: var(--ink);
+  color: var(--text);
+}
+.mn-vazio {
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.mn-sep {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 10px 10px 5px;
+}
+.mn-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.mn-pe button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-text);
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.mn-pe button:hover {
+  background: var(--brand-soft);
+}
+
+/* --- cor de tecido: sublimação fixa e grupos ----------------------------- */
+.mn-subli {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2px;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+.mn-subli:hover {
+  border-color: var(--ink);
+}
+.mn-subli .arco {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  background: conic-gradient(from 210deg, #e5484d, #f5a524, #3fcf8e, #2563eb, #7c3aed, #e5484d);
+}
+.mn-subli .tx {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+.mn-subli b {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  color: var(--text);
+}
+.mn-subli span {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.mn-grupo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  transition: background var(--t-fast) var(--ease-out);
+}
+.mn-grupo:hover {
+  background: var(--surface-2);
+}
+.mn-amostras {
+  display: flex;
+  flex-shrink: 0;
+}
+.mn-amostras i {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 1.5px var(--surface);
+  margin-left: -5px;
+}
+.mn-amostras i:first-child {
+  margin-left: 0;
+}
+.mn-grupo .nm {
+  font-size: 13.5px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mn-grupo .marca {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+.mn-grupo .qt {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.mn-grupo .seta {
+  font-size: 11px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform var(--t-base) var(--ease-out);
+}
+.mn-corpo {
+  display: none;
+  margin: 2px 0 4px 19px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  flex-direction: column;
+  gap: 2px;
+}
+.mn-g.aberto > .mn-corpo {
+  display: flex;
+}
+.mn-g.aberto > .mn-grupo .seta {
+  transform: rotate(180deg);
+}
+.mn-g.oculto {
+  display: none;
+}
+.qd {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-xs);
+  background: var(--cor);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--sw-borda);
+}
+
+/* --- código de cor: a grade ---------------------------------------------- */
+.mn-grade {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.mn-cod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px 7px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+.mn-cod:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+.mn-cod:active {
+  transform: translateY(0);
+}
+.mn-cod .am {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--cor);
+  box-shadow: inset 0 0 0 1px var(--sw-borda);
+  transition: box-shadow var(--t-fast) var(--ease-out);
+}
+.mn-cod:hover .am {
+  box-shadow:
+    inset 0 0 0 1px var(--sw-borda),
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--ink);
+}
+.mn-cod .cd {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  letter-spacing: 0.02em;
+}
+.mn-cod.ja .am {
+  box-shadow:
+    inset 0 0 0 1px var(--sw-borda),
+    0 0 0 2px var(--surface),
+    0 0 0 3px var(--brand);
+}
+.mn-cod.ja .cd {
+  color: var(--brand-text);
+}
+
+/* --- técnica: chips de múltipla escolha ---------------------------------- */
+.mn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px;
+}
+.mn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease-out);
+}
+.mn-chip:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+}
+.mn-chip .pt {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c);
+  flex-shrink: 0;
+}
+.mn-chip.sel {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.mn-chip.sel .pt {
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+.mn-dica {
+  padding: 0 10px 10px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.mn-secao + .mn-secao {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+/* --- linha de referência: tarja de gênero, código, nome ------------------ */
+.mn-ref {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  overflow: hidden;
+  font: inherit;
+  color: var(--text);
+  transition: background var(--t-fast) var(--ease-out);
+}
+.mn-ref:hover,
+.mn-ref.cursor {
+  background: var(--surface-2);
+}
+.mn-ref.on {
+  background: var(--ink-soft);
+}
+.mn-ref .tarja {
+  width: 5px;
+  align-self: stretch;
+  background: var(--g, var(--border-2));
+  flex-shrink: 0;
+}
+.mn-ref .cod {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-text);
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+  padding: 0 10px 0 11px;
+  font-variant-numeric: tabular-nums;
+}
+.mn-ref .nm {
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 12px;
+}
+.mn-ref.on .nm {
+  font-weight: 700;
+}
+.mn-ref .ok {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--brand);
+  display: none;
+  flex-shrink: 0;
+  padding-right: 10px;
+}
+.mn-ref.on .ok {
+  display: block;
+}
+.mn-tarjas {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.mn-tarjas i {
+  width: 5px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--c);
+}
+
+/* --- linha de tecido: nome e pastilha do tipo ---------------------------- */
+.mn-tec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  transition: background var(--t-fast) var(--ease-out);
+}
+.mn-tec:hover {
+  background: var(--surface-2);
+}
+.mn-tec.on {
+  background: var(--ink-soft);
+}
+.mn-tec .nm {
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mn-tec.on .nm {
+  font-weight: 700;
+}
+.mn-tec .ok {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--brand);
+  display: none;
+  flex-shrink: 0;
+}
+.mn-tec.on .ok {
+  display: block;
+}
+.past {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.mn-grupo .past {
+  margin-right: 2px;
+}
+
+/* --- bolinhas de gênero na ponta do campo -------------------------------- */
+.ref-gen {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  flex-shrink: 0;
+}
+.ref-gen-bt {
+  width: 11px;
+  height: 11px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--g);
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    opacity var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+.ref-gen-bt.g-0 {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+.ref-gen-bt:hover {
+  opacity: 0.85;
+}
+/* o halo é funcional: sem ele o campo tingido engole a bolinha escolhida */
+[data-genero='masculino'] .ref-gen-bt.g-M,
+[data-genero='feminino'] .ref-gen-bt.g-F,
+[data-genero='infantil'] .ref-gen-bt.g-C,
+[data-genero=''] .ref-gen-bt.g-0 {
+  opacity: 1;
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 1px var(--surface),
+    0 0 0 2px var(--ink);
+}
+
+/* --- a dica: balão preto em pílula, sempre acima ------------------------- */
+.mn-dica-linha {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 2147483001;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 8px 15px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+  max-width: min(92vw, 420px);
+  width: max-content;
+  display: none;
+}
+.mn-dica-linha.flutua {
+  display: block;
+  animation: a-dica 140ms var(--ease-out) both;
+}
+.mn-dica-linha::after {
+  content: '';
+  position: absolute;
+  left: var(--seta, 50%);
+  margin-left: -8px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+.mn-dica-linha[data-lado='cima']::after {
+  top: 100%;
+  border-top: 8px solid var(--ink);
+}
+.mn-dica-linha[data-lado='baixo']::after {
+  bottom: 100%;
+  border-bottom: 8px solid var(--ink);
+}
+.mn-dica-linha b {
+  color: #ff8a8e;
+  font-weight: 800;
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+@keyframes a-dica {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mn-dica-linha.flutua {
+    animation: none;
+  }
+}
+
+/* --- menu de contexto do botão direito ----------------------------------- */
+.mn-ctx {
+  min-width: 196px;
+  max-width: 260px;
+  padding: 6px;
+}
+.mn-ctx .mn-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px 9px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.mn-ctx .mn-item {
+  font-size: 13px;
+  min-height: 38px;
+}
+.mn-ctx .mn-item.risco {
+  color: var(--brand-text);
+}
+.mn-ctx .mn-item.risco:hover {
+  background: var(--brand-soft);
+}
+
+/* --- a faixa de cores C1 ------------------------------------------------- */
+.fx {
+  background: var(--ts);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 3px 0 0 var(--tc);
+  max-width: 100%;
+}
+.c1 {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 5px 12px 5px 5px;
+  width: max-content;
+  max-width: 100%;
+}
+.c1 > .tec {
+  margin: 1px 0 0 5px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 6px 0 13px;
+  font-size: 11.5px;
+  cursor: context-menu;
+}
+.c1 > .tec .mais {
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+}
+.c1 .sep {
+  align-self: stretch;
+  width: 1px;
+  background: color-mix(in srgb, var(--tc) 25%, transparent);
+  margin: 3px 0;
+  flex-shrink: 0;
+}
+.c1 .bandeja {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 1px 0;
+}
+/* o código tem sempre três caracteres, então toda ficha tem a mesma largura:
+   grade perfeita entre as linhas */
+.cor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 70px;
+  height: 32px;
+  padding: 0 7px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: context-menu;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+.cor:hover {
+  border-color: var(--tc);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+.cor .am {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-xs);
+  background: var(--cor);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--sw-borda);
+}
+.cor .cod {
+  flex: 1;
+  min-width: 3ch;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tf);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}

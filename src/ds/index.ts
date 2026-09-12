@@ -45,5 +45,28 @@ export {
 } from './componentes/superficie'
 export type { Tecnica, TomSelo } from './componentes/superficie'
 
+export { abrirDica, fecharDica, Flutuante, semAcento } from './componentes/flutuante'
+export type { OpcoesFlutuante } from './componentes/flutuante'
+
+export {
+  BolinhasDeGenero,
+  estiloDaTecnica,
+  FaixaDeCores,
+  MenuCodigoDeCor,
+  MenuCorDeTecido,
+  MenuDeContexto,
+  MenuReferencia,
+  MenuTecido,
+  MenuTecnica,
+} from './componentes/menus'
+export type {
+  AbaDeCores,
+  GrupoDeCor,
+  ItemDeContexto,
+  Referencia,
+  SecaoDeTecnica,
+  TipoDeTecido,
+} from './componentes/menus'
+
 export { TelaKit } from './kit/tela-kit'
 export { aplicarTema, temaAtual, temaGuardado, type Tema } from './kit/tema'

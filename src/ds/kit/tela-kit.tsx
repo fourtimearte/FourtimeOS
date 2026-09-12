@@ -12,6 +12,7 @@ import {
   Segmentado,
 } from '../componentes/formulario'
 import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/busca-global'
+import { DemoMenusDoModulo } from './demo-menus'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
 import { avisar, PilhaDeRecados } from '../componentes/recados'
 import { Gaveta, Modal } from '../componentes/sobreposicao'
@@ -46,6 +47,7 @@ const SECOES: [string, string][] = [
   ['recados', 'Recados'],
   ['buscaglobal', 'Busca global'],
   ['estados', 'Vazio, esqueleto e aviso'],
+  ['menus', 'Menus do módulo'],
 ]
 
 /* A rota /kit: a página viva do Design System. Nenhum componente aparece numa
@@ -117,10 +119,10 @@ export function TelaKit() {
         <div className="kit-corpo">
           <p className="kit-aviso">
             <i />
-            Passo 5, segunda leva. Já nasceram aqui: botão, chip, campo, busca, marcação, escolha,
+            Passo 5 fechado. Nasceram aqui: botão, chip, campo, busca, marcação, escolha,
             interruptor, segmentado, cartão, selo, tag, pílulas de técnica, tabela, modal, folha
-            lateral, recados, busca global, estado vazio, esqueleto e aviso. Faltam os cinco menus
-            do módulo, que vêm sozinhos na última leva.
+            lateral, recados, busca global, estado vazio, esqueleto, aviso, os cinco menus do
+            módulo, a faixa de cores e o menu de botão direito.
           </p>
 
           <Secao
@@ -465,6 +467,13 @@ export function TelaKit() {
                 acao={<Botao tom="forte">Limpar filtros</Botao>}
               />
             </div>
+          </Secao>
+          <Secao
+            id="menus"
+            titulo="Os cinco menus do módulo"
+            texto="Nenhum é um menu do navegador e nenhum é genérico: cada um resolve um problema diferente de escolha. Todos vivem na camada do topo, então nenhum nasce cortado dentro de um cartão. A largura vem da lista, não do campo, e é medida uma vez por abertura. A altura vem do lado com mais espaço, não do embaixo se couber."
+          >
+            <DemoMenusDoModulo />
           </Secao>
         </div>
       </div>

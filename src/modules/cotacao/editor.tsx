@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   AreaTexto,
@@ -73,21 +73,47 @@ const ESTADOS = (Object.keys(NOME_DO_ESTADO_DA_COTACAO) as EstadoDaCotacao[]).ma
 
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+/* A porta: acha a cotacao e some do caminho.
+
+   Quem edita e o Editor logo abaixo, e ele so nasce com uma cotacao na mao.
+   Separar os dois nao e capricho: enquanto o editor aceitava uma cotacao que
+   podia ser nula, cada funcao dentro dele precisava perguntar de novo se ela
+   existia, e o compilador reclamava com razao. Com a porta na frente, o nulo
+   acaba aqui e nao atravessa o arquivo inteiro. */
 export function EditorDeCotacao() {
   const { id = '' } = useParams()
   const navegar = useNavigate()
-  const original = useMemo(() => acharCotacao(id), [id])
-  const [c, setC] = useState<Cotacao | null>(original)
+  const original = acharCotacao(id)
+
+  if (!original) {
+    return (
+      <Pagina acima="Comercial" titulo="Cotação não encontrada">
+        <Vazio
+          titulo="Esta cotação não existe mais"
+          texto="Ela pode ter sido apagada nesta mesma aba. Volte para a lista e escolha outra."
+          acao={
+            <Botao tom="primario" onClick={() => navegar('/cotacao')}>
+              Voltar para a lista
+            </Botao>
+          }
+        />
+      </Pagina>
+    )
+  }
+
+  /* a chave troca o editor inteiro quando muda de cotacao: nenhum rascunho de
+     uma sobra dentro da outra */
+  return <Editor key={original.id} inicial={original} />
+}
+
+function Editor({ inicial }: { inicial: Cotacao }) {
+  const navegar = useNavigate()
+  const [c, setC] = useState<Cotacao>(inicial)
   const [sujo, setSujo] = useState(false)
   const [podeColar, setPodeColar] = useState(() => temCopia())
   /* apagar pede confirmacao no proprio botao: o sistema nao usa caixa de
      dialogo do navegador em lugar nenhum */
   const [confirmando, setConfirmando] = useState(false)
-
-  useEffect(() => {
-    setC(original)
-    setSujo(false)
-  }, [original])
 
   /* avisa antes de fechar a aba com mudanca nao salva */
   useEffect(() => {
@@ -97,20 +123,8 @@ export function EditorDeCotacao() {
     return () => window.removeEventListener('beforeunload', aviso)
   }, [sujo])
 
-  if (!c) {
-    return (
-      <Pagina acima="Comercial" titulo="Cotação não encontrada">
-        <Vazio
-          titulo="Esta cotação não existe mais"
-          texto="Ela pode ter sido apagada nesta mesma aba. Volte para a lista e escolha outra."
-          acao={<Botao tom="primario" onClick={() => navegar('/cotacao')}>Voltar para a lista</Botao>}
-        />
-      </Pagina>
-    )
-  }
-
   const mudar = (parte: Partial<Cotacao>) => {
-    setC((x) => (x ? { ...x, ...parte } : x))
+    setC((x) => ({ ...x, ...parte }))
     setSujo(true)
   }
 

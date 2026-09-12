@@ -130,25 +130,41 @@ export function Folha({
 
 export function Palco({ children }: { children: ReactNode }) {
   const caixa = useRef<HTMLDivElement>(null)
+  const pilha = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
+  const [altura, setAltura] = useState<number | undefined>(undefined)
 
-  /* a folha tem largura fixa em milimetros. Quando a tela e menor que ela, o
-     jeito de nao empurrar a pagina para o lado e encolher o desenho, e nao
-     apertar o documento: o que sai na impressora tem que ser o que se ve */
+  /* A folha tem largura fixa em milimetros. Quando a tela e menor que ela, o
+     jeito de nao empurrar a pagina para o lado e encolher o DESENHO, e nao
+     apertar o documento: o que sai na impressora tem que ser o que se ve.
+
+     Encolher com transform tem um porem que custa uma tela feia: o desenho
+     encolhe e o espaco que ele ocupava NAO. No celular sobrava meia tela de
+     branco embaixo das folhas. Por isso a altura da caixa e acertada na mao,
+     pela altura de verdade da pilha vezes a escala. */
   useEffect(() => {
     const medir = () => {
       const largura = caixa.current?.clientWidth ?? LARGURA_DA_FOLHA
-      setEscala(Math.min(1, largura / LARGURA_DA_FOLHA))
+      const e = Math.min(1, largura / LARGURA_DA_FOLHA)
+      setEscala(e)
+      const h = pilha.current?.scrollHeight ?? 0
+      setAltura(h ? Math.ceil(h * e) : undefined)
     }
     medir()
     window.addEventListener('resize', medir)
-    return () => window.removeEventListener('resize', medir)
+    const obs = new ResizeObserver(medir)
+    if (pilha.current) obs.observe(pilha.current)
+    return () => {
+      window.removeEventListener('resize', medir)
+      obs.disconnect()
+    }
   }, [])
 
   return (
-    <div className="fl-palco" ref={caixa}>
+    <div className="fl-palco" ref={caixa} style={{ height: altura }}>
       <div
         className="fl-pilha"
+        ref={pilha}
         style={{ transform: 'scale(' + escala + ')', width: LARGURA_DA_FOLHA }}
       >
         {children}

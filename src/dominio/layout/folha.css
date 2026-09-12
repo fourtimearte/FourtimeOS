@@ -125,6 +125,8 @@
   body.imprimindo .fl-palco {
     padding: 0 !important;
     overflow: visible !important;
+    /* a altura acertada na mao e da tela encolhida: no papel ela nao vale */
+    height: auto !important;
   }
   body.imprimindo .fl-pilha {
     gap: 0 !important;

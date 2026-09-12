@@ -111,9 +111,13 @@
   /* Pedido · Nome · Aviso · Departamento · Entrega · Planejamento · Total ·
      Subl. · Person. · Atualização. A ordem e a do Relatorio de Atividade do
      editor v3.375, que e o que a fabrica le hoje. */
+  /* Pedido · Nome · Aviso · Departamento · Entrega · Planejamento · Peças ·
+     Atualização. Total, Subl. e Person. moram juntos na célula de Peças:
+     como três colunas eles somavam 170 px e espremiam o Nome, que é o texto
+     que se procura na linha. */
   grid-template-columns:
-    92px minmax(0, 1.4fr) minmax(0, 150px) minmax(0, 120px)
-    78px 120px 56px 56px 62px minmax(0, 178px);
+    90px minmax(0, 1fr) minmax(0, 138px) minmax(0, 112px)
+    68px 94px 88px minmax(0, 162px);
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -255,6 +259,34 @@
 .at-etapa {
   min-width: 0;
 }
+/* a célula de peças: total em cima, a divisão embaixo, como o nome tem o
+   vendedor embaixo */
+.at-pecas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 0;
+}
+.at-pecas b {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.at-pecas small {
+  font-size: 10.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+/* os atrasados dentro do número de pedidos: mesmo tamanho da segunda linha,
+   senão ele herda os 26 px do número grande e vira o título do cartão */
+.at-atrasados {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-text, var(--brand));
+}
 /* Etapa sem ninguem tocar ha mais de tres dias: a borda vira tracejada, como
    no editor. O tracejado diz "isto aqui pode nao ser mais verdade" sem tirar a
    cor do posto nem gritar como um vermelho gritaria. */
@@ -338,8 +370,7 @@
   .at-colunas,
   .at-linha {
     grid-template-columns:
-      92px minmax(0, 1.4fr) minmax(0, 140px) 78px 116px 56px 56px 62px
-      minmax(0, 170px);
+      90px minmax(0, 1fr) minmax(0, 130px) 68px 92px 88px minmax(0, 158px);
   }
   .at-colunas .some-antes,
   .at-linha .some-antes {
@@ -350,7 +381,7 @@
 @media (max-width: 1100px) {
   .at-colunas,
   .at-linha {
-    grid-template-columns: 82px minmax(0, 1fr) 62px minmax(0, 160px);
+    grid-template-columns: 82px minmax(0, 1fr) 74px minmax(0, 150px);
   }
   .at-colunas .esconde,
   .at-linha .esconde,

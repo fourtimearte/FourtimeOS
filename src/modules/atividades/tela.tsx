@@ -18,7 +18,6 @@ import {
   diaEMes,
   ehHoje,
   listarPedidos,
-  naFabrica,
   semanaDoAno,
   type Etapa,
   type Pedido,
@@ -62,7 +61,11 @@ export function TelaAtividades() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versao, diasDaSemana])
 
-  const pedidos = useMemo(() => daSemana.filter(naFabrica), [daSemana])
+  /* O painel mostra TUDO que esta planejado na semana, inclusive o que ja
+     finalizou. E o que o editor faz: a maior parte dos chips verdes dele sao
+     pedidos prontos. Esconder os prontos faria a saturacao do dia mentir, que
+     e justamente a conta que esta tela existe para responder. */
+  const pedidos = daSemana
   const [vendedor, setVendedor] = useState('')
   const [etapa, setEtapa] = useState('')
   const [situacao, setSituacao] = useState('')
@@ -250,11 +253,10 @@ export function TelaAtividades() {
             <b>{filtrados.length}</b>
             <small>
               {prontos} finalizados · {pecasProntas.toLocaleString('pt-BR')} peças prontas
-              {atrasados ? ' · ' : ''}
               {atrasados ? (
-                <b className="vermelho">
+                <span className="at-atrasados">
                   {atrasados} atrasado{atrasados > 1 ? 's' : ''}
-                </b>
+                </span>
               ) : null}
             </small>
           </div>
@@ -268,9 +270,7 @@ export function TelaAtividades() {
           <span className="some-antes">Departamento</span>
           <span className="esconde num">Entrega</span>
           <span className="esconde num">Planejamento</span>
-          <span className="num">Total</span>
-          <span className="esconde num">Subl.</span>
-          <span className="esconde num">Person.</span>
+          <span className="num">Peças</span>
           <span>Atualização</span>
         </div>
       </div>
@@ -351,15 +351,18 @@ function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: E
       <span className="at-cod">{p.id}</span>
       <span className="at-quem">
         <b>{p.cliente}</b>
-        <small>
-          {p.vendedor} · {p.pecas} pçs · {p.departamento}
-        </small>
+        <small>{p.vendedor}</small>
       </span>
 
       {/* Sem aviso desenha tracejado apagado, e nao celula em branco: celula
           em branco parece dado que nao carregou. */}
       <span className="esconde">
-        <span className={p.aviso ? 'at-aviso' : 'at-aviso sem'}>{p.aviso || 'sem aviso'}</span>
+        <span
+          className={p.aviso ? 'at-aviso' : 'at-aviso sem'}
+          title={p.aviso || 'sem aviso'}
+        >
+          {p.aviso || 'sem aviso'}
+        </span>
       </span>
 
       <span className="some-antes at-suave">{p.departamento}</span>
@@ -375,9 +378,19 @@ function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: E
         </span>
       </span>
 
-      <span className="num at-forte">{p.pecas}</span>
-      <span className="esconde num at-suave">{p.pecasSubli || '-'}</span>
-      <span className="esconde num at-suave">{p.pecasPersonalizadas || '-'}</span>
+      {/* Total, sublimacao e personalizado numa celula so. No editor sao tres
+          colunas; aqui elas somavam 170 px e espremiam o Nome, que e o texto
+          que se procura na linha. Os tres numeros continuam todos na tela: o
+          total em cima, a divisao embaixo, do mesmo jeito que o nome tem o
+          vendedor embaixo. */}
+      <span className="at-pecas num">
+        <b>{p.pecas}</b>
+        <small>
+          {p.pecasSubli ? p.pecasSubli + ' subli' : ''}
+          {p.pecasSubli && p.pecasPersonalizadas ? ' · ' : ''}
+          {p.pecasPersonalizadas ? p.pecasPersonalizadas + ' pers' : ''}
+        </small>
+      </span>
 
       {/* A coluna chama Atualizacao, e nao Etapa, porque ela responde duas
           perguntas: em que posto o pedido esta, e se isso ainda vale. Etapa

@@ -6,6 +6,7 @@ import {
   CAPACIDADE_DA_SEMANA,
   POSTO,
   atrasado,
+  diasAteAEntrega,
   listarPedidos,
   naFabrica,
   noPreparo,
@@ -65,7 +66,9 @@ export function TelaPainel() {
   const conta = useMemo(() => {
     const ativos = pedidos.filter(naFabrica)
     const atrasados = ativos.filter(atrasado)
-    const semana = ativos.filter(saiEm7Dias).sort((a, b) => a.emDias - b.emDias)
+    const semana = ativos
+      .filter(saiEm7Dias)
+      .sort((a, b) => diasAteAEntrega(a) - diasAteAEntrega(b))
     return {
       ativos,
       atrasados,
@@ -73,7 +76,7 @@ export function TelaPainel() {
       pecas: ativos.reduce((s, p) => s + p.pecas, 0),
       pecasDaSemana: semana.reduce((s, p) => s + p.pecas, 0),
       preparo: ativos.filter(noPreparo).length,
-      maisAntigo: atrasados.length ? Math.max(...atrasados.map((p) => -p.emDias)) : 0,
+      maisAntigo: atrasados.length ? Math.max(...atrasados.map((p) => -diasAteAEntrega(p))) : 0,
     }
   }, [pedidos])
 

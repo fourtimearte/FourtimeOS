@@ -6,4 +6,7 @@ export {
   listarPedidos,
   listarTodosOsPedidos,
   moverEtapa,
+  mudarAviso,
+  mudarEntrega,
+  planejarPara,
 } from './repositorio'

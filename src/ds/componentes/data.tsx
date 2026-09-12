@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { Flutuante } from './flutuante'
 
 /* ==========================================================================
@@ -79,33 +80,6 @@ export function CampoDeData({
     setTexto(dataParaTela(valor))
   }, [valor])
 
-  const base = valor || hojeEmIso()
-  const [ano, mes] = base.split('-').map(Number)
-  const [olhando, setOlhando] = useState({ ano, mes })
-  useEffect(() => {
-    if (aberto) setOlhando({ ano, mes })
-  }, [aberto, ano, mes])
-
-  const primeiro = new Date(olhando.ano, olhando.mes - 1, 1)
-  const diasNoMes = new Date(olhando.ano, olhando.mes, 0).getDate()
-  const vazios = primeiro.getDay()
-  const hoje = hojeEmIso()
-
-  function escolher(dia: number) {
-    const iso = [
-      olhando.ano,
-      String(olhando.mes).padStart(2, '0'),
-      String(dia).padStart(2, '0'),
-    ].join('-')
-    aoMudar(iso)
-    setAberto(false)
-  }
-
-  function andar(passo: number) {
-    const d = new Date(olhando.ano, olhando.mes - 1 + passo, 1)
-    setOlhando({ ano: d.getFullYear(), mes: d.getMonth() + 1 })
-  }
-
   return (
     <>
       <div
@@ -140,67 +114,13 @@ export function CampoDeData({
         </button>
       </div>
 
-      <Flutuante
+      <CalendarioFlutuante
         aberto={aberto}
         ancora={caixa}
         aoFechar={() => setAberto(false)}
-        opcoes={{ alinhar: 'esquerda', largura: 296 }}
-        versao={olhando.ano * 100 + olhando.mes}
-        className="mn cal"
-      >
-        <div className="cal-topo">
-          <button type="button" className="cal-seta" onClick={() => andar(-1)} aria-label="Mês anterior">
-            ‹
-          </button>
-          <span className="cal-mes">
-            {MESES[olhando.mes - 1]} de {olhando.ano}
-          </span>
-          <button type="button" className="cal-seta" onClick={() => andar(1)} aria-label="Próximo mês">
-            ›
-          </button>
-        </div>
-
-        <div className="cal-semana">
-          {DIAS_DA_SEMANA.map((d, i) => (
-            <span key={i}>{d}</span>
-          ))}
-        </div>
-
-        <div className="cal-grade">
-          {Array.from({ length: vazios }, (_, i) => (
-            <span key={'v' + i} />
-          ))}
-          {Array.from({ length: diasNoMes }, (_, i) => {
-            const dia = i + 1
-            const iso = [
-              olhando.ano,
-              String(olhando.mes).padStart(2, '0'),
-              String(dia).padStart(2, '0'),
-            ].join('-')
-            return (
-              <button
-                key={dia}
-                type="button"
-                className={['cal-dia', iso === valor ? 'escolhido' : '', iso === hoje ? 'hoje' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => escolher(dia)}
-              >
-                {dia}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="cal-pe">
-          <button type="button" className="cal-acao" onClick={() => { aoMudar(hoje); setAberto(false) }}>
-            Hoje
-          </button>
-          <button type="button" className="cal-acao" onClick={() => { aoMudar(''); setAberto(false) }}>
-            Limpar
-          </button>
-        </div>
-      </Flutuante>
+        valor={valor}
+        aoMudar={aoMudar}
+      />
     </>
   )
 }
@@ -211,5 +131,182 @@ function Calendario() {
       <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M3.5 9.5h17M8 3.5V6M16 3.5V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
+  )
+}
+
+/* ==========================================================================
+   O calendario, sozinho.
+
+   Ele nasceu dentro do CampoDeData e saiu de la quando a tabela do painel de
+   atividades precisou de uma data que nao cabe num campo de formulario: ali a
+   celula e uma pilula de 90 px. Sao dois jeitos de PEDIR a data, e um jeito so
+   de escolher: se fossem dois calendarios, o dia que um ganhasse "Hoje" o
+   outro nao teria.
+   ========================================================================== */
+export function CalendarioFlutuante({
+  aberto,
+  ancora,
+  aoFechar,
+  valor,
+  aoMudar,
+  comLimpar = true,
+}: {
+  aberto: boolean
+  ancora: RefObject<HTMLElement | null>
+  aoFechar: () => void
+  valor: string
+  aoMudar: (iso: string) => void
+  comLimpar?: boolean
+}) {
+  const base = valor || hojeEmIso()
+  const [ano, mes] = base.split('-').map(Number)
+  const [olhando, setOlhando] = useState({ ano, mes })
+  useEffect(() => {
+    if (aberto) setOlhando({ ano, mes })
+  }, [aberto, ano, mes])
+
+  const primeiro = new Date(olhando.ano, olhando.mes - 1, 1)
+  const diasNoMes = new Date(olhando.ano, olhando.mes, 0).getDate()
+  const vazios = primeiro.getDay()
+  const hoje = hojeEmIso()
+
+  const isoDo = (dia: number) =>
+    [olhando.ano, String(olhando.mes).padStart(2, '0'), String(dia).padStart(2, '0')].join('-')
+
+  function andar(passo: number) {
+    const d = new Date(olhando.ano, olhando.mes - 1 + passo, 1)
+    setOlhando({ ano: d.getFullYear(), mes: d.getMonth() + 1 })
+  }
+
+  return (
+    <Flutuante
+      aberto={aberto}
+      ancora={ancora}
+      aoFechar={aoFechar}
+      opcoes={{ alinhar: 'esquerda', largura: 296 }}
+      versao={olhando.ano * 100 + olhando.mes}
+      className="mn cal"
+    >
+      <div className="cal-topo">
+        <button type="button" className="cal-seta" onClick={() => andar(-1)} aria-label="Mês anterior">
+          ‹
+        </button>
+        <span className="cal-mes">
+          {MESES[olhando.mes - 1]} de {olhando.ano}
+        </span>
+        <button type="button" className="cal-seta" onClick={() => andar(1)} aria-label="Próximo mês">
+          ›
+        </button>
+      </div>
+
+      <div className="cal-semana">
+        {DIAS_DA_SEMANA.map((d, i) => (
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+
+      <div className="cal-grade">
+        {Array.from({ length: vazios }, (_, i) => (
+          <span key={'v' + i} />
+        ))}
+        {Array.from({ length: diasNoMes }, (_, i) => {
+          const dia = i + 1
+          const iso = isoDo(dia)
+          return (
+            <button
+              key={dia}
+              type="button"
+              className={['cal-dia', iso === valor ? 'escolhido' : '', iso === hoje ? 'hoje' : '']
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => {
+                aoMudar(iso)
+                aoFechar()
+              }}
+            >
+              {dia}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="cal-pe">
+        <button
+          type="button"
+          className="cal-acao"
+          onClick={() => {
+            aoMudar(hoje)
+            aoFechar()
+          }}
+        >
+          Hoje
+        </button>
+        {comLimpar ? (
+          <button
+            type="button"
+            className="cal-acao"
+            onClick={() => {
+              aoMudar('')
+              aoFechar()
+            }}
+          >
+            Limpar
+          </button>
+        ) : null}
+      </div>
+    </Flutuante>
+  )
+}
+
+/* ==========================================================================
+   A data em pilula, para dentro de tabela.
+
+   O CampoDeData nao serve aqui: ele e campo de formulario, com input e altura
+   de campo. Numa linha de tabela a data e um botao que se le de relance e que
+   abre o mesmo calendario ao clicar.
+   ========================================================================== */
+export function DataEmPilula({
+  valor,
+  aoMudar,
+  rotulo,
+  marcada,
+  aviso,
+  titulo,
+}: {
+  valor: string
+  aoMudar: (iso: string) => void
+  /** o que o leitor de tela anuncia, tipo "Entrega" */
+  rotulo: string
+  /** desenha a pilula como escolhida na mao, e nao pelo sistema */
+  marcada?: boolean
+  /** desenha a pilula em vermelho: data que ja passou */
+  aviso?: boolean
+  titulo?: string
+}) {
+  const [aberto, setAberto] = useState(false)
+  const bt = useRef<HTMLButtonElement>(null)
+  return (
+    <>
+      <button
+        ref={bt}
+        type="button"
+        className={['pilula-data', marcada ? 'marcada' : '', aviso ? 'aviso' : '']
+          .filter(Boolean)
+          .join(' ')}
+        onClick={() => setAberto((a) => !a)}
+        aria-label={rotulo + ': ' + (dataParaTela(valor) || 'sem data')}
+        title={titulo ?? rotulo}
+      >
+        {dataParaTela(valor) || 'sem data'}
+      </button>
+      <CalendarioFlutuante
+        aberto={aberto}
+        ancora={bt}
+        aoFechar={() => setAberto(false)}
+        valor={valor}
+        aoMudar={aoMudar}
+        comLimpar={false}
+      />
+    </>
   )
 }

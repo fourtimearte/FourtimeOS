@@ -20,7 +20,7 @@ export {
   Segmentado,
 } from './componentes/formulario'
 
-export { CampoDeData, dataParaTela, telaParaData } from './componentes/data'
+export { CalendarioFlutuante, CampoDeData, DataEmPilula, dataParaTela, telaParaData } from './componentes/data'
 
 export { RedeDeSeguranca } from './componentes/rede'
 

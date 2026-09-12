@@ -52,6 +52,21 @@ export const POSTO: Record<Etapa, { nome: string; cor: string }> = {
   finalizado: { nome: 'Finalizado', cor: 'var(--posto-finalizado)' },
 }
 
+/* Os avisos do pedido.
+
+   Hoje ha um so, e isso e de proposito: e o unico que a fabrica usa. A lista
+   existe como lista, e nao como texto livre, porque "falta tecido", "sem
+   tecido" e "tecido nao chegou" escritos por tres pessoas viram tres avisos
+   diferentes no filtro e um so na fabrica. Quando faltar outro, a lista
+   cresce aqui. */
+export type Aviso = '' | 'falta-tecido'
+
+export const AVISO: Record<Exclude<Aviso, ''>, { nome: string; cor: string }> = {
+  'falta-tecido': { nome: 'Falta tecido', cor: 'var(--situacao-vencida)' },
+}
+
+export const AVISOS = Object.keys(AVISO) as Exclude<Aviso, ''>[]
+
 /** A ordem em que os postos aparecem no menu e na lateral. */
 export const ETAPAS = Object.keys(POSTO) as Etapa[]
 
@@ -74,8 +89,11 @@ export type Pedido = {
   vendedor: string
   departamento: string
   etapa: Etapa
-  /** quantos dias daqui ate a entrega. Negativo e atraso. */
-  emDias: number
+  /* A data de entrega, em ISO.
+     Era "quantos dias daqui ate a entrega", e isso nao da para editar num
+     calendario: numero de dias nao e data, e muda de significado a cada dia
+     que passa. */
+  entregaEm: string
   pecas: number
   layouts: number
   tecnicas: Tecnica[]
@@ -89,11 +107,10 @@ export type Pedido = {
   planejamentoManual: boolean
   /** quando o pedido foi fechado, que e o que o relatorio mensal soma */
   fechadoEm: string
-  /* O aviso do pedido: o que quem planeja a semana precisa ver antes de
-     mexer na data. Vazio quer dizer "sem aviso", e a tela desenha isso com
-     borda tracejada apagada, em vez de deixar a celula em branco: celula em
-     branco parece dado que nao carregou. */
-  aviso: string
+  /* O aviso do pedido. Vazio quer dizer "sem aviso", e a tela desenha isso
+     com borda tracejada apagada, em vez de deixar a celula em branco: celula
+     em branco parece dado que nao carregou. */
+  aviso: Aviso
   /* Quando a etapa foi atualizada pela ultima vez, em ISO. A coluna se chama
      Atualizacao no editor por causa disto: ela nao diz so em que posto o
      pedido esta, diz tambem se isso ainda vale. Etapa antiga sai com a borda
@@ -214,7 +231,13 @@ export const diaEMes = (d: Date) =>
 const DIA = 24 * 60 * 60 * 1000
 
 export function dataDaEntrega(p: Pedido): Date {
-  return new Date(Date.now() + p.emDias * DIA)
+  return new Date(p.entregaEm + 'T00:00:00')
+}
+
+/** Quantos dias faltam para a entrega. Negativo e atraso. */
+export function diasAteAEntrega(p: Pedido, hoje = new Date()): number {
+  const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+  return Math.round((dataDaEntrega(p).getTime() - base.getTime()) / DIA)
 }
 
 export function naFabrica(p: Pedido): boolean {
@@ -222,7 +245,7 @@ export function naFabrica(p: Pedido): boolean {
 }
 
 export function atrasado(p: Pedido): boolean {
-  return naFabrica(p) && p.emDias < 0
+  return naFabrica(p) && diasAteAEntrega(p) < 0
 }
 
 /* No preparo: ainda nao encostou em maquina de estampa. No editor v3.375 a
@@ -233,15 +256,17 @@ export function noPreparo(p: Pedido): boolean {
 }
 
 export function saiEm7Dias(p: Pedido): boolean {
-  return naFabrica(p) && p.emDias >= 0 && p.emDias <= 7
+  const dias = diasAteAEntrega(p)
+  return naFabrica(p) && dias >= 0 && dias <= 7
 }
 
 /** O texto da direita na lista: o atraso grita, o resto so informa. */
 export function prazoEmTexto(p: Pedido): { texto: string; atrasado: boolean } {
   if (!naFabrica(p)) return { texto: 'Entregue', atrasado: false }
-  if (p.emDias < 0) return { texto: 'Atrasado ' + -p.emDias + ' d', atrasado: true }
-  if (p.emDias === 0) return { texto: 'Entrega hoje', atrasado: false }
-  if (p.emDias <= 2) return { texto: 'Entrega em ' + p.emDias + ' d', atrasado: false }
+  const dias = diasAteAEntrega(p)
+  if (dias < 0) return { texto: 'Atrasado ' + -dias + ' d', atrasado: true }
+  if (dias === 0) return { texto: 'Entrega hoje', atrasado: false }
+  if (dias <= 2) return { texto: 'Entrega em ' + dias + ' d', atrasado: false }
   return {
     texto:
       'Entrega ' +

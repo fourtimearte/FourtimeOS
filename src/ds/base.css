@@ -1555,6 +1555,47 @@ dialog.cmdk .caixa {
 .cal {
   padding: 10px;
 }
+/* --- a data em pílula, para dentro de tabela -----------------------------
+   O campo de data não serve numa linha de tabela: ele é campo de formulário,
+   com input e altura de campo. Aqui a data é um botão que se lê de relance e
+   que abre o mesmo calendário ao clicar.
+   ========================================================================== */
+.pilula-data {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+.pilula-data:hover {
+  border-color: var(--text-3);
+}
+/* escolhida na mão, e não pelo sistema: a borda preta é a marca de "alguém
+   decidiu isto aqui" */
+.pilula-data.marcada {
+  border-color: var(--ink);
+  border-width: 1.5px;
+}
+/* data que já passou */
+.pilula-data.aviso {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  color: var(--brand-text, var(--brand));
+  font-weight: 700;
+}
+
 .cal-topo {
   display: flex;
   align-items: center;

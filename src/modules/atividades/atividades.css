@@ -100,9 +100,6 @@
   margin-top: 0;
   height: 5px;
 }
-.at-regua.dia.passou i {
-  background: var(--brand);
-}
 
 /* a grade que manda em tudo: cabeçalho e linhas usam a mesma */
 .at-colunas,
@@ -115,22 +112,34 @@
      Atualização. Total, Subl. e Person. moram juntos na célula de Peças:
      como três colunas eles somavam 170 px e espremiam o Nome, que é o texto
      que se procura na linha. */
+  /* punho · Pedido · Nome · Aviso · Departamento · Entrega · Planejamento ·
+     Total · Atualização */
   grid-template-columns:
-    90px minmax(0, 1fr) minmax(0, 138px) minmax(0, 112px)
-    68px 112px 88px minmax(0, 162px);
+    26px 90px minmax(0, 1fr) minmax(0, 132px) minmax(0, 108px)
+    100px 108px 52px minmax(0, 160px);
   gap: 12px;
   align-items: center;
   min-width: 0;
 }
 .at-colunas {
-  padding: 10px 20px;
-  border-top: 1px solid var(--border);
-  background: var(--surface-2);
+  /* Ele gruda no topo sozinho, e a linha de dia não. Rolando uma semana
+     cheia, o que se perde de vista é o nome das colunas: a linha de dia
+     aparece de novo a cada dia, o cabeçalho aparece uma vez só. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 11px 20px;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* contraste próprio, mais escuro que a linha de dia: encostados, os dois
+     não podem virar a mesma faixa cinza */
+  background: var(--surface-3);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 .at-colunas .num {
   text-align: right;
@@ -189,17 +198,6 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.at-alerta {
-  padding: 0 8px;
-  height: 20px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
 }
 
 .at-corpo {
@@ -261,22 +259,143 @@
 }
 /* a célula de peças: total em cima, a divisão embaixo, como o nome tem o
    vendedor embaixo */
-.at-pecas {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  min-width: 0;
+/* --- a carga do dia, numa caixa só ---------------------------------------
+   Quantas peças, a régua e quanto ainda cabe, juntos e da mesma cor. Verde
+   enquanto sobra espaço, laranja quando está quase cheio, vermelho quando
+   passou: é a cor que se lê de longe, não o número.
+   ========================================================================== */
+.at-carga {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--carga-borda);
+  background: var(--carga-fundo);
+  color: var(--carga-cor);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.at-pecas b {
-  font-size: 14px;
+.at-carga.cabe {
+  --carga-cor: var(--posto-finalizado);
+  --carga-borda: color-mix(in srgb, var(--posto-finalizado) 35%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--posto-finalizado) 10%, var(--surface));
+}
+.at-carga.quase {
+  --carga-cor: var(--warn);
+  --carga-borda: color-mix(in srgb, var(--warn) 42%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--warn) 12%, var(--surface));
+}
+.at-carga.passou {
+  --carga-cor: var(--brand);
+  --carga-borda: color-mix(in srgb, var(--brand) 45%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--brand) 10%, var(--surface));
+}
+.at-carga b {
+  font-size: 13.5px;
   font-weight: 700;
+}
+.at-carga .at-de {
+  color: var(--text-3);
+}
+.at-carga .at-regua.dia {
+  width: 110px;
+  flex: none;
+  background: color-mix(in srgb, var(--carga-cor) 18%, transparent);
+}
+.at-carga .at-regua.dia i {
+  background: var(--carga-cor);
+}
+.at-carga .at-folga {
+  font-weight: 600;
+}
+
+/* --- o punho de arrastar -------------------------------------------------- */
+.at-punho {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--border-2);
+  cursor: grab;
+  touch-action: none;
+}
+.at-punho:hover {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.at-punho:active {
+  cursor: grabbing;
+}
+.at-linha.carregando {
+  opacity: 0.35;
+}
+.at-dia.alvo {
+  outline: 2px dashed var(--ink);
+  outline-offset: -2px;
+}
+/* o pedido que está na mão, seguindo o dedo */
+.at-fantasma {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+  transform: rotate(-1deg);
+}
+.at-fantasma b {
+  font-size: 13.5px;
+}
+.at-fantasma span {
+  font-size: 11.5px;
+  color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.at-pecas small {
-  font-size: 10.5px;
-  color: var(--text-3);
-  white-space: nowrap;
+
+/* --- as duas quantidades na linha do vendedor ---------------------------- */
+.at-qtd {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.at-qtd i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.at-qtd.subli {
+  color: var(--posto-subli);
+}
+.at-qtd.pers {
+  color: var(--posto-prensa);
+}
+.at-ponto {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.at-ponto.subli {
+  background: var(--posto-subli);
+}
+.at-ponto.pers {
+  background: var(--posto-prensa);
 }
 /* os atrasados dentro do número de pedidos: mesmo tamanho da segunda linha,
    senão ele herda os 26 px do número grande e vira o título do cartão */
@@ -296,35 +415,9 @@
 
 /* o aviso do pedido, no formato do editor: pilula, e tracejada apagada quando
    nao ha aviso nenhum. Celula em branco parece dado que nao carregou. */
-.at-aviso {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--warn);
-  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
-  color: var(--warn);
-  font-size: 10.5px;
-  font-weight: 700;
-  overflow: hidden;
-}
 /* o corte vai no filho, e nao no pill: num inline-flex o text-overflow do pai
    nao tem em que texto pegar, e o aviso saia cortado a seco, sem as
    reticencias que dizem "tem mais aqui" */
-.at-aviso > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.at-aviso.sem {
-  border: 1px dashed var(--border-2);
-  background: none;
-  color: var(--text-3);
-  font-weight: 500;
-}
 .at-plano {
   display: inline-flex;
   align-items: center;
@@ -379,7 +472,7 @@
   .at-colunas,
   .at-linha {
     grid-template-columns:
-      90px minmax(0, 1fr) minmax(0, 130px) 68px 110px 88px minmax(0, 158px);
+      26px 90px minmax(0, 1fr) minmax(0, 126px) 98px 106px 52px minmax(0, 156px);
   }
   .at-colunas .some-antes,
   .at-linha .some-antes {
@@ -390,7 +483,7 @@
 @media (max-width: 1100px) {
   .at-colunas,
   .at-linha {
-    grid-template-columns: 82px minmax(0, 1fr) 74px minmax(0, 150px);
+    grid-template-columns: 26px 82px minmax(0, 1fr) 52px minmax(0, 148px);
   }
   .at-colunas .esconde,
   .at-linha .esconde,

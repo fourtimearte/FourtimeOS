@@ -1,7 +1,10 @@
-import { useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
-import { Botao, Pagina, Segmentado, Seletor, avisar } from '@ds'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
+import { DotsSixVertical, Printer } from '@phosphor-icons/react'
+import { Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
 import {
+  AVISO,
+  AVISOS,
   CAPACIDADE_DA_SEMANA,
   CAPACIDADE_DO_DIA,
   DIAS_DA_SEMANA,
@@ -10,76 +13,80 @@ import {
   POSTO,
   atrasado,
   diaDaSemanaDe,
-  etapaVelha,
-  iso,
-  moverEtapa,
-  semanaDeslocada,
-  tituloDaSemana,
   diaEMes,
   ehHoje,
+  etapaVelha,
+  iso,
   listarPedidos,
+  moverEtapa,
+  mudarAviso,
+  mudarEntrega,
+  planejarPara,
+  semanaDeslocada,
   semanaDoAno,
+  tituloDaSemana,
+  type Aviso,
   type Etapa,
   type Pedido,
 } from '@dominio/producao'
-import { VENDEDORES } from '@dominio/banco'
 import './atividades.css'
 
 /* ==========================================================================
-   Painel de atividades, no arranjo do v5.
+   Painel de atividades.
 
    A pergunta da tela esta escrita no proprio cabecalho: o que a fabrica
-   produz nesta semana, e cabe? Por isso cada dia tem uma regua de saturacao
-   contra a capacidade do dia, e ela fica vermelha quando passa de 100.
+   produz nesta semana, e cabe? Por isso cada dia carrega a sua caixa de
+   saturacao, que fica verde enquanto sobra espaco, laranja quando esta quase
+   cheia e vermelha quando passou.
 
-   Segunda a sabado, seis dias. Domingo nao vira coluna: dia que nao produz
-   nao ocupa espaco.
+   As colunas sao as do Relatorio de Atividade do editor v3.375. Segunda a
+   sabado, seis dias: domingo nao vira linha, porque dia que nao produz nao
+   ocupa espaco.
    ========================================================================== */
 
-const VISTAS = [
-  { valor: 'tela', rotulo: 'Tela' },
-  { valor: 'a4', rotulo: 'Folha A4' },
-]
+/* Quase cheio a partir de 85 por cento. O numero nao e redondo por acaso: com
+   325 pecas por dia, 85 por cento sao 276, e o que sobra dali nao da mais para
+   um pedido medio da casa. Dia que nao cabe mais um pedido ja nao e dia com
+   espaco, e a cor tem que dizer isso antes de estourar. */
+const QUASE_CHEIO = 85
+
+type Arrasto = {
+  id: string
+  x: number
+  y: number
+  x0: number
+  y0: number
+  dx: number
+  dy: number
+  largura: number
+  valendo: boolean
+}
 
 export function TelaAtividades() {
-  /* muda quando alguem troca a etapa de um pedido: e o sinal para reler */
+  /* muda quando alguem mexe num pedido: e o sinal para reler a lista */
   const [versao, setVersao] = useState(0)
   /* 0 e esta semana, -1 a passada, +1 a que vem */
   const [semana, setSemana] = useState(0)
+  const [etapa, setEtapa] = useState('')
+
   const inicio = useMemo(() => semanaDeslocada(semana), [semana])
   const diasDaSemana = useMemo(
     () => DIAS_DA_SEMANA.map((nome, i) => ({ nome, data: diaDaSemanaDe(inicio, i) })),
     [inicio],
   )
 
-  /* So os que estao planejados nesta semana. Antes o pedido guardava so o dia
-     da semana, entao toda semana mostrava os mesmos pedidos: uma tela que
-     parecia navegar e nao navegava. */
-  const daSemana = useMemo(() => {
+  /* So os que estao planejados nesta semana. O painel mostra tambem o que ja
+     finalizou: esconder os prontos faria a saturacao do dia mentir, que e
+     justamente a conta que esta tela existe para responder. */
+  const pedidos = useMemo(() => {
     const dias = new Set(diasDaSemana.map((d) => iso(d.data)))
     return listarPedidos().filter((p) => dias.has(p.planejadoEm))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versao, diasDaSemana])
 
-  /* O painel mostra TUDO que esta planejado na semana, inclusive o que ja
-     finalizou. E o que o editor faz: a maior parte dos chips verdes dele sao
-     pedidos prontos. Esconder os prontos faria a saturacao do dia mentir, que
-     e justamente a conta que esta tela existe para responder. */
-  const pedidos = daSemana
-  const [vendedor, setVendedor] = useState('')
-  const [etapa, setEtapa] = useState('')
-  const [situacao, setSituacao] = useState('')
-
   const filtrados = useMemo(
-    () =>
-      pedidos.filter((p) => {
-        if (vendedor && p.vendedor !== vendedor) return false
-        if (etapa && p.etapa !== etapa) return false
-        if (situacao === 'atrasados' && !atrasado(p)) return false
-        if (situacao === 'manual' && !p.planejamentoManual) return false
-        return true
-      }),
-    [pedidos, vendedor, etapa, situacao],
+    () => (etapa ? pedidos.filter((p) => p.etapa === etapa) : pedidos),
+    [pedidos, etapa],
   )
 
   const pecas = filtrados.reduce((s, p) => s + p.pecas, 0)
@@ -92,20 +99,87 @@ export function TelaAtividades() {
   const prontos = prontosNaSemana.length
   const pecasProntas = prontosNaSemana.reduce((s, p) => s + p.pecas, 0)
 
+  const mexeu = () => setVersao((v) => v + 1)
+
+  /* --- arrastar o pedido para outro dia ---------------------------------
+     Por evento de ponteiro, e nao pelo arrastar do HTML: o painel roda em
+     tablet no chao de fabrica, e o arrastar do HTML nao existe no toque. */
+  const [arrasto, setArrasto] = useState<Arrasto | null>(null)
+  const [alvo, setAlvo] = useState('')
+  const agora = useRef<{ arrasto: Arrasto | null; alvo: string }>({ arrasto: null, alvo: '' })
+  agora.current = { arrasto, alvo }
+  const carregado = arrasto ? filtrados.find((p) => p.id === arrasto.id) : null
+
+  useEffect(() => {
+    if (!arrasto) return
+    const mover = (e: PointerEvent) => {
+      setArrasto((a) =>
+        a
+          ? {
+              ...a,
+              x: e.clientX,
+              y: e.clientY,
+              valendo: a.valendo || Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > 6,
+            }
+          : a,
+      )
+      const sob = document.elementFromPoint(e.clientX, e.clientY)
+      const dia = sob?.closest('[data-dia]') as HTMLElement | null
+      setAlvo(dia?.dataset.dia ?? '')
+    }
+    const soltar = () => {
+      const { arrasto: a, alvo: onde } = agora.current
+      if (a?.valendo && onde) {
+        const antes = listarPedidos().find((p) => p.id === a.id)
+        if (antes && antes.planejadoEm !== onde) {
+          planejarPara(a.id, onde)
+          setVersao((v) => v + 1)
+          avisar(a.id + ' passou para ' + diaEMes(new Date(onde + 'T00:00:00')), 'ok')
+        }
+      }
+      setArrasto(null)
+      setAlvo('')
+    }
+    window.addEventListener('pointermove', mover)
+    window.addEventListener('pointerup', soltar)
+    window.addEventListener('pointercancel', soltar)
+    return () => {
+      window.removeEventListener('pointermove', mover)
+      window.removeEventListener('pointerup', soltar)
+      window.removeEventListener('pointercancel', soltar)
+    }
+  }, [arrasto])
+
+  function pegar(e: PointerEventoReact<HTMLElement>, p: Pedido) {
+    if (e.button !== 0) return
+    const linha = e.currentTarget.closest('.at-linha') as HTMLElement | null
+    const caixa = (linha ?? e.currentTarget).getBoundingClientRect()
+    setArrasto({
+      id: p.id,
+      x: e.clientX,
+      y: e.clientY,
+      x0: e.clientX,
+      y0: e.clientY,
+      dx: e.clientX - caixa.left,
+      dy: e.clientY - caixa.top,
+      largura: caixa.width,
+      valendo: false,
+    })
+  }
 
   return (
     <Pagina
       acima="Gestão · o que a fábrica produz nesta semana, e cabe?"
       titulo="Painel de atividades"
       sub={
-        'Semana ' + semanaDoAno(inicio) + ' · ' + tituloDaSemana(inicio) +
+        'Semana ' +
+        semanaDoAno(inicio) +
+        ' · ' +
+        tituloDaSemana(inicio) +
         ' · o planejamento é por dia, e o atraso é calculado pela entrega'
       }
       acoes={
         <>
-          {/* O seletor de semana, que no editor fica no topo e aqui faltava.
-              Sem ele o painel so sabia falar da semana de hoje, e quem planeja
-              precisa ver a que vem antes de prometer prazo. */}
           <span className="at-semana">
             <button
               type="button"
@@ -117,17 +191,7 @@ export function TelaAtividades() {
             </button>
             <span className="at-semana-txt">
               <b>{tituloDaSemana(inicio)}</b>
-              <small>
-                {semana === 0
-                  ? 'semana de hoje'
-                  : semana === -1
-                    ? 'semana passada'
-                    : semana === 1
-                      ? 'semana que vem'
-                      : semana < 0
-                        ? Math.abs(semana) + ' semanas atrás'
-                        : 'daqui a ' + semana + ' semanas'}
-              </small>
+              <small>{comoChamarASemana(semana)}</small>
             </span>
             <button
               type="button"
@@ -143,76 +207,47 @@ export function TelaAtividades() {
               Semana de hoje
             </Botao>
           ) : null}
+
+          <Seletor
+            rotulo="ETAPA"
+            valor={etapa}
+            opcoes={ETAPAS.map((e) => ({
+              valor: e,
+              rotulo: POSTO[e].nome,
+              contagem: pedidos.filter((p) => p.etapa === e).length,
+            }))}
+            vazio="Todas as etapas"
+            aoEscolher={setEtapa}
+          />
           <Botao
-            tom="contorno"
+            tom="forte"
             onClick={() => avisar('A varredura do Drive entra junto com o kanban', 'info')}
           >
             Conferir agora
           </Botao>
-          <Segmentado
-            valor="tela"
-            opcoes={VISTAS}
-            aoMudar={(v) => {
-              if (v === 'a4') avisar('A folha A4 do painel entra junto com o kanban', 'info')
-            }}
-          />
+          <Botao
+            tom="contorno"
+            onClick={() => avisar('A folha A4 do painel entra junto com o kanban', 'info')}
+          >
+            <Printer size={17} />
+            Impressão
+          </Botao>
         </>
       }
     >
-      <div className="at-filtros">
-        <Seletor
-          rotulo="VENDEDOR"
-          valor={vendedor}
-          opcoes={VENDEDORES.map((v) => ({
-            valor: v,
-            rotulo: v,
-            contagem: pedidos.filter((p) => p.vendedor === v).length,
-          }))}
-          vazio="Todos os vendedores"
-          aoEscolher={setVendedor}
-        />
-        <Seletor
-          rotulo="ETAPA"
-          valor={etapa}
-          opcoes={ETAPAS.map((e) => ({
-            valor: e,
-            rotulo: POSTO[e].nome,
-            contagem: pedidos.filter((p) => p.etapa === e).length,
-          }))}
-          vazio="Todas as etapas"
-          aoEscolher={setEtapa}
-        />
-        <Seletor
-          rotulo="SITUAÇÃO"
-          valor={situacao}
-          opcoes={[
-            { valor: 'atrasados', rotulo: 'Só atrasados', contagem: atrasados },
-            {
-              valor: 'manual',
-              rotulo: 'Só planejamento manual',
-              contagem: pedidos.filter((p) => p.planejamentoManual).length,
-            },
-          ]}
-          vazio="Todas"
-          aoEscolher={setSituacao}
-        />
-        <span className="at-capacidade">
-          Capacidade {CAPACIDADE_DA_SEMANA.toLocaleString('pt-BR')} pçs/semana ·{' '}
-          {CAPACIDADE_DO_DIA}/dia
-        </span>
-      </div>
-
       <div className="at-topo">
-        {/* Os quatro numeros do Relatorio de Atividade do editor v3.375, com a
-            mesma segunda linha embaixo de cada um. A segunda linha e o que faz
-            o numero valer: "1.173" sozinho nao diz nada, "730 sublimacao e 443
-            personalizado" diz onde a semana esta carregada. */}
+        {/* Os quatro numeros do Relatorio de Atividade do editor. A segunda
+            linha de cada um e o que faz o numero valer: "1.173" sozinho nao
+            diz nada, "730 sublimacao e 443 personalizado" diz onde a semana
+            esta carregada. */}
         <div className="at-numeros">
           <div style={{ '--barra': 'var(--posto-subli)' } as CSSProperties}>
             <span className="l">Peças na semana</span>
             <b>{pecas.toLocaleString('pt-BR')}</b>
             <small>
+              <i className="at-ponto subli" />
               {pecasSubli.toLocaleString('pt-BR')} sublimação ·{' '}
+              <i className="at-ponto pers" />
               {pecasPersonalizadas.toLocaleString('pt-BR')} personalizado
             </small>
           </div>
@@ -223,15 +258,9 @@ export function TelaAtividades() {
               {CAPACIDADE_DO_DIA} peças por dia · {DIAS_UTEIS} dias
             </small>
           </div>
-          <div
-            style={
-              {
-                '--barra': saturacao > 100 ? 'var(--brand)' : 'var(--posto-finalizado)',
-              } as CSSProperties
-            }
-          >
+          <div style={{ '--barra': corDaCarga(saturacao) } as CSSProperties}>
             <span className="l">Saturação</span>
-            <b className={saturacao > 100 ? 'vermelho' : 'verde'}>{saturacao}%</b>
+            <b style={{ color: corDaCarga(saturacao) }}>{saturacao}%</b>
             <small>
               {sobra >= 0
                 ? 'cabem +' + sobra.toLocaleString('pt-BR') + ' peças'
@@ -242,7 +271,7 @@ export function TelaAtividades() {
                 style={
                   {
                     width: Math.min(100, saturacao) + '%',
-                    background: saturacao > 100 ? 'var(--brand)' : 'var(--posto-finalizado)',
+                    background: corDaCarga(saturacao),
                   } as CSSProperties
                 }
               />
@@ -261,52 +290,57 @@ export function TelaAtividades() {
             </small>
           </div>
         </div>
+      </div>
 
-        {/* As colunas do editor, na ordem dele. */}
-        <div className="at-colunas">
-          <span>Pedido</span>
-          <span>Nome</span>
-          <span className="esconde">Aviso</span>
-          <span className="some-antes">Departamento</span>
-          <span className="esconde num">Entrega</span>
-          <span className="esconde num">Planejamento</span>
-          <span className="num">Peças</span>
-          <span>Atualização</span>
-        </div>
+      {/* O cabecalho gruda no topo sozinho, e a linha de dia nao: rolando uma
+          semana cheia, o que se perde de vista e o nome das colunas. Ele tem
+          contraste proprio, mais escuro que a linha de dia, para os dois nao
+          virarem a mesma faixa cinza quando encostam. */}
+      <div className="at-colunas">
+        <span />
+        <span>Pedido</span>
+        <span>Nome</span>
+        <span className="esconde">Aviso</span>
+        <span className="some-antes">Departamento</span>
+        <span className="esconde">Entrega</span>
+        <span className="esconde">Planejamento</span>
+        <span className="num">Total</span>
+        <span>Atualização</span>
       </div>
 
       {diasDaSemana.map(({ nome, data }) => {
-        const doDia = filtrados.filter((p) => p.planejadoEm === iso(data))
+        const chave = iso(data)
+        const doDia = filtrados.filter((p) => p.planejadoEm === chave)
         const pecasDoDia = doDia.reduce((s, p) => s + p.pecas, 0)
         const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
-        const folgaDoDia = CAPACIDADE_DO_DIA - pecasDoDia
-        const atrasadosDoDia = doDia.filter(atrasado).length
+        const folga = CAPACIDADE_DO_DIA - pecasDoDia
         return (
-          <section key={nome} className="at-dia">
+          <section
+            key={nome}
+            className={alvo === chave && arrasto?.valendo ? 'at-dia alvo' : 'at-dia'}
+            data-dia={chave}
+          >
             <header className={ehHoje(data) ? 'at-dia-topo hoje' : 'at-dia-topo'}>
               <span className="at-dia-nome">
                 {nome} <span className="at-data">{diaEMes(data)}</span>
                 {ehHoje(data) ? <span className="at-hoje">hoje</span> : null}
               </span>
-              {/* O editor escreve "309 / 325" e "cabem +16", e nao a
-                  porcentagem. Quem planeja a semana nao pergunta quantos por
-                  cento o dia esta: pergunta quanto ainda cabe nele. */}
-              <span className="at-conta">
-                <b>{pecasDoDia.toLocaleString('pt-BR')}</b> / {CAPACIDADE_DO_DIA}
-              </span>
-              <span className={pct > 100 ? 'at-regua dia passou' : 'at-regua dia'}>
-                <i style={{ width: Math.min(100, pct) + '%' }} />
-              </span>
-              <span className={folgaDoDia < 0 ? 'at-conta vermelho' : 'at-conta'}>
-                {folgaDoDia >= 0
-                  ? 'cabem +' + folgaDoDia.toLocaleString('pt-BR')
-                  : 'passou ' + Math.abs(folgaDoDia).toLocaleString('pt-BR')}
-              </span>
-              {atrasadosDoDia ? (
-                <span className="at-alerta">
-                  {atrasadosDoDia} atrasado{atrasadosDoDia > 1 ? 's' : ''}
+
+              {/* A carga do dia numa caixa só: quantas peças, a régua e quanto
+                  ainda cabe. Verde enquanto sobra espaço, laranja quando está
+                  quase cheio, vermelho quando passou. */}
+              <span className={'at-carga ' + faixaDaCarga(pct)}>
+                <b>{pecasDoDia.toLocaleString('pt-BR')}</b>
+                <span className="at-de">/ {CAPACIDADE_DO_DIA}</span>
+                <span className="at-regua dia">
+                  <i style={{ width: Math.min(100, pct) + '%' }} />
                 </span>
-              ) : null}
+                <span className="at-folga">
+                  {folga >= 0
+                    ? 'cabem +' + folga.toLocaleString('pt-BR')
+                    : 'passou ' + Math.abs(folga).toLocaleString('pt-BR')}
+                </span>
+              </span>
             </header>
 
             <div className="at-corpo">
@@ -314,11 +348,25 @@ export function TelaAtividades() {
                 <Linha
                   key={p.id}
                   pedido={p}
+                  carregando={arrasto?.id === p.id && arrasto.valendo}
+                  aoPegar={(ev) => pegar(ev, p)}
                   aoTrocarEtapa={(e) => {
                     const de = POSTO[p.etapa].nome
                     moverEtapa(p.id, e)
-                    setVersao((v) => v + 1)
+                    mexeu()
                     avisar(p.id + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
+                  }}
+                  aoTrocarAviso={(a) => {
+                    mudarAviso(p.id, a)
+                    mexeu()
+                  }}
+                  aoTrocarEntrega={(d) => {
+                    mudarEntrega(p.id, d)
+                    mexeu()
+                  }}
+                  aoTrocarPlanejamento={(d) => {
+                    planejarPara(p.id, d)
+                    mexeu()
                   }}
                 />
               ))}
@@ -328,77 +376,145 @@ export function TelaAtividades() {
         )
       })}
 
+      {/* o pedido que está na mão, seguindo o dedo */}
+      {carregado && arrasto?.valendo ? (
+        <div
+          className="at-fantasma"
+          style={{
+            left: arrasto.x - arrasto.dx,
+            top: arrasto.y - arrasto.dy,
+            width: arrasto.largura,
+          }}
+        >
+          <b>{carregado.cliente}</b>
+          <span>
+            {carregado.id} · {carregado.pecas} pçs
+          </span>
+        </div>
+      ) : null}
+
       <div className="at-legenda">
         <span>
           <i className="at-marca atrasado" />
           atrasado: situação calculada pela entrega, convive com a etapa
         </span>
-        <span>
-          Capacidade: {CAPACIDADE_DA_SEMANA.toLocaleString('pt-BR')} peças/semana ·{' '}
-          {CAPACIDADE_DO_DIA}/dia · {DIAS_UTEIS} dias
-        </span>
+        <span>arraste a linha pelo punho para mudar o dia do pedido</span>
       </div>
     </Pagina>
   )
 }
 
-function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: Etapa) => void }) {
+/* --- uma linha de pedido -------------------------------------------------- */
+function Linha({
+  pedido,
+  carregando,
+  aoPegar,
+  aoTrocarEtapa,
+  aoTrocarAviso,
+  aoTrocarEntrega,
+  aoTrocarPlanejamento,
+}: {
+  pedido: Pedido
+  carregando: boolean
+  aoPegar: (e: PointerEventoReact<HTMLElement>) => void
+  aoTrocarEtapa: (e: Etapa) => void
+  aoTrocarAviso: (a: Aviso) => void
+  aoTrocarEntrega: (d: string) => void
+  aoTrocarPlanejamento: (d: string) => void
+}) {
   const p = pedido
   const late = atrasado(p)
   const velha = etapaVelha(p)
   return (
-    <div className={late ? 'at-linha atrasada' : 'at-linha'}>
+    <div
+      className={['at-linha', late ? 'atrasada' : '', carregando ? 'carregando' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <button
+        type="button"
+        className="at-punho"
+        onPointerDown={aoPegar}
+        aria-label={'Arrastar ' + p.id + ' para outro dia'}
+        title="Arraste para mudar o dia"
+      >
+        <DotsSixVertical size={16} weight="bold" />
+      </button>
+
       <span className="at-cod">{p.id}</span>
+
+      {/* O vendedor e a divisão das peças na mesma linha miúda. As duas
+          quantidades levam a cor da técnica que representam, a mesma do resumo
+          lá em cima: é a cor que separa uma da outra sem escrever "subli" e
+          "pers" por extenso no meio da tabela. */}
       <span className="at-quem">
         <b>{p.cliente}</b>
-        <small>{p.vendedor}</small>
+        <small>
+          {p.vendedor}
+          {p.pecasSubli ? (
+            <span className="at-qtd subli" title={p.pecasSubli + ' peças de sublimação'}>
+              <i />
+              {p.pecasSubli}
+            </span>
+          ) : null}
+          {p.pecasPersonalizadas ? (
+            <span className="at-qtd pers" title={p.pecasPersonalizadas + ' peças personalizadas'}>
+              <i />
+              {p.pecasPersonalizadas}
+            </span>
+          ) : null}
+        </small>
       </span>
 
-      {/* Sem aviso desenha tracejado apagado, e nao celula em branco: celula
-          em branco parece dado que nao carregou. */}
       <span className="esconde">
-        <span
-          className={p.aviso ? 'at-aviso' : 'at-aviso sem'}
-          title={p.aviso || 'sem aviso'}
-        >
-          <span>{p.aviso || 'sem aviso'}</span>
-        </span>
+        <Seletor
+          tamanho="sm"
+          bloco
+          comBusca={false}
+          cor={p.aviso ? AVISO[p.aviso].cor : undefined}
+          valor={p.aviso}
+          vazio="sem aviso"
+          opcoes={AVISOS.map((a) => ({ valor: a, rotulo: AVISO[a].nome }))}
+          aoEscolher={(v) => aoTrocarAviso(v as Aviso)}
+        />
       </span>
 
       <span className="some-antes at-suave">{p.departamento}</span>
 
-      <span className={late ? 'esconde num at-vencido' : 'esconde num at-suave'}>
-        {diaEMes(new Date(Date.now() + p.emDias * 86400000))}
+      <span className="esconde">
+        <DataEmPilula
+          rotulo="Entrega"
+          valor={p.entregaEm}
+          aviso={late}
+          aoMudar={aoTrocarEntrega}
+          titulo="Data de entrega combinada com o cliente"
+        />
       </span>
 
-      <span className="esconde num">
-        <span className={p.planejamentoManual ? 'at-plano manual' : 'at-plano'}>
-          {diaEMes(new Date(p.planejadoEm + 'T00:00:00'))}
-          {p.planejamentoManual ? ' · manual' : ''}
-        </span>
+      <span className="esconde">
+        <DataEmPilula
+          rotulo="Planejamento"
+          valor={p.planejadoEm}
+          marcada={p.planejamentoManual}
+          aoMudar={aoTrocarPlanejamento}
+          titulo={
+            p.planejamentoManual
+              ? 'Dia escolhido na mão'
+              : 'Dia sugerido pelo sistema. Escolher uma data marca como manual.'
+          }
+        />
       </span>
 
-      {/* Total, sublimacao e personalizado numa celula so. No editor sao tres
-          colunas; aqui elas somavam 170 px e espremiam o Nome, que e o texto
-          que se procura na linha. Os tres numeros continuam todos na tela: o
-          total em cima, a divisao embaixo, do mesmo jeito que o nome tem o
-          vendedor embaixo. */}
-      <span className="at-pecas num">
-        <b>{p.pecas}</b>
-        <small>
-          {p.pecasSubli ? p.pecasSubli + ' subli' : ''}
-          {p.pecasSubli && p.pecasPersonalizadas ? ' · ' : ''}
-          {p.pecasPersonalizadas ? p.pecasPersonalizadas + ' pers' : ''}
-        </small>
-      </span>
+      <span className="num at-forte">{p.pecas}</span>
 
-      {/* A coluna chama Atualizacao, e nao Etapa, porque ela responde duas
-          perguntas: em que posto o pedido esta, e se isso ainda vale. Etapa
-          sem ninguem tocar ha mais de tres dias sai com a borda tracejada. */}
+      {/* A coluna chama Atualização, e não Etapa, porque ela responde duas
+          perguntas: em que posto o pedido está, e se isso ainda vale. Etapa
+          sem ninguém tocar há mais de três dias sai com a borda tracejada. */}
       <span className={velha ? 'at-etapa velha' : 'at-etapa'}>
         <Seletor
           tamanho="sm"
           bloco
+          comBusca={false}
           cor={POSTO[p.etapa].cor}
           valor={p.etapa}
           opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
@@ -408,4 +524,24 @@ function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: E
       </span>
     </div>
   )
+}
+
+/* --- as cores da carga ---------------------------------------------------- */
+function faixaDaCarga(pct: number): string {
+  if (pct > 100) return 'passou'
+  if (pct >= QUASE_CHEIO) return 'quase'
+  return 'cabe'
+}
+
+function corDaCarga(pct: number): string {
+  if (pct > 100) return 'var(--brand)'
+  if (pct >= QUASE_CHEIO) return 'var(--warn)'
+  return 'var(--posto-finalizado)'
+}
+
+function comoChamarASemana(n: number): string {
+  if (n === 0) return 'semana de hoje'
+  if (n === -1) return 'semana passada'
+  if (n === 1) return 'semana que vem'
+  return n < 0 ? Math.abs(n) + ' semanas atrás' : 'daqui a ' + n + ' semanas'
 }

@@ -15,6 +15,7 @@ import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/b
 import { CampoDeData } from '../componentes/data'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
+import { DataEmPilula } from '../componentes/data'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
 import { RedeDeSeguranca } from '../componentes/rede'
 import { avisar, PilhaDeRecados } from '../componentes/recados'
@@ -831,6 +832,7 @@ function FiltrosDemo() {
   const [segmento, setSegmento] = useState('')
   const [uf, setUf] = useState('GO')
   const [posto, setPosto] = useState('silk')
+  const [dataPilula, setDataPilula] = useState('2026-09-18')
   const [pagina, setPagina] = useState(3)
   return (
     <>
@@ -960,6 +962,17 @@ function FiltrosDemo() {
           aoEscolher={() => {}}
           opcoes={[{ valor: 'conferencia', rotulo: 'Conferência' }]}
         />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap', marginTop: 'var(--sp-4)', alignItems: 'center' }}>
+        <span className="kit-nota" style={{ width: '100%' }}>
+          A data em pílula: o mesmo calendário do campo de data, num botão que cabe dentro de uma
+          linha de tabela. A borda preta diz que alguém escolheu a data na mão; a vermelha, que ela
+          já passou
+        </span>
+        <DataEmPilula rotulo="Entrega" valor={dataPilula} aoMudar={setDataPilula} />
+        <DataEmPilula rotulo="Planejamento" valor={dataPilula} marcada aoMudar={setDataPilula} />
+        <DataEmPilula rotulo="Entrega" valor="2026-08-30" aviso aoMudar={() => {}} />
       </div>
 
       <Paginador

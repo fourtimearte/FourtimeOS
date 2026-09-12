@@ -91,14 +91,20 @@ export function FichaDoCliente({
   const tomDaSituacao =
     situacao === 'parado' ? 'brand' : situacao === 'novo' ? 'info' : situacao === 'ativo' ? 'ok' : 'neutro'
 
+  /* o resumo do pedido mora embaixo do numero, e nao numa coluna propria:
+     a ficha e estreita e o que importa nas colunas e numero, peca e valor */
   const colunas: Coluna<Pedido>[] = [
-    { chave: 'numero', titulo: 'Pedido', celula: (p) => <b>{p.numero}</b> },
-    { chave: 'data', titulo: 'Data', celula: (p) => formatarData(p.data) },
     {
-      chave: 'resumo',
-      titulo: 'O que era',
-      celula: (p) => <span style={{ color: 'var(--text-2)' }}>{p.resumo}</span>,
+      chave: 'numero',
+      titulo: 'Pedido',
+      celula: (p) => (
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <b>{p.numero}</b>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{p.resumo}</span>
+        </span>
+      ),
     },
+    { chave: 'data', titulo: 'Data', celula: (p) => formatarData(p.data) },
     { chave: 'pecas', titulo: 'Peças', numero: true, celula: (p) => p.pecas },
     {
       chave: 'estado',

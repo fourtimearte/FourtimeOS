@@ -91,7 +91,7 @@ const FAIXAS: { de: number; ate: number; nome: string; prazo: string }[] = [
 
 export function transportadoraPorCep(cep: string): Transportadora {
   const n = Number(cep.replace(/\D/g, ''))
-  if (!n) return { nome: 'Sem CEP', prazo: 'preencha o CEP para saber' }
+  if (!n) return { nome: 'Sem CEP', prazo: 'preencha para saber a faixa' }
   const f = FAIXAS.find((x) => n >= x.de && n <= x.ate)
   return f ? { nome: f.nome, prazo: f.prazo } : { nome: 'Correios', prazo: '5 a 9 dias úteis' }
 }

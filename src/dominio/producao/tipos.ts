@@ -48,13 +48,80 @@ export type Pedido = {
   id: string
   cliente: string
   vendedor: string
+  departamento: string
   etapa: Etapa
   /** quantos dias daqui ate a entrega. Negativo e atraso. */
   emDias: number
   pecas: number
   layouts: number
   tecnicas: Tecnica[]
+  /** em que dia da semana ele esta planejado: 0 e segunda, 5 e sabado */
+  planejadoNoDia: number
+  /** true quando alguem escolheu a data na mao, e nao o sistema */
+  planejamentoManual: boolean
+  /** quando o pedido foi fechado, que e o que o relatorio mensal soma */
+  fechadoEm: string
+  /** a divisao que o relatorio precisa: sublimacao de um lado, o resto do outro */
+  pecasSubli: number
+  pecasPersonalizadas: number
+  valorSubli: number
+  valorPersonalizado: number
 }
+
+/** Pedido misto: tem sublimacao E outra tecnica junto. O relatorio marca. */
+export function misto(p: Pedido): boolean {
+  return p.valorSubli > 0 && p.valorPersonalizado > 0
+}
+
+export function valorDoPedido(p: Pedido): number {
+  return p.valorSubli + p.valorPersonalizado
+}
+
+/* ==========================================================================
+   A semana do painel de atividades.
+
+   Segunda a sabado, seis dias, porque e o que a fabrica trabalha. O domingo
+   nao existe no painel de proposito: dia que nao produz nao ocupa coluna.
+   ========================================================================== */
+
+export const DIAS_DA_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+export const CAPACIDADE_DO_DIA = 325
+export const DIAS_UTEIS = 6
+
+/** A segunda-feira da semana de uma data. */
+export function inicioDaSemana(d = new Date()): Date {
+  const base = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const dia = base.getDay()
+  /* domingo (0) conta como fim da semana anterior, e nao comeco da proxima */
+  const recuo = dia === 0 ? 6 : dia - 1
+  base.setDate(base.getDate() - recuo)
+  return base
+}
+
+export function diaDaSemana(i: number, de = new Date()): Date {
+  const d = inicioDaSemana(de)
+  d.setDate(d.getDate() + i)
+  return d
+}
+
+/** A semana do ano, que e como a fabrica fala de prazo. */
+export function semanaDoAno(d = new Date()): number {
+  const inicio = new Date(d.getFullYear(), 0, 1)
+  return Math.ceil(((d.getTime() - inicio.getTime()) / 86400000 + inicio.getDay() + 1) / 7)
+}
+
+export function ehHoje(d: Date): boolean {
+  const hoje = new Date()
+  return (
+    d.getDate() === hoje.getDate() &&
+    d.getMonth() === hoje.getMonth() &&
+    d.getFullYear() === hoje.getFullYear()
+  )
+}
+
+export const diaEMes = (d: Date) =>
+  d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
 const DIA = 24 * 60 * 60 * 1000
 

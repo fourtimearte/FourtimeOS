@@ -1,0 +1,244 @@
+/* ==========================================================================
+   Banco de dados.
+
+   Abas com contagem, e cada categoria com o corpo que ela pede. As abas rolam
+   para o lado dentro da própria caixa: são nove, e nove não cabem em 390 px.
+   ========================================================================== */
+
+.bc-abas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--sp-4);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.bc-abas::-webkit-scrollbar {
+  display: none;
+}
+.bc-aba {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.bc-aba:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.bc-aba.ligada {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+.bc-aba .n {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.bc-nota {
+  margin: 0 0 var(--sp-4);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* --- referências, em tabela ---------------------------------------------- */
+.bc-rolo {
+  padding: 0;
+  overflow-x: auto;
+  min-width: 0;
+}
+.bc-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.bc-tab th,
+.bc-tab td {
+  padding: 0 20px;
+  height: 44px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.bc-tab th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+.bc-tab tbody tr:last-child td {
+  border-bottom: 0;
+}
+.bc-tab tbody tr:hover td {
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+.bc-cod {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.bc-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* a tarja de gênero, quadrada e com a letra só */
+.bc-ref .tag {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.bc-suave {
+  color: var(--text-3);
+}
+
+/* --- tecidos e cores, em cartões por grupo -------------------------------- */
+.bc-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.bc-grupo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.bc-grupo header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.bc-grupo .cod {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.bc-grupo .nm {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bc-grupo .n {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.bc-itens {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.bc-itens > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  min-width: 0;
+}
+.bc-itens > span:hover {
+  background: var(--surface-2);
+}
+.bc-amostra {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.bc-cor-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.bc-itens small {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- as listas simples --------------------------------------------------- */
+.bc-simples {
+  padding: 0;
+  min-width: 0;
+}
+.bc-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 20px;
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  min-width: 0;
+}
+.bc-linha:last-child {
+  border-bottom: 0;
+}
+.bc-linha span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .bc-tab .esconde,
+  .bc-tab th.esconde {
+    display: none;
+  }
+}

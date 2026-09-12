@@ -5,10 +5,13 @@ import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaEntrar } from '@modules/entrar'
+import { TelaAtividades } from '@modules/atividades'
+import { TelaBanco } from '@modules/banco'
 import { TelaEmBreve } from '@modules/em-breve'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFunil } from '@modules/funil'
+import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
 import { TelaPainel } from '@modules/painel'
 
@@ -51,42 +54,9 @@ export const rotas = createBrowserRouter([
           />
         ),
       },
-      {
-        path: 'atividades',
-        element: (
-          <TelaEmBreve
-            acima="Gestão"
-            titulo="Painel de atividades"
-            sub="A semana da fábrica, dia a dia, em uma folha só."
-            fase="fase 2"
-            texto="Ele depende dos pedidos em produção, que entram com o kanban."
-          />
-        ),
-      },
-      {
-        path: 'relatorio',
-        element: (
-          <TelaEmBreve
-            acima="Gestão"
-            titulo="Relatório mensal"
-            sub="O que foi produzido e faturado no mês, por vendedor e por técnica."
-            fase="fase 2"
-            texto="Ele soma pedidos aprovados, e por enquanto só existe cotação aprovada."
-          />
-        ),
-      },
-      {
-        path: 'banco',
-        element: (
-          <TelaEmBreve
-            acima="Gestão"
-            titulo="Banco de dados"
-            sub="Referências, tecidos, cores, etiquetas e tudo que os menus leem."
-            fase="fase 2"
-            texto="Hoje esse vocabulário vive no código. Ele vira tela quando o Supabase entrar."
-          />
-        ),
-      },
+      { path: 'atividades', element: <TelaAtividades /> },
+      { path: 'relatorio', element: <TelaRelatorio /> },
+      { path: 'banco', element: <TelaBanco /> },
       {
         path: 'config',
         element: (

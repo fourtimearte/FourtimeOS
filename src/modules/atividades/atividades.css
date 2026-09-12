@@ -1,0 +1,298 @@
+/* ==========================================================================
+   Painel de atividades.
+
+   Um cabeçalho de números colado no topo da lista, e depois um bloco por dia
+   da semana. Cada dia tem a régua de saturação contra a capacidade do dia, e
+   ela vira vermelha quando passa de 100 por cento.
+
+   As linhas usam a mesma grade do cabeçalho de colunas, senão nada alinha.
+   ========================================================================== */
+
+.at-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  margin-bottom: var(--sp-4);
+  min-width: 0;
+}
+.at-capacidade {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.at-topo {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface);
+  overflow: hidden;
+  min-width: 0;
+}
+.at-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+}
+.at-numeros > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.at-numeros > div:last-child {
+  border-right: 0;
+}
+.at-numeros .l {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.at-numeros b {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.at-numeros b small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.at-numeros .vermelho {
+  color: var(--brand-text, var(--brand));
+}
+
+.at-regua {
+  position: relative;
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.at-regua i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--ink);
+}
+.at-regua.dia {
+  flex: 1 1 120px;
+  max-width: 200px;
+  margin-top: 0;
+  height: 5px;
+}
+.at-regua.dia.passou i {
+  background: var(--brand);
+}
+
+/* a grade que manda em tudo: cabeçalho e linhas usam a mesma */
+.at-colunas,
+.at-linha {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 90px 70px 80px 150px 130px;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.at-colunas {
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.at-colunas .num {
+  text-align: right;
+}
+
+/* --- um dia --------------------------------------------------------------- */
+.at-dia {
+  border: 1px solid var(--border);
+  border-top: 0;
+  background: var(--surface);
+  min-width: 0;
+}
+.at-dia:last-of-type {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.at-dia-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.at-dia-topo.hoje {
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+.at-dia-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.at-data {
+  color: var(--text-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.at-hoje {
+  padding: 0 6px;
+  height: 17px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.at-conta {
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.at-alerta {
+  padding: 0 8px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.at-corpo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.at-linha {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.at-linha:last-child {
+  border-bottom: 0;
+}
+/* o atrasado ganha uma barra na lateral, e não a linha inteira pintada:
+   pintar a linha some com o texto no tema escuro */
+.at-linha.atrasada {
+  box-shadow: inset 3px 0 0 var(--brand);
+  background: color-mix(in srgb, var(--brand) 5%, transparent);
+}
+.at-cod {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.at-quem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.at-quem b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.at-quem small {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.at-suave {
+  color: var(--text-2);
+}
+.at-forte {
+  font-weight: 600;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.at-vencido {
+  color: var(--brand-text, var(--brand));
+  font-weight: 700;
+}
+.at-etapa {
+  min-width: 0;
+}
+.at-plano {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.at-plano.manual {
+  border-color: var(--ink);
+}
+.at-vazio {
+  margin: 0;
+  padding: 12px 20px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.at-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: var(--sp-4);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.at-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.at-marca {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+.at-marca.atrasado {
+  border-left: 3px solid var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+@media (max-width: 1100px) {
+  .at-colunas,
+  .at-linha {
+    grid-template-columns: 82px minmax(0, 1fr) 150px;
+  }
+  .at-colunas .esconde,
+  .at-linha .esconde {
+    display: none;
+  }
+  .at-capacidade {
+    margin-left: 0;
+  }
+}

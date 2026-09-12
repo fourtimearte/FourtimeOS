@@ -64,6 +64,7 @@ const TELAS = [
      base de exemplo nasce do mesmo molde toda vez */
   ['/cotacao/CT20260183', 'cotacao-editor'],
   ['/cotacao/CT20260183/folha', 'cotacao-folha'],
+  ['/funil', 'funil'],
 ]
 
 async function main() {

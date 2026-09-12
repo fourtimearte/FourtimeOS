@@ -48,9 +48,14 @@
 .fn-col-nome {
   font-size: 13.5px;
   font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* sem grid-row aqui: item com linha declarada é colocado ANTES dos que se
+   colocam sozinhos, e a contagem ia parar na frente do nome */
 .fn-col-conta {
-  grid-row: 1;
   justify-self: end;
   min-width: 22px;
   height: 20px;

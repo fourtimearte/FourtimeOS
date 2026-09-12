@@ -865,6 +865,18 @@
   min-width: 0;
   padding: 1px 0;
 }
+/* no celular a bandeja cai para baixo da pílula: a faixa nunca empurra a
+   página para o lado, e a grade das fichas continua perfeita */
+@media (max-width: 520px) {
+  .c1 {
+    flex-wrap: wrap;
+    width: auto;
+  }
+  .c1 .sep {
+    display: none;
+  }
+}
+
 /* o código tem sempre três caracteres, então toda ficha tem a mesma largura:
    grade perfeita entre as linhas */
 .cor {

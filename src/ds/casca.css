@@ -123,6 +123,21 @@
     0 0 0 4px var(--border-2);
 }
 
+/* no celular o nome da marca sai e a tecla de atalho some: o dedo nao usa
+   ctrl K, e o campo de busca precisa do espaco */
+@media (max-width: 560px) {
+  .topo {
+    padding: 0 var(--sp-3);
+    gap: var(--sp-2);
+  }
+  .topo .marca span {
+    display: none;
+  }
+  .topo .busca-atalho .tecla {
+    display: none;
+  }
+}
+
 /* --- o miolo ------------------------------------------------------------- */
 .vista {
   padding: 20px var(--gutter) calc(var(--bottomnav-h) + 28px);

@@ -5,6 +5,7 @@ export {
   acharLead,
   apagarLead,
   listarLeads,
+  marcarLido,
   moverLead,
   porEstagio,
   recomecarDoExemplo,

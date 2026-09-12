@@ -1,55 +1,52 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MouseEvent as MouseEventoReact, PointerEvent as PointerEventoReact } from 'react'
+import type { CSSProperties, MouseEvent as MouseEventoReact, PointerEvent as PointerEventoReact } from 'react'
 import { MenuDeContexto, type ItemDeContexto } from '@ds'
 import {
   ESTAGIOS,
-  EXPLICACAO_DO_ESTAGIO,
-  NOME_DA_ORIGEM,
   NOME_DO_ESTAGIO,
-  diasParado,
-  esquecido,
+  corDoEstagio,
   formatarDinheiro,
+  iniciais,
+  nomeDoLead,
   porEstagio,
+  semResposta,
+  tempoCurto,
   type Estagio,
   type Lead,
 } from '@dominio/funil'
 
 /* ==========================================================================
-   O quadro do funil.
+   O quadro do funil, como no v5.
 
-   ARRASTAR COM PONTEIRO, E NAO COM O ARRASTE DO NAVEGADOR.
-   O arraste nativo do HTML nao existe no toque, e este sistema roda em tablet
-   no galpao. Entao o arraste aqui e feito na mao, com eventos de ponteiro, que
-   sao os mesmos para dedo e para mouse.
+   Seis colunas que rolam para o lado dentro da propria caixa, cada uma com
+   nome, contagem e soma, e uma barra de 2 px embaixo do cabecalho na cor do
+   estagio. No celular, as fichas de cima levam para a coluna.
 
-   E arrastar NUNCA e o unico caminho. Todo cartao tem o menu do botao direito,
-   ou do toque longo, com "mover para". Quem esta de pe segurando um tablet
-   com uma mao so precisa disso, e quem usa teclado tambem.
+   ARRASTAR COM PONTEIRO, E NAO COM O ARRASTE DO NAVEGADOR: o arraste nativo
+   nao existe no toque, e isto roda em tablet no galpao. E arrastar nunca e o
+   unico caminho, porque quem esta de pe com uma mao so precisa do menu.
    ========================================================================== */
 
 type Arrasto = {
   id: string
-  /* onde o dedo esta agora */
   x: number
   y: number
-  /* onde ele encostou: e a distancia ate aqui que decide se e arraste */
   x0: number
   y0: number
-  /* de onde no cartao ele pegou, para o fantasma nao pular para o dedo */
   dx: number
   dy: number
   largura: number
-  /* so vira arraste de verdade depois de andar um tanto: senao todo toque
-     no cartao viraria arraste e ninguem conseguiria abrir a conversa */
   valendo: boolean
 }
 
 export function Quadro({
   leads,
+  aberto,
   aoMover,
   aoAbrir,
 }: {
   leads: Lead[]
+  aberto: string
   aoMover: (id: string, estagio: Estagio) => void
   aoAbrir: (l: Lead) => void
 }) {
@@ -58,17 +55,11 @@ export function Quadro({
   const [alvo, setAlvo] = useState<Estagio | ''>('')
   const [ctx, setCtx] = useState<{ lead: Lead; itens: ItemDeContexto[] } | null>(null)
   const ancora = useRef<HTMLElement | null>(null)
-  /* o clique chega DEPOIS do soltar, quando o arraste ja acabou. Sem esta
-     marca, largar um cartao abria a conversa dele junto */
   const arrastou = useRef(false)
-  /* espelho do arrasto e do alvo, para o soltar nao precisar ler estado de
-     dentro de um atualizador: atualizador de estado pode rodar duas vezes, e
-     mover o lead duas vezes seria mover errado */
+  const quadro = useRef<HTMLDivElement>(null)
   const agora = useRef<{ arrasto: Arrasto | null; alvo: Estagio | '' }>({ arrasto: null, alvo: '' })
   agora.current = { arrasto, alvo }
-  const hoje = Date.now()
 
-  /* o cartao que esta sendo carregado, para o fantasma saber o que desenhar */
   const carregado = arrasto ? leads.find((l) => l.id === arrasto.id) : null
 
   useEffect(() => {
@@ -92,7 +83,6 @@ export function Quadro({
       const { arrasto: a, alvo: onde } = agora.current
       if (a?.valendo) {
         arrastou.current = true
-        /* o clique do mesmo gesto chega logo em seguida: a marca some depois */
         setTimeout(() => (arrastou.current = false), 0)
         if (onde) aoMover(a.id, onde)
       }
@@ -107,10 +97,9 @@ export function Quadro({
       window.removeEventListener('pointerup', soltar)
       window.removeEventListener('pointercancel', soltar)
     }
-  }, [arrasto, alvo, aoMover])
+  }, [arrasto, aoMover])
 
   function pegar(e: PointerEventoReact<HTMLElement>, l: Lead) {
-    /* botao direito abre o menu, nao arrasta */
     if (e.button !== 0) return
     const caixa = e.currentTarget.getBoundingClientRect()
     setArrasto({
@@ -128,7 +117,7 @@ export function Quadro({
 
   function abrirMenu(e: MouseEventoReact<HTMLElement>, l: Lead) {
     e.preventDefault()
-    ancora.current = e.currentTarget as HTMLElement
+    ancora.current = e.currentTarget
     setCtx({
       lead: l,
       itens: [
@@ -141,94 +130,75 @@ export function Quadro({
     })
   }
 
+  function irPara(e: Estagio) {
+    const col = quadro.current?.querySelector('[data-estagio="' + e + '"]') as HTMLElement | null
+    const caixa = quadro.current
+    if (col && caixa) caixa.scrollTo({ left: col.offsetLeft - caixa.offsetLeft, behavior: 'smooth' })
+  }
+
   return (
     <>
-      <div className="fn-quadro">
+      {/* as fichas de cima: so no celular, para pular de coluna sem arrastar a tela */}
+      <div className="fn-abas">
+        {ESTAGIOS.map((e) => (
+          <button key={e} type="button" className="fn-aba" onClick={() => irPara(e)}>
+            {NOME_DO_ESTAGIO[e]} <b>{colunas[e].length}</b>
+          </button>
+        ))}
+      </div>
+
+      <div className="fn-quadro" ref={quadro}>
         {ESTAGIOS.map((e) => {
           const lista = colunas[e]
           const soma = lista.reduce((s, l) => s + l.valor, 0)
           return (
             <section
               key={e}
-              className={['fn-col', alvo === e && arrasto?.valendo ? 'alvo' : ''].filter(Boolean).join(' ')}
+              className="fn-col"
               data-estagio={e}
+              style={{ '--c': corDoEstagio(e) } as CSSProperties}
             >
               <header className="fn-col-topo">
-                <span className="fn-col-nome">{NOME_DO_ESTAGIO[e]}</span>
-                <span className="fn-col-conta">{lista.length}</span>
-                <span className="fn-col-dica">{EXPLICACAO_DO_ESTAGIO[e]}</span>
-                <span className="fn-col-soma">{formatarDinheiro(soma)}</span>
+                <span className="t">{NOME_DO_ESTAGIO[e]}</span>
+                <span className="n">{lista.length}</span>
+                <span className="n suave">{formatarDinheiro(soma)}</span>
               </header>
 
-              <div className="fn-col-lista">
+              <div
+                className={[
+                  'fn-col-corpo',
+                  alvo === e && arrasto?.valendo ? 'sobre' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 {lista.map((l) => (
-                  <article
+                  <Cartao
                     key={l.id}
-                    className={[
-                      'fn-card',
-                      arrasto?.id === l.id && arrasto.valendo ? 'carregado' : '',
-                      esquecido(l, hoje) ? 'esquecido' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onPointerDown={(ev) => pegar(ev, l)}
-                    onContextMenu={(ev) => abrirMenu(ev, l)}
-                    onClick={() => {
+                    lead={l}
+                    aberto={aberto === l.id}
+                    carregando={arrasto?.id === l.id && arrasto.valendo}
+                    aoPegar={(ev) => pegar(ev, l)}
+                    aoMenu={(ev) => abrirMenu(ev, l)}
+                    aoAbrir={() => {
                       if (!arrastou.current) aoAbrir(l)
                     }}
-                  >
-                    <div className="fn-card-topo">
-                      <b>{l.nome}</b>
-                      <button
-                        type="button"
-                        className="fn-card-mais"
-                        aria-label="Mover ou abrir"
-                        onPointerDown={(ev) => ev.stopPropagation()}
-                        onClick={(ev) => {
-                          ev.stopPropagation()
-                          abrirMenu(ev, l)
-                        }}
-                      >
-                        ⋯
-                      </button>
-                    </div>
-                    <span className="fn-card-linha">
-                      {l.contato} · {l.cidade}
-                    </span>
-                    <span className="fn-card-linha">
-                      {l.pecas} peças · <b>{formatarDinheiro(l.valor)}</b>
-                    </span>
-                    <div className="fn-card-pe">
-                      <span className="fn-tag">{NOME_DA_ORIGEM[l.origem]}</span>
-                      <span className="fn-tag">{l.vendedor}</span>
-                      <span className={esquecido(l, hoje) ? 'fn-dias grita' : 'fn-dias'}>
-                        {diasParado(l, hoje) === 0 ? 'hoje' : diasParado(l, hoje) + 'd'}
-                      </span>
-                    </div>
-                  </article>
+                  />
                 ))}
-                {!lista.length ? <p className="fn-vazio">nada aqui</p> : null}
+                {!lista.length ? <p className="fn-vazio">Arraste um lead para cá</p> : null}
               </div>
             </section>
           )
         })}
       </div>
 
-      {/* o fantasma que segue o dedo. Ele mora no fim da tela, fora das
-          colunas, para nao ser recortado por nenhuma delas */}
       {carregado && arrasto?.valendo ? (
         <div
           className="fn-fantasma"
-          style={{
-            left: arrasto.x - arrasto.dx,
-            top: arrasto.y - arrasto.dy,
-            width: arrasto.largura,
-          }}
+          style={{ left: arrasto.x - arrasto.dx, top: arrasto.y - arrasto.dy, width: arrasto.largura }}
         >
-          <b>{carregado.nome}</b>
-          <span>
-            {carregado.pecas} peças · {formatarDinheiro(carregado.valor)}
-          </span>
+          <b>{nomeDoLead(carregado)}</b>
+          <span>{formatarDinheiro(carregado.valor)}</span>
         </div>
       ) : null}
 
@@ -236,9 +206,82 @@ export function Quadro({
         aberto={!!ctx}
         ancora={ancora}
         aoFechar={() => setCtx(null)}
-        cabecalho={ctx?.lead.nome}
+        cabecalho={ctx ? nomeDoLead(ctx.lead) : undefined}
         itens={ctx?.itens ?? []}
       />
     </>
+  )
+}
+
+/* --- o cartao do v5 ------------------------------------------------------
+   Avatar com as iniciais, anel vermelho quando tem nao lida, nome, o contador
+   vermelho, duas linhas da ultima mensagem, e embaixo o valor com o tempo. */
+function Cartao({
+  lead,
+  aberto,
+  carregando,
+  aoPegar,
+  aoMenu,
+  aoAbrir,
+}: {
+  lead: Lead
+  aberto: boolean
+  carregando: boolean
+  aoPegar: (e: PointerEventoReact<HTMLElement>) => void
+  aoMenu: (e: MouseEventoReact<HTMLElement>) => void
+  aoAbrir: () => void
+}) {
+  return (
+    <article
+      className={['fn-card', carregando ? 'carregando' : '', aberto ? 'aberto' : '']
+        .filter(Boolean)
+        .join(' ')}
+      onPointerDown={aoPegar}
+      onContextMenu={aoMenu}
+      onClick={aoAbrir}
+    >
+      <div className="fn-card-topo">
+        <span className={lead.novo ? 'fn-avatar anel' : 'fn-avatar'}>
+          {iniciais(nomeDoLead(lead))}
+        </span>
+        <span className="fn-nome">{nomeDoLead(lead)}</span>
+        {lead.novo ? <span className="fn-novo">{lead.novo}</span> : null}
+        <button
+          type="button"
+          className="fn-mais"
+          aria-label="Mover ou abrir"
+          onPointerDown={(ev) => ev.stopPropagation()}
+          onClick={(ev) => {
+            ev.stopPropagation()
+            aoMenu(ev)
+          }}
+        >
+          ⋯
+        </button>
+      </div>
+
+      <p className="fn-msg">{lead.msg}</p>
+
+      <div className="fn-card-pe">
+        <span className="fn-valor">{formatarDinheiro(lead.valor)}</span>
+        <span className="fn-meta">
+          <Relogio />
+          <span className={semResposta(lead) ? 'fn-tempo atrasado' : 'fn-tempo'}>
+            {tempoCurto(lead.min)}
+          </span>
+          {lead.cotacao ? <span className="fn-tag">{lead.cotacao}</span> : null}
+          {lead.pedido ? <span className="fn-tag">{lead.pedido}</span> : null}
+        </span>
+      </div>
+    </article>
+  )
+}
+
+function Relogio() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7.5V12l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
   )
 }

@@ -1,161 +1,161 @@
-/* ==========================================================================
-   O funil de vendas.
-
-   Um lead e uma conversa que ainda nao virou pedido. Ele anda por estagios,
-   guarda o que foi dito, e em algum momento vira cotacao. O funil nao e um
-   quadro bonito: ele existe para ninguem esquecer de responder.
-   ========================================================================== */
-
 import { formatarDinheiro as dinheiro, linkDoWhatsApp as linkDoZap } from '@shared'
 
-export type Estagio = 'novo' | 'contato' | 'orcando' | 'enviado' | 'ganho' | 'perdido'
+/* ==========================================================================
+   O funil de vendas, do jeito que o mockup v5 desenhou.
 
-export const ESTAGIOS: Estagio[] = ['novo', 'contato', 'orcando', 'enviado', 'ganho', 'perdido']
+   Seis colunas, e o lead e uma CONVERSA de WhatsApp que ainda nao virou
+   pedido. Por isso o cartao mostra o trecho da ultima mensagem e o tempo
+   desde ela, e nao um resumo de cadastro: quem olha o funil esta perguntando
+   de quem a conversa esta esperando.
+   ========================================================================== */
+
+export type Estagio = 'novo' | 'atendimento' | 'cotacao' | 'negociando' | 'fechado' | 'perdido'
+
+export const ESTAGIOS: Estagio[] = [
+  'novo',
+  'atendimento',
+  'cotacao',
+  'negociando',
+  'fechado',
+  'perdido',
+]
 
 export const NOME_DO_ESTAGIO: Record<Estagio, string> = {
-  novo: 'Novo',
-  contato: 'Em contato',
-  orcando: 'Orçando',
-  enviado: 'Proposta enviada',
-  ganho: 'Ganho',
+  novo: 'Novo lead',
+  atendimento: 'Em atendimento',
+  cotacao: 'Cotação enviada',
+  negociando: 'Negociando',
+  fechado: 'Fechado',
   perdido: 'Perdido',
 }
 
-export const EXPLICACAO_DO_ESTAGIO: Record<Estagio, string> = {
-  novo: 'Chegou e ninguém falou ainda',
-  contato: 'Conversa aberta, sem número ainda',
-  orcando: 'Montando a cotação',
-  enviado: 'Proposta na mão do cliente',
-  ganho: 'Aprovou',
-  perdido: 'Não foi desta vez',
-}
-
 /** Os dois estagios em que o relogio nao corre mais. */
-export const ESTAGIO_FECHADO: Estagio[] = ['ganho', 'perdido']
+export const ESTAGIO_FECHADO: Estagio[] = ['fechado', 'perdido']
 
-export type Origem = 'whatsapp' | 'instagram' | 'indicacao' | 'site' | 'loja' | 'outro'
-
-export const NOME_DA_ORIGEM: Record<Origem, string> = {
-  whatsapp: 'WhatsApp',
-  instagram: 'Instagram',
-  indicacao: 'Indicação',
-  site: 'Site',
-  loja: 'Loja',
-  outro: 'Outro',
+/** A cor da barra de cada coluna, como no v5: fechado verde, perdido apagado. */
+export function corDoEstagio(e: Estagio): string {
+  if (e === 'fechado') return 'var(--ok)'
+  if (e === 'perdido') return 'var(--text-3)'
+  return 'var(--ink)'
 }
 
 export type Mensagem = {
   id: string
   quem: 'nos' | 'cliente'
   texto: string
-  em: string
+  /** minutos atras, para a conversa nao envelhecer sozinha entre recargas */
+  min: number
+  lida?: boolean
 }
 
 export type Lead = {
   id: string
-  nome: string
+  /** id do cliente cadastrado, quando ja existe */
+  clienteId: string
+  /** o nome quando o lead ainda nao virou cliente */
+  nomeLivre: string
   contato: string
   telefone: string
-  cidade: string
-  origem: Origem
   estagio: Estagio
-  vendedor: string
-  /** quantas pecas o cliente falou, mesmo que por alto */
-  pecas: number
-  /** o quanto a conversa vale, por alto, antes de existir cotacao */
+  /** a ultima mensagem, que e o que o cartao mostra */
+  msg: string
+  /** minutos desde a ultima mensagem */
+  min: number
+  /** quantas nao lidas: o numero vermelho no cartao */
+  novo: number
   valor: number
-  criadoEm: string
-  /** quando alguem mexeu nele pela ultima vez: e o que conta o esquecimento */
-  mexidoEm: string
-  /** id da cotacao, quando ja existe uma */
+  /** numero da cotacao ligada, quando existe */
   cotacao: string
-  clienteId: string
-  observacao: string
+  /** numero do pedido, quando fechou */
+  pedido: string
   conversa: Mensagem[]
 }
 
-const DIA = 24 * 60 * 60 * 1000
-
-/** Ha quantos dias ninguem encosta neste lead. */
-export function diasParado(l: Lead, hoje = Date.now()): number {
-  return Math.floor((hoje - new Date(l.mexidoEm).getTime()) / DIA)
+/** O tempo do cartao: 12 min, 3 h, 1 d. */
+export function tempoCurto(min: number): string {
+  if (min < 60) return min + ' min'
+  if (min < 1440) return Math.round(min / 60) + ' h'
+  return Math.round(min / 1440) + ' d'
 }
 
-/* Esquecer um lead custa mais caro do que perder: perdido a gente sabe por que.
-   Tres dias sem resposta ja e muito numa fabrica que responde no WhatsApp. */
-export function esquecido(l: Lead, hoje = Date.now()): boolean {
-  return !ESTAGIO_FECHADO.includes(l.estagio) && diasParado(l, hoje) >= 3
+/* No v5 o vermelho do tempo so aparece nas duas primeiras colunas: uma hora
+   sem responder quem acabou de chegar e ruim, uma hora esperando o cliente
+   decidir e normal. */
+export function semResposta(l: Lead): boolean {
+  return (l.estagio === 'novo' || l.estagio === 'atendimento') && l.min > 60
+}
+
+export function nomeDoLead(l: Lead): string {
+  return l.nomeLivre
+}
+
+export function iniciais(nome: string): string {
+  const p = nome.trim().split(/\s+/)
+  return ((p[0]?.[0] ?? '') + (p[1]?.[0] ?? '')).toUpperCase() || '?'
 }
 
 export function leadEmBranco(): Lead {
-  const agora = new Date().toISOString()
   return {
-    id: 'LD' + Math.random().toString(36).slice(2, 9),
-    nome: '',
+    id: 'L-' + Math.random().toString(36).slice(2, 7),
+    clienteId: '',
+    nomeLivre: 'Novo lead',
     contato: '',
     telefone: '',
-    cidade: '',
-    origem: 'whatsapp',
     estagio: 'novo',
-    vendedor: '',
-    pecas: 0,
+    msg: '',
+    min: 0,
+    novo: 0,
     valor: 0,
-    criadoEm: agora,
-    mexidoEm: agora,
     cotacao: '',
-    clienteId: '',
-    observacao: '',
+    pedido: '',
     conversa: [],
   }
 }
 
 /* --- as respostas rapidas -----------------------------------------------
-   Elas nao sao enfeite: o que faz um lead esfriar e a demora em mandar a
-   primeira frase. Os buracos em chaves sao trocados na hora de usar. */
+   As quatro do v5, na mesma ordem. Elas nao enviam sozinhas: escrevem a frase
+   no campo, para a pessoa ler antes de mandar. */
 export type RespostaRapida = { id: string; titulo: string; texto: string }
 
 export const RESPOSTAS: RespostaRapida[] = [
   {
-    id: 'ola',
-    titulo: 'Primeiro contato',
+    id: 'precos',
+    titulo: 'Tabela de preços',
     texto:
-      'Olá, {contato}! Aqui quem fala é {vendedor}, da Fourtime. Vi que você procurou a gente sobre uniformes. Me conta o que você precisa: quantas peças, qual modelo e para quando?',
+      'Oi {contato}! Nossa tabela começa em 10 peças. O valor por peça depende do modelo, do tecido e da técnica de estampa. Me diz o que você precisa que eu fecho o número certinho.',
   },
   {
-    id: 'arte',
-    titulo: 'Pedir a arte',
+    id: 'grade',
+    titulo: 'Pedir grade',
     texto:
-      'Oi, {contato}! Para montar o orçamento certinho preciso da arte ou de uma referência do que vocês querem, e da grade de tamanhos. Pode mandar por aqui mesmo.',
-  },
-  {
-    id: 'enviei',
-    titulo: 'Avisar que enviou',
-    texto:
-      'Oi, {contato}! Acabei de te mandar a proposta por e-mail. Qualquer dúvida me chama por aqui que eu ajusto.',
-  },
-  {
-    id: 'lembrete',
-    titulo: 'Cutucar sem incomodar',
-    texto:
-      'Oi, {contato}, tudo bem? Passando para saber se você chegou a ver a proposta. Se precisar mudar alguma coisa, é só falar.',
+      'Oi {contato}! Para eu montar o orçamento preciso da grade de tamanhos, tipo 2 P, 6 M, 5 G, 1 GG. Pode mandar por aqui mesmo.',
   },
   {
     id: 'prazo',
-    titulo: 'Avisar do prazo',
+    titulo: 'Prazo médio',
     texto:
-      'Oi, {contato}! Lembrando que o prazo de produção começa a contar depois da aprovação da arte. Se fecharmos esta semana, dá tempo tranquilo.',
+      'O prazo de produção é de 12 dias úteis, contando a partir da aprovação da arte final e da confirmação do pagamento da entrada.',
+  },
+  {
+    id: 'catalogo',
+    titulo: 'Catálogo',
+    texto:
+      'Oi {contato}! Te mando o catálogo com os modelos e tecidos que a gente trabalha. Qualquer peça de lá sai personalizada com a sua arte.',
   },
 ]
 
 export function preencher(texto: string, l: Lead): string {
-  return texto
-    .replace(/\{contato\}/g, l.contato || l.nome || 'tudo bem')
-    .replace(/\{vendedor\}/g, l.vendedor || 'Fourtime')
-    .replace(/\{nome\}/g, l.nome || '')
+  return texto.replace(/\{contato\}/g, l.contato || nomeDoLead(l) || 'tudo bem')
 }
 
 export function linkDoWhatsApp(l: Lead, mensagem: string): string {
   return linkDoZap(l.telefone, mensagem)
 }
 
+/** O v5 escreve dinheiro sem centavos no cartao e no topo da coluna. */
 export const formatarDinheiro = dinheiro
+
+/** R$ 16,1 mil, como sai no subtitulo da tela. */
+export function emMil(v: number): string {
+  return 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil'
+}

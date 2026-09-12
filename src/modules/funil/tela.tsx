@@ -1,175 +1,153 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Aviso, Botao, Busca, Kpi, Pagina, Seletor, avisar } from '@ds'
-import {
-  cotacaoEmBranco,
-  proximoNumero,
-  salvarCotacao,
-} from '@dominio/cotacao'
+import { Aviso, Botao, Pagina, avisar } from '@ds'
+import { cotacaoEmBranco, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import {
   DADO_DE_EXEMPLO,
   ESTAGIO_FECHADO,
-  esquecido,
-  formatarDinheiro,
-  leadEmBranco,
+  emMil,
   listarLeads,
+  marcarLido,
   moverLead,
   salvarLead,
+  semResposta,
   type Estagio,
   type Lead,
 } from '@dominio/funil'
-import { Conversa } from './conversa'
+import { Inbox } from './inbox'
 import { Quadro } from './quadro'
 import './funil.css'
 
-const limpar = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
+/* ==========================================================================
+   Funil e WhatsApp.
+
+   O arranjo e o do v5: o quadro a esquerda, o inbox fixo a direita a partir
+   de 1280 px, e os numeros do topo numa linha so, sem cartao de KPI. O titulo
+   da tela e "Funil de vendas"; "Funil e WhatsApp" e o nome no menu.
+   ========================================================================== */
 
 export function TelaFunil() {
   const navegar = useNavigate()
   const [versao, setVersao] = useState(0)
-  const todos = useMemo(() => listarLeads(), [versao])
-  const [busca, setBusca] = useState('')
-  const [vendedor, setVendedor] = useState('')
-  const [soEsquecidos, setSoEsquecidos] = useState(false)
-  const [naConversa, setNaConversa] = useState<Lead | null>(null)
-  const hoje = useMemo(() => Date.now(), [])
+  const leads = useMemo(() => listarLeads(), [versao])
+  const [abertoId, setAbertoId] = useState(leads[0]?.id ?? '')
 
-  const vendedores = useMemo(
-    () => [...new Set(todos.map((l) => l.vendedor).filter(Boolean))].sort(),
-    [todos],
-  )
+  const aberto = leads.find((l) => l.id === abertoId) ?? leads[0] ?? null
 
-  const filtrados = useMemo(() => {
-    const b = limpar(busca.trim())
-    return todos.filter((l) => {
-      if (vendedor && l.vendedor !== vendedor) return false
-      if (soEsquecidos && !esquecido(l, hoje)) return false
-      if (!b) return true
-      return limpar(l.nome + ' ' + l.contato + ' ' + l.cidade).includes(b)
-    })
-  }, [todos, busca, vendedor, soEsquecidos, hoje])
-
-  const contas = useMemo(() => {
-    const abertos = todos.filter((l) => !ESTAGIO_FECHADO.includes(l.estagio))
-    const ganhos = todos.filter((l) => l.estagio === 'ganho')
-    const fechados = todos.filter((l) => ESTAGIO_FECHADO.includes(l.estagio))
+  const resumo = useMemo(() => {
+    const ativos = leads.filter((l) => !ESTAGIO_FECHADO.includes(l.estagio))
     return {
-      abertos: abertos.length,
-      valorAberto: abertos.reduce((s, l) => s + l.valor, 0),
-      esquecidos: todos.filter((l) => esquecido(l, hoje)).length,
-      conversao: fechados.length ? Math.round((ganhos.length / fechados.length) * 100) : 0,
+      ativos: ativos.length,
+      valor: ativos.reduce((s, l) => s + l.valor, 0),
+      calados: leads.filter(semResposta).length,
+      naoLidas: leads.reduce((s, l) => s + l.novo, 0),
     }
-  }, [todos, hoje])
+  }, [leads])
 
-  function mexeu() {
-    setVersao((v) => v + 1)
+  const mexeu = () => setVersao((v) => v + 1)
+
+  function abrir(l: Lead) {
+    setAbertoId(l.id)
+    if (l.novo) {
+      marcarLido(l.id)
+      mexeu()
+    }
   }
 
   function mover(id: string, estagio: Estagio) {
     moverLead(id, estagio)
     mexeu()
+    if (estagio === 'fechado') {
+      avisar('Fechado. A cotação aprovada vira ficha de produção na fase 2.', 'ok')
+    }
   }
 
-  /* A cotacao nasce do lead com o que ja se sabe do cliente, e o lead passa a
-     apontar para ela. E aqui que o funil encosta na cotacao, e e so aqui: o
-     modulo do funil nao sabe nada de dentro do modulo da cotacao, so do
-     dominio dela. */
+  /* A cotacao nasce do lead com o que ja se sabe, e o lead passa a apontar
+     para ela. E aqui que o funil encosta na cotacao, e so aqui. */
   function montarCotacao(l: Lead) {
     const c = cotacaoEmBranco(proximoNumero())
-    c.vendedor = l.vendedor
+    c.vendedor = 'Carla'
     c.cliente = {
       ...c.cliente,
       id: l.clienteId,
-      nome: l.nome,
+      nome: l.nomeLivre,
       contato: l.contato,
       telefone: l.telefone,
-      cidade: l.cidade,
     }
     salvarCotacao(c)
-    salvarLead({ ...l, cotacao: c.id, estagio: l.estagio === 'novo' || l.estagio === 'contato' ? 'orcando' : l.estagio })
+    salvarLead({
+      ...l,
+      cotacao: c.id,
+      estagio: l.estagio === 'novo' || l.estagio === 'atendimento' ? 'cotacao' : l.estagio,
+    })
     mexeu()
     avisar('Cotação ' + c.numero + ' criada a partir do lead', 'ok')
     navegar('/cotacao/' + c.id)
+  }
+
+  /* o que foi mandado pelo WhatsApp entra na conversa, senao o funil mente
+     sobre quem falou por ultimo */
+  function registrar(l: Lead, texto: string) {
+    salvarLead({
+      ...l,
+      msg: texto,
+      min: 0,
+      novo: 0,
+      conversa: [
+        ...l.conversa,
+        { id: 'm' + Date.now(), quem: 'nos', texto, min: 0, lida: false },
+      ],
+    })
+    mexeu()
   }
 
   return (
     <Pagina
       acima="Comercial"
       titulo="Funil de vendas"
-      sub="A conversa que ainda não virou pedido, e de quem ela está esperando."
+      sub={
+        resumo.ativos +
+        ' leads ativos · ' +
+        emMil(resumo.valor) +
+        ' em negociação · ' +
+        resumo.calados +
+        ' sem resposta há mais de 1 h'
+      }
       acoes={
         <Botao
-          tom="primario"
+          tom="wa"
           onClick={() => {
-            const l = salvarLead({ ...leadEmBranco(), nome: 'Novo lead', vendedor: 'Marcela' })
-            mexeu()
-            setNaConversa(l)
+            const primeiro = leads.find((l) => l.novo) ?? leads[0]
+            if (primeiro) abrir(primeiro)
           }}
         >
-          Novo lead
+          Inbox
+          {resumo.naoLidas ? <span className="fn-novo no-botao">{resumo.naoLidas}</span> : null}
         </Botao>
       }
     >
       {DADO_DE_EXEMPLO ? (
-        <div style={{ marginBottom: 'var(--sp-5)' }}>
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Aviso tom="info" titulo="Estes leads são inventados">
-            Ninguém aqui existe. O que você mover ou escrever fica guardado neste navegador até o
-            banco entrar. O botão do WhatsApp é de verdade: ele abre a conversa com o número do
-            cartão, e nada é enviado sem você mandar.
+            São os mesmos oito do mockup, com os mesmos textos e valores, para dar para conferir a
+            tela contra o desenho. O botão do WhatsApp é de verdade: ele abre a conversa com o texto
+            pronto, e nada sai sem você mandar.
           </Aviso>
         </div>
       ) : null}
 
-      <div className="fila-kpi" style={{ marginBottom: 'var(--sp-5)' }}>
-        <Kpi rotulo="Em aberto" valor={contas.abertos} sub="ainda andando no funil" />
-        <Kpi rotulo="Valor em conversa" valor={formatarDinheiro(contas.valorAberto)} sub="por alto, antes da cotação" />
-        <Kpi
-          rotulo="Esquecidos"
-          valor={contas.esquecidos}
-          sub="três dias ou mais sem ninguém mexer"
-          aviso={contas.esquecidos > 0}
-          ligado={soEsquecidos}
-          aoClicar={() => setSoEsquecidos((x) => !x)}
-        />
-        <Kpi rotulo="Conversão" valor={contas.conversao} unidade="por cento" sub="dos que fecharam" />
-      </div>
-
-      <div className="ct-filtros">
-        <Busca
-          placeholder="Nome, contato ou cidade"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-        <Seletor
-          rotulo="VENDEDOR"
-          valor={vendedor}
-          opcoes={vendedores.map((v) => ({ valor: v, rotulo: v }))}
-          vazio="Todos"
-          aoEscolher={setVendedor}
+      <div className="fn-tela">
+        <div className="fn-esquerda">
+          <Quadro leads={leads} aberto={abertoId} aoMover={mover} aoAbrir={abrir} />
+        </div>
+        <Inbox
+          lead={aberto}
+          aoAbrirCliente={() => navegar('/clientes')}
+          aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
+          aoMontarCotacao={montarCotacao}
+          aoRegistrar={registrar}
         />
       </div>
-
-      <Quadro leads={filtrados} aoMover={mover} aoAbrir={setNaConversa} />
-
-      <p className="fn-rodape">
-        Arraste o cartão para mudar de coluna, ou use o botão de três pontos. No tablet os dois
-        funcionam.
-      </p>
-
-      <Conversa
-        lead={naConversa}
-        aoFechar={() => setNaConversa(null)}
-        aoSalvar={(l) => {
-          setNaConversa(l)
-          mexeu()
-        }}
-        aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
-        aoMontarCotacao={montarCotacao}
-      />
     </Pagina>
   )
 }

@@ -2,16 +2,22 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
+  CalendarCheck,
+  ChartBar,
   ClipboardText,
+  Database,
+  DotsThree,
   Factory,
-  Funnel,
+  Gear,
   House,
+  Kanban,
   Moon,
   Package,
   Palette,
   Receipt,
   SignOut,
   Sun,
+  TShirt,
   Users,
 } from '@phosphor-icons/react'
 import {
@@ -28,6 +34,7 @@ import {
   type Tema,
 } from '@ds'
 import { sair } from '@dominio/sessao'
+import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
    roteador e a lista de modulos ao mesmo tempo. A casca em si nao sabe o que e
@@ -71,37 +78,57 @@ export function App() {
 
   const icone = { size: 20, weight: 'regular' as const }
 
+  /* o contador do funil e o do v5: leads que ainda andam. Os do kanban e do
+     estoque so aparecem quando os modulos existirem, porque numero inventado
+     em contador de menu e pior que contador nenhum */
+  const leadsAtivos = listarLeads().filter((l) => !ESTAGIO_FECHADO.includes(l.estagio)).length
+
+  /* Os doze destinos do v5, na ordem e com os nomes dele. O Design System e a
+     unica linha que nao esta no mockup: ele e ferramenta nossa, e sem ele o
+     /kit fica inalcancavel pelo menu. */
   const secoes: SecaoDeNavegacao[] = [
     {
       titulo: 'Comercial',
       itens: [
         { para: '/', rotulo: 'Início', icone: <House {...icone} /> },
-        { para: '/funil', rotulo: 'Funil de vendas', icone: <Funnel {...icone} /> },
+        {
+          para: '/funil',
+          rotulo: 'Funil e WhatsApp',
+          icone: <Kanban {...icone} />,
+          contagem: leadsAtivos || undefined,
+        },
         { para: '/clientes', rotulo: 'Clientes', icone: <Users {...icone} /> },
-        { para: '/cotacao', rotulo: 'Cotação', icone: <Receipt {...icone} /> },
+        { para: '/cotacao', rotulo: 'Cotação de venda', icone: <Receipt {...icone} /> },
       ],
     },
     {
       titulo: 'Produção',
       itens: [
         { para: '/ficha', rotulo: 'Ficha de produção', icone: <ClipboardText {...icone} /> },
-        { para: '/kanban', rotulo: 'Produção MARK42', icone: <Factory {...icone} /> },
+        { para: '/kanban', rotulo: 'Kanban de produção', icone: <Factory {...icone} /> },
+        { para: '/produtos', rotulo: 'Fichas técnicas', icone: <TShirt {...icone} /> },
         { para: '/estoque', rotulo: 'Estoque', icone: <Package {...icone} /> },
       ],
     },
     {
-      titulo: 'Sistema',
-      itens: [{ para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> }],
+      titulo: 'Gestão',
+      itens: [
+        { para: '/atividades', rotulo: 'Painel de atividades', icone: <CalendarCheck {...icone} /> },
+        { para: '/relatorio', rotulo: 'Relatório mensal', icone: <ChartBar {...icone} /> },
+        { para: '/banco', rotulo: 'Banco de dados', icone: <Database {...icone} /> },
+        { para: '/config', rotulo: 'Configurações', icone: <Gear {...icone} /> },
+        { para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> },
+      ],
     },
   ]
 
-  /* cinco destinos na barra de baixo: os que a fabrica abre todo dia */
+  /* cinco destinos na barra de baixo, os mesmos do v5 */
   const rodapeNav: ItemDeNavegacao[] = [
     { para: '/', rotulo: 'Início', icone: <House size={22} /> },
-    { para: '/funil', rotulo: 'Funil', icone: <Funnel size={22} /> },
-    { para: '/cotacao', rotulo: 'Cotação', icone: <Receipt size={22} /> },
+    { para: '/funil', rotulo: 'Vendas', icone: <Kanban size={22} /> },
     { para: '/kanban', rotulo: 'Produção', icone: <Factory size={22} /> },
-    { para: '/estoque', rotulo: 'Estoque', icone: <Package size={22} /> },
+    { para: '/atividades', rotulo: 'Semana', icone: <CalendarCheck size={22} /> },
+    { para: '/config', rotulo: 'Mais', icone: <DotsThree size={22} /> },
   ]
 
   const itensDaBusca: ItemBusca[] = secoes.flatMap((s) =>

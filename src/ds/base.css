@@ -712,6 +712,19 @@ textarea.entrada {
 }
 
 /* --- barra de rolagem: desenhada aqui, nunca a do sistema ---------------- */
+
+/* A calha fica reservada mesmo quando a tela nao rola.
+
+   Sem isto, tela que rola perde a largura da barra e tela que nao rola nao
+   perde, e o conteudo inteiro pula uns 15 px para dentro toda vez que se
+   troca de tela. No Mac a barra e flutuante e isso nao aparece; no Windows,
+   que e onde a fabrica trabalha, aparece em toda troca de menu.
+
+   Vai no elemento que rola de verdade, que e o documento. */
+html {
+  scrollbar-gutter: stable;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-2) transparent;

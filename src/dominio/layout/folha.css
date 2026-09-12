@@ -133,6 +133,9 @@
     /* na impressora a folha vale o tamanho natural: o zoom era só da tela */
     transform: none !important;
     width: auto !important;
+    /* e o recuo que centraliza no monitor empurraria a folha para fora do
+       papel: na impressora a margem é da própria folha */
+    margin-left: 0 !important;
   }
   body.imprimindo .fl {
     box-shadow: none !important;

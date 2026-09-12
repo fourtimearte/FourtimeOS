@@ -133,6 +133,7 @@ export function Palco({ children }: { children: ReactNode }) {
   const pilha = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
   const [altura, setAltura] = useState<number | undefined>(undefined)
+  const [recuo, setRecuo] = useState(0)
 
   /* A folha tem largura fixa em milimetros. Quando a tela e menor que ela, o
      jeito de nao empurrar a pagina para o lado e encolher o DESENHO, e nao
@@ -149,6 +150,14 @@ export function Palco({ children }: { children: ReactNode }) {
       setEscala(e)
       const h = pilha.current?.scrollHeight ?? 0
       setAltura(h ? Math.ceil(h * e) : undefined)
+      /* A folha fica no meio do palco.
+
+         Ela e escalada a partir do canto de cima a esquerda, entao sozinha ela
+         encosta na borda esquerda e deixa o resto da tela vazio a direita, que
+         e o que acontecia num monitor largo depois que a pagina perdeu o teto
+         de 1320 px. O recuo e a metade do que sobra: com a tela menor que a
+         folha ele da zero e nada muda. */
+      setRecuo(Math.max(0, Math.round((largura - LARGURA_DA_FOLHA * e) / 2)))
     }
     medir()
     window.addEventListener('resize', medir)
@@ -165,7 +174,11 @@ export function Palco({ children }: { children: ReactNode }) {
       <div
         className="fl-pilha"
         ref={pilha}
-        style={{ transform: 'scale(' + escala + ')', width: LARGURA_DA_FOLHA }}
+        style={{
+          transform: 'scale(' + escala + ')',
+          width: LARGURA_DA_FOLHA,
+          marginLeft: recuo,
+        }}
       >
         {children}
       </div>

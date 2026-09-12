@@ -159,9 +159,20 @@
     animation: none;
   }
 }
+/* Sem teto de largura.
+
+   Tinha 1320 px com margem automatica, e ate 1440 isso nao aparecia: a vista
+   media 1192 e a pagina 1128, com os mesmos 32 px de cada lado em toda tela.
+   Passando disso o teto mordia e a conta virava outra: 176 px de faixa vazia
+   de cada lado num monitor de 1920, 496 px num de 2560. A fabrica trabalha em
+   monitor largo e em tablet deitado, e faixa vazia em monitor largo e espaco
+   de kanban, de tabela e de grade de tamanho que deixou de existir.
+
+   Agora toda tela tem a mesma margem lateral em qualquer monitor: o gutter, e
+   mais nada. E a margem que o painel de atividades ja tinha a 1440. */
 .pagina {
-  max-width: 1320px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 .pagina-topo {
   display: flex;

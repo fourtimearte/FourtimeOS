@@ -54,15 +54,14 @@ export type Situacao = 'ativo' | 'parado' | 'novo' | 'sem-pedido'
 
 const DIA = 24 * 60 * 60 * 1000
 
+/* A ordem importa: quem entrou este mes e novo mesmo que ja tenha pedido, e
+   quem nunca pediu nao e parado, e outra conversa. */
 export function situacaoDoCliente(c: Cliente, hoje = Date.now()): Situacao {
+  const naCasa = (hoje - new Date(c.criadoEm).getTime()) / DIA
+  if (naCasa <= 30) return 'novo'
   if (!c.ultimoPedido) return 'sem-pedido'
-  const dias = (hoje - new Date(c.ultimoPedido).getTime()) / DIA
-  if (dias <= 90) {
-    const desde = (hoje - new Date(c.criadoEm).getTime()) / DIA
-    return desde <= 30 ? 'novo' : 'ativo'
-  }
-  if (dias > 180) return 'parado'
-  return 'ativo'
+  const desdeOPedido = (hoje - new Date(c.ultimoPedido).getTime()) / DIA
+  return desdeOPedido > 180 ? 'parado' : 'ativo'
 }
 
 export const NOME_DA_SITUACAO: Record<Situacao, string> = {

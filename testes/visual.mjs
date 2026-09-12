@@ -52,6 +52,12 @@ const TEMAS = [
   ['dark', 'grafite'],
 ]
 
+/* telas do sistema que tambem entram na foto, alem do kit */
+const TELAS = [
+  ['/', 'inicio'],
+  ['/clientes', 'clientes'],
+]
+
 async function main() {
   await rm(SAIDA, { recursive: true, force: true })
   await mkdir(SAIDA, { recursive: true })
@@ -110,6 +116,50 @@ async function main() {
     if (rolando) {
       console.log('  a pagina rola para o lado em 1440 no ' + rotulo)
       erros++
+    }
+    await ctx.close()
+  }
+
+  /* as telas do sistema, a pagina inteira, nos dois temas */
+  for (const [tema, rotulo] of TEMAS) {
+    const ctx = await navegador.newContext({
+      viewport: { width: 1440, height: 1000 },
+      deviceScaleFactor: 1,
+      reducedMotion: 'reduce',
+    })
+    await ctx.addInitScript(
+      ([t]) => {
+        try {
+          localStorage.setItem(
+            'ft.sessao',
+            JSON.stringify({ usuario: 'admin', desde: 1700000000000 }),
+          )
+          localStorage.setItem('ft.tema', t)
+          localStorage.setItem('ft.menu', 'aberto')
+        } catch {
+          /* armazenamento bloqueado */
+        }
+      },
+      [tema],
+    )
+    await ctx.route('**://fonts.googleapis.com/**', (r) => r.abort())
+    await ctx.route('**://fonts.gstatic.com/**', (r) => r.abort())
+    const p = await ctx.newPage()
+    p.on('pageerror', (e) => {
+      console.log('  ERRO DE PAGINA ' + rotulo + ': ' + e.message)
+      erros++
+    })
+    for (const [rota, nome] of TELAS) {
+      await p.goto(SITE + rota, { waitUntil: 'domcontentloaded' })
+      await p.waitForTimeout(700)
+      await p.screenshot({ path: SAIDA + '/tela-' + nome + '-' + rotulo + '.png', fullPage: true })
+      const rolando = await p.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      )
+      if (rolando) {
+        console.log('  a tela ' + nome + ' rola para o lado em 1440 no ' + rotulo)
+        erros++
+      }
     }
     await ctx.close()
   }

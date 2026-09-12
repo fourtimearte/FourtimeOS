@@ -405,6 +405,11 @@ textarea.entrada {
   background: var(--ink);
   border-color: var(--ink);
 }
+/* meio marcado: o visto sai de cena e sobra o traco, centrado.
+   Sem esconder o svg a caixa vira uma grade de duas linhas e o traco desce. */
+.ck input:indeterminate + .bx svg {
+  display: none;
+}
 .ck input:indeterminate + .bx::after {
   content: '';
   width: 10px;

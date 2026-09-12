@@ -41,6 +41,20 @@ type Bruto = Record<string, unknown>
 const DEGRAUS: ((c: Bruto) => Bruto)[] = [
   /* de 0 (arquivo sem versao, anterior a tudo) para 1: so carimbar */
   (c) => c,
+
+  /* de 1 para 2: entrou o pedido.
+     Arquivo da versao 1 nao tem aprovacao nem pecas no envio. Aprovacao nula e
+     a resposta certa: ele foi salvo antes de existir aprovacao no sistema, e
+     inventar uma seria mentir sobre um sim que ninguem deu. As pecas de cada
+     envio antigo nao da para saber, entao ficam zero, e a tela mostra so o
+     total, que esse esta gravado. */
+  (c) => ({
+    ...c,
+    aprovacao: null,
+    enviadas: Array.isArray(c.enviadas)
+      ? (c.enviadas as Bruto[]).map((e) => ({ pecas: 0, ...e }))
+      : [],
+  }),
 ]
 
 export class ArquivoRecusado extends Error {}

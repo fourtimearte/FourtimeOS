@@ -233,11 +233,33 @@ function montarExemplo(s: Semente, i: number): Cotacao {
             {
               numero: 1,
               data: new Date(criada.getTime() + DIA).toISOString(),
-              total: 0,
+              total: produtos.reduce(
+                (soma, p) =>
+                  soma +
+                  Object.entries(p.bloco.grade).reduce(
+                    (t, [, q]) => t + (q ?? 0) * p.precoBase,
+                    0,
+                  ),
+                0,
+              ),
+              pecas: produtos.reduce(
+                (soma, p) =>
+                  soma + Object.values(p.bloco.grade).reduce((t: number, q) => t + (q ?? 0), 0),
+                0,
+              ),
               para: s.cliente.contato,
               observacao: 'Primeiro envio',
             },
           ],
+    aprovacao:
+      s.estado === 'aprovada'
+        ? {
+            pedido: 'PD' + new Date().getFullYear() + '0001',
+            versao: 1,
+            quem: s.vendedor,
+            em: new Date(criada.getTime() + 3 * DIA).toISOString(),
+          }
+        : null,
   }
 }
 

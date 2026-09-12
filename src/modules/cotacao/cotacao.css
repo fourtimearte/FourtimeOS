@@ -276,3 +276,66 @@
     width: 100%;
   }
 }
+
+/* --- o que já foi enviado ------------------------------------------------ */
+.ct-envios {
+  margin-bottom: var(--sp-5);
+}
+.ct-envios h4 {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-envio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13.5px;
+  color: var(--text-2);
+  min-width: 0;
+}
+.ct-envio.valeu {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 8%, var(--surface));
+}
+.ct-envio b {
+  color: var(--text);
+}
+.ct-envio-total {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ct-envio-selo {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ok);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* um ajuste depois do sim: ele continua visível, só não se mexe mais */
+.ct-ajuste.travado {
+  color: var(--text-2);
+}
+.ct-sinal.parado {
+  display: grid;
+  place-items: center;
+  cursor: default;
+  color: var(--text-3);
+}
+.ct-ajuste-motivo-lido {
+  flex: 1 1 200px;
+  min-width: 0;
+}

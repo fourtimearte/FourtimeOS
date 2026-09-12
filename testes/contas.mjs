@@ -10,7 +10,17 @@
    Rode com: npm run contas
    ========================================================================== */
 
-import { cotacaoEmBranco, totalDaCotacao, subtotal, pecasDaCotacao, VERSAO_DO_CFT } from './compilado/cotacao/tipos.js'
+import {
+  cotacaoEmBranco,
+  totalDaCotacao,
+  subtotal,
+  pecasDaCotacao,
+  registrarEnvio,
+  numeroDePedido,
+  aprovar,
+  travada,
+  VERSAO_DO_CFT,
+} from './compilado/cotacao/tipos.js'
 import { paraCft, deCft, nomeDoArquivo, ArquivoRecusado } from './compilado/cotacao/arquivo.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
@@ -72,6 +82,55 @@ const recusa = (t, nome) => { try { deCft(t); ok(nome, false) } catch (e) { ok(n
 recusa('nao e json', 'texto qualquer e recusado')
 recusa(JSON.stringify({ marca: 'outra.coisa' }), 'arquivo de outro sistema e recusado')
 recusa(JSON.stringify({ marca: 'fourtime.cotacao', versao: 99, cotacao: {} }), 'arquivo do futuro e recusado')
+
+/* --- enviar e aprovar --- */
+console.log('enviar e aprovar')
+let d = cotacaoEmBranco('2026-9002')
+const bb = blocoEmBranco(1)
+bb.grade = { M: 5 }
+d.produtos = [{ bloco: bb, precoPorTamanho: {}, precoBase: 100 }]
+d = registrarEnvio(d, 'Paulo', 'primeira')
+ok('enviar guarda a versao 1', d.enviadas.length === 1 && d.enviadas[0].total === 500)
+ok('enviar muda o estado', d.estado === 'enviada')
+/* o preco sobe DEPOIS do primeiro envio */
+d.produtos = [{ ...d.produtos[0], precoBase: 120 }]
+d = registrarEnvio(d, 'Paulo', 'segunda')
+ok('a versao 1 guarda o total que saiu, e nao o de hoje', d.enviadas[0].total === 500)
+ok('a versao 2 guarda o novo', d.enviadas[1].total === 600)
+ok('as duas versoes continuam la', d.enviadas.length === 2)
+ok('nao travada antes do sim', !travada(d))
+const pedido = numeroDePedido([])
+d = aprovar(d, pedido, 'Rafael')
+ok('aprovar gera numero de pedido', /^PD\d{8}$/.test(d.aprovacao.pedido))
+ok('aprovar marca a versao que valeu', d.aprovacao.versao === 2)
+ok('aprovar registra quem e quando', d.aprovacao.quem === 'Rafael' && !!d.aprovacao.em)
+ok('travada depois do sim', travada(d))
+ok('numero de pedido nao repete', numeroDePedido([pedido]) !== pedido)
+
+/* a cotacao aprovada vai e volta pelo arquivo sem perder a aprovacao */
+const voltaAprovada = deCft(paraCft(d))
+ok('o .cft guarda a aprovacao', voltaAprovada.aprovacao?.pedido === d.aprovacao.pedido)
+ok('o .cft guarda as duas versoes', voltaAprovada.enviadas.length === 2)
+
+/* --- a escada de 1 para 2 --- */
+console.log('escada da versao 1 para a 2')
+const v1 = JSON.stringify({
+  marca: 'fourtime.cotacao',
+  versao: 1,
+  cotacao: {
+    numero: '2025-0002',
+    estado: 'enviada',
+    cliente: { nome: 'Antigo' },
+    produtos: [{ bloco: { grade: { M: 2 } }, precoBase: 30 }],
+    enviadas: [{ numero: 1, data: '2025-01-01T00:00:00.000Z', total: 60, para: 'ele', observacao: '' }],
+  },
+})
+const subiu = deCft(v1)
+ok('arquivo da versao 1 sobe para a 2', subiu.versaoDoFormato === VERSAO_DO_CFT)
+ok('arquivo antigo nao ganha aprovacao inventada', subiu.aprovacao === null)
+ok('arquivo antigo nao fica travado', !travada(subiu))
+ok('o envio antigo mantem o total', subiu.enviadas[0].total === 60)
+ok('o envio antigo ganha pecas zero, e nao indefinido', subiu.enviadas[0].pecas === 0)
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

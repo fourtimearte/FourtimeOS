@@ -16,6 +16,7 @@ import {
 import {
   CaixaDeImagem,
   FileiraDoLayout,
+  FileiraEmLeitura,
   GradeDeTamanhos,
   blocoEmBranco,
   colarBloco,
@@ -29,7 +30,12 @@ import {
   NOME_DO_ESTADO_DA_COTACAO,
   acharCotacao,
   apagarCotacao,
+  aprovar,
   baixarCft,
+  listarCotacoes,
+  numeroDePedido,
+  registrarEnvio,
+  travada,
   pecasDaCotacao,
   pecasDoProduto,
   precoMedioPorPeca,
@@ -177,8 +183,33 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     navegar('/cotacao')
   }
 
+  /* Enviar grava o que saiu. O total vai congelado junto, e nao recalculado
+     depois: a conversa tres semanas depois e sobre o numero que o cliente viu,
+     e nao sobre o de hoje. */
+  function enviar() {
+    const nova = registrarEnvio(c, c.cliente.contato || c.cliente.nome, '')
+    setC(nova)
+    salvarCotacao(nova)
+    setSujo(false)
+    avisar('Envio ' + nova.enviadas.length + ' registrado. Agora mande o PDF para o cliente.', 'ok')
+  }
+
+  function dizerSim() {
+    const pedido = numeroDePedido(
+      listarCotacoes()
+        .map((x) => x.aprovacao?.pedido ?? '')
+        .filter(Boolean),
+    )
+    const nova = aprovar(c, pedido, c.vendedor || 'admin')
+    setC(nova)
+    salvarCotacao(nova)
+    setSujo(false)
+    avisar('Pedido ' + pedido + ' gerado. A grade está travada a partir de agora.', 'ok')
+  }
+
   const base = subtotal(c)
   const total = totalDaCotacao(c)
+  const fechada = travada(c)
 
   return (
     <Pagina
@@ -210,12 +241,34 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           <Botao tom="contorno" onClick={() => { salvar(); navegar('/cotacao/' + c.id + '/folha') }}>
             Ver a folha
           </Botao>
+          {!fechada ? (
+            <Botao tom="contorno" onClick={enviar}>
+              Registrar envio
+            </Botao>
+          ) : null}
+          {!fechada && c.produtos.length ? (
+            <Botao tom="forte" onClick={dizerSim}>
+              Cliente aprovou
+            </Botao>
+          ) : null}
           <Botao tom="primario" onClick={salvar}>
             Salvar
           </Botao>
         </>
       }
     >
+      {fechada && c.aprovacao ? (
+        <div style={{ marginBottom: 'var(--sp-5)' }}>
+          <Aviso tom="ok" titulo={'Aprovada, e virou o pedido ' + c.aprovacao.pedido}>
+            {c.vendedor ? c.aprovacao.quem : 'Alguém'} registrou o sim em{' '}
+            {new Date(c.aprovacao.em).toLocaleString('pt-BR')}, sobre o envio{' '}
+            {c.aprovacao.versao}. A grade e os valores estão travados a partir daqui: a produção já
+            corta por eles, e mudar quantidade depois do corte é o jeito clássico de sobrar pano e
+            faltar peça. Se o cliente mudar de ideia, o caminho é uma cotação nova.
+          </Aviso>
+        </div>
+      ) : null}
+
       {/* --- o cabecalho do documento --- */}
       <section className="ct-bloco">
         <h3 className="ct-h">Quem recebe</h3>
@@ -294,6 +347,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         <Produto
           key={p.bloco.id}
           produto={p}
+          travado={fechada}
           aoMudarBloco={(b) => mudarBloco(i, b)}
           aoMudarProduto={(troca) => mudarProduto(i, troca)}
           aoCopiar={() => {
@@ -316,16 +370,18 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           }
         />
       ) : (
-        <div className="ct-acoes-produto">
-          <Botao tom="contorno" onClick={novoProduto}>
-            Mais um produto
-          </Botao>
-          {podeColar ? (
-            <Botao tom="limpo" onClick={colar}>
-              Colar layout
+        !fechada ? (
+          <div className="ct-acoes-produto">
+            <Botao tom="contorno" onClick={novoProduto}>
+              Mais um produto
             </Botao>
-          ) : null}
-        </div>
+            {podeColar ? (
+              <Botao tom="limpo" onClick={colar}>
+                Colar layout
+              </Botao>
+            ) : null}
+          </div>
+        ) : null
       )}
 
       {/* --- os ajustes e o fechamento --- */}
@@ -338,6 +394,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
                 <LinhaDeAjuste
                   key={a.id}
                   ajuste={a}
+                  travado={fechada}
                   base={base}
                   aoMudar={(novo) =>
                     mudar({ ajustes: c.ajustes.map((x) => (x.id === a.id ? novo : x)) })
@@ -351,6 +408,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
               Nenhum desconto nem acréscimo. O total é a soma dos produtos.
             </p>
           )}
+          {fechada ? null : (
           <div className="ct-acoes-produto">
             <Botao
               tom="contorno"
@@ -372,6 +430,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
               Mais um ajuste
             </Botao>
           </div>
+          )}
 
           <div className="ct-fecha">
             <div>
@@ -392,6 +451,25 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             </div>
           </div>
 
+          {c.enviadas.length ? (
+            <div className="ct-envios">
+              <h4>O que já foi enviado</h4>
+              {c.enviadas.map((e) => (
+                <div key={e.numero} className={c.aprovacao?.versao === e.numero ? 'ct-envio valeu' : 'ct-envio'}>
+                  <b>Envio {e.numero}</b>
+                  <span>{new Date(e.data).toLocaleString('pt-BR')}</span>
+                  <span>{e.pecas ? e.pecas + ' peças' : 'peças não gravadas'}</span>
+                  <span className="ct-envio-total">{dinheiro(e.total)}</span>
+                  {c.aprovacao?.versao === e.numero ? <span className="ct-envio-selo">aprovado</span> : null}
+                </div>
+              ))}
+              <p className="ct-nada">
+                O valor de cada envio fica congelado como saiu. Ele não é recalculado quando o preço
+                muda depois, porque a conversa com o cliente é sobre o número que ele viu.
+              </p>
+            </div>
+          ) : null}
+
           <Aviso tom="info" titulo="Como o por cento é calculado">
             Ajuste em por cento vale sempre sobre o subtotal, nunca sobre o total já ajustado. Dois
             descontos de 10 por cento tiram 20, e não 19.
@@ -405,12 +483,14 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 /* --- um produto: imagem a esquerda, tecnica a direita, grade atravessando -- */
 function Produto({
   produto,
+  travado,
   aoMudarBloco,
   aoMudarProduto,
   aoCopiar,
   aoRemover,
 }: {
   produto: ProdutoCotado
+  travado?: boolean
   aoMudarBloco: (b: Bloco) => void
   aoMudarProduto: (troca: (p: ProdutoCotado) => ProdutoCotado) => void
   aoCopiar: () => void
@@ -429,15 +509,18 @@ function Produto({
           <button type="button" className="img-bt" onClick={aoCopiar}>
             Copiar layout
           </button>
-          <button type="button" className="img-bt risco" onClick={aoRemover}>
-            Remover
-          </button>
+          {!travado ? (
+            <button type="button" className="img-bt risco" onClick={aoRemover}>
+              Remover
+            </button>
+          ) : null}
         </span>
       </header>
 
       <div className="ct-produto-corpo">
         <div className="ct-esq">
           <CaixaDeImagem
+            leitura={travado}
             imagem={b.imagem}
             arte={b.arte}
             aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
@@ -446,7 +529,7 @@ function Produto({
         </div>
 
         <div className="ct-dir">
-          <FileiraDoLayout bloco={b} aoMudar={aoMudarBloco} />
+          {travado ? <FileiraEmLeitura bloco={b} /> : <FileiraDoLayout bloco={b} aoMudar={aoMudarBloco} />}
           <Campo rotulo="Observação do produto">
             <AreaTexto
               rows={3}
@@ -458,6 +541,7 @@ function Produto({
         </div>
 
         <div className="ct-grade">
+          {travado ? null : (
           <div className="ct-preco-base">
             <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
               <Entrada
@@ -473,11 +557,13 @@ function Produto({
               />
             </Campo>
           </div>
+          )}
           <GradeDeTamanhos
+            leitura={travado}
             faixa={b.faixa}
             grade={b.grade}
-            aoMudar={(g: Grade) => aoMudarBloco({ ...b, grade: g })}
-            aoTrocarFaixa={(f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
+            aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
+            aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
             precoBase={produto.precoBase}
             precoPorTamanho={produto.precoPorTamanho}
             aoMudarPreco={(tamanho, valor) =>
@@ -499,15 +585,32 @@ function Produto({
 function LinhaDeAjuste({
   ajuste,
   base,
+  travado,
   aoMudar,
   aoRemover,
 }: {
   ajuste: Ajuste
   base: number
+  travado?: boolean
   aoMudar: (a: Ajuste) => void
   aoRemover: () => void
 }) {
   const soma = ajuste.valor >= 0
+
+  if (travado) {
+    return (
+      <div className="ct-ajuste travado">
+        <span className="ct-sinal parado">{soma ? '+' : '−'}</span>
+        <span>
+          {Math.abs(ajuste.valor)}
+          {ajuste.tipo === 'porcento' ? '%' : ' reais'}
+        </span>
+        <span className="ct-ajuste-motivo-lido">{ajuste.descricao || 'sem motivo escrito'}</span>
+        <span className="ct-ajuste-conta">{dinheiro(valorDoAjuste(ajuste, base))}</span>
+      </div>
+    )
+  }
+
   return (
     <div className="ct-ajuste">
       <button

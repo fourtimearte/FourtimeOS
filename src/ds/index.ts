@@ -68,6 +68,9 @@ export type {
   TipoDeTecido,
 } from './componentes/menus'
 
+export { Kpi, Paginador, Seletor } from './componentes/seletor'
+export type { OpcaoDoSeletor } from './componentes/seletor'
+
 export { Casca, Pagina } from './componentes/casca'
 export type { ItemDeNavegacao, SecaoDeNavegacao } from './componentes/casca'
 

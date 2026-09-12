@@ -1215,3 +1215,201 @@ dialog.cmdk .caixa {
   background: var(--surface);
   color: var(--text-2);
 }
+
+/* --- seletor: o dropdown proprio, nunca o <select> do navegador ---------- */
+.sel {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.sel.bloco {
+  display: flex;
+  width: 100%;
+}
+.sel > .cb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--btn-h);
+  padding: 0 12px 0 14px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow);
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-base) var(--ease-out);
+}
+.sel > .cb .lb {
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: 12.5px;
+  flex: none;
+}
+.sel > .cb .v {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sel > .cb .seta {
+  margin-left: auto;
+  color: var(--text-3);
+  flex: none;
+  font-size: 10px;
+  transition: transform var(--t-base) var(--ease-mola);
+}
+.sel > .cb:hover {
+  border-color: var(--text-3);
+}
+.sel.aberto > .cb {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.sel.aberto > .cb .seta {
+  transform: rotate(180deg);
+}
+/* marcado: o filtro que esta valendo fica preto, porque preto e selecao */
+.sel.marcado > .cb {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: var(--ink);
+}
+.sel.marcado > .cb .lb,
+.sel.marcado > .cb .seta {
+  color: var(--on-ink);
+}
+.sel.sm > .cb {
+  height: var(--btn-h-sm);
+  font-size: 13px;
+}
+
+/* --- paginador ----------------------------------------------------------- */
+.pag {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  padding: var(--sp-4) 0 0;
+}
+.pag .conta {
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.pag .meio {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pag button {
+  min-width: var(--btn-h-sm);
+  height: var(--btn-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast);
+}
+.pag button:hover:not([disabled]) {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.pag button.ligado {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.pag button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.pag .reticencia {
+  color: var(--text-3);
+  padding: 0 2px;
+}
+
+/* --- KPI: o numero que se clica ----------------------------------------- */
+.kpi {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  transition:
+    border-color var(--t-base),
+    box-shadow var(--t-base),
+    transform var(--t-base) var(--ease-out);
+}
+.kpi.clicavel {
+  cursor: pointer;
+}
+.kpi.clicavel:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.kpi.ligado {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.kpi .rot {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.kpi .val {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.kpi .val small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-left: 4px;
+}
+.kpi .sub {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.kpi.aviso .val {
+  color: var(--brand-text);
+}
+.kpi.aviso {
+  border-color: color-mix(in srgb, var(--brand) 28%, var(--border));
+}
+.fila-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--sp-4);
+}

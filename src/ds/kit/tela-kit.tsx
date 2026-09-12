@@ -13,6 +13,7 @@ import {
 } from '../componentes/formulario'
 import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/busca-global'
 import { DemoMenusDoModulo } from './demo-menus'
+import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
 import { avisar, PilhaDeRecados } from '../componentes/recados'
 import { Gaveta, Modal } from '../componentes/sobreposicao'
@@ -47,6 +48,7 @@ const SECOES: [string, string][] = [
   ['recados', 'Recados'],
   ['buscaglobal', 'Busca global'],
   ['estados', 'Vazio, esqueleto e aviso'],
+  ['filtros', 'Seletor, KPI e paginador'],
   ['menus', 'Menus do módulo'],
 ]
 
@@ -469,6 +471,17 @@ export function TelaKit() {
             </div>
           </Secao>
           <Secao
+            id="filtros"
+            titulo="Seletor, KPI e paginador"
+            texto="As três peças de uma tela de lista. O seletor nunca é o do navegador: ele vive na camada do topo, ganha busca sozinho quando passa de dez opções, e fica preto quando está filtrando, porque preto é seleção. O KPI é clicável e vira filtro. O paginador mostra no máximo sete botões, para a fileira não crescer com a tabela."
+          >
+            <div className="kit-bancada" style={{ display: 'block' }}>
+              <span className="kit-nota">KPI, clicável, virando filtro</span>
+              <FiltrosDemo />
+            </div>
+          </Secao>
+
+          <Secao
             id="menus"
             titulo="Os cinco menus do módulo"
             texto="Nenhum é um menu do navegador e nenhum é genérico: cada um resolve um problema diferente de escolha. Todos vivem na camada do topo, então nenhum nasce cortado dentro de um cartão. A largura vem da lista, não do campo, e é medida uma vez por abertura. A altura vem do lado com mais espaço, não do embaixo se couber."
@@ -735,6 +748,79 @@ function BuscaDemo() {
         ou <span className="tecla">ctrl</span> <span className="tecla">K</span>
       </span>
       <BuscaGlobal aberto={aberta} aoFechar={() => setAberta(false)} itens={itens} />
+    </>
+  )
+}
+
+function FiltrosDemo() {
+  const [foco, setFoco] = useState('todos')
+  const [vendedor, setVendedor] = useState('')
+  const [segmento, setSegmento] = useState('')
+  const [pagina, setPagina] = useState(3)
+  return (
+    <>
+      <div className="fila-kpi" style={{ marginBottom: 'var(--sp-4)' }}>
+        <Kpi
+          rotulo="Clientes"
+          valor="1.901"
+          sub="na base inteira"
+          ligado={foco === 'todos'}
+          aoClicar={() => setFoco('todos')}
+        />
+        <Kpi
+          rotulo="Ativos"
+          valor="412"
+          sub="pediram nos últimos 90 dias"
+          ligado={foco === 'ativos'}
+          aoClicar={() => setFoco('ativos')}
+        />
+        <Kpi
+          rotulo="Parados"
+          valor="87"
+          sub="sem pedido há mais de 6 meses"
+          aviso
+          ligado={foco === 'parados'}
+          aoClicar={() => setFoco('parados')}
+        />
+        <Kpi rotulo="Ticket médio" valor="4.120" unidade="reais" sub="nos últimos 90 dias" />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap' }}>
+        <Seletor
+          rotulo="VENDEDOR"
+          valor={vendedor}
+          aoEscolher={setVendedor}
+          opcoes={[
+            { valor: 'h', rotulo: 'Henrique', contagem: 612 },
+            { valor: 'm', rotulo: 'Marcela', contagem: 438 },
+            { valor: 'r', rotulo: 'Rafael', contagem: 201 },
+          ]}
+        />
+        <Seletor
+          rotulo="SEGMENTO"
+          valor={segmento}
+          aoEscolher={setSegmento}
+          comBusca
+          opcoes={[
+            { valor: 'esc', rotulo: 'Escola' },
+            { valor: 'aca', rotulo: 'Academia' },
+            { valor: 'time', rotulo: 'Time' },
+            { valor: 'emp', rotulo: 'Empresa' },
+            { valor: 'org', rotulo: 'Órgão público' },
+            { valor: 'ig', rotulo: 'Igreja' },
+            { valor: 'ev', rotulo: 'Evento' },
+            { valor: 'out', rotulo: 'Outros' },
+          ]}
+        />
+      </div>
+
+      <Paginador
+        pagina={pagina}
+        paginas={12}
+        total={238}
+        porPagina={20}
+        aoIr={(p) => setPagina(Math.max(1, Math.min(12, p)))}
+      />
     </>
   )
 }

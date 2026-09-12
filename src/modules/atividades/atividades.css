@@ -38,8 +38,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-right: 1px solid var(--border);
+  /* a barrinha de cor à esquerda de cada número, como no editor */
+  border-left: 3px solid var(--barra, transparent);
   min-width: 0;
 }
 .at-numeros > div:last-child {
@@ -60,6 +62,17 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--text-3);
+}
+/* a segunda linha: e ela que faz o número valer alguma coisa */
+.at-numeros small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.at-numeros .verde {
+  color: var(--posto-finalizado);
+}
+.at-conta.vermelho {
+  color: var(--brand-text, var(--brand));
 }
 .at-numeros .vermelho {
   color: var(--brand-text, var(--brand));
@@ -95,7 +108,12 @@
 .at-colunas,
 .at-linha {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr) 90px 70px 80px 150px 130px;
+  /* Pedido · Nome · Aviso · Departamento · Entrega · Planejamento · Total ·
+     Subl. · Person. · Atualização. A ordem e a do Relatorio de Atividade do
+     editor v3.375, que e o que a fabrica le hoje. */
+  grid-template-columns:
+    92px minmax(0, 1.4fr) minmax(0, 150px) minmax(0, 120px)
+    78px 120px 56px 56px 62px minmax(0, 178px);
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -237,6 +255,37 @@
 .at-etapa {
   min-width: 0;
 }
+/* Etapa sem ninguem tocar ha mais de tres dias: a borda vira tracejada, como
+   no editor. O tracejado diz "isto aqui pode nao ser mais verdade" sem tirar a
+   cor do posto nem gritar como um vermelho gritaria. */
+.at-etapa.velha .sel > .cb {
+  border-style: dashed;
+}
+
+/* o aviso do pedido, no formato do editor: pilula, e tracejada apagada quando
+   nao ha aviso nenhum. Celula em branco parece dado que nao carregou. */
+.at-aviso {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  color: var(--warn);
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.at-aviso.sem {
+  border: 1px dashed var(--border-2);
+  background: none;
+  color: var(--text-3);
+  font-weight: 500;
+}
 .at-plano {
   display: inline-flex;
   align-items: center;
@@ -283,13 +332,30 @@
   background: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
+/* Abaixo de 1400 o Departamento sai: ele ja aparece na linha miuda embaixo do
+   nome, e a coluna que nao pode sair e a Atualizacao. */
+@media (max-width: 1399px) {
+  .at-colunas,
+  .at-linha {
+    grid-template-columns:
+      92px minmax(0, 1.4fr) minmax(0, 140px) 78px 116px 56px 56px 62px
+      minmax(0, 170px);
+  }
+  .at-colunas .some-antes,
+  .at-linha .some-antes {
+    display: none;
+  }
+}
+
 @media (max-width: 1100px) {
   .at-colunas,
   .at-linha {
-    grid-template-columns: 82px minmax(0, 1fr) 150px;
+    grid-template-columns: 82px minmax(0, 1fr) 62px minmax(0, 160px);
   }
   .at-colunas .esconde,
-  .at-linha .esconde {
+  .at-linha .esconde,
+  .at-colunas .some-antes,
+  .at-linha .some-antes {
     display: none;
   }
   .at-capacidade {

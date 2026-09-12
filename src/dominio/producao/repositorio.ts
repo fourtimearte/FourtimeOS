@@ -22,17 +22,24 @@ export const DADO_DE_EXEMPLO = true
 const V = VENDEDORES
 const D = DEPARTAMENTOS
 
+/* A data de um apontamento feito ha N dias, em ISO. Os exemplos usam isto em
+   vez de data escrita a mao para a coluna Atualizacao nao envelhecer sozinha
+   toda vez que alguem abre o sistema numa segunda-feira. */
+function diasAtras(n: number): string {
+  return new Date(Date.now() - n * 86400000).toISOString()
+}
+
 const EXEMPLO: Pedido[] = [
-  { id: 'PD004142', cliente: 'Academia Prime Fit', vendedor: V[1], departamento: D[1], etapa: 'cq', emDias: -2, pecas: 120, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: true, fechadoEm: '2026-09-06', pecasSubli: 0, pecasPersonalizadas: 120, valorSubli: 0, valorPersonalizado: 2055 },
-  { id: 'PD004140', cliente: 'Umbroken Funcional', vendedor: V[1], departamento: D[2], etapa: 'silk', emDias: -1, pecas: 80, layouts: 1, tecnicas: ['silk'], planejadoNoDia: 1, planejamentoManual: false, fechadoEm: '2026-09-01', pecasSubli: 33, pecasPersonalizadas: 47, valorSubli: 1792, valorPersonalizado: 828 },
-  { id: 'PD004145', cliente: 'Crossbox Norte', vendedor: V[2], departamento: D[1], etapa: 'despacho', emDias: 1, pecas: 75, layouts: 1, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-03', pecasSubli: 0, pecasPersonalizadas: 75, valorSubli: 0, valorPersonalizado: 4344 },
-  { id: 'PD004149', cliente: 'EC Juventude Sul', vendedor: V[2], departamento: D[0], etapa: 'subli', emDias: 4, pecas: 46, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-08', pecasSubli: 46, pecasPersonalizadas: 0, valorSubli: 2055, valorPersonalizado: 0 },
-  { id: 'PD004146', cliente: 'Logística Ramos Ltda', vendedor: V[1], departamento: D[2], etapa: 'bordado', emDias: 5, pecas: 60, layouts: 1, tecnicas: ['bordado'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-09', pecasSubli: 0, pecasPersonalizadas: 60, valorSubli: 0, valorPersonalizado: 2637 },
-  { id: 'PD004148', cliente: 'Colégio Santa Clara', vendedor: V[1], departamento: D[3], etapa: 'costura', emDias: 7, pecas: 180, layouts: 2, tecnicas: ['subli', 'silk'], planejadoNoDia: 2, planejamentoManual: true, fechadoEm: '2026-09-10', pecasSubli: 130, pecasPersonalizadas: 50, valorSubli: 7020, valorPersonalizado: 1900 },
-  { id: 'PD004153', cliente: 'Vôlei Clube Araras', vendedor: V[1], departamento: D[0], etapa: 'arte', emDias: 11, pecas: 28, layouts: 2, tecnicas: ['subli'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-09', pecasSubli: 28, pecasPersonalizadas: 0, valorSubli: 1820, valorPersonalizado: 0 },
-  { id: 'PD004150', cliente: 'Viapol Engenharia', vendedor: V[2], departamento: D[4], etapa: 'corte', emDias: 14, pecas: 170, layouts: 1, tecnicas: ['dtf', 'silk'], planejadoNoDia: 3, planejamentoManual: false, fechadoEm: '2026-09-01', pecasSubli: 0, pecasPersonalizadas: 170, valorSubli: 0, valorPersonalizado: 8330 },
-  { id: 'PD004151', cliente: 'Escola Municipal Ipê', vendedor: V[2], departamento: D[1], etapa: 'corte', emDias: 19, pecas: 320, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 3, planejamentoManual: true, fechadoEm: '2026-09-02', pecasSubli: 0, pecasPersonalizadas: 320, valorSubli: 0, valorPersonalizado: 13300 },
-  { id: 'PD004138', cliente: 'Colégio Horizonte', vendedor: V[2], departamento: D[0], etapa: 'fim', emDias: -6, pecas: 240, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 0, planejamentoManual: false, fechadoEm: '2026-08-27', pecasSubli: 240, pecasPersonalizadas: 0, valorSubli: 9860, valorPersonalizado: 0 },
+  { id: 'PD004142', cliente: 'Academia Prime Fit', vendedor: V[1], departamento: D[1], etapa: 'conferencia', emDias: -2, pecas: 120, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: true, fechadoEm: '2026-09-06', aviso: 'Entrega vencida há 2 dias', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 120, valorSubli: 0, valorPersonalizado: 2055 },
+  { id: 'PD004140', cliente: 'Umbroken Funcional', vendedor: V[1], departamento: D[2], etapa: 'silk', emDias: -1, pecas: 80, layouts: 1, tecnicas: ['silk'], planejadoNoDia: 1, planejamentoManual: false, fechadoEm: '2026-09-01', aviso: 'Cliente pediu para antecipar', atualizadoEm: diasAtras(1), pecasSubli: 33, pecasPersonalizadas: 47, valorSubli: 1792, valorPersonalizado: 828 },
+  { id: 'PD004145', cliente: 'Crossbox Norte', vendedor: V[2], departamento: D[1], etapa: 'embalagem', emDias: 1, pecas: 75, layouts: 1, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-03', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 75, valorSubli: 0, valorPersonalizado: 4344 },
+  { id: 'PD004149', cliente: 'EC Juventude Sul', vendedor: V[2], departamento: D[0], etapa: 'subli', emDias: 4, pecas: 46, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-08', aviso: '', atualizadoEm: diasAtras(2), pecasSubli: 46, pecasPersonalizadas: 0, valorSubli: 2055, valorPersonalizado: 0 },
+  { id: 'PD004146', cliente: 'Logística Ramos Ltda', vendedor: V[1], departamento: D[2], etapa: 'bordado', emDias: 5, pecas: 60, layouts: 1, tecnicas: ['bordado'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(5), pecasSubli: 0, pecasPersonalizadas: 60, valorSubli: 0, valorPersonalizado: 2637 },
+  { id: 'PD004148', cliente: 'Colégio Santa Clara', vendedor: V[1], departamento: D[3], etapa: 'costura', emDias: 7, pecas: 180, layouts: 2, tecnicas: ['subli', 'silk'], planejadoNoDia: 2, planejamentoManual: true, fechadoEm: '2026-09-10', aviso: 'Arte aprovada com atraso', atualizadoEm: diasAtras(1), pecasSubli: 130, pecasPersonalizadas: 50, valorSubli: 7020, valorPersonalizado: 1900 },
+  { id: 'PD004153', cliente: 'Vôlei Clube Araras', vendedor: V[1], departamento: D[0], etapa: 'corte', emDias: 11, pecas: 28, layouts: 2, tecnicas: ['subli'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 28, pecasPersonalizadas: 0, valorSubli: 1820, valorPersonalizado: 0 },
+  { id: 'PD004150', cliente: 'Viapol Engenharia', vendedor: V[2], departamento: D[4], etapa: 'corte', emDias: 14, pecas: 170, layouts: 1, tecnicas: ['dtf', 'silk'], planejadoNoDia: 3, planejamentoManual: false, fechadoEm: '2026-09-01', aviso: '', atualizadoEm: diasAtras(4), pecasSubli: 0, pecasPersonalizadas: 170, valorSubli: 0, valorPersonalizado: 8330 },
+  { id: 'PD004151', cliente: 'Escola Municipal Ipê', vendedor: V[2], departamento: D[1], etapa: 'corte', emDias: 19, pecas: 320, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 3, planejamentoManual: true, fechadoEm: '2026-09-02', aviso: '', atualizadoEm: diasAtras(6), pecasSubli: 0, pecasPersonalizadas: 320, valorSubli: 0, valorPersonalizado: 13300 },
+  { id: 'PD004138', cliente: 'Colégio Horizonte', vendedor: V[2], departamento: D[0], etapa: 'finalizado', emDias: -6, pecas: 240, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 0, planejamentoManual: false, fechadoEm: '2026-08-27', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 240, pecasPersonalizadas: 0, valorSubli: 9860, valorPersonalizado: 0 },
 ]
 
 /* ==========================================================================
@@ -69,7 +76,9 @@ function historico(): Pedido[] {
         cliente: CLIENTES_DO_HISTORICO[(i + mes) % CLIENTES_DO_HISTORICO.length],
         vendedor: VENDEDORES[i % VENDEDORES.length],
         departamento: DEPARTAMENTOS[i % DEPARTAMENTOS.length],
-        etapa: 'fim',
+        etapa: 'finalizado',
+        aviso: '',
+        atualizadoEm: diasAtras(0),
         emDias: -60,
         pecas: Math.round(sub / 54) + Math.round(per / 45),
         layouts: 1,
@@ -89,9 +98,28 @@ function historico(): Pedido[] {
 
 const TODOS = [...EXEMPLO, ...historico()]
 
+/* A lista viva. Trocar a etapa mexe aqui, e nao no banco, porque banco ainda
+   nao ha: vale enquanto a aba estiver aberta e some ao recarregar. */
+let base: Pedido[] = [...EXEMPLO]
+
 /** Os que estao na fabrica agora. E o que o inicio e o painel usam. */
 export function listarPedidos(): Pedido[] {
-  return EXEMPLO
+  return base
+}
+
+export function acharPedido(id: string): Pedido | undefined {
+  return base.find((p) => p.id === id)
+}
+
+/* Trocar a etapa carimba a hora junto, sempre. Elas nao podem andar
+   separadas: uma etapa nova com a data velha faria a coluna Atualizacao dizer
+   que o apontamento de agora mesmo ja esta vencido. */
+export function moverEtapa(id: string, etapa: Pedido['etapa']): Pedido | undefined {
+  const achado = base.find((p) => p.id === id)
+  if (!achado) return undefined
+  const novo = { ...achado, etapa, atualizadoEm: new Date().toISOString() }
+  base = base.map((p) => (p.id === id ? novo : p))
+  return novo
 }
 
 /** Tudo, inclusive o historico fechado. E o que o relatorio soma. */

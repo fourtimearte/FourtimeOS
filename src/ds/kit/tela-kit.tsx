@@ -830,6 +830,7 @@ function FiltrosDemo() {
   const [vendedor, setVendedor] = useState('')
   const [segmento, setSegmento] = useState('')
   const [uf, setUf] = useState('GO')
+  const [posto, setPosto] = useState('silk')
   const [pagina, setPagina] = useState(3)
   return (
     <>
@@ -916,6 +917,49 @@ function FiltrosDemo() {
             opcoes={[{ valor: 'esc', rotulo: 'Escola' }]}
           />
         </Campo>
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap', marginTop: 'var(--sp-4)' }}>
+        <span className="kit-nota" style={{ width: '100%' }}>
+          O seletor com tom: quando ele É o estado da coisa, e não um filtro sobre ela. O preto do
+          marcado diria "está peneirando por isto" numa célula que só está dizendo em que posto o
+          pedido está. A cor chega de fora, do domínio, porque quem sabe a cor de um posto é a
+          produção
+        </span>
+        <Seletor
+          tamanho="sm"
+          cor="var(--posto-silk)"
+          valor={posto}
+          vazio="sem etapa"
+          aoEscolher={setPosto}
+          opcoes={[
+            { valor: 'corte', rotulo: 'Corte' },
+            { valor: 'silk', rotulo: 'Silk' },
+            { valor: 'costura', rotulo: 'Costura' },
+            { valor: 'finalizado', rotulo: 'Finalizado' },
+          ]}
+        />
+        <Seletor
+          tamanho="sm"
+          cor="var(--posto-finalizado)"
+          valor="finalizado"
+          aoEscolher={() => {}}
+          opcoes={[{ valor: 'finalizado', rotulo: 'Finalizado' }]}
+        />
+        <Seletor
+          tamanho="sm"
+          cor="var(--posto-prensa)"
+          valor="prensa"
+          aoEscolher={() => {}}
+          opcoes={[{ valor: 'prensa', rotulo: 'Prensa DTF' }]}
+        />
+        <Seletor
+          tamanho="sm"
+          cor="var(--posto-conferencia)"
+          valor="conferencia"
+          aoEscolher={() => {}}
+          opcoes={[{ valor: 'conferencia', rotulo: 'Conferência' }]}
+        />
       </div>
 
       <Paginador

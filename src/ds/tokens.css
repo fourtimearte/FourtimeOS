@@ -144,6 +144,31 @@
 /* O solido e identidade e nao muda entre os temas. Quem muda e o par soft/fg,
    que se apoia na superficie, mais o Patch, que clareia no escuro. */
 [data-theme='light'] {
+  /* --- as 13 etapas do editor v3.375 ------------------------------------
+     Estas cores NAO sao escolha de design: sao as do Relatorio de Atividade
+     do editor que a fabrica usa hoje, copiadas hexadecimal por hexadecimal.
+     Quem opera decora cor de etapa, e uma cor diferente aqui seria um posto
+     diferente para quem olha. Por isso elas nao mudam de tema: o que muda no
+     escuro e o tratamento do chip, nao a cor do posto. */
+  --posto-corte: #7c3aed;
+  --posto-subli: #0ea5e9;
+  --posto-dtf: #2563eb;
+  --posto-prensa: #ea580c;
+  --posto-silk: #d97706;
+  --posto-bordado: #9333ea;
+  --posto-calandra: #0891b2;
+  --posto-futurize: #4f46e5;
+  --posto-conferencia: #475569;
+  --posto-cd-costura: #be185d;
+  --posto-costura: #db2777;
+  --posto-embalagem: #65a30d;
+  --posto-finalizado: #16a34a;
+
+  /* as tres situacoes da lateral do editor */
+  --situacao-vencida: #c6161b;
+  --situacao-finalizado: #16a34a;
+  --situacao-andamento: #9aa3af;
+
   --tec-dtf: #147bb3;
   --tec-dtf-vivo: #29aaef;
   --tec-dtf-soft: #e7f4fb;

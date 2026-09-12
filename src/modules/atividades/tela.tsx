@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Botao, Pagina, Segmentado, Selo, Seletor, avisar } from '@ds'
+import { Botao, Pagina, Segmentado, Seletor, avisar } from '@ds'
 import {
   CAPACIDADE_DA_SEMANA,
   CAPACIDADE_DO_DIA,
   DIAS_DA_SEMANA,
   DIAS_UTEIS,
+  ETAPAS,
   POSTO,
   atrasado,
+  etapaVelha,
+  moverEtapa,
   diaDaSemana,
   diaEMes,
   ehHoje,
@@ -37,7 +40,9 @@ const VISTAS = [
 ]
 
 export function TelaAtividades() {
-  const pedidos = useMemo(() => listarPedidos().filter(naFabrica), [])
+  /* muda quando alguem troca a etapa de um pedido: e o sinal para reler */
+  const [versao, setVersao] = useState(0)
+  const pedidos = useMemo(() => listarPedidos().filter(naFabrica), [versao])
   const [vendedor, setVendedor] = useState('')
   const [etapa, setEtapa] = useState('')
   const [situacao, setSituacao] = useState('')
@@ -55,15 +60,17 @@ export function TelaAtividades() {
   )
 
   const pecas = filtrados.reduce((s, p) => s + p.pecas, 0)
+  const pecasSubli = filtrados.reduce((s, p) => s + p.pecasSubli, 0)
+  const pecasPersonalizadas = filtrados.reduce((s, p) => s + p.pecasPersonalizadas, 0)
   const atrasados = filtrados.filter(atrasado).length
   const saturacao = Math.round((pecas / CAPACIDADE_DA_SEMANA) * 100)
+  const sobra = CAPACIDADE_DA_SEMANA - pecas
+  const prontosNaSemana = filtrados.filter((p) => p.etapa === 'finalizado')
+  const prontos = prontosNaSemana.length
+  const pecasProntas = prontosNaSemana.reduce((s, p) => s + p.pecas, 0)
   const inicio = diaDaSemana(0)
   const fim = diaDaSemana(DIAS_UTEIS - 1)
 
-  const etapasUsadas = useMemo(
-    () => [...new Set(pedidos.map((p) => p.etapa))] as Etapa[],
-    [pedidos],
-  )
 
   return (
     <Pagina
@@ -106,7 +113,7 @@ export function TelaAtividades() {
         <Seletor
           rotulo="ETAPA"
           valor={etapa}
-          opcoes={etapasUsadas.map((e) => ({
+          opcoes={ETAPAS.map((e) => ({
             valor: e,
             rotulo: POSTO[e].nome,
             contagem: pedidos.filter((p) => p.etapa === e).length,
@@ -135,46 +142,78 @@ export function TelaAtividades() {
       </div>
 
       <div className="at-topo">
+        {/* Os quatro numeros do Relatorio de Atividade do editor v3.375, com a
+            mesma segunda linha embaixo de cada um. A segunda linha e o que faz
+            o numero valer: "1.173" sozinho nao diz nada, "730 sublimacao e 443
+            personalizado" diz onde a semana esta carregada. */}
         <div className="at-numeros">
-          <div>
-            <span className="l">Pedidos na semana</span>
-            <b>{filtrados.length}</b>
+          <div style={{ '--barra': 'var(--posto-subli)' } as CSSProperties}>
+            <span className="l">Peças na semana</span>
+            <b>{pecas.toLocaleString('pt-BR')}</b>
+            <small>
+              {pecasSubli.toLocaleString('pt-BR')} sublimação ·{' '}
+              {pecasPersonalizadas.toLocaleString('pt-BR')} personalizado
+            </small>
           </div>
-          <div>
-            <span className="l">Peças</span>
-            <b>
-              {pecas.toLocaleString('pt-BR')}{' '}
-              <small>de {CAPACIDADE_DA_SEMANA.toLocaleString('pt-BR')}</small>
-            </b>
+          <div style={{ '--barra': 'var(--text-3)' } as CSSProperties}>
+            <span className="l">Capacidade</span>
+            <b>{CAPACIDADE_DA_SEMANA.toLocaleString('pt-BR')}</b>
+            <small>
+              {CAPACIDADE_DO_DIA} peças por dia · {DIAS_UTEIS} dias
+            </small>
           </div>
-          <div>
+          <div
+            style={
+              {
+                '--barra': saturacao > 100 ? 'var(--brand)' : 'var(--posto-finalizado)',
+              } as CSSProperties
+            }
+          >
             <span className="l">Saturação</span>
-            <b className={saturacao > 100 ? 'vermelho' : ''}>{saturacao}%</b>
+            <b className={saturacao > 100 ? 'vermelho' : 'verde'}>{saturacao}%</b>
+            <small>
+              {sobra >= 0
+                ? 'cabem +' + sobra.toLocaleString('pt-BR') + ' peças'
+                : 'passou ' + Math.abs(sobra).toLocaleString('pt-BR') + ' peças do limite'}
+            </small>
             <span className="at-regua">
               <i
                 style={
                   {
                     width: Math.min(100, saturacao) + '%',
-                    background: saturacao > 100 ? 'var(--brand)' : 'var(--ink)',
+                    background: saturacao > 100 ? 'var(--brand)' : 'var(--posto-finalizado)',
                   } as CSSProperties
                 }
               />
             </span>
           </div>
-          <div>
-            <span className="l">Atrasados</span>
-            <b className={atrasados ? 'vermelho' : ''}>{atrasados}</b>
+          <div style={{ '--barra': 'var(--brand)' } as CSSProperties}>
+            <span className="l">Pedidos</span>
+            <b>{filtrados.length}</b>
+            <small>
+              {prontos} finalizados · {pecasProntas.toLocaleString('pt-BR')} peças prontas
+              {atrasados ? ' · ' : ''}
+              {atrasados ? (
+                <b className="vermelho">
+                  {atrasados} atrasado{atrasados > 1 ? 's' : ''}
+                </b>
+              ) : null}
+            </small>
           </div>
         </div>
 
+        {/* As colunas do editor, na ordem dele. */}
         <div className="at-colunas">
           <span>Pedido</span>
-          <span>Cliente</span>
-          <span className="esconde">Vendedor</span>
-          <span className="esconde num">Peças</span>
+          <span>Nome</span>
+          <span className="esconde">Aviso</span>
+          <span className="some-antes">Departamento</span>
           <span className="esconde num">Entrega</span>
-          <span>Etapa</span>
-          <span className="esconde">Planejado</span>
+          <span className="esconde num">Planejamento</span>
+          <span className="num">Total</span>
+          <span className="esconde num">Subl.</span>
+          <span className="esconde num">Person.</span>
+          <span>Atualização</span>
         </div>
       </div>
 
@@ -183,6 +222,7 @@ export function TelaAtividades() {
         const doDia = filtrados.filter((p) => p.planejadoNoDia === i)
         const pecasDoDia = doDia.reduce((s, p) => s + p.pecas, 0)
         const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
+        const folgaDoDia = CAPACIDADE_DO_DIA - pecasDoDia
         const atrasadosDoDia = doDia.filter(atrasado).length
         return (
           <section key={nome} className="at-dia">
@@ -191,14 +231,19 @@ export function TelaAtividades() {
                 {nome} <span className="at-data">{diaEMes(data)}</span>
                 {ehHoje(data) ? <span className="at-hoje">hoje</span> : null}
               </span>
+              {/* O editor escreve "309 / 325" e "cabem +16", e nao a
+                  porcentagem. Quem planeja a semana nao pergunta quantos por
+                  cento o dia esta: pergunta quanto ainda cabe nele. */}
               <span className="at-conta">
-                {doDia.length} ped · {pecasDoDia.toLocaleString('pt-BR')} pçs
+                <b>{pecasDoDia.toLocaleString('pt-BR')}</b> / {CAPACIDADE_DO_DIA}
               </span>
               <span className={pct > 100 ? 'at-regua dia passou' : 'at-regua dia'}>
                 <i style={{ width: Math.min(100, pct) + '%' }} />
               </span>
-              <span className="at-conta">
-                {pct}% de {CAPACIDADE_DO_DIA}
+              <span className={folgaDoDia < 0 ? 'at-conta vermelho' : 'at-conta'}>
+                {folgaDoDia >= 0
+                  ? 'cabem +' + folgaDoDia.toLocaleString('pt-BR')
+                  : 'passou ' + Math.abs(folgaDoDia).toLocaleString('pt-BR')}
               </span>
               {atrasadosDoDia ? (
                 <span className="at-alerta">
@@ -209,11 +254,18 @@ export function TelaAtividades() {
 
             <div className="at-corpo">
               {doDia.map((p) => (
-                <Linha key={p.id} pedido={p} />
+                <Linha
+                  key={p.id}
+                  pedido={p}
+                  aoTrocarEtapa={(e) => {
+                    const de = POSTO[p.etapa].nome
+                    moverEtapa(p.id, e)
+                    setVersao((v) => v + 1)
+                    avisar(p.id + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
+                  }}
+                />
               ))}
-              {!doDia.length ? (
-                <p className="at-vazio">Sem pedido planejado para este dia.</p>
-              ) : null}
+              {!doDia.length ? <p className="at-vazio">Nada neste dia.</p> : null}
             </div>
           </section>
         )
@@ -233,9 +285,10 @@ export function TelaAtividades() {
   )
 }
 
-function Linha({ pedido }: { pedido: Pedido }) {
+function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: Etapa) => void }) {
   const p = pedido
   const late = atrasado(p)
+  const velha = etapaVelha(p)
   return (
     <div className={late ? 'at-linha atrasada' : 'at-linha'}>
       <span className="at-cod">{p.id}</span>
@@ -245,19 +298,43 @@ function Linha({ pedido }: { pedido: Pedido }) {
           {p.vendedor} · {p.pecas} pçs · {p.departamento}
         </small>
       </span>
-      <span className="esconde at-suave">{p.vendedor}</span>
-      <span className="esconde num at-forte">{p.pecas}</span>
+
+      {/* Sem aviso desenha tracejado apagado, e nao celula em branco: celula
+          em branco parece dado que nao carregou. */}
+      <span className="esconde">
+        <span className={p.aviso ? 'at-aviso' : 'at-aviso sem'}>{p.aviso || 'sem aviso'}</span>
+      </span>
+
+      <span className="some-antes at-suave">{p.departamento}</span>
+
       <span className={late ? 'esconde num at-vencido' : 'esconde num at-suave'}>
         {diaEMes(new Date(Date.now() + p.emDias * 86400000))}
       </span>
-      <span className="at-etapa">
-        <Selo forma="contorno">{POSTO[p.etapa].nome}</Selo>
-      </span>
-      <span className="esconde">
+
+      <span className="esconde num">
         <span className={p.planejamentoManual ? 'at-plano manual' : 'at-plano'}>
           {diaEMes(diaDaSemana(p.planejadoNoDia))}
           {p.planejamentoManual ? ' · manual' : ''}
         </span>
+      </span>
+
+      <span className="num at-forte">{p.pecas}</span>
+      <span className="esconde num at-suave">{p.pecasSubli || '-'}</span>
+      <span className="esconde num at-suave">{p.pecasPersonalizadas || '-'}</span>
+
+      {/* A coluna chama Atualizacao, e nao Etapa, porque ela responde duas
+          perguntas: em que posto o pedido esta, e se isso ainda vale. Etapa
+          sem ninguem tocar ha mais de tres dias sai com a borda tracejada. */}
+      <span className={velha ? 'at-etapa velha' : 'at-etapa'}>
+        <Seletor
+          tamanho="sm"
+          bloco
+          cor={POSTO[p.etapa].cor}
+          valor={p.etapa}
+          opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
+          vazio="sem etapa"
+          aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
+        />
       </span>
     </div>
   )

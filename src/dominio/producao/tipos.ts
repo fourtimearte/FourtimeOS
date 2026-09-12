@@ -11,34 +11,58 @@ import type { Tecnica } from '@ds'
    inicio nao muda, porque ela ja le por estas funcoes.
    ========================================================================== */
 
+/* As 13 etapas do Relatorio de Atividade do editor v3.375, na ordem dele.
+
+   Elas nao sao as 12 do roteador do kanban, e isso e de proposito: o kanban
+   fatia o pedido por tecnica em 21 estacoes, e o painel de atividades olha o
+   pedido inteiro num posto so. Sao duas perguntas diferentes.
+
+   Os nomes estao como estao no editor, inclusive "Futurize" e "Cd costura",
+   que sao os nomes que a fabrica usa. Mudar o nome aqui seria inventar um
+   posto que ninguem conhece. */
 export type Etapa =
-  | 'arte'
   | 'corte'
+  | 'subli'
   | 'dtf'
   | 'prensa'
   | 'silk'
-  | 'subli'
-  | 'calandra'
   | 'bordado'
+  | 'calandra'
+  | 'futurize'
+  | 'conferencia'
+  | 'cd-costura'
   | 'costura'
-  | 'cq'
-  | 'despacho'
-  | 'fim'
+  | 'embalagem'
+  | 'finalizado'
 
-/** nome e cor de cada posto, na ordem do roteador do V7 */
+/** nome e cor de cada posto, copiados do editor v3.375 */
 export const POSTO: Record<Etapa, { nome: string; cor: string }> = {
-  arte: { nome: 'Arte', cor: 'var(--info)' },
-  corte: { nome: 'Corte', cor: 'var(--text-2)' },
-  dtf: { nome: 'Impressão DTF', cor: 'var(--tec-dtf-vivo)' },
-  prensa: { nome: 'Prensa DTF', cor: 'var(--tec-dtf-vivo)' },
-  silk: { nome: 'Silk', cor: 'var(--tec-silk-vivo)' },
-  subli: { nome: 'Impressão Subli', cor: 'var(--tec-subli-vivo)' },
-  calandra: { nome: 'Calandra', cor: 'var(--tec-subli-vivo)' },
-  bordado: { nome: 'Bordado externo', cor: 'var(--tec-bordado-vivo)' },
-  costura: { nome: 'Costura', cor: 'var(--text-2)' },
-  cq: { nome: 'CQ e Embalagem', cor: 'var(--ok)' },
-  despacho: { nome: 'Despacho', cor: 'var(--info)' },
-  fim: { nome: 'Finalizado', cor: 'var(--text-3)' },
+  corte: { nome: 'Corte', cor: 'var(--posto-corte)' },
+  subli: { nome: 'Impressão sublimação', cor: 'var(--posto-subli)' },
+  dtf: { nome: 'Impressão DTF', cor: 'var(--posto-dtf)' },
+  prensa: { nome: 'Prensa DTF', cor: 'var(--posto-prensa)' },
+  silk: { nome: 'Silk', cor: 'var(--posto-silk)' },
+  bordado: { nome: 'Bordado', cor: 'var(--posto-bordado)' },
+  calandra: { nome: 'Calandra', cor: 'var(--posto-calandra)' },
+  futurize: { nome: 'Futurize', cor: 'var(--posto-futurize)' },
+  conferencia: { nome: 'Conferência', cor: 'var(--posto-conferencia)' },
+  'cd-costura': { nome: 'Cd costura', cor: 'var(--posto-cd-costura)' },
+  costura: { nome: 'Costura', cor: 'var(--posto-costura)' },
+  embalagem: { nome: 'Embalagem', cor: 'var(--posto-embalagem)' },
+  finalizado: { nome: 'Finalizado', cor: 'var(--posto-finalizado)' },
+}
+
+/** A ordem em que os postos aparecem no menu e na lateral. */
+export const ETAPAS = Object.keys(POSTO) as Etapa[]
+
+/* As tres situacoes da lateral do editor. Elas nao sao etapa: um pedido em
+   Costura pode estar com a entrega vencida ao mesmo tempo. */
+export type Situacao = 'vencida' | 'finalizado' | 'andamento'
+
+export const SITUACAO: Record<Situacao, { nome: string; cor: string }> = {
+  vencida: { nome: 'Entrega vencida', cor: 'var(--situacao-vencida)' },
+  finalizado: { nome: 'Finalizados', cor: 'var(--situacao-finalizado)' },
+  andamento: { nome: 'Em andamento', cor: 'var(--situacao-andamento)' },
 }
 
 /** quanto a fabrica da conta por semana, e o que o KPI da fila compara */
@@ -61,11 +85,32 @@ export type Pedido = {
   planejamentoManual: boolean
   /** quando o pedido foi fechado, que e o que o relatorio mensal soma */
   fechadoEm: string
+  /* O aviso do pedido: o que quem planeja a semana precisa ver antes de
+     mexer na data. Vazio quer dizer "sem aviso", e a tela desenha isso com
+     borda tracejada apagada, em vez de deixar a celula em branco: celula em
+     branco parece dado que nao carregou. */
+  aviso: string
+  /* Quando a etapa foi atualizada pela ultima vez, em ISO. A coluna se chama
+     Atualizacao no editor por causa disto: ela nao diz so em que posto o
+     pedido esta, diz tambem se isso ainda vale. Etapa antiga sai com a borda
+     tracejada. */
+  atualizadoEm: string
   /** a divisao que o relatorio precisa: sublimacao de um lado, o resto do outro */
   pecasSubli: number
   pecasPersonalizadas: number
   valorSubli: number
   valorPersonalizado: number
+}
+
+/* A etapa fica velha depois de tres dias sem ninguem mexer nela. Nao e
+   palpite: o pedido medio atravessa a fabrica em menos de duas semanas, entao
+   tres dias parado no mesmo posto e ou um pedido travado ou um apontamento que
+   ninguem fez. Nos dois casos quem planeja a semana precisa saber. */
+const DIAS_ATE_ENVELHECER = 3
+
+export function etapaVelha(p: Pedido, hoje = Date.now()): boolean {
+  if (!p.atualizadoEm) return true
+  return (hoje - new Date(p.atualizadoEm).getTime()) / 86400000 > DIAS_ATE_ENVELHECER
 }
 
 /** Pedido misto: tem sublimacao E outra tecnica junto. O relatorio marca. */

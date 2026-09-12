@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Flutuante, semAcento } from './flutuante'
 
 export type OpcaoDoSeletor = { valor: string; rotulo: string; contagem?: number }
@@ -21,6 +21,7 @@ export function Seletor({
   tamanho = 'md',
   bloco,
   campo,
+  cor,
   comBusca,
 }: {
   /** o rotulo miudo dentro do botao, tipo VENDEDOR */
@@ -35,6 +36,13 @@ export function Seletor({
   /** dentro de um formulario, e nao numa barra de filtro: campo preenchido e
       so um campo preenchido, entao ele nao fica preto */
   campo?: boolean
+  /* A cor do que esta escolhido, para o seletor que E o estado da coisa e nao
+     um filtro sobre ela. A etapa do pedido e o caso: "Silk" em laranja e
+     "Costura" em cinza se acham de longe numa lista de sessenta linhas, e o
+     nome sozinho, todo do mesmo cinza, nao se acha. Recebe uma cor pronta do
+     dominio (var(--tec-silk-vivo) e afins), porque quem sabe a cor de um posto
+     e a producao, nao o Design System. */
+  cor?: string
   comBusca?: boolean
 }) {
   const [aberto, setAberto] = useState(false)
@@ -58,11 +66,13 @@ export function Seletor({
         tamanho === 'sm' ? 'sm' : '',
         bloco ? 'bloco' : '',
         campo ? 'campo' : '',
+        cor ? 'tom' : '',
         aberto ? 'aberto' : '',
         valor ? 'marcado' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      style={cor ? ({ '--tom': cor } as CSSProperties) : undefined}
     >
       <button ref={bt} type="button" className="cb" onClick={() => setAberto((a) => !a)}>
         {rotulo ? <span className="lb">{rotulo}</span> : null}

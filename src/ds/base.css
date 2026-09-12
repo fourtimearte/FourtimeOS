@@ -1328,6 +1328,38 @@ dialog.cmdk .caixa {
   font-size: 13px;
 }
 
+/* --- o seletor com tom ---------------------------------------------------
+   Quando o seletor E o estado da coisa, e nao um filtro sobre ela, o preto do
+   "marcado" mente: ele diz "esta peneirando por isto" numa celula que so esta
+   dizendo em que posto o pedido esta. Aqui o escolhido veste a cor do proprio
+   estado, num fundo lavado, com uma bolinha na frente.
+
+   A cor chega em --tom, de fora: quem sabe a cor de um posto e a producao.
+   Numa lista de sessenta linhas e a bolinha que se acha, nao o nome. */
+.sel.tom > .cb,
+.sel.tom.marcado > .cb {
+  background: color-mix(in srgb, var(--tom) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 40%, var(--border));
+  color: var(--text);
+  font-weight: 600;
+  padding-left: 10px;
+  gap: 7px;
+}
+.sel.tom > .cb::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tom);
+}
+.sel.tom > .cb .seta {
+  color: color-mix(in srgb, var(--tom) 70%, var(--text-3));
+}
+.sel.tom > .cb:hover {
+  border-color: var(--tom);
+}
+
 /* --- paginador ----------------------------------------------------------- */
 .pag {
   display: flex;

@@ -7,6 +7,7 @@
    na rota /kit, com todos os seus estados e nos dois temas. */
 
 export { Botao, Chip } from './componentes/botao'
+export { BotaoComMenu } from './componentes/botao-menu'
 export type { TomBotao, TamanhoBotao } from './componentes/botao'
 
 export {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Botao, Pagina, Seletor, Vazio, avisar } from '@ds'
+import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, avisar } from '@ds'
 import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
 import { VENDEDORES } from '@dominio/banco'
 import { listarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
@@ -57,6 +57,15 @@ export function TelaRelatorio() {
   const totalSubli = itens.reduce((s, x) => s + x.valorSubli, 0)
   const varios = meses.length > 1
 
+  /* O que a pilula escreve. Ate tres meses cabem por extenso, e ler "Jul · Ago
+     · Set" e melhor que ler "3 meses": diz QUAIS. De quatro em diante nao cabe
+     mais, e a contagem no canto ja guarda o numero. */
+  const naOrdem = [...meses].sort((a2, b2) => a2 - b2)
+  const rotuloDoPeriodo =
+    naOrdem.length <= 3
+      ? naOrdem.map((m) => MES_CURTO[m]).join(' · ') + ' ' + ano
+      : naOrdem.length + ' meses de ' + ano
+
   /* agrupado por mes e semana do mes, na ordem em que aparecem */
   const grupos = useMemo(() => {
     const mapa = new Map<string, Item[]>()
@@ -98,6 +107,66 @@ export function TelaRelatorio() {
           <Botao tom="contorno" onClick={() => avisar('A folha A4 do relatório entra junto com o kanban', 'info')}>
             Imprimir A4
           </Botao>
+          {/* O período saiu da coluna da esquerda e virou uma pílula com o
+              mesmo menu de antes: passo de ano em cima e a grade dos doze
+              meses embaixo. A coluna inteira some com ele, e a tabela, que é
+              o conteúdo desta tela, fica com a largura toda. */}
+          <BotaoComMenu
+            rotulo="PERÍODO"
+            marcado
+            valor={rotuloDoPeriodo}
+            conta={meses.length}
+            titulo="Marcar um mês abre o relatório do mês; marcar dois ou mais soma"
+          >
+            {() => (
+              <>
+                <div className="rl-menu-topo">
+                  <b>Escolher o período</b>
+                  <span className="rl-ano">
+                    <button
+                      type="button"
+                      onClick={() => setAno((a2) => a2 - 1)}
+                      aria-label="Ano anterior"
+                    >
+                      ‹
+                    </button>
+                    <b>{ano}</b>
+                    <button
+                      type="button"
+                      onClick={() => setAno((a2) => a2 + 1)}
+                      aria-label="Próximo ano"
+                    >
+                      ›
+                    </button>
+                  </span>
+                </div>
+                <div className="rl-meses">
+                  {MES_CURTO.map((m, i) => (
+                    <button
+                      key={m}
+                      type="button"
+                      /* 'sem-movimento' e nao 'vazio': vazio e a classe do
+                         estado vazio do Design System, com 44 px de recheio, e
+                         ela estava inchando cada mes para 90 px de altura */
+                      className={[
+                        meses.includes(i) ? 'ligado' : '',
+                        comMovimento.has(i) ? '' : 'sem-movimento',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => marcarMes(i)}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                <p className="rl-nota">
+                  Mês sem movimento continua clicável, só mais apagado: é nele que se gera o
+                  primeiro relatório. Desmarcar o último mês não faz nada.
+                </p>
+              </>
+            )}
+          </BotaoComMenu>
           <Seletor
             rotulo="VENDEDOR"
             valor={vendedor}
@@ -116,47 +185,6 @@ export function TelaRelatorio() {
       }
     >
       <div className="rl-grade">
-        <div className="rl-lado">
-          <section className="cartao rl-cartao">
-            <header className="rl-cartao-topo">
-              <h3>Período</h3>
-              <Seletor
-                tamanho="sm"
-                campo
-                valor={String(ano)}
-                opcoes={[2026, 2025].map((y) => ({ valor: String(y), rotulo: String(y) }))}
-                vazio="2026"
-                aoEscolher={(v) => setAno(Number(v) || hoje.getFullYear())}
-              />
-            </header>
-            <div className="rl-meses">
-              {MES_CURTO.map((m, i) => (
-                <button
-                  key={m}
-                  type="button"
-                  /* 'sem-movimento' e nao 'vazio': vazio e a classe do estado
-                     vazio do Design System, com 44 px de recheio, e ela estava
-                     inchando cada mes para 90 px de altura */
-                  className={[
-                    meses.includes(i) ? 'ligado' : '',
-                    comMovimento.has(i) ? '' : 'sem-movimento',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => marcarMes(i)}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-            <p className="rl-nota">
-              Mês sem movimento continua clicável, só mais apagado: é nele que se gera o primeiro
-              relatório. Desmarcar o último mês não faz nada.
-            </p>
-          </section>
-
-        </div>
-
         <div className="rl-direita">
           <div className="rl-fixo">
             <div className="rl-fixo-quem">

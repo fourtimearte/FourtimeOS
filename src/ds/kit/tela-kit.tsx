@@ -16,6 +16,7 @@ import { CampoDeData } from '../componentes/data'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { DataEmPilula } from '../componentes/data'
+import { BotaoComMenu } from '../componentes/botao-menu'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
 import { RedeDeSeguranca } from '../componentes/rede'
 import { avisar, PilhaDeRecados } from '../componentes/recados'
@@ -973,6 +974,35 @@ function FiltrosDemo() {
         <DataEmPilula rotulo="Entrega" valor={dataPilula} aoMudar={setDataPilula} />
         <DataEmPilula rotulo="Planejamento" valor={dataPilula} marcada aoMudar={setDataPilula} />
         <DataEmPilula rotulo="Entrega" valor="2026-08-30" aviso aoMudar={() => {}} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap', marginTop: 'var(--sp-4)' }}>
+        <span className="kit-nota" style={{ width: '100%' }}>
+          O botão com menu: é o gatilho do seletor sem a lista. A mesma pílula e a mesma seta, mas
+          quem desenha o que abre é quem usa. Existe porque nem todo menu é uma lista de opções: o
+          período do relatório é um passo de ano mais uma grade de doze meses
+        </span>
+        <BotaoComMenu rotulo="PERÍODO" marcado valor="Jul · Ago · Set 2026" conta={3}>
+          {(fechar) => (
+            <div style={{ display: 'grid', gap: 8, width: 236 }}>
+              <b style={{ fontSize: 13.5 }}>O corpo é seu</b>
+              <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+                Grade, calendário, dois campos, o que a tela precisar. O menu entrega a caixa, a
+                sombra e o fechar ao clicar fora.
+              </span>
+              <Botao tom="contorno" tamanho="sm" onClick={fechar}>
+                Fechar daqui de dentro
+              </Botao>
+            </div>
+          )}
+        </BotaoComMenu>
+        <BotaoComMenu rotulo="ETAPA" valor="Todas" >
+          {() => (
+            <span style={{ fontSize: 12.5, color: 'var(--text-3)', display: 'block', width: 180 }}>
+              Sem nada escolhido a pílula não fica preta, igual ao seletor.
+            </span>
+          )}
+        </BotaoComMenu>
       </div>
 
       <Paginador

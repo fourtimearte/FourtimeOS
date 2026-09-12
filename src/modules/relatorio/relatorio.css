@@ -1,8 +1,9 @@
 /* ==========================================================================
    Relatório mensal.
 
-   Coluna de 264 px à esquerda com período, filtros e fora da conta; à direita
-   a faixa de números e a tabela. Abaixo de 1024 px vira uma coluna só.
+   Uma coluna só: a faixa de números e a tabela. O período, o vendedor e as
+   ações moram todos na barra horizontal do topo, então a tabela, que é o
+   conteúdo desta tela, fica com a largura toda.
    ========================================================================== */
 
 .rl-grade {
@@ -11,12 +12,6 @@
   gap: 16px;
   min-width: 0;
 }
-@media (min-width: 1024px) {
-  .rl-grade {
-    grid-template-columns: 264px minmax(0, 1fr);
-  }
-}
-.rl-lado,
 .rl-direita {
   display: flex;
   flex-direction: column;
@@ -24,38 +19,51 @@
   min-width: 0;
 }
 
-.rl-cartao {
-  padding: 18px 20px;
-  min-width: 0;
-}
-.rl-cartao-topo {
+/* --- o menu do período, dentro da pílula da barra ------------------------ */
+.rl-menu-topo {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-  min-width: 0;
+  gap: 16px;
+  margin-bottom: 10px;
 }
-.rl-cartao-topo h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 15px;
+.rl-menu-topo b {
+  font-size: 13.5px;
   font-weight: 700;
 }
-.rl-cartao-topo h3::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--brand);
+.rl-ano {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.rl-ano b {
+  min-width: 46px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.rl-ano button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+.rl-ano button:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
-/* a grade de doze meses */
+/* a grade de doze meses, agora dentro do menu: largura fixa, porque num menu
+   flutuante não há coluna que mande na largura */
 .rl-meses {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 62px);
   gap: 6px;
 }
 .rl-meses button {
@@ -88,15 +96,11 @@
 }
 
 .rl-nota {
-  margin: 12px 0 0;
-  font-size: 12px;
+  margin: 10px 2px 0;
+  max-width: 280px;
+  font-size: 11.5px;
   color: var(--text-3);
   line-height: 1.45;
-}
-.rl-nota.sem-topo {
-  margin-top: 0;
-  font-size: 13px;
-  color: var(--text-2);
 }
 
 

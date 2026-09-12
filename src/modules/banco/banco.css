@@ -242,3 +242,16 @@
     display: none;
   }
 }
+
+/* referência cadastrada só com o nome: erro de cadastro fica visível */
+.bc-sem {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--brand-text, var(--brand));
+  font-size: 11px;
+  font-weight: 700;
+}
+.bc-alerta {
+  color: var(--brand-text, var(--brand));
+}

@@ -41,7 +41,14 @@ export type ReferenciaDoBanco = {
 }
 
 export const REFERENCIAS: ReferenciaDoBanco[] = REFERENCIAS_DO_EDITOR.map((linha) => {
-  const [cod, ...resto] = linha.split(SEPARADOR)
+  const partes = linha.split(SEPARADOR)
+  /* Duas linhas do banco do editor nao tem codigo: alguem cadastrou so o nome.
+     Elas entram assim mesmo, marcadas, porque esconder erro de cadastro e o
+     jeito de ele nunca ser consertado. */
+  if (partes.length < 2) {
+    return { cod: '', nome: linha, genero: '', categoria: 'sem categoria' }
+  }
+  const [cod, ...resto] = partes
   return {
     cod,
     nome: resto.join(' '),
@@ -49,6 +56,9 @@ export const REFERENCIAS: ReferenciaDoBanco[] = REFERENCIAS_DO_EDITOR.map((linha
     categoria: CATS_REF[refCategoria(cod)] ?? 'Outros',
   }
 })
+
+/** Quantas referencias estao sem codigo. A tela avisa, e nao esconde. */
+export const REFERENCIAS_SEM_CODIGO = REFERENCIAS.filter((r) => !r.cod).length
 
 /* --- cor: o codigo do grupo vira o nome do grupo -------------------------- */
 const NOME_DO_GRUPO: Record<string, string> = { SUB: 'Sublimação' }

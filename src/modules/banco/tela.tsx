@@ -5,6 +5,7 @@ import {
   CORES_POR_GRUPO,
   LISTA_SIMPLES,
   REFERENCIAS,
+  REFERENCIAS_SEM_CODIGO,
   TECIDOS_POR_TIPO,
   abas,
   type Categoria,
@@ -82,6 +83,15 @@ export function TelaBanco() {
           <p className="bc-nota">
             Código FT-CCC-NNNG: categoria, sequencial e gênero (M, F, U, C). O gênero sai da última
             letra do código, e é ele que pinta a tarja.
+            {REFERENCIAS_SEM_CODIGO ? (
+              <>
+                {' '}
+                <b className="bc-alerta">
+                  {REFERENCIAS_SEM_CODIGO} referências estão sem código no banco do editor
+                </b>
+                , cadastradas só com o nome. Elas aparecem marcadas aqui em vez de sumirem.
+              </>
+            ) : null}
           </p>
           <div className="cartao bc-rolo">
             <table className="bc-tab">
@@ -95,12 +105,16 @@ export function TelaBanco() {
               <tbody>
                 {REFERENCIAS.map((r) => (
                   <tr key={r.cod}>
-                    <td className="bc-cod">{r.cod}</td>
+                    <td className="bc-cod">
+                      {r.cod || <span className="bc-sem">sem código</span>}
+                    </td>
                     <td>
                       <span className="bc-ref">
-                        <span className={'tag gen-' + (r.genero || 'masculino')}>
-                          {NOME_DO_GENERO[r.genero] ?? 'U'}
-                        </span>
+                        {r.cod ? (
+                          <span className={'tag gen-' + (r.genero || 'masculino')}>
+                            {NOME_DO_GENERO[r.genero] ?? 'U'}
+                          </span>
+                        ) : null}
                         <b>{r.nome}</b>
                       </span>
                     </td>

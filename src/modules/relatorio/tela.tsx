@@ -123,9 +123,12 @@ export function TelaRelatorio() {
                 <button
                   key={m}
                   type="button"
+                  /* 'sem-movimento' e nao 'vazio': vazio e a classe do estado
+                     vazio do Design System, com 44 px de recheio, e ela estava
+                     inchando cada mes para 90 px de altura */
                   className={[
                     meses.includes(i) ? 'ligado' : '',
-                    comMovimento.has(i) ? '' : 'vazio',
+                    comMovimento.has(i) ? '' : 'sem-movimento',
                   ]
                     .filter(Boolean)
                     .join(' ')}

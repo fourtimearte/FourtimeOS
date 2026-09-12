@@ -1,0 +1,375 @@
+/* ==========================================================================
+   A casca do sistema: menu lateral no computador, barra de baixo no celular,
+   cabecalho sempre. Portada do mockup v5.
+   ========================================================================== */
+
+.casca {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+/* --- cabecalho ----------------------------------------------------------- */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.topo .marca {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+.topo .marca .ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--brand);
+}
+.topo .busca-atalho {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  color: var(--text-3);
+  font: inherit;
+  font-size: 14px;
+  cursor: text;
+  text-align: left;
+  max-width: 520px;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--t-fast);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.topo .busca-atalho:hover {
+  border-color: var(--border-2);
+}
+.topo .busca-atalho .tecla {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.bt-icone {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+.bt-icone:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.bt-icone .sinal {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2px solid var(--bg);
+}
+.pessoa {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow var(--t-fast);
+}
+.pessoa:hover {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--border-2);
+}
+
+/* --- o miolo ------------------------------------------------------------- */
+.vista {
+  padding: 20px var(--gutter) calc(var(--bottomnav-h) + 28px);
+  min-width: 0;
+  animation: vista-entra var(--t-slow) var(--ease-out);
+}
+@keyframes vista-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vista {
+    animation: none;
+  }
+}
+.pagina {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+.pagina-topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  row-gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+  flex-wrap: wrap;
+}
+.pagina-topo h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+.pagina-topo .acima {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pagina-topo .acima::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+.pagina-topo .sub {
+  color: var(--text-2);
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+
+/* --- barra de baixo, no celular ----------------------------------------- */
+.rodape-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+}
+.rodape-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-decoration: none;
+  transition:
+    color var(--t-fast),
+    transform var(--t-fast);
+}
+.rodape-nav a:active {
+  transform: scale(0.96);
+}
+.rodape-nav a.ligado {
+  color: var(--text);
+}
+.rodape-nav a.ligado svg {
+  color: var(--brand);
+}
+
+/* --- menu lateral, no computador ---------------------------------------- */
+.lado {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .casca {
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    transition: grid-template-columns var(--t-slow) var(--ease-out);
+  }
+  .casca.encolhida {
+    --sidebar-w: 68px;
+  }
+  .rodape-nav {
+    display: none;
+  }
+  /* no computador a marca ja esta no menu lateral: no topo ela seria a segunda */
+  .topo .marca {
+    display: none;
+  }
+  .vista {
+    padding: 24px var(--gutter) 40px;
+  }
+
+  .lado {
+    display: flex;
+    flex-direction: column;
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+    gap: 2px;
+    overflow: hidden auto;
+    scrollbar-width: none;
+  }
+  .lado::-webkit-scrollbar {
+    display: none;
+  }
+  .lado > * {
+    flex: none;
+  }
+  .lado .marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 8px;
+    margin-bottom: 14px;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .lado .marca .logo {
+    width: 30px;
+    height: 30px;
+    background: var(--brand);
+    display: grid;
+    place-items: center;
+    color: var(--on-brand);
+    font-weight: 800;
+    font-size: 14px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+  }
+  .lado .secao {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-3);
+    padding: 16px 12px 6px;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .lado a.item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    color: var(--text-2);
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      background var(--t-fast),
+      color var(--t-fast);
+  }
+  .lado a.item svg {
+    flex: none;
+  }
+  .lado a.item:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .lado a.item.ligado {
+    background: var(--ink);
+    color: var(--on-ink);
+    font-weight: 600;
+  }
+  .lado a.item .cnt {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-2);
+    background: var(--surface-3);
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+  }
+  .lado a.item.ligado .cnt {
+    background: color-mix(in srgb, var(--on-ink) 18%, transparent);
+    color: var(--on-ink);
+  }
+  .lado a.item .cnt.aviso {
+    background: var(--brand);
+    color: var(--on-brand);
+  }
+  .lado .rodape {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  /* encolhida: so os icones, e o rotulo some sem pular */
+  .casca.encolhida .lado .rotulo,
+  .casca.encolhida .lado .secao,
+  .casca.encolhida .lado .cnt,
+  .casca.encolhida .lado .marca span {
+    display: none;
+  }
+  .casca.encolhida .lado a.item,
+  .casca.encolhida .lado .marca {
+    justify-content: center;
+    padding: 0;
+  }
+  .casca.encolhida .lado .rodape {
+    flex-direction: column;
+  }
+}

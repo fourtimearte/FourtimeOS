@@ -68,5 +68,8 @@ export type {
   TipoDeTecido,
 } from './componentes/menus'
 
+export { Casca, Pagina } from './componentes/casca'
+export type { ItemDeNavegacao, SecaoDeNavegacao } from './componentes/casca'
+
 export { TelaKit } from './kit/tela-kit'
 export { aplicarTema, temaAtual, temaGuardado, type Tema } from './kit/tema'

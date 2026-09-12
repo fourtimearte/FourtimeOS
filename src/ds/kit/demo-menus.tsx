@@ -106,7 +106,7 @@ export function DemoMenusDoModulo() {
           },
         },
         {
-          rotulo: 'Remover a tecnica e as cores',
+          rotulo: 'Remover a técnica e as cores',
           risco: true,
           aoEscolher: () => {
             setTecnicas((t) => t.filter((x) => x !== 'DTF'))
@@ -131,7 +131,7 @@ export function DemoMenusDoModulo() {
           },
         },
         {
-          rotulo: 'Remover so esta cor',
+          rotulo: 'Remover só esta cor',
           risco: true,
           aoEscolher: () => setCoresDtf((c) => c.filter((x) => x.cod !== cod)),
         },
@@ -146,7 +146,7 @@ export function DemoMenusDoModulo() {
       itens: TAG_ETIQUETA.map((n) => ({ nome: n, cor: 'var(--brand)' })),
     },
     {
-      titulo: 'Tipo de impressao',
+      titulo: 'Tipo de impressão',
       itens: TAG_TECNICA.map((n) => ({ nome: n, cor: COR_DA_TECNICA[n] })),
     },
     {
@@ -158,7 +158,7 @@ export function DemoMenusDoModulo() {
   return (
     <>
       <div className="kit-bancada">
-        <span className="kit-nota">A fileira do modulo, como ela aparece no editor</span>
+        <span className="kit-nota">A fileira do módulo, como ela aparece no editor</span>
 
         <div className="lay-combo" data-genero={genero}>
           <button ref={btRef} type="button" className="lay-bt" onClick={() => setMenu('ref')}>
@@ -186,7 +186,7 @@ export function DemoMenusDoModulo() {
 
       <div className="kit-bancada coluna">
         <span className="kit-nota">
-          A faixa C1: o mais abre as cores, o botao direito na pilula ou na cor apaga
+          A faixa C1: o mais abre as cores, o botão direito na pílula ou na cor apaga
         </span>
         {tecnicas.includes('DTF') ? (
           <FaixaDeCores
@@ -219,7 +219,7 @@ export function DemoMenusDoModulo() {
       </div>
 
       <div className="kit-bancada coluna">
-        <span className="kit-nota">Na folha A4 e no arquivo do cliente, a mesma faixa vira a opcao B</span>
+        <span className="kit-nota">Na folha A4 e no arquivo do cliente, a mesma faixa vira a opção B</span>
         <FaixaDeCores tecnica="dtf" rotulo="DTF" cores={coresDtf} impressao />
       </div>
 

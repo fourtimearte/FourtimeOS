@@ -154,7 +154,7 @@ export function MenuReferencia({
         <CampoDeBusca
           valor={busca}
           aoMudar={setBusca}
-          convite="Buscar referencia ou codigo"
+          convite="Buscar referência ou código"
           campo={campo}
           aoEnter={() => {
             const primeira = grupos[0]?.itens[0]
@@ -168,7 +168,7 @@ export function MenuReferencia({
 
       <div className="mn-lista">
         {grupos.length === 0 ? (
-          <div className="mn-vazio">Nenhuma referencia com esse nome</div>
+          <div className="mn-vazio">Nenhuma referência com esse nome</div>
         ) : (
           grupos.map((g) => {
             const temEscolhida = g.itens.some((r) => r.cod === valor)
@@ -255,7 +255,7 @@ export function BolinhasDeGenero({
   aoEscolher: (g: string) => void
 }) {
   const bolas: [string, string, string][] = [
-    ['g-0', '', 'Sem genero'],
+    ['g-0', '', 'Sem gênero'],
     ['g-M', 'masculino', 'Masculino'],
     ['g-F', 'feminino', 'Feminino'],
     ['g-C', 'infantil', 'Infantil'],
@@ -461,14 +461,14 @@ export function MenuCorDeTecido({
             type="button"
             className="mn-subli"
             onClick={() => {
-              aoEscolher('SUBLIMACAO', '')
+              aoEscolher('SUBLIMAÇÃO', '')
               aoFechar()
             }}
           >
             <span className="arco" />
             <span className="tx">
-              <b>SUBLIMACAO</b>
-              <span>a cor vem da arte, nao do tecido</span>
+              <b>SUBLIMAÇÃO</b>
+              <span>a cor vem da arte, não do tecido</span>
             </span>
           </button>
         ) : null}
@@ -675,11 +675,11 @@ export function MenuCodigoDeCor({
             </button>
           ))}
         </div>
-        <CampoDeBusca valor={busca} aoMudar={setBusca} convite="Numero da cor" campo={campo} />
+        <CampoDeBusca valor={busca} aoMudar={setBusca} convite="Número da cor" campo={campo} />
       </div>
 
       {achadas.length === 0 ? (
-        <div className="mn-vazio">Nenhum codigo com esse numero</div>
+        <div className="mn-vazio">Nenhum código com esse número</div>
       ) : (
         <div className="mn-grade">
           {achadas.map((c) => (
@@ -688,7 +688,7 @@ export function MenuCodigoDeCor({
               key={c[0]}
               className={['mn-cod', noLayout.includes(c[0]) ? 'ja' : ''].filter(Boolean).join(' ')}
               onClick={() => aoAlternar(c[0], c[1], aba)}
-              title={noLayout.includes(c[0]) ? 'Clique de novo para tirar' : 'Lancar no layout'}
+              title={noLayout.includes(c[0]) ? 'Clique de novo para tirar' : 'Lançar no layout'}
             >
               <span className="am" style={{ '--cor': c[1] } as CSSProperties} />
               <span className="cd">{c[0]}</span>

@@ -1,0 +1,325 @@
+/* ==========================================================================
+   O quadro do funil.
+
+   A regra de sempre: as colunas rolam para o lado DENTRO da própria caixa. A
+   página nunca anda de lado, nem no celular.
+   ========================================================================== */
+
+.fn-quadro {
+  display: flex;
+  gap: var(--sp-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: var(--sp-4);
+  min-width: 0;
+  /* no toque, a coluna encaixa: no tablet ninguém acerta meia coluna */
+  scroll-snap-type: x proximate;
+  /* arrastar o cartão não pode virar rolagem da coluna */
+  touch-action: pan-x;
+}
+
+.fn-col {
+  flex: 0 0 276px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 68vh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  scroll-snap-align: start;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+.fn-col.alvo {
+  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.fn-col-topo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.fn-col-nome {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.fn-col-conta {
+  grid-row: 1;
+  justify-self: end;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fn-col-dica {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.fn-col-soma {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.fn-col-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  overflow-y: auto;
+  min-height: 90px;
+}
+
+.fn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  user-select: none;
+  /* o dedo no cartão é para arrastar o cartão, não para rolar a coluna */
+  touch-action: none;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+.fn-card:hover {
+  border-color: var(--text-3);
+}
+.fn-card.carregado {
+  opacity: 0.35;
+}
+.fn-card.esquecido {
+  border-left: 3px solid var(--brand);
+}
+.fn-card-topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.fn-card-topo b {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+.fn-card-mais {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.fn-card-mais:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.fn-card-linha {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fn-card-linha b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.fn-card-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.fn-tag {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-3);
+}
+.fn-dias {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.fn-dias.grita {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.fn-vazio {
+  margin: 0;
+  padding: 8px 2px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* o cartão que segue o dedo: fora das colunas, senão seria recortado */
+.fn-fantasma {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+  transform: rotate(-1.5deg);
+  font-size: 13px;
+}
+.fn-fantasma span {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.fn-rodape {
+  margin: var(--sp-4) 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* --- a conversa na folha lateral ---------------------------------------- */
+.fn-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--sp-4);
+}
+.fn-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.fn-dados {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0 0 var(--sp-4);
+  font-size: 13.5px;
+}
+.fn-dados dt {
+  color: var(--text-3);
+}
+.fn-dados dd {
+  margin: 0;
+}
+.fn-editar {
+  border: 0;
+  padding: 0;
+  margin-bottom: var(--sp-4);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.fn-editar:hover {
+  color: var(--text);
+}
+.fn-ligacao {
+  margin-bottom: var(--sp-5);
+}
+
+.fn-h {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.fn-linha-do-tempo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--sp-5);
+}
+.fn-msg {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.fn-msg.nos {
+  align-self: flex-end;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.fn-msg p {
+  margin: 0 0 4px;
+}
+.fn-msg span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.fn-respostas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--sp-4);
+}
+.fn-resposta {
+  height: var(--btn-h-sm);
+  padding: 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.fn-resposta:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.fn-escrever {
+  height: auto;
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+@media (max-width: 700px) {
+  .fn-col {
+    flex-basis: 84vw;
+    max-height: none;
+  }
+}

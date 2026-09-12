@@ -361,7 +361,7 @@ function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: E
           className={p.aviso ? 'at-aviso' : 'at-aviso sem'}
           title={p.aviso || 'sem aviso'}
         >
-          {p.aviso || 'sem aviso'}
+          <span>{p.aviso || 'sem aviso'}</span>
         </span>
       </span>
 

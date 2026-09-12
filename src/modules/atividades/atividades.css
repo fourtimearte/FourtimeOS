@@ -308,9 +308,16 @@
   color: var(--warn);
   font-size: 10.5px;
   font-weight: 700;
-  white-space: nowrap;
+  overflow: hidden;
+}
+/* o corte vai no filho, e nao no pill: num inline-flex o text-overflow do pai
+   nao tem em que texto pegar, e o aviso saia cortado a seco, sem as
+   reticencias que dizem "tem mais aqui" */
+.at-aviso > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .at-aviso.sem {
   border: 1px dashed var(--border-2);

@@ -80,12 +80,16 @@ async function main() {
       },
       [tema],
     )
+    /* a fonte vem do Google e pode nao existir no ambiente: nao vale travar a
+       foto esperando por ela */
+    await ctx.route('**://fonts.googleapis.com/**', (r) => r.abort())
+    await ctx.route('**://fonts.gstatic.com/**', (r) => r.abort())
     const p = await ctx.newPage()
     p.on('pageerror', (e) => {
       console.log('  ERRO DE PAGINA ' + rotulo + ': ' + e.message)
       erros++
     })
-    await p.goto(SITE + '/kit', { waitUntil: 'load' })
+    await p.goto(SITE + '/kit', { waitUntil: 'domcontentloaded' })
     await p.waitForTimeout(900)
 
     for (const id of SECOES) {
@@ -130,12 +134,14 @@ async function main() {
         /* idem */
       }
     })
+    await ctx.route('**://fonts.googleapis.com/**', (r) => r.abort())
+    await ctx.route('**://fonts.gstatic.com/**', (r) => r.abort())
     const p = await ctx.newPage()
     p.on('pageerror', (e) => {
       console.log('  ERRO DE PAGINA em ' + nome + ': ' + e.message)
       erros++
     })
-    await p.goto(SITE + '/kit', { waitUntil: 'load' })
+    await p.goto(SITE + '/kit', { waitUntil: 'domcontentloaded' })
     await p.waitForTimeout(900)
     await p.screenshot({ path: SAIDA + '/pagina-' + nome + '.png', fullPage: true })
     const rolando = await p.evaluate(

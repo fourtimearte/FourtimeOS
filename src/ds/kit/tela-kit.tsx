@@ -554,7 +554,7 @@ function RedeDemo() {
   const [cai, setCai] = useState(false)
   /* a rede do kit é a dela mesma: um tombo aqui não pode derrubar o kit */
   return (
-    <RedeDeSeguranca>
+    <RedeDeSeguranca aoTentar={() => setCai(false)}>
       <Quebrado cai={cai} />
       {!cai ? (
         <Botao tom="contorno" onClick={() => setCai(true)}>

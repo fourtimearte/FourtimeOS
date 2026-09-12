@@ -13,7 +13,12 @@ import type { ErrorInfo, ReactNode } from 'react'
    nao existe versao em funcao ate hoje.
    ========================================================================== */
 
-type Props = { children: ReactNode; aoVoltar?: () => void }
+type Props = {
+  children: ReactNode
+  aoVoltar?: () => void
+  /** chamado ao tentar de novo, para quem quiser desfazer o que causou o tombo */
+  aoTentar?: () => void
+}
 type Estado = { erro: Error | null }
 
 export class RedeDeSeguranca extends Component<Props, Estado> {
@@ -40,7 +45,14 @@ export class RedeDeSeguranca extends Component<Props, Estado> {
         </p>
         <pre>{this.state.erro.message}</pre>
         <div className="rede-bts">
-          <button type="button" className="btn btn-primario" onClick={() => this.setState({ erro: null })}>
+          <button
+            type="button"
+            className="btn btn-primario"
+            onClick={() => {
+              this.props.aoTentar?.()
+              this.setState({ erro: null })
+            }}
+          >
             Tentar de novo
           </button>
           <button

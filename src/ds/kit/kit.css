@@ -377,6 +377,10 @@
   align-items: start;
 }
 .kit-nota {
+  /* block, e não só width:100%: largura não vale em elemento em linha, e numa
+     bancada que não é flex a nota ficava lado a lado com o que vinha depois,
+     por cima do botão */
+  display: block;
   width: 100%;
   margin: 0 0 var(--sp-2);
   font-size: 11.5px;

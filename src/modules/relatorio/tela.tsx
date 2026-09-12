@@ -312,7 +312,17 @@ function Total({ linhas, rotulo, forte }: { linhas: Item[]; rotulo: string; fort
   const soma = (f: (x: Item) => number) => linhas.reduce((s, x) => s + f(x), 0)
   return (
     <tr className={forte ? 'rl-total periodo' : 'rl-total'}>
-      <td colSpan={5}>{rotulo}</td>
+      {/* Tres celulas, e nao um colSpan de cinco.
+
+          Vendedor e Departamento somem por CSS abaixo de 1536 px, e colSpan
+          nao sabe disso: ele continua comendo cinco colunas quando so tres
+          estao na tela, e a linha inteira de numeros escorrega duas colunas
+          para a esquerda. O total da semana aparecia na coluna do subtotal de
+          sublimacao, certinho e no lugar errado, que e o pior tipo de numero
+          errado. Com celulas de verdade, a que some some junto. */}
+      <td colSpan={3}>{rotulo}</td>
+      <td className="esconde" />
+      <td className="esconde" />
       <td className="num">{soma((x) => x.pecasSubli).toLocaleString('pt-BR')}</td>
       <td className="num">{soma((x) => x.pecasPersonalizadas).toLocaleString('pt-BR')}</td>
       <td className="num">

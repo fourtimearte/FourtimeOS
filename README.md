@@ -78,12 +78,18 @@ o teste reprova e pinta de vermelho onde mudou.
 
 ## Estado
 
-Passo 6 de 22. O que já existe:
+O que já existe:
 
 - tela de entrada em `/entrar`, com sessão provisória no navegador
 - os tokens do Design System V7 e a página viva em `/kit`, com Gelo e Grafite
 - os componentes base, incluindo os cinco menus do módulo de layout
 - as travas de arquitetura cobradas no build
-- o teste visual do `/kit`
+- o teste visual do `/kit`, do início e da tela de clientes
+- a casca do app: menu lateral, barra do celular, busca global, troca de tema
+- a tela de clientes, com busca, filtros, KPIs clicáveis, ordenação e paginação
+
+Falta o passo 7, o Supabase, que precisa de conta e chaves. Enquanto ele não
+entra, o dado de cliente vem de `dominio/cliente/repositorio.ts`, que é o único
+arquivo que muda quando o banco chegar.
 
 No ar em https://fourtimeos.arte-adc.workers.dev

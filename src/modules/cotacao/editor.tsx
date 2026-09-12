@@ -207,6 +207,9 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           <Botao tom="contorno" onClick={baixar}>
             Baixar .cft
           </Botao>
+          <Botao tom="contorno" onClick={() => { salvar(); navegar('/cotacao/' + c.id + '/folha') }}>
+            Ver a folha
+          </Botao>
           <Botao tom="primario" onClick={salvar}>
             Salvar
           </Botao>

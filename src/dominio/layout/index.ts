@@ -12,3 +12,13 @@ export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
 export { CaixaDeImagem } from './imagem'
 export { colarBloco, copiarBloco, temCopia } from './copia'
+export {
+  ALTURA_DA_FOLHA,
+  Folha,
+  LARGURA_DA_FOLHA,
+  Medidor,
+  Palco,
+  imprimir,
+  usarPaginacao,
+  type BlocoDaFolha,
+} from './folha'

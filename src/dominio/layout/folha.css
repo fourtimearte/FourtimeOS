@@ -1,0 +1,126 @@
+/* ==========================================================================
+   A folha A4.
+
+   Ela é a mesma na tela e na impressora: 210 x 297 mm, margem de 12 mm.
+   O que muda na impressão é só o redor, que some.
+
+   A folha é sempre clara, nos dois temas. Imprimir a partir do tema escuro
+   tem que entregar o mesmo documento que o cliente aprovou, e não uma folha
+   preta. Por isso ela declara as próprias cores em vez de herdar as do tema.
+   ========================================================================== */
+
+.fl-palco {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--sp-4) 0;
+}
+.fl-pilha {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transform-origin: top left;
+}
+
+.fl {
+  /* cores próprias: a folha não segue o tema */
+  --fl-texto: #161a20;
+  --fl-fraco: #6b7280;
+  --fl-borda: #dfe3e8;
+  --fl-fundo-2: #f5f7f9;
+
+  position: relative;
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  padding: 12mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  color: var(--fl-texto);
+  font-size: 10.5pt;
+  line-height: 1.35;
+  box-shadow: var(--shadow);
+}
+.fl-topo {
+  flex: none;
+}
+.fl-corpo {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.fl-pe {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6mm;
+  padding-top: 2.5mm;
+  border-top: 1px solid var(--fl-borda);
+  font-size: 8pt;
+  color: var(--fl-fraco);
+}
+.fl-num {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* a área de medição: desenha de verdade, com a largura de verdade, mas fora
+   da vista. display:none não serve, porque o que não é desenhado não tem
+   altura para medir */
+.fl-medidor {
+  position: absolute;
+  left: -99999px;
+  top: 0;
+  width: calc(210mm - 24mm);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --- a impressão --------------------------------------------------------
+   Não se esconde um ancestral da folha: um pai oculto leva junto tudo o que
+   está dentro, e a folha sai em branco. Escondem-se os irmãos. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  body.imprimindo .casca > *:not(.vista),
+  body.imprimindo .pilha-recados,
+  body.imprimindo .fl-nao-imprime {
+    display: none !important;
+  }
+  body.imprimindo .casca,
+  body.imprimindo .vista,
+  body.imprimindo .pagina {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  body.imprimindo .fl-palco {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  body.imprimindo .fl-pilha {
+    gap: 0 !important;
+    /* na impressora a folha vale o tamanho natural: o zoom era só da tela */
+    transform: none !important;
+    width: auto !important;
+  }
+  body.imprimindo .fl {
+    box-shadow: none !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  body.imprimindo .fl:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

@@ -305,7 +305,7 @@ export function TelaAtividades() {
           virarem a mesma faixa cinza quando encostam. */}
       <div className="at-colunas">
         <span />
-        <span>Pedido</span>
+        <span className="at-cod">Pedido</span>
         <span>Nome</span>
         <span className="esconde">Aviso</span>
         <span className="some-antes">Departamento</span>

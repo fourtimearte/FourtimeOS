@@ -231,7 +231,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   /* pagina 1, dois produtos por folha, e a folha do resumo geral */
   const paginas = 1 + Math.ceil(c.produtos.length / 2) + 1
 
-  const rs = (v: number) => (comDinheiro ? dinheiro(v) : '— — —')
+  const rs = (v: number) => (comDinheiro ? dinheiro(v) : '· · ·')
 
   return (
     <Pagina
@@ -591,7 +591,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             </div>
             <div className="ct-linha">
               <span>Ajustes</span>
-              <b>{comDinheiro ? (ajustes < 0 ? '- ' : '+ ') + dinheiro(Math.abs(ajustes)) : '— — —'}</b>
+              <b>{comDinheiro ? (ajustes < 0 ? '- ' : '+ ') + dinheiro(Math.abs(ajustes)) : '· · ·'}</b>
             </div>
             <div className="ct-linha grande">
               <span>Total</span>
@@ -797,7 +797,7 @@ function Produto({
           <h3>Tamanhos e valores</h3>
           <span>
             {pecasDoProduto(produto)} peças ·{' '}
-            {comDinheiro ? dinheiro(totalDoProduto(produto)) : '— — —'}
+            {comDinheiro ? dinheiro(totalDoProduto(produto)) : '· · ·'}
           </span>
         </header>
         {!travado ? (
@@ -856,7 +856,7 @@ function LinhaDeAjuste({
   aoRemover: () => void
 }) {
   const soma = ajuste.valor >= 0
-  const conta = comDinheiro ? dinheiro(valorDoAjuste(ajuste, base)) : '— — —'
+  const conta = comDinheiro ? dinheiro(valorDoAjuste(ajuste, base)) : '· · ·'
 
   if (travado) {
     return (

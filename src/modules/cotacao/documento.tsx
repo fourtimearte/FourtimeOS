@@ -182,7 +182,7 @@ function Celula({ rotulo, valor, forte }: { rotulo: string; valor: string; forte
   return (
     <div className={forte ? 'dc-cel forte' : 'dc-cel'}>
       <span className="dc-rot">{rotulo}</span>
-      <span className="dc-val">{valor || '—'}</span>
+      <span className="dc-val">{valor || '-'}</span>
     </div>
   )
 }

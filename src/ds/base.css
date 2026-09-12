@@ -977,6 +977,10 @@ dialog.modal .caixa {
   animation: a-crescer-surgir 300ms var(--ease-mola) both;
 }
 
+dialog.modal.largo {
+  max-width: 980px;
+}
+
 /* folha lateral, colada na direita */
 dialog.gaveta {
   margin: 0 0 0 auto;

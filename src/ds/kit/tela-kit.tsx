@@ -666,14 +666,36 @@ function TabelaDemo() {
 function SobreposicaoDemo() {
   const [modal, setModal] = useState(false)
   const [gaveta, setGaveta] = useState(false)
+  const [largo, setLargo] = useState(false)
   return (
     <>
       <Botao tom="forte" onClick={() => setModal(true)}>
         Abrir modal
       </Botao>
+      <Botao tom="contorno" onClick={() => setLargo(true)}>
+        Abrir modal largo
+      </Botao>
       <Botao tom="contorno" onClick={() => setGaveta(true)}>
         Abrir folha lateral
       </Botao>
+
+      <Modal
+        aberto={largo}
+        largo
+        aoFechar={() => setLargo(false)}
+        titulo="Modal largo, para duas colunas"
+        pe={
+          <Botao tom="forte" onClick={() => setLargo(false)}>
+            Fechar
+          </Botao>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-2)' }}>
+          A versão larga existe para o que não cabe numa folha lateral de 440 px, como a ficha do
+          cliente: cadastro de um lado, histórico do outro. Abaixo de 900 px as duas colunas viram
+          uma só.
+        </p>
+      </Modal>
 
       <Modal
         aberto={modal}

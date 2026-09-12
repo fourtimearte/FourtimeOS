@@ -14,7 +14,9 @@ import {
   avisar,
   type Coluna,
 } from '@ds'
+import { FichaDoCliente } from './ficha'
 import {
+  clienteEmBranco,
   DADO_DE_EXEMPLO,
   NOME_DA_SITUACAO,
   NOME_DO_SEGMENTO,
@@ -39,7 +41,10 @@ const limpar = (s: string) =>
     .toLowerCase()
 
 export function TelaClientes() {
-  const todos = useMemo(listarClientes, [])
+  /* muda quando alguem salva: e o sinal para reler a lista */
+  const [versao, setVersao] = useState(0)
+  const todos = useMemo(() => listarClientes(), [versao])
+  const [naFicha, setNaFicha] = useState<Cliente | null>(null)
   const hoje = useMemo(() => Date.now(), [])
 
   const [busca, setBusca] = useState('')
@@ -191,7 +196,7 @@ export function TelaClientes() {
           <Botao tom="contorno" onClick={() => avisar('A importação do Bling entra no passo 11', 'info')}>
             Importar do Bling
           </Botao>
-          <Botao tom="primario" onClick={() => avisar('O cadastro entra no passo 13', 'info')}>
+          <Botao tom="primario" onClick={() => setNaFicha(clienteEmBranco())}>
             Novo cliente
           </Botao>
         </>
@@ -201,8 +206,9 @@ export function TelaClientes() {
         <div style={{ marginBottom: 'var(--sp-5)' }}>
           <Aviso tom="info" titulo="Estes clientes são inventados">
             A tela está pronta, o dado não. Nenhum nome, documento ou telefone aqui pertence a
-            alguém de verdade. A base real entra na importação do Bling, e só o arquivo que busca o
-            dado muda: esta tela fica igual.
+            alguém de verdade, e o que você cadastrar ou editar vale só enquanto esta aba estiver
+            aberta. A base real entra na importação do Bling, e só o arquivo que busca o dado muda:
+            esta tela fica igual.
           </Aviso>
         </div>
       ) : null}
@@ -296,7 +302,7 @@ export function TelaClientes() {
         colunas={colunas}
         linhas={naTela}
         chaveDaLinha={(c) => c.id}
-        aoClicarNaLinha={() => avisar('A ficha do cliente entra no passo 13', 'info')}
+        aoClicarNaLinha={(c) => setNaFicha(c)}
         vazio={
           <Vazio
             titulo="Nenhum cliente com esses filtros"
@@ -319,6 +325,15 @@ export function TelaClientes() {
             }
           />
         }
+      />
+
+      <FichaDoCliente
+        cliente={naFicha}
+        aoFechar={() => setNaFicha(null)}
+        aoSalvar={(c) => {
+          setVersao((v) => v + 1)
+          setNaFicha(c)
+        }}
       />
 
       <Paginador

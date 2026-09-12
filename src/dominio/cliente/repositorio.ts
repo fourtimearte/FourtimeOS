@@ -1107,10 +1107,53 @@ const EXEMPLO: Cliente[] = [
 /** true enquanto a lista for de exemplo. A tela avisa quem esta olhando. */
 export const DADO_DE_EXEMPLO = true
 
+/* A lista viva. Salvar mexe aqui, e nao no banco, porque banco ainda nao ha.
+   O que for cadastrado ou editado vale enquanto a aba estiver aberta, e some
+   ao recarregar. A tela diz isso. */
+let base: Cliente[] = [...EXEMPLO]
+
 export function listarClientes(): Cliente[] {
-  return EXEMPLO
+  return base
 }
 
 export function acharCliente(id: string): Cliente | undefined {
-  return EXEMPLO.find((c) => c.id === id)
+  return base.find((c) => c.id === id)
+}
+
+/** Salva um cliente novo ou altera um que ja existe, e devolve o que ficou. */
+export function salvarCliente(c: Cliente): Cliente {
+  const i = base.findIndex((x) => x.id === c.id)
+  if (i >= 0) {
+    base = base.map((x, j) => (j === i ? c : x))
+    return c
+  }
+  const novo = { ...c, id: c.id || proximoId() }
+  base = [novo, ...base]
+  return novo
+}
+
+function proximoId() {
+  const maior = base.reduce((m, c) => Math.max(m, Number(c.id.replace(/\D/g, '')) || 0), 0)
+  return 'C' + String(maior + 1).padStart(4, '0')
+}
+
+/** O molde de um cliente que ainda nao existe. */
+export function clienteEmBranco(): Cliente {
+  return {
+    id: '',
+    nome: '',
+    documento: '',
+    contato: '',
+    telefone: '',
+    email: '',
+    cidade: '',
+    uf: 'GO',
+    cep: '',
+    segmento: 'outros',
+    vendedor: '',
+    pedidos: 0,
+    total: 0,
+    ultimoPedido: '',
+    criadoEm: new Date().toISOString().slice(0, 10),
+  }
 }

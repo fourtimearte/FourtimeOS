@@ -7,6 +7,8 @@ type Props = {
   titulo?: ReactNode
   children: ReactNode
   pe?: ReactNode
+  /** largo: para o que precisa de duas colunas, como a ficha do cliente */
+  largo?: boolean
 }
 
 /* O <dialog> nativo é usado de propósito: ele desenha na camada do topo do
@@ -36,10 +38,14 @@ function cliqueNoEscuro(e: MouseEvent<HTMLDialogElement>, aoFechar: () => void) 
   if (e.target === e.currentTarget) aoFechar()
 }
 
-export function Modal({ aberto, aoFechar, titulo, children, pe }: Props) {
+export function Modal({ aberto, aoFechar, titulo, children, pe, largo }: Props) {
   const ref = usarDialogo(aberto, aoFechar)
   return (
-    <dialog ref={ref} className="sobrepoe modal" onClick={(e) => cliqueNoEscuro(e, aoFechar)}>
+    <dialog
+      ref={ref}
+      className={['sobrepoe', 'modal', largo ? 'largo' : ''].filter(Boolean).join(' ')}
+      onClick={(e) => cliqueNoEscuro(e, aoFechar)}
+    >
       <div className="caixa">
         {titulo ? (
           <header className="sobre-topo">

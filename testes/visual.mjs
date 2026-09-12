@@ -110,6 +110,9 @@ async function main() {
         continue
       }
       await el.scrollIntoViewIfNeeded()
+      /* rolagem quebrada em meio pixel muda o desenho da letra e faz a foto
+         nao bater duas vezes: arredonda antes de fotografar */
+      await p.evaluate(() => window.scrollTo(0, Math.round(window.scrollY)))
       await p.waitForTimeout(250)
       await el.screenshot({ path: SAIDA + '/' + id + '-' + rotulo + '.png' })
     }

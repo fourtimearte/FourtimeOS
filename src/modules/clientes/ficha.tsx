@@ -211,6 +211,7 @@ export function FichaDoCliente({
               <Campo rotulo="Estado">
                 <Seletor
                   bloco
+                  campo
                   valor={c.uf}
                   opcoes={UFS}
                   vazio="Escolher"
@@ -223,6 +224,7 @@ export function FichaDoCliente({
               <Campo rotulo="Segmento">
                 <Seletor
                   bloco
+                  campo
                   valor={c.segmento}
                   opcoes={SEGMENTOS}
                   vazio="Escolher"

@@ -1283,6 +1283,23 @@ dialog.cmdk .caixa {
 .sel.aberto > .cb .seta {
   transform: rotate(180deg);
 }
+/* Dentro de um formulario o preto nao vale: ali um campo preenchido e so um
+   campo preenchido, e um retangulo preto no meio de campos brancos grita uma
+   coisa que nao esta acontecendo. O preto e da barra de filtro, onde ele diz
+   "esta peneirando por isto". */
+.sel.campo.marcado > .cb {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-2);
+}
+.sel.campo.marcado > .cb .lb,
+.sel.campo.marcado > .cb .seta {
+  color: var(--text-3);
+}
+.sel.campo.marcado > .cb:hover {
+  border-color: var(--text-3);
+}
+
 /* marcado: o filtro que esta valendo fica preto, porque preto e selecao */
 .sel.marcado > .cb {
   background: var(--ink);

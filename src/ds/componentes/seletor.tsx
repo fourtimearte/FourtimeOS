@@ -20,6 +20,7 @@ export function Seletor({
   vazio = 'Todos',
   tamanho = 'md',
   bloco,
+  campo,
   comBusca,
 }: {
   /** o rotulo miudo dentro do botao, tipo VENDEDOR */
@@ -31,6 +32,9 @@ export function Seletor({
   vazio?: string
   tamanho?: 'sm' | 'md'
   bloco?: boolean
+  /** dentro de um formulario, e nao numa barra de filtro: campo preenchido e
+      so um campo preenchido, entao ele nao fica preto */
+  campo?: boolean
   comBusca?: boolean
 }) {
   const [aberto, setAberto] = useState(false)
@@ -49,7 +53,14 @@ export function Seletor({
 
   return (
     <span
-      className={['sel', tamanho === 'sm' ? 'sm' : '', bloco ? 'bloco' : '', aberto ? 'aberto' : '', valor ? 'marcado' : '']
+      className={[
+        'sel',
+        tamanho === 'sm' ? 'sm' : '',
+        bloco ? 'bloco' : '',
+        campo ? 'campo' : '',
+        aberto ? 'aberto' : '',
+        valor ? 'marcado' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >

@@ -481,7 +481,7 @@ export function TelaKit() {
           <Secao
             id="filtros"
             titulo="Seletor, KPI e paginador"
-            texto="As três peças de uma tela de lista. O seletor nunca é o do navegador: ele vive na camada do topo, ganha busca sozinho quando passa de dez opções, e fica preto quando está filtrando, porque preto é seleção. O KPI é clicável e vira filtro. O paginador mostra no máximo sete botões, para a fileira não crescer com a tabela."
+            texto="As três peças de uma tela de lista. O seletor nunca é o do navegador: ele vive na camada do topo, ganha busca sozinho quando passa de dez opções, e fica preto quando está filtrando, porque preto é seleção. Dentro de um formulário ele não fica preto: ali preenchido não quer dizer peneirando. O KPI é clicável e vira filtro. O paginador mostra no máximo sete botões, para a fileira não crescer com a tabela."
           >
             <div className="kit-bancada" style={{ display: 'block' }}>
               <span className="kit-nota">KPI, clicável, virando filtro</span>
@@ -801,6 +801,7 @@ function FiltrosDemo() {
   const [foco, setFoco] = useState('todos')
   const [vendedor, setVendedor] = useState('')
   const [segmento, setSegmento] = useState('')
+  const [uf, setUf] = useState('GO')
   const [pagina, setPagina] = useState(3)
   return (
     <>
@@ -857,6 +858,36 @@ function FiltrosDemo() {
             { valor: 'out', rotulo: 'Outros' },
           ]}
         />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap', marginTop: 'var(--sp-4)' }}>
+        <span className="kit-nota" style={{ width: '100%' }}>
+          O mesmo seletor dentro de um formulário: preenchido não fica preto, porque ali
+          preenchido não quer dizer peneirando
+        </span>
+        <Campo rotulo="Estado">
+          <Seletor
+            campo
+            valor={uf}
+            vazio="Escolher"
+            aoEscolher={setUf}
+            opcoes={[
+              { valor: 'GO', rotulo: 'GO' },
+              { valor: 'DF', rotulo: 'DF' },
+              { valor: 'MG', rotulo: 'MG' },
+              { valor: 'SP', rotulo: 'SP' },
+            ]}
+          />
+        </Campo>
+        <Campo rotulo="Segmento">
+          <Seletor
+            campo
+            valor=""
+            vazio="Escolher"
+            aoEscolher={() => {}}
+            opcoes={[{ valor: 'esc', rotulo: 'Escola' }]}
+          />
+        </Campo>
       </div>
 
       <Paginador

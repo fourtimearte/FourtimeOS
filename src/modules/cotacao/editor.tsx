@@ -245,6 +245,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           <Campo rotulo="Situação">
             <Seletor
               bloco
+              campo
               valor={c.estado}
               opcoes={ESTADOS}
               vazio="Rascunho"

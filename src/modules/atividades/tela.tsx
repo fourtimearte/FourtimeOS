@@ -455,6 +455,12 @@ function Linha({
           lá em cima: é a cor que separa uma da outra sem escrever "subli" e
           "pers" por extenso no meio da tabela. */}
       <span className="at-quem">
+        {/* No celular não cabem sete colunas, então o código do pedido e o
+            total de peças dobram para dentro da célula do nome. Eles não
+            somem: some a coluna, que é outra coisa. */}
+        <span className="at-antes-do-nome">
+          {p.id} · {p.pecas} pçs
+        </span>
         <b>{p.cliente}</b>
         <small>
           {p.vendedor}

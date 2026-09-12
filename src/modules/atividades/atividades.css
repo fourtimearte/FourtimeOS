@@ -141,6 +141,12 @@
   text-transform: uppercase;
   color: var(--text-2);
 }
+.at-colunas > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .at-colunas .num {
   text-align: right;
 }
@@ -229,6 +235,16 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
 }
+/* o código e o total, que no computador têm coluna própria e no celular
+   dobram para cá */
+.at-antes-do-nome {
+  display: none;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
 .at-quem {
   display: flex;
   flex-direction: column;
@@ -297,6 +313,24 @@
   --carga-borda: color-mix(in srgb, var(--brand) 45%, var(--border));
   --carga-fundo: color-mix(in srgb, var(--brand) 10%, var(--surface));
 }
+/* O mesmo no Grafite: a cor do estado continua a mesma, a letra clareia para
+   caber no fundo escuro. */
+[data-theme='dark'] .at-carga.cabe {
+  --carga-cor: color-mix(in srgb, var(--posto-finalizado) 45%, #fff);
+  --carga-borda: color-mix(in srgb, var(--posto-finalizado) 45%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--posto-finalizado) 16%, var(--surface));
+}
+[data-theme='dark'] .at-carga.quase {
+  --carga-cor: color-mix(in srgb, var(--warn) 50%, #fff);
+  --carga-borda: color-mix(in srgb, var(--warn) 50%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--warn) 18%, var(--surface));
+}
+[data-theme='dark'] .at-carga.passou {
+  --carga-cor: color-mix(in srgb, var(--brand) 45%, #fff);
+  --carga-borda: color-mix(in srgb, var(--brand) 50%, var(--border));
+  --carga-fundo: color-mix(in srgb, var(--brand) 16%, var(--surface));
+}
+
 .at-carga b {
   font-size: 13.5px;
   font-weight: 700;
@@ -497,16 +531,21 @@
 @media (max-width: 1100px) {
   .at-colunas,
   .at-linha {
-    grid-template-columns: 26px 82px minmax(0, 1fr) 52px minmax(0, 148px);
+    grid-template-columns: 22px minmax(0, 1fr) minmax(0, 132px);
   }
   .at-colunas .esconde,
   .at-linha .esconde,
   .at-colunas .some-antes,
-  .at-linha .some-antes {
+  .at-linha .some-antes,
+  /* o código e o total dobram para dentro do nome */
+  .at-colunas .at-cod,
+  .at-linha .at-cod,
+  .at-colunas .num,
+  .at-linha > .num {
     display: none;
   }
-  .at-capacidade {
-    margin-left: 0;
+  .at-antes-do-nome {
+    display: block;
   }
 }
 

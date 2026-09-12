@@ -1359,6 +1359,18 @@ dialog.cmdk .caixa {
 .sel.tom > .cb:hover {
   border-color: var(--tom);
 }
+/* No Grafite as cores do editor sao escuras demais para virar texto: o
+   Conferencia (#475569) sobre o fundo escuro fica ilegivel. A BOLINHA continua
+   na cor exata do posto, que e o que se decora; quem clareia e so a letra. */
+[data-theme='dark'] .sel.tom > .cb,
+[data-theme='dark'] .sel.tom.marcado > .cb {
+  background: color-mix(in srgb, var(--tom) 16%, var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 45%, var(--border));
+  color: color-mix(in srgb, var(--tom) 45%, #fff);
+}
+[data-theme='dark'] .sel.tom > .cb .seta {
+  color: color-mix(in srgb, var(--tom) 40%, #fff);
+}
 
 /* --- paginador ----------------------------------------------------------- */
 .pag {

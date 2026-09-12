@@ -140,10 +140,10 @@
   --wa: #25d366;
 }
 
-/* --- tecnicas: solido, vivo, soft, fg ------------------------------------ */
-/* O solido e identidade e nao muda entre os temas. Quem muda e o par soft/fg,
-   que se apoia na superficie, mais o Patch, que clareia no escuro. */
-[data-theme='light'] {
+/* Elas moram no :root, e nao dentro de um tema, de proposito: sao as mesmas
+   nos dois. Estavam dentro do tema claro e no escuro nao existiam, entao toda
+   tag de etapa e toda caixa de carga saiam sem cor nenhuma no Grafite. */
+:root {
   /* --- as 13 etapas do editor v3.375 ------------------------------------
      Estas cores NAO sao escolha de design: sao as do Relatorio de Atividade
      do editor que a fabrica usa hoje, copiadas hexadecimal por hexadecimal.
@@ -168,7 +168,12 @@
   --situacao-vencida: #c6161b;
   --situacao-finalizado: #16a34a;
   --situacao-andamento: #9aa3af;
+}
 
+/* --- tecnicas: solido, vivo, soft, fg ------------------------------------ */
+/* O solido e identidade e nao muda entre os temas. Quem muda e o par soft/fg,
+   que se apoia na superficie, mais o Patch, que clareia no escuro. */
+[data-theme='light'] {
   --tec-dtf: #147bb3;
   --tec-dtf-vivo: #29aaef;
   --tec-dtf-soft: #e7f4fb;

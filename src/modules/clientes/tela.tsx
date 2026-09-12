@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  Aviso,
   Botao,
   Busca,
   Kpi,
@@ -17,7 +16,6 @@ import {
 import { FichaDoCliente } from './ficha'
 import {
   clienteEmBranco,
-  DADO_DE_EXEMPLO,
   NOME_DA_SITUACAO,
   NOME_DO_SEGMENTO,
   formatarData,
@@ -202,17 +200,6 @@ export function TelaClientes() {
         </>
       }
     >
-      {DADO_DE_EXEMPLO ? (
-        <div style={{ marginBottom: 'var(--sp-5)' }}>
-          <Aviso tom="info" titulo="Estes clientes são inventados">
-            A tela está pronta, o dado não. Nenhum nome, documento ou telefone aqui pertence a
-            alguém de verdade, e o que você cadastrar ou editar vale só enquanto esta aba estiver
-            aberta. A base real entra na importação do Bling, e só o arquivo que busca o dado muda:
-            esta tela fica igual.
-          </Aviso>
-        </div>
-      ) : null}
-
       <div className="fila-kpi" style={{ marginBottom: 'var(--sp-5)' }}>
         <Kpi
           rotulo="Clientes"

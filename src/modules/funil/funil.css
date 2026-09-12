@@ -1,26 +1,14 @@
 /* ==========================================================================
-   Funil e WhatsApp, no arranjo do mockup v5.
+   Funil e WhatsApp.
 
-   Uma coluna até 1280 px, e a partir daí o quadro à esquerda com o inbox de
-   336 px fixo à direita. O quadro rola para o lado dentro da própria caixa: a
-   página nunca anda de lado, nem no celular.
+   O quadro ocupa a largura inteira, sempre. A conversa não fica reservando
+   espaço do lado: ela entra por cima, à direita, quando alguém clica num
+   cartão para conversar, e sai quando fecha. Quem está olhando o funil está
+   olhando o funil; quem clicou num lead quer responder.
+
+   O quadro rola para o lado dentro da própria caixa: a página nunca anda de
+   lado, nem no celular.
    ========================================================================== */
-
-.fn-tela {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  min-width: 0;
-}
-.fn-esquerda {
-  min-width: 0;
-}
-
-@media (min-width: 1280px) {
-  .fn-tela {
-    grid-template-columns: minmax(0, 1fr) 336px;
-  }
-}
 
 /* --- as fichas de cima, só no celular ------------------------------------ */
 .fn-abas {
@@ -328,31 +316,54 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- o inbox ------------------------------------------------------------- */
+/* --- a conversa, por cima, à direita ------------------------------------- */
 .fn-inbox {
+  position: fixed;
+  z-index: 60;
+  right: 0;
+  top: var(--topbar-h);
+  bottom: 0;
+  width: min(400px, 100vw);
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-left: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-pop);
+  animation: fn-entra var(--t-base) var(--ease-out);
 }
-@media (min-width: 1280px) {
-  .fn-inbox {
-    position: sticky;
-    top: calc(var(--topbar-h) + 10px);
-    height: calc(100dvh - var(--topbar-h) - 40px);
+@keyframes fn-entra {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
   }
 }
-.fn-inbox.vazio {
-  padding: 20px;
-  color: var(--text-3);
-  font-size: 13.5px;
+/* no celular ela sobe do rodapé e cobre a tela, que é onde o polegar alcança */
+@media (max-width: 700px) {
+  .fn-inbox {
+    top: var(--topbar-h);
+    bottom: var(--bottomnav-h);
+    width: 100vw;
+    border-left: 0;
+  }
 }
-.fn-inbox.vazio p {
-  margin: 0;
+
+.fn-in-fechar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.fn-in-fechar:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .fn-in-topo {

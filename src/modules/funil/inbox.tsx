@@ -25,12 +25,14 @@ import {
 
 export function Inbox({
   lead,
+  aoFechar,
   aoAbrirCliente,
   aoAbrirCotacao,
   aoMontarCotacao,
   aoRegistrar,
 }: {
   lead: Lead | null
+  aoFechar: () => void
   aoAbrirCliente: (id: string) => void
   aoAbrirCotacao: (numero: string) => void
   aoMontarCotacao: (l: Lead) => void
@@ -44,13 +46,17 @@ export function Inbox({
     setTexto('')
   }, [lead?.id])
 
-  if (!lead) {
-    return (
-      <aside className="fn-inbox vazio">
-        <p>Escolha um lead no quadro para ver a conversa.</p>
-      </aside>
-    )
-  }
+  /* Esc fecha, como qualquer coisa que abre por cima */
+  useEffect(() => {
+    if (!lead) return
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') aoFechar()
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [lead, aoFechar])
+
+  if (!lead) return null
 
   const l = lead
 
@@ -65,6 +71,11 @@ export function Inbox({
             {l.contato ? ' · ' + l.contato : ''}
           </small>
         </span>
+        <button type="button" className="fn-in-fechar" onClick={aoFechar} aria-label="Fechar a conversa" title="Fechar">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+          </svg>
+        </button>
       </header>
 
       <div className="fn-in-msgs">

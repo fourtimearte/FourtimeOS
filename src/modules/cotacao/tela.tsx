@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Aviso,
   Botao,
   Busca,
   Kpi,
@@ -15,7 +14,6 @@ import {
 } from '@ds'
 import {
   ArquivoRecusado,
-  DADO_DE_EXEMPLO,
   NOME_DO_ESTADO_DA_COTACAO,
   abrirCft,
   cotacaoEmBranco,
@@ -158,16 +156,6 @@ export function TelaCotacao() {
         </>
       }
     >
-      {DADO_DE_EXEMPLO ? (
-        <div style={{ marginBottom: 'var(--sp-5)' }}>
-          <Aviso tom="info" titulo="Estas cotações são inventadas">
-            A tela está pronta, o dado não. O que você criar ou editar fica guardado neste navegador
-            e vale enquanto o banco não entra. O arquivo .cft, esse já é de verdade: salve, feche a
-            aba, abra de volta e a cotação volta inteira.
-          </Aviso>
-        </div>
-      ) : null}
-
       <div className="fila-kpi" style={{ marginBottom: 'var(--sp-5)' }}>
         <Kpi rotulo="Cotações" valor={todas.length} sub="na base inteira" ligado={estado === ''} aoClicar={() => setEstado('')} />
         <Kpi rotulo="Rascunhos" valor={contas.rascunho} sub="ainda não saíram" ligado={estado === 'rascunho'} aoClicar={() => setEstado('rascunho')} />

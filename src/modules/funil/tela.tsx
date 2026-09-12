@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Aviso, Botao, Pagina, avisar } from '@ds'
+import { Botao, Pagina, avisar } from '@ds'
 import { cotacaoEmBranco, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import {
-  DADO_DE_EXEMPLO,
   ESTAGIO_FECHADO,
   emMil,
   listarLeads,
@@ -30,9 +29,12 @@ export function TelaFunil() {
   const navegar = useNavigate()
   const [versao, setVersao] = useState(0)
   const leads = useMemo(() => listarLeads(), [versao])
-  const [abertoId, setAbertoId] = useState(leads[0]?.id ?? '')
+  /* Comeca fechado: o quadro e a tela, e a conversa so aparece quando alguem
+     clica num cartao para conversar. Enquanto ela nao abre, o kanban ocupa a
+     largura inteira. */
+  const [abertoId, setAbertoId] = useState('')
 
-  const aberto = leads.find((l) => l.id === abertoId) ?? leads[0] ?? null
+  const aberto = leads.find((l) => l.id === abertoId) ?? null
 
   const resumo = useMemo(() => {
     const ativos = leads.filter((l) => !ESTAGIO_FECHADO.includes(l.estagio))
@@ -126,28 +128,16 @@ export function TelaFunil() {
         </Botao>
       }
     >
-      {DADO_DE_EXEMPLO ? (
-        <div style={{ marginBottom: 'var(--sp-4)' }}>
-          <Aviso tom="info" titulo="Estes leads são inventados">
-            São os mesmos oito do mockup, com os mesmos textos e valores, para dar para conferir a
-            tela contra o desenho. O botão do WhatsApp é de verdade: ele abre a conversa com o texto
-            pronto, e nada sai sem você mandar.
-          </Aviso>
-        </div>
-      ) : null}
+      <Quadro leads={leads} aberto={abertoId} aoMover={mover} aoAbrir={abrir} />
 
-      <div className="fn-tela">
-        <div className="fn-esquerda">
-          <Quadro leads={leads} aberto={abertoId} aoMover={mover} aoAbrir={abrir} />
-        </div>
-        <Inbox
-          lead={aberto}
-          aoAbrirCliente={() => navegar('/clientes')}
-          aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
-          aoMontarCotacao={montarCotacao}
-          aoRegistrar={registrar}
-        />
-      </div>
+      <Inbox
+        lead={aberto}
+        aoFechar={() => setAbertoId('')}
+        aoAbrirCliente={() => navegar('/clientes')}
+        aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
+        aoMontarCotacao={montarCotacao}
+        aoRegistrar={registrar}
+      />
     </Pagina>
   )
 }

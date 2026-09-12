@@ -1,216 +1,257 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Aviso, Botao, Kpi, Pagina, Selo, Vazio } from '@ds'
-import { formatarData, formatarDinheiro } from '@shared'
+import { Botao, ChipTecnica, Kpi, Pagina, Selo, Vazio } from '@ds'
+import { abaixoDoMinimo, corDoNivel, nivel, quantidade } from '@dominio/estoque'
 import {
-  NOME_DO_ESTADO_DA_COTACAO,
-  listarCotacoes,
-  pecasDaCotacao,
-  totalDaCotacao,
-  type Cotacao,
-} from '@dominio/cotacao'
-import { diasParado, esquecido, listarLeads, type Lead } from '@dominio/funil'
-import { listarClientes, situacaoDoCliente } from '@dominio/cliente'
+  CAPACIDADE_DA_SEMANA,
+  POSTO,
+  atrasado,
+  listarPedidos,
+  naFabrica,
+  noPreparo,
+  prazoEmTexto,
+  saiEm7Dias,
+  type Pedido,
+} from '@dominio/producao'
+import { iniciais, listarLeads, nomeDoLead, tempoCurto } from '@dominio/funil'
 import './painel.css'
 
 /* ==========================================================================
-   O inicio.
+   Inicio, no arranjo do mockup v5.
 
-   Ele nao e um painel de graficos. Ele responde a uma pergunta so, que e a
-   primeira da manha: o que esta esperando por mim?
+   Ele nao e painel de grafico: e a primeira pergunta da manha. Em cima, o dia
+   e o que esta na fabrica. Depois quatro numeros de PRODUCAO, nao de venda.
+   Embaixo, duas colunas: "Precisa de voce" com os pedidos que gritam, e a
+   direita o WhatsApp e o estoque abaixo do minimo.
 
-   Por isso a lista do meio nao e "as ultimas coisas": e o que passou da hora.
-   Lead esquecido, proposta vencendo, rascunho parado. Cada linha leva para o
-   lugar onde ela se resolve, em um clique.
+   Producao e estoque ainda nao tem modulo: os dados sao de exemplo, os mesmos
+   do mockup, e as telas de destino avisam em que fase nascem.
    ========================================================================== */
 
-const DIA = 24 * 60 * 60 * 1000
+const NOME_DA_TECNICA: Record<string, string> = {
+  dtf: 'DTF',
+  subli: 'SUB',
+  silk: 'SILK',
+  patch: 'PATCH',
+  bordado: 'BORDADO',
+  gola: 'GOLA',
+  ribana: 'RIBANA',
+  etiqueta: 'ETIQUETA',
+}
 
-type Pendencia = {
-  id: string
-  tipo: 'lead' | 'cotacao'
-  titulo: string
-  motivo: string
-  desde: number
-  para: string
-  valor: number
+const DIA_DA_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+const MES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+]
+
+/** a semana do ano, que e como a fabrica fala de prazo */
+function semanaDoAno(d: Date): number {
+  const inicio = new Date(d.getFullYear(), 0, 1)
+  return Math.ceil(((d.getTime() - inicio.getTime()) / 86400000 + inicio.getDay() + 1) / 7)
 }
 
 export function TelaPainel() {
   const navegar = useNavigate()
-  const hoje = useMemo(() => Date.now(), [])
+  const pedidos = useMemo(() => listarPedidos(), [])
   const leads = useMemo(() => listarLeads(), [])
-  const cotacoes = useMemo(() => listarCotacoes(), [])
-  const clientes = useMemo(() => listarClientes(), [])
+  const baixo = useMemo(() => abaixoDoMinimo(), [])
 
-  const pendencias = useMemo(() => {
-    const lista: Pendencia[] = []
+  const hoje = new Date()
+  const cabecalho =
+    DIA_DA_SEMANA[hoje.getDay()] + ', ' + hoje.getDate() + ' de ' + MES[hoje.getMonth()] +
+    ' · semana ' + semanaDoAno(hoje)
 
-    leads.filter((l) => esquecido(l, hoje)).forEach((l: Lead) =>
-      lista.push({
-        id: l.id,
-        tipo: 'lead',
-        titulo: l.nome,
-        motivo: 'ninguém responde há ' + diasParado(l, hoje) + ' dias',
-        desde: diasParado(l, hoje),
-        para: '/funil',
-        valor: l.valor,
-      }),
-    )
-
-    cotacoes.forEach((c: Cotacao) => {
-      if (c.estado !== 'enviada') return
-      const faltam = Math.ceil((new Date(c.validaAte).getTime() - hoje) / DIA)
-      if (faltam <= 5) {
-        lista.push({
-          id: c.id,
-          tipo: 'cotacao',
-          titulo: c.numero + ' · ' + (c.cliente.nome || 'sem cliente'),
-          motivo: faltam < 0 ? 'venceu há ' + -faltam + ' dias' : faltam === 0 ? 'vence hoje' : 'vence em ' + faltam + ' dias',
-          desde: -faltam,
-          para: '/cotacao/' + c.id,
-          valor: totalDaCotacao(c),
-        })
-      }
-    })
-
-    cotacoes.forEach((c: Cotacao) => {
-      if (c.estado !== 'rascunho') return
-      const parada = Math.floor((hoje - new Date(c.alteradaEm).getTime()) / DIA)
-      if (parada >= 2) {
-        lista.push({
-          id: c.id,
-          tipo: 'cotacao',
-          titulo: c.numero + ' · ' + (c.cliente.nome || 'sem cliente'),
-          motivo: 'rascunho parado há ' + parada + ' dias',
-          desde: parada,
-          para: '/cotacao/' + c.id,
-          valor: totalDaCotacao(c),
-        })
-      }
-    })
-
-    return lista.sort((a, b) => b.desde - a.desde)
-  }, [leads, cotacoes, hoje])
-
-  const contas = useMemo(() => {
-    const enviadas = cotacoes.filter((c) => c.estado === 'enviada')
-    const aprovadasNoMes = cotacoes.filter((c) => {
-      if (!c.aprovacao) return false
-      const d = new Date(c.aprovacao.em)
-      const agora = new Date(hoje)
-      return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear()
-    })
+  const conta = useMemo(() => {
+    const ativos = pedidos.filter(naFabrica)
+    const atrasados = ativos.filter(atrasado)
+    const semana = ativos.filter(saiEm7Dias).sort((a, b) => a.emDias - b.emDias)
     return {
-      esperando: pendencias.length,
-      emAberto: enviadas.length,
-      valorEmAberto: enviadas.reduce((s, c) => s + totalDaCotacao(c), 0),
-      pedidosNoMes: aprovadasNoMes.length,
-      pecasNoMes: aprovadasNoMes.reduce((s, c) => s + pecasDaCotacao(c), 0),
-      clientesNovos: clientes.filter((c) => situacaoDoCliente(c, hoje) === 'novo').length,
+      ativos,
+      atrasados,
+      semana,
+      pecas: ativos.reduce((s, p) => s + p.pecas, 0),
+      pecasDaSemana: semana.reduce((s, p) => s + p.pecas, 0),
+      preparo: ativos.filter(noPreparo).length,
+      maisAntigo: atrasados.length ? Math.max(...atrasados.map((p) => -p.emDias)) : 0,
     }
-  }, [cotacoes, clientes, pendencias, hoje])
+  }, [pedidos])
 
-  const ultimas = useMemo(
-    () =>
-      [...cotacoes]
-        .sort((a, b) => new Date(b.alteradaEm).getTime() - new Date(a.alteradaEm).getTime())
-        .slice(0, 5),
-    [cotacoes],
-  )
+  /* a lista do meio: primeiro o que ja atrasou, depois o que sai esta semana */
+  const precisa: Pedido[] = [
+    ...conta.atrasados,
+    ...conta.semana.filter((p) => !conta.atrasados.includes(p)),
+  ].slice(0, 6)
+
+  /* no WhatsApp entra so quem ainda nao foi atendido: novo e em atendimento */
+  const conversas = leads.filter((l) => l.estagio === 'novo' || l.estagio === 'atendimento')
 
   return (
     <Pagina
-      acima="Fourtime OS"
-      titulo="Início"
-      sub="O que está esperando por você, antes de qualquer outra coisa."
+      acima={cabecalho}
+      titulo="Bom dia, Henrique"
+      sub={
+        <>
+          {conta.ativos.length} pedidos na fábrica ·{' '}
+          {conta.pecas.toLocaleString('pt-BR')} peças ·{' '}
+          {conta.atrasados.length ? (
+            <b className="pn-vermelho">{conta.atrasados.length} atrasado</b>
+          ) : (
+            'nenhum atraso'
+          )}
+        </>
+      }
       acoes={
         <>
-          <Botao tom="contorno" onClick={() => navegar('/funil')}>
-            Abrir o funil
+          <Botao tom="contorno" onClick={() => navegar('/atividades')}>
+            Semana
           </Botao>
           <Botao tom="primario" onClick={() => navegar('/cotacao')}>
-            Cotações
+            Nova cotação
           </Botao>
         </>
       }
     >
-      <div className="fila-kpi" style={{ marginBottom: 'var(--sp-5)' }}>
+      <div className="fila-kpi" style={{ marginBottom: 'var(--sp-4)' }}>
         <Kpi
-          rotulo="Esperando você"
-          valor={contas.esperando}
-          sub="lead esquecido ou proposta vencendo"
-          aviso={contas.esperando > 0}
-        />
-        <Kpi rotulo="Propostas em aberto" valor={contas.emAberto} sub="na mão do cliente" />
-        <Kpi
-          rotulo="Valor em aberto"
-          valor={formatarDinheiro(contas.valorEmAberto)}
-          sub="soma do que foi enviado"
+          rotulo="Peças na fila"
+          valor={conta.pecas.toLocaleString('pt-BR')}
+          sub={Math.round((conta.pecas / CAPACIDADE_DA_SEMANA) * 100) + '% da capacidade semanal'}
         />
         <Kpi
-          rotulo="Aprovado no mês"
-          valor={contas.pedidosNoMes}
-          unidade={contas.pedidosNoMes === 1 ? 'pedido' : 'pedidos'}
-          sub={contas.pecasNoMes + ' peças para produzir'}
+          rotulo="Pedidos em produção"
+          valor={conta.ativos.length}
+          sub={conta.preparo + ' ainda no preparo'}
+        />
+        <Kpi
+          rotulo="Atrasados"
+          valor={conta.atrasados.length}
+          aviso={conta.atrasados.length > 0}
+          sub={conta.atrasados.length ? 'mais antigo: ' + conta.maisAntigo + ' d' : 'no prazo'}
+        />
+        <Kpi
+          rotulo="Entregas em 7 dias"
+          valor={conta.semana.length}
+          sub={conta.pecasDaSemana.toLocaleString('pt-BR') + ' peças a sair'}
         />
       </div>
 
-      <section className="pn-bloco">
-        <h3 className="pn-h">O que passou da hora</h3>
-        {pendencias.length ? (
-          <div className="pn-lista">
-            {pendencias.map((p) => (
-              <button key={p.tipo + p.id} type="button" className="pn-linha" onClick={() => navegar(p.para)}>
-                <Selo tom={p.tipo === 'lead' ? 'warn' : 'brand'}>
-                  {p.tipo === 'lead' ? 'Lead' : 'Cotação'}
-                </Selo>
-                <span className="pn-titulo">{p.titulo}</span>
-                <span className="pn-motivo">{p.motivo}</span>
-                <span className="pn-valor">{formatarDinheiro(p.valor)}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <Vazio
-            titulo="Nada atrasado"
-            texto="Nenhum lead esquecido e nenhuma proposta vencendo. Bom dia de trabalho."
-          />
-        )}
-      </section>
-
-      <section className="pn-bloco">
-        <h3 className="pn-h">Últimas cotações mexidas</h3>
-        <div className="pn-lista">
-          {ultimas.map((c) => (
-            <button key={c.id} type="button" className="pn-linha" onClick={() => navegar('/cotacao/' + c.id)}>
-              <Selo
-                tom={
-                  c.estado === 'aprovada'
-                    ? 'ok'
-                    : c.estado === 'enviada'
-                      ? 'info'
-                      : c.estado === 'recusada'
-                        ? 'brand'
-                        : 'neutro'
-                }
-              >
-                {NOME_DO_ESTADO_DA_COTACAO[c.estado]}
-              </Selo>
-              <span className="pn-titulo">
-                {c.numero} · {c.cliente.nome || 'sem cliente'}
-              </span>
-              <span className="pn-motivo">mexida em {formatarData(c.alteradaEm)}</span>
-              <span className="pn-valor">{formatarDinheiro(totalDaCotacao(c))}</span>
+      <div className="pn-grade">
+        <section className="cartao pn-cartao">
+          <header className="pn-cartao-topo">
+            <h3>Precisa de você</h3>
+            <button type="button" onClick={() => navegar('/kanban')}>
+              Kanban
             </button>
-          ))}
-        </div>
-      </section>
+          </header>
+          <div className="pn-lista">
+            {precisa.map((p) => {
+              const prazo = prazoEmTexto(p)
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="pn-linha"
+                  onClick={() => navegar('/kanban')}
+                >
+                  <span className="pn-cod">{p.id}</span>
+                  <span className="pn-quem">
+                    <b>{p.cliente}</b>
+                    <small>
+                      {p.pecas} pçs · {p.layouts} layout{p.layouts > 1 ? 's' : ''} · {p.vendedor}
+                    </small>
+                  </span>
+                  <span className="pn-tecnicas">
+                    {p.tecnicas.map((t) => (
+                      <ChipTecnica key={t} tecnica={t}>
+                        {NOME_DA_TECNICA[t] ?? t}
+                      </ChipTecnica>
+                    ))}
+                  </span>
+                  <span className="pn-etapa">
+                    <Selo forma="contorno">{POSTO[p.etapa].nome}</Selo>
+                  </span>
+                  <span className={prazo.atrasado ? 'pn-prazo atrasado' : 'pn-prazo'}>
+                    {prazo.texto}
+                  </span>
+                </button>
+              )
+            })}
+            {!precisa.length ? (
+              <Vazio titulo="Nada gritando" texto="Nenhum pedido atrasado e nenhum saindo esta semana." />
+            ) : null}
+          </div>
+        </section>
 
-      <Aviso tom="info" titulo="Tudo aqui vem de dado inventado">
-        Os números saem das cotações, dos leads e dos clientes de exemplo que vivem neste navegador.
-        Quando o banco entrar, esta tela não muda: ela já lê pelas mesmas funções.
-      </Aviso>
+        <div className="pn-coluna">
+          <section className="cartao pn-cartao">
+            <header className="pn-cartao-topo">
+              <h3>WhatsApp</h3>
+              <button type="button" onClick={() => navegar('/funil')}>
+                Funil
+              </button>
+            </header>
+            <div className="pn-lista">
+              {conversas.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className="pn-linha conversa"
+                  onClick={() => navegar('/funil')}
+                >
+                  <span className={l.novo ? 'fn-avatar anel' : 'fn-avatar'}>
+                    {iniciais(nomeDoLead(l))}
+                  </span>
+                  <span className="pn-conversa">
+                    <span className="pn-conversa-topo">
+                      <b>{nomeDoLead(l)}</b>
+                      <small>{tempoCurto(l.min)}</small>
+                    </span>
+                    <small className="pn-previa">{l.msg}</small>
+                  </span>
+                </button>
+              ))}
+              {!conversas.length ? (
+                <Vazio titulo="Ninguém esperando" texto="Nenhuma conversa nova no WhatsApp." />
+              ) : null}
+            </div>
+          </section>
+
+          <section className="cartao pn-cartao">
+            <header className="pn-cartao-topo">
+              <h3>Estoque abaixo do mínimo</h3>
+              <button type="button" onClick={() => navegar('/estoque')}>
+                Estoque
+              </button>
+            </header>
+            <div className="pn-lista">
+              {baixo.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="pn-linha"
+                  onClick={() => navegar('/estoque')}
+                >
+                  <span className="pn-quem">
+                    <b>{m.nome}</b>
+                    <small>
+                      {m.categoria} · mín {m.minimo} {m.unidade}
+                    </small>
+                  </span>
+                  <span className="pn-barra">
+                    <i style={{ width: nivel(m) + '%', background: corDoNivel(m) }} />
+                    <u />
+                  </span>
+                  <span className="pn-prazo atrasado">{quantidade(m)}</span>
+                </button>
+              ))}
+              {!baixo.length ? (
+                <Vazio titulo="Estoque em dia" texto="Nenhum material abaixo do mínimo." />
+              ) : null}
+            </div>
+          </section>
+        </div>
+      </div>
     </Pagina>
   )
 }

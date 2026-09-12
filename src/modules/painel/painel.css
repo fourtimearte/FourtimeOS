@@ -1,71 +1,228 @@
 /* ==========================================================================
-   O início.
+   Início, no arranjo do mockup v5.
 
-   Lista de uma linha por pendência, e cada linha é um botão: o alvo de toque
-   é a linha inteira, não um link de três palavras no meio dela.
+   Duas colunas a partir de 1024 px, 1.5 para 1: a lista do que precisa de
+   você é a coluna larga, porque é ela que a pessoa lê. À direita, WhatsApp e
+   estoque, empilhados.
+
+   Cada linha é um botão inteiro, e não um link no meio do texto: o alvo de
+   toque é a linha toda.
    ========================================================================== */
 
-.pn-bloco {
-  margin-bottom: var(--sp-5);
-}
-.pn-h {
-  margin: 0 0 var(--sp-4);
-  font-size: 13px;
+.pn-vermelho {
+  color: var(--brand-text, var(--brand));
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-3);
 }
+
+.pn-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .pn-grade {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+.pn-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pn-cartao {
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.pn-cartao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 12px;
+}
+.pn-cartao-topo h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+/* o ponto vermelho antes do título, como em toda seção do v5 */
+.pn-cartao-topo h3::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+.pn-cartao-topo button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pn-cartao-topo button:hover {
+  color: var(--text);
+}
+
 .pn-lista {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  padding: 0 20px 8px;
   min-width: 0;
 }
+
 .pn-linha {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  min-height: 52px;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: 12px;
+  min-height: var(--row-h, 48px);
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
   min-width: 0;
-  transition:
-    border-color var(--t-fast) var(--ease-out),
-    transform var(--t-base) var(--ease-out);
+}
+.pn-linha:last-child {
+  border-bottom: 0;
 }
 .pn-linha:hover {
-  border-color: var(--text-3);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
 }
-.pn-titulo {
-  flex: 1 1 200px;
-  min-width: 0;
+
+.pn-cod {
+  flex: none;
+  width: 78px;
+  font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.pn-quem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.pn-quem b {
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pn-motivo {
-  font-size: 13px;
+.pn-quem small {
+  font-size: 12px;
   color: var(--text-3);
-}
-.pn-valor {
-  margin-left: auto;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.pn-tecnicas {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+.pn-etapa {
+  flex: none;
+}
+.pn-prazo {
+  flex: none;
+  width: 112px;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.pn-prazo.atrasado {
+  color: var(--brand-text, var(--brand));
+}
+
+/* a conversa, na coluna da direita */
+.pn-linha.conversa {
+  align-items: flex-start;
+}
+.pn-conversa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.pn-conversa-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.pn-conversa-topo b {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pn-conversa-topo small {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.pn-previa {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* a régua do estoque: o traço do meio é o mínimo */
+.pn-barra {
+  position: relative;
+  flex: none;
+  width: 86px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.pn-barra i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-pill);
+}
+.pn-barra u {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--text-3);
+  opacity: 0.55;
+}
+
 @media (max-width: 620px) {
-  .pn-valor {
-    margin-left: 0;
+  .pn-cod,
+  .pn-tecnicas,
+  .pn-etapa {
+    display: none;
+  }
+  .pn-prazo {
+    width: auto;
   }
 }

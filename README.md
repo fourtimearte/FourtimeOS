@@ -21,6 +21,8 @@ Abre em http://localhost:5173
 | `npm run preview` | serve o build local |
 | `npm run lint` | ESLint |
 | `npm run fmt` | Prettier em tudo |
+| `npm run visual` | teste visual do `/kit`, foto por foto |
+| `npm run visual:aprovar` | adota as fotos novas como as aprovadas |
 
 ## A regra que organiza o código
 
@@ -68,12 +70,20 @@ No projeto do Claude, em `claude/`:
 - `DECISAO-COTACAO-E-FICHA-DOIS-EDITORES.md` por que são dois editores
 - `REGRA-VERSAO-E-PROTOTIPO.md` a regra de versão do editor
 
+## O teste visual
+
+`testes/LEIA.md` explica. Em resumo: uma foto de cada seção do `/kit` nos dois
+temas, comparada com as aprovadas em `testes/fotos/`. Mexeu num token sem querer,
+o teste reprova e pinta de vermelho onde mudou.
+
 ## Estado
 
-Passo 4 de 22. O que já existe:
+Passo 6 de 22. O que já existe:
 
 - tela de entrada em `/entrar`, com sessão provisória no navegador
 - os tokens do Design System V7 e a página viva em `/kit`, com Gelo e Grafite
+- os componentes base, incluindo os cinco menus do módulo de layout
 - as travas de arquitetura cobradas no build
+- o teste visual do `/kit`
 
 No ar em https://fourtimeos.arte-adc.workers.dev

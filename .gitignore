@@ -10,3 +10,7 @@ dist-ssr
 coverage
 test-results
 playwright-report
+
+# fotos recem-tiradas e o estrago do teste visual: so as aprovadas vao para o repositorio
+testes/atual/
+testes/diferenca/

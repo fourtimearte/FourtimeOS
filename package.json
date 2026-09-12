@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "fmt": "prettier --write .",
-    "arquitetura": "depcruise src"
+    "arquitetura": "depcruise src",
+    "visual": "node testes/visual.mjs && python3 testes/comparar.py",
+    "visual:aprovar": "python3 testes/comparar.py --aprovar"
   },
   "dependencies": {
     "react": "^19.0.0",

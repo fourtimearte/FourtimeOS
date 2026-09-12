@@ -7,6 +7,7 @@ import {
 } from '@ds/kit/banco-de-exemplo'
 import type { Bloco, Design, Tecnica } from '../layout/bloco'
 import { ETIQUETAS, GOLAS, KITS, MANGAS, NUMERACOES } from '../layout/vocabulario'
+import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
 import type { Faixa, Grade } from '../layout/grade'
 import {
   VERSAO_DO_CFT,
@@ -144,7 +145,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0184',
     estado: 'rascunho',
     cliente: { id: 'C0001', nome: 'CrossBox Delta', cidade: 'Uberlândia', uf: 'MG', contato: 'Diego' },
-    vendedor: 'Marcela',
+    vendedor: 'Dani',
     dias: 1,
     produtos: 2,
   },
@@ -152,7 +153,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0183',
     estado: 'enviada',
     cliente: { id: 'C0002', nome: 'Escola Girassol', cidade: 'Goiânia', uf: 'GO', contato: 'Paulo' },
-    vendedor: 'Rafael',
+    vendedor: 'Lucas',
     dias: 3,
     produtos: 3,
   },
@@ -160,7 +161,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0182',
     estado: 'aprovada',
     cliente: { id: 'C0003', nome: 'Igreja Rio Claro', cidade: 'Rio Verde', uf: 'GO', contato: 'Renata' },
-    vendedor: 'Marcela',
+    vendedor: 'Dani',
     dias: 9,
     produtos: 1,
   },
@@ -168,7 +169,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0181',
     estado: 'enviada',
     cliente: { id: 'C0007', nome: 'Time Aliança', cidade: 'Anápolis', uf: 'GO', contato: 'Bruno' },
-    vendedor: 'Rafael',
+    vendedor: 'Lucas',
     dias: 12,
     produtos: 2,
   },
@@ -176,7 +177,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0180',
     estado: 'recusada',
     cliente: { id: 'C0011', nome: 'Academia Pulso', cidade: 'Brasília', uf: 'DF', contato: 'Sara' },
-    vendedor: 'Marcela',
+    vendedor: 'Dani',
     dias: 21,
     produtos: 1,
   },
@@ -184,7 +185,7 @@ const SEMENTES: Semente[] = [
     numero: '2026-0179',
     estado: 'vencida',
     cliente: { id: 'C0015', nome: 'Colégio Nova Era', cidade: 'Goiânia', uf: 'GO', contato: 'Heitor' },
-    vendedor: 'Rafael',
+    vendedor: 'Lucas',
     dias: 40,
     produtos: 2,
   },
@@ -234,8 +235,8 @@ function montarExemplo(s: Semente, i: number): Cotacao {
         : [],
     informe: {
       prazo: '12 dias úteis',
-      pagamento: '50% entrada + 50% na entrega',
-      envio: 'Correios PAC',
+      pagamento: PAGAMENTOS[0],
+      envio: ENTREGAS[1],
       tabelaDePreco: 'Atacado 2026',
     },
     informes: informesEmBranco(),

@@ -1,5 +1,6 @@
 import type { Bloco } from '../layout/bloco'
 import { totalDaGrade } from '../layout/grade'
+import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
 
 /* ==========================================================================
    A cotacao de venda.
@@ -247,8 +248,8 @@ export function cotacaoEmBranco(numero: string): Cotacao {
     ajustes: [],
     informe: {
       prazo: '12 dias úteis',
-      pagamento: '50% entrada + 50% na entrega',
-      envio: 'Correios PAC',
+      pagamento: PAGAMENTOS[0],
+      envio: ENTREGAS[1],
       tabelaDePreco: 'Atacado 2026',
     },
     informes: informesEmBranco(),

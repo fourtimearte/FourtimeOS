@@ -353,10 +353,27 @@
   font-weight: 600;
   color: var(--text-3);
 }
-.lay-bt.campo {
+/* O botao que abre um menu dentro do arranjo em campos.
+
+   O nome NAO e "campo": ".campo" ja existe no Design System, com
+   flex-direction column, e "lay-bt campo" virava uma coluna que centralizava
+   o texto. Foi a segunda vez nesta semana que uma classe generica colidiu com
+   uma do DS. Classe de modulo leva o prefixo do modulo, sempre. */
+.lay-bt.lay-abre {
   width: 100%;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px;
   justify-content: flex-start;
-  min-height: 36px;
+  font-size: 13px;
+}
+/* a seta, para ele parecer o que e: um menu, igual aos vizinhos */
+.lay-bt.lay-abre::after {
+  content: '▼';
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 9px;
+  color: var(--text-3);
 }
 .lay-sem-cor {
   margin: 0;

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Botao, Pagina, avisar } from '@ds'
+import { VENDEDORES } from '@dominio/banco'
 import { cotacaoEmBranco, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import {
   ESTAGIO_FECHADO,
@@ -68,7 +69,9 @@ export function TelaFunil() {
      para ela. E aqui que o funil encosta na cotacao, e so aqui. */
   function montarCotacao(l: Lead) {
     const c = cotacaoEmBranco(proximoNumero())
-    c.vendedor = 'Carla'
+    /* o vendedor sai do banco, e nao de um nome escrito a mao: se ele nao
+       estiver na lista, o campo da cotacao abre vazio */
+    c.vendedor = VENDEDORES[0]
     c.cliente = {
       ...c.cliente,
       id: l.clienteId,

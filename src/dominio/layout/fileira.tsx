@@ -306,7 +306,7 @@ export function FileiraDoLayout({
             <button
               ref={btTecido}
               type="button"
-              className="lay-bt campo"
+              className="lay-bt lay-abre"
               onClick={() => setMenu('tecido')}
             >
               <span className="v">{tecido.nome || 'a definir'}</span>
@@ -318,7 +318,7 @@ export function FileiraDoLayout({
             <button
               ref={btCor}
               type="button"
-              className="lay-bt campo"
+              className="lay-bt lay-abre"
               onClick={() => setMenu('cor')}
             >
               <span className="qd" style={{ '--cor': tecido.hex } as CSSProperties} />
@@ -334,7 +334,7 @@ export function FileiraDoLayout({
             <button
               ref={btDesign}
               type="button"
-              className="lay-bt campo"
+              className="lay-bt lay-abre"
               onClick={() => setMenu('tecnica')}
             >
               <span className="v">

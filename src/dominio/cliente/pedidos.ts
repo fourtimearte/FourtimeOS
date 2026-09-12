@@ -95,8 +95,3 @@ export function transportadoraPorCep(cep: string): Transportadora {
   const f = FAIXAS.find((x) => n >= x.de && n <= x.ate)
   return f ? { nome: f.nome, prazo: f.prazo } : { nome: 'Correios', prazo: '5 a 9 dias úteis' }
 }
-
-export function formatarCep(cep: string) {
-  const n = cep.replace(/\D/g, '')
-  return n.length === 8 ? n.replace(/(\d{5})(\d{3})/, '$1-$2') : cep
-}

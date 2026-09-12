@@ -1,3 +1,5 @@
+import { linkDoWhatsApp as linkDoZap } from '@shared'
+
 /* O que e um cliente para o sistema.
 
    Mora em dominio/ porque nao pertence a uma tela so: a cotacao vai precisar
@@ -72,38 +74,18 @@ export const NOME_DA_SITUACAO: Record<Situacao, string> = {
 }
 
 /* --- como o documento e o telefone aparecem na tela ---------------------- */
-export function formatarDocumento(d: string) {
-  const n = d.replace(/\D/g, '')
-  if (n.length === 11) return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-  if (n.length === 14) return n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
-  return d
-}
+/* Os formatadores moram em shared/, porque telefone e telefone em qualquer
+   tela. Ficam reexportados aqui para nenhuma tela precisar mudar de import. */
+export {
+  formatarCep,
+  formatarData,
+  formatarDinheiro,
+  formatarDocumento,
+  formatarTelefone,
+} from '@shared'
 
-export function formatarTelefone(t: string) {
-  const n = t.replace(/\D/g, '')
-  if (n.length === 11) return n.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-  if (n.length === 10) return n.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
-  return t
-}
-
-export function formatarDinheiro(v: number) {
-  return v.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  })
-}
-
-export function formatarData(iso: string) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-/* O link do WhatsApp com a mensagem pronta, que foi a decisao 1 do passo 1:
-   wa.me agora, API oficial depois. */
+/* O link do WhatsApp com a mensagem pronta, que foi a decisao 1 do passo 1. */
 export function linkDoWhatsApp(c: Cliente, mensagem: string) {
-  const n = c.telefone.replace(/\D/g, '')
-  const numero = n.startsWith('55') ? n : '55' + n
-  return 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensagem)
+  return linkDoZap(c.telefone, mensagem)
 }
+

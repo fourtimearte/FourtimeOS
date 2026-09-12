@@ -6,6 +6,8 @@
    quadro bonito: ele existe para ninguem esquecer de responder.
    ========================================================================== */
 
+import { formatarDinheiro as dinheiro, linkDoWhatsApp as linkDoZap } from '@shared'
+
 export type Estagio = 'novo' | 'contato' | 'orcando' | 'enviado' | 'ganho' | 'perdido'
 
 export const ESTAGIOS: Estagio[] = ['novo', 'contato', 'orcando', 'enviado', 'ganho', 'perdido']
@@ -117,7 +119,7 @@ export const RESPOSTAS: RespostaRapida[] = [
     id: 'ola',
     titulo: 'Primeiro contato',
     texto:
-      'Olá, {contato}! Aqui é a {vendedor}, da Fourtime. Vi que você procurou a gente sobre uniformes. Me conta o que você precisa: quantas peças, qual modelo e para quando?',
+      'Olá, {contato}! Aqui quem fala é {vendedor}, da Fourtime. Vi que você procurou a gente sobre uniformes. Me conta o que você precisa: quantas peças, qual modelo e para quando?',
   },
   {
     id: 'arte',
@@ -153,10 +155,7 @@ export function preencher(texto: string, l: Lead): string {
 }
 
 export function linkDoWhatsApp(l: Lead, mensagem: string): string {
-  const n = l.telefone.replace(/\D/g, '')
-  const numero = n.length <= 11 ? '55' + n : n
-  return 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensagem)
+  return linkDoZap(l.telefone, mensagem)
 }
 
-export const formatarDinheiro = (v: number) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+export const formatarDinheiro = dinheiro

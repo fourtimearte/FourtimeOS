@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Botao, Campo, Entrada, Gaveta, Selo, Seletor, avisar } from '@ds'
+import { formatarTelefone } from '@shared'
 import {
   ESTAGIOS,
   NOME_DA_ORIGEM,
@@ -173,7 +174,7 @@ export function Conversa({
           <dt>Contato</dt>
           <dd>{l.contato || 'não preenchido'}</dd>
           <dt>Telefone</dt>
-          <dd>{l.telefone || 'não preenchido'}</dd>
+          <dd>{formatarTelefone(l.telefone) || 'não preenchido'}</dd>
           <dt>Cidade</dt>
           <dd>{l.cidade || 'não preenchida'}</dd>
           <dt>Vendedor</dt>

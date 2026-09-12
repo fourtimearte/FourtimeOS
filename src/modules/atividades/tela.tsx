@@ -9,9 +9,12 @@ import {
   ETAPAS,
   POSTO,
   atrasado,
+  diaDaSemanaDe,
   etapaVelha,
+  iso,
   moverEtapa,
-  diaDaSemana,
+  semanaDeslocada,
+  tituloDaSemana,
   diaEMes,
   ehHoje,
   listarPedidos,
@@ -42,7 +45,24 @@ const VISTAS = [
 export function TelaAtividades() {
   /* muda quando alguem troca a etapa de um pedido: e o sinal para reler */
   const [versao, setVersao] = useState(0)
-  const pedidos = useMemo(() => listarPedidos().filter(naFabrica), [versao])
+  /* 0 e esta semana, -1 a passada, +1 a que vem */
+  const [semana, setSemana] = useState(0)
+  const inicio = useMemo(() => semanaDeslocada(semana), [semana])
+  const diasDaSemana = useMemo(
+    () => DIAS_DA_SEMANA.map((nome, i) => ({ nome, data: diaDaSemanaDe(inicio, i) })),
+    [inicio],
+  )
+
+  /* So os que estao planejados nesta semana. Antes o pedido guardava so o dia
+     da semana, entao toda semana mostrava os mesmos pedidos: uma tela que
+     parecia navegar e nao navegava. */
+  const daSemana = useMemo(() => {
+    const dias = new Set(diasDaSemana.map((d) => iso(d.data)))
+    return listarPedidos().filter((p) => dias.has(p.planejadoEm))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versao, diasDaSemana])
+
+  const pedidos = useMemo(() => daSemana.filter(naFabrica), [daSemana])
   const [vendedor, setVendedor] = useState('')
   const [etapa, setEtapa] = useState('')
   const [situacao, setSituacao] = useState('')
@@ -68,8 +88,6 @@ export function TelaAtividades() {
   const prontosNaSemana = filtrados.filter((p) => p.etapa === 'finalizado')
   const prontos = prontosNaSemana.length
   const pecasProntas = prontosNaSemana.reduce((s, p) => s + p.pecas, 0)
-  const inicio = diaDaSemana(0)
-  const fim = diaDaSemana(DIAS_UTEIS - 1)
 
 
   return (
@@ -77,11 +95,51 @@ export function TelaAtividades() {
       acima="Gestão · o que a fábrica produz nesta semana, e cabe?"
       titulo="Painel de atividades"
       sub={
-        'Semana ' + semanaDoAno() + ' · ' + diaEMes(inicio) + ' a ' + diaEMes(fim) +
+        'Semana ' + semanaDoAno(inicio) + ' · ' + tituloDaSemana(inicio) +
         ' · o planejamento é por dia, e o atraso é calculado pela entrega'
       }
       acoes={
         <>
+          {/* O seletor de semana, que no editor fica no topo e aqui faltava.
+              Sem ele o painel so sabia falar da semana de hoje, e quem planeja
+              precisa ver a que vem antes de prometer prazo. */}
+          <span className="at-semana">
+            <button
+              type="button"
+              onClick={() => setSemana((n) => n - 1)}
+              aria-label="Semana anterior"
+              title="Semana anterior"
+            >
+              ‹
+            </button>
+            <span className="at-semana-txt">
+              <b>{tituloDaSemana(inicio)}</b>
+              <small>
+                {semana === 0
+                  ? 'semana de hoje'
+                  : semana === -1
+                    ? 'semana passada'
+                    : semana === 1
+                      ? 'semana que vem'
+                      : semana < 0
+                        ? Math.abs(semana) + ' semanas atrás'
+                        : 'daqui a ' + semana + ' semanas'}
+              </small>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSemana((n) => n + 1)}
+              aria-label="Próxima semana"
+              title="Próxima semana"
+            >
+              ›
+            </button>
+          </span>
+          {semana !== 0 ? (
+            <Botao tom="limpo" onClick={() => setSemana(0)}>
+              Semana de hoje
+            </Botao>
+          ) : null}
           <Botao
             tom="contorno"
             onClick={() => avisar('A varredura do Drive entra junto com o kanban', 'info')}
@@ -217,9 +275,8 @@ export function TelaAtividades() {
         </div>
       </div>
 
-      {DIAS_DA_SEMANA.map((nome, i) => {
-        const data = diaDaSemana(i)
-        const doDia = filtrados.filter((p) => p.planejadoNoDia === i)
+      {diasDaSemana.map(({ nome, data }) => {
+        const doDia = filtrados.filter((p) => p.planejadoEm === iso(data))
         const pecasDoDia = doDia.reduce((s, p) => s + p.pecas, 0)
         const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
         const folgaDoDia = CAPACIDADE_DO_DIA - pecasDoDia
@@ -313,7 +370,7 @@ function Linha({ pedido, aoTrocarEtapa }: { pedido: Pedido; aoTrocarEtapa: (e: E
 
       <span className="esconde num">
         <span className={p.planejamentoManual ? 'at-plano manual' : 'at-plano'}>
-          {diaEMes(diaDaSemana(p.planejadoNoDia))}
+          {diaEMes(new Date(p.planejadoEm + 'T00:00:00'))}
           {p.planejamentoManual ? ' · manual' : ''}
         </span>
       </span>

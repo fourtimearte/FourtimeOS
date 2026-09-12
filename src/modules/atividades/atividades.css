@@ -362,3 +362,53 @@
     margin-left: 0;
   }
 }
+
+/* --- o seletor de semana -------------------------------------------------
+   No editor ele fica no topo, e aqui não existia: o painel só sabia falar da
+   semana de hoje. Quem planeja precisa ver a semana que vem antes de prometer
+   prazo, e a passada para saber o que escorregou.
+   ========================================================================== */
+.at-semana {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--btn-h);
+  padding: 0 4px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.at-semana button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.at-semana button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.at-semana-txt {
+  display: grid;
+  gap: 0;
+  padding: 0 6px;
+  text-align: center;
+  line-height: 1.2;
+}
+.at-semana-txt b {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.at-semana-txt small {
+  font-size: 11px;
+  color: var(--text-3);
+}

@@ -1,5 +1,5 @@
 import { DEPARTAMENTOS, VENDEDORES } from '@dominio/banco'
-import type { Pedido } from './tipos'
+import { diaDaSemanaDe, iso, semanaDeslocada, type Pedido } from './tipos'
 
 /* ==========================================================================
    Os pedidos de exemplo.
@@ -29,17 +29,24 @@ function diasAtras(n: number): string {
   return new Date(Date.now() - n * 86400000).toISOString()
 }
 
+/* O dia i (0 segunda, 5 sabado) da semana que esta a `semana` semanas daqui.
+   Os exemplos usam isto, e nao data escrita a mao, para o painel abrir sempre
+   com a semana corrente cheia, seja qual for o dia em que alguem abrir. */
+function noDia(semana: number, i: number): string {
+  return iso(diaDaSemanaDe(semanaDeslocada(semana), i))
+}
+
 const EXEMPLO: Pedido[] = [
-  { id: 'PD004142', cliente: 'Academia Prime Fit', vendedor: V[1], departamento: D[1], etapa: 'conferencia', emDias: -2, pecas: 120, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: true, fechadoEm: '2026-09-06', aviso: 'Entrega vencida há 2 dias', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 120, valorSubli: 0, valorPersonalizado: 2055 },
-  { id: 'PD004140', cliente: 'Umbroken Funcional', vendedor: V[1], departamento: D[2], etapa: 'silk', emDias: -1, pecas: 80, layouts: 1, tecnicas: ['silk'], planejadoNoDia: 1, planejamentoManual: false, fechadoEm: '2026-09-01', aviso: 'Cliente pediu para antecipar', atualizadoEm: diasAtras(1), pecasSubli: 33, pecasPersonalizadas: 47, valorSubli: 1792, valorPersonalizado: 828 },
-  { id: 'PD004145', cliente: 'Crossbox Norte', vendedor: V[2], departamento: D[1], etapa: 'embalagem', emDias: 1, pecas: 75, layouts: 1, tecnicas: ['dtf'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-03', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 75, valorSubli: 0, valorPersonalizado: 4344 },
-  { id: 'PD004149', cliente: 'EC Juventude Sul', vendedor: V[2], departamento: D[0], etapa: 'subli', emDias: 4, pecas: 46, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-08', aviso: '', atualizadoEm: diasAtras(2), pecasSubli: 46, pecasPersonalizadas: 0, valorSubli: 2055, valorPersonalizado: 0 },
-  { id: 'PD004146', cliente: 'Logística Ramos Ltda', vendedor: V[1], departamento: D[2], etapa: 'bordado', emDias: 5, pecas: 60, layouts: 1, tecnicas: ['bordado'], planejadoNoDia: 5, planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(5), pecasSubli: 0, pecasPersonalizadas: 60, valorSubli: 0, valorPersonalizado: 2637 },
-  { id: 'PD004148', cliente: 'Colégio Santa Clara', vendedor: V[1], departamento: D[3], etapa: 'costura', emDias: 7, pecas: 180, layouts: 2, tecnicas: ['subli', 'silk'], planejadoNoDia: 2, planejamentoManual: true, fechadoEm: '2026-09-10', aviso: 'Arte aprovada com atraso', atualizadoEm: diasAtras(1), pecasSubli: 130, pecasPersonalizadas: 50, valorSubli: 7020, valorPersonalizado: 1900 },
-  { id: 'PD004153', cliente: 'Vôlei Clube Araras', vendedor: V[1], departamento: D[0], etapa: 'corte', emDias: 11, pecas: 28, layouts: 2, tecnicas: ['subli'], planejadoNoDia: 4, planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 28, pecasPersonalizadas: 0, valorSubli: 1820, valorPersonalizado: 0 },
-  { id: 'PD004150', cliente: 'Viapol Engenharia', vendedor: V[2], departamento: D[4], etapa: 'corte', emDias: 14, pecas: 170, layouts: 1, tecnicas: ['dtf', 'silk'], planejadoNoDia: 3, planejamentoManual: false, fechadoEm: '2026-09-01', aviso: '', atualizadoEm: diasAtras(4), pecasSubli: 0, pecasPersonalizadas: 170, valorSubli: 0, valorPersonalizado: 8330 },
-  { id: 'PD004151', cliente: 'Escola Municipal Ipê', vendedor: V[2], departamento: D[1], etapa: 'corte', emDias: 19, pecas: 320, layouts: 2, tecnicas: ['dtf'], planejadoNoDia: 3, planejamentoManual: true, fechadoEm: '2026-09-02', aviso: '', atualizadoEm: diasAtras(6), pecasSubli: 0, pecasPersonalizadas: 320, valorSubli: 0, valorPersonalizado: 13300 },
-  { id: 'PD004138', cliente: 'Colégio Horizonte', vendedor: V[2], departamento: D[0], etapa: 'finalizado', emDias: -6, pecas: 240, layouts: 1, tecnicas: ['subli'], planejadoNoDia: 0, planejamentoManual: false, fechadoEm: '2026-08-27', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 240, pecasPersonalizadas: 0, valorSubli: 9860, valorPersonalizado: 0 },
+  { id: 'PD004142', cliente: 'Academia Prime Fit', vendedor: V[1], departamento: D[1], etapa: 'conferencia', emDias: -2, pecas: 120, layouts: 2, tecnicas: ['dtf'], planejadoEm: noDia(0, 4), planejamentoManual: true, fechadoEm: '2026-09-06', aviso: 'Entrega vencida há 2 dias', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 120, valorSubli: 0, valorPersonalizado: 2055 },
+  { id: 'PD004140', cliente: 'Umbroken Funcional', vendedor: V[1], departamento: D[2], etapa: 'silk', emDias: -1, pecas: 80, layouts: 1, tecnicas: ['silk'], planejadoEm: noDia(0, 1), planejamentoManual: false, fechadoEm: '2026-09-01', aviso: 'Cliente pediu para antecipar', atualizadoEm: diasAtras(1), pecasSubli: 33, pecasPersonalizadas: 47, valorSubli: 1792, valorPersonalizado: 828 },
+  { id: 'PD004145', cliente: 'Crossbox Norte', vendedor: V[2], departamento: D[1], etapa: 'embalagem', emDias: 1, pecas: 75, layouts: 1, tecnicas: ['dtf'], planejadoEm: noDia(0, 4), planejamentoManual: false, fechadoEm: '2026-09-03', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 0, pecasPersonalizadas: 75, valorSubli: 0, valorPersonalizado: 4344 },
+  { id: 'PD004149', cliente: 'EC Juventude Sul', vendedor: V[2], departamento: D[0], etapa: 'subli', emDias: 4, pecas: 46, layouts: 1, tecnicas: ['subli'], planejadoEm: noDia(0, 5), planejamentoManual: false, fechadoEm: '2026-09-08', aviso: '', atualizadoEm: diasAtras(2), pecasSubli: 46, pecasPersonalizadas: 0, valorSubli: 2055, valorPersonalizado: 0 },
+  { id: 'PD004146', cliente: 'Logística Ramos Ltda', vendedor: V[1], departamento: D[2], etapa: 'bordado', emDias: 5, pecas: 60, layouts: 1, tecnicas: ['bordado'], planejadoEm: noDia(0, 5), planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(5), pecasSubli: 0, pecasPersonalizadas: 60, valorSubli: 0, valorPersonalizado: 2637 },
+  { id: 'PD004148', cliente: 'Colégio Santa Clara', vendedor: V[1], departamento: D[3], etapa: 'costura', emDias: 7, pecas: 180, layouts: 2, tecnicas: ['subli', 'silk'], planejadoEm: noDia(0, 2), planejamentoManual: true, fechadoEm: '2026-09-10', aviso: 'Arte aprovada com atraso', atualizadoEm: diasAtras(1), pecasSubli: 130, pecasPersonalizadas: 50, valorSubli: 7020, valorPersonalizado: 1900 },
+  { id: 'PD004153', cliente: 'Vôlei Clube Araras', vendedor: V[1], departamento: D[0], etapa: 'corte', emDias: 11, pecas: 28, layouts: 2, tecnicas: ['subli'], planejadoEm: noDia(0, 4), planejamentoManual: false, fechadoEm: '2026-09-09', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 28, pecasPersonalizadas: 0, valorSubli: 1820, valorPersonalizado: 0 },
+  { id: 'PD004150', cliente: 'Viapol Engenharia', vendedor: V[2], departamento: D[4], etapa: 'corte', emDias: 14, pecas: 170, layouts: 1, tecnicas: ['dtf', 'silk'], planejadoEm: noDia(1, 3), planejamentoManual: false, fechadoEm: '2026-09-01', aviso: '', atualizadoEm: diasAtras(4), pecasSubli: 0, pecasPersonalizadas: 170, valorSubli: 0, valorPersonalizado: 8330 },
+  { id: 'PD004151', cliente: 'Escola Municipal Ipê', vendedor: V[2], departamento: D[1], etapa: 'corte', emDias: 19, pecas: 320, layouts: 2, tecnicas: ['dtf'], planejadoEm: noDia(1, 3), planejamentoManual: true, fechadoEm: '2026-09-02', aviso: '', atualizadoEm: diasAtras(6), pecasSubli: 0, pecasPersonalizadas: 320, valorSubli: 0, valorPersonalizado: 13300 },
+  { id: 'PD004138', cliente: 'Colégio Horizonte', vendedor: V[2], departamento: D[0], etapa: 'finalizado', emDias: -6, pecas: 240, layouts: 1, tecnicas: ['subli'], planejadoEm: noDia(-1, 0), planejamentoManual: false, fechadoEm: '2026-08-27', aviso: '', atualizadoEm: diasAtras(0), pecasSubli: 240, pecasPersonalizadas: 0, valorSubli: 9860, valorPersonalizado: 0 },
 ]
 
 /* ==========================================================================
@@ -83,7 +90,10 @@ function historico(): Pedido[] {
         pecas: Math.round(sub / 54) + Math.round(per / 45),
         layouts: 1,
         tecnicas: sub ? ['subli'] : ['dtf'],
-        planejadoNoDia: 0,
+        /* o historico ja fechou: o planejamento dele e o proprio dia em que
+           saiu, e nao um dia de uma semana que o painel ainda mostra */
+        planejadoEm:
+          '2026-' + String(mes + 1).padStart(2, '0') + '-' + String(dia).padStart(2, '0'),
         planejamentoManual: false,
         fechadoEm: '2026-' + String(mes + 1).padStart(2, '0') + '-' + String(dia).padStart(2, '0'),
         pecasSubli: sub ? Math.round(sub / 54) : 0,

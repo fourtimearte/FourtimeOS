@@ -79,8 +79,12 @@ export type Pedido = {
   pecas: number
   layouts: number
   tecnicas: Tecnica[]
-  /** em que dia da semana ele esta planejado: 0 e segunda, 5 e sabado */
-  planejadoNoDia: number
+  /* Em que DIA ele esta planejado, em ISO.
+     Era so o indice do dia da semana, 0 a 5, e isso amarrava o painel a uma
+     semana so: navegar para a semana que vem mostraria os mesmos pedidos de
+     novo, o que e uma tela que mente. Com data de verdade a semana anterior
+     mostra o que foi, e a seguinte mostra o que ja esta marcado. */
+  planejadoEm: string
   /** true quando alguem escolheu a data na mao, e nao o sistema */
   planejamentoManual: boolean
   /** quando o pedido foi fechado, que e o que o relatorio mensal soma */
@@ -151,6 +155,45 @@ export function diaDaSemana(i: number, de = new Date()): Date {
 }
 
 /** A semana do ano, que e como a fabrica fala de prazo. */
+/** A segunda-feira da semana que esta a N semanas daqui. 0 e esta semana. */
+export function semanaDeslocada(semanas: number, de = new Date()): Date {
+  const d = inicioDaSemana(de)
+  d.setDate(d.getDate() + semanas * 7)
+  return d
+}
+
+/** O dia i (0 a 5) da semana que comeca nesta segunda. */
+export function diaDaSemanaDe(inicio: Date, i: number): Date {
+  const d = new Date(inicio)
+  d.setDate(d.getDate() + i)
+  return d
+}
+
+/** A data em ISO curto, que e como o pedido guarda o planejamento. */
+export function iso(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return d.getFullYear() + '-' + m + '-' + dia
+}
+
+/* O titulo que o editor escreve: "7 a 12 de setembro de 2026", e "7 de
+   setembro a 3 de outubro" quando a semana atravessa o mes. */
+const MESES_POR_EXTENSO = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+]
+
+export function tituloDaSemana(inicio: Date): string {
+  const fim = diaDaSemanaDe(inicio, DIAS_UTEIS - 1)
+  const mesmoMes = inicio.getMonth() === fim.getMonth() && inicio.getFullYear() === fim.getFullYear()
+  const mesDe = MESES_POR_EXTENSO[inicio.getMonth()]
+  const mesAte = MESES_POR_EXTENSO[fim.getMonth()]
+  if (mesmoMes) return inicio.getDate() + ' a ' + fim.getDate() + ' de ' + mesAte + ' de ' + fim.getFullYear()
+  return (
+    inicio.getDate() + ' de ' + mesDe + ' a ' + fim.getDate() + ' de ' + mesAte + ' de ' + fim.getFullYear()
+  )
+}
+
 export function semanaDoAno(d = new Date()): number {
   const inicio = new Date(d.getFullYear(), 0, 1)
   return Math.ceil(((d.getTime() - inicio.getTime()) / 86400000 + inicio.getDay() + 1) / 7)

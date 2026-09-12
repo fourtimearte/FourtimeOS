@@ -126,8 +126,14 @@
      cheia, o que se perde de vista é o nome das colunas: a linha de dia
      aparece de novo a cada dia, o cabeçalho aparece uma vez só. */
   position: sticky;
-  top: 0;
+  /* Debaixo da barra do topo, e nao no zero. Ele ja era sticky: grudava em
+     top: 0, que e onde a barra do topo tambem gruda, e sumia por baixo dela.
+     Sticky que cola atras de outro sticky parece sticky quebrado. */
+  top: var(--topbar-h);
   z-index: 3;
+  /* respiro entre os cartoes de cima e a tabela: colados, o cabecalho parecia
+     a ultima linha do cartao de Pedidos */
+  margin-top: var(--sp-4);
   padding: 11px 20px;
   border: 1px solid var(--border);
   border-bottom: 0;
@@ -583,18 +589,8 @@
   color: var(--text);
 }
 .at-semana-txt {
-  display: grid;
-  gap: 0;
-  padding: 0 6px;
-  text-align: center;
-  line-height: 1.2;
-}
-.at-semana-txt b {
+  padding: 0 8px;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-}
-.at-semana-txt small {
-  font-size: 11px;
-  color: var(--text-3);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
-import { DotsSixVertical, Printer } from '@phosphor-icons/react'
+import { ArrowsClockwise, DotsSixVertical, Printer } from '@phosphor-icons/react'
 import { Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
 import {
   AVISO,
@@ -189,10 +189,7 @@ export function TelaAtividades() {
             >
               ‹
             </button>
-            <span className="at-semana-txt">
-              <b>{tituloDaSemana(inicio)}</b>
-              <small>{comoChamarASemana(semana)}</small>
-            </span>
+            <b className="at-semana-txt">{tituloDaSemana(inicio)}</b>
             <button
               type="button"
               onClick={() => setSemana((n) => n + 1)}
@@ -223,6 +220,7 @@ export function TelaAtividades() {
             tom="forte"
             onClick={() => avisar('A varredura do Drive entra junto com o kanban', 'info')}
           >
+            <ArrowsClockwise size={17} />
             Conferir agora
           </Botao>
           <Botao
@@ -552,9 +550,3 @@ function corDaCarga(pct: number): string {
   return 'var(--posto-finalizado)'
 }
 
-function comoChamarASemana(n: number): string {
-  if (n === 0) return 'semana de hoje'
-  if (n === -1) return 'semana passada'
-  if (n === 1) return 'semana que vem'
-  return n < 0 ? Math.abs(n) + ' semanas atrás' : 'daqui a ' + n + ' semanas'
-}

@@ -99,23 +99,6 @@
   color: var(--text-2);
 }
 
-.rl-filtros {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
-}
-.rl-limpar {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12.5px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
 
 /* --- a faixa de números -------------------------------------------------- */
 .rl-fixo {

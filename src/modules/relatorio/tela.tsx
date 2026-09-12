@@ -98,6 +98,17 @@ export function TelaRelatorio() {
           <Botao tom="contorno" onClick={() => avisar('A folha A4 do relatório entra junto com o kanban', 'info')}>
             Imprimir A4
           </Botao>
+          <Seletor
+            rotulo="VENDEDOR"
+            valor={vendedor}
+            opcoes={VENDEDORES.map((v) => ({
+              valor: v,
+              rotulo: v,
+              contagem: itens.filter((x) => x.vendedor === v).length,
+            }))}
+            vazio="Todos os vendedores"
+            aoEscolher={setVendedor}
+          />
           <Botao tom="primario" onClick={() => avisar('Gerar e guardar no Drive entra com o Supabase', 'info')}>
             Gerar / atualizar
           </Botao>
@@ -144,40 +155,6 @@ export function TelaRelatorio() {
             </p>
           </section>
 
-          <section className="cartao rl-cartao">
-            <header className="rl-cartao-topo">
-              <h3>Filtros</h3>
-            </header>
-            <div className="rl-filtros">
-              <Seletor
-                bloco
-                campo
-                tamanho="sm"
-                valor={vendedor}
-                opcoes={VENDEDORES.map((v) => ({
-                  valor: v,
-                  rotulo: v,
-                  contagem: itens.filter((x) => x.vendedor === v).length,
-                }))}
-                vazio="Todos os vendedores"
-                aoEscolher={setVendedor}
-              />
-              {vendedor ? (
-                <button type="button" className="rl-limpar" onClick={() => setVendedor('')}>
-                  limpar filtros
-                </button>
-              ) : null}
-            </div>
-          </section>
-
-          <section className="cartao rl-cartao">
-            <header className="rl-cartao-topo">
-              <h3>Fora da conta</h3>
-            </header>
-            <p className="rl-nota sem-topo">
-              Pedidos tirados do total (teste, cancelado). 0 neste período.
-            </p>
-          </section>
         </div>
 
         <div className="rl-direita">

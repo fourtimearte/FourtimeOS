@@ -1,0 +1,278 @@
+/* ==========================================================================
+   A tela e o editor de cotação.
+
+   O arranjo do editor é o do plano: imagem à esquerda, detalhes técnicos à
+   direita, e a tabela de tamanho, valor e total atravessando as duas colunas.
+   No celular tudo vira uma coluna só, na mesma ordem de leitura.
+
+   Nenhuma faixa 1fr pura: sempre minmax(0, 1fr), senão conteúdo largo empurra
+   a página inteira de lado no celular.
+   ========================================================================== */
+
+.ct-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  margin-bottom: var(--sp-5);
+}
+.ct-filtros .busca {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.ct-num {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ct-num span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* --- o editor ------------------------------------------------------------ */
+.ct-volta {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-2);
+}
+.ct-volta:hover {
+  text-decoration-color: currentColor;
+}
+
+.ct-titulo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ct-sujo {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--warn);
+}
+
+.ct-bloco {
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  min-width: 0;
+}
+.ct-h {
+  margin: 0 0 var(--sp-4);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.ct-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.ct-form .col-2 {
+  grid-column: span 2;
+}
+
+.ct-nada {
+  margin: 0 0 var(--sp-4);
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+
+/* --- um produto ---------------------------------------------------------- */
+.ct-produto {
+  margin-bottom: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  min-width: 0;
+}
+.ct-produto-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.ct-n {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.ct-produto-topo b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-produto-resumo {
+  font-size: 13px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.ct-produto-bts {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* o arranjo: imagem à esquerda, técnica à direita, grade atravessando */
+.ct-produto-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+  min-width: 0;
+}
+.ct-esq,
+.ct-dir {
+  min-width: 0;
+}
+.ct-dir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.ct-grade {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.ct-preco-base {
+  max-width: 200px;
+  margin-bottom: var(--sp-4);
+}
+
+.ct-acoes-produto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  margin-bottom: var(--sp-5);
+}
+
+/* --- ajustes ------------------------------------------------------------- */
+.ct-ajustes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--sp-4);
+}
+.ct-ajuste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ct-sinal {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ct-sinal:hover {
+  border-color: var(--text-3);
+}
+.ct-ajuste-valor,
+.ct-ajuste-motivo {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: inherit;
+  min-width: 0;
+}
+.ct-ajuste-valor {
+  width: 96px;
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ct-ajuste-motivo {
+  flex: 1 1 200px;
+}
+.ct-ajuste-conta {
+  min-width: 110px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+/* --- o fechamento -------------------------------------------------------- */
+.ct-fecha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--sp-4);
+  margin: var(--sp-5) 0;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.ct-fecha > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ct-fecha .rot {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-fecha b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.ct-fecha .forte b {
+  font-size: 22px;
+  color: var(--brand);
+}
+
+/* --- celular ------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .ct-produto-corpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-form .col-2 {
+    grid-column: auto;
+  }
+  .ct-produto-bts {
+    margin-left: 0;
+    width: 100%;
+  }
+}

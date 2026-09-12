@@ -84,6 +84,13 @@
   --gen-fem-fg: #7a123f;
   --gen-inf-bg: #e4f3ec;
   --gen-inf-fg: #0f5138;
+
+  /* tamanho lancado fora da faixa da grade: ele precisa gritar na mesa de
+     corte, entao ganha fundo de sinal e sobe (ou desce) na ordem */
+  --fora-inf-bg: #fce8e9;
+  --fora-inf-fg: #7a1216;
+  --fora-ad-bg: #e3eefb;
+  --fora-ad-fg: #12213f;
 }
 
 /* --- Grafite (escuro) ---------------------------------------------------- */
@@ -118,6 +125,11 @@
   --gen-fem-fg: #f5a9cd;
   --gen-inf-bg: #143026;
   --gen-inf-fg: #9adfc0;
+
+  --fora-inf-bg: #3a1618;
+  --fora-inf-fg: #f7b3b6;
+  --fora-ad-bg: #15263e;
+  --fora-ad-fg: #a9cbfb;
 }
 
 /* --- cor com significado ------------------------------------------------- */

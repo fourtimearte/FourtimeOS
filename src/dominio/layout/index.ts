@@ -1,9 +1,14 @@
 /* A porta da frente do layout.
 
-   O bloco de layout e a grade de tamanhos sao o que a cotacao (.cft) e a ficha
-   de producao (.ft) vao compartilhar. Eles moram aqui, e nao dentro de um dos
-   dois, para os dois lerem a mesma coisa e a escada de migracao ser uma so.
+   O bloco de layout, a grade de tamanhos, a fileira do módulo com os cinco
+   menus, a caixa de imagem e o copiar e colar: tudo que a cotação (.cft) e a
+   ficha de produção (.ft) vão dividir. Escrito uma vez só, arrumado uma vez só.
 
    Regra: dominio/ pode importar de shared/ e de ds/, e NUNCA de modules/. */
 export * from './grade'
 export * from './bloco'
+export * from './banco'
+export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
+export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
+export { CaixaDeImagem } from './imagem'
+export { colarBloco, copiarBloco, temCopia } from './copia'

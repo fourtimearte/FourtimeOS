@@ -1,0 +1,306 @@
+/* ==========================================================================
+   As peças compartilhadas do layout.
+
+   Este arquivo veste a fileira do módulo, a grade de tamanhos e a caixa de
+   imagem. Ele mora em dominio/layout porque as peças moram aqui: o editor de
+   cotação e, na fase 2, o de ficha importam as duas coisas juntas.
+
+   Regra que vale em toda tela: nenhuma coluna com 1fr puro. Uma faixa 1fr
+   nunca encolhe abaixo do conteúdo, e conteúdo largo empurra a página inteira
+   de lado no celular. Sempre minmax(0, 1fr).
+   ========================================================================== */
+
+/* --- a fileira ----------------------------------------------------------- */
+.lay-fileira {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.lay-faixas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.lay-leitura {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.lay-leitura b {
+  color: var(--text);
+}
+.lay-leitura .sep {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+/* --- a grade de tamanhos ------------------------------------------------- */
+.gr {
+  min-width: 0;
+}
+.gr-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.gr-dica {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* a tabela rola dentro da própria caixa, nunca empurrando a página */
+.gr-rolo {
+  overflow-x: auto;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.gr-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.gr-tab th,
+.gr-tab td {
+  padding: 0 12px;
+  height: 44px; /* alvo de toque: a fábrica lança grade no tablet */
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.gr-tab th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+.gr-tab .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.gr-tam {
+  font-weight: 700;
+}
+.gr-tab tbody tr:last-child td {
+  border-bottom: 0;
+}
+.gr-tab tfoot td {
+  height: 46px;
+  font-weight: 700;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-2);
+  border-bottom: 0;
+}
+.gr-linha-total {
+  color: var(--text-2);
+}
+
+/* o fora de faixa */
+.gr-tab tr[data-fora='infantil'] td {
+  background: var(--fora-inf-bg);
+  color: var(--fora-inf-fg);
+}
+.gr-tab tr[data-fora='adulto'] td {
+  background: var(--fora-ad-bg);
+  color: var(--fora-ad-fg);
+}
+
+.gr-campo {
+  width: 100%;
+  min-width: 62px;
+  max-width: 110px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+.gr-campo:hover {
+  border-color: var(--border-2);
+}
+.gr-campo:focus {
+  border-color: var(--ring);
+  background: var(--surface);
+}
+.gr-campo::placeholder {
+  color: var(--text-3);
+}
+
+/* a grade escrita numa linha, no resumo e na folha */
+.gr-linha {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gr-par {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.gr-par b {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+.gr-par[data-fora='infantil'] {
+  background: var(--fora-inf-bg);
+  color: var(--fora-inf-fg);
+}
+.gr-par[data-fora='infantil'] b,
+.gr-par[data-fora='adulto'] b {
+  color: inherit;
+  opacity: 0.75;
+}
+.gr-par[data-fora='adulto'] {
+  background: var(--fora-ad-bg);
+  color: var(--fora-ad-fg);
+}
+
+/* --- a caixa de imagem --------------------------------------------------- */
+.img-caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.img-area {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+.img-area.tem {
+  border-style: solid;
+  background: var(--surface);
+}
+.img-area:hover,
+.img-area.sobre {
+  border-color: var(--ring);
+  background: var(--surface);
+}
+.img-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.img-convite {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.img-convite small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.img-acoes {
+  display: flex;
+  gap: 8px;
+}
+.img-bt {
+  height: var(--btn-h-sm);
+  padding: 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.img-bt:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.img-bt.risco:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.img-arte {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--btn-h);
+  padding: 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  min-width: 0;
+}
+.img-arte .lb {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.img-arte input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+}
+.img-arte .v {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.img-lupa {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 11, 13, 0.82);
+  cursor: zoom-out;
+}
+.img-lupa img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+}

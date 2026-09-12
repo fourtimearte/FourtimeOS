@@ -3,7 +3,7 @@ import { App } from './app'
 import { Protegido } from '@dominio/sessao/protegido'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
-import { TelaCotacao } from '@modules/cotacao'
+import { EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaEntrar } from '@modules/entrar'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaFicha } from '@modules/ficha'
@@ -29,6 +29,7 @@ export const rotas = createBrowserRouter([
       { path: 'funil', element: <TelaFunil /> },
       { path: 'clientes', element: <TelaClientes /> },
       { path: 'cotacao', element: <TelaCotacao /> },
+      { path: 'cotacao/:id', element: <EditorDeCotacao /> },
       { path: 'ficha', element: <TelaFicha /> },
       { path: 'kanban', element: <TelaKanban /> },
       { path: 'estoque', element: <TelaEstoque /> },

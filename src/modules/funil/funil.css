@@ -229,6 +229,9 @@
   width: 24px;
   height: 24px;
   margin-right: -4px;
+  /* No v5 o cartao nao tem este botao no computador: la o caminho e arrastar,
+     e o nome do lead usa a largura inteira. Ele existe no celular, onde
+     arrastar com uma mao so nao funciona. */
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -241,6 +244,11 @@
 .fn-mais:hover {
   background: var(--surface-2);
   color: var(--text);
+}
+@media (min-width: 1024px) {
+  .fn-mais {
+    display: none;
+  }
 }
 
 /* duas linhas da última mensagem, e não mais: o cartão é uma prévia */

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Botao, ChipTecnica, Kpi, Pagina, Selo, Vazio } from '@ds'
+import { Botao, Kpi, Pagina, PilulaTecnica, Selo, Vazio } from '@ds'
 import { abaixoDoMinimo, corDoNivel, nivel, quantidade } from '@dominio/estoque'
 import {
   CAPACIDADE_DA_SEMANA,
@@ -163,9 +163,9 @@ export function TelaPainel() {
                   </span>
                   <span className="pn-tecnicas">
                     {p.tecnicas.map((t) => (
-                      <ChipTecnica key={t} tecnica={t}>
+                      <PilulaTecnica key={t} tecnica={t} tamanho="sm">
                         {NOME_DA_TECNICA[t] ?? t}
-                      </ChipTecnica>
+                      </PilulaTecnica>
                     ))}
                   </span>
                   <span className="pn-etapa">

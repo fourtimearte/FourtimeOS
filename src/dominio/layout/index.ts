@@ -1,4 +1,9 @@
-/* Peças que a cotação e a ficha usam em comum: o tipo Layout, a grade de tamanhos,
-   a combo de referência, os cinco menus e a folha A4. Entram no passo 15.
+/* A porta da frente do layout.
+
+   O bloco de layout e a grade de tamanhos sao o que a cotacao (.cft) e a ficha
+   de producao (.ft) vao compartilhar. Eles moram aqui, e nao dentro de um dos
+   dois, para os dois lerem a mesma coisa e a escada de migracao ser uma so.
+
    Regra: dominio/ pode importar de shared/ e de ds/, e NUNCA de modules/. */
-export {}
+export * from './grade'
+export * from './bloco'

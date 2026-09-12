@@ -14,3 +14,5 @@ playwright-report
 # fotos recem-tiradas e o estrago do teste visual: so as aprovadas vao para o repositorio
 testes/atual/
 testes/diferenca/
+
+testes/compilado/

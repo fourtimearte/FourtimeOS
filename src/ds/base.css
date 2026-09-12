@@ -1311,7 +1311,16 @@ dialog.cmdk .caixa {
   margin-left: auto;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
+}
+/* no celular a fileira de paginas cai para a linha de baixo inteira, se nao
+   ela sozinha ja e mais larga que a tela */
+@media (max-width: 560px) {
+  .pag .meio {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 .pag button {
   min-width: var(--btn-h-sm);

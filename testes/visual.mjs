@@ -44,6 +44,9 @@ const SECOES = [
   'recados',
   'buscaglobal',
   'estados',
+  /* faltava: a secao do seletor, do KPI e do paginador nunca tinha sido
+     fotografada, entao mudanca nessas tres pecas passava sem ninguem ver */
+  'filtros',
   'menus',
 ]
 

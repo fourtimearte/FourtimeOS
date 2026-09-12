@@ -710,3 +710,502 @@ textarea.entrada {
   flex-shrink: 0;
   background: var(--cor-amostra, repeating-linear-gradient(45deg, #8884 0 2px, #5554 2px 4px));
 }
+
+/* --- barra de rolagem: desenhada aqui, nunca a do sistema ---------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: var(--radius-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --- tabela -------------------------------------------------------------- */
+.tabela-rola {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.tabela th {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--surface);
+  position: relative;
+}
+table.tabela th.ordena {
+  cursor: pointer;
+  user-select: none;
+}
+table.tabela th.ordena:hover {
+  color: var(--text);
+}
+table.tabela th .seta {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--text-3);
+}
+table.tabela th.ordenando {
+  color: var(--text);
+}
+table.tabela th.ordenando .seta {
+  color: var(--brand);
+}
+table.tabela td {
+  padding: 0 14px;
+  height: var(--row-h);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+table.tabela th:first-child,
+table.tabela td:first-child {
+  padding-left: 20px;
+}
+table.tabela th:last-child,
+table.tabela td:last-child {
+  padding-right: 20px;
+}
+table.tabela tr:last-child td {
+  border-bottom: 0;
+}
+table.tabela tbody tr {
+  transition: background var(--t-fast);
+}
+table.tabela tbody tr:hover {
+  background: var(--surface-2);
+}
+table.tabela td.dir,
+table.tabela th.dir {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+table.tabela tr.grupo td {
+  background: var(--surface-2);
+  height: 36px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+table.tabela tr.total td {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+table.tabela tr.marcada {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+/* --- estado vazio, esqueleto e aviso ------------------------------------ */
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-3);
+  padding: 44px 24px;
+  color: var(--text-2);
+}
+.vazio h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.vazio p {
+  font-size: 14px;
+  max-width: 340px;
+  margin: 0;
+}
+
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: var(--radius-xs);
+}
+.esqueleto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface) 80%, transparent),
+    transparent
+  );
+  animation: a-esqueleto 1.3s infinite;
+}
+@keyframes a-esqueleto {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.aviso {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--c, var(--brand)) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c, var(--brand)) 30%, var(--border));
+  font-size: 14px;
+  line-height: 1.5;
+}
+.aviso > .pt {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--c, var(--brand));
+}
+.aviso .corpo {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.aviso b {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+/* --- sobreposições: modal e folha lateral -------------------------------- */
+@keyframes a-crescer-surgir {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes a-surgir {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes a-deslizar-direita {
+  from {
+    opacity: 0;
+    transform: translateX(38px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes a-entrar-lado {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes a-entrar-baixo {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+dialog.sobrepoe {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+dialog.sobrepoe::backdrop {
+  background: rgba(10, 12, 16, 0.44);
+  backdrop-filter: blur(3px);
+  animation: a-surgir var(--t-base) var(--ease-out) both;
+}
+
+/* modal, centrado */
+dialog.modal {
+  width: calc(100vw - 32px);
+  max-width: 560px;
+  margin: auto;
+}
+dialog.modal .caixa {
+  width: 100%;
+  max-height: calc(100dvh - 32px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: a-crescer-surgir 300ms var(--ease-mola) both;
+}
+
+/* folha lateral, colada na direita */
+dialog.gaveta {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  width: min(440px, 100vw);
+}
+dialog.gaveta .caixa {
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: a-entrar-lado var(--t-slow) var(--ease-revelar) both;
+}
+
+.sobre-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.sobre-topo .t {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  min-width: 0;
+}
+.sobre-corpo {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.sobre-pe {
+  display: flex;
+  gap: var(--gap-btn);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+/* no celular tudo vira folha de baixo, que é onde o polegar alcança */
+@media (max-width: 767px) {
+  dialog.modal,
+  dialog.gaveta {
+    width: 100vw;
+    max-width: none;
+    margin: auto 0 0;
+    height: auto;
+  }
+  dialog.modal .caixa,
+  dialog.gaveta .caixa {
+    height: auto;
+    max-height: 88dvh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    animation: a-entrar-baixo var(--t-slow) var(--ease-revelar) both;
+  }
+  .sobre-topo,
+  .sobre-corpo,
+  .sobre-pe {
+    padding-left: var(--sp-5);
+    padding-right: var(--sp-5);
+  }
+}
+
+/* --- recado que aparece e some (toast) ----------------------------------- */
+.pilha-recados {
+  position: fixed;
+  z-index: 2147483100;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  align-items: flex-end;
+  max-width: min(92vw, 420px);
+}
+@media (max-width: 767px) {
+  .pilha-recados {
+    right: var(--sp-4);
+    left: var(--sp-4);
+    bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
+    align-items: stretch;
+    max-width: none;
+  }
+}
+.recado {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  background: var(--ink);
+  color: var(--on-ink);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+  animation: a-deslizar-direita 340ms var(--ease-revelar) both;
+}
+.recado .pt {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--brand));
+}
+.recado .fechar {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.recado .fechar:hover {
+  opacity: 1;
+}
+
+/* --- busca global -------------------------------------------------------- */
+dialog.cmdk {
+  width: calc(100vw - 32px);
+  max-width: 620px;
+  margin: 10vh auto auto;
+}
+dialog.cmdk .caixa {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  animation: a-crescer-surgir 240ms var(--ease-out) both;
+}
+.cmdk-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-5);
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+}
+.cmdk-topo input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 15.5px;
+  color: var(--text);
+}
+.cmdk-topo input::placeholder {
+  color: var(--text-3);
+}
+.cmdk-lista {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding: 6px;
+}
+.cmdk-lista .grupo {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 10px 12px 4px;
+}
+.cmdk-lista .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--t-fast);
+}
+.cmdk-lista .item:hover {
+  background: var(--surface-2);
+}
+.cmdk-lista .item.ligado {
+  background: var(--ink-soft);
+  font-weight: 700;
+}
+.cmdk-lista .item .lado {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cmdk-pe {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 10px var(--sp-5);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--text-3);
+  flex-wrap: wrap;
+}
+.tecla {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-2);
+}

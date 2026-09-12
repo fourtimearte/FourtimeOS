@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Botao, Chip } from '../componentes/botao'
 import {
@@ -11,6 +11,11 @@ import {
   Marcacao,
   Segmentado,
 } from '../componentes/formulario'
+import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/busca-global'
+import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
+import { avisar, PilhaDeRecados } from '../componentes/recados'
+import { Gaveta, Modal } from '../componentes/sobreposicao'
+import { Tabela, type Coluna } from '../componentes/tabela'
 import {
   Amostra,
   Cartao,
@@ -36,6 +41,11 @@ const SECOES: [string, string][] = [
   ['segmentado', 'Segmentado'],
   ['cartoes', 'Cartões'],
   ['selos', 'Selos e tags'],
+  ['tabela', 'Tabela'],
+  ['sobreposicoes', 'Modal e gaveta'],
+  ['recados', 'Recados'],
+  ['buscaglobal', 'Busca global'],
+  ['estados', 'Vazio, esqueleto e aviso'],
 ]
 
 /* A rota /kit: a página viva do Design System. Nenhum componente aparece numa
@@ -107,9 +117,10 @@ export function TelaKit() {
         <div className="kit-corpo">
           <p className="kit-aviso">
             <i />
-            Passo 5 em andamento. Já nasceram aqui: botão, chip, campo, busca, marcação, escolha,
-            interruptor, segmentado, cartão, selo, tag e as pílulas de técnica. Faltam tabela,
-            modal, folha lateral, toast, busca global e os cinco menus do módulo.
+            Passo 5, segunda leva. Já nasceram aqui: botão, chip, campo, busca, marcação, escolha,
+            interruptor, segmentado, cartão, selo, tag, pílulas de técnica, tabela, modal, folha
+            lateral, recados, busca global, estado vazio, esqueleto e aviso. Faltam os cinco menus
+            do módulo, que vêm sozinhos na última leva.
           </p>
 
           <Secao
@@ -377,8 +388,87 @@ export function TelaKit() {
               </span>
             </div>
           </Secao>
+          <Secao
+            id="tabela"
+            titulo="Tabela"
+            texto="Rola na horizontal dentro da própria caixa, então no celular ela não empurra a página inteira para o lado. Cabeçalho que ordena, número à direita com dígito de largura fixa, e a linha de total com peso maior."
+          >
+            <div className="kit-bancada" style={{ display: 'block', padding: 0 }}>
+              <TabelaDemo />
+            </div>
+          </Secao>
+
+          <Secao
+            id="sobreposicoes"
+            titulo="Modal e folha lateral"
+            texto="As duas usam a camada do topo do navegador, acima de qualquer corte e de qualquer empilhamento. Foco preso dentro, Esc para sair, clique no escuro fecha. No celular as duas viram folha de baixo, que é onde o polegar alcança."
+          >
+            <div className="kit-bancada">
+              <SobreposicaoDemo />
+            </div>
+          </Secao>
+
+          <Secao
+            id="recados"
+            titulo="Recados"
+            texto="O aviso que aparece no canto e some sozinho. Serve para confirmar o que acabou de acontecer, nunca para pedir decisão: decisão é modal."
+          >
+            <div className="kit-bancada">
+              <Botao onClick={() => avisar('Cotação salva')}>Salvar</Botao>
+              <Botao onClick={() => avisar('Pedido aprovado', 'ok')}>Aprovar</Botao>
+              <Botao onClick={() => avisar('Estoque de malha dry abaixo do mínimo', 'warn')}>
+                Estoque baixo
+              </Botao>
+              <Botao onClick={() => avisar('Importação do Bling terminada', 'info')}>Importar</Botao>
+            </div>
+          </Secao>
+
+          <Secao
+            id="buscaglobal"
+            titulo="Busca global"
+            texto="Abre com Ctrl K, ou Cmd K no Mac. Anda com as setas, escolhe com Enter, sai com Esc. Ela some assim que escolhe: nunca fica no meio do caminho."
+          >
+            <div className="kit-bancada">
+              <BuscaDemo />
+            </div>
+          </Secao>
+
+          <Secao
+            id="estados"
+            titulo="Vazio, esqueleto e aviso"
+            texto="Lista vazia num galpão costuma ser dúvida, não descanso: o vazio diz o que aconteceu e qual é a saída. O esqueleto ocupa o lugar exato do conteúdo, para a tela não pular quando o dado chega."
+          >
+            <div className="kit-bancada coluna">
+              <Aviso tom="brand" titulo="Três pedidos passaram da data">
+                Eles continuam no kanban, mas já contam como atraso no relatório do mês.
+              </Aviso>
+              <Aviso tom="ok" titulo="Tudo em dia">
+                Nenhum pedido atrasado nesta semana.
+              </Aviso>
+              <Aviso tom="warn">Malha dry preta abaixo do mínimo: restam 12 kg.</Aviso>
+              <Aviso tom="info">A importação do Bling roda uma vez, e depois o sistema é a fonte.</Aviso>
+            </div>
+            <div className="kit-bancada" style={{ display: 'block' }}>
+              <span className="kit-nota">Esqueleto</span>
+              <div style={{ display: 'grid', gap: 'var(--sp-3)', maxWidth: 460 }}>
+                <Esqueleto largura="42%" altura={18} />
+                <Esqueleto />
+                <Esqueleto largura="78%" />
+                <Esqueleto largura="60%" />
+              </div>
+            </div>
+            <div className="kit-bancada" style={{ display: 'block' }}>
+              <span className="kit-nota">Vazio</span>
+              <Vazio
+                titulo="Nenhuma cotação neste filtro"
+                texto="Tire o filtro de atraso ou mude o período para ver o resto."
+                acao={<Botao tom="forte">Limpar filtros</Botao>}
+              />
+            </div>
+          </Secao>
         </div>
       </div>
+      <PilhaDeRecados />
     </div>
   )
 }
@@ -475,6 +565,167 @@ function SegmentadoDemo() {
           { valor: 'tudo', rotulo: 'Tudo' },
         ]}
       />
+    </>
+  )
+}
+
+type LinhaDemo = {
+  id: string
+  pedido: string
+  cliente: string
+  tecnica: Tecnica
+  pecas: number
+  valor: number
+}
+
+const LINHAS: LinhaDemo[] = [
+  { id: '2481', pedido: '2.481', cliente: 'Colégio Delta', tecnica: 'dtf', pecas: 120, valor: 7440 },
+  { id: '2480', pedido: '2.480', cliente: 'Academia Pulse', tecnica: 'subli', pecas: 64, valor: 5120 },
+  { id: '2479', pedido: '2.479', cliente: 'Time Aurora', tecnica: 'silk', pecas: 210, valor: 9870 },
+  { id: '2478', pedido: '2.478', cliente: 'Prefeitura de Goiânia', tecnica: 'bordado', pecas: 45, valor: 3150 },
+]
+
+const dinheiro = (n: number) =>
+  n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+function TabelaDemo() {
+  const [marcada, setMarcada] = useState<string[]>(['2480'])
+  const colunas: Coluna<LinhaDemo>[] = [
+    {
+      chave: 'pedido',
+      titulo: 'Pedido',
+      ordenarPor: (l) => l.pedido,
+      celula: (l) => <b>{l.pedido}</b>,
+    },
+    {
+      chave: 'cliente',
+      titulo: 'Cliente',
+      ordenarPor: (l) => l.cliente,
+      celula: (l) => l.cliente,
+    },
+    {
+      chave: 'tecnica',
+      titulo: 'Técnica',
+      celula: (l) => <PilulaTecnica tecnica={l.tecnica}>{l.tecnica.toUpperCase()}</PilulaTecnica>,
+    },
+    {
+      chave: 'pecas',
+      titulo: 'Peças',
+      numero: true,
+      ordenarPor: (l) => l.pecas,
+      celula: (l) => l.pecas,
+    },
+    {
+      chave: 'valor',
+      titulo: 'Valor',
+      numero: true,
+      ordenarPor: (l) => l.valor,
+      celula: (l) => dinheiro(l.valor),
+    },
+  ]
+  return (
+    <Tabela
+      colunas={colunas}
+      linhas={LINHAS}
+      chaveDaLinha={(l) => l.id}
+      marcadas={marcada}
+      aoClicarNaLinha={(l) => setMarcada((m) => (m.includes(l.id) ? [] : [l.id]))}
+      total={[
+        'Total',
+        '',
+        '',
+        LINHAS.reduce((s, l) => s + l.pecas, 0),
+        dinheiro(LINHAS.reduce((s, l) => s + l.valor, 0)),
+      ]}
+    />
+  )
+}
+
+function SobreposicaoDemo() {
+  const [modal, setModal] = useState(false)
+  const [gaveta, setGaveta] = useState(false)
+  return (
+    <>
+      <Botao tom="forte" onClick={() => setModal(true)}>
+        Abrir modal
+      </Botao>
+      <Botao tom="contorno" onClick={() => setGaveta(true)}>
+        Abrir folha lateral
+      </Botao>
+
+      <Modal
+        aberto={modal}
+        aoFechar={() => setModal(false)}
+        titulo="Aprovar a cotação 2.481"
+        pe={
+          <>
+            <Botao tom="limpo" onClick={() => setModal(false)}>
+              Cancelar
+            </Botao>
+            <Botao
+              tom="primario"
+              onClick={() => {
+                setModal(false)
+                avisar('Cotação 2.481 aprovada', 'ok')
+              }}
+            >
+              Aprovar
+            </Botao>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-2)' }}>
+          Aprovar gera um rascunho de ficha de produção e avisa o cliente pelo WhatsApp. Dá para
+          desfazer enquanto ninguém tiver aberto a ficha.
+        </p>
+      </Modal>
+
+      <Gaveta
+        aberto={gaveta}
+        aoFechar={() => setGaveta(false)}
+        titulo="Colégio Delta"
+        pe={
+          <Botao tom="forte" onClick={() => setGaveta(false)}>
+            Fechar
+          </Botao>
+        }
+      >
+        <div style={{ display: 'grid', gap: 'var(--sp-4)' }}>
+          <Campo rotulo="Contato">
+            <Entrada defaultValue="Marcela, compras" />
+          </Campo>
+          <Campo rotulo="Telefone">
+            <Entrada defaultValue="(62) 99999-0000" />
+          </Campo>
+          <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap' }}>
+            <Selo tom="ok">Cliente ativo</Selo>
+            <Selo tom="info">14 pedidos</Selo>
+          </div>
+        </div>
+      </Gaveta>
+    </>
+  )
+}
+
+function BuscaDemo() {
+  const [aberta, setAberta] = useState(false)
+  usarAtalhoDaBusca(useCallback(() => setAberta(true), []))
+  const itens: ItemBusca[] = [
+    { id: '1', grupo: 'Pedidos', titulo: '2.481 . Colégio Delta', lado: '120 peças', aoEscolher: () => avisar('Abriria o pedido 2.481') },
+    { id: '2', grupo: 'Pedidos', titulo: '2.480 . Academia Pulse', lado: '64 peças', aoEscolher: () => avisar('Abriria o pedido 2.480') },
+    { id: '3', grupo: 'Clientes', titulo: 'Colégio Delta', lado: 'Goiânia', aoEscolher: () => avisar('Abriria o cliente') },
+    { id: '4', grupo: 'Telas', titulo: 'Kanban de produção', termos: 'mark42 producao', lado: 'ir para', aoEscolher: () => avisar('Iria para o kanban') },
+    { id: '5', grupo: 'Telas', titulo: 'Estoque', termos: 'malha insumo', lado: 'ir para', aoEscolher: () => avisar('Iria para o estoque') },
+  ]
+  return (
+    <>
+      <Botao tom="contorno" onClick={() => setAberta(true)}>
+        Abrir a busca
+      </Botao>
+      <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+        ou <span className="tecla">ctrl</span> <span className="tecla">K</span>
+      </span>
+      <BuscaGlobal aberto={aberta} aoFechar={() => setAberta(false)} itens={itens} />
     </>
   )
 }

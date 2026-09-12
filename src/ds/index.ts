@@ -20,6 +20,20 @@ export {
   Segmentado,
 } from './componentes/formulario'
 
+export { Aviso, Esqueleto, Vazio } from './componentes/estado'
+export type { TomAviso } from './componentes/estado'
+
+export { Tabela } from './componentes/tabela'
+export type { Coluna } from './componentes/tabela'
+
+export { Gaveta, Modal } from './componentes/sobreposicao'
+
+export { avisar, fecharRecado, PilhaDeRecados } from './componentes/recados'
+export type { TomRecado } from './componentes/recados'
+
+export { BuscaGlobal, usarAtalhoDaBusca } from './componentes/busca-global'
+export type { ItemBusca } from './componentes/busca-global'
+
 export {
   Amostra,
   Cartao,

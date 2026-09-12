@@ -35,6 +35,13 @@ export function formatarDinheiroExato(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+/* So o numero, sem o R$. A tabela do relatorio usa isto porque o cabecalho ja
+   diz "Total R$": repetir o simbolo em cada celula custa uns 30 px por coluna,
+   que e exatamente o que empurrava o Total R$ para fora da vista. */
+export function formatarNumeroExato(v: number) {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 export function formatarData(iso: string) {
   if (!iso) return ''
   const d = new Date(iso)

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Botao, Pagina, Seletor, Vazio, avisar } from '@ds'
-import { formatarDinheiroExato } from '@shared'
+import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
 import { VENDEDORES } from '@dominio/banco'
 import { listarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
 import './relatorio.css'
@@ -295,12 +295,12 @@ function Grupo({
           <td className="num">{x.pecasPersonalizadas || ''}</td>
           <td className="num forte">{x.pecasSubli + x.pecasPersonalizadas}</td>
           <td className={misto(x) ? 'num rl-misto' : 'num'}>
-            {x.valorSubli ? formatarDinheiroExato(x.valorSubli) + (misto(x) ? '*' : '') : ''}
+            {x.valorSubli ? formatarNumeroExato(x.valorSubli) + (misto(x) ? '*' : '') : ''}
           </td>
           <td className="num">
-            {x.valorPersonalizado ? formatarDinheiroExato(x.valorPersonalizado) : ''}
+            {x.valorPersonalizado ? formatarNumeroExato(x.valorPersonalizado) : ''}
           </td>
-          <td className="num forte">{formatarDinheiroExato(valorDoPedido(x))}</td>
+          <td className="num forte">{formatarNumeroExato(valorDoPedido(x))}</td>
         </tr>
       ))}
       <Total linhas={linhas} rotulo={rotuloDoTotal} />
@@ -318,9 +318,9 @@ function Total({ linhas, rotulo, forte }: { linhas: Item[]; rotulo: string; fort
       <td className="num">
         {soma((x) => x.pecasSubli + x.pecasPersonalizadas).toLocaleString('pt-BR')}
       </td>
-      <td className="num">{formatarDinheiroExato(soma((x) => x.valorSubli))}</td>
-      <td className="num">{formatarDinheiroExato(soma((x) => x.valorPersonalizado))}</td>
-      <td className="num">{formatarDinheiroExato(soma(valorDoPedido))}</td>
+      <td className="num">{formatarNumeroExato(soma((x) => x.valorSubli))}</td>
+      <td className="num">{formatarNumeroExato(soma((x) => x.valorPersonalizado))}</td>
+      <td className="num">{formatarNumeroExato(soma(valorDoPedido))}</td>
     </tr>
   )
 }

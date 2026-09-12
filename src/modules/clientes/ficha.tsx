@@ -24,11 +24,12 @@ import {
   pedidosDoCliente,
   salvarCliente,
   situacaoDoCliente,
-  transportadoraPorCep,
   type Cliente,
   type Pedido,
   type Segmento,
+  listarClientes,
 } from '@dominio/cliente'
+import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
 import './clientes.css'
 
 const SEGMENTOS = (Object.keys(NOME_DO_SEGMENTO) as Segmento[]).map((s) => ({
@@ -68,7 +69,14 @@ export function FichaDoCliente({
   const novo = !!c && !c.id
 
   const pedidos = useMemo(() => (c && c.id ? pedidosDoCliente(c) : []), [c])
-  const transportadora = useMemo(() => transportadoraPorCep(c?.cep ?? ''), [c?.cep])
+  /* A melhor sugestao de frete: a lista vem em ordem de confianca, entao a
+     primeira e a que tem a origem mais firme. A lista inteira fica na tela de
+     clientes, ao clicar na cidade. */
+  const frete = useMemo(() => {
+    if (!c) return null
+    const achadas = transportadorasPara(c, cepsPorCidade(listarClientes()))
+    return achadas[0] ?? null
+  }, [c])
 
   if (!c) return null
 
@@ -189,13 +197,36 @@ export function FichaDoCliente({
                   placeholder="Como aparece na cotação"
                 />
               </Campo>
+              <Campo rotulo="Nome fantasia" className="col-2">
+                <Entrada
+                  value={c.fantasia}
+                  onChange={(e) => mudar('fantasia', e.target.value)}
+                  placeholder="Quando o nome do cadastro não é o nome da porta"
+                />
+              </Campo>
+              <Campo rotulo="Tipo">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.tipo}
+                  opcoes={[
+                    { valor: 'F', rotulo: 'Pessoa física' },
+                    { valor: 'J', rotulo: 'Pessoa jurídica' },
+                  ]}
+                  vazio="Escolher"
+                  aoEscolher={(v) => mudar('tipo', (v || 'F') as Cliente['tipo'])}
+                />
+              </Campo>
               <Campo rotulo="CPF ou CNPJ" dica="Só os números">
                 <Entrada value={c.documento} onChange={(e) => mudar('documento', e.target.value)} />
               </Campo>
               <Campo rotulo="Contato">
                 <Entrada value={c.contato} onChange={(e) => mudar('contato', e.target.value)} />
               </Campo>
-              <Campo rotulo="Telefone" dica="Com DDD, só os números">
+              <Campo rotulo="Celular" dica="Com DDD. É por ele que sai o WhatsApp.">
+                <Entrada value={c.celular} onChange={(e) => mudar('celular', e.target.value)} />
+              </Campo>
+              <Campo rotulo="Telefone fixo" dica="Com DDD, só os números">
                 <Entrada value={c.telefone} onChange={(e) => mudar('telefone', e.target.value)} />
               </Campo>
               <Campo rotulo="E-mail">
@@ -204,6 +235,22 @@ export function FichaDoCliente({
                   value={c.email}
                   onChange={(e) => mudar('email', e.target.value)}
                 />
+              </Campo>
+              <Campo rotulo="Endereço" className="col-2">
+                <Entrada
+                  value={c.endereco}
+                  onChange={(e) => mudar('endereco', e.target.value)}
+                  placeholder="Rua e número"
+                />
+              </Campo>
+              <Campo rotulo="Complemento">
+                <Entrada
+                  value={c.complemento}
+                  onChange={(e) => mudar('complemento', e.target.value)}
+                />
+              </Campo>
+              <Campo rotulo="Bairro">
+                <Entrada value={c.bairro} onChange={(e) => mudar('bairro', e.target.value)} />
               </Campo>
               <Campo rotulo="Cidade">
                 <Entrada value={c.cidade} onChange={(e) => mudar('cidade', e.target.value)} />
@@ -218,7 +265,14 @@ export function FichaDoCliente({
                   aoEscolher={(v) => mudar('uf', v)}
                 />
               </Campo>
-              <Campo rotulo="CEP" dica={transportadora.nome + ', ' + transportadora.prazo}>
+              <Campo
+                rotulo="CEP"
+                dica={
+                  frete
+                    ? frete.transportadora.nome + ', ' + frete.transportadora.prazo
+                    : 'Preencha para saber quem entrega'
+                }
+              >
                 <Entrada value={c.cep} onChange={(e) => mudar('cep', e.target.value)} />
               </Campo>
               <Campo rotulo="Segmento">
@@ -237,11 +291,18 @@ export function FichaDoCliente({
             </div>
           ) : (
             <dl className="ficha-dados">
+              <Linha rotulo="Nome fantasia" valor={c.fantasia} />
+              <Linha rotulo="Tipo" valor={c.tipo === 'J' ? 'Pessoa jurídica' : 'Pessoa física'} />
               <Linha rotulo="Documento" valor={formatarDocumento(c.documento)} />
               <Linha rotulo="Contato" valor={c.contato} />
-              <Linha rotulo="Telefone" valor={formatarTelefone(c.telefone)} />
+              <Linha rotulo="Celular" valor={formatarTelefone(c.celular)} />
+              <Linha rotulo="Telefone fixo" valor={formatarTelefone(c.telefone)} />
               <Linha rotulo="E-mail" valor={c.email} />
-              <Linha rotulo="Cidade" valor={c.cidade + ', ' + c.uf} />
+              <Linha
+                rotulo="Endereço"
+                valor={[c.endereco, c.complemento, c.bairro].filter(Boolean).join(' · ')}
+              />
+              <Linha rotulo="Cidade" valor={c.cidade ? c.cidade + ', ' + c.uf : ''} />
               <Linha rotulo="CEP" valor={formatarCep(c.cep)} />
               <Linha rotulo="Segmento" valor={NOME_DO_SEGMENTO[c.segmento]} />
               <Linha rotulo="Vendedor" valor={c.vendedor} />
@@ -252,9 +313,15 @@ export function FichaDoCliente({
           <div className="ficha-frete">
             <b>Frete</b>
             <span>
-              {transportadora.nome}, {transportadora.prazo}
+              {frete
+                ? frete.transportadora.nome + ', ' + frete.transportadora.prazo
+                : 'Sem CEP e sem cidade'}
             </span>
-            <small>Quem decide é a faixa de CEP, não a cidade.</small>
+            <small>
+              {frete
+                ? 'Achada pelo ' + NOME_DA_ORIGEM[frete.origem] + '.'
+                : 'Preencha cidade ou CEP para o sistema sugerir quem entrega.'}
+            </small>
           </div>
         </section>
 

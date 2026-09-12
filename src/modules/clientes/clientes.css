@@ -106,3 +106,419 @@
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   A lista de clientes cadastrados.
+
+   Seis numeros em cima, uma fileira de filtros, o que esta filtrando escrito
+   embaixo dela, e a tabela dentro de um cartao com o rodape de paginas colado
+   nela. Quem opera precisa ver de um golpe quantos cadastros estao pela
+   metade: e por isso que os seis numeros vem antes da busca, e nao depois.
+   ========================================================================== */
+
+.cl-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+@media (min-width: 1280px) {
+  .cl-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* --- a fileira de filtros ------------------------------------------------ */
+.cl-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: stretch;
+}
+.cl-busca {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.cl-limpa {
+  align-self: center;
+}
+
+/* --- o que esta filtrando ------------------------------------------------ */
+.cl-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.cl-marcas b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.cl-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 4px 0 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.cl-marca button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cl-marca button:hover {
+  background: var(--surface-3);
+}
+.cl-limpa-tudo {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- a tabela ------------------------------------------------------------ */
+.cl-caixa {
+  padding: 0;
+  overflow: hidden;
+}
+.cl-rolo {
+  overflow-x: auto;
+  min-width: 0;
+}
+.cl-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cl-tab th,
+.cl-tab td {
+  padding: 9px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.cl-tab th {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.cl-tab th button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.cl-tab tbody tr {
+  cursor: pointer;
+}
+.cl-tab tbody tr:hover {
+  background: var(--surface-2);
+}
+.cl-tab tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.cl-quem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cl-retrato {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+.cl-nome {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.cl-titulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cl-fantasia {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* as tres tarjas do nome. Sao miudas de proposito: elas contam alguma coisa
+   sobre o cadastro, nao sobre o cliente. */
+.cl-marca-pd,
+.cl-marca-dup,
+.cl-marca-inc {
+  flex: none;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+}
+.cl-marca-pd {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.cl-marca-dup {
+  background: color-mix(in srgb, var(--warn) 16%, var(--surface));
+  color: var(--warn);
+}
+.cl-marca-inc {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.cl-doc {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cl-falta {
+  color: var(--text-3);
+  opacity: 0.75;
+}
+.cl-contato {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+.cl-contato > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.cl-email {
+  color: var(--text-3);
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block !important;
+}
+.cl-wa {
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid var(--wa);
+  color: var(--wa);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 14px;
+  text-decoration: none;
+}
+
+.cl-cidade {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cl-cidade:hover {
+  text-decoration: underline;
+}
+.cl-uf {
+  color: var(--text-3);
+}
+.cl-transp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+.cl-tipo {
+  display: inline-block;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 17px;
+  color: var(--text-2);
+}
+.cl-tipo.pj {
+  background: color-mix(in srgb, var(--info) 14%, var(--surface));
+  border-color: transparent;
+  color: var(--info);
+}
+.cl-desde {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* Contato, Tipo e Desde saem no celular: ali a linha tem que caber sem rolar
+   para o lado, e nome, documento e cidade sao o que se procura no balcao. */
+@media (max-width: 1023px) {
+  .cl-tab .cl-some {
+    display: none;
+  }
+}
+
+/* --- o rodape de paginas, colado na tabela ------------------------------- */
+.cl-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.cl-pe b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.cl-empurra {
+  flex: 1 1 auto;
+}
+.cl-numeros {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.cl-numeros button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.cl-numeros button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.cl-numeros button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.cl-numeros button.ligado {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.cl-numeros > span {
+  color: var(--text-3);
+  padding: 0 2px;
+}
+
+/* --- a gaveta das transportadoras ---------------------------------------- */
+.cl-nota {
+  margin: 0 0 var(--sp-4);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.cl-transp-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.cl-caminhao {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+}
+.cl-transp-nome {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cl-transp-nome b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+.cl-transp-nome span {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.cl-origem {
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 14px;
+  color: var(--text-3);
+}
+.cl-prazo {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

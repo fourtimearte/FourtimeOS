@@ -1,198 +1,284 @@
 import { useMemo, useState } from 'react'
-import {
-  Botao,
-  Busca,
-  Kpi,
-  Pagina,
-  Paginador,
-  Selo,
-  Seletor,
-  Tabela,
-  Tag,
-  Vazio,
-  avisar,
-  type Coluna,
-} from '@ds'
+import { Buildings, MapPin, Trash, Truck, User } from '@phosphor-icons/react'
+import { Botao, Busca, Gaveta, Kpi, Pagina, Seletor, Vazio, avisar } from '@ds'
+import { formatarCep, semAcento } from '@shared'
 import { FichaDoCliente } from './ficha'
 import {
+  cadastroIncompleto,
   clienteEmBranco,
-  NOME_DA_SITUACAO,
-  NOME_DO_SEGMENTO,
+  entrouNosUltimos30,
   formatarData,
-  formatarDinheiro,
   formatarDocumento,
   formatarTelefone,
+  idsDuplicados,
   listarClientes,
-  situacaoDoCliente,
+  numeroDeWhatsApp,
+  temContato,
+  temPedidoNoSistema,
   type Cliente,
-  type Segmento,
-  type Situacao,
 } from '@dominio/cliente'
+import {
+  NOME_DA_ORIGEM,
+  cepsPorCidade,
+  transportadorasPara,
+  type Sugestao,
+} from '@dominio/entrega'
+import './clientes.css'
 
-const POR_PAGINA = 20
+/* ==========================================================================
+   Clientes cadastrados.
 
-/* busca sem acento e sem caixa, que e como a fabrica digita */
-const limpar = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
+   Esta e a base do Bling encostada nos pedidos do sistema, e por isso ela nao
+   e uma lista bonita: e um retrato do que esta cadastrado. Os seis numeros do
+   topo existem para isso. "Cadastro incompleto" e o unico em vermelho porque
+   e o unico que custa dinheiro: cliente sem documento e sem contato e cliente
+   que nao da para cobrar nem avisar que a arte ficou pronta.
+
+   Clicar na cidade abre as transportadoras que cobrem aquele CEP. Isso mora
+   aqui porque a pergunta "quem entrega ai?" aparece no atendimento, antes de
+   existir pedido, e nao na hora de despachar.
+   ========================================================================== */
+
+type Ordem = 'nome' | 'cidade' | 'desde'
+type Qualidade =
+  | ''
+  | 'contato'
+  | 'sem-contato'
+  | 'whatsapp'
+  | 'documento'
+  | 'endereco'
+  | 'incompleto'
+  | 'duplicado'
+  | 'pedidos'
+  | 'novos30'
+  | 'fornecedor'
+  | 'funcionario'
+
+const ROTULO_DA_QUALIDADE: Record<Exclude<Qualidade, ''>, string> = {
+  contato: 'Com contato',
+  'sem-contato': 'Sem contato',
+  whatsapp: 'Com WhatsApp',
+  documento: 'Com CPF/CNPJ',
+  endereco: 'Com endereço',
+  incompleto: 'Cadastro incompleto',
+  duplicado: 'Possíveis duplicados',
+  pedidos: 'Com pedido no sistema',
+  novos30: 'Novos (30 dias)',
+  fornecedor: 'Também fornecedor',
+  funcionario: 'Também funcionário',
+}
+
+const ROTULO_DO_PERIODO: Record<string, string> = {
+  mes: 'Este mês',
+  '90': 'Últimos 90 dias',
+}
+
+const SEM = '__vazio__'
+const so = (s: string) => (s || '').replace(/\D/g, '')
 
 export function TelaClientes() {
-  /* muda quando alguem salva: e o sinal para reler a lista */
   const [versao, setVersao] = useState(0)
   const todos = useMemo(() => listarClientes(), [versao])
-  const [naFicha, setNaFicha] = useState<Cliente | null>(null)
   const hoje = useMemo(() => Date.now(), [])
+  const duplicados = useMemo(() => idsDuplicados(todos), [todos])
+  const cepsDaCidade = useMemo(() => cepsPorCidade(todos), [todos])
+
+  const [naFicha, setNaFicha] = useState<Cliente | null>(null)
+  const [naEntrega, setNaEntrega] = useState<Cliente | null>(null)
 
   const [busca, setBusca] = useState('')
-  const [foco, setFoco] = useState<Situacao | ''>('')
-  const [vendedor, setVendedor] = useState('')
-  const [segmento, setSegmento] = useState('')
+  const [tipo, setTipo] = useState('')
+  const [uf, setUf] = useState('')
   const [cidade, setCidade] = useState('')
+  const [periodo, setPeriodo] = useState('')
+  const [qualidade, setQualidade] = useState<Qualidade>('')
+  const [ordem, setOrdem] = useState<Ordem>('desde')
+  const [crescente, setCrescente] = useState(false)
   const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState(25)
 
-  const comSituacao = useMemo(
-    () => todos.map((c) => ({ c, situacao: situacaoDoCliente(c, hoje) })),
-    [todos, hoje],
-  )
+  /* --- os seis numeros do topo, sempre sobre a base inteira -------------- */
+  const conta = useMemo(() => {
+    const pf = todos.filter((c) => c.tipo === 'F').length
+    return {
+      total: todos.length,
+      pf,
+      pj: todos.length - pf,
+      contato: todos.filter(temContato).length,
+      novos: todos.filter((c) => entrouNosUltimos30(c, hoje)).length,
+      incompletos: todos.filter(cadastroIncompleto).length,
+      whatsapp: todos.filter((c) => !!numeroDeWhatsApp(c)).length,
+      documento: todos.filter((c) => !!c.documento).length,
+      endereco: todos.filter((c) => !!(c.endereco || c.cidade)).length,
+      pedidos: todos.filter(temPedidoNoSistema).length,
+      duplicados: duplicados.size,
+      fornecedor: todos.filter((c) => c.tipoDeContato.includes('Fornecedor')).length,
+      funcionario: todos.filter((c) => c.tipoDeContato.includes('Funcionario')).length,
+    }
+  }, [todos, hoje, duplicados])
 
-  const contas = useMemo(() => {
-    const n = { ativo: 0, novo: 0, parado: 0, 'sem-pedido': 0 } as Record<Situacao, number>
-    comSituacao.forEach((x) => (n[x.situacao] += 1))
-    const compradores = todos.filter((c) => c.pedidos > 0)
-    const ticket = compradores.length
-      ? compradores.reduce((s, c) => s + c.total, 0) / compradores.reduce((s, c) => s + c.pedidos, 0)
-      : 0
-    return { ...n, ticket }
-  }, [comSituacao, todos])
-
-  const opcoesVendedor = useMemo(
-    () => juntar(todos.map((c) => c.vendedor)).map((v) => ({ valor: v[0], rotulo: v[0], contagem: v[1] })),
+  const ufs = useMemo(
+    () => [...new Set(todos.map((c) => c.uf).filter(Boolean))].sort(),
     [todos],
   )
-  const opcoesCidade = useMemo(
+
+  /* a lista de cidades segue a UF escolhida, senao ela oferece cidade que o
+     filtro de cima ja tirou da mesa */
+  const cidades = useMemo(() => {
+    const base = uf && uf !== SEM ? todos.filter((c) => c.uf === uf) : todos
+    const mapa = new Map<string, { nome: string; quantos: number }>()
+    base.forEach((c) => {
+      if (!c.cidade) return
+      const k = semAcento(c.cidade)
+      const ja = mapa.get(k)
+      mapa.set(k, { nome: c.cidade, quantos: (ja?.quantos ?? 0) + 1 })
+    })
+    return [...mapa.entries()].sort(
+      (a, b) => b[1].quantos - a[1].quantos || a[1].nome.localeCompare(b[1].nome, 'pt'),
+    )
+  }, [todos, uf])
+
+  const anos = useMemo(
     () =>
-      juntar(todos.map((c) => c.cidade + ' ' + c.uf)).map((v) => ({
-        valor: v[0],
-        rotulo: v[0],
-        contagem: v[1],
-      })),
+      [...new Set(todos.map((c) => c.criadoEm.slice(0, 4)).filter(Boolean))].sort().reverse(),
     [todos],
   )
-  const opcoesSegmento = useMemo(
-    () =>
-      juntar(todos.map((c) => c.segmento)).map((v) => ({
-        valor: v[0],
-        rotulo: NOME_DO_SEGMENTO[v[0] as Segmento],
-        contagem: v[1],
-      })),
-    [todos],
-  )
+
+  function noPeriodo(c: Cliente) {
+    if (!periodo) return true
+    if (!c.criadoEm) return false
+    if (periodo === 'mes') return c.criadoEm.slice(0, 7) === new Date(hoje).toISOString().slice(0, 7)
+    if (periodo === '90') return (hoje - new Date(c.criadoEm).getTime()) / 86400000 <= 90
+    return c.criadoEm.slice(0, 4) === periodo
+  }
+
+  function naQualidade(c: Cliente) {
+    switch (qualidade) {
+      case '':
+        return true
+      case 'contato':
+        return temContato(c)
+      case 'sem-contato':
+        return !temContato(c)
+      case 'whatsapp':
+        return !!numeroDeWhatsApp(c)
+      case 'documento':
+        return !!c.documento
+      case 'endereco':
+        return !!(c.endereco || c.cidade)
+      case 'incompleto':
+        return cadastroIncompleto(c)
+      case 'duplicado':
+        return duplicados.has(c.id)
+      case 'pedidos':
+        return temPedidoNoSistema(c)
+      case 'novos30':
+        return entrouNosUltimos30(c, hoje)
+      case 'fornecedor':
+        return c.tipoDeContato.includes('Fornecedor')
+      case 'funcionario':
+        return c.tipoDeContato.includes('Funcionario')
+    }
+  }
 
   const achados = useMemo(() => {
-    const b = limpar(busca.trim())
-    const so = b.replace(/\D/g, '')
-    return comSituacao
-      .filter(({ c, situacao }) => {
-        if (foco && situacao !== foco) return false
-        if (vendedor && c.vendedor !== vendedor) return false
-        if (segmento && c.segmento !== segmento) return false
-        if (cidade && c.cidade + ' ' + c.uf !== cidade) return false
-        if (!b) return true
-        if (so.length >= 3 && (c.documento.includes(so) || c.telefone.includes(so))) return true
-        return limpar(c.nome + ' ' + c.contato + ' ' + c.vendedor + ' ' + c.cidade).includes(b)
-      })
-      .map((x) => x.c)
-  }, [comSituacao, busca, foco, vendedor, segmento, cidade])
+    const b = semAcento(busca.trim())
+    const digitado = so(busca)
+    const lista = todos.filter((c) => {
+      if (tipo && c.tipo !== tipo) return false
+      if (uf) {
+        if (uf === SEM ? !!c.uf : c.uf !== uf) return false
+      }
+      if (cidade) {
+        if (cidade === SEM ? !!c.cidade : semAcento(c.cidade) !== cidade) return false
+      }
+      if (!noPeriodo(c)) return false
+      if (!naQualidade(c)) return false
+      if (!b) return true
+      const palha =
+        semAcento([c.nome, c.fantasia, c.email, c.cidade, c.uf, c.bairro].filter(Boolean).join(' ')) +
+        ' ' +
+        [c.documento, c.telefone, c.celular].join(' ')
+      return palha.includes(b) || (digitado.length >= 4 && palha.includes(digitado))
+    })
+    const sinal = crescente ? 1 : -1
+    return [...lista].sort((a, b2) => {
+      let r = 0
+      if (ordem === 'desde') r = (a.criadoEm || '').localeCompare(b2.criadoEm || '')
+      else if (ordem === 'cidade')
+        r = (a.cidade || 'zzz').localeCompare(b2.cidade || 'zzz', 'pt')
+      else r = semAcento(a.nome).localeCompare(semAcento(b2.nome), 'pt')
+      if (r === 0) r = semAcento(a.nome).localeCompare(semAcento(b2.nome), 'pt')
+      return r * sinal
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todos, busca, tipo, uf, cidade, periodo, qualidade, ordem, crescente, duplicados, hoje])
 
-  const paginas = Math.max(1, Math.ceil(achados.length / POR_PAGINA))
+  const paginas = Math.max(1, Math.ceil(achados.length / porPagina))
   const paginaSegura = Math.min(pagina, paginas)
-  const naTela = achados.slice((paginaSegura - 1) * POR_PAGINA, paginaSegura * POR_PAGINA)
+  const de = achados.length ? (paginaSegura - 1) * porPagina + 1 : 0
+  const ate = Math.min(achados.length, paginaSegura * porPagina)
+  const naTela = achados.slice((paginaSegura - 1) * porPagina, paginaSegura * porPagina)
 
-  function mudouFiltro(fn: () => void) {
+  function mudou(fn: () => void) {
     fn()
     setPagina(1)
   }
 
-  const filtrando = !!(busca || foco || vendedor || segmento || cidade)
+  function limparTudo() {
+    mudou(() => {
+      setBusca('')
+      setTipo('')
+      setUf('')
+      setCidade('')
+      setPeriodo('')
+      setQualidade('')
+    })
+  }
 
-  const colunas: Coluna<Cliente>[] = [
-    {
-      chave: 'nome',
-      titulo: 'Cliente',
-      ordenarPor: (c) => limpar(c.nome),
-      celula: (c) => (
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <b>{c.nome}</b>
-          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{formatarDocumento(c.documento)}</span>
-        </span>
-      ),
-    },
-    {
-      chave: 'segmento',
-      titulo: 'Segmento',
-      ordenarPor: (c) => c.segmento,
-      celula: (c) => <Tag>{NOME_DO_SEGMENTO[c.segmento]}</Tag>,
-    },
-    {
-      chave: 'contato',
-      titulo: 'Contato',
-      celula: (c) => (
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span>{c.contato}</span>
-          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{formatarTelefone(c.telefone)}</span>
-        </span>
-      ),
-    },
-    {
-      chave: 'cidade',
-      titulo: 'Cidade',
-      ordenarPor: (c) => limpar(c.cidade),
-      celula: (c) => c.cidade + ', ' + c.uf,
-    },
-    { chave: 'vendedor', titulo: 'Vendedor', ordenarPor: (c) => c.vendedor, celula: (c) => c.vendedor },
-    {
-      chave: 'situacao',
-      titulo: 'Situação',
-      celula: (c) => {
-        const s = situacaoDoCliente(c, hoje)
-        const tom = s === 'parado' ? 'brand' : s === 'novo' ? 'info' : s === 'ativo' ? 'ok' : 'neutro'
-        return <Selo tom={tom}>{NOME_DA_SITUACAO[s]}</Selo>
-      },
-    },
-    {
-      chave: 'pedidos',
-      titulo: 'Pedidos',
-      numero: true,
-      ordenarPor: (c) => c.pedidos,
-      celula: (c) => c.pedidos,
-    },
-    {
-      chave: 'ultimo',
-      titulo: 'Último pedido',
-      numero: true,
-      ordenarPor: (c) => c.ultimoPedido || '0',
-      celula: (c) => formatarData(c.ultimoPedido) || '-',
-    },
-    {
-      chave: 'total',
-      titulo: 'Total comprado',
-      numero: true,
-      ordenarPor: (c) => c.total,
-      celula: (c) => formatarDinheiro(c.total),
-    },
-  ]
+  function ordenarPor(k: Ordem) {
+    if (ordem === k) setCrescente((c) => !c)
+    else {
+      setOrdem(k)
+      setCrescente(k !== 'desde')
+    }
+    setPagina(1)
+  }
+
+  /* o que esta filtrando agora, escrito, com um x em cada um */
+  const marcas: [string, () => void][] = []
+  if (tipo) marcas.push([tipo === 'F' ? 'Pessoa física' : 'Pessoa jurídica', () => setTipo('')])
+  if (uf) marcas.push([uf === SEM ? 'Sem UF' : 'UF: ' + uf, () => setUf('')])
+  if (cidade) {
+    const achada = cidades.find(([k]) => k === cidade)
+    marcas.push([
+      cidade === SEM ? 'Sem cidade' : 'Cidade: ' + (achada ? achada[1].nome : cidade),
+      () => setCidade(''),
+    ])
+  }
+  if (periodo) marcas.push([ROTULO_DO_PERIODO[periodo] ?? 'Em ' + periodo, () => setPeriodo('')])
+  if (qualidade) marcas.push([ROTULO_DA_QUALIDADE[qualidade], () => setQualidade('')])
+  if (busca.trim()) marcas.push(['"' + busca.trim() + '"', () => setBusca('')])
+
+  const seta = (k: Ordem) => (ordem === k ? (crescente ? ' ▲' : ' ▼') : '')
 
   return (
     <Pagina
-      acima="Comercial"
-      titulo="Clientes"
-      sub="Quem compra, o que já comprou e quem atende."
+      acima="CRM · base do Bling + pedidos do sistema"
+      titulo="Clientes cadastrados"
+      sub={
+        <>
+          <b>{conta.total.toLocaleString('pt-BR')}</b> contatos · clique na cidade para ver as
+          transportadoras
+        </>
+      }
       acoes={
         <>
-          <Botao tom="contorno" onClick={() => avisar('A importação do Bling entra no passo 11', 'info')}>
-            Importar do Bling
+          <Botao
+            tom="contorno"
+            onClick={() => avisar('A exportação do filtro entra junto com o Supabase', 'info')}
+          >
+            Exportar filtro
           </Botao>
           <Botao tom="primario" onClick={() => setNaFicha(clienteEmBranco())}>
             Novo cliente
@@ -200,119 +286,230 @@ export function TelaClientes() {
         </>
       }
     >
-      <div className="fila-kpi" style={{ marginBottom: 'var(--sp-5)' }}>
+      <div className="cl-kpis">
+        <Kpi rotulo="Total de clientes" valor={conta.total} sub="base completa" />
         <Kpi
-          rotulo="Clientes"
-          valor={todos.length}
-          sub="na base inteira"
-          ligado={foco === ''}
-          aoClicar={() => mudouFiltro(() => setFoco(''))}
+          rotulo="Pessoa física"
+          valor={conta.pf}
+          sub={pct(conta.pf, conta.total) + ' da base'}
+          ligado={tipo === 'F'}
+          aoClicar={() => mudou(() => setTipo(tipo === 'F' ? '' : 'F'))}
         />
         <Kpi
-          rotulo="Ativos"
-          valor={contas.ativo}
-          sub="pediram nos últimos 6 meses"
-          ligado={foco === 'ativo'}
-          aoClicar={() => mudouFiltro(() => setFoco('ativo'))}
+          rotulo="Pessoa jurídica"
+          valor={conta.pj}
+          sub={pct(conta.pj, conta.total) + ' da base'}
+          ligado={tipo === 'J'}
+          aoClicar={() => mudou(() => setTipo(tipo === 'J' ? '' : 'J'))}
         />
         <Kpi
-          rotulo="Novos"
-          valor={contas.novo}
-          sub="entraram nos últimos 30 dias"
-          ligado={foco === 'novo'}
-          aoClicar={() => mudouFiltro(() => setFoco('novo'))}
+          rotulo="Com contato"
+          valor={conta.contato}
+          sub="fone, celular ou e-mail"
+          ligado={qualidade === 'contato'}
+          aoClicar={() => mudou(() => setQualidade(qualidade === 'contato' ? '' : 'contato'))}
         />
         <Kpi
-          rotulo="Parados"
-          valor={contas.parado}
-          sub="sem pedido há mais de 6 meses"
+          rotulo="Novos · 30 dias"
+          valor={conta.novos}
+          sub="entraram no último mês"
+          ligado={qualidade === 'novos30'}
+          aoClicar={() => mudou(() => setQualidade(qualidade === 'novos30' ? '' : 'novos30'))}
+        />
+        <Kpi
+          rotulo="Cadastro incompleto"
+          valor={conta.incompletos}
+          sub="sem documento e sem contato"
           aviso
-          ligado={foco === 'parado'}
-          aoClicar={() => mudouFiltro(() => setFoco('parado'))}
+          ligado={qualidade === 'incompleto'}
+          aoClicar={() => mudou(() => setQualidade(qualidade === 'incompleto' ? '' : 'incompleto'))}
         />
-        <Kpi rotulo="Ticket médio" valor={formatarDinheiro(contas.ticket)} sub="por pedido" />
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--gap-btn)',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          marginBottom: 'var(--sp-4)',
-        }}
-      >
-        <div style={{ flex: '1 1 260px', minWidth: 0, maxWidth: 420 }}>
+      <div className="cl-filtros">
+        <div className="cl-busca">
           <Busca
-            placeholder="Nome, documento, telefone ou contato"
+            placeholder="Buscar por nome, fantasia, CPF/CNPJ, e-mail, telefone, cidade"
             value={busca}
-            onChange={(e) => mudouFiltro(() => setBusca(e.target.value))}
+            onChange={(e) => mudou(() => setBusca(e.target.value))}
           />
         </div>
         <Seletor
-          rotulo="VENDEDOR"
-          valor={vendedor}
-          opcoes={opcoesVendedor}
-          aoEscolher={(v) => mudouFiltro(() => setVendedor(v))}
+          rotulo="Tipo"
+          valor={tipo}
+          vazio="Todos"
+          opcoes={[
+            { valor: 'F', rotulo: 'Pessoa física', contagem: conta.pf },
+            { valor: 'J', rotulo: 'Pessoa jurídica', contagem: conta.pj },
+          ]}
+          aoEscolher={(v) => mudou(() => setTipo(v))}
         />
         <Seletor
-          rotulo="SEGMENTO"
-          valor={segmento}
-          opcoes={opcoesSegmento}
-          aoEscolher={(v) => mudouFiltro(() => setSegmento(v))}
+          rotulo="UF"
+          valor={uf}
+          vazio="Todas"
+          opcoes={[
+            ...ufs.map((u) => ({
+              valor: u,
+              rotulo: u,
+              contagem: todos.filter((c) => c.uf === u).length,
+            })),
+            { valor: SEM, rotulo: 'Sem UF', contagem: todos.filter((c) => !c.uf).length },
+          ]}
+          aoEscolher={(v) =>
+            mudou(() => {
+              setUf(v)
+              setCidade('')
+            })
+          }
         />
         <Seletor
-          rotulo="CIDADE"
+          rotulo="Cidade"
           valor={cidade}
-          opcoes={opcoesCidade}
-          aoEscolher={(v) => mudouFiltro(() => setCidade(v))}
+          vazio={uf && uf !== SEM ? 'Todas de ' + uf : 'Todas'}
+          comBusca
+          opcoes={[
+            ...cidades.map(([k, o]) => ({ valor: k, rotulo: o.nome, contagem: o.quantos })),
+            { valor: SEM, rotulo: 'Sem cidade', contagem: todos.filter((c) => !c.cidade).length },
+          ]}
+          aoEscolher={(v) => mudou(() => setCidade(v))}
         />
-        {filtrando ? (
-          <Botao
-            tom="limpo"
-            onClick={() =>
-              mudouFiltro(() => {
-                setBusca('')
-                setFoco('')
-                setVendedor('')
-                setSegmento('')
-                setCidade('')
-              })
-            }
-          >
-            Limpar filtros
-          </Botao>
+        <Seletor
+          rotulo="Cliente desde"
+          valor={periodo}
+          vazio="Todos"
+          opcoes={[
+            { valor: 'mes', rotulo: 'Este mês' },
+            { valor: '90', rotulo: 'Últimos 90 dias' },
+            ...anos.map((a) => ({
+              valor: a,
+              rotulo: 'Em ' + a,
+              contagem: todos.filter((c) => c.criadoEm.slice(0, 4) === a).length,
+            })),
+          ]}
+          aoEscolher={(v) => mudou(() => setPeriodo(v))}
+        />
+        <Seletor
+          rotulo="Filtro"
+          valor={qualidade}
+          vazio="Todos"
+          opcoes={[
+            { valor: 'contato', rotulo: 'Com contato', contagem: conta.contato },
+            { valor: 'sem-contato', rotulo: 'Sem contato', contagem: conta.total - conta.contato },
+            { valor: 'whatsapp', rotulo: 'Com WhatsApp', contagem: conta.whatsapp },
+            { valor: 'documento', rotulo: 'Com CPF/CNPJ', contagem: conta.documento },
+            { valor: 'endereco', rotulo: 'Com endereço', contagem: conta.endereco },
+            { valor: 'incompleto', rotulo: 'Cadastro incompleto', contagem: conta.incompletos },
+            { valor: 'duplicado', rotulo: 'Possíveis duplicados', contagem: conta.duplicados },
+            { valor: 'pedidos', rotulo: 'Com pedido no sistema', contagem: conta.pedidos },
+            { valor: 'novos30', rotulo: 'Novos (30 dias)', contagem: conta.novos },
+            { valor: 'fornecedor', rotulo: 'Também fornecedor', contagem: conta.fornecedor },
+            { valor: 'funcionario', rotulo: 'Também funcionário', contagem: conta.funcionario },
+          ]}
+          aoEscolher={(v) => mudou(() => setQualidade(v as Qualidade))}
+        />
+        <button
+          type="button"
+          className="bt-icone cl-limpa"
+          title="Limpar filtros"
+          aria-label="Limpar filtros"
+          onClick={limparTudo}
+        >
+          <Trash size={18} />
+        </button>
+      </div>
+
+      <div className="cl-marcas">
+        <span>
+          <b>{achados.length.toLocaleString('pt-BR')}</b>{' '}
+          {achados.length === 1 ? 'cliente' : 'clientes'}
+          {achados.length !== conta.total ? ' de ' + conta.total.toLocaleString('pt-BR') : ''}
+        </span>
+        {marcas.map(([texto, tirar]) => (
+          <span className="cl-marca" key={texto}>
+            {texto}
+            <button type="button" aria-label={'Tirar o filtro ' + texto} onClick={() => mudou(tirar)}>
+              &times;
+            </button>
+          </span>
+        ))}
+        {marcas.length ? (
+          <button type="button" className="cl-limpa-tudo" onClick={limparTudo}>
+            limpar tudo
+          </button>
         ) : null}
       </div>
 
-      <Tabela
-        colunas={colunas}
-        linhas={naTela}
-        chaveDaLinha={(c) => c.id}
-        aoClicarNaLinha={(c) => setNaFicha(c)}
-        vazio={
+      <div className="cartao cl-caixa">
+        {achados.length ? (
+          <>
+            <div className="cl-rolo">
+              <table className="cl-tab">
+                <thead>
+                  <tr>
+                    <th>
+                      <button type="button" onClick={() => ordenarPor('nome')}>
+                        Cliente{seta('nome')}
+                      </button>
+                    </th>
+                    <th>Documento</th>
+                    <th className="cl-some">Contato</th>
+                    <th>
+                      <button type="button" onClick={() => ordenarPor('cidade')}>
+                        Cidade / UF{seta('cidade')}
+                      </button>
+                    </th>
+                    <th className="cl-some">Tipo</th>
+                    <th className="cl-some">
+                      <button type="button" onClick={() => ordenarPor('desde')}>
+                        Desde{seta('desde')}
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {naTela.map((c) => (
+                    <Linha
+                      key={c.id}
+                      c={c}
+                      duplicado={duplicados.has(c.id)}
+                      transportadoras={c.cidade ? transportadorasPara(c, cepsDaCidade).length : 0}
+                      aoAbrir={() => setNaFicha(c)}
+                      aoVerEntrega={() => setNaEntrega(c)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="cl-pe">
+              <span>
+                Mostrando <b>{de} a {ate}</b> de <b>{achados.length.toLocaleString('pt-BR')}</b>
+              </span>
+              <span className="cl-empurra" />
+              <Seletor
+                rotulo="Por página"
+                tamanho="sm"
+                valor={String(porPagina)}
+                vazio="25"
+                opcoes={[25, 50, 100].map((n) => ({ valor: String(n), rotulo: String(n) }))}
+                aoEscolher={(v) => mudou(() => setPorPagina(Number(v) || 25))}
+              />
+              <Numeros pagina={paginaSegura} paginas={paginas} aoIr={setPagina} />
+            </div>
+          </>
+        ) : (
           <Vazio
-            titulo="Nenhum cliente com esses filtros"
-            texto="Tire um filtro ou procure por outro pedaço do nome."
+            titulo="Nenhum cliente encontrado"
+            texto="Ajuste a busca ou limpe os filtros para ver a base completa."
             acao={
-              <Botao
-                tom="forte"
-                onClick={() =>
-                  mudouFiltro(() => {
-                    setBusca('')
-                    setFoco('')
-                    setVendedor('')
-                    setSegmento('')
-                    setCidade('')
-                  })
-                }
-              >
+              <Botao tom="forte" onClick={limparTudo}>
                 Limpar filtros
               </Botao>
             }
           />
-        }
-      />
+        )}
+      </div>
 
       <FichaDoCliente
         cliente={naFicha}
@@ -323,20 +520,205 @@ export function TelaClientes() {
         }}
       />
 
-      <Paginador
-        pagina={paginaSegura}
-        paginas={paginas}
-        total={achados.length}
-        porPagina={POR_PAGINA}
-        aoIr={(p) => setPagina(Math.max(1, Math.min(paginas, p)))}
+      <Entrega
+        cliente={naEntrega}
+        sugestoes={naEntrega ? transportadorasPara(naEntrega, cepsDaCidade) : []}
+        aoFechar={() => setNaEntrega(null)}
       />
     </Pagina>
   )
 }
 
-/* conta quantas vezes cada valor aparece, e devolve em ordem alfabetica */
-function juntar(valores: string[]): [string, number][] {
-  const mapa = new Map<string, number>()
-  valores.forEach((v) => mapa.set(v, (mapa.get(v) ?? 0) + 1))
-  return [...mapa.entries()].sort((a, b) => a[0].localeCompare(b[0], 'pt'))
+/* --- uma linha da tabela -------------------------------------------------- */
+function Linha({
+  c,
+  duplicado,
+  transportadoras,
+  aoAbrir,
+  aoVerEntrega,
+}: {
+  c: Cliente
+  duplicado: boolean
+  transportadoras: number
+  aoAbrir: () => void
+  aoVerEntrega: () => void
+}) {
+  const zap = numeroDeWhatsApp(c)
+  const fone = c.celular || c.telefone
+  return (
+    <tr onClick={aoAbrir}>
+      <td>
+        <span className="cl-quem">
+          <span className="cl-retrato">
+            {c.tipo === 'J' ? <Buildings size={14} /> : <User size={14} />}
+          </span>
+          <span className="cl-nome">
+            <span className="cl-titulo">
+              {c.nome}
+              {temPedidoNoSistema(c) ? <b className="cl-marca-pd">PD</b> : null}
+              {duplicado ? (
+                <b className="cl-marca-dup" title="Mesmo documento ou nome de outro cadastro">
+                  DUP
+                </b>
+              ) : null}
+              {cadastroIncompleto(c) ? (
+                <b className="cl-marca-inc" title="Sem documento e sem contato">
+                  INC
+                </b>
+              ) : null}
+            </span>
+            {c.fantasia ? <span className="cl-fantasia">{c.fantasia}</span> : null}
+          </span>
+        </span>
+      </td>
+      <td className="cl-doc">
+        {c.documento ? formatarDocumento(c.documento) : <span className="cl-falta">sem documento</span>}
+      </td>
+      <td className="cl-some">
+        <span className="cl-contato">
+          {fone ? (
+            <span>
+              {formatarTelefone(fone)}
+              {zap ? (
+                <a
+                  className="cl-wa"
+                  href={'https://wa.me/55' + zap}
+                  target="_blank"
+                  rel="noopener"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  WA
+                </a>
+              ) : null}
+            </span>
+          ) : null}
+          {c.email ? <span className="cl-email">{c.email.toLowerCase()}</span> : null}
+          {!fone && !c.email ? <span className="cl-falta">sem contato</span> : null}
+        </span>
+      </td>
+      <td>
+        {c.cidade ? (
+          <button
+            type="button"
+            className="cl-cidade"
+            onClick={(e) => {
+              e.stopPropagation()
+              aoVerEntrega()
+            }}
+          >
+            <MapPin size={14} />
+            {c.cidade}
+            {c.uf ? <span className="cl-uf">· {c.uf}</span> : null}
+            <span className="cl-transp">
+              <Truck size={13} /> {transportadoras}
+            </span>
+          </button>
+        ) : (
+          <span className="cl-falta">sem cidade</span>
+        )}
+      </td>
+      <td className="cl-some">
+        <span className={c.tipo === 'J' ? 'cl-tipo pj' : 'cl-tipo'}>
+          {c.tipo === 'J' ? 'PJ' : 'PF'}
+        </span>
+      </td>
+      <td className="cl-some cl-desde">{formatarData(c.criadoEm)}</td>
+    </tr>
+  )
 }
+
+/* --- os numeros de pagina do rodape -------------------------------------- */
+function Numeros({
+  pagina,
+  paginas,
+  aoIr,
+}: {
+  pagina: number
+  paginas: number
+  aoIr: (p: number) => void
+}) {
+  const lista: (number | 'mais')[] = []
+  for (let p = 1; p <= paginas; p++) {
+    if (p <= 2 || p > paginas - 2 || Math.abs(p - pagina) <= 1) lista.push(p)
+    else if (lista[lista.length - 1] !== 'mais') lista.push('mais')
+  }
+  return (
+    <span className="cl-numeros">
+      <button type="button" disabled={pagina <= 1} onClick={() => aoIr(pagina - 1)} aria-label="Página anterior">
+        ‹
+      </button>
+      {lista.map((p, i) =>
+        p === 'mais' ? (
+          <span key={'m' + i}>…</span>
+        ) : (
+          <button
+            type="button"
+            key={p}
+            className={p === pagina ? 'ligado' : ''}
+            aria-current={p === pagina ? 'page' : undefined}
+            onClick={() => aoIr(p)}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        disabled={pagina >= paginas}
+        onClick={() => aoIr(pagina + 1)}
+        aria-label="Próxima página"
+      >
+        ›
+      </button>
+    </span>
+  )
+}
+
+/* --- a gaveta das transportadoras ---------------------------------------- */
+function Entrega({
+  cliente,
+  sugestoes,
+  aoFechar,
+}: {
+  cliente: Cliente | null
+  sugestoes: Sugestao[]
+  aoFechar: () => void
+}) {
+  if (!cliente) return null
+  return (
+    <Gaveta
+      aberto={!!cliente}
+      aoFechar={aoFechar}
+      titulo={'Transportadoras · ' + cliente.cidade + (cliente.uf ? ' · ' + cliente.uf : '')}
+    >
+      <p className="cl-nota">
+        Cobertura calculada pelo CEP {cliente.cep ? formatarCep(cliente.cep) : 'da cidade'}. A tabela
+        de faixas fica editável em Configurações.
+      </p>
+      {sugestoes.length ? (
+        sugestoes.map(({ transportadora, origem }) => (
+          <div className="cl-transp-linha" key={transportadora.nome}>
+            <span className="cl-caminhao" style={{ background: 'var(' + transportadora.cor + ')' }}>
+              <Truck size={14} />
+            </span>
+            <span className="cl-transp-nome">
+              <b>
+                {transportadora.nome}
+                <span className="cl-origem">{NOME_DA_ORIGEM[origem]}</span>
+              </b>
+              <span>{transportadora.observacao}</span>
+            </span>
+            <span className="cl-prazo">{transportadora.prazo}</span>
+          </div>
+        ))
+      ) : (
+        <Vazio
+          titulo="Sem cobertura calculada"
+          texto="Cadastre cidade ou CEP para o sistema sugerir a transportadora."
+        />
+      )}
+    </Gaveta>
+  )
+}
+
+const pct = (parte: number, todo: number) => (todo ? Math.round((parte / todo) * 100) : 0) + '%'

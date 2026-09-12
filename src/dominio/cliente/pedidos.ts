@@ -69,29 +69,3 @@ export function pedidosDoCliente(c: Cliente): Pedido[] {
   }
   return lista
 }
-
-/* ==========================================================================
-   Transportadora por faixa de CEP.
-
-   A faixa abaixo e de exemplo e vai virar cadastro no sistema. O que importa
-   agora e a regra: quem decide a transportadora e o CEP, nao a cidade, porque
-   cidade grande tem faixa propria e entrega propria so vale em parte dela.
-   ========================================================================== */
-
-export type Transportadora = { nome: string; prazo: string }
-
-const FAIXAS: { de: number; ate: number; nome: string; prazo: string }[] = [
-  { de: 74000000, ate: 74999999, nome: 'Entrega própria', prazo: 'no mesmo dia' },
-  { de: 75000000, ate: 76799999, nome: 'Rodoviário Goiás', prazo: '1 a 2 dias úteis' },
-  { de: 72800000, ate: 72999999, nome: 'Rodoviário Goiás', prazo: '1 a 2 dias úteis' },
-  { de: 70000000, ate: 72799999, nome: 'Expresso Brasília', prazo: '2 dias úteis' },
-  { de: 30000000, ate: 39999999, nome: 'Minas Log', prazo: '3 a 4 dias úteis' },
-  { de: 1000000, ate: 19999999, nome: 'Paulista Cargas', prazo: '3 a 5 dias úteis' },
-]
-
-export function transportadoraPorCep(cep: string): Transportadora {
-  const n = Number(cep.replace(/\D/g, ''))
-  if (!n) return { nome: 'Sem CEP', prazo: 'preencha para saber a faixa' }
-  const f = FAIXAS.find((x) => n >= x.de && n <= x.ate)
-  return f ? { nome: f.nome, prazo: f.prazo } : { nome: 'Correios', prazo: '5 a 9 dias úteis' }
-}

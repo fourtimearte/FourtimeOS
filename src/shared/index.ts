@@ -5,6 +5,7 @@ export {
   formatarData,
   formatarDinheiro,
   formatarDinheiroExato,
+  formatarNumeroExato,
   formatarDocumento,
   formatarTelefone,
   linkDoWhatsApp,

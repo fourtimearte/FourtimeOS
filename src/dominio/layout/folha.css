@@ -104,7 +104,12 @@
   }
   body.imprimindo .casca > *:not(.vista),
   body.imprimindo .pilha-recados,
-  body.imprimindo .fl-nao-imprime {
+  body.imprimindo .pagina-topo,
+  body.imprimindo .fl-nao-imprime,
+  /* a área de medição fica a 99999 px para a esquerda: na tela ela é
+     invisível, mas na impressora ela estica a área do papel e sai uma folha
+     em branco no fim. Na impressão ela não existe. */
+  body.imprimindo .fl-medidor {
     display: none !important;
   }
   body.imprimindo .casca,

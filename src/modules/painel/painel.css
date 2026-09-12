@@ -1,0 +1,71 @@
+/* ==========================================================================
+   O início.
+
+   Lista de uma linha por pendência, e cada linha é um botão: o alvo de toque
+   é a linha inteira, não um link de três palavras no meio dela.
+   ========================================================================== */
+
+.pn-bloco {
+  margin-bottom: var(--sp-5);
+}
+.pn-h {
+  margin: 0 0 var(--sp-4);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pn-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.pn-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+.pn-linha:hover {
+  border-color: var(--text-3);
+  transform: translateY(-1px);
+}
+.pn-titulo {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pn-motivo {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.pn-valor {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .pn-valor {
+    margin-left: 0;
+  }
+}

@@ -218,16 +218,18 @@ export function dataDaEntrega(p: Pedido): Date {
 }
 
 export function naFabrica(p: Pedido): boolean {
-  return p.etapa !== 'fim'
+  return p.etapa !== 'finalizado'
 }
 
 export function atrasado(p: Pedido): boolean {
   return naFabrica(p) && p.emDias < 0
 }
 
-/** No preparo: ainda nao encostou em maquina de estampa. */
+/* No preparo: ainda nao encostou em maquina de estampa. No editor v3.375 a
+   etapa de entrada e Corte; nao existe mais uma etapa "Arte" no painel, porque
+   arte e trabalho de antes do pedido virar producao. */
 export function noPreparo(p: Pedido): boolean {
-  return p.etapa === 'arte' || p.etapa === 'corte'
+  return p.etapa === 'corte'
 }
 
 export function saiEm7Dias(p: Pedido): boolean {

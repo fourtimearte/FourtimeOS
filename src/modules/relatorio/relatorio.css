@@ -180,9 +180,12 @@
   border-collapse: collapse;
   font-size: 12.5px;
 }
+/* 9 px de lado, e nao 12: com 12 a tabela media 875 px numa caixa de 846 e o
+   Total R$ ficava 29 px fora da vista. Sao onze colunas, entao cada 1 px de
+   padding custa 22 px de tabela. */
 .rl-tab th,
 .rl-tab td {
-  padding: 8px 12px;
+  padding: 8px 9px;
   text-align: left;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);

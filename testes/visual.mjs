@@ -56,6 +56,10 @@ const TEMAS = [
 const TELAS = [
   ['/', 'inicio'],
   ['/clientes', 'clientes'],
+  ['/cotacao', 'cotacao'],
+  /* o editor com uma cotacao de exemplo. O numero e sempre o mesmo porque a
+     base de exemplo nasce do mesmo molde toda vez */
+  ['/cotacao/CT20260183', 'cotacao-editor'],
 ]
 
 async function main() {
@@ -191,15 +195,17 @@ async function main() {
       console.log('  ERRO DE PAGINA em ' + nome + ': ' + e.message)
       erros++
     })
-    await p.goto(SITE + '/kit', { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(900)
-    await p.screenshot({ path: SAIDA + '/pagina-' + nome + '.png', fullPage: true })
-    const rolando = await p.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    )
-    if (rolando) {
-      console.log('  a pagina rola para o lado em ' + nome)
-      erros++
+    for (const [rota, chapa] of [['/kit', 'pagina'], ...TELAS.map(([r, n]) => [r, 'tela-' + n])]) {
+      await p.goto(SITE + rota, { waitUntil: 'domcontentloaded' })
+      await p.waitForTimeout(900)
+      await p.screenshot({ path: SAIDA + '/' + chapa + '-' + nome + '.png', fullPage: true })
+      const rolando = await p.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      )
+      if (rolando) {
+        console.log('  ' + rota + ' rola para o lado em ' + nome)
+        erros++
+      }
     }
     await ctx.close()
   }

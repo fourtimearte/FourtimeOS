@@ -5,6 +5,7 @@ import {
   Aviso,
   Botao,
   Campo,
+  CampoDeData,
   Entrada,
   Pagina,
   Selo,
@@ -239,11 +240,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             <Entrada value={c.vendedor} onChange={(e) => mudar({ vendedor: e.target.value })} />
           </Campo>
           <Campo rotulo="Vale até">
-            <Entrada
-              type="date"
-              value={c.validaAte}
-              onChange={(e) => mudar({ validaAte: e.target.value })}
-            />
+            <CampoDeData bloco valor={c.validaAte} aoMudar={(d) => mudar({ validaAte: d })} />
           </Campo>
           <Campo rotulo="Situação">
             <Seletor

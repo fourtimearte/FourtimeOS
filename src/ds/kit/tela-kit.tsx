@@ -12,6 +12,7 @@ import {
   Segmentado,
 } from '../componentes/formulario'
 import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/busca-global'
+import { CampoDeData } from '../componentes/data'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
@@ -312,6 +313,13 @@ export function TelaKit() {
                 <AreaTexto placeholder="Gola em ribana, punho reforçado" />
               </Campo>
             </div>
+            <div className="kit-bancada">
+              <span className="kit-nota">
+                Data: digitar e escolher no calendário são o mesmo campo. Nada de
+                &lt;input type=&quot;date&quot;&gt;, que abre o calendário do navegador
+              </span>
+              <DataDemo />
+            </div>
           </Secao>
 
           <Secao
@@ -530,6 +538,21 @@ function ChipsDemo() {
       <Chip tamanho="sm" ligado={ligados.includes('mes')} onClick={() => alterna('mes')}>
         Este mês
       </Chip>
+    </>
+  )
+}
+
+function DataDemo() {
+  const [uma, setUma] = useState('2026-09-24')
+  const [outra, setOutra] = useState('')
+  return (
+    <>
+      <Campo rotulo="Vale até">
+        <CampoDeData valor={uma} aoMudar={setUma} />
+      </Campo>
+      <Campo rotulo="Entrega combinada" dica="Ainda em branco">
+        <CampoDeData valor={outra} aoMudar={setOutra} />
+      </Campo>
     </>
   )
 }

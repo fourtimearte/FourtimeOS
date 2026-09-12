@@ -228,10 +228,15 @@ export function Kpi({
   const classes = ['kpi', aoClicar ? 'clicavel' : '', ligado ? 'ligado' : '', aviso ? 'aviso' : '']
     .filter(Boolean)
     .join(' ')
+  /* Valor comprido, tipo dinheiro, nao pode empurrar o cartao para fora da
+     fileira: ele diminui de corpo em vez de estourar. O numero nunca quebra em
+     duas linhas nem vira reticencia, porque KPI cortado mente. */
+  const comprido = (typeof valor === 'string' || typeof valor === 'number') &&
+    String(valor).length + (unidade?.length ?? 0) > 9
   const dentro = (
     <>
       <span className="rot">{rotulo}</span>
-      <span className="val">
+      <span className={comprido ? 'val longo' : 'val'}>
         {valor}
         {unidade ? <small>{unidade}</small> : null}
       </span>

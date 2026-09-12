@@ -1405,6 +1405,10 @@ dialog.cmdk .caixa {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.kpi .val.longo {
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
 .kpi .val small {
   font-size: 14px;
   font-weight: 500;
@@ -1425,4 +1429,155 @@ dialog.cmdk .caixa {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: var(--sp-4);
+}
+
+/* ==========================================================================
+   O campo de data e o calendário.
+
+   Nada de <input type="date">: o calendário do navegador muda de cara em cada
+   máquina e não obedece ao tema. Este é nosso, e abre na camada do topo como
+   qualquer outro flutuante.
+   ========================================================================== */
+.data {
+  display: inline-flex;
+  align-items: center;
+  height: var(--btn-h);
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  min-width: 0;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+.data.bloco {
+  display: flex;
+  width: 100%;
+}
+.data:hover {
+  border-color: var(--text-3);
+}
+.data:focus-within,
+.data.aberto {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.data-campo {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.data-campo::placeholder {
+  color: var(--text-3);
+}
+.data-bt {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.data-bt:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.cal {
+  padding: 10px;
+}
+.cal-topo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cal-mes {
+  flex: 1;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.cal-seta {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cal-seta:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.cal-semana,
+.cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.cal-semana span {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.cal-dia {
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.cal-dia:hover {
+  background: var(--surface-2);
+}
+.cal-dia.hoje {
+  box-shadow: inset 0 0 0 1px var(--border-2);
+  font-weight: 700;
+}
+.cal-dia.escolhido {
+  background: var(--ink);
+  color: var(--on-ink);
+  font-weight: 700;
+}
+.cal-pe {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.cal-acao {
+  flex: 1;
+  height: var(--btn-h-sm);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cal-acao:hover {
+  border-color: var(--text-3);
+  color: var(--text);
 }

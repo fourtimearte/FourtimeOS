@@ -163,7 +163,9 @@ export function FileiraDoLayout({
         <button ref={btDesign} type="button" className="lay-bt" onClick={() => setMenu('tecnica')}>
           <span className="lb">DESIGN</span>
           <span className="v">
-            {marcadas.length ? marcadas.length + ' marcadas' : 'nenhuma'}
+            {marcadas.length
+              ? marcadas.length + (marcadas.length === 1 ? ' marcada' : ' marcadas')
+              : 'nenhuma'}
           </span>
         </button>
       </div>

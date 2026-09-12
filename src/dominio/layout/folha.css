@@ -69,16 +69,29 @@
   white-space: nowrap;
 }
 
-/* a área de medição: desenha de verdade, com a largura de verdade, mas fora
+/* A área de medição: desenha de verdade, com a largura de verdade, mas fora
    da vista. display:none não serve, porque o que não é desenhado não tem
-   altura para medir */
+   altura para medir.
+
+   Ela precisa herdar a MESMA tipografia da folha, e não a da tela. Sem isso o
+   bloco era medido com a letra do sistema, dava alguns pixels a mais, e a
+   conta da página sobrava espaço em branco à toa: uma folha rendia um produto
+   quando cabiam dois. Medir no lugar errado é o mesmo que não medir. */
 .fl-medidor {
+  --fl-texto: #161a20;
+  --fl-fraco: #6b7280;
+  --fl-borda: #dfe3e8;
+  --fl-fundo-2: #f5f7f9;
+
   position: absolute;
   left: -99999px;
   top: 0;
   width: calc(210mm - 24mm);
   visibility: hidden;
   pointer-events: none;
+  color: var(--fl-texto);
+  font-size: 10.5pt;
+  line-height: 1.35;
 }
 
 /* --- a impressão --------------------------------------------------------
@@ -118,6 +131,10 @@
     box-shadow: none !important;
     break-after: page;
     page-break-after: always;
+    /* 296,5 e não 297: a página impressa tem 297 mm exatos e o navegador
+       arredonda para cima ao medir. Com os 297 cheios, cada folha vazava um
+       fio na seguinte e saía uma folha em branco no fim. */
+    height: 296.5mm;
   }
   body.imprimindo .fl:last-child {
     break-after: auto;

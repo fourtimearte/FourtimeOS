@@ -84,8 +84,12 @@
 .kit-corpo {
   padding: var(--sp-8) var(--gutter) 96px;
   display: grid;
+  /* minmax(0,1fr) e nao 1fr: com 1fr a coluna nunca encolhe abaixo do conteudo
+     mais largo, e uma tabela larga empurra a pagina inteira para o lado */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-8);
   max-width: 1180px;
+  min-width: 0;
 }
 
 .kit-sec > h2 {
@@ -114,7 +118,7 @@
 /* --- grade de cores ------------------------------------------------------ */
 .kit-cores {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(178px, 100%), 1fr));
   gap: var(--sp-4);
 }
 .kit-cor {
@@ -272,7 +276,7 @@
 /* --- a casca da página: rail de seções à esquerda ------------------------ */
 .kit-casca {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 1024px) {
   .kit-casca {
@@ -343,6 +347,7 @@
 
 .kit-sec {
   scroll-margin-top: calc(var(--topbar-h) + var(--sp-6));
+  min-width: 0;
 }
 
 /* --- as bancadas de demonstração ---------------------------------------- */
@@ -367,7 +372,7 @@
 }
 .kit-bancada.grade {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
   gap: var(--sp-4);
   align-items: start;
 }

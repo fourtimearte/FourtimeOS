@@ -6,8 +6,15 @@ import {
   refGenero,
 } from '@ds/kit/banco-de-exemplo'
 import type { Bloco, Design, Tecnica } from '../layout/bloco'
+import { ETIQUETAS, GOLAS, KITS, MANGAS, NUMERACOES } from '../layout/vocabulario'
 import type { Faixa, Grade } from '../layout/grade'
-import { VERSAO_DO_CFT, type Cotacao, type EstadoDaCotacao, type ProdutoCotado } from './tipos'
+import {
+  VERSAO_DO_CFT,
+  informesEmBranco,
+  type Cotacao,
+  type EstadoDaCotacao,
+  type ProdutoCotado,
+} from './tipos'
 
 /* ==========================================================================
    A porta de entrada da cotacao.
@@ -110,6 +117,11 @@ function blocoSorteado(n: number, semente: number): Bloco {
     grade: gradeSorteada(faixa, r),
     tecidos: [{ nome: tecido, cor: corNome, hex: corHex }],
     design: designSorteado(r),
+    kit: KITS[Math.floor(r() * 2)],
+    manga: MANGAS[Math.floor(r() * 2)],
+    gola: GOLAS[Math.floor(r() * GOLAS.length)],
+    etiqueta: ETIQUETAS[0],
+    numeracao: NUMERACOES[Math.floor(r() * NUMERACOES.length)],
     arte: ARTES[Math.floor(r() * ARTES.length)],
     imagem: '',
     observacao: '',
@@ -221,11 +233,12 @@ function montarExemplo(s: Semente, i: number): Cotacao {
         ? [{ id: 'AJ1', descricao: 'Desconto fechamento', tipo: 'porcento', valor: -5 }]
         : [],
     informe: {
-      prazo: '15 dias úteis após a aprovação da arte',
-      entrega: s.cliente.cidade + ', ' + s.cliente.uf,
-      pagamento: '50% na aprovação, 50% na entrega',
-      observacao: '',
+      prazo: '12 dias úteis',
+      pagamento: '50% entrada + 50% na entrega',
+      envio: 'Correios PAC',
+      tabelaDePreco: 'Atacado 2026',
     },
+    informes: informesEmBranco(),
     enviadas:
       s.estado === 'rascunho'
         ? []

@@ -270,6 +270,7 @@ function Par({ rotulo, valor }: { rotulo: string; valor: string }) {
 function Resumo({ cotacao }: { cotacao: Cotacao }) {
   const c = cotacao
   const base = subtotal(c)
+  const informes = c.informes.filter((x) => x.noDocumento)
   return (
     <section className="dc-resumo">
       <h3 className="dc-h">Resumo do orçamento</h3>
@@ -319,12 +320,26 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
       </table>
 
       <dl className="dc-informe">
-        <Par rotulo="Prazo" valor={c.informe.prazo} />
-        <Par rotulo="Entrega" valor={c.informe.entrega} />
+        <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
         <Par rotulo="Pagamento" valor={c.informe.pagamento} />
-        {c.informe.observacao ? <Par rotulo="Observação" valor={c.informe.observacao} /> : null}
+        <Par rotulo="Envio" valor={c.informe.envio} />
+        <Par rotulo="Tabela de preço" valor={c.informe.tabelaDePreco} />
         <Par rotulo="Validade desta proposta" valor={data(c.validaAte)} />
       </dl>
+
+      {/* Os informes que o vendedor deixou marcados. Os desmarcados ficam
+          guardados na cotação e não aparecem aqui: o PDF é o que o cliente
+          recebe, e ele só mostra o que foi escolhido para ele. */}
+      {informes.length ? (
+        <section className="dc-informes">
+          <h3>Informes sobre a produção</h3>
+          <ol>
+            {informes.map((x) => (
+              <li key={x.id}>{x.texto}</li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <div className="dc-aceite">
         <p>

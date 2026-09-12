@@ -304,3 +304,63 @@
   object-fit: contain;
   border-radius: var(--radius);
 }
+
+/* ==========================================================================
+   O arranjo em campos.
+
+   O mesmo bloco da fileira, mas com rotulo em cada campo e em duas colunas,
+   que e como a cotacao mostra no v5. A fileira serve a quem opera e ja sabe o
+   que cada botao quer dizer; esta serve a quem confere o que o cliente vai
+   receber, e ali um rotulo vale mais que um pixel poupado.
+   ========================================================================== */
+
+.lay-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.lay-combo.largo {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.lay-combo.largo .lay-bt {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.lay-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+@media (min-width: 640px) {
+  .lay-campos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.lay-campo {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  min-width: 0;
+}
+.lay-campo.largo {
+  grid-column: 1 / -1;
+}
+.lay-campo > span:first-child {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.lay-bt.campo {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 36px;
+}
+.lay-sem-cor {
+  margin: 0;
+  padding: 9px 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}

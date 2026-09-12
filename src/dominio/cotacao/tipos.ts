@@ -15,7 +15,12 @@ import { totalDaGrade } from '../layout/grade'
    2: entrou o pedido. Enviar passou a gravar uma versao com o total que saiu,
       e aprovar passou a gerar numero de pedido, travar a grade e registrar
       quem aprovou e quando. */
-export const VERSAO_DO_CFT = 2
+/* 3: os informes viraram lista.
+      "entrega" virou "envio", entrou "tabela de preco", e a observacao solta
+      deu lugar a uma lista de informes, cada um com a sua marca de ir ou nao
+      ir para o PDF. O vendedor tira um informe do documento sem apagar o
+      texto, e e isso que faz a lista valer a pena. */
+export const VERSAO_DO_CFT = 3
 
 export type EstadoDaCotacao = 'rascunho' | 'enviada' | 'aprovada' | 'recusada' | 'vencida'
 
@@ -44,12 +49,76 @@ export type Ajuste = {
   valor: number
 }
 
-/** o que a producao precisa saber, e que vai no cabecalho da folha A4 */
+/** as condicoes, que vao no cabecalho da pagina 1 do documento */
 export type InformeDeProducao = {
   prazo: string
-  entrega: string
   pagamento: string
-  observacao: string
+  envio: string
+  tabelaDePreco: string
+}
+
+/* Um informe e uma frase que o cliente le antes de aprovar. Desmarcar tira ela
+   do PDF sem apagar o texto: a frase continua guardada e volta com um clique,
+   que e o contrario de reescrever da memoria toda vez. */
+export type InformeDoDocumento = {
+  id: string
+  texto: string
+  noDocumento: boolean
+}
+
+/* Os nove informes que a Fourtime manda hoje. Eles nascem junto com a cotacao
+   e cada uma leva a sua copia: mexer num informe de uma cotacao nao pode mexer
+   na cotacao que ja foi enviada para outro cliente. */
+export const INFORMES_PADRAO: { texto: string; noDocumento: boolean }[] = [
+  {
+    texto:
+      'O prazo de produção começa a contar a partir da aprovação da arte final e da confirmação do pagamento da entrada.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Esta cotação é válida até a data indicada no cabeçalho. Após o prazo, valores e disponibilidade de tecido podem ser revistos.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Pagamento: 50% na aprovação e 50% na retirada ou envio. Pedidos abaixo de R$ 500,00 são pagos integralmente na aprovação.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Tolerância de até 2 cm nas medidas de cada peça e variação de tonalidade entre lotes de tecido, conforme prática do setor têxtil.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'A arte aprovada pelo cliente é de sua responsabilidade: nomes, números e textos aprovados com erro não geram refação sem custo.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Alterações de grade, cor, tecido ou arte depois da aprovação geram nova cotação e novo prazo de entrega.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Quantidade mínima por modelo: 10 peças. Tamanhos acima de GG têm acréscimo já incluído na tabela de valores.',
+    noDocumento: true,
+  },
+  {
+    texto:
+      'Frete por conta do cliente, salvo combinação em contrário. Entregas em Goiânia e Aparecida de Goiânia por motoboy.',
+    noDocumento: false,
+  },
+  {
+    texto:
+      'Garantia de 90 dias contra defeitos de fabricação, nos termos do Código de Defesa do Consumidor. Não cobre desgaste de uso ou lavagem inadequada.',
+    noDocumento: true,
+  },
+]
+
+export function informesEmBranco(): InformeDoDocumento[] {
+  return INFORMES_PADRAO.map((x, i) => ({ id: 'IF' + (i + 1), ...x }))
 }
 
 /** cada envio guarda o que foi enviado, para a conversa nao virar palavra
@@ -98,6 +167,7 @@ export type Cotacao = {
   produtos: ProdutoCotado[]
   ajustes: Ajuste[]
   informe: InformeDeProducao
+  informes: InformeDoDocumento[]
   enviadas: VersaoEnviada[]
   /** existe a partir do sim do cliente; antes disso e null */
   aprovacao: Aprovacao | null
@@ -176,11 +246,12 @@ export function cotacaoEmBranco(numero: string): Cotacao {
     produtos: [],
     ajustes: [],
     informe: {
-      prazo: '15 dias úteis após a aprovação da arte',
-      entrega: '',
-      pagamento: '50% na aprovação, 50% na entrega',
-      observacao: '',
+      prazo: '12 dias úteis',
+      pagamento: '50% entrada + 50% na entrega',
+      envio: 'Correios PAC',
+      tabelaDePreco: 'Atacado 2026',
     },
+    informes: informesEmBranco(),
     enviadas: [],
     aprovacao: null,
   }

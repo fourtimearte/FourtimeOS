@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
   BolinhasDeGenero,
   FaixaDeCores,
@@ -9,6 +9,7 @@ import {
   MenuReferencia,
   MenuTecido,
   MenuTecnica,
+  Seletor,
   type ItemDeContexto,
 } from '@ds'
 import {
@@ -25,6 +26,7 @@ import {
 } from './banco'
 import type { Bloco, Design } from './bloco'
 import { faixaDoTamanho } from './grade'
+import { ETIQUETAS, GOLAS, KITS, MANGAS, NUMERACOES, emOpcoes } from './vocabulario'
 import './layout.css'
 
 /* ==========================================================================
@@ -41,12 +43,32 @@ import './layout.css'
 
 const SEM_COR = { nome: 'sem cor', hex: '' }
 
+/* Dois arranjos, um wiring so.
+
+   'fileira' e a barra compacta do modulo: REF, TECIDO, COR, DESIGN numa linha.
+   'campos' e o arranjo da cotacao no v5: campos com rotulo em duas colunas,
+   porque ali quem le e o vendedor conferindo o que o cliente vai receber, e
+   nao o operador que ja sabe de cor o que cada botao quer dizer.
+
+   Os dois abrem exatamente os mesmos menus. Se fossem dois componentes, o dia
+   que um menu ganhasse uma opcao nova so um dos dois teria. */
+export type Arranjo = 'fileira' | 'campos'
+
 export function FileiraDoLayout({
   bloco,
   aoMudar,
+  arranjo = 'fileira',
+  selo,
+  acoes,
 }: {
   bloco: Bloco
   aoMudar: (b: Bloco) => void
+  arranjo?: Arranjo
+  /* so no arranjo 'campos': o selo do produto e os botoes do canto. Eles
+     entram por aqui porque a barra da referencia e daqui, e quem a desenha
+     duas vezes acaba com duas barras que so parecem iguais. */
+  selo?: ReactNode
+  acoes?: ReactNode
 }) {
   const [menu, setMenu] = useState('')
   const [ctx, setCtx] = useState<{ cabecalho: string; itens: ItemDeContexto[] } | null>(null)
@@ -132,68 +154,30 @@ export function FileiraDoLayout({
 
   const aberta = bloco.design.find((d) => d.tag === tagAberta)
 
-  return (
-    <>
-      <div className="lay-fileira">
-        <div className="lay-combo" data-genero={bloco.genero}>
-          <button ref={btRef} type="button" className="lay-bt" onClick={() => setMenu('ref')}>
-            <span className="lb">REF</span>
-            <span className="v">
-              {bloco.referencia ? bloco.referencia + '  ' + bloco.nomeDaReferencia : 'escolher'}
-            </span>
-          </button>
-          <BolinhasDeGenero
-            genero={bloco.genero}
-            aoEscolher={(g) =>
-              mudar({ genero: g, faixa: g === 'infantil' ? 'infantil' : bloco.faixa })
+  /* As faixas de cor e os menus sao os mesmos nos dois arranjos, entao eles
+     nascem aqui em cima e cada arranjo so escolhe onde pendura. */
+  const faixas = bloco.design.map((d) => (
+    <FaixaDeCores
+      key={d.tag}
+      tecnica={d.tecnica}
+      rotulo={d.tag}
+      cores={d.cores}
+      aoAdicionar={
+        lancaCor(d.tecnica)
+          ? (el) => {
+              ancoraSolta.current = el
+              setTagAberta(d.tag)
+              setMenu('codigo')
             }
-          />
-        </div>
+          : undefined
+      }
+      aoAbrirMenuDaPilula={(el) => contextoDaPilula(el, d)}
+      aoAbrirMenuDaCor={(el, cod) => contextoDaCor(el, d, cod)}
+    />
+  ))
 
-        <button ref={btTecido} type="button" className="lay-bt" onClick={() => setMenu('tecido')}>
-          <span className="lb">TECIDO</span>
-          <span className="v">{tecido.nome || 'escolher'}</span>
-        </button>
-
-        <button ref={btCor} type="button" className="lay-bt" onClick={() => setMenu('cor')}>
-          <span className="qd" style={{ '--cor': tecido.hex } as CSSProperties} />
-          <span className="v">{tecido.cor || 'sem cor'}</span>
-        </button>
-
-        <button ref={btDesign} type="button" className="lay-bt" onClick={() => setMenu('tecnica')}>
-          <span className="lb">DESIGN</span>
-          <span className="v">
-            {marcadas.length
-              ? marcadas.length + (marcadas.length === 1 ? ' marcada' : ' marcadas')
-              : 'nenhuma'}
-          </span>
-        </button>
-      </div>
-
-      {bloco.design.length ? (
-        <div className="lay-faixas">
-          {bloco.design.map((d) => (
-            <FaixaDeCores
-              key={d.tag}
-              tecnica={d.tecnica}
-              rotulo={d.tag}
-              cores={d.cores}
-              aoAdicionar={
-                lancaCor(d.tecnica)
-                  ? (el) => {
-                      ancoraSolta.current = el
-                      setTagAberta(d.tag)
-                      setMenu('codigo')
-                    }
-                  : undefined
-              }
-              aoAbrirMenuDaPilula={(el) => contextoDaPilula(el, d)}
-              aoAbrirMenuDaCor={(el, cod) => contextoDaCor(el, d, cod)}
-            />
-          ))}
-        </div>
-      ) : null}
-
+  const menus = (
+    <>
       <MenuReferencia
         aberto={menu === 'ref'}
         ancora={btRef}
@@ -265,6 +249,161 @@ export function FileiraDoLayout({
         cabecalho={ctx?.cabecalho}
         itens={ctx?.itens ?? []}
       />
+    </>
+  )
+
+  const campos = arranjo === 'campos'
+
+  const menuDeTexto = (
+    rotulo: string,
+    lista: string[],
+    valor: string,
+    aoEscolher: (v: string) => void,
+  ) => (
+    <label className="lay-campo" key={rotulo}>
+      <span>{rotulo}</span>
+      <Seletor
+        bloco
+        campo
+        tamanho="sm"
+        valor={valor}
+        opcoes={emOpcoes(lista)}
+        vazio="a definir"
+        aoEscolher={aoEscolher}
+      />
+    </label>
+  )
+
+  if (campos) {
+    return (
+      <>
+        <div className="lay-topo">
+          {selo}
+          <div className="lay-combo largo" data-genero={bloco.genero}>
+            <button ref={btRef} type="button" className="lay-bt" onClick={() => setMenu('ref')}>
+              <span className="v">
+                {bloco.referencia
+                  ? bloco.referencia + '  ' + bloco.nomeDaReferencia
+                  : 'escolher a referência'}
+              </span>
+            </button>
+            <BolinhasDeGenero
+              genero={bloco.genero}
+              aoEscolher={(g) =>
+                mudar({ genero: g, faixa: g === 'infantil' ? 'infantil' : bloco.faixa })
+              }
+            />
+          </div>
+          {acoes}
+        </div>
+
+        <div className="lay-campos">
+          {menuDeTexto('Tipo de kit vendido', KITS, bloco.kit, (v) => mudar({ kit: v }))}
+          {menuDeTexto('Manga / modelo', MANGAS, bloco.manga, (v) => mudar({ manga: v }))}
+
+          <label className="lay-campo">
+            <span>Tecido</span>
+            <button
+              ref={btTecido}
+              type="button"
+              className="lay-bt campo"
+              onClick={() => setMenu('tecido')}
+            >
+              <span className="v">{tecido.nome || 'a definir'}</span>
+            </button>
+          </label>
+
+          <label className="lay-campo">
+            <span>Cor do tecido</span>
+            <button
+              ref={btCor}
+              type="button"
+              className="lay-bt campo"
+              onClick={() => setMenu('cor')}
+            >
+              <span className="qd" style={{ '--cor': tecido.hex } as CSSProperties} />
+              <span className="v">{tecido.cor || 'a definir'}</span>
+            </button>
+          </label>
+
+          {menuDeTexto('Ribana / gola', GOLAS, bloco.gola, (v) => mudar({ gola: v }))}
+          {menuDeTexto('Etiqueta', ETIQUETAS, bloco.etiqueta, (v) => mudar({ etiqueta: v }))}
+
+          <label className="lay-campo">
+            <span>Técnica de estampa</span>
+            <button
+              ref={btDesign}
+              type="button"
+              className="lay-bt campo"
+              onClick={() => setMenu('tecnica')}
+            >
+              <span className="v">
+                {marcadas.length ? marcadas.join(' + ') : 'a definir'}
+              </span>
+            </button>
+          </label>
+
+          {menuDeTexto('Nomes e números', NUMERACOES, bloco.numeracao, (v) =>
+            mudar({ numeracao: v }),
+          )}
+
+          <div className="lay-campo largo">
+            <span>Cores da estampa</span>
+            {bloco.design.length ? (
+              <div className="lay-faixas">{faixas}</div>
+            ) : (
+              <p className="lay-sem-cor">
+                Marque a técnica de estampa para lançar os códigos de cor.
+              </p>
+            )}
+          </div>
+        </div>
+        {menus}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="lay-fileira">
+        <div className="lay-combo" data-genero={bloco.genero}>
+          <button ref={btRef} type="button" className="lay-bt" onClick={() => setMenu('ref')}>
+            <span className="lb">REF</span>
+            <span className="v">
+              {bloco.referencia ? bloco.referencia + '  ' + bloco.nomeDaReferencia : 'escolher'}
+            </span>
+          </button>
+          <BolinhasDeGenero
+            genero={bloco.genero}
+            aoEscolher={(g) =>
+              mudar({ genero: g, faixa: g === 'infantil' ? 'infantil' : bloco.faixa })
+            }
+          />
+        </div>
+
+        <button ref={btTecido} type="button" className="lay-bt" onClick={() => setMenu('tecido')}>
+          <span className="lb">TECIDO</span>
+          <span className="v">{tecido.nome || 'escolher'}</span>
+        </button>
+
+        <button ref={btCor} type="button" className="lay-bt" onClick={() => setMenu('cor')}>
+          <span className="qd" style={{ '--cor': tecido.hex } as CSSProperties} />
+          <span className="v">{tecido.cor || 'sem cor'}</span>
+        </button>
+
+        <button ref={btDesign} type="button" className="lay-bt" onClick={() => setMenu('tecnica')}>
+          <span className="lb">DESIGN</span>
+          <span className="v">
+            {marcadas.length
+              ? marcadas.length + (marcadas.length === 1 ? ' marcada' : ' marcadas')
+              : 'nenhuma'}
+          </span>
+        </button>
+      </div>
+
+      {bloco.design.length ? <div className="lay-faixas">{faixas}</div> : null}
+
+      {menus}
     </>
   )
 }

@@ -1,5 +1,5 @@
 import { migrarBloco, VERSAO_DO_BLOCO, type Bloco } from '../layout/bloco'
-import { VERSAO_DO_CFT, cotacaoEmBranco, type Cotacao } from './tipos'
+import { VERSAO_DO_CFT, cotacaoEmBranco, informesEmBranco, type Cotacao } from './tipos'
 
 /* ==========================================================================
    O arquivo .cft
@@ -55,6 +55,30 @@ const DEGRAUS: ((c: Bruto) => Bruto)[] = [
       ? (c.enviadas as Bruto[]).map((e) => ({ pecas: 0, ...e }))
       : [],
   }),
+
+  /* de 2 para 3: os informes viraram lista.
+     "entrega" muda de nome para "envio" e a tabela de preco entra com o padrao
+     da casa. A observacao solta, que era um campo de texto sem dono, vira o
+     primeiro informe da lista e ja nasce marcada para o PDF: ela foi escrita
+     para o cliente ler, e sumir com ela na migracao seria perder texto que
+     alguem digitou. Os nove informes padrao entram depois dela. */
+  (c) => {
+    const velho = (c.informe ?? {}) as Bruto
+    const observacao = String(velho.observacao ?? '').trim()
+    const daCasa = informesEmBranco()
+    return {
+      ...c,
+      informe: {
+        prazo: String(velho.prazo ?? ''),
+        pagamento: String(velho.pagamento ?? ''),
+        envio: String(velho.entrega ?? ''),
+        tabelaDePreco: 'Atacado 2026',
+      },
+      informes: observacao
+        ? [{ id: 'IF0', texto: observacao, noDocumento: true }, ...daCasa]
+        : daCasa,
+    }
+  },
 ]
 
 export class ArquivoRecusado extends Error {}

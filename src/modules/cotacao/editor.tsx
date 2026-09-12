@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Check, Copy, FileText, FloppyDisk, Plus, Trash, WhatsappLogo, X } from '@phosphor-icons/react'
 import {
   AreaTexto,
   Aviso,
@@ -8,11 +9,13 @@ import {
   CampoDeData,
   Entrada,
   Pagina,
+  Segmentado,
   Selo,
   Seletor,
   Vazio,
   avisar,
 } from '@ds'
+import { VENDEDORES, PAGAMENTOS, ENTREGAS } from '@dominio/banco'
 import {
   CaixaDeImagem,
   FileiraDoLayout,
@@ -38,7 +41,6 @@ import {
   travada,
   pecasDaCotacao,
   pecasDoProduto,
-  precoMedioPorPeca,
   salvarCotacao,
   subtotal,
   totalDaCotacao,
@@ -47,19 +49,23 @@ import {
   type Ajuste,
   type Cotacao,
   type EstadoDaCotacao,
+  type InformeDoDocumento,
   type ProdutoCotado,
 } from '@dominio/cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
-   O editor de cotacao.
+   O editor de cotacao, no arranjo do mockup v5.
 
-   O arranjo e o que o Henrique pediu e esta no plano do passo 15: imagem a
-   esquerda, detalhes tecnicos em dropdown a direita, e a tabela de tamanho,
-   valor e total atravessando as duas colunas. A ficha de producao, na fase 2,
-   usa as MESMAS pecas num arranjo diferente: imagem a esquerda e uma coluna de
-   cartoes a direita. E por isso que as pecas moram em dominio/layout e nao
-   aqui dentro.
+   Duas colunas: a cotacao inteira a esquerda, e a direita uma coluna fixa de
+   300 px com o resumo, o que o documento vai ter e os tres botoes que fecham
+   a venda. A coluna da direita nao rola junto: quem esta mexendo em preco na
+   linha 40 precisa ver o total sem subir a pagina, porque e olhando o total
+   que se decide o desconto.
+
+   Cada produto e um cartao: selo P-01 e referencia em cima, imagem a esquerda,
+   os oito campos do produto a direita, e a tabela de tamanhos embaixo,
+   atravessando as duas colunas.
 
    Salvar e explicito, nao automatico: o vendedor precisa poder mexer no preco,
    olhar, e desistir.
@@ -78,15 +84,14 @@ const ESTADOS = (Object.keys(NOME_DO_ESTADO_DA_COTACAO) as EstadoDaCotacao[]).ma
   rotulo: NOME_DO_ESTADO_DA_COTACAO[e],
 }))
 
+const TABELAS = ['Atacado 2026', 'Varejo 2026', 'Evento'].map((t) => ({ valor: t, rotulo: t }))
+const emOpcao = (lista: readonly string[]) => lista.map((x) => ({ valor: x, rotulo: x }))
+
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const dataCurta = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
 
-/* A porta: acha a cotacao e some do caminho.
-
-   Quem edita e o Editor logo abaixo, e ele so nasce com uma cotacao na mao.
-   Separar os dois nao e capricho: enquanto o editor aceitava uma cotacao que
-   podia ser nula, cada funcao dentro dele precisava perguntar de novo se ela
-   existia, e o compilador reclamava com razao. Com a porta na frente, o nulo
-   acaba aqui e nao atravessa o arquivo inteiro. */
+/* A porta: acha a cotacao e some do caminho. Quem edita e o Editor logo
+   abaixo, e ele so nasce com uma cotacao na mao. */
 export function EditorDeCotacao() {
   const { id = '' } = useParams()
   const navegar = useNavigate()
@@ -108,8 +113,6 @@ export function EditorDeCotacao() {
     )
   }
 
-  /* a chave troca o editor inteiro quando muda de cotacao: nenhum rascunho de
-     uma sobra dentro da outra */
   return <Editor key={original.id} inicial={original} />
 }
 
@@ -118,11 +121,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const [c, setC] = useState<Cotacao>(inicial)
   const [sujo, setSujo] = useState(false)
   const [podeColar, setPodeColar] = useState(() => temCopia())
-  /* apagar pede confirmacao no proprio botao: o sistema nao usa caixa de
-     dialogo do navegador em lugar nenhum */
+  /* o R$ some da tela inteira quando a cotacao vai ser mostrada ao cliente
+     no balcao antes de fechar o preco */
+  const [comDinheiro, setComDinheiro] = useState(true)
   const [confirmando, setConfirmando] = useState(false)
 
-  /* avisa antes de fechar a aba com mudanca nao salva */
   useEffect(() => {
     if (!sujo) return
     const aviso = (e: BeforeUnloadEvent) => e.preventDefault()
@@ -161,7 +164,9 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
   function removerProduto(i: number) {
     mudar({
-      produtos: c.produtos.filter((_, k) => k !== i).map((p, k) => ({ ...p, bloco: { ...p.bloco, n: k + 1 } })),
+      produtos: c.produtos
+        .filter((_, k) => k !== i)
+        .map((p, k) => ({ ...p, bloco: { ...p.bloco, n: k + 1 } })),
     })
   }
 
@@ -181,6 +186,12 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     apagarCotacao(c.id)
     avisar('Cotação ' + c.numero + ' apagada', 'ok')
     navegar('/cotacao')
+  }
+
+  function verDocumento() {
+    salvarCotacao(c)
+    setSujo(false)
+    navegar('/cotacao/' + c.id + '/folha')
   }
 
   /* Enviar grava o que saiu. O total vai congelado junto, e nao recalculado
@@ -207,315 +218,544 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     avisar('Pedido ' + pedido + ' gerado. A grade está travada a partir de agora.', 'ok')
   }
 
+  function mudarInforme(id: string, troca: (x: InformeDoDocumento) => InformeDoDocumento) {
+    mudar({ informes: c.informes.map((x) => (x.id === id ? troca(x) : x)) })
+  }
+
   const base = subtotal(c)
-  const total = totalDaCotacao(c)
+  const ajustes = totalDaCotacao(c) - base
+  const total = base + ajustes
+  const pecas = pecasDaCotacao(c)
   const fechada = travada(c)
+  const noDocumento = c.informes.filter((x) => x.noDocumento).length
+  /* pagina 1, dois produtos por folha, e a folha do resumo geral */
+  const paginas = 1 + Math.ceil(c.produtos.length / 2) + 1
+
+  const rs = (v: number) => (comDinheiro ? dinheiro(v) : '— — —')
 
   return (
     <Pagina
-      acima={
-        <button type="button" className="ct-volta" onClick={() => navegar('/cotacao')}>
-          Cotação de venda
-        </button>
-      }
+      acima="Comercial · cotação de venda"
       titulo={
         <span className="ct-titulo">
-          {c.numero}
-          <Selo tom={TOM_DO_ESTADO[c.estado]}>{NOME_DO_ESTADO_DA_COTACAO[c.estado]}</Selo>
+          Cotação {c.numero}
           {sujo ? <span className="ct-sujo">não salva</span> : null}
         </span>
       }
-      sub={c.cliente.nome || 'sem cliente ainda'}
+      sub={
+        <>
+          {c.cliente.nome || 'sem cliente ainda'} · criada em {dataCurta(c.criadaEm)} ·{' '}
+          <Selo tom={TOM_DO_ESTADO[c.estado]}>{NOME_DO_ESTADO_DA_COTACAO[c.estado]}</Selo> · o
+          cliente recebe só o documento (PDF)
+        </>
+      }
       acoes={
         <>
-          <Botao
-            tom={confirmando ? 'perigo' : 'limpo'}
-            onClick={() => (confirmando ? apagar() : setConfirmando(true))}
-            onBlur={() => setConfirmando(false)}
-          >
-            {confirmando ? 'Confirmar' : 'Apagar'}
+          <Botao tom="contorno" onClick={salvar}>
+            <FloppyDisk size={17} />
+            Salvar
           </Botao>
-          <Botao tom="contorno" onClick={baixar}>
-            Baixar .cft
-          </Botao>
-          <Botao tom="contorno" onClick={() => { salvar(); navegar('/cotacao/' + c.id + '/folha') }}>
-            Ver a folha
+          <Botao tom="contorno" onClick={verDocumento}>
+            <FileText size={17} />
+            PDF
           </Botao>
           {!fechada ? (
-            <Botao tom="contorno" onClick={enviar}>
-              Registrar envio
+            <Botao tom="wa" onClick={enviar}>
+              <WhatsappLogo size={17} />
+              Enviar
             </Botao>
           ) : null}
           {!fechada && c.produtos.length ? (
-            <Botao tom="forte" onClick={dizerSim}>
-              Cliente aprovou
+            <Botao tom="primario" onClick={dizerSim}>
+              <Check size={17} />
+              Aprovar e gerar ficha
             </Botao>
           ) : null}
-          <Botao tom="primario" onClick={salvar}>
-            Salvar
-          </Botao>
         </>
       }
     >
+      {/* --- a barra de abas do v5 --- */}
+      <BarraDoEditor
+        atual={c.id}
+        comDinheiro={comDinheiro}
+        aoTrocarDinheiro={() => setComDinheiro((v) => !v)}
+        aoIr={(id) => navegar('/cotacao/' + id)}
+        aoVerDocumento={verDocumento}
+      />
+
       {fechada && c.aprovacao ? (
-        <div style={{ marginBottom: 'var(--sp-5)' }}>
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Aviso tom="ok" titulo={'Aprovada, e virou o pedido ' + c.aprovacao.pedido}>
-            {c.vendedor ? c.aprovacao.quem : 'Alguém'} registrou o sim em{' '}
-            {new Date(c.aprovacao.em).toLocaleString('pt-BR')}, sobre o envio{' '}
-            {c.aprovacao.versao}. A grade e os valores estão travados a partir daqui: a produção já
-            corta por eles, e mudar quantidade depois do corte é o jeito clássico de sobrar pano e
-            faltar peça. Se o cliente mudar de ideia, o caminho é uma cotação nova.
+            {c.aprovacao.quem} registrou o sim em{' '}
+            {new Date(c.aprovacao.em).toLocaleString('pt-BR')}, sobre o envio {c.aprovacao.versao}.
+            A grade e os valores estão travados a partir daqui: a produção já corta por eles, e
+            mudar quantidade depois do corte é o jeito clássico de sobrar pano e faltar peça. Se o
+            cliente mudar de ideia, o caminho é uma cotação nova.
           </Aviso>
         </div>
       ) : null}
 
-      {/* --- o cabecalho do documento --- */}
-      <section className="ct-bloco">
-        <h3 className="ct-h">Quem recebe</h3>
-        <div className="ct-form">
-          <Campo rotulo="Cliente" className="col-2">
-            <Entrada
-              value={c.cliente.nome}
-              placeholder="Nome como sai na proposta"
-              onChange={(e) => mudar({ cliente: { ...c.cliente, nome: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Contato">
-            <Entrada
-              value={c.cliente.contato}
-              onChange={(e) => mudar({ cliente: { ...c.cliente, contato: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Cidade">
-            <Entrada
-              value={c.cliente.cidade}
-              onChange={(e) => mudar({ cliente: { ...c.cliente, cidade: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Vendedor">
-            <Entrada value={c.vendedor} onChange={(e) => mudar({ vendedor: e.target.value })} />
-          </Campo>
-          <Campo rotulo="Vale até">
-            <CampoDeData bloco valor={c.validaAte} aoMudar={(d) => mudar({ validaAte: d })} />
-          </Campo>
-          <Campo rotulo="Situação">
-            <Seletor
-              bloco
-              campo
-              valor={c.estado}
-              opcoes={ESTADOS}
-              vazio="Rascunho"
-              aoEscolher={(v) => mudar({ estado: (v || 'rascunho') as EstadoDaCotacao })}
-            />
-          </Campo>
-        </div>
-      </section>
-
-      <section className="ct-bloco">
-        <h3 className="ct-h">Informes de produção</h3>
-        <div className="ct-form">
-          <Campo rotulo="Prazo">
-            <Entrada
-              value={c.informe.prazo}
-              onChange={(e) => mudar({ informe: { ...c.informe, prazo: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Entrega">
-            <Entrada
-              value={c.informe.entrega}
-              onChange={(e) => mudar({ informe: { ...c.informe, entrega: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Pagamento" className="col-2">
-            <Entrada
-              value={c.informe.pagamento}
-              onChange={(e) => mudar({ informe: { ...c.informe, pagamento: e.target.value } })}
-            />
-          </Campo>
-          <Campo rotulo="Observação" className="col-2">
-            <AreaTexto
-              rows={2}
-              value={c.informe.observacao}
-              onChange={(e) => mudar({ informe: { ...c.informe, observacao: e.target.value } })}
-            />
-          </Campo>
-        </div>
-      </section>
-
-      {/* --- os produtos --- */}
-      {c.produtos.map((p, i) => (
-        <Produto
-          key={p.bloco.id}
-          produto={p}
-          travado={fechada}
-          aoMudarBloco={(b) => mudarBloco(i, b)}
-          aoMudarProduto={(troca) => mudarProduto(i, troca)}
-          aoCopiar={() => {
-            copiarBloco(p.bloco)
-            setPodeColar(true)
-            avisar('Layout copiado. Use Colar layout para repetir.', 'ok')
-          }}
-          aoRemover={() => removerProduto(i)}
-        />
-      ))}
-
-      {!c.produtos.length ? (
-        <Vazio
-          titulo="Nenhum produto ainda"
-          texto="Um produto é uma peça: referência, tecido, arte e grade de tamanhos."
-          acao={
-            <Botao tom="primario" onClick={novoProduto}>
-              Primeiro produto
-            </Botao>
-          }
-        />
-      ) : (
-        !fechada ? (
-          <div className="ct-acoes-produto">
-            <Botao tom="contorno" onClick={novoProduto}>
-              Mais um produto
-            </Botao>
-            {podeColar ? (
-              <Botao tom="limpo" onClick={colar}>
-                Colar layout
-              </Botao>
-            ) : null}
-          </div>
-        ) : null
-      )}
-
-      {/* --- os ajustes e o fechamento --- */}
-      {c.produtos.length ? (
-        <section className="ct-bloco">
-          <h3 className="ct-h">Ajustes no valor</h3>
-          {c.ajustes.length ? (
-            <div className="ct-ajustes">
-              {c.ajustes.map((a) => (
-                <LinhaDeAjuste
-                  key={a.id}
-                  ajuste={a}
-                  travado={fechada}
-                  base={base}
-                  aoMudar={(novo) =>
-                    mudar({ ajustes: c.ajustes.map((x) => (x.id === a.id ? novo : x)) })
-                  }
-                  aoRemover={() => mudar({ ajustes: c.ajustes.filter((x) => x.id !== a.id) })}
+      <div className="ct-editor">
+        <div className="ct-coluna">
+          {/* --- dados da cotacao --- */}
+          <section className="cartao ct-cartao">
+            <header className="ct-cab">
+              <h3>Dados da cotação</h3>
+              <span>vai para o cabeçalho da página 1</span>
+            </header>
+            <div className="ct-form">
+              <Campo rotulo="Cliente">
+                <Entrada
+                  value={c.cliente.nome}
+                  placeholder="Nome como sai na proposta"
+                  onChange={(e) => mudar({ cliente: { ...c.cliente, nome: e.target.value } })}
                 />
-              ))}
+              </Campo>
+              <Campo rotulo="CPF / CNPJ">
+                <Entrada
+                  value={c.cliente.documento}
+                  onChange={(e) => mudar({ cliente: { ...c.cliente, documento: e.target.value } })}
+                />
+              </Campo>
+              <Campo rotulo="Contato">
+                <Entrada
+                  value={c.cliente.contato}
+                  onChange={(e) => mudar({ cliente: { ...c.cliente, contato: e.target.value } })}
+                />
+              </Campo>
+              <Campo rotulo="Vendedor">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.vendedor}
+                  opcoes={emOpcao(VENDEDORES)}
+                  vazio="Escolher"
+                  aoEscolher={(v) => mudar({ vendedor: v })}
+                />
+              </Campo>
+              <Campo rotulo="Validade">
+                <CampoDeData bloco valor={c.validaAte} aoMudar={(d) => mudar({ validaAte: d })} />
+              </Campo>
+              <Campo rotulo="Prazo de produção">
+                <Entrada
+                  value={c.informe.prazo}
+                  onChange={(e) => mudar({ informe: { ...c.informe, prazo: e.target.value } })}
+                />
+              </Campo>
+              <Campo rotulo="Pagamento">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.informe.pagamento}
+                  opcoes={emOpcao(PAGAMENTOS)}
+                  vazio="Escolher"
+                  aoEscolher={(v) => mudar({ informe: { ...c.informe, pagamento: v } })}
+                />
+              </Campo>
+              <Campo rotulo="Envio">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.informe.envio}
+                  opcoes={emOpcao(ENTREGAS)}
+                  vazio="Escolher"
+                  aoEscolher={(v) => mudar({ informe: { ...c.informe, envio: v } })}
+                />
+              </Campo>
+              <Campo rotulo="Tabela de preço">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.informe.tabelaDePreco}
+                  opcoes={TABELAS}
+                  vazio="Escolher"
+                  aoEscolher={(v) => mudar({ informe: { ...c.informe, tabelaDePreco: v } })}
+                />
+              </Campo>
+              <Campo rotulo="Situação">
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.estado}
+                  opcoes={ESTADOS}
+                  vazio="Rascunho"
+                  aoEscolher={(v) => mudar({ estado: (v || 'rascunho') as EstadoDaCotacao })}
+                />
+              </Campo>
             </div>
-          ) : (
-            <p className="ct-nada">
-              Nenhum desconto nem acréscimo. O total é a soma dos produtos.
-            </p>
-          )}
-          {fechada ? null : (
-          <div className="ct-acoes-produto">
-            <Botao
-              tom="contorno"
-              tamanho="sm"
-              onClick={() =>
-                mudar({
-                  ajustes: [
-                    ...c.ajustes,
-                    {
-                      id: 'AJ' + Math.random().toString(36).slice(2, 7),
-                      descricao: '',
-                      tipo: 'porcento',
-                      valor: 0,
-                    },
-                  ],
-                })
-              }
-            >
-              Mais um ajuste
-            </Botao>
-          </div>
-          )}
+          </section>
 
-          <div className="ct-fecha">
-            <div>
-              <span className="rot">Peças</span>
-              <b>{pecasDaCotacao(c)}</b>
-            </div>
-            <div>
-              <span className="rot">Subtotal</span>
-              <b>{dinheiro(base)}</b>
-            </div>
-            <div>
-              <span className="rot">Média por peça</span>
-              <b>{dinheiro(precoMedioPorPeca(c))}</b>
-            </div>
-            <div className="forte">
-              <span className="rot">Total</span>
-              <b>{dinheiro(total)}</b>
-            </div>
-          </div>
-
-          {c.enviadas.length ? (
-            <div className="ct-envios">
-              <h4>O que já foi enviado</h4>
-              {c.enviadas.map((e) => (
-                <div key={e.numero} className={c.aprovacao?.versao === e.numero ? 'ct-envio valeu' : 'ct-envio'}>
-                  <b>Envio {e.numero}</b>
-                  <span>{new Date(e.data).toLocaleString('pt-BR')}</span>
-                  <span>{e.pecas ? e.pecas + ' peças' : 'peças não gravadas'}</span>
-                  <span className="ct-envio-total">{dinheiro(e.total)}</span>
-                  {c.aprovacao?.versao === e.numero ? <span className="ct-envio-selo">aprovado</span> : null}
+          {/* --- os informes --- */}
+          <section className="cartao ct-cartao">
+            <header className="ct-cab">
+              <h3>Informes sobre a produção</h3>
+              <span>página 1 do documento · desmarcar tira do PDF</span>
+            </header>
+            <div className="ct-informes">
+              {c.informes.map((x) => (
+                <div className={x.noDocumento ? 'ct-informe' : 'ct-informe fora'} key={x.id}>
+                  <button
+                    type="button"
+                    className="ct-marca"
+                    role="switch"
+                    aria-checked={x.noDocumento}
+                    aria-label={x.noDocumento ? 'Tirar do PDF' : 'Pôr no PDF'}
+                    title={x.noDocumento ? 'Sai no PDF. Clique para tirar.' : 'Fora do PDF. Clique para pôr.'}
+                    onClick={() => mudarInforme(x.id, (i) => ({ ...i, noDocumento: !i.noDocumento }))}
+                  >
+                    {x.noDocumento ? <Check size={13} weight="bold" /> : null}
+                  </button>
+                  <AreaTexto
+                    rows={2}
+                    value={x.texto}
+                    aria-label="Texto do informe"
+                    onChange={(e) => mudarInforme(x.id, (i) => ({ ...i, texto: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    className="ct-tira"
+                    aria-label="Apagar o informe"
+                    title="Apagar o informe"
+                    onClick={() => mudar({ informes: c.informes.filter((i) => i.id !== x.id) })}
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
               ))}
-              <p className="ct-nada">
-                O valor de cada envio fica congelado como saiu. Ele não é recalculado quando o preço
-                muda depois, porque a conversa com o cliente é sobre o número que ele viu.
-              </p>
+              <Botao
+                tom="limpo"
+                tamanho="sm"
+                onClick={() =>
+                  mudar({
+                    informes: [
+                      ...c.informes,
+                      {
+                        id: 'IF' + Math.random().toString(36).slice(2, 7),
+                        texto: '',
+                        noDocumento: true,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus size={15} />
+                Adicionar informe
+              </Botao>
+            </div>
+          </section>
+
+          <p className="ct-eyebrow">Produtos cotados</p>
+
+          {c.produtos.map((p, i) => (
+            <Produto
+              key={p.bloco.id}
+              produto={p}
+              indice={i}
+              travado={fechada}
+              comDinheiro={comDinheiro}
+              aoMudarBloco={(b) => mudarBloco(i, b)}
+              aoMudarProduto={(troca) => mudarProduto(i, troca)}
+              aoCopiar={() => {
+                copiarBloco(p.bloco)
+                setPodeColar(true)
+                avisar('Layout copiado. Use Colar layout para repetir.', 'ok')
+              }}
+              aoRemover={() => removerProduto(i)}
+            />
+          ))}
+
+          {!c.produtos.length ? (
+            <Vazio
+              titulo="Nenhum produto ainda"
+              texto="Um produto é uma peça: referência, tecido, arte e grade de tamanhos."
+              acao={
+                <Botao tom="primario" onClick={novoProduto}>
+                  Primeiro produto
+                </Botao>
+              }
+            />
+          ) : !fechada ? (
+            <div className="ct-mais">
+              <button type="button" className="ct-mais-bt" onClick={novoProduto}>
+                <Plus size={17} />
+                Adicionar mais um produto
+              </button>
+              {podeColar ? (
+                <Botao tom="limpo" tamanho="sm" onClick={colar}>
+                  Colar layout
+                </Botao>
+              ) : null}
             </div>
           ) : null}
 
-          <Aviso tom="info" titulo="Como o por cento é calculado">
-            Ajuste em por cento vale sempre sobre o subtotal, nunca sobre o total já ajustado. Dois
-            descontos de 10 por cento tiram 20, e não 19.
-          </Aviso>
-        </section>
-      ) : null}
+          {/* --- ajustes --- */}
+          {c.produtos.length ? (
+            <section className="cartao ct-cartao">
+              <header className="ct-cab">
+                <h3>Ajustes no valor</h3>
+                <span>do documento, não de um produto</span>
+              </header>
+              {c.ajustes.length ? (
+                <div className="ct-ajustes">
+                  {c.ajustes.map((a) => (
+                    <LinhaDeAjuste
+                      key={a.id}
+                      ajuste={a}
+                      travado={fechada}
+                      base={base}
+                      comDinheiro={comDinheiro}
+                      aoMudar={(novo) =>
+                        mudar({ ajustes: c.ajustes.map((x) => (x.id === a.id ? novo : x)) })
+                      }
+                      aoRemover={() => mudar({ ajustes: c.ajustes.filter((x) => x.id !== a.id) })}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="ct-nada">
+                  Nenhum desconto nem acréscimo. O total é a soma dos produtos.
+                </p>
+              )}
+              {!fechada ? (
+                <Botao
+                  tom="limpo"
+                  tamanho="sm"
+                  onClick={() =>
+                    mudar({
+                      ajustes: [
+                        ...c.ajustes,
+                        {
+                          id: 'AJ' + Math.random().toString(36).slice(2, 7),
+                          descricao: '',
+                          tipo: 'porcento',
+                          valor: 0,
+                        },
+                      ],
+                    })
+                  }
+                >
+                  <Plus size={15} />
+                  Adicionar ajuste
+                </Botao>
+              ) : null}
+              <p className="ct-nada">
+                Ajuste em por cento vale sempre sobre o subtotal, nunca sobre o total já ajustado.
+                Dois descontos de 10 por cento tiram 20, e não 19.
+              </p>
+            </section>
+          ) : null}
+
+          {c.enviadas.length ? (
+            <section className="cartao ct-cartao">
+              <header className="ct-cab">
+                <h3>O que já foi enviado</h3>
+                <span>o valor de cada envio fica congelado como saiu</span>
+              </header>
+              <div className="ct-envios">
+                {c.enviadas.map((e) => (
+                  <div
+                    key={e.numero}
+                    className={c.aprovacao?.versao === e.numero ? 'ct-envio valeu' : 'ct-envio'}
+                  >
+                    <b>Envio {e.numero}</b>
+                    <span>{new Date(e.data).toLocaleString('pt-BR')}</span>
+                    <span>{e.pecas ? e.pecas + ' peças' : 'peças não gravadas'}</span>
+                    <span className="ct-envio-total">{rs(e.total)}</span>
+                    {c.aprovacao?.versao === e.numero ? (
+                      <span className="ct-envio-selo">aprovado</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+
+        {/* --- a coluna fixa da direita --- */}
+        <aside className="ct-lado">
+          <section className="cartao ct-cartao ct-resumo">
+            <header className="ct-cab">
+              <h3>Resumo da cotação</h3>
+            </header>
+            <div className="ct-linha">
+              <span>Produtos</span>
+              <b>{c.produtos.length}</b>
+            </div>
+            <div className="ct-linha">
+              <span>Peças</span>
+              <b>{pecas}</b>
+            </div>
+            <div className="ct-linha">
+              <span>Subtotal</span>
+              <b>{rs(base)}</b>
+            </div>
+            <div className="ct-linha">
+              <span>Ajustes</span>
+              <b>{comDinheiro ? (ajustes < 0 ? '- ' : '+ ') + dinheiro(Math.abs(ajustes)) : '— — —'}</b>
+            </div>
+            <div className="ct-linha grande">
+              <span>Total</span>
+              <b>{rs(total)}</b>
+            </div>
+            <p className="ct-miudo">
+              Entrada 50%: <b>{rs(total / 2)}</b> · média por peça{' '}
+              <b>{rs(pecas ? total / pecas : 0)}</b>
+            </p>
+          </section>
+
+          <section className="cartao ct-cartao">
+            <header className="ct-cab">
+              <h3>Documento</h3>
+            </header>
+            <p className="ct-nada">
+              Página 1: cabeçalho e informes. Um bloco por produto: imagem, detalhes e tabela de
+              tamanhos. Última página: tabela geral sem imagens.
+            </p>
+            <div className="ct-tags">
+              <span>{paginas} páginas</span>
+              <span>{noDocumento} informes</span>
+              <span>sem rota de produção</span>
+            </div>
+          </section>
+
+          <div className="ct-lado-bts">
+            {!fechada && c.produtos.length ? (
+              <Botao tom="primario" bloco onClick={dizerSim}>
+                <Check size={17} />
+                Aprovar e gerar ficha
+              </Botao>
+            ) : null}
+            {!fechada ? (
+              <Botao tom="wa" bloco onClick={enviar}>
+                <WhatsappLogo size={17} />
+                Enviar por WhatsApp
+              </Botao>
+            ) : null}
+            <Botao tom="contorno" bloco onClick={verDocumento}>
+              <FileText size={17} />
+              Ver documento
+            </Botao>
+            <Botao tom="contorno" bloco onClick={baixar}>
+              Baixar .cft
+            </Botao>
+            <Botao
+              tom={confirmando ? 'perigo' : 'limpo'}
+              bloco
+              onClick={() => (confirmando ? apagar() : setConfirmando(true))}
+              onBlur={() => setConfirmando(false)}
+            >
+              {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
+            </Botao>
+          </div>
+        </aside>
+      </div>
     </Pagina>
   )
 }
 
-/* --- um produto: imagem a esquerda, tecnica a direita, grade atravessando -- */
+/* --- a barra de abas, o Editor/Documento e o R$ ---------------------------
+   As abas sao as cotacoes abertas. No v5 elas vivem entre o titulo e o
+   conteudo, e e ali que fazem sentido: quem atende tres clientes ao mesmo
+   tempo troca de aba, nao volta para a lista. */
+function BarraDoEditor({
+  atual,
+  comDinheiro,
+  aoTrocarDinheiro,
+  aoIr,
+  aoVerDocumento,
+}: {
+  atual: string
+  comDinheiro: boolean
+  aoTrocarDinheiro: () => void
+  aoIr: (id: string) => void
+  aoVerDocumento: () => void
+}) {
+  const abertas = listarCotacoes().slice(0, 6)
+  return (
+    <div className="ct-barra">
+      <div className="ct-abas">
+        {abertas.map((x) => (
+          <button
+            type="button"
+            key={x.id}
+            className={x.id === atual ? 'ct-aba ligada' : 'ct-aba'}
+            onClick={() => aoIr(x.id)}
+          >
+            {(x.cliente.nome || x.numero).split(' ').slice(0, 2).join(' ')}
+          </button>
+        ))}
+      </div>
+      <span className="ct-empurra" />
+      <Segmentado
+        valor="editor"
+        opcoes={[
+          { valor: 'editor', rotulo: 'Editor' },
+          { valor: 'documento', rotulo: 'Documento' },
+        ]}
+        aoMudar={(v) => {
+          if (v === 'documento') aoVerDocumento()
+        }}
+      />
+      <button
+        type="button"
+        className={comDinheiro ? 'ct-chip' : 'ct-chip ligado'}
+        onClick={aoTrocarDinheiro}
+        title="Esconde todo valor da tela, para mostrar a cotação ao cliente antes de fechar o preço"
+      >
+        {comDinheiro ? 'R$ visível' : 'R$ oculto'}
+      </button>
+    </div>
+  )
+}
+
+/* --- um produto: selo, referencia, imagem, campos e grade ---------------- */
 function Produto({
   produto,
+  indice,
   travado,
+  comDinheiro,
   aoMudarBloco,
   aoMudarProduto,
   aoCopiar,
   aoRemover,
 }: {
   produto: ProdutoCotado
+  indice: number
   travado?: boolean
+  comDinheiro: boolean
   aoMudarBloco: (b: Bloco) => void
   aoMudarProduto: (troca: (p: ProdutoCotado) => ProdutoCotado) => void
   aoCopiar: () => void
   aoRemover: () => void
 }) {
   const b = produto.bloco
+  const selo = <span className="ct-selo">P-{String(indice + 1).padStart(2, '0')}</span>
+  const acoes = (
+    <span className="ct-produto-bts">
+      <button type="button" className="ct-bt-icone" onClick={aoCopiar} title="Duplicar produto">
+        <Copy size={17} />
+      </button>
+      {!travado ? (
+        <button
+          type="button"
+          className="ct-bt-icone risco"
+          onClick={aoRemover}
+          title="Remover produto"
+        >
+          <Trash size={17} />
+        </button>
+      ) : null}
+    </span>
+  )
+
   return (
-    <section className="ct-produto">
-      <header className="ct-produto-topo">
-        <span className="ct-n">{b.n}</span>
-        <b>{b.referencia || 'produto sem referência'}</b>
-        <span className="ct-produto-resumo">
-          {pecasDoProduto(produto)} peças · {dinheiro(totalDoProduto(produto))}
-        </span>
-        <span className="ct-produto-bts">
-          <button type="button" className="img-bt" onClick={aoCopiar}>
-            Copiar layout
-          </button>
-          {!travado ? (
-            <button type="button" className="img-bt risco" onClick={aoRemover}>
-              Remover
-            </button>
-          ) : null}
-        </span>
-      </header>
+    <section className="cartao ct-produto">
+      {travado ? (
+        <div className="ct-produto-travado">
+          {selo}
+          <FileiraEmLeitura bloco={b} />
+        </div>
+      ) : null}
 
       <div className="ct-produto-corpo">
         <div className="ct-esq">
@@ -526,22 +766,41 @@ function Produto({
             aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
             aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
           />
+          <p className="ct-nada">
+            Foto ou mockup do produto. Uma só, do jeito que o cliente vai ver.
+          </p>
         </div>
 
         <div className="ct-dir">
-          {travado ? <FileiraEmLeitura bloco={b} /> : <FileiraDoLayout bloco={b} aoMudar={aoMudarBloco} />}
-          <Campo rotulo="Observação do produto">
+          {travado ? null : (
+            <FileiraDoLayout
+              arranjo="campos"
+              bloco={b}
+              aoMudar={aoMudarBloco}
+              selo={selo}
+              acoes={acoes}
+            />
+          )}
+          <Campo rotulo="Observações do produto">
             <AreaTexto
               rows={3}
               value={b.observacao}
-              placeholder="O que a produção precisa saber sobre esta peça"
+              placeholder="Detalhe que o cliente precisa ler (patrocinadores, posição do escudo, numeração)"
               onChange={(e) => aoMudarBloco({ ...b, observacao: e.target.value })}
             />
           </Campo>
         </div>
+      </div>
 
-        <div className="ct-grade">
-          {travado ? null : (
+      <div className="ct-grade">
+        <header className="ct-cab">
+          <h3>Tamanhos e valores</h3>
+          <span>
+            {pecasDoProduto(produto)} peças ·{' '}
+            {comDinheiro ? dinheiro(totalDoProduto(produto)) : '— — —'}
+          </span>
+        </header>
+        {!travado ? (
           <div className="ct-preco-base">
             <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
               <Entrada
@@ -557,25 +816,24 @@ function Produto({
               />
             </Campo>
           </div>
-          )}
-          <GradeDeTamanhos
-            leitura={travado}
-            faixa={b.faixa}
-            grade={b.grade}
-            aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
-            aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
-            precoBase={produto.precoBase}
-            precoPorTamanho={produto.precoPorTamanho}
-            aoMudarPreco={(tamanho, valor) =>
-              aoMudarProduto((p) => {
-                const novo = { ...p.precoPorTamanho }
-                if (valor === null) delete novo[tamanho]
-                else novo[tamanho] = valor
-                return { ...p, precoPorTamanho: novo }
-              })
-            }
-          />
-        </div>
+        ) : null}
+        <GradeDeTamanhos
+          leitura={travado}
+          faixa={b.faixa}
+          grade={b.grade}
+          aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
+          aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
+          precoBase={produto.precoBase}
+          precoPorTamanho={produto.precoPorTamanho}
+          aoMudarPreco={(tamanho, valor) =>
+            aoMudarProduto((p) => {
+              const novo = { ...p.precoPorTamanho }
+              if (valor === null) delete novo[tamanho]
+              else novo[tamanho] = valor
+              return { ...p, precoPorTamanho: novo }
+            })
+          }
+        />
       </div>
     </section>
   )
@@ -586,16 +844,19 @@ function LinhaDeAjuste({
   ajuste,
   base,
   travado,
+  comDinheiro,
   aoMudar,
   aoRemover,
 }: {
   ajuste: Ajuste
   base: number
   travado?: boolean
+  comDinheiro: boolean
   aoMudar: (a: Ajuste) => void
   aoRemover: () => void
 }) {
   const soma = ajuste.valor >= 0
+  const conta = comDinheiro ? dinheiro(valorDoAjuste(ajuste, base)) : '— — —'
 
   if (travado) {
     return (
@@ -606,7 +867,7 @@ function LinhaDeAjuste({
           {ajuste.tipo === 'porcento' ? '%' : ' reais'}
         </span>
         <span className="ct-ajuste-motivo-lido">{ajuste.descricao || 'sem motivo escrito'}</span>
-        <span className="ct-ajuste-conta">{dinheiro(valorDoAjuste(ajuste, base))}</span>
+        <span className="ct-ajuste-conta">{conta}</span>
       </div>
     )
   }
@@ -650,9 +911,9 @@ function LinhaDeAjuste({
         onChange={(e) => aoMudar({ ...ajuste, descricao: e.target.value })}
         aria-label="Motivo do ajuste"
       />
-      <span className="ct-ajuste-conta">{dinheiro(valorDoAjuste(ajuste, base))}</span>
-      <button type="button" className="img-bt risco" onClick={aoRemover}>
-        Remover
+      <span className="ct-ajuste-conta">{conta}</span>
+      <button type="button" className="ct-bt-icone risco" onClick={aoRemover} title="Remover ajuste">
+        <X size={16} />
       </button>
     </div>
   )

@@ -143,10 +143,15 @@
 /* o arranjo: imagem à esquerda, técnica à direita, grade atravessando */
 .ct-produto-corpo {
   display: grid;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-5);
   padding: var(--sp-5);
   min-width: 0;
+}
+@media (min-width: 820px) {
+  .ct-produto-corpo {
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  }
 }
 .ct-esq,
 .ct-dir {
@@ -158,7 +163,7 @@
   gap: var(--sp-4);
 }
 .ct-grade {
-  grid-column: 1 / -1;
+  padding: 0 var(--sp-5) var(--sp-5);
   min-width: 0;
 }
 .ct-preco-base {
@@ -338,4 +343,321 @@
 .ct-ajuste-motivo-lido {
   flex: 1 1 200px;
   min-width: 0;
+}
+
+/* ==========================================================================
+   O arranjo do v5: a cotação à esquerda, o resumo fixo à direita.
+
+   A coluna da direita não rola junto. Quem está mexendo em preço na linha 40
+   precisa ver o total sem subir a página, porque é olhando o total que se
+   decide o desconto. Abaixo de 1024 px ela vira a última seção da página, e
+   os botões de fechar a venda continuam no topo, nas ações da página.
+   ========================================================================== */
+
+.ct-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .ct-editor {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .ct-lado {
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--sp-4));
+  }
+}
+.ct-coluna,
+.ct-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* --- a barra de abas ----------------------------------------------------- */
+.ct-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--sp-4);
+  min-width: 0;
+}
+.ct-abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.ct-aba {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-aba:hover {
+  background: var(--surface-2);
+}
+.ct-aba.ligada {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.ct-empurra {
+  flex: 1 1 auto;
+}
+.ct-chip {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ct-chip.ligado {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+/* --- os cartões ---------------------------------------------------------- */
+.ct-cartao {
+  padding: var(--sp-5);
+  min-width: 0;
+}
+.ct-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: var(--sp-4);
+}
+.ct-cab h3 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.ct-cab h3::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  vertical-align: middle;
+}
+.ct-cab span {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ct-eyebrow {
+  margin: var(--sp-2) 0 calc(var(--sp-2) * -1);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* --- os informes --------------------------------------------------------- */
+.ct-informes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.ct-informe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  width: 100%;
+}
+.ct-informe textarea {
+  font-size: 13px;
+  line-height: 1.45;
+}
+/* desmarcado continua legível, só mais apagado: o texto não sumiu, ele só não
+   vai no PDF desta vez */
+.ct-informe.fora textarea {
+  opacity: 0.55;
+}
+.ct-marca {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 7px;
+  border: 1.5px solid var(--border-2);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--on-ink);
+  cursor: pointer;
+}
+.ct-marca[aria-checked='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.ct-tira {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.ct-tira:hover {
+  background: var(--surface-2);
+  color: var(--brand);
+}
+
+/* --- o produto ----------------------------------------------------------- */
+.ct-selo {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.ct-produto-travado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.ct-bt-icone {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.ct-bt-icone:hover {
+  background: var(--surface-2);
+}
+.ct-bt-icone.risco:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.ct-mais {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.ct-mais-bt {
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1.5px dashed var(--border-2);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ct-mais-bt:hover {
+  border-color: var(--ink);
+  color: var(--text);
+}
+
+/* --- o resumo da direita ------------------------------------------------- */
+.ct-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.ct-linha b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ct-linha.grande {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1.5px solid var(--ink);
+  font-size: 15px;
+}
+.ct-linha.grande b {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.ct-miudo {
+  margin: var(--sp-2) 0 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.ct-miudo b {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ct-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.ct-tags span {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  line-height: 20px;
+  color: var(--text-3);
+}
+.ct-lado-bts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

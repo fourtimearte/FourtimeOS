@@ -2772,7 +2772,7 @@ const EXEMPLO: Cliente[] = [
       "pedidos": 0,
       "total": 0,
       "ultimoPedido": "",
-      "criadoEm": "2026-09-21"
+      "criadoEm": "2026-07-28"
     },
     {
       "id": "C0116",

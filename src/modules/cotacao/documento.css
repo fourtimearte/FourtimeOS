@@ -308,3 +308,25 @@
   display: block;
   border-top: 1px solid var(--fl-texto);
 }
+
+/* --- os informes na folha ------------------------------------------------ */
+.dc-informes {
+  margin-top: 6mm;
+}
+.dc-informes h3 {
+  margin: 0 0 2mm;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dc-informes ol {
+  margin: 0;
+  padding-left: 5mm;
+  display: grid;
+  gap: 1.4mm;
+}
+.dc-informes li {
+  font-size: 8.4pt;
+  line-height: 1.45;
+}

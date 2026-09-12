@@ -115,8 +115,8 @@
   /* punho · Pedido · Nome · Aviso · Departamento · Entrega · Planejamento ·
      Total · Atualização */
   grid-template-columns:
-    26px 90px minmax(0, 1fr) minmax(0, 132px) minmax(0, 108px)
-    100px 108px 52px minmax(0, 160px);
+    26px 90px minmax(0, 1fr) minmax(0, 146px) minmax(0, 104px)
+    100px 108px 52px minmax(0, 158px);
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -143,6 +143,10 @@
 }
 .at-colunas .num {
   text-align: right;
+}
+/* estas duas ficam sobre pílulas centralizadas */
+.at-colunas .meio {
+  text-align: center;
 }
 
 /* --- um dia --------------------------------------------------------------- */
@@ -363,6 +367,16 @@
 }
 
 /* --- as duas quantidades na linha do vendedor ---------------------------- */
+/* a divisão das peças no resumo do topo: uma por linha, e é ela que ensina o
+   que os pontinhos coloridos querem dizer lá na lista */
+.at-divisao {
+  display: grid;
+  gap: 1px;
+}
+.at-divisao .at-qtd {
+  margin-left: 0;
+  font-weight: 500;
+}
 .at-qtd {
   display: inline-flex;
   align-items: center;
@@ -472,7 +486,7 @@
   .at-colunas,
   .at-linha {
     grid-template-columns:
-      26px 90px minmax(0, 1fr) minmax(0, 126px) 98px 106px 52px minmax(0, 156px);
+      26px 90px minmax(0, 1fr) minmax(0, 140px) 98px 106px 52px minmax(0, 154px);
   }
   .at-colunas .some-antes,
   .at-linha .some-antes {

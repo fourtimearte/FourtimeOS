@@ -244,11 +244,18 @@ export function TelaAtividades() {
           <div style={{ '--barra': 'var(--posto-subli)' } as CSSProperties}>
             <span className="l">Peças na semana</span>
             <b>{pecas.toLocaleString('pt-BR')}</b>
-            <small>
-              <i className="at-ponto subli" />
-              {pecasSubli.toLocaleString('pt-BR')} sublimação ·{' '}
-              <i className="at-ponto pers" />
-              {pecasPersonalizadas.toLocaleString('pt-BR')} personalizado
+            {/* uma por linha, e não uma frase que quebra no meio de "418
+                personalizado". Estas duas linhas são a legenda dos pontinhos
+                coloridos que aparecem em cada pedido lá embaixo. */}
+            <small className="at-divisao">
+              <span className="at-qtd subli">
+                <i />
+                {pecasSubli.toLocaleString('pt-BR')} sublimação
+              </span>
+              <span className="at-qtd pers">
+                <i />
+                {pecasPersonalizadas.toLocaleString('pt-BR')} personalizado
+              </span>
             </small>
           </div>
           <div style={{ '--barra': 'var(--text-3)' } as CSSProperties}>
@@ -302,8 +309,8 @@ export function TelaAtividades() {
         <span>Nome</span>
         <span className="esconde">Aviso</span>
         <span className="some-antes">Departamento</span>
-        <span className="esconde">Entrega</span>
-        <span className="esconde">Planejamento</span>
+        <span className="esconde meio">Entrega</span>
+        <span className="esconde meio">Planejamento</span>
         <span className="num">Total</span>
         <span>Atualização</span>
       </div>

@@ -16,6 +16,7 @@ import { CampoDeData } from '../componentes/data'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { Aviso, Esqueleto, Vazio } from '../componentes/estado'
+import { RedeDeSeguranca } from '../componentes/rede'
 import { avisar, PilhaDeRecados } from '../componentes/recados'
 import { Gaveta, Modal } from '../componentes/sobreposicao'
 import { Tabela, type Coluna } from '../componentes/tabela'
@@ -447,9 +448,16 @@ export function TelaKit() {
 
           <Secao
             id="estados"
-            titulo="Vazio, esqueleto e aviso"
+            titulo="Vazio, esqueleto, aviso e a rede"
             texto="Lista vazia num galpão costuma ser dúvida, não descanso: o vazio diz o que aconteceu e qual é a saída. O esqueleto ocupa o lugar exato do conteúdo, para a tela não pular quando o dado chega."
           >
+            <div className="kit-bancada" style={{ display: 'block' }}>
+              <span className="kit-nota">
+                A rede de segurança: erro solto em React deixa a tela branca, e numa fábrica isso é
+                pior que o erro
+              </span>
+              <RedeDemo />
+            </div>
             <div className="kit-bancada coluna">
               <Aviso tom="brand" titulo="Três pedidos passaram da data">
                 Eles continuam no kanban, mas já contam como atraso no relatório do mês.
@@ -540,6 +548,26 @@ function ChipsDemo() {
       </Chip>
     </>
   )
+}
+
+function RedeDemo() {
+  const [cai, setCai] = useState(false)
+  /* a rede do kit é a dela mesma: um tombo aqui não pode derrubar o kit */
+  return (
+    <RedeDeSeguranca>
+      <Quebrado cai={cai} />
+      {!cai ? (
+        <Botao tom="contorno" onClick={() => setCai(true)}>
+          Derrubar esta seção de propósito
+        </Botao>
+      ) : null}
+    </RedeDeSeguranca>
+  )
+}
+
+function Quebrado({ cai }: { cai: boolean }) {
+  if (cai) throw new Error('Erro de propósito, para a rede aparecer no kit')
+  return null
 }
 
 function DataDemo() {

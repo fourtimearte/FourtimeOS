@@ -19,6 +19,7 @@ import {
   BuscaGlobal,
   Casca,
   PilhaDeRecados,
+  RedeDeSeguranca,
   temaAtual,
   usarAtalhoDaBusca,
   type ItemBusca,
@@ -167,7 +168,11 @@ export function App() {
           </button>
         }
       >
-        <Outlet />
+        {/* a rede fica DENTRO da casca: quando uma tela cai, o menu continua
+            de pe e da para ir para outro lugar sem recarregar nada */}
+        <RedeDeSeguranca aoVoltar={() => navegar('/')}>
+          <Outlet />
+        </RedeDeSeguranca>
       </Casca>
 
       <BuscaGlobal aberto={busca} aoFechar={() => setBusca(false)} itens={itensDaBusca} />

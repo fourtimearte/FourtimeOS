@@ -1598,3 +1598,39 @@ dialog.cmdk .caixa {
   border-color: var(--text-3);
   color: var(--text);
 }
+
+/* --- a rede de segurança ------------------------------------------------- */
+.rede {
+  max-width: 620px;
+  margin: var(--sp-6, 32px) auto;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.rede h2 {
+  margin: 0 0 10px;
+  font-size: 19px;
+}
+.rede p {
+  margin: 0 0 14px;
+  color: var(--text-2);
+}
+.rede pre {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rede-bts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}

@@ -22,6 +22,8 @@ export {
 
 export { CampoDeData, dataParaTela, telaParaData } from './componentes/data'
 
+export { RedeDeSeguranca } from './componentes/rede'
+
 export { Aviso, Esqueleto, Vazio } from './componentes/estado'
 export type { TomAviso } from './componentes/estado'
 

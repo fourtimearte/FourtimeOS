@@ -64,6 +64,8 @@ const TELAS = [
      base de exemplo nasce do mesmo molde toda vez */
   ['/cotacao/CT20260183', 'cotacao-editor'],
   ['/cotacao/CT20260183/folha', 'cotacao-folha'],
+  /* uma cotacao ja aprovada: e o unico jeito de a trava aparecer na foto */
+  ['/cotacao/CT20260182', 'cotacao-aprovada'],
   ['/funil', 'funil'],
 ]
 

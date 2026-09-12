@@ -95,10 +95,16 @@
 
 /* --- um produto ---------------------------------------------------------- */
 .dc-prod {
+  /* A medida da coluna da imagem e do respiro foi escolhida contando folha, e
+     não no olho: com 52 mm e 4 mm de respiro o bloco media 419 px e a folha
+     comporta 809, então dois produtos não cabiam por 10 px e cada produto
+     gastava uma folha inteira. Com 48 e 3 o bloco cabe duas vezes. A
+     paginação continua medida, então produto grande continua indo sozinho:
+     isto só desfaz o desperdício do caso comum. */
   display: grid;
-  grid-template-columns: 52mm minmax(0, 1fr);
-  gap: 4mm;
-  padding: 4mm 0;
+  grid-template-columns: 48mm minmax(0, 1fr);
+  gap: 3mm;
+  padding: 3mm 0;
   border-bottom: 1px solid var(--fl-borda);
 }
 .dc-prod:last-child {

@@ -120,9 +120,21 @@
   color: var(--text-3);
   background: var(--surface-2);
 }
+.gr-tab th,
+.gr-tab td {
+  vertical-align: middle;
+}
 .gr-tab .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+/* O NUMERO DIGITADO TEM QUE CAIR DEBAIXO DO TITULO DA COLUNA. A celula tem
+   12 px de recheio e o campo tinha mais 8 por dentro: o titulo parava a 12 px
+   da borda e o numero a 20, e as duas colunas nunca se encontravam. Aqui a
+   conta fecha: 4 da celula mais 8 do campo dao os mesmos 12 do titulo, e o
+   campo continua com folga por dentro para a moldura do foco. */
+.gr-tab td.num:has(.gr-campo) {
+  padding: 0 4px;
 }
 .gr-tam {
   font-weight: 700;
@@ -156,6 +168,7 @@
   min-width: 62px;
   max-width: 110px;
   height: 34px;
+  vertical-align: middle;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -413,11 +426,17 @@
   touch-action: none;
   transition: opacity var(--t-fast) var(--ease-out);
 }
-/* a área do dedo, invisível, por fora do quadradinho */
+/* A AREA DO DEDO, invisível, por fora do quadradinho. Ela cresce para cima e
+   para a esquerda, que é de onde o dedo vem, e NAO para a direita nem para
+   baixo. Crescer para a direita era o que punha uma barra de rolagem na
+   tabela sem valor: ali a coluna das peças é a última, a área do dedo passava
+   11 px da borda direita da tabela, e o navegador via conteúdo fora da caixa.
+   Com as colunas de dinheiro no ar o defeito não aparecia, porque a última
+   coluna é a do total e ela não tem alça. */
 .gr-alca::after {
   content: '';
   position: absolute;
-  inset: -11px;
+  inset: -14px -3px -3px -14px;
 }
 .gr-tab td.num:hover .gr-alca,
 .gr-tab td.num:focus-within .gr-alca,

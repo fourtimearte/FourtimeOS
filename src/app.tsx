@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
+  Buildings,
   CalendarCheck,
   ChartBar,
   ClipboardText,
@@ -20,9 +21,11 @@ import {
   TShirt,
   UserCircle,
   Users,
+  UsersThree,
 } from '@phosphor-icons/react'
 import {
   aplicarTema,
+  Avatar,
   BuscaGlobal,
   Casca,
   PilhaDeRecados,
@@ -34,7 +37,14 @@ import {
   type SecaoDeNavegacao,
   type Tema,
 } from '@ds'
-import { fotoDe, iniciaisDe, podeVer, primeiroNome, useSessao } from '@dominio/sessao'
+import {
+  fotoDe,
+  iniciaisDe,
+  NOME_DO_PAPEL,
+  podeVer,
+  primeiroNome,
+  useSessao,
+} from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 import { contarEsperando } from '@dominio/equipe'
@@ -124,7 +134,7 @@ export function App() {
      Isto e arrumacao, nao tranca. Quem protege o dado e a regra de acesso das
      tabelas la no banco. Esconder o item evita que a pessoa esbarre no que nao
      e dela, e nada alem disso. */
-  type Item = ItemDeNavegacao & { chave: Painel }
+  type Item = Omit<ItemDeNavegacao, 'filhos'> & { chave: Painel; filhos?: Item[] }
 
   const todas: { titulo: string; itens: Item[] }[] = [
     {
@@ -181,15 +191,46 @@ export function App() {
           rotulo: 'Relatório mensal',
           icone: <ChartBar {...icone} />,
         },
-        { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', icone: <Database {...icone} /> },
+        /* Configurações não é destino: é a raiz de uma árvore. Banco de dados e
+           Design System moraram soltos no menu enquanto não tinham casa, e
+           agora têm: os dois são cadastro do sistema, e cadastro do sistema é
+           configuração. Um menu com treze itens soltos não é um menu, é uma
+           lista de tudo que existe. */
         {
           chave: 'config',
           para: '/config',
           rotulo: 'Configurações',
           icone: <Gear {...icone} />,
           contagem: naFila || undefined,
+          filhos: [
+            {
+              chave: 'config',
+              para: '/config',
+              rotulo: 'Pessoas',
+              icone: <UsersThree size={18} />,
+              ativo: local.pathname === '/config',
+            },
+            {
+              chave: 'banco',
+              para: '/banco',
+              rotulo: 'Banco de dados',
+              icone: <Database size={18} />,
+            },
+            {
+              chave: 'config',
+              para: '/config/empresa',
+              rotulo: 'Empresa',
+              icone: <Buildings size={18} />,
+              ativo: local.pathname === '/config/empresa',
+            },
+            {
+              chave: 'kit',
+              para: '/kit',
+              rotulo: 'Design System',
+              icone: <Palette size={18} />,
+            },
+          ],
         },
-        { chave: 'kit', para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> },
       ],
     },
   ]
@@ -197,9 +238,17 @@ export function App() {
   const posso = (chave: Painel) => !!pessoa && podeVer(pessoa, chave)
 
   /* Secao sem nenhum item vira titulo solto pairando sobre nada, entao ela
-     some junto. */
+     some junto. E uma arvore sem nenhum galho que a pessoa alcance nao vira
+     item vazio: ela some tambem. */
   const secoes: SecaoDeNavegacao[] = todas
-    .map((s) => ({ titulo: s.titulo, itens: s.itens.filter((i) => posso(i.chave)) }))
+    .map((s) => ({
+      titulo: s.titulo,
+      itens: s.itens
+        .map((i) =>
+          i.filhos ? { ...i, filhos: i.filhos.filter((f) => posso(f.chave)) } : i,
+        )
+        .filter((i) => (i.filhos ? i.filhos.length > 0 : posso(i.chave))),
+    }))
     .filter((s) => s.itens.length > 0)
 
   /* cinco destinos na barra de baixo, os mesmos do v5 */
@@ -219,7 +268,7 @@ export function App() {
   }
 
   const itensDaBusca: ItemBusca[] = secoes.flatMap((s) =>
-    s.itens.map((i) => ({
+    s.itens.flatMap((i) => (i.filhos ? i.filhos : [i])).map((i) => ({
       id: i.para,
       grupo: 'Telas',
       titulo: i.rotulo,
@@ -272,18 +321,45 @@ export function App() {
             </button>
           </>
         }
-        rodapeDoLado={
-          <button
-            type="button"
-            className="bt-icone"
-            aria-label="Sair"
-            title="Sair"
-            onClick={() => {
-              void sair()
-            }}
-          >
-            <SignOut size={18} />
-          </button>
+        peDoLado={
+          pessoa ? (
+            <>
+              {/* Quem esta usando o sistema fica no pe do menu, e nao so numa
+                  bolinha no canto do topo: o papel manda no que a pessoa ve, e
+                  ela precisa poder conferir de relance com que crachá entrou. */}
+              <Link to="/perfil" className="lado-eu" title="Meu perfil">
+                <Avatar iniciais={iniciaisDe(pessoa.nome)} foto={fotoDe(pessoa)} tamanho={34} />
+                <div>
+                  <b>{pessoa.nome}</b>
+                  <span>{NOME_DO_PAPEL[pessoa.papel]}</span>
+                </div>
+              </Link>
+
+              <div className="lado-acoes">
+                {podeVer(pessoa, 'config') ? (
+                  <Link
+                    to="/config"
+                    className={ligado('/config') ? 'lado-acao ligado' : 'lado-acao'}
+                  >
+                    <Gear size={18} />
+                    <span>Configurações</span>
+                  </Link>
+                ) : null}
+                <span className="lado-risco" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="bt-icone"
+                  aria-label="Sair"
+                  title="Sair"
+                  onClick={() => {
+                    void sair()
+                  }}
+                >
+                  <SignOut size={18} />
+                </button>
+              </div>
+            </>
+          ) : null
         }
       >
         {/* a rede fica DENTRO da casca: quando uma tela cai, o menu continua

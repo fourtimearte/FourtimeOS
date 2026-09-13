@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 export type ItemDeNavegacao = {
   para: string
@@ -10,9 +11,13 @@ export type ItemDeNavegacao = {
   aviso?: boolean
   /** quando a rota atual conta como este item */
   ativo?: boolean
+  /** quando o item nao e destino, e sim a raiz de uma arvore que abre abaixo */
+  filhos?: ItemDeNavegacao[]
 }
 
 export type SecaoDeNavegacao = { titulo: string; itens: ItemDeNavegacao[] }
+
+type TipoDeLink = (p: { to: string; className?: string; children: ReactNode }) => ReactNode
 
 /* ==========================================================================
    A casca do sistema.
@@ -34,7 +39,7 @@ export function Casca({
   Link,
   aoAbrirBusca,
   acoesDoTopo,
-  rodapeDoLado,
+  peDoLado,
   children,
 }: {
   encolhida: boolean
@@ -45,55 +50,65 @@ export function Casca({
   /** diz se um caminho e o atual */
   ligado: (para: string) => boolean
   /** o Link do roteador, injetado para o ds nao depender dele */
-  Link: (p: { to: string; className?: string; children: ReactNode }) => ReactNode
+  Link: TipoDeLink
   aoAbrirBusca: () => void
   acoesDoTopo?: ReactNode
-  rodapeDoLado?: ReactNode
+  /** o pe do menu lateral: quem esta usando, e o que ele faz daqui */
+  peDoLado?: ReactNode
   children: ReactNode
 }) {
+  /* Dois cliques no trilho abrem e fecham o menu. So no vazio dele: dois
+     cliques num item sao dois cliques num item, e nao um pedido de encolher. */
+  function doisCliquesNoTrilho(e: MouseEvent<HTMLElement>) {
+    const alvo = e.target as HTMLElement | null
+    if (alvo && alvo.closest('a, button, input, [role="button"]')) return
+    aoEncolher()
+  }
+
   return (
     <div className={['casca', encolhida ? 'encolhida' : ''].filter(Boolean).join(' ')}>
-      <nav className="lado" aria-label="Menu do sistema">
-        <Link to="/" className="marca">
-          <span className="logo">F</span>
-          <span>Fourtime OS</span>
-        </Link>
+      <nav className="lado" aria-label="Menu do sistema" onDoubleClick={doisCliquesNoTrilho}>
+        {/* O F vermelho e o botao do trilho. Ele ja estava no canto onde a mao
+            procura, e um segundo botao so para encolher era um botao a mais
+            disputando o mesmo canto. */}
+        <div className="marca">
+          <button
+            type="button"
+            className="logo"
+            onClick={aoEncolher}
+            aria-label={encolhida ? 'Abrir o menu' : 'Encolher o menu'}
+            title={encolhida ? 'Abrir o menu' : 'Encolher o menu'}
+            aria-expanded={!encolhida}
+          >
+            F
+          </button>
+          <Link to="/" className="marca-nome">
+            Fourtime OS
+          </Link>
+        </div>
 
         {secoes.map((s) => (
           <div key={s.titulo}>
             <div className="secao">{s.titulo}</div>
-            {s.itens.map((i) => (
-              <Link
-                key={i.para}
-                to={i.para}
-                className={['item', i.ativo ?? ligado(i.para) ? 'ligado' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {i.icone}
-                <span className="rotulo">{i.rotulo}</span>
-                {i.contagem != null ? (
-                  <span className={['cnt', i.aviso ? 'aviso' : ''].filter(Boolean).join(' ')}>
-                    {i.contagem}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
+            {s.itens.map((i) =>
+              i.filhos && i.filhos.length > 0 ? (
+                <Ramo
+                  key={i.para}
+                  item={i}
+                  filhos={i.filhos}
+                  ligado={ligado}
+                  Link={Link}
+                  encolhida={encolhida}
+                  aoEncolher={aoEncolher}
+                />
+              ) : (
+                <ItemDoMenu key={i.para} item={i} ligado={ligado} Link={Link} />
+              ),
+            )}
           </div>
         ))}
 
-        <div className="rodape">
-          <button
-            type="button"
-            className="bt-icone"
-            onClick={aoEncolher}
-            aria-label={encolhida ? 'Abrir o menu' : 'Encolher o menu'}
-            title={encolhida ? 'Abrir o menu' : 'Encolher o menu'}
-          >
-            <Seta virada={encolhida} />
-          </button>
-          {rodapeDoLado}
-        </div>
+        {peDoLado ? <div className="lado-pe">{peDoLado}</div> : null}
       </nav>
 
       <header className="topo">
@@ -126,20 +141,110 @@ export function Casca({
   )
 }
 
-function Seta({ virada }: { virada: boolean }) {
+function ItemDoMenu({
+  item,
+  ligado,
+  Link,
+  filho,
+}: {
+  item: ItemDeNavegacao
+  ligado: (para: string) => boolean
+  Link: TipoDeLink
+  filho?: boolean
+}) {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      style={{ transform: virada ? 'rotate(180deg)' : undefined }}
+    <Link
+      to={item.para}
+      className={['item', filho ? 'filho' : '', item.ativo ?? ligado(item.para) ? 'ligado' : '']
+        .filter(Boolean)
+        .join(' ')}
     >
+      {item.icone}
+      <span className="rotulo">{item.rotulo}</span>
+      {item.contagem != null ? (
+        <span className={['cnt', item.aviso ? 'aviso' : ''].filter(Boolean).join(' ')}>
+          {item.contagem}
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
+/* --- o item que abre uma arvore abaixo ------------------------------------
+   Ele nao e destino: e a raiz. Clicar abre e fecha a lista dos filhos, e
+   estando num dos filhos ele ja nasce aberto, se nao a pessoa teria que abrir
+   a arvore toda vez para descobrir onde ela esta. */
+function Ramo({
+  item,
+  filhos,
+  ligado,
+  Link,
+  encolhida,
+  aoEncolher,
+}: {
+  item: ItemDeNavegacao
+  filhos: ItemDeNavegacao[]
+  ligado: (para: string) => boolean
+  Link: TipoDeLink
+  encolhida: boolean
+  aoEncolher: () => void
+}) {
+  const dentro = filhos.some((f) => f.ativo ?? ligado(f.para))
+  const [aberto, setAberto] = useState(dentro)
+
+  useEffect(() => {
+    if (dentro) setAberto(true)
+  }, [dentro])
+
+  /* Com o menu em trilho nao cabe arvore nenhuma: o clique abre o menu e a
+     arvore junto, que e o que a pessoa queria ver. */
+  function clicar() {
+    if (encolhida) {
+      aoEncolher()
+      setAberto(true)
+      return
+    }
+    setAberto((a) => !a)
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={['item', 'ramo', dentro ? 'dentro' : ''].filter(Boolean).join(' ')}
+        onClick={clicar}
+        aria-expanded={aberto && !encolhida}
+      >
+        {item.icone}
+        <span className="rotulo">{item.rotulo}</span>
+        {item.contagem != null ? (
+          <span className={['cnt', item.aviso ? 'aviso' : ''].filter(Boolean).join(' ')}>
+            {item.contagem}
+          </span>
+        ) : null}
+        <span className={aberto ? 'galho-seta virada' : 'galho-seta'} aria-hidden="true">
+          <SetaDeGalho />
+        </span>
+      </button>
+
+      {aberto ? (
+        <div className="galho">
+          {filhos.map((f) => (
+            <ItemDoMenu key={f.para} item={f} ligado={ligado} Link={Link} filho />
+          ))}
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+function SetaDeGalho() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M14.5 6 8.5 12l6 6"
+        d="m8 10 4 4 4-4"
         stroke="currentColor"
-        strokeWidth="1.9"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

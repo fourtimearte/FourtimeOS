@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Buildings, Database, UsersThree } from '@phosphor-icons/react'
+import { Buildings, Database, Palette, UsersThree } from '@phosphor-icons/react'
 import { podeVer, useSessao } from '@dominio/sessao'
 import type { Painel } from '@dominio/sessao'
 
@@ -16,18 +16,20 @@ import type { Painel } from '@dominio/sessao'
    junto, o poder de aprovar conta de gente.
    ========================================================================== */
 
-export type AbaDaConfig = 'pessoas' | 'banco' | 'empresa'
+export type AbaDaConfig = 'pessoas' | 'banco' | 'empresa' | 'kit'
 
 const ABAS: { chave: AbaDaConfig; para: string; rotulo: string; painel: Painel }[] = [
   { chave: 'pessoas', para: '/config', rotulo: 'Pessoas', painel: 'config' },
   { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', painel: 'banco' },
   { chave: 'empresa', para: '/config/empresa', rotulo: 'Empresa', painel: 'config' },
+  { chave: 'kit', para: '/kit', rotulo: 'Design System', painel: 'kit' },
 ]
 
 const ICONE: Record<AbaDaConfig, typeof UsersThree> = {
   pessoas: UsersThree,
   banco: Database,
   empresa: Buildings,
+  kit: Palette,
 }
 
 export function AbasDaConfig({ atual }: { atual: AbaDaConfig }) {

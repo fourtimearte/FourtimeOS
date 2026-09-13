@@ -253,6 +253,7 @@ function PecaNaFicha({
       <ModuloDeLayout
         bloco={b}
         aoMudar={aoMudarBloco}
+        semValor={!comDinheiro}
         arte={
           <CaixaDeImagem
             imagem={b.imagem}

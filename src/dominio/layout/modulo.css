@@ -125,22 +125,52 @@
   min-width: 0;
 }
 
-/* --- a coluna da direita: tabela à esquerda, cartões à direita ------------ */
+/* --- a coluna da direita: a ficha técnica ---------------------------------
+   COM VALOR ela é uma pilha, e é assim na v3.375: tecido, design, tabela e
+   observação, cada um com a largura inteira da coluna. A conta é de espaço.
+   A tabela com valor tem quatro colunas (tamanho, peças, valor e total), e
+   quatro colunas não cabem em metade de meia coluna: quando a tabela ficava
+   ao lado dos cartões, a coluna do total desaparecia atrás de uma barra de
+   rolagem que não tinha motivo para existir.
+
+   SEM VALOR a tabela perde duas colunas e passa a sobrar espaço ao lado dela.
+   Aí, e só aí, a ficha vira duas colunas: a tabela encosta à esquerda com a
+   largura que ela precisa, e tecido, design e observação ocupam o que sobrou.
+   A observação é quem engole a sobra de altura, e não uma fileira vazia. */
 .mod-ficha {
-  display: grid;
-  grid-template-columns: minmax(140px, 0.85fr) minmax(0, 1.15fr);
-  gap: var(--sp-3);
-  align-items: start;
-  min-width: 0;
-}
-.mod-tabela,
-.mod-cartoes {
-  min-width: 0;
-}
-.mod-cartoes {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  min-width: 0;
+}
+.mod-tabela {
+  min-width: 0;
+}
+.mod-ficha.sem-valor {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  column-gap: var(--sp-3);
+  row-gap: var(--sp-2);
+  align-items: start;
+}
+/* por classe, e não por posição: um bloco novo amanhã não desalinha nada */
+.mod-ficha.sem-valor > .mod-tabela {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+}
+.mod-ficha.sem-valor > .mod-tec {
+  grid-column: 2;
+  grid-row: 1;
+}
+.mod-ficha.sem-valor > .mod-design {
+  grid-column: 2;
+  grid-row: 2;
+}
+.mod-ficha.sem-valor > .mod-obs {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: stretch;
 }
 
 .mod-cartao {
@@ -361,6 +391,13 @@
   color: var(--text-3);
 }
 
+/* sem valor a tabela tem duas colunas: ela toma so a largura que precisa, em
+   vez de esticar e deixar as celulas ocas */
+.mod-ficha.sem-valor > .mod-tabela .gr-rolo {
+  width: max-content;
+  max-width: 100%;
+}
+
 /* --- no celular a ficha desce por baixo da arte -------------------------- */
 @media (max-width: 1100px) {
   .mod {
@@ -368,7 +405,8 @@
   }
 }
 @media (max-width: 620px) {
-  .mod-ficha {
-    grid-template-columns: minmax(0, 1fr);
+  .mod-ficha.sem-valor {
+    display: flex;
+    flex-direction: column;
   }
 }

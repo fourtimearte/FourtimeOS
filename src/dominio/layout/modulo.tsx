@@ -58,6 +58,7 @@ export function ModuloDeLayout({
   tabela,
   acoes,
   leitura,
+  semValor,
 }: {
   bloco: Bloco
   aoMudar: (b: Bloco) => void
@@ -68,6 +69,8 @@ export function ModuloDeLayout({
   /** os botões do canto: informações, copiar e apagar */
   acoes?: ReactNode
   leitura?: boolean
+  /** modo sem valor: a tabela encolhe e a ficha vira duas colunas */
+  semValor?: boolean
 }) {
   const [menu, setMenu] = useState('')
   const [ctx, setCtx] = useState<{ cabecalho: string; itens: ItemDeContexto[] } | null>(null)
@@ -238,8 +241,17 @@ export function ModuloDeLayout({
         <div className="mod-arte">{arte}</div>
       </div>
 
-      {/* ================= coluna da direita: a ficha técnica =============== */}
-      <div className="mod-ficha">
+      {/* ================= coluna da direita: a ficha técnica ===============
+          A ORDEM E O ARRANJO SÃO OS DA v3.375, e a razão é largura. Com valor
+          a ficha é uma pilha: tecido, design, tabela e observação, cada um com
+          a largura inteira da coluna. Quatro colunas de tabela (tamanho,
+          peças, valor e total) não cabem em metade de meia coluna, e foi
+          exatamente isso que aconteceu quando a tabela ficou ao lado dos
+          cartões: a coluna do total sumia atrás de uma barra de rolagem.
+
+          Sem valor a tabela perde duas colunas e sobra espaço: aí ela encosta
+          à esquerda e os cartões ocupam o que ela deixou. */}
+      <div className={semValor ? 'mod-ficha sem-valor' : 'mod-ficha'}>
         {info ? (
           <p className="mod-so-anexo">
             Módulo de informações. Ele é anexo do pedido, não peça de produção:
@@ -247,11 +259,8 @@ export function ModuloDeLayout({
           </p>
         ) : (
           <>
-            <div className="mod-tabela">{tabela}</div>
-
-            <div className="mod-cartoes">
-              {/* --- tecido, uma linha por tecido --- */}
-              <section className="mod-cartao">
+            {/* --- tecido, uma linha por tecido --- */}
+              <section className="mod-cartao mod-tec">
                 <header>
                   <span>Tecido</span>
                   {leitura ? null : (
@@ -343,6 +352,8 @@ export function ModuloDeLayout({
                 </div>
               </section>
 
+              <div className="mod-tabela">{tabela}</div>
+
               {/* --- a observação do layout --- */}
               <section className="mod-cartao mod-obs">
                 {leitura && !bloco.observacao ? null : (
@@ -354,7 +365,6 @@ export function ModuloDeLayout({
                   />
                 )}
               </section>
-            </div>
           </>
         )}
       </div>

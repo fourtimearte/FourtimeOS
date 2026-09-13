@@ -243,6 +243,21 @@
   line-height: 1.5;
   color: var(--text-3);
 }
+.ent-pe a {
+  color: var(--text);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.ent-pe a:hover {
+  color: var(--brand);
+}
+
+/* o campo desligado enquanto o servidor responde: continua legivel, so para de
+   parecer que aceita digitacao */
+.ent-caixa input[disabled] {
+  color: var(--text-3);
+  cursor: default;
+}
 
 /* --- celular ------------------------------------------------------------- */
 @media (max-width: 420px) {

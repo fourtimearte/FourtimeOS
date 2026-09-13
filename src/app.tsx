@@ -18,6 +18,7 @@ import {
   SignOut,
   Sun,
   TShirt,
+  UserCircle,
   Users,
 } from '@phosphor-icons/react'
 import {
@@ -33,7 +34,8 @@ import {
   type SecaoDeNavegacao,
   type Tema,
 } from '@ds'
-import { iniciaisDe, primeiroNome, useSessao } from '@dominio/sessao'
+import { iniciaisDe, podeVer, primeiroNome, useSessao } from '@dominio/sessao'
+import type { Painel, Pessoa } from '@dominio/sessao'
 import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
@@ -43,7 +45,7 @@ export function App() {
   const navegar = useNavigate()
   const local = useLocation()
   const { estado, sair } = useSessao()
-  const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
+  const pessoa: Pessoa | null = estado.fase === 'dentro' ? estado.pessoa : null
   const [encolhida, setEncolhida] = useState(() => {
     try {
       return localStorage.getItem('ft.menu') === 'encolhido'
@@ -88,50 +90,99 @@ export function App() {
   /* Os doze destinos do v5, na ordem e com os nomes dele. O Design System e a
      unica linha que nao esta no mockup: ele e ferramenta nossa, e sem ele o
      /kit fica inalcancavel pelo menu. */
-  const secoes: SecaoDeNavegacao[] = [
+  /* Cada item sabe de qual painel ele e. A pessoa so ve o que o papel dela
+     alcanca, e quem resolve essa lista e o banco: aqui so filtra.
+
+     Isto e arrumacao, nao tranca. Quem protege o dado e a regra de acesso das
+     tabelas la no banco. Esconder o item evita que a pessoa esbarre no que nao
+     e dela, e nada alem disso. */
+  type Item = ItemDeNavegacao & { chave: Painel }
+
+  const todas: { titulo: string; itens: Item[] }[] = [
     {
       titulo: 'Comercial',
       itens: [
-        { para: '/', rotulo: 'Início', icone: <House {...icone} /> },
+        { chave: 'inicio', para: '/', rotulo: 'Início', icone: <House {...icone} /> },
         {
+          chave: 'funil',
           para: '/funil',
           rotulo: 'Funil e WhatsApp',
           icone: <Kanban {...icone} />,
           contagem: leadsAtivos || undefined,
         },
-        { para: '/clientes', rotulo: 'Clientes', icone: <Users {...icone} /> },
-        { para: '/cotacao', rotulo: 'Cotação de venda', icone: <Receipt {...icone} /> },
+        { chave: 'clientes', para: '/clientes', rotulo: 'Clientes', icone: <Users {...icone} /> },
+        {
+          chave: 'cotacao',
+          para: '/cotacao',
+          rotulo: 'Cotação de venda',
+          icone: <Receipt {...icone} />,
+        },
       ],
     },
     {
       titulo: 'Produção',
       itens: [
-        { para: '/ficha', rotulo: 'Ficha de produção', icone: <ClipboardText {...icone} /> },
-        { para: '/kanban', rotulo: 'Kanban de produção', icone: <Factory {...icone} /> },
-        { para: '/produtos', rotulo: 'Fichas técnicas', icone: <TShirt {...icone} /> },
-        { para: '/estoque', rotulo: 'Estoque', icone: <Package {...icone} /> },
+        {
+          chave: 'ficha',
+          para: '/ficha',
+          rotulo: 'Ficha de produção',
+          icone: <ClipboardText {...icone} />,
+        },
+        {
+          chave: 'kanban',
+          para: '/kanban',
+          rotulo: 'Kanban de produção',
+          icone: <Factory {...icone} />,
+        },
+        { chave: 'produtos', para: '/produtos', rotulo: 'Fichas técnicas', icone: <TShirt {...icone} /> },
+        { chave: 'estoque', para: '/estoque', rotulo: 'Estoque', icone: <Package {...icone} /> },
       ],
     },
     {
       titulo: 'Gestão',
       itens: [
-        { para: '/atividades', rotulo: 'Painel de atividades', icone: <CalendarCheck {...icone} /> },
-        { para: '/relatorio', rotulo: 'Relatório mensal', icone: <ChartBar {...icone} /> },
-        { para: '/banco', rotulo: 'Banco de dados', icone: <Database {...icone} /> },
-        { para: '/config', rotulo: 'Configurações', icone: <Gear {...icone} /> },
-        { para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> },
+        {
+          chave: 'atividades',
+          para: '/atividades',
+          rotulo: 'Painel de atividades',
+          icone: <CalendarCheck {...icone} />,
+        },
+        {
+          chave: 'relatorio',
+          para: '/relatorio',
+          rotulo: 'Relatório mensal',
+          icone: <ChartBar {...icone} />,
+        },
+        { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', icone: <Database {...icone} /> },
+        { chave: 'config', para: '/config', rotulo: 'Configurações', icone: <Gear {...icone} /> },
+        { chave: 'kit', para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> },
       ],
     },
   ]
 
+  const posso = (chave: Painel) => !!pessoa && podeVer(pessoa, chave)
+
+  /* Secao sem nenhum item vira titulo solto pairando sobre nada, entao ela
+     some junto. */
+  const secoes: SecaoDeNavegacao[] = todas
+    .map((s) => ({ titulo: s.titulo, itens: s.itens.filter((i) => posso(i.chave)) }))
+    .filter((s) => s.itens.length > 0)
+
   /* cinco destinos na barra de baixo, os mesmos do v5 */
-  const rodapeNav: ItemDeNavegacao[] = [
-    { para: '/', rotulo: 'Início', icone: <House size={22} /> },
-    { para: '/funil', rotulo: 'Vendas', icone: <Kanban size={22} /> },
-    { para: '/kanban', rotulo: 'Produção', icone: <Factory size={22} /> },
-    { para: '/atividades', rotulo: 'Semana', icone: <CalendarCheck size={22} /> },
-    { para: '/config', rotulo: 'Mais', icone: <DotsThree size={22} /> },
+  const rodapeTodos: Item[] = [
+    { chave: 'inicio', para: '/', rotulo: 'Início', icone: <House size={22} /> },
+    { chave: 'funil', para: '/funil', rotulo: 'Vendas', icone: <Kanban size={22} /> },
+    { chave: 'kanban', para: '/kanban', rotulo: 'Produção', icone: <Factory size={22} /> },
+    { chave: 'atividades', para: '/atividades', rotulo: 'Semana', icone: <CalendarCheck size={22} /> },
+    { chave: 'config', para: '/config', rotulo: 'Mais', icone: <DotsThree size={22} /> },
   ]
+
+  /* No celular a barra de baixo nunca fica vazia: quem ainda nao foi aprovado
+     tem pelo menos o proprio perfil para onde ir. */
+  const rodapeNav: ItemDeNavegacao[] = rodapeTodos.filter((i) => posso(i.chave))
+  if (rodapeNav.length === 0) {
+    rodapeNav.push({ para: '/perfil', rotulo: 'Perfil', icone: <UserCircle size={22} /> })
+  }
 
   const itensDaBusca: ItemBusca[] = secoes.flatMap((s) =>
     s.itens.map((i) => ({
@@ -171,11 +222,11 @@ export function App() {
             <button
               type="button"
               className="pessoa"
-              title={pessoa ? `${pessoa.nome} · sair` : 'Sair'}
-              aria-label={pessoa ? `${primeiroNome(pessoa.nome)}, sair do sistema` : 'Sair'}
-              onClick={() => {
-                void sair()
-              }}
+              title={pessoa ? `${pessoa.nome} · meu perfil` : 'Meu perfil'}
+              aria-label={
+                pessoa ? `${primeiroNome(pessoa.nome)}, abrir meu perfil` : 'Meu perfil'
+              }
+              onClick={() => navegar('/perfil')}
             >
               {pessoa ? iniciaisDe(pessoa.nome) : '··'}
             </button>

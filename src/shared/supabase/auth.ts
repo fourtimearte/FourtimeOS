@@ -184,6 +184,72 @@ export function crachaValido(): Promise<Cracha | null> {
   return renovarAgora()
 }
 
+/* --- criar conta ----------------------------------------------------------
+   Quem libera o e-mail e o admin, e a trava disso mora no banco: sem convite,
+   o insert em auth.users e desfeito e a conta nao nasce. O servidor devolve o
+   motivo com a dica ja escrita, e e ela que a tela mostra. */
+
+type RespostaDoCadastro = RespostaDoToken & {
+  code?: string | number
+  hint?: string
+}
+
+function recadoDoCadastro(dados: RespostaDoCadastro, situacao: number): string {
+  /* P0001 e "a regra do banco recusou". A dica vem escrita de la em portugues,
+     entao ela ganha da mensagem generica. */
+  if (dados.code === 'P0001' && dados.hint) return dados.hint
+
+  const bruto = [dados.msg, dados.message, dados.error_description, dados.error_code]
+    .filter(Boolean)
+    .join(' ')
+
+  if (/user[ _]already[ _]exists|already[ _]registered/i.test(bruto)) {
+    return 'Já existe uma conta com este e-mail. Tente entrar.'
+  }
+  if (/weak[ _]password|at least/i.test(bruto)) {
+    return 'A senha é curta demais. Use pelo menos 8 caracteres.'
+  }
+  if (/signups?[ _]not[ _]allowed|disabled/i.test(bruto)) {
+    return 'O cadastro está fechado no momento. Fale com o administrador.'
+  }
+  if (situacao === 429) {
+    return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.'
+  }
+  return bruto || 'Não consegui criar a conta agora. Tente de novo.'
+}
+
+export async function cadastrar(email: string, senha: string, nome: string): Promise<Cracha> {
+  let resposta: Response
+  try {
+    resposta = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_CHAVE, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password: senha,
+        data: { nome: nome.trim() },
+      }),
+    })
+  } catch {
+    throw new Error(SEM_REDE)
+  }
+
+  const dados = (await resposta.json().catch(() => ({}))) as RespostaDoCadastro
+  if (!resposta.ok || !dados.access_token || !dados.refresh_token) {
+    throw new Error(recadoDoCadastro(dados, resposta.status))
+  }
+
+  const novo: Cracha = {
+    acesso: dados.access_token,
+    renovacao: dados.refresh_token,
+    venceEm: Date.now() + (dados.expires_in ?? 3600) * 1000,
+    usuario: dados.user?.id ?? '',
+    email: dados.user?.email ?? '',
+  }
+  gravar(novo)
+  return novo
+}
+
 export async function entrarComEmail(email: string, senha: string): Promise<Cracha> {
   const novo = await pedirCracha(
     { email: email.trim().toLowerCase(), password: senha },

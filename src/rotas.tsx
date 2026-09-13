@@ -1,16 +1,20 @@
+import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { App } from './app'
-import { Protegido } from '@dominio/sessao/protegido'
+import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
+import type { Painel } from '@dominio/sessao'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
+import { TelaConfig } from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
-import { TelaEntrar } from '@modules/entrar'
+import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
 import { TelaEmBreve } from '@modules/em-breve'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFunil } from '@modules/funil'
+import { TelaPerfil } from '@modules/perfil'
 import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
 import { TelaPainel } from '@modules/painel'
@@ -19,8 +23,17 @@ import { TelaPainel } from '@modules/painel'
    todas as camadas ao mesmo tempo. É de propósito que ele fique na raiz de src
    e não dentro de shared/, para a regra de dependência continuar de mão única:
    modules → dominio → shared → ds. */
+
+/* Cada tela declara de qual painel ela é, e o porteiro decide. Quem não foi
+   aprovado vai para o próprio perfil; quem foi aprovado mas não tem este
+   painel vê o aviso de que a tela não é do acesso dela. */
+const pede = (painel: Painel, tela: ReactNode) => (
+  <ExigePainel painel={painel}>{tela}</ExigePainel>
+)
+
 export const rotas = createBrowserRouter([
   { path: '/entrar', element: <TelaEntrar /> },
+  { path: '/criar-conta', element: <TelaCriarConta /> },
   {
     path: '/',
     element: (
@@ -29,44 +42,40 @@ export const rotas = createBrowserRouter([
       </Protegido>
     ),
     children: [
-      { index: true, element: <TelaPainel /> },
-      { path: 'funil', element: <TelaFunil /> },
-      { path: 'clientes', element: <TelaClientes /> },
-      { path: 'cotacao', element: <TelaCotacao /> },
-      { path: 'cotacao/:id', element: <EditorDeCotacao /> },
-      { path: 'cotacao/:id/folha', element: <DocumentoDaCotacao /> },
-      { path: 'ficha', element: <TelaFicha /> },
-      { path: 'kanban', element: <TelaKanban /> },
-      { path: 'estoque', element: <TelaEstoque /> },
-      { path: 'kit', element: <TelaKit /> },
+      { index: true, element: pede('inicio', <TelaPainel />) },
 
-      /* Os destinos do v5 que ainda nao tem modulo. Eles existem para o menu
-         estar inteiro: nenhum item leva a lugar nenhum. */
+      /* O perfil é a única tela que abre sem aprovação. É onde quem acabou de
+         criar a conta descobre que está na fila, em vez de encarar um menu
+         vazio sem explicação nenhuma. */
+      { path: 'perfil', element: <TelaPerfil /> },
+
+      { path: 'funil', element: pede('funil', <TelaFunil />) },
+      { path: 'clientes', element: pede('clientes', <TelaClientes />) },
+      { path: 'cotacao', element: pede('cotacao', <TelaCotacao />) },
+      { path: 'cotacao/:id', element: pede('cotacao', <EditorDeCotacao />) },
+      { path: 'cotacao/:id/folha', element: pede('cotacao', <DocumentoDaCotacao />) },
+      { path: 'ficha', element: pede('ficha', <TelaFicha />) },
+      { path: 'kanban', element: pede('kanban', <TelaKanban />) },
+      { path: 'estoque', element: pede('estoque', <TelaEstoque />) },
+      { path: 'kit', element: pede('kit', <TelaKit />) },
+      { path: 'atividades', element: pede('atividades', <TelaAtividades />) },
+      { path: 'relatorio', element: pede('relatorio', <TelaRelatorio />) },
+      { path: 'banco', element: pede('banco', <TelaBanco />) },
+      { path: 'config', element: pede('config', <TelaConfig />) },
+
+      /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar
+         inteiro: nenhum item leva a lugar nenhum. */
       {
         path: 'produtos',
-        element: (
+        element: pede(
+          'produtos',
           <TelaEmBreve
             acima="Produção"
             titulo="Fichas técnicas"
             sub="A referência de cada peça: molde, tecido, consumo e mínimo."
             fase="fase 2"
             texto="Ela nasce junto com a ficha de produção, porque as duas leem o mesmo cadastro de referência."
-          />
-        ),
-      },
-      { path: 'atividades', element: <TelaAtividades /> },
-      { path: 'relatorio', element: <TelaRelatorio /> },
-      { path: 'banco', element: <TelaBanco /> },
-      {
-        path: 'config',
-        element: (
-          <TelaEmBreve
-            acima="Gestão"
-            titulo="Configurações"
-            sub="Empresa, pessoas, papéis e o que cada um pode fazer."
-            fase="fase 1, junto com o Supabase"
-            texto="O endereço e o CNPJ da Fourtime, que hoje estão como a conferir no rodapé da folha, passam a ser preenchidos aqui."
-          />
+          />,
         ),
       },
     ],

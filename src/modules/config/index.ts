@@ -1,0 +1,1 @@
+export { TelaConfig } from './tela'

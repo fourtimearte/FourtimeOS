@@ -4,6 +4,10 @@ import type { Estado } from './tipos'
 export type Sessao = {
   estado: Estado
   entrar: (email: string, senha: string) => Promise<void>
+  criarConta: (nome: string, email: string, senha: string) => Promise<void>
+  mudarMeuNome: (nome: string) => Promise<void>
+  /** pergunta de novo ao banco quem eu sou: usada depois que o admin aprova */
+  reconferir: () => Promise<void>
   sair: () => Promise<void>
 }
 

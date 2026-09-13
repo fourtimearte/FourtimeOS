@@ -97,3 +97,13 @@ export async function tabela<T>(caminho: string, pedido: Pedido = {}): Promise<T
   if (resposta.status === 204) return undefined as T
   return (await resposta.json()) as T
 }
+
+/* Uma funcao do banco chamada pelo nome. Serve para o que nao cabe em ler ou
+   gravar uma linha: mudar o proprio nome, por exemplo, que precisa tocar uma
+   coluna so e nenhuma outra. */
+export async function chamar<T>(
+  funcao: string,
+  argumentos: Record<string, unknown> = {},
+): Promise<T> {
+  return tabela<T>(`rpc/${funcao}`, { metodo: 'POST', corpo: argumentos })
+}

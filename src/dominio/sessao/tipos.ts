@@ -1,28 +1,89 @@
 /* Quem esta usando o sistema, e o que essa pessoa pode. */
 
-export type Papel = 'dono' | 'vendedor' | 'producao'
+export type Papel = 'admin' | 'gerente' | 'vendedor' | 'producao' | 'estoquista' | 'analista'
+
+export const PAPEIS: Papel[] = [
+  'admin',
+  'gerente',
+  'vendedor',
+  'producao',
+  'estoquista',
+  'analista',
+]
 
 export const NOME_DO_PAPEL: Record<Papel, string> = {
-  dono: 'Dono',
+  admin: 'Administrador',
+  gerente: 'Gerente',
   vendedor: 'Vendedor',
   producao: 'Produção',
+  estoquista: 'Estoquista',
+  analista: 'Analista',
 }
+
+export const LINHA_DO_PAPEL: Record<Papel, string> = {
+  admin: 'Manda em tudo, e é quem libera e-mail, aprova conta e escolhe painel.',
+  gerente: 'Vê a fábrica inteira e o dinheiro, sem mexer em quem entra.',
+  vendedor: 'Cliente, funil e cotação.',
+  producao: 'Ficha, kanban e o que vai para a mesa de corte.',
+  estoquista: 'Estoque e as referências das peças.',
+  analista: 'Relatório e o painel da semana, para olhar sem mexer.',
+}
+
+/* esperando: a conta existe e o admin ainda nao liberou. Ela nao ve nada alem
+   do proprio perfil, e isso e decidido no banco, nao aqui. */
+export type Situacao = 'esperando' | 'aprovado' | 'bloqueado'
+
+export const NOME_DA_SITUACAO: Record<Situacao, string> = {
+  esperando: 'Esperando aprovação',
+  aprovado: 'Aprovado',
+  bloqueado: 'Bloqueado',
+}
+
+/* As chaves dos paineis. A mesma lista existe na tabela painel do banco, e e a
+   do banco que vale na hora de gravar: aqui elas servem para a rota e o menu
+   saberem do que estao falando sem escrever texto solto. */
+export type Painel =
+  | 'inicio'
+  | 'funil'
+  | 'clientes'
+  | 'cotacao'
+  | 'ficha'
+  | 'kanban'
+  | 'produtos'
+  | 'estoque'
+  | 'atividades'
+  | 'relatorio'
+  | 'banco'
+  | 'config'
+  | 'kit'
 
 export type Pessoa = {
   id: string
   nome: string
   papel: Papel
+  situacao: Situacao
+  /** ja vem resolvido pelo banco: o padrao do papel, ou a lista so dela */
+  paineis: Painel[]
   email: string
 }
 
-/* Tres fases, e a primeira e a que costuma ser esquecida. Ao abrir o sistema o
-   cracha guardado ainda esta sendo conferido com o servidor, e nesse instante
-   a resposta nao e "entrou" nem "nao entrou": e "espera". Sem essa fase, a
-   pessoa que ja estava dentro pisca na tela de entrada a cada recarga. */
+/* Tres fases, e a esquecida e 'conferindo'. Ao abrir o sistema o cracha
+   guardado ainda esta sendo conferido com o servidor, e nesse instante a
+   resposta nao e "entrou" nem "nao entrou": e "espera". Sem essa fase, quem ja
+   estava dentro pisca na tela de entrada a cada recarga. */
 export type Estado =
   | { fase: 'conferindo' }
   | { fase: 'fora' }
   | { fase: 'dentro'; pessoa: Pessoa }
+
+/** Entrou de verdade, com a conta ja liberada pelo admin. */
+export function liberada(p: Pessoa): boolean {
+  return p.situacao === 'aprovado'
+}
+
+export function podeVer(p: Pessoa, painel: Painel): boolean {
+  return liberada(p) && p.paineis.includes(painel)
+}
 
 /** As iniciais que aparecem na bolinha do topo. */
 export function iniciaisDe(nome: string): string {

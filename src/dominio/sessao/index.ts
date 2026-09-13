@@ -2,5 +2,14 @@
 export { ProvedorDeSessao } from './provedor'
 export { useSessao } from './contexto'
 export type { Sessao } from './contexto'
-export { iniciaisDe, NOME_DO_PAPEL, primeiroNome } from './tipos'
-export type { Estado, Papel, Pessoa } from './tipos'
+export {
+  iniciaisDe,
+  liberada,
+  LINHA_DO_PAPEL,
+  NOME_DA_SITUACAO,
+  NOME_DO_PAPEL,
+  PAPEIS,
+  podeVer,
+  primeiroNome,
+} from './tipos'
+export type { Estado, Painel, Papel, Pessoa, Situacao } from './tipos'

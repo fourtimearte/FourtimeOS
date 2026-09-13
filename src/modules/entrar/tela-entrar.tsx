@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useSessao } from '@dominio/sessao'
 import fundo from '../../assets/fundo-entrar.jpg'
+import { Olho } from './olho'
 import './entrar.css'
 
 type DeOnde = { de?: string }
@@ -134,27 +135,10 @@ export function TelaEntrar() {
           {entrando ? 'Entrando...' : 'Entrar'}
         </button>
 
-        <p className="ent-pe">Acesso restrito à equipe Fourtime.</p>
+        <p className="ent-pe">
+          Primeira vez? <Link to="/criar-conta">Criar conta</Link>
+        </p>
       </form>
     </div>
-  )
-}
-
-/* Phosphor entra de verdade no passo 5. Até lá, o olho é desenhado aqui. */
-function Olho({ aberto }: { aberto: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.6" />
-      {aberto ? null : (
-        <path d="M4 20 20 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      )}
-    </svg>
   )
 }

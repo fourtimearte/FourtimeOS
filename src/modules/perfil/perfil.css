@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Meu perfil. Dois cartoes lado a lado no computador, empilhados no celular.
+   ========================================================================== */
+
+.pf-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .pf-grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+/* papel e situacao nao sao campo: sao o que o sistema decidiu sobre a pessoa,
+   entao aparecem como linha de leitura, nao como caixa que parece editavel */
+.pf-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-block: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+.pf-rotulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.pf-nada {
+  margin: var(--sp-4) 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.pf-paineis {
+  list-style: none;
+  margin: var(--sp-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pf-paineis li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-block: 10px;
+  border-top: 1px solid var(--border);
+}
+.pf-paineis li:first-child {
+  border-top: 0;
+}
+.pf-paineis b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pf-paineis span {
+  font-size: 12px;
+  color: var(--text-3);
+}

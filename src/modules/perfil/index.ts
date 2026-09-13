@@ -1,0 +1,1 @@
+export { TelaPerfil } from './tela'

@@ -6,6 +6,7 @@
 
    Regra: dominio/ pode importar de shared/ e de ds/, e NUNCA de modules/. */
 export * from './grade'
+/* bloco.ts ja exporta blocoEmBranco, migrarBloco e os tipos */
 export * from './bloco'
 export * from './banco'
 export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'

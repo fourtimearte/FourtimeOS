@@ -22,3 +22,12 @@ certa. A conferencia leva tres segundos.
 
 **Grant mora no objeto, nao na view.** Todo drop leva os grants junto, entao o
 grant vai no mesmo arquivo do create, logo embaixo dele.
+
+## Uma carga que falha desfaz a carga inteira
+
+O SQL Editor roda tudo numa transacao so. Se o ultimo insert de um arquivo
+esbarrar numa chave estrangeira, os primeiros somem junto, e a tela nao grita:
+ela diz que rodou. Foi assim que a carga do banco do editor pareceu ter
+funcionado com as tabelas vazias.
+
+Depois de carregar dados, conte as linhas. Nunca confie no "Success".

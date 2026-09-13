@@ -1,0 +1,3027 @@
+{
+ "origem": "editor v3.375, fourtime-etapa02.onrender.com",
+ "tiradoEm": "2026-09-13T06:42:46.472Z",
+ "gruposDeReferencia": [
+  {
+   "cod": "010",
+   "rotulo": "010 · Camisetas e polos"
+  },
+  {
+   "cod": "020",
+   "rotulo": "020 · Raglan"
+  },
+  {
+   "cod": "030",
+   "rotulo": "030 · Regatas"
+  },
+  {
+   "cod": "040",
+   "rotulo": "040 · Moletom"
+  },
+  {
+   "cod": "050",
+   "rotulo": "050 · Cropped"
+  },
+  {
+   "cod": "060",
+   "rotulo": "060 · Tops"
+  },
+  {
+   "cod": "070",
+   "rotulo": "070 · Calças"
+  },
+  {
+   "cod": "080",
+   "rotulo": "080 · Bermudas"
+  },
+  {
+   "cod": "090",
+   "rotulo": "090 · Calções"
+  },
+  {
+   "cod": "100",
+   "rotulo": "100 · Shorts"
+  },
+  {
+   "cod": "110",
+   "rotulo": "110 · Uniformes e social"
+  },
+  {
+   "cod": "120",
+   "rotulo": "120 · Acessórios"
+  },
+  {
+   "cod": "KIT",
+   "rotulo": "KIT · Kits (conjuntos)"
+  }
+ ],
+ "gruposDeTecido": [
+  {
+   "cod": "ALG",
+   "rotulo": "ALGODÃO"
+  },
+  {
+   "cod": "POL",
+   "rotulo": "POLIAMIDA"
+  },
+  {
+   "cod": "DRY",
+   "rotulo": "DRY FIT"
+  },
+  {
+   "cod": "PIQ",
+   "rotulo": "PIQUE"
+  },
+  {
+   "cod": "MOL",
+   "rotulo": "MOLETOM"
+  },
+  {
+   "cod": "SPX",
+   "rotulo": "SUPLEX"
+  },
+  {
+   "cod": "VIS",
+   "rotulo": "VISCOSE"
+  },
+  {
+   "cod": "PP",
+   "rotulo": "POLIESTER"
+  },
+  {
+   "cod": "TPA",
+   "rotulo": "TECIDO PLANO"
+  },
+  {
+   "cod": "ESP",
+   "rotulo": "MATERIAIS"
+  },
+  {
+   "cod": "",
+   "rotulo": "Sem tipo"
+  }
+ ],
+ "gruposDeCorDeTecido": [
+  {
+   "cod": "BR",
+   "nome": "Branco e Cru",
+   "quantas": 10
+  },
+  {
+   "cod": "PC",
+   "nome": "Preto e Cinza",
+   "quantas": 10
+  },
+  {
+   "cod": "VM",
+   "nome": "Vermelho",
+   "quantas": 10
+  },
+  {
+   "cod": "RS",
+   "nome": "Rosa",
+   "quantas": 10
+  },
+  {
+   "cod": "LR",
+   "nome": "Laranja",
+   "quantas": 10
+  },
+  {
+   "cod": "AM",
+   "nome": "Amarelo",
+   "quantas": 10
+  },
+  {
+   "cod": "VD",
+   "nome": "Verde",
+   "quantas": 10
+  },
+  {
+   "cod": "AZ",
+   "nome": "Azul",
+   "quantas": 10
+  },
+  {
+   "cod": "RX",
+   "nome": "Roxo e Lilás",
+   "quantas": 10
+  },
+  {
+   "cod": "MR",
+   "nome": "Marrom e Terra",
+   "quantas": 10
+  },
+  {
+   "cod": "BG",
+   "nome": "Bege e Nude",
+   "quantas": 10
+  },
+  {
+   "cod": "MT",
+   "nome": "Metálicos e Especiais",
+   "quantas": 10
+  },
+  {
+   "cod": "",
+   "nome": "Sem grupo",
+   "quantas": 1
+  }
+ ],
+ "referencias": [
+  "FT-010-000M — CAMISETA MASC TRAD",
+  "FT-010-001M — CAMISETA MASC TRAD GOLA V",
+  "FT-010-002M — CAMISETA MASC TRAD ML",
+  "FT-010-003M — CAMISETA MASC TRAD ML GOLA V",
+  "FT-010-004F — BABY LOOK",
+  "FT-010-006F — BABY LOOK ML",
+  "FT-010-005F — BABY LOOK GOLA V",
+  "FT-010-007F — BABY LOOK  ML GOLA V",
+  "FT-010-008C — CAMISETA INFANTIL UNISSEX",
+  "FT-010-009C — CAMISETA INFANTIL UNISSEX ML",
+  "FT-010-010M — CAMISETA OVERSIZE MASC",
+  "FT-010-011M — CAMISETA POLO MASC SEM PUNHO",
+  "FT-010-012M — CAMISETA POLO MASC COM PUNHO",
+  "FT-010-013F — CAMISETA POLO FEM SEM PUNHO",
+  "FT-010-014F — CAMISETA POLO FEM COM PUNHO",
+  "FT-010-015M — CAMISETA COM CAPUZ MASC ML",
+  "FT-010-016F — BABY LOOK COM CAPUZ ML",
+  "FT-020-000M — RAGLAN MASC SEM PUNHO",
+  "FT-020-001M — RAGLAN MASC COM PUNHO",
+  "FT-020-002M — RAGLAN MASC SEM PUNHO GOLA V",
+  "FT-020-003M — RAGLAN MASC COM PUNHO GOLA V",
+  "FT-020-004M — RAGLAN MASC SEM PUNHO GOLA PADRE",
+  "FT-020-005M — RAGLAN MASC COM PUNHO GOLA PADRE",
+  "FT-020-006M — RAGLAN MASC ML",
+  "FT-020-007M — RAGLAN MASC ML GOLA V",
+  "FT-020-008M — RAGLAN MASC FORTIME",
+  "FT-020-009F — RAGLAN FEM SEM PUNHO",
+  "FT-020-010F — RAGLAN FEM C0M PUNHO",
+  "FT-020-011F — RAGLAN FEM ML",
+  "FT-020-012M — RAGLAN RASH GUARD MASC",
+  "FT-020-013M — RAGLAN RASH GUARD MASC ML",
+  "FT-020-014C — RAGLAN INFANTIL UNISSEX",
+  "FT-030-000M — REGATA MASC TRAD",
+  "FT-030-001M — REGATÃO MASC MACHÃO",
+  "FT-030-002M — REGATA MASC OVERSIZED",
+  "FT-030-003M — BASQUETEIRO GOLA REDONDA",
+  "FT-030-004M — BASQUETEIRO GOLA V",
+  "FT-030-005F — REGATA FEM TRAD",
+  "FT-030-006F — REGATÃO FEM",
+  "FT-030-007F — REGATÃO FEM RANI",
+  "FT-030-008F — REGATÃO FEM FUTEVOLEY",
+  "FT-040-000M — BLUSA MOLETOM MASC SEM ZIPER",
+  "FT-040-001M — BLUSA MOLETOM MASC COM ZIPER",
+  "FT-040-002F — BLUSA MOLETOM FEM SEM ZIPER",
+  "FT-040-003F — BLUSA MOLETOM FEM COM ZIPER",
+  "FT-040-004M — BLUSA MOLETON MASC SEM CAPUZ",
+  "FT-040-005F — BLUSA MOLETON FEM SEM CAPUZ",
+  "FT-050-000F — CROPPED FEM OVERSIZE",
+  "FT-050-001F — CROPPED FEM SEM MANGA",
+  "FT-060-000F — TOP FEM TRAD",
+  "FT-060-001F — TOP FEM 4 TIRAS",
+  "FT-060-002F — TOP FEM NADADOR",
+  "FT-060-003F — TOP FEM MARCELA",
+  "FT-060-004F — TOP FEM DANI",
+  "FT-060-005F — TOP FEM ALCINHA",
+  "FT-060-006M — TOP MASC FUTEBOL",
+  "FT-070-000M — CALÇA COMPRESSÃO MASC",
+  "FT-070-001U — CALÇA MOLETOM UNISSEX COM PUNHO",
+  "FT-070-002F — CALÇA LEGGINGS FEM",
+  "FT-070-003C — CALÇA INFANTIL FEM",
+  "FT-070-004M — CALÇA NO GI MASC",
+  "FT-070-005U — CALÇA INDUSTRIAL UNISSEX SEM BOLSO",
+  "FT-080-000M — BERMUDA DRY FOURTIME COM BOLSO",
+  "FT-080-001M — BERMUDA DRY FOURTIME SEM BOLSO",
+  "FT-080-002M — BERMUDA NO GI MASC COM BOLSO",
+  "FT-080-003M — BERMUDA NO GI MASC SEM BOLSO",
+  "FT-080-004U — BERMUDA DRY INFANTIL UNISSEX SEM BOLSO",
+  "FT-080-005U — BERMUDA DRY INFANTIL UNISSEX COM BOLSO",
+  "FT-080-006U — BERMUDA TACTEL INFANTIL UNISSEX SEM BOLSO",
+  "FT-080-007U — BERMUDA TACTEL INFANTIL UNISSEX COM BOLSO",
+  "FT-090-000M — CALÇAO MASC SEM BOLSO",
+  "FT-090-001M — CALÇÃO MASC COM BOLSO",
+  "FT-100-000F — SHORT FEM RECORTADO",
+  "FT-100-001F — SHORT FEM DANI",
+  "FT-100-002F — SHORT FEM FERNANDA",
+  "FT-100-003F — SHORT FEM FUTEVOLEI",
+  "FT-100-004F — SHORT FEM SAIA FEM",
+  "FT-100-005C — SHORT INFANTIL SUPLEX",
+  "FT-100-006M — SHORT NO GI MASC SEM BOLSO",
+  "FT-100-007M — SHORT NO GI MASC COM BOLSO",
+  "FT-100-008M — SHORT TACTEL MASC FOURTIME CURTO",
+  "FT-100-009M — SHORT TACTEL MASC FOURTIME MEDIA",
+  "FT-110-000U — JALECO E CALÇA COM BOTÃO",
+  "FT-110-001U — JALECO E CALÇA COM BOTÃO ML",
+  "FT-110-002U — JALECO E CALÇA SEM BOTÃO",
+  "FT-110-003U — JALECO E CALÇA SEM BOTÃO ML",
+  "FT-120-000U — COLETE COM VIES UNISSEX",
+  "FT-120-001U — COLETE DUPLA FACE",
+  "FT-120-002U — AVENTAL UNISSEX",
+  "FT-120-003U — BALACLAVA UNISSEX",
+  "FT-120-004U — BONE",
+  "FT-120-005U — BANDEIRA",
+  "FT-010-017M — CAMISETA MASC LONG LINE",
+  "FT-010-018M — CAMISETA MASC LONG LINE GOLA V",
+  "FT-010-019F — BABY LOOK LONG LINE",
+  "FT-010-020F — BABY LOOK LONG LINE GOLA V",
+  "FT-120-007U — MEIAO FUTEBOL",
+  "FT-030-009F — REGATAO FEM DANI",
+  "FT-090-002U — CALÇÃO INF SEM BOLSO",
+  "FT-090-003U — CALÇÃO INF COM BOLSO",
+  "FT-040-006C — BLUSA MOLETOM INF COM ZIPER",
+  "FT-040-007C — BLUSA MOLETOM INF SEM  ZIPER",
+  "FT-110-004M — CAMISA MASCULINA SOCIAL",
+  "FT-110-006F — CAMISETE FEMININA MANGA 3/4",
+  "FT-110-005F — CAMISETE FEMININA MANGA LONGA",
+  "FT-110-008U — CALÇA INDUSTRIAL UNISSEX 4 BOLSOS",
+  "FT-110-002U — JALECO GOLA V SEM BOTAO M.C",
+  "FT-110-003U — JALECO GOLA V SEM BOTAO M.L",
+  "FT-100-010F — SHORT FEM CORRIDA",
+  "FT-100-007F — TOP FEM LADO",
+  "FT-100-011M — SHORT VOLEIBOL MASCULINO",
+  "FT-KIT-020-000M-090-000M — KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO",
+  "CALÇA MOLETOM MASC TRAD CORTE RETO SEM PUNHO",
+  "CALÇA MOLETOM FEMININA COM PUNHO",
+  "KIT FEMININO RAGLAN E SHORT",
+  "AGASALHO FEMININO BLUSA E CALÇA",
+  "CULINO BLUSA E CALÇA",
+  "AGASALHO MASCULINO BLUSA E CALÇA",
+  "KIT FEM BABY LOOK E SHORT FEM FUTEVOLEI",
+  "ALGODAO PIMA",
+  "HELANCA COLEGIAL",
+  "FT-010-021M — CAMISETA POLO GOLA V"
+ ],
+ "tecidos": [
+  {
+   "n": "ALGODAO 100%",
+   "g": "ALG"
+  },
+  {
+   "n": "ALGODAO COM ELASTANO",
+   "g": "ALG"
+  },
+  {
+   "n": "ALGODAO MESCLA COM ELASTANO",
+   "g": "ALG"
+  },
+  {
+   "n": "ALGODAO MESCLA SEM ELASTANO",
+   "g": "ALG"
+  },
+  {
+   "n": "ALGODAO STRONG",
+   "g": "ALG"
+  },
+  {
+   "n": "BRIM LEVE",
+   "g": "TPA"
+  },
+  {
+   "n": "BRIM PESADO",
+   "g": "TPA"
+  },
+  {
+   "n": "DRYFIT FURADINHO COM ELASTANO",
+   "g": "DRY"
+  },
+  {
+   "n": "DRYFIT FURADINHO SEM ELASTANO",
+   "g": "DRY"
+  },
+  {
+   "n": "DRYFIT POLIESTER 100%",
+   "g": "DRY"
+  },
+  {
+   "n": "MOLETINHO COM ELASTANO",
+   "g": "MOL"
+  },
+  {
+   "n": "MOLETOM",
+   "g": "MOL"
+  },
+  {
+   "n": "NEOPRENE",
+   "g": "ESP"
+  },
+  {
+   "n": "PIQUET 100%",
+   "g": "PIQ"
+  },
+  {
+   "n": "PIQUET COM ELASTANO",
+   "g": "PIQ"
+  },
+  {
+   "n": "PIQUET MISTO",
+   "g": "PIQ"
+  },
+  {
+   "n": "POLIAMIDA FRESH",
+   "g": "POL"
+  },
+  {
+   "n": "SUPLEX POLIAMIDA",
+   "g": "SPX"
+  },
+  {
+   "n": "MOLETOM SUBLIMAVEL",
+   "g": "MOL"
+  },
+  {
+   "n": "HELANCA COLEGIAL",
+   "g": ""
+  },
+  {
+   "n": "ALGODÃO CONFORT MIX",
+   "g": "ALG"
+  },
+  {
+   "n": "DRY FIT CREPE 100%",
+   "g": "DRY"
+  },
+  {
+   "n": "ALGODÃO NATURALINHO",
+   "g": "ALG"
+  },
+  {
+   "n": "POLIAMIDA FLOW COM ELASTANO",
+   "g": "POL"
+  },
+  {
+   "n": "VISCOSE PV ANTIPILING",
+   "g": "VIS"
+  },
+  {
+   "n": "SUPLEX POLIESTER",
+   "g": "SPX"
+  },
+  {
+   "n": "TERBRIM POLIESTER",
+   "g": "TPA"
+  },
+  {
+   "n": "VISCOSE VIS UP LIGTH",
+   "g": "VIS"
+  },
+  {
+   "n": "ALGODAO FLAME",
+   "g": "ALG"
+  },
+  {
+   "n": "ALGODÃO PIMA",
+   "g": "ALG"
+  },
+  {
+   "n": "POLIAMIDA 100%",
+   "g": "POL"
+  },
+  {
+   "n": "POLIAMIDA COM ELASTANO",
+   "g": "POL"
+  },
+  {
+   "n": "POLIAMIDA MICRO PERFURADA",
+   "g": "POL"
+  },
+  {
+   "n": "DRYFIT JAKAR 100%",
+   "g": "DRY"
+  },
+  {
+   "n": "MOLETOM FELPUDO",
+   "g": "MOL"
+  },
+  {
+   "n": "POLIESTER PP ANTIPILING",
+   "g": "PP"
+  },
+  {
+   "n": "TACTEL POLIAMIDA COM ELASTANO",
+   "g": "TPA"
+  },
+  {
+   "n": "TACTEL POLIESTE COM ELASTANO",
+   "g": "TPA"
+  },
+  {
+   "n": "POLIAMIDA FURADINHA C/ ELASTANO",
+   "g": "POL"
+  },
+  {
+   "n": "DRYFIT C/ ELASTANO PROTEÇÃO UV50",
+   "g": "DRY"
+  },
+  {
+   "n": "POLIAMIDA FURADINHA COM ELASTANO",
+   "g": "POL"
+  },
+  {
+   "n": "DRYFIT COM ELASTANO PROTEÇÃO UV50",
+   "g": "DRY"
+  }
+ ],
+ "coresDeTecido": [
+  {
+   "n": "Branco",
+   "c": "#FFFFFF",
+   "g": "BR"
+  },
+  {
+   "n": "Preto",
+   "c": "#111111",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Mescla",
+   "c": "#A8A9AD",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Chumbo",
+   "c": "#4A4E52",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Claro",
+   "c": "#D3D5D8",
+   "g": "PC"
+  },
+  {
+   "n": "Prata",
+   "c": "#C0C4C8",
+   "g": "MT"
+  },
+  {
+   "n": "Vermelho",
+   "c": "#D0021B",
+   "g": "VM"
+  },
+  {
+   "n": "Vermelho Escuro",
+   "c": "#8E1218",
+   "g": "VM"
+  },
+  {
+   "n": "Vinho",
+   "c": "#6B1F2B",
+   "g": "VM"
+  },
+  {
+   "n": "Bordô",
+   "c": "#5C1A2B",
+   "g": "VM"
+  },
+  {
+   "n": "Coral",
+   "c": "#FF6F5E",
+   "g": "RS"
+  },
+  {
+   "n": "Salmão",
+   "c": "#FA8072",
+   "g": "RS"
+  },
+  {
+   "n": "Rosa",
+   "c": "#F48FB1",
+   "g": "RS"
+  },
+  {
+   "n": "Rosa Pink",
+   "c": "#E91E8C",
+   "g": "RS"
+  },
+  {
+   "n": "Rosa Bebê",
+   "c": "#F7C6D9",
+   "g": "RS"
+  },
+  {
+   "n": "Magenta",
+   "c": "#C2007B",
+   "g": "RS"
+  },
+  {
+   "n": "Laranja",
+   "c": "#F57C00",
+   "g": "LR"
+  },
+  {
+   "n": "Laranja Neon",
+   "c": "#FF6D00",
+   "g": "LR"
+  },
+  {
+   "n": "Terracota",
+   "c": "#B4543A",
+   "g": "LR"
+  },
+  {
+   "n": "Ferrugem",
+   "c": "#8E4B2E",
+   "g": "LR"
+  },
+  {
+   "n": "Amarelo Ouro",
+   "c": "#E7B400",
+   "g": "AM"
+  },
+  {
+   "n": "Amarelo Canário",
+   "c": "#FFE000",
+   "g": "AM"
+  },
+  {
+   "n": "Amarelo Neon",
+   "c": "#EFFF00",
+   "g": "AM"
+  },
+  {
+   "n": "Mostarda",
+   "c": "#C99700",
+   "g": "AM"
+  },
+  {
+   "n": "Creme",
+   "c": "#F3E9D2",
+   "g": "BR"
+  },
+  {
+   "n": "Bege",
+   "c": "#D9C7A7",
+   "g": "BG"
+  },
+  {
+   "n": "Verde Bandeira",
+   "c": "#00963F",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Musgo",
+   "c": "#4A5D23",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Militar",
+   "c": "#5A6650",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Limão",
+   "c": "#9BD200",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Água",
+   "c": "#8FD3C4",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Neon",
+   "c": "#39FF14",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Menta",
+   "c": "#B7E4C7",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Oliva",
+   "c": "#7C864A",
+   "g": "VD"
+  },
+  {
+   "n": "Azul Royal",
+   "c": "#12489E",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Marinho",
+   "c": "#12213F",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Celeste",
+   "c": "#7EC8E3",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Turquesa",
+   "c": "#00B2A9",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Petróleo",
+   "c": "#12556B",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Bebê",
+   "c": "#BBDDFB",
+   "g": "AZ"
+  },
+  {
+   "n": "Ciano",
+   "c": "#00BFFF",
+   "g": "AZ"
+  },
+  {
+   "n": "Roxo",
+   "c": "#5E2A84",
+   "g": "RX"
+  },
+  {
+   "n": "Lilás",
+   "c": "#B491C8",
+   "g": "RX"
+  },
+  {
+   "n": "Violeta",
+   "c": "#7A4FBF",
+   "g": "RX"
+  },
+  {
+   "n": "Púrpura",
+   "c": "#6A0D5B",
+   "g": "RX"
+  },
+  {
+   "n": "Marrom",
+   "c": "#6B4423",
+   "g": "MR"
+  },
+  {
+   "n": "Café",
+   "c": "#4B3621",
+   "g": "MR"
+  },
+  {
+   "n": "Chocolate",
+   "c": "#5C3317",
+   "g": "MR"
+  },
+  {
+   "n": "Caqui",
+   "c": "#B5A16B",
+   "g": "MR"
+  },
+  {
+   "n": "Nude",
+   "c": "#E3C4A8",
+   "g": "BG"
+  },
+  {
+   "n": "SUBLIMAÇÃO",
+   "c": "#cccccc",
+   "g": "SUB"
+  },
+  {
+   "n": "AMARELO MANTEIGA",
+   "c": "#cccccc",
+   "g": ""
+  },
+  {
+   "n": "Branco Gelo",
+   "c": "#F7F9FA",
+   "g": "BR"
+  },
+  {
+   "n": "Off White",
+   "c": "#F2EFE9",
+   "g": "BR"
+  },
+  {
+   "n": "Marfim",
+   "c": "#EFE7D2",
+   "g": "BR"
+  },
+  {
+   "n": "Pérola",
+   "c": "#EDE9E3",
+   "g": "BR"
+  },
+  {
+   "n": "Areia Clara",
+   "c": "#EAE0CE",
+   "g": "BR"
+  },
+  {
+   "n": "Palha",
+   "c": "#E8DFC0",
+   "g": "BR"
+  },
+  {
+   "n": "Champagne",
+   "c": "#E4D9C3",
+   "g": "BR"
+  },
+  {
+   "n": "Cru",
+   "c": "#DED3BC",
+   "g": "BR"
+  },
+  {
+   "n": "Preto Ônix",
+   "c": "#1B1B1F",
+   "g": "PC"
+  },
+  {
+   "n": "Grafite",
+   "c": "#3A3F47",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Escuro",
+   "c": "#5F646A",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Mescla Escuro",
+   "c": "#6E7378",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Médio",
+   "c": "#8A8F95",
+   "g": "PC"
+  },
+  {
+   "n": "Cinza Pérola",
+   "c": "#E5E7EA",
+   "g": "PC"
+  },
+  {
+   "n": "Vermelho Fourtime",
+   "c": "#C6161B",
+   "g": "VM"
+  },
+  {
+   "n": "Vermelho Tomate",
+   "c": "#E23B2E",
+   "g": "VM"
+  },
+  {
+   "n": "Vermelho Escarlate",
+   "c": "#B3161C",
+   "g": "VM"
+  },
+  {
+   "n": "Vermelho Neon",
+   "c": "#FF1E1E",
+   "g": "VM"
+  },
+  {
+   "n": "Cereja",
+   "c": "#A81232",
+   "g": "VM"
+  },
+  {
+   "n": "Marsala",
+   "c": "#7B3540",
+   "g": "VM"
+  },
+  {
+   "n": "Rosé",
+   "c": "#E8A0A0",
+   "g": "RS"
+  },
+  {
+   "n": "Rosa Chiclete",
+   "c": "#FF6FB5",
+   "g": "RS"
+  },
+  {
+   "n": "Rosa Neon",
+   "c": "#FF2D95",
+   "g": "RS"
+  },
+  {
+   "n": "Fúcsia",
+   "c": "#D4157E",
+   "g": "RS"
+  },
+  {
+   "n": "Pêssego",
+   "c": "#FFCBA4",
+   "g": "LR"
+  },
+  {
+   "n": "Damasco",
+   "c": "#F0A868",
+   "g": "LR"
+  },
+  {
+   "n": "Laranja Claro",
+   "c": "#FFA24D",
+   "g": "LR"
+  },
+  {
+   "n": "Tangerina",
+   "c": "#F2670A",
+   "g": "LR"
+  },
+  {
+   "n": "Cenoura",
+   "c": "#ED7014",
+   "g": "LR"
+  },
+  {
+   "n": "Abóbora",
+   "c": "#D97D1E",
+   "g": "LR"
+  },
+  {
+   "n": "Amarelo Bebê",
+   "c": "#FBEFA0",
+   "g": "AM"
+  },
+  {
+   "n": "Amarelo Limão",
+   "c": "#F4F062",
+   "g": "AM"
+  },
+  {
+   "n": "Milho",
+   "c": "#F5CE3E",
+   "g": "AM"
+  },
+  {
+   "n": "Girassol",
+   "c": "#F2C200",
+   "g": "AM"
+  },
+  {
+   "n": "Âmbar",
+   "c": "#D99A00",
+   "g": "AM"
+  },
+  {
+   "n": "Dourado",
+   "c": "#C9A227",
+   "g": "AM"
+  },
+  {
+   "n": "Verde Esmeralda",
+   "c": "#068A5B",
+   "g": "VD"
+  },
+  {
+   "n": "Verde Floresta",
+   "c": "#1E4D2B",
+   "g": "VD"
+  },
+  {
+   "n": "Azul Piscina",
+   "c": "#29A8C9",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Cobalto",
+   "c": "#1A4FBF",
+   "g": "AZ"
+  },
+  {
+   "n": "Azul Jeans",
+   "c": "#4A6D8C",
+   "g": "AZ"
+  },
+  {
+   "n": "Lavanda",
+   "c": "#C9B6E4",
+   "g": "RX"
+  },
+  {
+   "n": "Roxo Neon",
+   "c": "#B026FF",
+   "g": "RX"
+  },
+  {
+   "n": "Orquídea",
+   "c": "#A45EE5",
+   "g": "RX"
+  },
+  {
+   "n": "Ametista",
+   "c": "#8A5FBF",
+   "g": "RX"
+  },
+  {
+   "n": "Uva",
+   "c": "#4B2354",
+   "g": "RX"
+  },
+  {
+   "n": "Berinjela",
+   "c": "#3F2140",
+   "g": "RX"
+  },
+  {
+   "n": "Areia Escura",
+   "c": "#C2A878",
+   "g": "MR"
+  },
+  {
+   "n": "Canela",
+   "c": "#A9703F",
+   "g": "MR"
+  },
+  {
+   "n": "Caramelo",
+   "c": "#9A5B22",
+   "g": "MR"
+  },
+  {
+   "n": "Tabaco",
+   "c": "#7A5230",
+   "g": "MR"
+  },
+  {
+   "n": "Castanho",
+   "c": "#5A3A22",
+   "g": "MR"
+  },
+  {
+   "n": "Cacau",
+   "c": "#3E2A1E",
+   "g": "MR"
+  },
+  {
+   "n": "Linho",
+   "c": "#E6DCC8",
+   "g": "BG"
+  },
+  {
+   "n": "Nude Rosado",
+   "c": "#E7C9BC",
+   "g": "BG"
+  },
+  {
+   "n": "Trigo",
+   "c": "#E0CBA4",
+   "g": "BG"
+  },
+  {
+   "n": "Amêndoa",
+   "c": "#DCC3A5",
+   "g": "BG"
+  },
+  {
+   "n": "Café com Leite",
+   "c": "#C8A784",
+   "g": "BG"
+  },
+  {
+   "n": "Bege Escuro",
+   "c": "#C3AE8A",
+   "g": "BG"
+  },
+  {
+   "n": "Argila",
+   "c": "#C08F72",
+   "g": "BG"
+  },
+  {
+   "n": "Camurça",
+   "c": "#BFA37C",
+   "g": "BG"
+  },
+  {
+   "n": "Perolado",
+   "c": "#E8E6E1",
+   "g": "MT"
+  },
+  {
+   "n": "Champanhe Metálico",
+   "c": "#CBB78F",
+   "g": "MT"
+  },
+  {
+   "n": "Holográfico",
+   "c": "#C9D6E8",
+   "g": "MT"
+  },
+  {
+   "n": "Dourado Metálico",
+   "c": "#C6A140",
+   "g": "MT"
+  },
+  {
+   "n": "Refletivo",
+   "c": "#B8C0C6",
+   "g": "MT"
+  },
+  {
+   "n": "Cobre",
+   "c": "#B06C3B",
+   "g": "MT"
+  },
+  {
+   "n": "Bronze",
+   "c": "#A9773F",
+   "g": "MT"
+  },
+  {
+   "n": "Chumbo Metálico",
+   "c": "#7E858B",
+   "g": "MT"
+  },
+  {
+   "n": "Grafite Metálico",
+   "c": "#6E7276",
+   "g": "MT"
+  }
+ ],
+ "coresDtf": {
+  "100": "#593F79",
+  "101": "#4C2477",
+  "102": "#563270",
+  "103": "#D9CAE2",
+  "104": "#B881BE",
+  "105": "#9865A3",
+  "106": "#9760AA",
+  "107": "#8B4E97",
+  "108": "#8B4B97",
+  "109": "#89478C",
+  "110": "#673C7B",
+  "111": "#674575",
+  "112": "#E3CFE3",
+  "113": "#D897CB",
+  "114": "#AE579D",
+  "115": "#CC33FF",
+  "116": "#B535D1",
+  "117": "#9F37A4",
+  "118": "#883976",
+  "119": "#7A417C",
+  "120": "#71477E",
+  "121": "#F0D4E4",
+  "122": "#F0B7CF",
+  "123": "#E284C4",
+  "124": "#C367A6",
+  "125": "#C500B2",
+  "126": "#B3458E",
+  "127": "#AB518F",
+  "128": "#994887",
+  "129": "#82346D",
+  "130": "#F1D3D9",
+  "131": "#EC89B3",
+  "132": "#D765A7",
+  "133": "#DC589D",
+  "134": "#C9438A",
+  "135": "#CA0088",
+  "136": "#A23B7E",
+  "137": "#91316C",
+  "138": "#72294D",
+  "139": "#F1D2D0",
+  "140": "#E995AB",
+  "141": "#F2789D",
+  "142": "#E34D89",
+  "143": "#CF3D81",
+  "144": "#BA3575",
+  "145": "#A33D6D",
+  "146": "#863055",
+  "147": "#67303A",
+  "148": "#F1D2C9",
+  "149": "#FF9B92",
+  "150": "#E77981",
+  "151": "#E53D33",
+  "152": "#CD1C39",
+  "153": "#B31F37",
+  "154": "#A91328",
+  "155": "#802741",
+  "156": "#683842",
+  "157": "#E5A88F",
+  "158": "#E9674B",
+  "159": "#E9502A",
+  "160": "#F14434",
+  "161": "#C54426",
+  "162": "#A7262C",
+  "163": "#9B1D2B",
+  "164": "#732A34",
+  "165": "#62383A",
+  "166": "#F4DBC6",
+  "167": "#FFC397",
+  "168": "#EC801C",
+  "169": "#FF8720",
+  "170": "#FF7A13",
+  "171": "#EA7815",
+  "172": "#EE6331",
+  "173": "#ED5215",
+  "174": "#B95527",
+  "175": "#F8E5CA",
+  "176": "#FFD699",
+  "177": "#FFD262",
+  "178": "#FFC148",
+  "179": "#FFB300",
+  "180": "#F49713",
+  "181": "#FB9221",
+  "182": "#EC801C",
+  "183": "#C85A1D",
+  "184": "#FBEFD0",
+  "185": "#FAE3AA",
+  "186": "#FEDC66",
+  "187": "#FCD300",
+  "188": "#FFC800",
+  "189": "#FAAF00",
+  "190": "#CB9E0F",
+  "191": "#B5975A",
+  "192": "#7B6742",
+  "193": "#FFFBD6",
+  "194": "#FFF68A",
+  "195": "#FDEB09",
+  "196": "#FFF22D",
+  "197": "#FFE000",
+  "198": "#FFD603",
+  "199": "#CAB734",
+  "200": "#B4AB22",
+  "201": "#7F7F3F",
+  "202": "#E9EDAF",
+  "203": "#F3EE8E",
+  "204": "#F1EB51",
+  "205": "#F4EB09",
+  "206": "#F4EC6F",
+  "207": "#D4D813",
+  "208": "#AFB351",
+  "209": "#7F8243",
+  "210": "#6B7354",
+  "211": "#E7F0D5",
+  "212": "#D5E09C",
+  "213": "#E1ED84",
+  "214": "#D8DE3F",
+  "215": "#CEDA42",
+  "216": "#BAD147",
+  "217": "#9DB63E",
+  "218": "#7C864A",
+  "219": "#6A7037",
+  "220": "#DDEBD4",
+  "221": "#C9DEA3",
+  "222": "#CCEB80",
+  "223": "#B2CE63",
+  "224": "#8FF700",
+  "225": "#A0C32D",
+  "226": "#82A440",
+  "227": "#678433",
+  "228": "#41523F",
+  "229": "#D3E7D3",
+  "230": "#C9DEA3",
+  "231": "#B1FD90",
+  "232": "#A4CA78",
+  "233": "#6DCC54",
+  "234": "#77B566",
+  "235": "#00C719",
+  "236": "#478740",
+  "237": "#475C37",
+  "238": "#D2E7DC",
+  "239": "#BFD8C0",
+  "240": "#B2D6B3",
+  "241": "#89C18B",
+  "242": "#68D48F",
+  "243": "#33C477",
+  "244": "#55AB5C",
+  "245": "#638C4E",
+  "246": "#4E804D",
+  "247": "#D2E8E5",
+  "248": "#B1D2C2",
+  "249": "#A8D0BB",
+  "250": "#7AD8C4",
+  "251": "#75CAB2",
+  "252": "#44C6A6",
+  "253": "#2BA478",
+  "254": "#008550",
+  "255": "#7F7F3F",
+  "256": "#D1E9EE",
+  "257": "#BBDBDC",
+  "258": "#A0D4DA",
+  "259": "#7EC9D3",
+  "260": "#63ADB5",
+  "261": "#51B3B1",
+  "262": "#3EB8AF",
+  "263": "#2B8184",
+  "264": "#A2A247",
+  "265": "#BD912A",
+  "266": "#C69520",
+  "267": "#C29E43",
+  "268": "#CB9E0F",
+  "269": "#D7AA1F",
+  "270": "#EBBA1D",
+  "271": "#D8B366",
+  "272": "#E2C27B",
+  "273": "#F3D99B",
+  "274": "#AC8F55",
+  "275": "#B09269",
+  "276": "#BB9768",
+  "277": "#BDA587",
+  "278": "#BCA580",
+  "279": "#B6A594",
+  "280": "#B4A78F",
+  "281": "#CCB49B",
+  "282": "#EBDFCA",
+  "283": "#734773",
+  "284": "#4A3E7C",
+  "285": "#2E396A",
+  "286": "#3D4341",
+  "287": "#A5B6C9",
+  "288": "#B5ACAE",
+  "289": "#C9B1B2",
+  "290": "#9F9F98",
+  "291": "#D8DA5E",
+  "292": "#B62149",
+  "293": "#D12968",
+  "294": "#DB244F",
+  "295": "#726D45",
+  "296": "#948E63",
+  "297": "#918865",
+  "298": "#A5A187",
+  "299": "#ABAA91",
+  "300": "#CACF4F",
+  "001": "#FFFFFF",
+  "002": "#202121",
+  "003": "#25251F",
+  "004": "#37363A",
+  "005": "#494B59",
+  "006": "#666877",
+  "007": "#626672",
+  "008": "#767985",
+  "009": "#858994",
+  "010": "#9698A4",
+  "011": "#BFC1CB",
+  "012": "#000000",
+  "013": "#BB8859",
+  "014": "#DB9B2C",
+  "015": "#CE891D",
+  "016": "#A66B22",
+  "017": "#8B5B4B",
+  "018": "#C26F47",
+  "019": "#9E5127",
+  "020": "#7B4936",
+  "021": "#AA8665",
+  "022": "#936B4F",
+  "023": "#836449",
+  "024": "#604537",
+  "025": "#452E29",
+  "026": "#BC2A4B",
+  "027": "#9D2943",
+  "028": "#792F43",
+  "029": "#A92450",
+  "030": "#A21F48",
+  "031": "#D1E9EE",
+  "032": "#C3E2EA",
+  "033": "#A8D5E1",
+  "034": "#80C5D6",
+  "035": "#54B6CC",
+  "036": "#00AAC2",
+  "037": "#008FA3",
+  "038": "#007484",
+  "039": "#005A67",
+  "040": "#D1E9EE",
+  "041": "#B5DCEC",
+  "042": "#93CDE4",
+  "043": "#75C8DA",
+  "044": "#42B6D9",
+  "045": "#00ADC8",
+  "046": "#009CB2",
+  "047": "#008FA3",
+  "048": "#008395",
+  "049": "#CDDEF3",
+  "050": "#BAE0F8",
+  "051": "#90CEF4",
+  "052": "#65BFF1",
+  "053": "#23B2EE",
+  "054": "#00ACEC",
+  "055": "#009DD7",
+  "056": "#0083B2",
+  "057": "#2B648F",
+  "058": "#D0E9FB",
+  "059": "#A6D7F6",
+  "060": "#7CC6F2",
+  "061": "#4BB8EF",
+  "062": "#00ACEC",
+  "063": "#0090C5",
+  "064": "#0076A0",
+  "065": "#005B7D",
+  "066": "#004D6B",
+  "067": "#CAD4EC",
+  "068": "#95B5DD",
+  "069": "#7197CF",
+  "070": "#0091CA",
+  "071": "#0083B8",
+  "072": "#067CB1",
+  "073": "#007BBC",
+  "074": "#0073BF",
+  "075": "#095282",
+  "076": "#C7CCE6",
+  "077": "#A19BC8",
+  "078": "#7A80BD",
+  "079": "#687DC4",
+  "080": "#0073C1",
+  "081": "#205AA7",
+  "082": "#264D8F",
+  "083": "#2B3E71",
+  "084": "#2C3D5C",
+  "085": "#C5C3E0",
+  "086": "#9F8DC8",
+  "087": "#8D73B3",
+  "088": "#7261A6",
+  "089": "#52509E",
+  "090": "#6353A1",
+  "091": "#2846A4",
+  "092": "#484185",
+  "093": "#2B3881",
+  "094": "#CFC7E1",
+  "095": "#BF9DCF",
+  "096": "#A178B1",
+  "097": "#9760AA",
+  "098": "#784B97",
+  "099": "#5F4484"
+ },
+ "coresSublimacao": {
+  "S01": "#1E1E1E",
+  "S02": "#141414",
+  "S03": "#000000",
+  "S04": "#3C3C3C",
+  "S05": "#323232",
+  "S06": "#282828",
+  "S07": "#E5E5E6",
+  "S08": "#D0D1D2",
+  "S09": "#BABBBE",
+  "S10": "#C5A455",
+  "S11": "#B1944D",
+  "S12": "#9F8545",
+  "S13": "#F2C92F",
+  "S14": "#E3A709",
+  "S15": "#E39D09",
+  "S16": "#FFF86B",
+  "S17": "#FEF100",
+  "S18": "#F3DF39",
+  "S19": "#FF5109",
+  "S20": "#CF4207",
+  "S21": "#BA3B06",
+  "S22": "#BB251D",
+  "S23": "#A9221A",
+  "S24": "#971E17",
+  "S25": "#851D18",
+  "S26": "#771A16",
+  "S27": "#691713",
+  "S28": "#5B213D",
+  "S29": "#56143E",
+  "S30": "#50063E",
+  "S31": "#542467",
+  "S32": "#48235C",
+  "S33": "#3D2152",
+  "S34": "#70139E",
+  "S35": "#660F92",
+  "S36": "#5C0A85",
+  "S37": "#CD2D96",
+  "S38": "#C00F82",
+  "S39": "#9C0D69",
+  "S40": "#F0D5E4",
+  "S41": "#E9C1D7",
+  "S42": "#E4AECB",
+  "S43": "#E9E1D2",
+  "S44": "#E5DAC8",
+  "S45": "#E1D2BF",
+  "S46": "#C9A687",
+  "S47": "#BB967D",
+  "S48": "#AD8672",
+  "S49": "#541D19",
+  "S50": "#481D19",
+  "S51": "#3C1D19",
+  "S52": "#213C27",
+  "S53": "#1D3422",
+  "S54": "#182C1D",
+  "S55": "#49802F",
+  "S56": "#3A6B23",
+  "S57": "#385928",
+  "S58": "#7C864A",
+  "S59": "#525831",
+  "S60": "#434728",
+  "S61": "#B6E7AA",
+  "S62": "#A3DDA6",
+  "S63": "#90D2A2",
+  "S64": "#97C62D",
+  "S65": "#8DB82D",
+  "S66": "#82AA2D",
+  "S67": "#BBDBF0",
+  "S68": "#AAD2F0",
+  "S69": "#A0C8F0",
+  "S70": "#81D9D7",
+  "S71": "#5CC0C0",
+  "S72": "#37A8A9",
+  "S73": "#0085B7",
+  "S74": "#006C95",
+  "S75": "#005779",
+  "S76": "#0F64A0",
+  "S77": "#0A5AA0",
+  "S78": "#0550A0",
+  "S79": "#182153",
+  "S80": "#131A41",
+  "S81": "#101534",
+  "S82": "#182034",
+  "S83": "#141C2B",
+  "S84": "#101722",
+  "S85": "#FFFBD5",
+  "S86": "#FFF8B9",
+  "S87": "#FFF69C"
+ },
+ "pagamentos": [
+  "ENTRADA + SAIDA",
+  "LINK",
+  "ENTRADA + BOLETO",
+  "PIX TOTAL",
+  "DINHEIRO",
+  "BOLETO",
+  "ENTREGA",
+  "CARTAO DE CREDITO",
+  "PATROCINIO"
+ ],
+ "entregas": [
+  "AEREO",
+  "CORREIOS",
+  "FABRICA",
+  "MOTOBOY",
+  "TRANSPORTADORA"
+ ],
+ "embalagens": [
+  "Fardo",
+  "Sacola",
+  "Caixa",
+  "SACO CORREIOS"
+ ],
+ "vendedores": [
+  "Lucas",
+  "Dani",
+  "Kev",
+  "Alam",
+  "Fabricio"
+ ],
+ "departamentos": [
+  "Sublimação",
+  "DTF",
+  "Silk",
+  "DTF + Sublimação",
+  "DTF + Silk",
+  "BORDADO",
+  "SILK + SUBLIMAÇÃO"
+ ],
+ "clientes": [
+  {
+   "n": "AÇAI NO COCO",
+   "doc": "",
+   "rua": "",
+   "num": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "id": "84612fef-0de6-4fd2-b024-6f77bfdf4494",
+   "uf": "",
+   "cep": ""
+  },
+  {
+   "n": "3B CROSS",
+   "doc": "",
+   "id": "18d08e2c-3abb-40cf-b9b8-dba25a01c5fb"
+  },
+  {
+   "n": "7BOX",
+   "doc": "",
+   "id": "2e8ec5a0-ee2d-4d6d-b5d9-7828f5603d26"
+  },
+  {
+   "n": "ABBA BOX",
+   "doc": "",
+   "id": "915e77ee-3f40-44bd-a35f-b648a4a1f5da"
+  },
+  {
+   "n": "ADRIELLE STUDIO PILATES",
+   "doc": "",
+   "id": "9fee226b-125e-416d-9915-8b203992c203"
+  },
+  {
+   "n": "AGRICONRADI",
+   "doc": "",
+   "id": "9397fc5f-2dea-469c-88c7-2c9cbe167dc3"
+  },
+  {
+   "n": "ALPHA ACADEMIA",
+   "doc": "",
+   "id": "3e9755c8-754c-4fe6-a05f-8793849216d6"
+  },
+  {
+   "n": "ARENA AUTOVEMA",
+   "doc": "",
+   "id": "497ab44d-c205-4b77-9754-eeeab2567b53"
+  },
+  {
+   "n": "ARENA CROSS",
+   "doc": "",
+   "id": "2e2db7a2-3f59-4a22-a97a-9e2dc1d20da8"
+  },
+  {
+   "n": "ARENA FLAMBOYANT",
+   "doc": "",
+   "id": "5741a142-4e81-43c5-8ee3-0a027fe582fe"
+  },
+  {
+   "n": "ARTNEW",
+   "doc": "",
+   "id": "6a757235-7d0e-4274-a44e-e4e033db4f7e"
+  },
+  {
+   "n": "ASSAULT",
+   "doc": "",
+   "id": "1d71f72a-e91c-426b-a686-38e8c23ba304"
+  },
+  {
+   "n": "ATRIUM",
+   "doc": "",
+   "id": "394b8290-54e8-46fb-8d34-7a45e2c570ac"
+  },
+  {
+   "n": "AUDAX CAPITAL",
+   "doc": "",
+   "id": "049d9155-6668-4fa9-876e-5899f449ba8d"
+  },
+  {
+   "n": "AXI FIT",
+   "doc": "",
+   "id": "01baf45b-5eb9-43af-a487-197ac463f386"
+  },
+  {
+   "n": "B13",
+   "doc": "",
+   "id": "e52f468f-f3aa-42c6-81e7-9d376ada0bd8"
+  },
+  {
+   "n": "BANANEIRAS",
+   "doc": "",
+   "id": "a700fbf8-d044-477b-a9d1-10357c011e43"
+  },
+  {
+   "n": "BEESTRONG",
+   "doc": "",
+   "id": "bed35317-7efd-4d9b-894a-4e1339698ff5"
+  },
+  {
+   "n": "BEGIN FIT",
+   "doc": "",
+   "id": "79368917-c11c-494e-9cc2-82b2512fd244"
+  },
+  {
+   "n": "BIG BOX CROSSFIT",
+   "doc": "",
+   "id": "1dfbf2a7-9467-4062-8073-37c819508bdb"
+  },
+  {
+   "n": "BIO FIT",
+   "doc": "",
+   "id": "8b89ed99-0946-47cb-b8c7-ca3c2be37b1f"
+  },
+  {
+   "n": "BLACK BEAR",
+   "doc": "",
+   "id": "51a19842-9475-47a2-b50f-b8d83e938ebe"
+  },
+  {
+   "n": "BLACK BOX",
+   "doc": "",
+   "id": "98a84d99-428d-41e4-953e-e7beee568bf4"
+  },
+  {
+   "n": "BLACK DUCK",
+   "doc": "",
+   "id": "d95f100e-9fe9-4673-aef0-5d1bc7a572ec"
+  },
+  {
+   "n": "BLACK SHED",
+   "doc": "",
+   "id": "6f880a7a-71ec-4030-a04d-4f3c4662ff02"
+  },
+  {
+   "n": "BONS FRUTOS",
+   "doc": "",
+   "id": "11f72dc6-a4af-4445-94f1-ab88b59df63b"
+  },
+  {
+   "n": "BOOMBOX CROSSFIT",
+   "doc": "",
+   "id": "66890d26-8e28-4b35-a7d1-ab4217c6ef11"
+  },
+  {
+   "n": "BOX 21",
+   "doc": "",
+   "id": "5a455027-e1ed-484e-92c7-1df73941ec6a"
+  },
+  {
+   "n": "BOX 77",
+   "doc": "",
+   "id": "b37c06d1-db44-40e4-b55a-814b2569d09e"
+  },
+  {
+   "n": "BOX 891",
+   "doc": "",
+   "id": "3c8fb18f-869f-429c-99e7-c1b425f75833"
+  },
+  {
+   "n": "BOX CERRADO",
+   "doc": "",
+   "id": "94f713ab-b120-4a5e-8095-fda5de6f50a9"
+  },
+  {
+   "n": "BRANCO QUEIROZ",
+   "doc": "",
+   "id": "95184bc1-4628-4859-a9cd-90fc14b2f35b"
+  },
+  {
+   "n": "BUENO BOX",
+   "doc": "",
+   "id": "614adada-dca8-4a2f-b0a6-1f236d1508d5"
+  },
+  {
+   "n": "BULLS PET",
+   "doc": "",
+   "id": "5974d7b7-5149-401b-a208-a47655739b7c"
+  },
+  {
+   "n": "CAMPEAO",
+   "doc": "",
+   "id": "d53a45ff-f9f7-4747-9116-193853ff5a1f"
+  },
+  {
+   "n": "CANTINA SAN MARCO",
+   "doc": "",
+   "id": "82d425a2-4fa3-4552-b5e0-be8bff3d7aff"
+  },
+  {
+   "n": "CARTO",
+   "doc": "",
+   "id": "8c27d6d4-0dfa-497d-a5e6-6d2bc7671251",
+   "uf": ""
+  },
+  {
+   "n": "CENTAURUS CROSSFIT",
+   "doc": "",
+   "id": "95a732d8-4ccb-4367-b582-478d7ed734a1"
+  },
+  {
+   "n": "CF 788",
+   "doc": "",
+   "id": "1472db76-7726-428d-82e4-c3dbf42e8c74"
+  },
+  {
+   "n": "CF LION",
+   "doc": "",
+   "id": "8ff2838a-e8b9-437c-8e65-b23de686c81a"
+  },
+  {
+   "n": "CF SAJ",
+   "doc": "",
+   "id": "29af135f-2ecb-46f5-ba15-e41695471382"
+  },
+  {
+   "n": "CFBA",
+   "doc": "",
+   "id": "cc0c0821-925f-45ef-aaf4-dc9a76a63297"
+  },
+  {
+   "n": "CFIT",
+   "doc": "",
+   "id": "ff85c620-bfba-4e1e-8e05-1e5446cfaa7b"
+  },
+  {
+   "n": "CHAMPION FIT",
+   "doc": "",
+   "id": "be59b55a-2d9e-4da0-9001-4fcf44d0ef7d"
+  },
+  {
+   "n": "CHIVAS BARBER CUB",
+   "doc": "",
+   "id": "8c459725-4bca-4f9b-ba4e-494787791929"
+  },
+  {
+   "n": "CIGA",
+   "doc": "",
+   "id": "5210b980-a467-4725-839b-2459508e7201"
+  },
+  {
+   "n": "CIRCO MIRAGE",
+   "doc": "",
+   "id": "af10efa3-b171-46a2-9a99-7f58035199d5"
+  },
+  {
+   "n": "CIRCO ROCCA",
+   "doc": "",
+   "id": "2d2e6637-c71b-4320-ae84-655138acd336"
+  },
+  {
+   "n": "CLINICA MAIS VIDA",
+   "doc": "",
+   "id": "73bb444f-f33a-40a0-a4f9-5c66945db032"
+  },
+  {
+   "n": "CLINICA ZAIA",
+   "doc": "",
+   "id": "fb224da3-3a04-4a52-8b8c-b16c25a0b461"
+  },
+  {
+   "n": "CLUBE DOS BANCARIOS",
+   "doc": "",
+   "id": "8770b943-14d2-4d00-a1fa-e835973f1147"
+  },
+  {
+   "n": "CLUBE JAO",
+   "doc": "",
+   "id": "70e4b3e5-00b4-4125-a099-9582eb1116be"
+  },
+  {
+   "n": "COACH NATHY",
+   "doc": "",
+   "id": "50984ded-1bd5-43e5-8e50-3f3e731204a5"
+  },
+  {
+   "n": "COACH ORLEY",
+   "doc": "",
+   "id": "96f098c6-f401-4db8-9c15-242f9fbf87e0"
+  },
+  {
+   "n": "COLEGIO MARISTA",
+   "doc": "",
+   "id": "dfa55bf1-894c-41e1-9698-b741b6b72e75"
+  },
+  {
+   "n": "COLISEU",
+   "doc": "",
+   "id": "dcda21f5-fc61-4296-a322-d1fdb32c9ff8"
+  },
+  {
+   "n": "CORRE TEAM",
+   "doc": "",
+   "id": "2205873d-15d7-4fc0-88c3-5fe546f226ec"
+  },
+  {
+   "n": "CPE RIO VERDE",
+   "doc": "",
+   "id": "fa4d6b44-8eea-45d8-94d4-02a8aa66df34"
+  },
+  {
+   "n": "CRAF",
+   "doc": "",
+   "id": "9e9ab552-a559-404f-8d57-cf8428c6cbbf"
+  },
+  {
+   "n": "CROSS 300",
+   "doc": "",
+   "id": "02176015-5843-444c-ba4a-9e35b9c1186e"
+  },
+  {
+   "n": "CROSS DOZE",
+   "doc": "",
+   "id": "7c2bb6a4-25b7-4bca-ada3-98dceb134352"
+  },
+  {
+   "n": "CROSS DUBAI",
+   "doc": "",
+   "id": "c74b9611-d1de-4e6e-8e59-6ed4cc64bf16"
+  },
+  {
+   "n": "CROSS INVICTOS",
+   "doc": "",
+   "id": "9598d255-f198-43bf-b7df-0b4b53e06440"
+  },
+  {
+   "n": "CROSS IPIAU",
+   "doc": "",
+   "id": "e6afeada-b9cc-463c-b699-465ec6e03a5a"
+  },
+  {
+   "n": "CROSS MASTER",
+   "doc": "",
+   "id": "8ffcd51d-efed-4872-9fa0-23cfc3d39554"
+  },
+  {
+   "n": "CROSS SENIOR",
+   "doc": "",
+   "id": "9569473a-538a-43db-a270-40979453d8fb"
+  },
+  {
+   "n": "CROSSFIRE INDIARA",
+   "doc": "",
+   "id": "df637a74-6076-4210-9547-501efb1de0ba"
+  },
+  {
+   "n": "CROSSFIRE PALMEIRAS",
+   "doc": "",
+   "id": "65fa1dbf-700c-4fe0-bb9c-f178dd1dc4a5"
+  },
+  {
+   "n": "CROSSFIT ON",
+   "doc": "",
+   "id": "28f4c1ee-b8c0-49ee-9756-f802d90bbf5e"
+  },
+  {
+   "n": "CROSSFIT SAI",
+   "doc": "",
+   "id": "7881cb6a-8e35-474b-b653-6cce211833b9"
+  },
+  {
+   "n": "CROSSMOVE",
+   "doc": "",
+   "id": "c6452750-3768-4bcf-a0df-6696b6562f1d"
+  },
+  {
+   "n": "CROSSPRATA",
+   "doc": "",
+   "id": "1e7c1acf-0f1a-4731-a9bd-5ae083afbe8a"
+  },
+  {
+   "n": "CT BRONX",
+   "doc": "",
+   "id": "d8669af3-519d-4a9e-bb7e-d6c22ef9cdfc"
+  },
+  {
+   "n": "CT CIA FITNESS",
+   "doc": "",
+   "id": "aabc2df7-5867-4ca6-a9bd-37fd61c4a794"
+  },
+  {
+   "n": "CT HEAVY",
+   "doc": "",
+   "id": "a9f4ba96-604e-4550-bc34-ec6775b78e16"
+  },
+  {
+   "n": "CT XINAMPA",
+   "doc": "",
+   "id": "88583726-1484-4b86-be34-fda857183b3f"
+  },
+  {
+   "n": "CTW13",
+   "doc": "",
+   "id": "49a4a28a-c993-48b5-8cf5-b19605627307"
+  },
+  {
+   "n": "DI PAULA CROSS",
+   "doc": "",
+   "id": "8fabd440-82a9-4d36-9bfb-434397fa7a7f"
+  },
+  {
+   "n": "DIEGO LOVATTO",
+   "doc": "",
+   "id": "810cd767-7848-4420-b886-47dec8bf3b38"
+  },
+  {
+   "n": "DOGY BOX",
+   "doc": "",
+   "id": "0e0b6e2d-c5b4-44b8-b578-4a8f7322b5d0"
+  },
+  {
+   "n": "DT CROSS",
+   "doc": "",
+   "id": "fd3df83a-2867-4c62-86f1-68c9cf1ae957"
+  },
+  {
+   "n": "DUCKS CF",
+   "doc": "",
+   "id": "1d5ebc95-6d0d-42de-8210-7b4c80b96896"
+  },
+  {
+   "n": "DUMMOND CROSSFIT",
+   "doc": "",
+   "id": "10c66719-17cb-4714-bb1c-e44817a606ba"
+  },
+  {
+   "n": "ELITE CENTER",
+   "doc": "",
+   "id": "80ca5ec9-d0bf-4bed-897e-8256ded99736"
+  },
+  {
+   "n": "ELO CROSSFIT",
+   "doc": "",
+   "id": "fbfa6e4e-41b6-429a-a7ca-a98495c742fc"
+  },
+  {
+   "n": "ENVOLVE",
+   "doc": "",
+   "id": "313050c9-6500-49e4-a179-9158a692a40e"
+  },
+  {
+   "n": "EUROCROSS",
+   "doc": "",
+   "id": "42edb022-f96b-45d5-8b22-08135c285343"
+  },
+  {
+   "n": "EXTREME",
+   "doc": "",
+   "id": "952ef555-8d2d-47ba-975b-161a3f7ae09e"
+  },
+  {
+   "n": "FIGTHERS TEAM",
+   "doc": "",
+   "id": "28fe263c-654e-4dcd-ba17-091ae5b10f07"
+  },
+  {
+   "n": "FIRST RESPONDER",
+   "doc": "",
+   "id": "4bba4b03-5e57-46d3-bcf3-0d2e38d6fa52"
+  },
+  {
+   "n": "FIVE GYN",
+   "doc": "",
+   "id": "f8b194bd-a7ee-4ebf-a907-323a5a5051b4"
+  },
+  {
+   "n": "FLAG CALISTENIA",
+   "doc": "",
+   "id": "389d7501-1e4b-4f24-9810-8974369e1e8b"
+  },
+  {
+   "n": "FLAMPARK CROSSFIT",
+   "doc": "",
+   "id": "c5b85b8f-7862-4043-874f-c312d5254047"
+  },
+  {
+   "n": "FLOW BRASIL",
+   "doc": "",
+   "id": "07770aa0-1aff-4313-8b26-ab3279091d2e"
+  },
+  {
+   "n": "FLOW CROSSFIT",
+   "doc": "",
+   "id": "a22622c7-64da-4ec6-9fab-c83686012bca"
+  },
+  {
+   "n": "FLY BOX",
+   "doc": "",
+   "id": "ec8e6fc4-53ed-4c74-87bd-b1286f07c59a"
+  },
+  {
+   "n": "FORÇA TATICA",
+   "doc": "",
+   "id": "11ee5d42-2bdc-4972-b1ee-66ede0eef080"
+  },
+  {
+   "n": "FORMULA ALAGOAS",
+   "doc": "",
+   "id": "5260bfa5-93dc-42bf-a082-f469800aad32"
+  },
+  {
+   "n": "FORMULA ARACAJU",
+   "doc": "",
+   "id": "00f84d6d-dc33-4152-b7be-775c06bbc18a"
+  },
+  {
+   "n": "FORMULA CAMAÇARI",
+   "doc": "",
+   "id": "d2a2d5ea-67b3-4fd1-b639-1666f3ac323a"
+  },
+  {
+   "n": "FORMULA EUNAPOLIS",
+   "doc": "",
+   "id": "3d515d04-8388-4026-a196-8cbe99d66881"
+  },
+  {
+   "n": "FORMULA FORTALEZA",
+   "doc": "",
+   "id": "6619d84a-def6-4109-b270-59a530f3ba6a"
+  },
+  {
+   "n": "FORMULA IRECE",
+   "doc": "",
+   "id": "9ebc2a81-dfd8-4b32-9cef-f06565ac9869"
+  },
+  {
+   "n": "FORMULA JACOBINA",
+   "doc": "",
+   "id": "9b314213-8a1c-4b81-b2a8-42e30b38109f"
+  },
+  {
+   "n": "FORMULA JOAO PESSOA",
+   "doc": "",
+   "id": "d1da1cfa-e5c9-4a16-b083-99839fc218bc"
+  },
+  {
+   "n": "FORMULA JUAZEIRO",
+   "doc": "",
+   "id": "48c56e8f-abd5-470b-ab79-08ae58cd1086"
+  },
+  {
+   "n": "FORTIFIT",
+   "doc": "",
+   "id": "fc434588-696a-4a47-ad5d-317ba7c7e2ca"
+  },
+  {
+   "n": "FRANÇA FITNESS",
+   "doc": "",
+   "id": "2b895be7-51ee-4aaa-aa18-d08e702e49e8"
+  },
+  {
+   "n": "FRATELLI CROSSFIT",
+   "doc": "",
+   "id": "06dd730f-c18c-4552-a0e3-9ca21ad5585f"
+  },
+  {
+   "n": "FT 38",
+   "doc": "",
+   "id": "9ce189eb-b4c3-4864-8a54-52bf0ac73a86"
+  },
+  {
+   "n": "GARAGE TRAINING",
+   "doc": "",
+   "id": "ae565662-a927-45be-a733-07ff5ac79059"
+  },
+  {
+   "n": "GFT TEAM",
+   "doc": "",
+   "id": "0afcb4d0-0661-4a62-93a5-ea3772cb96ff"
+  },
+  {
+   "n": "GOIAS PET",
+   "doc": "",
+   "id": "f44c151c-caf9-439f-b7f0-c72dddeaa164"
+  },
+  {
+   "n": "GR3 CROSS",
+   "doc": "",
+   "id": "a7e7a4d1-e49c-4cd2-8ece-933f516cb5c5"
+  },
+  {
+   "n": "GREELINFE",
+   "doc": "",
+   "id": "8c5facd0-52c2-4895-8b3d-60c7b2835325"
+  },
+  {
+   "n": "GRIFO CROSSFIT",
+   "doc": "",
+   "id": "9c1ffc40-e36e-4be4-84af-9e2044fbd208"
+  },
+  {
+   "n": "GRIT",
+   "doc": "",
+   "id": "b189959f-ae9e-423b-8f79-58e63a0a8b52"
+  },
+  {
+   "n": "GUSTAVO FUTEVOLEI",
+   "doc": "",
+   "id": "f6453bd4-02c3-4451-821d-1d861721d2a0"
+  },
+  {
+   "n": "GUSTAVO GUIOT",
+   "doc": "",
+   "id": "c19977ba-4bd3-43c5-ae05-8884fcfa2559"
+  },
+  {
+   "n": "HI CROSSFIT",
+   "doc": "",
+   "id": "8e057e6a-6a3b-40d9-a714-c5d24516fbd1"
+  },
+  {
+   "n": "HM SPORTS",
+   "doc": "",
+   "id": "a1f99535-0e48-4b6f-916b-81adc9505442"
+  },
+  {
+   "n": "HOLBEN",
+   "doc": "",
+   "id": "987d178d-8d9f-4360-9942-0b70ce514e6f"
+  },
+  {
+   "n": "HOME FIT BOX",
+   "doc": "",
+   "id": "8ca54fa4-fd18-43dd-855c-551509d68625"
+  },
+  {
+   "n": "HOSPITAL DA MULHER",
+   "doc": "",
+   "id": "bae11dc8-85fd-4c9c-9fca-0a389e60b980"
+  },
+  {
+   "n": "INFANTE",
+   "doc": "",
+   "id": "8f6bab5d-b17f-4286-ba1a-869e46330f9c"
+  },
+  {
+   "n": "INSANO CROSSFIT",
+   "doc": "",
+   "id": "d79528ad-fe10-41df-9427-518a427467f8"
+  },
+  {
+   "n": "INSPIRE ACADEMIA",
+   "doc": "",
+   "id": "7a249470-501c-44ed-bcc9-976e55e87724"
+  },
+  {
+   "n": "IZU",
+   "doc": "",
+   "id": "ec0cf414-3aa7-4868-8aa3-286b1d1f87f1"
+  },
+  {
+   "n": "JAIRO FERNANDES",
+   "doc": "",
+   "id": "3bd1a0fb-44fb-4767-979e-21b06d8de43c"
+  },
+  {
+   "n": "JM KIDS",
+   "doc": "",
+   "id": "7594d4db-0bca-4411-8942-f174ff773917"
+  },
+  {
+   "n": "JULIANA FERNANDES",
+   "doc": "",
+   "id": "b169db5b-a314-47bb-8ea2-cd5c5ee2f697"
+  },
+  {
+   "n": "JUMPERS",
+   "doc": "",
+   "id": "cff918c6-cdb5-4e6e-b184-1ad5f14dcfe9"
+  },
+  {
+   "n": "KAKUDA",
+   "doc": "",
+   "id": "f643bfb8-1906-44a8-a641-b357d426aa28"
+  },
+  {
+   "n": "KNOVE CROSSFIT",
+   "doc": "",
+   "id": "95d30769-b530-460c-b77e-f2fcb12c20ba"
+  },
+  {
+   "n": "KVR",
+   "doc": "",
+   "id": "07c8dd3b-d533-4706-829b-a7db1247b394"
+  },
+  {
+   "n": "LADO DE FORA",
+   "doc": "",
+   "id": "4afe843a-2145-4940-b3dd-ee4a47136c3d"
+  },
+  {
+   "n": "LEO ACESSORIA",
+   "doc": "",
+   "id": "38e4f2a1-0848-4cdb-907f-981cc624850f"
+  },
+  {
+   "n": "LIFT CENTER",
+   "doc": "",
+   "id": "2bcae03c-1d65-44f9-b2cb-92c7547b6ad6"
+  },
+  {
+   "n": "LIMA CAR",
+   "doc": "",
+   "id": "fdb4c281-ca8e-449b-93f5-52e11d187e04"
+  },
+  {
+   "n": "LIVE SUPLEMENTOS",
+   "doc": "",
+   "id": "d949d709-394e-4918-826b-22bf99b9eece"
+  },
+  {
+   "n": "MAHI CROSSFIT",
+   "doc": "",
+   "id": "82ced821-ce8d-477f-b870-beed1d475433"
+  },
+  {
+   "n": "MANAIRA CROSSFIT",
+   "doc": "",
+   "id": "f11bed8c-8aa6-4443-b4ff-39ca349a503d"
+  },
+  {
+   "n": "MARADONA SUPLEMENTOS",
+   "doc": "",
+   "id": "4981a1e4-952d-4b9e-a63b-e120035b22fc"
+  },
+  {
+   "n": "MARAGOSH TEAM",
+   "doc": "",
+   "id": "c79750aa-ce47-44f2-a6ad-cc4b46bfdf82"
+  },
+  {
+   "n": "MARCELO COSTA",
+   "doc": "",
+   "id": "22200ac9-9035-4a1e-a8f7-c54c8129e090"
+  },
+  {
+   "n": "MARFIT",
+   "doc": "",
+   "id": "bdcf9834-4a05-4381-bd73-3ca92fc14c1c"
+  },
+  {
+   "n": "MET",
+   "doc": "",
+   "id": "a47ebfed-ded2-4332-b8a3-0c675c2accec"
+  },
+  {
+   "n": "MK FITNESS",
+   "doc": "",
+   "id": "21c94a41-8ac9-47ad-acb0-48deec1c532c"
+  },
+  {
+   "n": "MONUMENTAL",
+   "doc": "",
+   "id": "97df5035-a671-40df-ac62-2d9bbf1132dd"
+  },
+  {
+   "n": "MORBECK",
+   "doc": "",
+   "id": "fbf3a895-c4e4-4ca5-91d9-6b72eacba4b8"
+  },
+  {
+   "n": "MOSCAVO",
+   "doc": "",
+   "id": "475e8258-b782-41ec-a677-a437a962d1c8"
+  },
+  {
+   "n": "MY CROSS",
+   "doc": "",
+   "id": "13af068a-1ff5-4914-bfdd-718742e297b8"
+  },
+  {
+   "n": "NA HORA H",
+   "doc": "",
+   "id": "dccf20a1-0013-4e36-adf9-eb189ba5d18e"
+  },
+  {
+   "n": "NAIAK",
+   "doc": "",
+   "id": "52cd9b13-20ed-4db1-8472-185585fc9e93"
+  },
+  {
+   "n": "NBK CROSSFIT",
+   "doc": "",
+   "id": "36f6ba76-a8b6-4f38-9a74-7783079d5285"
+  },
+  {
+   "n": "NIZ ESTETICA",
+   "doc": "",
+   "id": "bdc19f12-4233-4d6d-bd68-7d162b62dbab"
+  },
+  {
+   "n": "NOMADE",
+   "doc": "",
+   "id": "7ed2f1ab-9eb9-4627-8909-adff9473953c"
+  },
+  {
+   "n": "NUBOX",
+   "doc": "",
+   "id": "2b8c2bbe-c6eb-4ce1-b96e-e96e64295fba"
+  },
+  {
+   "n": "O.M",
+   "doc": "",
+   "id": "2362f9cf-e018-48e4-b850-da658e5a176c"
+  },
+  {
+   "n": "OCA",
+   "doc": "",
+   "id": "37b23939-c08b-4f21-a584-875037e9d5b1"
+  },
+  {
+   "n": "OIKOS CF",
+   "doc": "",
+   "id": "af62d930-3af4-4212-bceb-c14ec7038143"
+  },
+  {
+   "n": "OPEN CENTER",
+   "doc": "",
+   "id": "3f9fd069-93a0-44ba-ade2-e79c8017b433"
+  },
+  {
+   "n": "ORLA",
+   "doc": "",
+   "id": "0c356f17-2661-42ac-9119-302352c09a76"
+  },
+  {
+   "n": "PARACATU CROSSFIT",
+   "doc": "",
+   "id": "11d7ede2-5a9f-4737-a040-56dba89f2dc3"
+  },
+  {
+   "n": "PATROAS DO SOL",
+   "doc": "",
+   "id": "89db6e84-e938-4480-89a4-83c623986ae8"
+  },
+  {
+   "n": "PLAY",
+   "doc": "",
+   "id": "6e1a78bd-e637-49ee-bfdb-90f365e14ddc"
+  },
+  {
+   "n": "PONTO SETE",
+   "doc": "",
+   "id": "67d292c2-30d8-4693-9584-0c10397b41b7"
+  },
+  {
+   "n": "PORTELA CROSSFIT",
+   "doc": "",
+   "id": "87a7f762-b0f4-4a40-9b4a-93d99b765e81"
+  },
+  {
+   "n": "POWER CROSS",
+   "doc": "",
+   "id": "deb82507-46e1-4081-bbe6-bb8c47e1998f"
+  },
+  {
+   "n": "PRIMATAS CROSSFIT",
+   "doc": "",
+   "id": "30f7f1e8-f72b-4fe3-9926-36c8b1577317"
+  },
+  {
+   "n": "PRIME",
+   "doc": "",
+   "id": "98954379-708b-4d83-ad1e-2506e7a47761"
+  },
+  {
+   "n": "PROMAIS",
+   "doc": "",
+   "id": "f24a25c2-98d6-4132-af3c-c8ae6916f9df"
+  },
+  {
+   "n": "PROXY",
+   "doc": "",
+   "id": "137cd6a2-db3d-4f50-b157-e820e452a61b"
+  },
+  {
+   "n": "PUNK CROSSFIT",
+   "doc": "",
+   "id": "9485deb6-abb2-4a4a-b975-862c5793d8b2"
+  },
+  {
+   "n": "R TRAINERS",
+   "doc": "",
+   "id": "e777f69e-ca30-4056-af37-ee3867a8ef43"
+  },
+  {
+   "n": "RA ACESSORIA",
+   "doc": "",
+   "id": "79acb8af-99dd-43ea-afcc-392574a6c3fc"
+  },
+  {
+   "n": "RADICAL SURF",
+   "doc": "",
+   "id": "1269f749-3574-4866-95d5-158ac2e663dd"
+  },
+  {
+   "n": "RANGEDOR CROSSFIT",
+   "doc": "",
+   "id": "5a8ff147-fd76-4334-900d-3c924ab051a6"
+  },
+  {
+   "n": "RASTA",
+   "doc": "",
+   "id": "776a1d18-a166-458e-a050-ca3e07bb21be"
+  },
+  {
+   "n": "RECANTO ARENA",
+   "doc": "",
+   "id": "3d4d5465-1e8a-459f-9584-fb8931b2c9fc"
+  },
+  {
+   "n": "REPLAY",
+   "doc": "",
+   "id": "ceccb422-5ec8-4cf2-b539-45e153f5a14a"
+  },
+  {
+   "n": "REPOSIT",
+   "doc": "",
+   "id": "0a558a66-2b19-4c55-bd04-056312423858"
+  },
+  {
+   "n": "RHEMA",
+   "doc": "",
+   "id": "f28531ca-2b7e-444b-810e-247a435a43da"
+  },
+  {
+   "n": "RIVEN",
+   "doc": "",
+   "id": "54376451-9939-4b02-8cf9-7f0f8541522a"
+  },
+  {
+   "n": "RODRIGO TEASER",
+   "doc": "",
+   "id": "05275fc5-6c66-4813-8d21-43d285201cbf"
+  },
+  {
+   "n": "ROMARIO FUTEVOLEI",
+   "doc": "",
+   "id": "8e70edca-0368-468f-9a4c-47330cd82e68"
+  },
+  {
+   "n": "ROQUE BOX",
+   "doc": "",
+   "id": "135be72a-f358-4a99-9e71-1db1317fd9a4"
+  },
+  {
+   "n": "ROTA 152 CROSSFIT",
+   "doc": "",
+   "id": "2583b444-cfb7-4e5b-8ee1-8af2841a3dbc"
+  },
+  {
+   "n": "ROTA GYN",
+   "doc": "",
+   "id": "000fdb05-c1f5-4d24-be49-bd61758056fb"
+  },
+  {
+   "n": "SAFARI CROSSFIT",
+   "doc": "",
+   "id": "77f38eb1-118a-4a67-8cc3-e93b34f66162"
+  },
+  {
+   "n": "SAFEWEY",
+   "doc": "",
+   "id": "9842f63e-d310-4162-b92c-4536661f1747"
+  },
+  {
+   "n": "SAGA",
+   "doc": "",
+   "id": "475abd95-a596-49c9-8a7c-4a73361b5ed4"
+  },
+  {
+   "n": "SAGA HYUNDAI",
+   "doc": "",
+   "id": "f1efda13-9415-496b-9ec9-7d26839eaa78"
+  },
+  {
+   "n": "SAME CF",
+   "doc": "",
+   "id": "0ad78d3a-6a26-4b54-b33f-54b92f2282bc"
+  },
+  {
+   "n": "SANCO CROSSFIT",
+   "doc": "",
+   "id": "01a20d9d-ee8e-4931-94aa-e69b2e36e50c"
+  },
+  {
+   "n": "SOCRATES ONLINE",
+   "doc": "",
+   "id": "8968fccf-6b74-4287-a0f9-05de7dc5b3ab"
+  },
+  {
+   "n": "SOUL",
+   "doc": "",
+   "id": "3b5567dc-011a-44cd-9751-b56c22f356ea"
+  },
+  {
+   "n": "STRONGER",
+   "doc": "",
+   "id": "a66eb5fa-de0a-4ce2-8d99-c83cc778ea6c"
+  },
+  {
+   "n": "STUDIO RAFAELLA LOPES",
+   "doc": "",
+   "id": "981b46e8-44c7-4fd0-9f20-89e9bfdcdb36"
+  },
+  {
+   "n": "SUPERAÇÃO",
+   "doc": "",
+   "id": "14e3e090-9968-4cae-aed1-15bdf20a2268"
+  },
+  {
+   "n": "TEAM BIA",
+   "doc": "",
+   "id": "dc806e33-7d2c-43d4-b044-06f0f505affb"
+  },
+  {
+   "n": "TEC GRUA",
+   "doc": "",
+   "id": "668bc29d-c1e4-4a34-9b6d-4033f8d92cb4"
+  },
+  {
+   "n": "TOP STUDIO",
+   "doc": "",
+   "id": "5428d605-9abe-4fef-a81c-6d25b8ceafc1"
+  },
+  {
+   "n": "TORK",
+   "doc": "",
+   "id": "602b9e34-c4cd-4df6-b50b-e3c36c1eb6c9"
+  },
+  {
+   "n": "TORU BOX",
+   "doc": "",
+   "id": "6310a5de-0087-4265-934f-faf8048fc46e"
+  },
+  {
+   "n": "TRINUS",
+   "doc": "",
+   "id": "2c35a977-3820-451b-ad38-d5319664b519"
+  },
+  {
+   "n": "TUCAN",
+   "doc": "",
+   "id": "352b9ba5-9554-41d5-9f33-718e20424292"
+  },
+  {
+   "n": "UBUNTU CROSSFIT",
+   "doc": "",
+   "id": "8725861d-0154-42c0-8bed-0a1778d7211c"
+  },
+  {
+   "n": "UCLA",
+   "doc": "",
+   "id": "e40ae669-fd4e-4951-a9d6-45344f9dcfb0"
+  },
+  {
+   "n": "UMBROKEN FUNCIONAL",
+   "doc": "",
+   "id": "6c698a9a-c4fd-4e1d-b2d9-65b5ca5acec0"
+  },
+  {
+   "n": "UNIMED CALDAS",
+   "doc": "",
+   "id": "1209e5f2-8d70-4a0b-8e6c-5703ef90d24b"
+  },
+  {
+   "n": "VESPO CROSSFIT",
+   "doc": "",
+   "id": "339ff9ab-b87f-4dfc-9ed4-b5e1228e0cb4"
+  },
+  {
+   "n": "VILMA TRANSPORTES",
+   "doc": "",
+   "id": "418f4601-f6b2-4552-a8ee-1927e0ca7452"
+  },
+  {
+   "n": "VMCF",
+   "doc": "",
+   "id": "1c7fa283-9cf2-48d3-ac17-334acbafe6bc"
+  },
+  {
+   "n": "WAIA CROSSFIT",
+   "doc": "",
+   "id": "63e301f9-a490-4b5b-9530-36fb6d242c9e"
+  },
+  {
+   "n": "WARLO FTV",
+   "doc": "",
+   "id": "ca40fcaf-26a8-4250-9997-a8eb94e8a035"
+  },
+  {
+   "n": "WAURIMAM",
+   "doc": "",
+   "id": "01c8d61e-9f65-4be0-9297-e40a00d85e14"
+  },
+  {
+   "n": "WEST",
+   "doc": "",
+   "id": "d2707cb1-00a5-41a9-8c4c-7b9f25b9aca3"
+  },
+  {
+   "n": "WOLF",
+   "doc": "",
+   "id": "803c16f0-5f83-4ed7-b20a-45f394a9eb42"
+  },
+  {
+   "n": "WOOD FITNESS",
+   "doc": "",
+   "id": "0037388f-a138-41fb-bca9-9c3e064204e4"
+  },
+  {
+   "n": "XTREME PRODUÇOES",
+   "doc": "",
+   "id": "e247b0a1-3ac0-4869-a747-7483a3682038"
+  },
+  {
+   "n": "YELOW MONKEY",
+   "doc": "",
+   "id": "2dce8242-4ee2-4dfa-9c09-01a3c807f090"
+  },
+  {
+   "n": "NOVO CLIENTE",
+   "resp": "",
+   "doc": "",
+   "cep": "",
+   "rua": "",
+   "num": "",
+   "bairro": "",
+   "cidade": "",
+   "uf": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "id": "b873bd75-c7db-49a3-acb9-60dc678d857b"
+  },
+  {
+   "n": "ROGER RAFAEL PORTO ROCHA",
+   "razao": "ROGER RAFAEL PORTO ROCHA",
+   "resp": "DR ROGER",
+   "doc": "057.434.125-02",
+   "cep": "44860-055",
+   "rua": "Rua Aurélio José Marques",
+   "num": "77",
+   "bairro": "Centro",
+   "cidade": "Irecê",
+   "uf": "BA",
+   "email": "",
+   "zap": "71985545558",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "697dad3d-bcb9-4838-9e00-2534dc1d1021"
+  },
+  {
+   "n": "CORUJINHAS DE MAE PARA FILHO LTDA",
+   "razao": "CORUJINHAS DE MAE PARA FILHO- LTDA",
+   "resp": "ANDRESSA",
+   "doc": "23.024.628/0001-22",
+   "cep": "74645-080",
+   "rua": "AVENIDA SEXTA AVENIDA",
+   "num": "14",
+   "bairro": "SET LESTE VILA NOVA",
+   "cidade": "GOIANIA",
+   "uf": "GO",
+   "email": "assessoria.contabil@hotmail.com.br",
+   "zap": "62983300712",
+   "insta": "",
+   "fone": "(62) 9977-0712",
+   "entrega": "",
+   "enderecos": [],
+   "id": "a9106a3b-4822-4e1c-9121-0d5462ce41e0"
+  },
+  {
+   "n": "JONATAS NORBERTO RODRIGUES",
+   "razao": "",
+   "resp": "",
+   "doc": "702.818.971-66",
+   "cep": "74946-520",
+   "rua": "Avenida Lago dos Marrecos",
+   "num": "sn",
+   "bairro": "Jardim Tropical",
+   "cidade": "Aparecida de Goiânia",
+   "uf": "GO",
+   "email": "",
+   "zap": "62999656737",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "4d0684d0-b6df-495f-9e37-349f7b9754ff"
+  },
+  {
+   "n": "ERREJOTA - GABY",
+   "razao": "",
+   "resp": "",
+   "doc": "",
+   "cep": "",
+   "rua": "",
+   "num": "",
+   "bairro": "",
+   "cidade": "",
+   "uf": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "eb3f9409-b732-4748-a84f-481cd2a15f51"
+  },
+  {
+   "n": "ALEXANDRE DA SILVA LIMA",
+   "razao": "ALEXANDRE 74",
+   "resp": "ALEXANDRE",
+   "doc": "019.636.931-24",
+   "cep": "",
+   "rua": "",
+   "num": "",
+   "bairro": "",
+   "cidade": "",
+   "uf": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "81190b0b-bd77-42e0-a67d-29544a68853e"
+  },
+  {
+   "n": "CENTRO DE TREINAMENTO ELITE",
+   "razao": "CENTRO DE TREINAMENTO CARVALHO DIAS LTDA",
+   "resp": "GUSTAVO",
+   "doc": "52.497.980/0001-83",
+   "cep": "75940-000",
+   "rua": "RUA RUI BARBOSA",
+   "num": "SN",
+   "bairro": "SETOR CENTRAL",
+   "cidade": "EDEIA",
+   "uf": "GO",
+   "email": "centrodetreinamentoelite95@gmail.com",
+   "zap": "64992335632",
+   "insta": "",
+   "fone": "(64) 9832-2176",
+   "entrega": "",
+   "enderecos": [],
+   "id": "3777b914-e948-4a15-9ad3-051abe67e94a"
+  },
+  {
+   "n": "JACKELINE MUNIZ LEITE",
+   "razao": "36.987.927 JACKELYNNE MUNIZ LEITE SOUZA",
+   "resp": "JACKELINE",
+   "doc": "36.987.927/0001-04",
+   "cep": "79500-000",
+   "rua": "RUA RUA GERALDO NUNES RIBEIRO",
+   "num": "1287",
+   "bairro": "JARDIM IMPERIAL",
+   "cidade": "PARANAIBA",
+   "uf": "MS",
+   "email": "jackelynneeleite@hotmail.com",
+   "zap": "",
+   "insta": "",
+   "fone": "(67) 8170-9215",
+   "entrega": "",
+   "enderecos": [],
+   "id": "a8edc53b-938a-4c50-864b-3466846cc8f1"
+  },
+  {
+   "n": "LOYANY SALIMA",
+   "razao": "XFORMA",
+   "resp": "LOYANE",
+   "doc": "025.714.541-96",
+   "cep": "75903-290",
+   "rua": "Avenida Presidente Vargas",
+   "num": "2280",
+   "bairro": "Jardim Goiás",
+   "cidade": "Rio Verde",
+   "uf": "GO",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "f61297ed-71bd-4e0e-bac0-0d8eb0a7158b"
+  },
+  {
+   "n": "IMAR RIBEIRO DO CARMO JUNIOR",
+   "razao": "DOT ELETRONICOS",
+   "resp": "",
+   "doc": "006.209.171-99",
+   "cep": "74503-101",
+   "rua": "Avenida Anhanguera",
+   "num": "8035",
+   "bairro": "Setor Campinas",
+   "cidade": "Goiânia",
+   "uf": "GO",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "21012f57-5ec2-4138-b236-2f25bf1fac4f"
+  },
+  {
+   "n": "MARLUCIO PEREIRA DE AZEVEDO",
+   "razao": "CROSS MASTER",
+   "resp": "MARLUCIO",
+   "doc": "033.318.855-17",
+   "cep": "46140-000",
+   "rua": "RUA GOVERNADOR JURACI MAGALHAES",
+   "num": "431",
+   "bairro": "CENTRO",
+   "cidade": "Livramento de Nossa Senhora",
+   "uf": "BA",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "7b6c9806-10fe-4f13-ac62-2e2700e59fa7"
+  },
+  {
+   "n": "SOCORRO",
+   "razao": "DONA SOCORRO",
+   "resp": "",
+   "doc": "",
+   "cep": "",
+   "rua": "",
+   "num": "",
+   "bairro": "",
+   "cidade": "",
+   "uf": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "e6e819f2-fa09-48e0-86ec-a51152106d3e"
+  },
+  {
+   "n": "MATHEUS IVENS MEDEIROS FONSECA",
+   "razao": "MATHEUS FONSECA",
+   "resp": "MATHEUS FONSECA",
+   "doc": "157.708.327-03",
+   "cep": "25933-510",
+   "rua": "Avenida Automóvel Clube",
+   "num": "670",
+   "bairro": "Centro (Vila Inhomirim)",
+   "cidade": "Magé",
+   "uf": "RJ",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "d676fecc-b1b1-463d-a3a2-32c765b3d10e"
+  },
+  {
+   "n": "COLEGIO YOLANDA",
+   "razao": "",
+   "resp": "",
+   "doc": "",
+   "cep": "",
+   "rua": "",
+   "num": "",
+   "bairro": "",
+   "cidade": "",
+   "uf": "",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "03ff0ccc-03a0-4455-817f-26b26d5c1113"
+  },
+  {
+   "n": "ADEPOL DF",
+   "razao": "ASSOCIAÇÃO DOS DELEGADOS DE POLICIA DO DF",
+   "resp": "AMADO PEREIRA",
+   "doc": "00.720.516/0001-00",
+   "cep": "70610-000",
+   "rua": "SAIS LOTE 02 BLOCO D",
+   "num": "S/N",
+   "bairro": "SAIS",
+   "cidade": "BRASILIA",
+   "uf": "DF",
+   "email": "adepoldf@adepoldf.org.br",
+   "zap": "61998298558",
+   "insta": "",
+   "fone": "(61) 3233-0068",
+   "entrega": "",
+   "enderecos": [],
+   "id": "1e92dc0e-c3b5-44d9-9ce6-cdb5f1b3b726"
+  },
+  {
+   "n": "TEAM MASTERS - FABIANO ARAUJO",
+   "razao": "",
+   "resp": "FABIANO",
+   "doc": "920.906.305-82",
+   "cep": "45600-148",
+   "rua": "Travessa Manoel Fogueira",
+   "num": "155 / 2º ANDAR AP 201",
+   "bairro": "Centro",
+   "cidade": "Itabuna",
+   "uf": "BA",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "6fbcaa9d-5ca7-424f-853e-c312c0b43c55"
+  },
+  {
+   "n": "UMUARAMA ADMINISTRAÇÃO E PARTICIPAÇÃO CONCESSIONARIA LTDA",
+   "razao": "UMUARAMA ADMINISTRACAO E PARTICIPACAO CONCESSIONARIA LTDA",
+   "resp": "MARCELINO",
+   "doc": "26.481.915/0001-50",
+   "cep": "74672-400",
+   "rua": "AVENIDA CAIAPO",
+   "num": "1110",
+   "bairro": "BRO SANTA GENOVEVA",
+   "cidade": "GOIANIA",
+   "uf": "GO",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "(62) 3265-2600",
+   "entrega": "",
+   "enderecos": [],
+   "id": "a6dd7aa7-5efa-45dd-9f65-eec8d1c650ed"
+  },
+  {
+   "n": "LEONARDO SANTEDICOLA ANDRADE",
+   "razao": "LEO ACESSORIA",
+   "resp": "LEO",
+   "doc": "803.396.545-20",
+   "cep": "45204-064",
+   "rua": "Rua Dolfo Valverde",
+   "num": "32",
+   "bairro": "São Judas Tadeu",
+   "cidade": "Jequié",
+   "uf": "BA",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "f94004d3-eeb9-46b2-a272-579a2c2fa1a6"
+  },
+  {
+   "n": "CERRADO ACADEMIA",
+   "razao": "CERRADO ACADEMIA LTDA",
+   "resp": "cassia",
+   "doc": "34.466.048/0001-01",
+   "cep": "74670-600",
+   "rua": "AVENIDA DAS INDUSTRIAS",
+   "num": "431",
+   "bairro": "BRO SANTA GENOVEVA",
+   "cidade": "GOIANIA",
+   "uf": "GO",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "(62) 3282-6187",
+   "entrega": "",
+   "enderecos": [],
+   "id": "a4742077-b995-46f2-9df3-1c8436e16a81"
+  },
+  {
+   "n": "Diune Eduarda de Sousa Silva",
+   "razao": "BOMBARTA",
+   "resp": "DIUNE",
+   "doc": "033.740.801-70",
+   "cep": "75461-868",
+   "rua": "rua 11",
+   "num": "",
+   "bairro": "jardim paraiso",
+   "cidade": "Nerópolis",
+   "uf": "GO",
+   "email": "",
+   "zap": "",
+   "insta": "",
+   "fone": "",
+   "entrega": "",
+   "enderecos": [],
+   "id": "6ad69c70-4214-4e40-bb7c-ef5f3e633196"
+  }
+ ],
+ "fichas": [
+  {
+   "n": "FT-010-000M — CAMISETA MASC TRAD",
+   "esc": 6,
+   "tec": [
+    {
+     "nome": "ALGODAO 100%",
+     "parte": "Corpo",
+     "base": 1,
+     "aj": {}
+    }
+   ],
+   "avi": [
+    {
+     "nome": "Linha de costura",
+     "qtd": 100,
+     "uni": "m"
+    }
+   ]
+  }
+ ]
+}

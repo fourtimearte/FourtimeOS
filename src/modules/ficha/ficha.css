@@ -241,9 +241,13 @@
 }
 
 /* --- uma peça no documento ------------------------------------------------ */
+/* A peca tem a forma da v3.375: a arte grande a esquerda, a tabela de
+   tamanhos a direita, e os campos por cima dos dois. A arte e grande porque
+   e o que a producao olha primeiro; a tabela e estreita porque sao dez
+   linhas de dois numeros. */
 .fc-peca {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   gap: var(--sp-4);
   align-items: start;
   padding: var(--sp-4);
@@ -357,5 +361,13 @@
   min-width: 0;
 }
 .fc-imagem {
-  max-width: 520px;
+  min-width: 0;
+}
+/* Com quatro campos, duas colunas deixam buraco. Os campos da ficha ficam
+   numa linha so quando a largura deixa, e a arte ganha o resto da altura. */
+.fc-peca-esq .lay-campos {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.fc-peca-esq .lay-campo.largo {
+  grid-column: 1 / -1;
 }

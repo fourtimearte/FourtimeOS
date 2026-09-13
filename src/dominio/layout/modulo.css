@@ -191,11 +191,16 @@
   display: flex;
   flex-direction: column;
 }
+/* DUAS LINHAS DE TEXTO À ESQUERDA, o menos e o quadrado à direita. Em coluna
+   os dois nomes disputavam a mesma largura e cortavam os dois no meio;
+   empilhados, cada um tem a largura inteira do cartão. O quadrado cobre as
+   duas fileiras porque ele é do par, e não do nome da cor. */
 .mod-tec-linha {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 2px;
-  padding: 4px 6px;
+  gap: 0 6px;
+  padding: 6px 8px 6px 6px;
   border-bottom: 1px solid var(--border);
   min-width: 0;
 }
@@ -204,18 +209,14 @@
 }
 .mod-tec-nome,
 .mod-tec-cor {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+  grid-column: 1;
+  display: block;
   min-width: 0;
-  min-height: 32px;
-  padding: 0 8px;
+  padding: 3px 7px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   font: inherit;
-  font-size: 12.5px;
-  color: var(--text);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
@@ -223,13 +224,19 @@
   white-space: nowrap;
 }
 .mod-tec-nome {
-  flex: 1.4;
+  grid-row: 1;
+  font-size: 13px;
+  color: var(--text);
 }
+/* a cor é a legenda do tecido, e legenda é menor: em corpo igual as duas
+   linhas brigavam para ser a principal */
 .mod-tec-cor {
-  flex: 1;
-  color: var(--text-2);
+  grid-row: 2;
+  font-size: 11.5px;
+  color: var(--text-3);
 }
 .mod-tec-cor span {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -242,13 +249,36 @@
 .mod-tec-cor:disabled {
   cursor: default;
 }
+/* o botão do quadrado: alvo de dedo por fora, quadrado grande por dentro */
+.mod-tec-sw {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+}
+.mod-tec-sw:disabled {
+  cursor: default;
+}
 .mod-sw {
-  flex: none;
-  width: 18px;
-  height: 18px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   background: var(--cor);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent);
+  transition: box-shadow var(--t-fast) var(--ease-out);
+}
+.mod-tec-sw:hover .mod-sw {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent),
+    0 0 0 2px var(--brand);
 }
 /* sem cor escolhida o quadrado não pode ficar branco: branco É uma cor de
    malha, e os dois estados ficariam iguais. Hachurado, não */
@@ -260,7 +290,9 @@
   );
 }
 .mod-tec-tirar {
-  flex: none;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
   display: grid;
   place-items: center;
   width: 28px;

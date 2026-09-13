@@ -451,6 +451,16 @@ function TecidoNaLinha({
   aoAbrirCor: (el: HTMLElement) => void
   aoTirar: () => void
 }) {
+  /* O NOME DA COR É A SEGUNDA LINHA DO TECIDO, e não uma coluna ao lado.
+     Em coluna, os dois nomes disputavam a mesma largura e os dois cortavam
+     no meio: "Dry fit peletiz..." e "Azul marinho esc...". Empilhados, cada
+     um tem a largura inteira do cartão, e a cor lida como legenda do tecido,
+     que é o que ela é.
+
+     O quadrado mora no canto direito e cobre as duas linhas: ele é do PAR,
+     e não do nome da cor. O menos fica à esquerda dele porque apagar é o
+     último gesto da linha, e o primeiro lugar onde o dedo não deve cair
+     por acidente é em cima da cor. */
   return (
     <div className="mod-tec-linha">
       <button
@@ -469,10 +479,6 @@ function TecidoNaLinha({
         title={tecido.cor || 'sem cor'}
         onClick={(e) => aoAbrirCor(e.currentTarget)}
       >
-        <i
-          className={tecido.hex ? 'mod-sw' : 'mod-sw vazia'}
-          style={{ '--cor': tecido.hex } as CSSProperties}
-        />
         <span>{tecido.cor || 'sem cor'}</span>
       </button>
 
@@ -487,6 +493,20 @@ function TecidoNaLinha({
           <Menos />
         </button>
       )}
+
+      <button
+        type="button"
+        className="mod-tec-sw"
+        disabled={leitura}
+        title={'Cor do tecido: ' + (tecido.cor || 'sem cor')}
+        aria-label={'Cor do tecido: ' + (tecido.cor || 'sem cor')}
+        onClick={(e) => aoAbrirCor(e.currentTarget)}
+      >
+        <i
+          className={tecido.hex ? 'mod-sw' : 'mod-sw vazia'}
+          style={{ '--cor': tecido.hex } as CSSProperties}
+        />
+      </button>
     </div>
   )
 }

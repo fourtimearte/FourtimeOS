@@ -1,11 +1,24 @@
 import { useCallback, useMemo, useState } from 'react'
-import { ArrowCounterClockwise, ArrowClockwise, CurrencyDollar, Eye, Plus, Printer, Trash } from '@phosphor-icons/react'
+import {
+  ArrowClockwise,
+  ArrowCounterClockwise,
+  CopySimple,
+  CurrencyDollar,
+  Eye,
+  Info,
+  Plus,
+  Printer,
+  Trash,
+} from '@phosphor-icons/react'
 import { Botao, Pagina, avisar } from '@ds'
 import {
   CaixaDeImagem,
-  FileiraDoLayout,
   GradeDeTamanhos,
+  ModuloDeLayout,
   blocoEmBranco,
+  colarBloco,
+  copiarBloco,
+  temCopia,
   type Bloco,
 } from '@dominio/layout'
 import {
@@ -163,6 +176,7 @@ export function TelaFicha() {
               })
             }
             aoRemover={() => remover(i)}
+            aoColar={(b) => mudarPeca(i, (x) => ({ ...x, bloco: b }))}
           />
         ))}
 
@@ -175,7 +189,10 @@ export function TelaFicha() {
   )
 }
 
-/* --- uma peça no documento contínuo -------------------------------------- */
+/* --- uma peça no documento contínuo --------------------------------------
+   O módulo é o da v3.375: duas colunas de mesma largura, a arte à esquerda e
+   a ficha técnica à direita. A arte e a tabela chegam de fora porque a arte é
+   arquivo e a tabela tem preço, e nenhuma das duas é do bloco. */
 function PecaNaFicha({
   peca,
   comDinheiro,
@@ -183,6 +200,7 @@ function PecaNaFicha({
   aoMudarBloco,
   aoMudarPreco,
   aoRemover,
+  aoColar,
 }: {
   peca: PecaDaFicha
   comDinheiro: boolean
@@ -190,53 +208,85 @@ function PecaNaFicha({
   aoMudarBloco: (b: Bloco) => void
   aoMudarPreco: (tamanho: string, valor: number | null) => void
   aoRemover: () => void
+  aoColar: (b: Bloco) => void
 }) {
   const b = peca.bloco
+  const info = b.informacoes === true
+
   return (
     <section className="fc-peca">
-      <div className="fc-peca-esq">
-      <FileiraDoLayout
+      <ModuloDeLayout
         bloco={b}
         aoMudar={aoMudarBloco}
-        arranjo="campos"
-        selo={<span className="fc-selo-lay">L-{String(b.n).padStart(2, '0')}</span>}
+        arte={
+          <CaixaDeImagem
+            imagem={b.imagem}
+            arte={b.arte}
+            aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
+            aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
+          />
+        }
+        tabela={
+          <GradeDeTamanhos
+            faixa={b.faixa}
+            grade={b.grade}
+            aoMudar={(g) => aoMudarBloco({ ...b, grade: g })}
+            aoTrocarFaixa={(f) => aoMudarBloco({ ...b, faixa: f })}
+            precoBase={comDinheiro ? peca.precoBase : undefined}
+            precoPorTamanho={peca.precoPorTamanho}
+            aoMudarPreco={aoMudarPreco}
+          />
+        }
         acoes={
-          podeRemover ? (
+          <>
             <button
               type="button"
-              className="fc-apagar"
-              title="Apagar este layout"
-              aria-label="Apagar este layout"
-              onClick={aoRemover}
+              className={info ? 'fc-bt-mod ligado' : 'fc-bt-mod'}
+              aria-pressed={info}
+              title={
+                info
+                  ? 'Voltar a ser layout de produção'
+                  : 'Transformar em módulo de informações'
+              }
+              onClick={() => aoMudarBloco({ ...b, informacoes: !info })}
             >
-              <Trash size={16} />
+              <Info size={16} />
             </button>
-          ) : null
+
+            <button
+              type="button"
+              className="fc-bt-mod"
+              title={temCopia() ? 'Colar o layout copiado' : 'Copiar este layout'}
+              onClick={() => {
+                if (temCopia()) {
+                  const colado = colarBloco(b.n)
+                  if (colado) {
+                    aoColar({ ...colado, id: b.id, n: b.n })
+                    avisar('Layout colado.', 'ok')
+                    return
+                  }
+                }
+                copiarBloco(b)
+                avisar('Layout copiado. Cole em outro layout ou em outra ficha.', 'ok')
+              }}
+            >
+              <CopySimple size={16} />
+            </button>
+
+            {podeRemover ? (
+              <button
+                type="button"
+                className="fc-bt-mod perigo"
+                title="Apagar este layout"
+                aria-label="Apagar este layout"
+                onClick={aoRemover}
+              >
+                <Trash size={16} />
+              </button>
+            ) : null}
+          </>
         }
       />
-
-      <div className="fc-imagem">
-        <CaixaDeImagem
-          imagem={b.imagem}
-          arte={b.arte}
-          aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
-          aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
-        />
-      </div>
-      </div>
-
-      <div className="fc-grade">
-        <GradeDeTamanhos
-          faixa={b.faixa}
-          grade={b.grade}
-          aoMudar={(g) => aoMudarBloco({ ...b, grade: g })}
-          aoTrocarFaixa={(f) => aoMudarBloco({ ...b, faixa: f })}
-          precoBase={comDinheiro ? peca.precoBase : undefined}
-          precoPorTamanho={peca.precoPorTamanho}
-          aoMudarPreco={aoMudarPreco}
-        />
-        {b.observacao ? <p className="fc-obs">{b.observacao}</p> : null}
-      </div>
     </section>
   )
 }

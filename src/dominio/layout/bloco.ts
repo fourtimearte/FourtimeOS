@@ -18,8 +18,13 @@ import type { Faixa, Grade } from './grade'
       fabrica usa todo dia, e campo que ninguem preenche vira campo que todo
       mundo ignora. O que descreve como a peca e feita e o cartao de design,
       com as tres familias da v3.375: etiqueta, tecnica e acabamento. Gola e
-      ribana ja moram la, como acabamento. */
-export const VERSAO_DO_BLOCO = 3
+      ribana ja moram la, como acabamento.
+   4: entrou a marca de MODULO DE INFORMACOES, que na v3.375 e o anexo do
+      pedido: ele nao tem tecido, design nem grade, e nao entra em soma
+      nenhuma. Ate a v3.330 o editor adivinhava isso pela imagem, e
+      atrapalhava quem estava montando; virou botao, e a decisao fica
+      gravada. */
+export const VERSAO_DO_BLOCO = 4
 
 export type Tecnica =
   | 'dtf'
@@ -58,6 +63,8 @@ export type Bloco = {
   grade: Grade
   tecidos: TecidoDoBloco[]
   design: Design[]
+  /** true quando o modulo e anexo do pedido, e nao peca de producao */
+  informacoes?: boolean
   /** o nome da arte, que e o que liga o bloco ao arquivo de arte */
   arte: string
   /** a imagem em data URL, ou vazio */
@@ -76,6 +83,7 @@ export function blocoEmBranco(n: number): Bloco {
     grade: {},
     tecidos: [],
     design: [],
+    informacoes: false,
     arte: '',
     imagem: '',
     observacao: '',
@@ -126,6 +134,12 @@ const DEGRAUS: ((b: Bruto) => Bruto)[] = [
     for (const k of ['kit', 'manga', 'gola', 'etiqueta', 'numeracao']) delete limpo[k]
     return limpo
   },
+
+  /* de 3 para 4: a marca de informacoes.
+     Ela entra desligada, e nao deduzida. A deducao antiga (imagem, e nada
+     preenchido alem dela) so vale para arquivo .ft salvo antes da v3.329, e
+     esse caminho e a importacao do .ft, nao esta escada. */
+  (b) => ({ informacoes: false, ...b }),
 ]
 
 export function migrarBloco(bruto: Bruto): Bloco {

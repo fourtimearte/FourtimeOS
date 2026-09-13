@@ -11,6 +11,7 @@ export * from './bloco'
 export * from './banco'
 export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
+export { ModuloDeLayout } from './modulo'
 export { CaixaDeImagem } from './imagem'
 export { colarBloco, copiarBloco, temCopia } from './copia'
 export {

@@ -241,15 +241,9 @@
 }
 
 /* --- uma peça no documento ------------------------------------------------ */
-/* A peca tem a forma da v3.375: a arte grande a esquerda, a tabela de
-   tamanhos a direita, e os campos por cima dos dois. A arte e grande porque
-   e o que a producao olha primeiro; a tabela e estreita porque sao dez
-   linhas de dois numeros. */
+/* A peca e so a casca: quem arruma as duas colunas de mesma largura e o
+   proprio modulo, em dominio/layout/modulo.css. */
 .fc-peca {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  gap: var(--sp-4);
-  align-items: start;
   padding: var(--sp-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -270,9 +264,6 @@
   }
 }
 @media (max-width: 900px) {
-  .fc-peca {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .fc-cab {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -285,49 +276,7 @@
   }
 }
 
-.fc-selo-lay {
-  display: inline-grid;
-  place-items: center;
-  min-width: 42px;
-  height: 26px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  color: var(--brand-text, var(--brand));
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  font-variant-numeric: tabular-nums;
-}
-.fc-apagar {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast);
-}
-.fc-apagar:hover {
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  color: var(--brand-text, var(--brand));
-}
 
-.fc-grade {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  min-width: 0;
-}
-.fc-obs {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-3);
-}
 
 /* --- o botão do fim, que é onde a mão já está ---------------------------- */
 .fc-mais-layout {
@@ -353,21 +302,34 @@
   background: color-mix(in srgb, var(--brand) 5%, transparent);
 }
 
-/* --- a coluna da esquerda da peca: a barra da referencia e a imagem ------- */
-.fc-peca-esq {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  min-width: 0;
+
+/* --- os botoes do canto do modulo ---------------------------------------- */
+.fc-bt-mod {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
 }
-.fc-imagem {
-  min-width: 0;
+.fc-bt-mod:hover {
+  border-color: var(--border-2);
+  color: var(--text);
 }
-/* Com quatro campos, duas colunas deixam buraco. Os campos da ficha ficam
-   numa linha so quando a largura deixa, e a arte ganha o resto da altura. */
-.fc-peca-esq .lay-campos {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+/* o de informacoes fica aceso quando o modulo E informacao: o botao diz o
+   estado, e nao so o que ele faz */
+.fc-bt-mod.ligado {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
 }
-.fc-peca-esq .lay-campo.largo {
-  grid-column: 1 / -1;
+.fc-bt-mod.perigo:hover {
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand-text, var(--brand));
 }

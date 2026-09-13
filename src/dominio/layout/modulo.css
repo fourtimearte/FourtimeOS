@@ -1,0 +1,320 @@
+/* ==========================================================================
+   O módulo de layout, no arranjo do editor v3.375.
+
+   Duas colunas de MESMA largura. À esquerda a referência e a arte; à direita
+   a ficha técnica. A arte é metade porque é o que a produção olha primeiro, e
+   a ficha é a outra metade porque é o que ela lê depois.
+   ========================================================================== */
+
+.mod {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+
+/* --- a coluna da esquerda ------------------------------------------------- */
+.mod-esq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.mod-topo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mod-selo {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 46px;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand-text, var(--brand));
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* o campo da referência, com as bolinhas de gênero grudadas no fim */
+.mod-ref {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color var(--t-fast);
+}
+.mod-ref:focus-within {
+  border-color: var(--brand);
+}
+.mod-ref-bt {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.mod-ref-bt .v {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mod-ref-bt:disabled {
+  cursor: default;
+}
+.mod-info-selo {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* a arte ocupa a altura que sobrar da coluna */
+.mod-arte {
+  min-width: 0;
+}
+
+/* --- a coluna da direita: tabela à esquerda, cartões à direita ------------ */
+.mod-ficha {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.85fr) minmax(0, 1.15fr);
+  gap: var(--sp-3);
+  align-items: start;
+  min-width: 0;
+}
+.mod-tabela,
+.mod-cartoes {
+  min-width: 0;
+}
+.mod-cartoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.mod-cartao {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  min-width: 0;
+}
+.mod-cartao > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px 7px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.mod-cartao > header span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.mod-add {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.mod-add:hover {
+  border-color: var(--brand);
+  color: var(--brand-text, var(--brand));
+}
+
+/* --- as linhas de tecido -------------------------------------------------- */
+.mod-tecidos {
+  display: flex;
+  flex-direction: column;
+}
+.mod-tec-linha {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.mod-tec-linha:last-child {
+  border-bottom: 0;
+}
+.mod-tec-nome,
+.mod-tec-cor {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mod-tec-nome {
+  flex: 1.4;
+}
+.mod-tec-cor {
+  flex: 1;
+  color: var(--text-2);
+}
+.mod-tec-cor span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mod-tec-nome:hover,
+.mod-tec-cor:hover {
+  background: var(--surface-2);
+}
+.mod-tec-nome:disabled,
+.mod-tec-cor:disabled {
+  cursor: default;
+}
+.mod-sw {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--cor);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent);
+}
+/* sem cor escolhida o quadrado não pode ficar branco: branco É uma cor de
+   malha, e os dois estados ficariam iguais. Hachurado, não */
+.mod-sw.vazia {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface-3) 0 3px,
+    var(--surface) 3px 6px
+  );
+}
+.mod-tec-tirar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.mod-tec-tirar:hover {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--brand-text, var(--brand));
+}
+
+/* --- o cartão de design --------------------------------------------------- */
+.mod-faixas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  min-width: 0;
+}
+.mod-vazio {
+  margin: 0;
+  padding: 10px 12px 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* --- a observação --------------------------------------------------------- */
+.mod-obs textarea {
+  width: 100%;
+  min-height: 62px;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+  resize: vertical;
+  outline: 0;
+}
+.mod-obs textarea::placeholder {
+  color: var(--text-3);
+}
+.mod-obs p {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+/* --- o módulo de informações --------------------------------------------- */
+.mod.info .mod-ref {
+  border-color: var(--ink);
+}
+.mod-so-anexo {
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+/* --- no celular a ficha desce por baixo da arte -------------------------- */
+@media (max-width: 1100px) {
+  .mod {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .mod-ficha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

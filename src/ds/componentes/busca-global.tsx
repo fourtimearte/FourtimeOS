@@ -138,7 +138,7 @@ export function BuscaGlobal({
                       onClick={() => escolher(i)}
                     >
                       <span>{i.titulo}</span>
-                      {i.lado ? <span className="lado">{i.lado}</span> : null}
+                      {i.lado ? <span className="cmdk-lado">{i.lado}</span> : null}
                     </button>
                   )
                 })}

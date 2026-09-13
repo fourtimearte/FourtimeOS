@@ -1246,7 +1246,7 @@ dialog.cmdk .caixa {
   background: var(--ink-soft);
   font-weight: 700;
 }
-.cmdk-lista .item .lado {
+.cmdk-lista .item .cmdk-lado {
   font-size: 11.5px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;

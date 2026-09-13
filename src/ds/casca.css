@@ -57,6 +57,9 @@
   cursor: text;
   text-align: left;
   max-width: 520px;
+  /* empurra tema, avisos e o que mais vier para a direita da barra, em vez de
+     deixarem grudados no fim da busca com a metade direita vazia */
+  margin-right: auto;
   box-shadow: var(--shadow-card);
   transition: border-color var(--t-fast);
   white-space: nowrap;
@@ -100,39 +103,6 @@
   background: var(--brand);
   border: 2px solid var(--bg);
 }
-.pessoa {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-3);
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: box-shadow var(--t-fast);
-}
-.pessoa {
-  overflow: hidden;
-  padding: 0;
-}
-.pessoa img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.pessoa:hover {
-  box-shadow:
-    0 0 0 2px var(--surface),
-    0 0 0 4px var(--border-2);
-}
-
 /* no celular o nome da marca sai e a tecla de atalho some: o dedo nao usa
    ctrl K, e o campo de busca precisa do espaco */
 @media (max-width: 560px) {
@@ -261,8 +231,12 @@
   color: var(--brand);
 }
 
-/* --- menu lateral, no computador ---------------------------------------- */
-.lado {
+/* --- menu lateral, no computador ----------------------------------------
+   O seletor e nav.lado, e nao .lado: "lado" e uma palavra curta demais para
+   ser dona de uma regra global. Ela ja tinha colidido com o texto miudo da
+   direita de cada linha da busca, que tambem se chamava lado, e a busca
+   inteira virou uma coluna de 100dvh de altura por causa disso. */
+nav.lado {
   display: none;
 }
 
@@ -285,7 +259,7 @@
     padding: 24px var(--gutter) 40px;
   }
 
-  .lado {
+  nav.lado {
     display: flex;
     flex-direction: column;
     grid-row: 1 / span 2;

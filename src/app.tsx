@@ -42,7 +42,6 @@ import {
   iniciaisDe,
   NOME_DO_PAPEL,
   podeVer,
-  primeiroNome,
   useSessao,
 } from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
@@ -172,8 +171,6 @@ export function App() {
           rotulo: 'Kanban de produção',
           icone: <Factory {...icone} />,
         },
-        { chave: 'produtos', para: '/produtos', rotulo: 'Fichas técnicas', icone: <TShirt {...icone} /> },
-        { chave: 'estoque', para: '/estoque', rotulo: 'Estoque', icone: <Package {...icone} /> },
       ],
     },
     {
@@ -191,6 +188,22 @@ export function App() {
           rotulo: 'Relatório mensal',
           icone: <ChartBar {...icone} />,
         },
+      ],
+    },
+    /* Materiais não é produção: produção é o que acontece com o pedido, e
+       material é o que a fábrica tem. A ficha técnica diz de que a peça é
+       feita e o estoque diz quanto disso existe. As duas respondem à mesma
+       pergunta, e quem procura uma procura a outra logo em seguida. */
+    {
+      titulo: 'Materiais',
+      itens: [
+        {
+          chave: 'produtos',
+          para: '/produtos',
+          rotulo: 'Fichas técnicas',
+          icone: <TShirt {...icone} />,
+        },
+        { chave: 'estoque', para: '/estoque', rotulo: 'Estoque', icone: <Package {...icone} /> },
       ],
     },
   ]
@@ -298,26 +311,12 @@ export function App() {
             >
               {tema === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
+            {/* Quem está usando o sistema mora no pé do menu, com nome e papel
+                à vista. A bolinha aqui em cima era a segunda vez que a mesma
+                coisa aparecia na mesma tela, e a pior das duas. */}
             <button type="button" className="bt-icone" aria-label="Avisos" title="Avisos">
               <Bell size={20} />
               <span className="sinal" />
-            </button>
-            <button
-              type="button"
-              className="pessoa"
-              title={pessoa ? `${pessoa.nome} · meu perfil` : 'Meu perfil'}
-              aria-label={
-                pessoa ? `${primeiroNome(pessoa.nome)}, abrir meu perfil` : 'Meu perfil'
-              }
-              onClick={() => navegar('/perfil')}
-            >
-              {pessoa && fotoDe(pessoa) ? (
-                <img src={fotoDe(pessoa) ?? ''} alt="" />
-              ) : pessoa ? (
-                iniciaisDe(pessoa.nome)
-              ) : (
-                '··'
-              )}
             </button>
           </>
         }

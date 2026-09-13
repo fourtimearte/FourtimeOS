@@ -1,14 +1,16 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
 import {
   CaixaDeImagem,
   Folha,
+  Medidor,
   GradeDeTamanhos,
   ModuloDeLayout,
   Palco,
   imprimir,
+  usarPaginacao,
   type BlocoDaFolha,
 } from '@dominio/layout'
 import {
@@ -46,6 +48,20 @@ import './documento.css'
    dentro do componente: aqui e regra, e nao medicao. */
 const LAYOUTS_POR_FOLHA = 2
 
+/* O PALPITE INICIAL DA ALTURA UTIL, em pixel de papel a 96 dpi.
+
+   A folha tem 297 mm e 12 mm de margem de cada lado, o que deixa 273 mm de
+   corpo; o rodape come uns 12 mm. Sobram 261 mm, que sao 984 px. O cabecalho
+   tem altura FIXA por construcao (tres fileiras de mesma altura, ver o
+   comentario do Cabecalho), e mede 178 px.
+
+   Sao palpites, e nao verdades: logo depois do primeiro desenho as duas
+   alturas sao MEDIDAS na folha de verdade e tomam o lugar destes numeros.
+   Palpite de altura sem medicao depois e o jeito classico de perder a ultima
+   linha de cada pagina. */
+const ALTURA_SEM_CABECALHO = 984
+const ALTURA_COM_CABECALHO = 806
+
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
 
@@ -72,35 +88,88 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
   /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
   const [comValor, setComValor] = useState(para !== 'producao')
 
-  /* A PAGINACAO AQUI E UMA REGRA, E NAO UMA MEDICAO.
+  /* ==========================================================================
+     A PAGINACAO: uma regra para os layouts, uma regua para os dados.
 
-     A folha 1 e sempre a das informacoes: resumo, condicoes, informes legais
-     e o aceite. Os layouts comecam na folha 2, DOIS POR FOLHA. Foi assim que
-     o Henrique pediu, e a regra e melhor que a regua neste caso: com medicao,
-     um layout com observacao comprida empurraria o vizinho para a folha
-     seguinte e o PDF de um mesmo pedido mudaria de numero de paginas a cada
-     linha digitada. Com a regra, o cliente sabe que a folha 3 tem os layouts
-     3 e 4, e a producao sabe onde procurar.
+     OS LAYOUTS seguem a REGRA: no maximo dois por folha. A regra vale mais
+     que a regua aqui, porque com medicao pura um layout de observacao
+     comprida empurraria o vizinho e o PDF do mesmo pedido mudaria de numero
+     de paginas a cada linha digitada. Com dois por folha, o cliente sabe que
+     a folha 3 tem os layouts 3 e 4, e a producao sabe onde procurar.
 
-     O que a regra NAO resolve e um layout que nao caiba em meia folha. Esse e
-     o trabalho de apertar o conteudo, que ainda nao existe e esta anotado. */
-  const paginas: BlocoDaFolha[][] = useMemo(() => {
-    if (!c) return []
-    const folhas: BlocoDaFolha[][] = [
-      [{ id: 'resumo', conteudo: <Resumo cotacao={c} comValor={comValor} /> }],
-    ]
-    for (let i = 0; i < c.produtos.length; i += LAYOUTS_POR_FOLHA) {
-      folhas.push(
-        c.produtos.slice(i, i + LAYOUTS_POR_FOLHA).map((p) => ({
-          id: p.bloco.id,
-          conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
-        })),
-      )
-    }
-    return folhas
-  }, [c, comValor])
+     Mas a regra sozinha CORTAVA. O kit de teste mostrou na primeira rodada:
+     duas artes em retrato, com tabela de seis tamanhos cada, nao cabem numa
+     folha, e a segunda saia serrada no meio da tabela. Entao a regra ganhou
+     um teto de altura: cabem dois SE couberem dois, e um quando nao couberem.
+     Foi o que o Henrique autorizou ao dizer "1 ou 2 layouts".
+
+     OS DADOS seguem a REGUA, e nao a regra. A folha 1 e a dos dados, e o que
+     a enche e o numero de layouts: com vinte layouts a tabela de resumo
+     sozinha passa de uma folha. Entao eles sao tres blocos que paginam entre
+     si (a tabela, as condicoes com os informes, e o aceite), e os layouts so
+     comecam na folha seguinte a ultima folha de dados. No caso normal isso da
+     exatamente o que foi pedido: dados na 1, layouts da 2 em diante.
+
+     Os dados sao medidos contra a altura da folha COM cabecalho, mesmo nas
+     folhas de dados que nao tem cabecalho. Perde-se um dedo de papel na
+     segunda folha de dados, que quase nunca existe, e em troca nenhuma
+     medicao pode cortar. Errar sobrando e um espaco em branco; errar
+     faltando e uma clausula pela metade.
+     ========================================================================== */
+  const chave =
+    (c?.id ?? '') + ':' + (c?.alteradaEm ?? '') + ':' + (c?.produtos.length ?? 0) + ':' + comValor
+
+  const blocosDeDados: BlocoDaFolha[] = useMemo(
+    () =>
+      c
+        ? [
+            { id: 'd-tabela', conteudo: <ResumoDoPedido cotacao={c} comValor={comValor} /> },
+            { id: 'd-condicoes', conteudo: <Condicoes cotacao={c} comValor={comValor} /> },
+            ...(comValor ? [{ id: 'd-aceite', conteudo: <Aceite cotacao={c} /> }] : []),
+          ]
+        : [],
+    [c, comValor],
+  )
+
+  const blocosDeLayout: BlocoDaFolha[] = useMemo(
+    () =>
+      c
+        ? c.produtos.map((p) => ({
+            id: p.bloco.id,
+            conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
+          }))
+        : [],
+    [c, comValor],
+  )
+
+  const [altoComCab, setAltoComCab] = useState(ALTURA_COM_CABECALHO)
+  const [altoSemCab, setAltoSemCab] = useState(ALTURA_SEM_CABECALHO)
+  const dados = usarPaginacao(blocosDeDados, altoComCab, 'dados:' + chave)
+  const layouts = usarPaginacao(blocosDeLayout, altoSemCab, 'layouts:' + chave, LAYOUTS_POR_FOLHA)
+
+  const folhas = [
+    ...dados.paginas.map((blocos, i) => ({ blocos, comCabecalho: i === 0 })),
+    ...layouts.paginas.map((blocos) => ({ blocos, comCabecalho: false })),
+  ].filter((f) => f.blocos.length)
 
   const palco = useRef<HTMLDivElement>(null)
+
+  /* AS DUAS ALTURAS, MEDIDAS NA FOLHA DE VERDADE. clientHeight e nao
+     getBoundingClientRect: o palco encolhe a folha com transform quando a
+     tela e estreita, e o retangulo sairia encolhido junto. A conta da pagina
+     e em milimetro de papel, e nao em pixel de tela. */
+  useEffect(() => {
+    const fls = [...(palco.current?.querySelectorAll('.fl') ?? [])]
+    const corpoDe = (comTopo: boolean) => {
+      const f = fls.find((x) => !!x.querySelector('.fl-topo') === comTopo)
+      const corpo = f?.querySelector('.fl-corpo')
+      return corpo instanceof HTMLElement ? corpo.clientHeight : 0
+    }
+    const comCab = corpoDe(true)
+    const semCab = corpoDe(false)
+    if (comCab > 200 && Math.abs(comCab - altoComCab) > 2) setAltoComCab(comCab)
+    if (semCab > 200 && Math.abs(semCab - altoSemCab) > 2) setAltoSemCab(semCab)
+  })
 
   if (!c) {
     return (
@@ -132,8 +201,8 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
         (para === 'producao'
           ? 'O que vai para o chão de fábrica, do jeito que sai na impressora. '
           : 'O que o cliente recebe, do jeito que sai na impressora. ') +
-        paginas.length +
-        (paginas.length === 1 ? ' página.' : ' páginas.')
+        folhas.length +
+        (folhas.length === 1 ? ' página.' : ' páginas.')
       }
       acoes={
         <>
@@ -167,31 +236,39 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
         </div>
       ) : null}
 
-      <div ref={palco}>
-      <Palco>
-        {paginas.map((pagina, i) => (
-          /* O CABECALHO E DA FOLHA 1, E SO DELA.
+      {/* AS DUAS AREAS DE MEDICAO. Elas desenham de verdade, com a largura de
+          verdade, fora da vista: o que nao e desenhado nao tem altura para
+          medir. Somem na impressao. */}
+      <Medidor aoMedir={dados.medidor} blocos={blocosDeDados} />
+      <Medidor aoMedir={layouts.medidor} blocos={blocosDeLayout} />
 
-             A folha 1 e a folha dos dados: e ali que estao quem compra, o que
-             foi combinado e o resumo de todos os layouts. Da folha 2 em diante
-             so existem layouts, e repetir o cabecalho em cada uma delas era
-             gastar 30 mm de papel por folha para dizer de novo o que ja foi
-             dito uma vez. Esses 30 mm sao o que faltava para a arte ter
-             tamanho de conferencia. O rodape fica em todas: ele e quem diz de
-             que documento aquela folha solta veio. */
-          <Folha
-            key={i}
-            numero={i + 1}
-            de={paginas.length}
-            cabecalho={i === 0 ? <Cabecalho cotacao={c} comValor={comValor} /> : undefined}
-            rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} comValor={comValor} />}
-          >
-            {pagina.map((b) => (
-              <div key={b.id}>{b.conteudo}</div>
-            ))}
-          </Folha>
-        ))}
-      </Palco>
+      <div ref={palco}>
+        <Palco>
+          {folhas.map((folha, i) => (
+            /* O CABECALHO E DA PRIMEIRA FOLHA, E SO DELA.
+
+               A folha 1 e a folha dos dados: e ali que estao quem compra, o
+               que foi combinado e o resumo de todos os layouts. Daí em diante
+               so existem layouts, e repetir o cabecalho em cada folha era
+               gastar 30 mm de papel para dizer de novo o que ja foi dito uma
+               vez. Esses 30 mm sao o que faltava para a arte ter tamanho de
+               conferencia. O rodape fica em todas: ele e quem diz de que
+               documento aquela folha solta veio. */
+            <Folha
+              key={i}
+              numero={i + 1}
+              de={folhas.length}
+              cabecalho={
+                folha.comCabecalho ? <Cabecalho cotacao={c} comValor={comValor} /> : undefined
+              }
+              rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} comValor={comValor} />}
+            >
+              {folha.blocos.map((b) => (
+                <div key={b.id}>{b.conteudo}</div>
+              ))}
+            </Folha>
+          ))}
+        </Palco>
       </div>
     </Pagina>
   )
@@ -321,11 +398,17 @@ function Par({ rotulo, valor }: { rotulo: string; valor: string }) {
   )
 }
 
-/* --- o resumo geral, com o aceite ---------------------------------------- */
-function Resumo({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
+/* --- os tres blocos da folha de dados -------------------------------------
+   Eram um so, e um bloco so nao pagina: ou cabia inteiro ou saia serrado. O
+   kit de teste mostrou o corte com seis layouts, que e um pedido pequeno.
+
+   Divididos assim, os tres paginam entre si, e o corte, quando existir, cai
+   ENTRE um bloco e outro em vez de no meio de uma clausula. A ordem e a da
+   leitura: o que foi pedido, em que condicoes, e onde assinar. */
+
+function ResumoDoPedido({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
   const c = cotacao
   const base = subtotal(c)
-  const informes = c.informes.filter((x) => x.noDocumento)
   return (
     <section className="dc-resumo">
       <h3 className="dc-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
@@ -385,7 +468,15 @@ function Resumo({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) 
           ) : null}
         </tfoot>
       </table>
+    </section>
+  )
+}
 
+function Condicoes({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
+  const c = cotacao
+  const informes = c.informes.filter((x) => x.noDocumento)
+  return (
+    <section className="dc-resumo">
       <dl className="dc-informe">
         <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
         {comValor ? <Par rotulo="Pagamento" valor={c.informe.pagamento} /> : null}
@@ -410,32 +501,36 @@ function Resumo({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) 
           </ol>
         </section>
       ) : null}
-
-      {/* O ACEITE E DA VENDA. Quem corta nao assina proposta, e uma linha de
-          assinatura na folha do galpao so confunde quem le. */}
-      {comValor ? (
-      <div className="dc-aceite">
-        <p>
-          A produção começa depois da aprovação da arte e do pagamento combinado acima. Grade e
-          quantidade valem como estão nesta folha: mudança depois da aprovação pode mudar prazo e
-          valor.
-        </p>
-        <div className="dc-assinaturas">
-          <span>
-            <i />
-            {c.cliente.nome || 'Cliente'}
-          </span>
-          <span>
-            <i />
-            Fourtime · {c.vendedor || 'vendedor'}
-          </span>
-          <span>
-            <i />
-            Data
-          </span>
-        </div>
-      </div>
-      ) : null}
     </section>
+  )
+}
+
+/* O ACEITE E DA VENDA. Quem corta nao assina proposta, e uma linha de
+   assinatura na folha do galpao so confunde quem le: por isso ele nem entra
+   na lista de blocos quando a folha e sem valor. */
+function Aceite({ cotacao }: { cotacao: Cotacao }) {
+  const c = cotacao
+  return (
+    <div className="dc-aceite">
+      <p>
+        A produção começa depois da aprovação da arte e do pagamento combinado acima. Grade e
+        quantidade valem como estão nesta folha: mudança depois da aprovação pode mudar prazo e
+        valor.
+      </p>
+      <div className="dc-assinaturas">
+        <span>
+          <i />
+          {c.cliente.nome || 'Cliente'}
+        </span>
+        <span>
+          <i />
+          Fourtime · {c.vendedor || 'vendedor'}
+        </span>
+        <span>
+          <i />
+          Data
+        </span>
+      </div>
+    </div>
   )
 }

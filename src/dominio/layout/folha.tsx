@@ -40,13 +40,24 @@ export type BlocoDaFolha = {
     `chave` e o que diz que o conteudo mudou de verdade. Sem ela a medicao
     rodaria a cada desenho, porque a lista de blocos e um array novo toda vez,
     e o React nunca pararia de remedir. */
-export function usarPaginacao(blocos: BlocoDaFolha[], alturaUtil: number, chave: string) {
+/**
+ * @param maximo quantos blocos cabem numa folha, no maximo, mesmo que a
+ *   altura permitisse mais. A cotacao usa 2: dois layouts por folha e uma
+ *   regra que o vendedor decora, em vez de um numero que muda a cada foto
+ *   colada. Sem ele, a altura sozinha decide, que e o que a ficha quer.
+ */
+export function usarPaginacao(
+  blocos: BlocoDaFolha[],
+  alturaUtil: number,
+  chave: string,
+  maximo = Infinity,
+) {
   const medidor = useRef<HTMLDivElement>(null)
   const [paginas, setPaginas] = useState<BlocoDaFolha[][]>([blocos])
   const [medido, setMedido] = useState(false)
   const ultima = useRef('')
 
-  const marca = chave + '|' + alturaUtil
+  const marca = chave + '|' + alturaUtil + '|' + maximo
 
   useLayoutEffect(() => {
     if (ultima.current === marca) return
@@ -64,7 +75,7 @@ export function usarPaginacao(blocos: BlocoDaFolha[], alturaUtil: number, chave:
       const h = alturas[i]
       /* bloco maior que a folha inteira nao tem como caber: ele vai sozinho
          numa pagina e transborda, o que e feio mas visivel. Sumir seria pior */
-      if (atual.length && soma + h > alturaUtil) {
+      if (atual.length && (soma + h > alturaUtil || atual.length >= maximo)) {
         saida.push(atual)
         atual = []
         soma = 0

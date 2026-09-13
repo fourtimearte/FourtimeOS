@@ -54,6 +54,13 @@ export const rotas = createBrowserRouter([
       { path: 'cotacao', element: pede('cotacao', <TelaCotacao />) },
       { path: 'cotacao/:id', element: pede('cotacao', <EditorDeCotacao />) },
       { path: 'cotacao/:id/folha', element: pede('cotacao', <DocumentoDaCotacao />) },
+      /* A MESMA FOLHA, OUTRO LEITOR. A do cliente nasce com valor e a da
+         producao nasce sem: e o endereco que decide, para ninguem precisar
+         lembrar de apagar preco antes de mandar papel para o galpao. */
+      {
+        path: 'cotacao/:id/producao',
+        element: pede('cotacao', <DocumentoDaCotacao para="producao" />),
+      },
       { path: 'ficha', element: pede('ficha', <TelaFicha />) },
       { path: 'kanban', element: pede('kanban', <TelaKanban />) },
       { path: 'estoque', element: pede('estoque', <TelaEstoque />) },

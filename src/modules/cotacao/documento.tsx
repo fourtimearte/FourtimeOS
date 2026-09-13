@@ -1,6 +1,6 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Aviso, Botao, FaixaDeCores, Pagina, Vazio } from '@ds'
+import { Aviso, Botao, FaixaDeCores, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
 import {
   Folha,
@@ -48,10 +48,28 @@ const LAYOUTS_POR_FOLHA = 2
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
 
-export function DocumentoDaCotacao() {
+/* ==========================================================================
+   PARA QUEM A FOLHA VAI, E POR QUE ISSO DECIDE O DINHEIRO.
+
+   Com valor e sem valor nunca foram gosto: sao dois leitores. O cliente
+   precisa da tabela inteira, com o valor de cada tamanho, porque e nisso que
+   ele diz sim. O chao de fabrica nao pode receber valor nenhum, porque preco
+   de venda no galpao vira assunto de corredor.
+
+   Entao o DESTINO decide, e nao a memoria de quem clicou: a folha do cliente
+   nasce com valor e a folha da producao nasce sem, sempre, sem ninguem
+   precisar lembrar. A IMPRESSAO e a unica excecao, e e do Henrique: ali ele
+   troca com um toque, porque as vezes a folha do cliente vai para o arquivo
+   sem preco, e as vezes a da producao vai junto do financeiro.
+   ========================================================================== */
+export type DestinoDaFolha = 'cliente' | 'producao'
+
+export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha }) {
   const { id = '' } = useParams()
   const navegar = useNavigate()
   const c = acharCotacao(id)
+  /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
+  const [comValor, setComValor] = useState(para !== 'producao')
 
   /* A PAGINACAO AQUI E UMA REGRA, E NAO UMA MEDICAO.
 
@@ -67,17 +85,19 @@ export function DocumentoDaCotacao() {
      o trabalho de apertar o conteudo, que ainda nao existe e esta anotado. */
   const paginas: BlocoDaFolha[][] = useMemo(() => {
     if (!c) return []
-    const folhas: BlocoDaFolha[][] = [[{ id: 'resumo', conteudo: <Resumo cotacao={c} /> }]]
+    const folhas: BlocoDaFolha[][] = [
+      [{ id: 'resumo', conteudo: <Resumo cotacao={c} comValor={comValor} /> }],
+    ]
     for (let i = 0; i < c.produtos.length; i += LAYOUTS_POR_FOLHA) {
       folhas.push(
         c.produtos.slice(i, i + LAYOUTS_POR_FOLHA).map((p) => ({
           id: p.bloco.id,
-          conteudo: <ProdutoNaFolha produto={p} />,
+          conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
         })),
       )
     }
     return folhas
-  }, [c])
+  }, [c, comValor])
 
   const palco = useRef<HTMLDivElement>(null)
 
@@ -104,10 +124,29 @@ export function DocumentoDaCotacao() {
           Voltar ao editor
         </button>
       }
-      titulo={'Folha da cotação ' + c.numero}
-      sub={'O que o cliente recebe, do jeito que sai na impressora. ' + paginas.length + (paginas.length === 1 ? ' página.' : ' páginas.')}
+      titulo={
+        (para === 'producao' ? 'Folha da produção ' : 'Folha do cliente ') + c.numero
+      }
+      sub={
+        (para === 'producao'
+          ? 'O que vai para o chão de fábrica, do jeito que sai na impressora. '
+          : 'O que o cliente recebe, do jeito que sai na impressora. ') +
+        paginas.length +
+        (paginas.length === 1 ? ' página.' : ' páginas.')
+      }
       acoes={
         <>
+          {/* O DESTINO JA DECIDIU, E ESTE BOTAO E SO PARA A IMPRESSAO. Ele nao
+              muda para onde a folha vai nem o que foi enviado: muda o papel
+              que sai agora da impressora. */}
+          <Segmentado
+            valor={comValor ? 'com' : 'sem'}
+            opcoes={[
+              { valor: 'com', rotulo: 'Com valor' },
+              { valor: 'sem', rotulo: 'Sem valor' },
+            ]}
+            aoMudar={(v) => setComValor(v === 'com')}
+          />
           <Botao tom="contorno" onClick={() => navegar('/cotacao/' + c.id)}>
             Editar
           </Botao>
@@ -134,8 +173,8 @@ export function DocumentoDaCotacao() {
             key={i}
             numero={i + 1}
             de={paginas.length}
-            cabecalho={<Cabecalho cotacao={c} />}
-            rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} />}
+            cabecalho={<Cabecalho cotacao={c} comValor={comValor} />}
+            rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} comValor={comValor} />}
           >
             {pagina.map((b) => (
               <div key={b.id}>{b.conteudo}</div>
@@ -154,7 +193,7 @@ export function DocumentoDaCotacao() {
    cortavam com reticencia. As tres fileiras tem a mesma altura, entao a
    altura do cabecalho nao depende do conteudo e a conta da quebra de pagina
    continua sendo uma conta fixa. */
-function Cabecalho({ cotacao }: { cotacao: Cotacao }) {
+function Cabecalho({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
   const c = cotacao
   return (
     <div className="dc-cab">
@@ -171,7 +210,14 @@ function Cabecalho({ cotacao }: { cotacao: Cotacao }) {
       <Celula rotulo="Situação" valor={NOME_DO_ESTADO_DA_COTACAO[c.estado]} />
       <Celula rotulo="Prazo" valor={c.informe.prazo} />
       <Celula rotulo="Pagamento" valor={c.informe.pagamento} />
-      <Celula rotulo="Total" valor={dinheiro(totalDaCotacao(c))} forte />
+      {/* a ultima celula da grade nao pode sumir: as tres fileiras tem altura
+          fixa e e nela que a conta da quebra de pagina se apoia. Sem valor ela
+          troca de conteudo, e passa a dizer o numero que a fabrica confere */}
+      {comValor ? (
+        <Celula rotulo="Total" valor={dinheiro(totalDaCotacao(c))} forte />
+      ) : (
+        <Celula rotulo="Peças" valor={String(pecasDaCotacao(c))} forte />
+      )}
     </div>
   )
 }
@@ -185,7 +231,15 @@ function Celula({ rotulo, valor, forte }: { rotulo: string; valor: string; forte
   )
 }
 
-function RodapeDaEmpresa({ cotacao, primeira }: { cotacao: Cotacao; primeira: boolean }) {
+function RodapeDaEmpresa({
+  cotacao,
+  primeira,
+  comValor,
+}: {
+  cotacao: Cotacao
+  primeira: boolean
+  comValor: boolean
+}) {
   return (
     <div className="dc-pe">
       <span>
@@ -196,7 +250,8 @@ function RodapeDaEmpresa({ cotacao, primeira }: { cotacao: Cotacao; primeira: bo
           solto, sem o que o explica, e ja houve confusao com isso */}
       {primeira ? (
         <span className="dc-pe-total">
-          {pecasDaCotacao(cotacao)} peças · {dinheiro(totalDaCotacao(cotacao))}
+          {pecasDaCotacao(cotacao)} peças
+          {comValor ? <> · {dinheiro(totalDaCotacao(cotacao))}</> : null}
         </span>
       ) : null}
     </div>
@@ -204,7 +259,7 @@ function RodapeDaEmpresa({ cotacao, primeira }: { cotacao: Cotacao; primeira: bo
 }
 
 /* --- um produto na folha ------------------------------------------------- */
-function ProdutoNaFolha({ produto }: { produto: ProdutoCotado }) {
+function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValor: boolean }) {
   const b = produto.bloco
   const tecido = b.tecidos[0]
   return (
@@ -248,11 +303,17 @@ function ProdutoNaFolha({ produto }: { produto: ProdutoCotado }) {
           leitura
           faixa={b.faixa}
           grade={b.grade}
-          precoBase={produto.precoBase}
+          precoBase={comValor ? produto.precoBase : undefined}
           precoPorTamanho={produto.precoPorTamanho}
         />
         <div className="dc-prod-soma">
-          {pecasDoProduto(produto)} peças · <b>{dinheiro(totalDoProduto(produto))}</b>
+          {pecasDoProduto(produto)} peças
+          {comValor ? (
+            <>
+              {' · '}
+              <b>{dinheiro(totalDoProduto(produto))}</b>
+            </>
+          ) : null}
         </div>
       </div>
     </article>
@@ -269,13 +330,13 @@ function Par({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 /* --- o resumo geral, com o aceite ---------------------------------------- */
-function Resumo({ cotacao }: { cotacao: Cotacao }) {
+function Resumo({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
   const c = cotacao
   const base = subtotal(c)
   const informes = c.informes.filter((x) => x.noDocumento)
   return (
     <section className="dc-resumo">
-      <h3 className="dc-h">Resumo do orçamento</h3>
+      <h3 className="dc-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
 
       <table className="dc-tab">
         <thead>
@@ -283,7 +344,7 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
             <th>Produto</th>
             <th>Grade</th>
             <th className="num">Peças</th>
-            <th className="num">Total</th>
+            {comValor ? <th className="num">Total</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -294,39 +355,48 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
               </td>
               <td className="dc-grade-linha">{gradeEmTexto(p.bloco.faixa, p.bloco.grade)}</td>
               <td className="num">{pecasDoProduto(p)}</td>
-              <td className="num">{dinheiro(totalDoProduto(p))}</td>
+              {comValor ? <td className="num">{dinheiro(totalDoProduto(p))}</td> : null}
             </tr>
           ))}
         </tbody>
+        {/* SEM VALOR O RODAPE DA TABELA E SO A CONTA DE PECAS. Ajuste e total
+            sao conversa de venda, e nao existem para quem corta. */}
         <tfoot>
-          <tr>
-            <td colSpan={2}>Subtotal</td>
+          <tr className={comValor ? undefined : 'dc-total'}>
+            <td colSpan={2}>{comValor ? 'Subtotal' : 'Total de peças'}</td>
             <td className="num">{pecasDaCotacao(c)}</td>
-            <td className="num">{dinheiro(base)}</td>
+            {comValor ? <td className="num">{dinheiro(base)}</td> : null}
           </tr>
-          {c.ajustes.map((a) => (
-            <tr key={a.id}>
-              <td colSpan={3}>
-                {a.descricao || 'Ajuste'}
-                {a.tipo === 'porcento' ? ' (' + a.valor + '%)' : ''}
-              </td>
-              <td className="num">{dinheiro(valorDoAjuste(a, base))}</td>
+          {comValor
+            ? c.ajustes.map((a) => (
+                <tr key={a.id}>
+                  <td colSpan={3}>
+                    {a.descricao || 'Ajuste'}
+                    {a.tipo === 'porcento' ? ' (' + a.valor + '%)' : ''}
+                  </td>
+                  <td className="num">{dinheiro(valorDoAjuste(a, base))}</td>
+                </tr>
+              ))
+            : null}
+          {comValor ? (
+            <tr className="dc-total">
+              <td colSpan={2}>Total</td>
+              <td className="num">{dinheiro(precoMedioPorPeca(c))} por peça</td>
+              <td className="num">{dinheiro(totalDaCotacao(c))}</td>
             </tr>
-          ))}
-          <tr className="dc-total">
-            <td colSpan={2}>Total</td>
-            <td className="num">{dinheiro(precoMedioPorPeca(c))} por peça</td>
-            <td className="num">{dinheiro(totalDaCotacao(c))}</td>
-          </tr>
+          ) : null}
         </tfoot>
       </table>
 
       <dl className="dc-informe">
         <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
-        <Par rotulo="Pagamento" valor={c.informe.pagamento} />
+        {comValor ? <Par rotulo="Pagamento" valor={c.informe.pagamento} /> : null}
         <Par rotulo="Envio" valor={c.informe.entrega} />
-        <Par rotulo="Tabela de preço" valor={c.informe.tabelaDePreco} />
-        <Par rotulo="Validade desta proposta" valor={data(c.validaAte)} />
+        {comValor ? <Par rotulo="Tabela de preço" valor={c.informe.tabelaDePreco} /> : null}
+        {comValor ? <Par rotulo="Validade desta proposta" valor={data(c.validaAte)} /> : null}
+        {!comValor ? <Par rotulo="Pedido" valor={c.producao.pedido} /> : null}
+        {!comValor ? <Par rotulo="Departamento" valor={c.producao.departamento} /> : null}
+        {!comValor ? <Par rotulo="Embalagem" valor={c.producao.embalagem} /> : null}
       </dl>
 
       {/* Os informes que o vendedor deixou marcados. Os desmarcados ficam
@@ -343,6 +413,9 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
         </section>
       ) : null}
 
+      {/* O ACEITE E DA VENDA. Quem corta nao assina proposta, e uma linha de
+          assinatura na folha do galpao so confunde quem le. */}
+      {comValor ? (
       <div className="dc-aceite">
         <p>
           A produção começa depois da aprovação da arte e do pagamento combinado acima. Grade e
@@ -364,6 +437,7 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
           </span>
         </div>
       </div>
+      ) : null}
     </section>
   )
 }

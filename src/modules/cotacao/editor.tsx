@@ -5,8 +5,6 @@ import {
   AreaTexto,
   Aviso,
   Botao,
-  Campo,
-  Entrada,
   Pagina,
   Segmentado,
   Selo,
@@ -184,6 +182,14 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     navegar('/cotacao/' + c.id + '/folha')
   }
 
+  /* A FOLHA DO GALPAO. Mesma cotacao, outro leitor: ela nasce sem valor
+     nenhum, e nao por um botao que alguem tem que lembrar de apertar. */
+  function verFolhaDaProducao() {
+    salvarCotacao(c)
+    setSujo(false)
+    navegar('/cotacao/' + c.id + '/producao')
+  }
+
   /* Enviar grava o que saiu. O total vai congelado junto, e nao recalculado
      depois: a conversa tres semanas depois e sobre o numero que o cliente viu,
      e nao sobre o de hoje. */
@@ -192,7 +198,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     setC(nova)
     salvarCotacao(nova)
     setSujo(false)
-    avisar('Envio ' + nova.enviadas.length + ' registrado. Agora mande o PDF para o cliente.', 'ok')
+    avisar('Envio ' + nova.enviadas.length + ' registrado. Esta é a folha que vai para ele.', 'ok')
+    /* O QUE VAI PARA O CLIENTE VAI COM VALOR, SEMPRE. Registrar o envio e
+       depois deixar a pessoa procurar o PDF era onde o erro cabia: bastava
+       estar com o R$ oculto na tela para mandar uma proposta sem preco. */
+    navegar('/cotacao/' + nova.id + '/folha')
   }
 
   function dizerSim() {
@@ -217,9 +227,6 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const total = base + ajustes
   const pecas = pecasDaCotacao(c)
   const fechada = travada(c)
-  const noDocumento = c.informes.filter((x) => x.noDocumento).length
-  /* pagina 1, dois produtos por folha, e a folha do resumo geral */
-  const paginas = 1 + Math.ceil(c.produtos.length / 2) + 1
 
   const rs = (v: number) => (comDinheiro ? dinheiro(v) : '· · ·')
 
@@ -239,30 +246,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           cliente recebe só o documento (PDF)
         </>
       }
-      acoes={
-        <>
-          <Botao tom="contorno" onClick={salvar}>
-            <FloppyDisk size={17} />
-            Salvar
-          </Botao>
-          <Botao tom="contorno" onClick={verDocumento}>
-            <FileText size={17} />
-            PDF
-          </Botao>
-          {!fechada ? (
-            <Botao tom="wa" onClick={enviar}>
-              <WhatsappLogo size={17} />
-              Enviar
-            </Botao>
-          ) : null}
-          {!fechada && c.produtos.length ? (
-            <Botao tom="primario" onClick={dizerSim}>
-              <Check size={17} />
-              Aprovar e gerar ficha
-            </Botao>
-          ) : null}
-        </>
-      }
+      /* O TOPO NAO TEM MAIS BOTAO. Eles estavam em dois lugares ao mesmo
+         tempo, o topo e a barra da direita, e com nomes diferentes para a
+         mesma coisa: PDF em cima e Ver documento embaixo. Agora existe um
+         lugar so, e ele e a barra da direita, que fica grudada na tela
+         enquanto a pagina rola. */
     >
       {/* --- a barra de abas do v5 --- */}
       <BarraDoEditor
@@ -506,21 +494,15 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             </p>
           </section>
 
-          <section className="cartao ct-cartao">
-            <header className="ct-cab">
-              <h3>Documento</h3>
-            </header>
-            <p className="ct-nada">
-              Página 1: cabeçalho e informes. Um bloco por produto: imagem, detalhes e tabela de
-              tamanhos. Última página: tabela geral sem imagens.
-            </p>
-            <div className="ct-tags">
-              <span>{paginas} páginas</span>
-              <span>{noDocumento} informes</span>
-              <span>sem rota de produção</span>
-            </div>
-          </section>
+          {/* ================= o que dá para fazer com esta cotação ==========
+              O cartão Documento saiu. Ele descrevia o PDF em três linhas de
+              texto que ninguém lia duas vezes, e a contagem de páginas está
+              na própria folha, escrita no subtítulo dela.
 
+              Os botões que estavam aqui e os que estavam no topo viraram um
+              grupo só, em duas alturas: em cima o que move o pedido adiante,
+              embaixo, miúdo, o que quase nunca se usa. Apagar não merece o
+              mesmo tamanho que aprovar. */}
           <div className="ct-lado-bts">
             {!fechada && c.produtos.length ? (
               <Botao tom="primario" bloco onClick={dizerSim}>
@@ -531,24 +513,36 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             {!fechada ? (
               <Botao tom="wa" bloco onClick={enviar}>
                 <WhatsappLogo size={17} />
-                Enviar por WhatsApp
+                Enviar ao cliente
               </Botao>
             ) : null}
-            <Botao tom="contorno" bloco onClick={verDocumento}>
-              <FileText size={17} />
-              Ver documento
+            {/* A FOLHA DA PRODUÇÃO SÓ EXISTE DEPOIS DO SIM. Antes disso não há
+                o que cortar, e oferecer papel de galpão para um orçamento em
+                rascunho é como uma peça sai antes do cliente aprovar. */}
+            {fechada ? (
+              <Botao tom="contorno" bloco onClick={verFolhaDaProducao}>
+                <FileText size={17} />
+                Folha da produção
+              </Botao>
+            ) : null}
+            <Botao tom="contorno" bloco onClick={salvar}>
+              <FloppyDisk size={17} />
+              Salvar
             </Botao>
-            <Botao tom="contorno" bloco onClick={baixar}>
-              Baixar .cft
-            </Botao>
-            <Botao
-              tom={confirmando ? 'perigo' : 'limpo'}
-              bloco
-              onClick={() => (confirmando ? apagar() : setConfirmando(true))}
-              onBlur={() => setConfirmando(false)}
-            >
-              {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
-            </Botao>
+
+            <div className="ct-lado-miudos">
+              <button type="button" onClick={baixar}>
+                Baixar .cft
+              </button>
+              <button
+                type="button"
+                className={confirmando ? 'risco' : undefined}
+                onClick={() => (confirmando ? apagar() : setConfirmando(true))}
+                onBlur={() => setConfirmando(false)}
+              >
+                {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
+              </button>
+            </div>
           </div>
         </aside>
       </div>
@@ -679,25 +673,17 @@ function Produto({
               aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
             />
           }
+          /* O VALOR BASE SAIU DO MODULO. Ele era um campo a mais para dizer
+             o que a coluna VALOR da tabela ja diz: escreve o valor na
+             primeira linha, arrasta a alca para baixo, e todos os tamanhos
+             ficam com ele. Dois lugares para o mesmo numero e um convite a
+             divergencia, e quem digita num e esquece o outro descobre pelo
+             total errado.
+
+             O DADO continua vivo: orcamento antigo guardou precoBase, e ele
+             segue valendo para o tamanho que nao tem valor proprio. O que
+             saiu foi o campo, e nao o numero. */
           tabela={
-            <>
-              {!travado ? (
-                <div className="ct-preco-base">
-                  <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
-                    <Entrada
-                      inputMode="decimal"
-                      value={produto.precoBase ? String(produto.precoBase) : ''}
-                      placeholder="0,00"
-                      onChange={(e) =>
-                        aoMudarProduto((p) => ({
-                          ...p,
-                          precoBase: Number(e.target.value.replace(',', '.')) || 0,
-                        }))
-                      }
-                    />
-                </Campo>
-              </div>
-            ) : null}
             <GradeDeTamanhos
               leitura={travado}
               faixa={b.faixa}
@@ -715,8 +701,7 @@ function Produto({
                 })
               }
             />
-          </>
-        }
+          }
           pe={<SobreAPeca bloco={b} travado={travado} />}
         />
       </div>

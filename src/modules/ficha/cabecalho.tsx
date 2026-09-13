@@ -63,7 +63,7 @@ export function CabecalhoDaProducao({
     <div className={classe}>
       <span className="fc-rot">{rotulo}</span>
       {leitura ? (
-        <span className="fc-val">{String(cab[campo] || '') || '—'}</span>
+        <span className="fc-val">{String(cab[campo] || '') || '-'}</span>
       ) : (
         <Seletor
           campo
@@ -127,7 +127,7 @@ export function CabecalhoDaProducao({
       <div className="fc-campo">
         <span className="fc-rot">Cliente</span>
         {leitura ? (
-          <span className="fc-val">{cab.cliente || '—'}</span>
+          <span className="fc-val">{cab.cliente || '-'}</span>
         ) : (
           <input
             className="fc-entrada"
@@ -146,13 +146,13 @@ export function CabecalhoDaProducao({
       <div className="fc-campo">
         <span className="fc-rot">CPF / CNPJ</span>
         {leitura ? (
-          <span className="fc-val">{cab.documento || '—'}</span>
+          <span className="fc-val">{cab.documento || '-'}</span>
         ) : (
           <input
             className="fc-entrada"
             inputMode="numeric"
             value={cab.documento}
-            placeholder="—"
+            placeholder="-"
             onChange={(e) => aoMudar({ documento: mascaraDeDocumento(e.target.value) })}
           />
         )}
@@ -161,7 +161,7 @@ export function CabecalhoDaProducao({
       <div className="fc-campo meia">
         <span className="fc-rot">Pedido nº</span>
         {leitura ? (
-          <span className="fc-val">{cab.pedido || '—'}</span>
+          <span className="fc-val">{cab.pedido || '-'}</span>
         ) : (
           <input
             className="fc-entrada"
@@ -180,7 +180,7 @@ export function CabecalhoDaProducao({
       <div className="fc-campo meia">
         <span className="fc-rot">Envio</span>
         {leitura ? (
-          <span className="fc-val">{cab.envio || '—'}</span>
+          <span className="fc-val">{cab.envio || '-'}</span>
         ) : (
           <CampoDeData bloco valor={cab.envio} aoMudar={(iso) => aoMudar({ envio: iso })} />
         )}

@@ -1,7 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ArrowCounterClockwise, ArrowClockwise, CurrencyDollar, Eye, Plus, Printer, Trash } from '@phosphor-icons/react'
 import { Botao, Pagina, avisar } from '@ds'
-import { FileiraDoLayout, GradeDeTamanhos, blocoEmBranco, type Bloco } from '@dominio/layout'
+import {
+  CaixaDeImagem,
+  FileiraDoLayout,
+  GradeDeTamanhos,
+  blocoEmBranco,
+  type Bloco,
+} from '@dominio/layout'
 import {
   fichaEmBranco,
   pecasDaFicha,
@@ -188,6 +194,7 @@ function PecaNaFicha({
   const b = peca.bloco
   return (
     <section className="fc-peca">
+      <div className="fc-peca-esq">
       <FileiraDoLayout
         bloco={b}
         aoMudar={aoMudarBloco}
@@ -207,6 +214,16 @@ function PecaNaFicha({
           ) : null
         }
       />
+
+      <div className="fc-imagem">
+        <CaixaDeImagem
+          imagem={b.imagem}
+          arte={b.arte}
+          aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
+          aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
+        />
+      </div>
+      </div>
 
       <div className="fc-grade">
         <GradeDeTamanhos

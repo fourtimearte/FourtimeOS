@@ -85,45 +85,7 @@ export function CabecalhoDaProducao({
         <span className="fc-logo">FOURTIME</span>
       </div>
 
-      <div className="fc-cnpj">
-        <span className="fc-rot">CNPJ</span>
-        <span className="fc-cnpj-num">{EMPRESA.cnpj}</span>
-      </div>
-
-      <div className="fc-marcas">
-        {cab.marcas.map((m) => (
-          <span
-            key={m}
-            className="fc-selo"
-            style={{ '--c': COR_DA_MARCA[m] ?? 'var(--brand)' } as CSSProperties}
-          >
-            {m}
-            {leitura ? null : (
-              <button
-                type="button"
-                aria-label={'Tirar a marca ' + m}
-                onClick={() => aoMudar({ marcas: cab.marcas.filter((x) => x !== m) })}
-              >
-                <X size={11} weight="bold" />
-              </button>
-            )}
-          </span>
-        ))}
-        {leitura || cab.marcas.length >= MARCAS.length ? null : (
-          <button
-            type="button"
-            ref={btMarcas}
-            className="fc-mais"
-            title="Marcar o documento"
-            aria-label="Marcar o documento"
-            onClick={() => setMenuDeMarcas((a) => !a)}
-          >
-            <Plus size={13} weight="bold" />
-          </button>
-        )}
-      </div>
-
-      {/* --- fileira 1 --- */}
+            {/* --- fileira 1 --- */}
       <div className="fc-campo">
         <span className="fc-rot">Cliente</span>
         {leitura ? (
@@ -186,16 +148,54 @@ export function CabecalhoDaProducao({
         )}
       </div>
 
-      {/* --- fileira 2 --- */}
+      {/* --- fileira 2: a coluna 1 e o CNPJ --- */}
+      <div className="fc-cnpj">
+        <span className="fc-rot">CNPJ</span>
+        <span className="fc-cnpj-num">{EMPRESA.cnpj}</span>
+      </div>
+
       {campoDeMenu('vendedor', 'Vendedor')}
       {campoDeMenu('departamento', 'Departamento')}
-      {campoDeMenu('entrega', 'Entrega', 'fc-campo larga')}
+      {campoDeMenu('entrega', 'Entrega')}
 
-      {/* --- fileira 3 --- */}
+      {/* --- fileira 3: a coluna 1 sao as marcas do documento --- */}
+<div className="fc-marcas">
+        {cab.marcas.map((m) => (
+          <span
+            key={m}
+            className="fc-selo"
+            style={{ '--c': COR_DA_MARCA[m] ?? 'var(--brand)' } as CSSProperties}
+          >
+            {m}
+            {leitura ? null : (
+              <button
+                type="button"
+                aria-label={'Tirar a marca ' + m}
+                onClick={() => aoMudar({ marcas: cab.marcas.filter((x) => x !== m) })}
+              >
+                <X size={11} weight="bold" />
+              </button>
+            )}
+          </span>
+        ))}
+        {leitura || cab.marcas.length >= MARCAS.length ? null : (
+          <button
+            type="button"
+            ref={btMarcas}
+            className="fc-mais"
+            title="Marcar o documento"
+            aria-label="Marcar o documento"
+            onClick={() => setMenuDeMarcas((a) => !a)}
+          >
+            <Plus size={13} weight="bold" />
+          </button>
+        )}
+      </div>
+
       {campoDeMenu('embalagem', 'Embalagem')}
       {campoDeMenu('pagamento', 'Pagamento')}
 
-      <div className="fc-campo larga fc-caixa-total">
+      <div className="fc-campo fc-caixa-total">
         <span className="fc-rot">Total</span>
         <span className="fc-tot">
           <b>{totalDePecas.toLocaleString('pt-BR')}</b>

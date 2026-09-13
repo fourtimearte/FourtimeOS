@@ -18,10 +18,14 @@
    ficava aberto. Aqui o fundo da caixa É a cor da linha, cada célula tem
    fundo próprio, e não sobra linha para cortar. É a mesma solução da v3.375,
    pelo mesmo motivo. */
+/* Sete colunas, e nao quatro. A primeira e a da marca; as outras seis sao
+   meias colunas, e um campo comum ocupa duas delas. Isso existe porque na
+   primeira fileira Pedido e Envio dividem a ultima coluna, e sem meia coluna
+   nao ha como dividir sem quebrar o alinhamento das outras duas fileiras. */
 .fc-cab {
   display: grid;
-  grid-template-columns: 190px repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(56px, auto);
+  grid-template-columns: 186px repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(58px, auto);
   gap: 1px;
   padding: 1px;
   background: var(--border);
@@ -119,8 +123,16 @@
   padding: 7px 12px;
   min-width: 0;
 }
+/* um campo comum ocupa duas meias colunas; Pedido e Envio, uma cada */
+.fc-campo {
+  grid-column: span 2;
+}
 .fc-campo.meia {
-  /* Pedido e Envio dividem a quarta coluna da primeira fileira */
+  grid-column: span 1;
+}
+.fc-marca,
+.fc-cnpj,
+.fc-marcas {
   grid-column: span 1;
 }
 .fc-rot {
@@ -171,9 +183,6 @@
   font-weight: 500;
 }
 
-.fc-campo.larga {
-  grid-column: span 2;
-}
 .fc-caixa-total {
   background: var(--surface-2) !important;
 }
@@ -234,7 +243,7 @@
 /* --- uma peça no documento ------------------------------------------------ */
 .fc-peca {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: var(--sp-4);
   align-items: start;
   padding: var(--sp-4);
@@ -244,20 +253,31 @@
   box-shadow: var(--shadow-card);
   min-width: 0;
 }
-@media (max-width: 900px) {
-  .fc-peca {
-    grid-template-columns: minmax(0, 1fr);
-  }
+@media (max-width: 1100px) {
+  /* na tela estreita a coluna da marca sai de perto e o cabecalho vira duas
+     colunas de campo, que e o que cabe sem espremer rotulo */
   .fc-cab {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .fc-campo.larga {
-    grid-column: span 2;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .fc-marca,
   .fc-cnpj,
   .fc-marcas {
     grid-column: span 2;
+  }
+}
+@media (max-width: 900px) {
+  .fc-peca {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fc-cab {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fc-campo,
+  .fc-campo.meia,
+  .fc-marca,
+  .fc-cnpj,
+  .fc-marcas {
+    grid-column: span 1;
   }
 }
 
@@ -327,4 +347,15 @@
   border-color: var(--brand);
   color: var(--brand-text, var(--brand));
   background: color-mix(in srgb, var(--brand) 5%, transparent);
+}
+
+/* --- a coluna da esquerda da peca: a barra da referencia e a imagem ------- */
+.fc-peca-esq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.fc-imagem {
+  max-width: 520px;
 }

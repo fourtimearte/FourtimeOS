@@ -489,6 +489,7 @@
 /* a barra da referência: uma linha, sem altura de dedo */
 .papel .mod-topo {
   gap: 1.5mm;
+  margin-bottom: -1mm;
 }
 .papel .mod-selo,
 .papel .mod-ref {
@@ -510,8 +511,14 @@
   min-height: 0;
   border-radius: 1.5mm;
 }
+/* O TETO DA IMAGEM É A CONTA DE CABER DOIS. Com 112 mm um par de artes em
+   retrato dava 1.011 px numa folha de 984, e o segundo layout ia sozinho para
+   a folha seguinte: seis layouts viravam cinco folhas. Com 92 mm o par cabe,
+   e 92 mm de altura por 103 de largura ainda é arte de conferir estampa, e
+   não selo. Quem tiver uma arte que precise de mais que isso imprime um
+   layout por folha, que continua acontecendo sozinho quando não couber. */
 .papel .img-area img {
-  max-height: 112mm;
+  max-height: 92mm;
   object-position: center top;
 }
 /* sem arte a moldura não pode esticar até o fim da ficha: no papel isso é um
@@ -523,20 +530,20 @@
 
 /* os cartões e a tabela, na letra do documento */
 .papel .mod-ficha {
-  gap: 2mm;
+  gap: 1.5mm;
 }
 .papel .mod-cartao {
   border-radius: 1.5mm;
 }
 .papel .mod-cartao > header {
-  padding: 1.2mm 2mm;
+  padding: 0.8mm 2mm;
 }
 .papel .mod-cartao > header span {
-  font-size: 7pt;
+  font-size: 6.5pt;
 }
 .papel .mod-tec-linha {
   min-height: 0;
-  padding: 1.5mm 2mm;
+  padding: 1mm 2mm;
 }
 /* NO PAPEL O NOME DO TECIDO NAO PODE CORTAR. Na tela a reticencia e aceitavel
    porque o nome inteiro esta a um toque; numa folha na mesa de corte, "SUPLEX
@@ -549,7 +556,7 @@
   line-height: 1.25;
 }
 .papel .mod-fila {
-  padding: 1.2mm 1.5mm;
+  padding: 0.8mm 1.5mm;
 }
 .papel .gr-rolo {
   border-radius: 1.5mm;
@@ -560,7 +567,7 @@
 }
 .papel .gr-tab th,
 .papel .gr-tab td {
-  height: 5.4mm;
+  height: 4.6mm;
   padding: 0 2mm;
 }
 .papel .mod-obs .rico {

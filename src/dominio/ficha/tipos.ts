@@ -1,5 +1,8 @@
-import { blocoEmBranco, migrarBloco, type Bloco } from '@dominio/layout'
-import { totalDaGrade } from '@dominio/layout'
+/* relativo, e nao pelo apelido: a porta da frente de @dominio/layout leva
+   junto as telas em React, e o dominio da ficha precisa continuar rodando em
+   node puro para as conferencias de formato e de conta poderem existir */
+import { blocoEmBranco, migrarBloco, type Bloco } from '../layout/bloco'
+import { totalDaGrade } from '../layout/grade'
 
 /* ==========================================================================
    A ficha de produção.

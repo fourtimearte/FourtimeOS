@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "noEmit": false,
+    "outDir": "./compilado-ficha",
+    "rootDir": "..",
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "..",
+    "paths": {
+      "@ds": ["src/ds/index.ts"],
+      "@ds/*": ["src/ds/*"],
+      "@dominio": ["src/dominio/index.ts"],
+      "@dominio/*": ["src/dominio/*"]
+    }
+  },
+  "files": ["../src/dominio/ficha/arquivo.ts"]
+}

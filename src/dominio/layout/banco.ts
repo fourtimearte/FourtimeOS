@@ -105,6 +105,33 @@ export const SECOES_DE_TECNICA: SecaoDeTecnica[] = [
 
 /* --- codigo de cor: as duas abas ----------------------------------------- */
 
+/* O HEX de uma cor de TECIDO, pelo nome. O arquivo da v3.375 guarda so o
+   nome da cor da malha, porque la o quadrado era desenhado a partir dele: sem
+   esta busca, toda ficha antiga abriria com o quadrado hachurado de "sem cor"
+   ao lado de um nome de cor escrito. Nome que nao existe no banco devolve
+   vazio, e ai o hachurado esta certo: e cor que a fabrica nao tem mais. */
+export function hexDoTecido(nome: string): string {
+  const alvo = String(nome || '').trim().toLowerCase()
+  if (!alvo) return ''
+  for (const g of GRUPOS_DE_COR) {
+    for (const [n, hex] of g.cores) {
+      if (n.trim().toLowerCase() === alvo) return hex
+    }
+  }
+  return ''
+}
+
+/* O HEX de um codigo de cor. O S na frente e o que separa as duas tabelas:
+   S012 e sublimacao, 012 e DTF. Existe para quem chega com o codigo na mao e
+   precisa da cor: o arquivo salvo guarda so o codigo, porque o codigo e o que
+   a maquina entende, e a cor e consequencia dele. */
+export function hexDaCor(cod: string): string {
+  const c = String(cod || '').toUpperCase()
+  const tabela = c.startsWith('S') ? SB_CORES : DTF_CORES
+  const achada = tabela.find((x) => x[0].toUpperCase() === c)
+  return achada ? achada[1] : '#cccccc'
+}
+
 export const ABAS_DE_COR: AbaDeCores[] = [
   { id: 'dtf', rotulo: 'DTF', cor: 'var(--tec-dtf-vivo)', cores: DTF_CORES },
   { id: 'sub', rotulo: 'SUB', cor: 'var(--tec-subli-vivo)', cores: SB_CORES },

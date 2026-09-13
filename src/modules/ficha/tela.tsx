@@ -5,6 +5,8 @@ import {
   CopySimple,
   CurrencyDollar,
   Eye,
+  FolderOpen,
+  FloppyDisk,
   Info,
   Plus,
   Printer,
@@ -22,6 +24,8 @@ import {
   type Bloco,
 } from '@dominio/layout'
 import {
+  abrirFt,
+  baixarFt,
   fichaEmBranco,
   pecasDaFicha,
   useAtalhosDoHistorico,
@@ -100,6 +104,23 @@ export function TelaFicha() {
   const pecas = pecasDaFicha(ficha)
   const reais = valorDaFicha(ficha)
 
+  /* SALVAR E BAIXAR, e não salvar no banco: enquanto o Supabase não é a casa
+     da ficha, o arquivo é o que atravessa de um computador para o outro. E o
+     abrir lê os dois formatos, o novo e o .ft da v3.375, que é como o acervo
+     inteiro da fábrica entra aqui sem ninguém reescrever nada. */
+  async function abrir() {
+    try {
+      const lida = await abrirFt()
+      if (!lida) return
+      /* entra como UM passo do histórico: quem abriu o arquivo errado desfaz
+         com Ctrl+Z e volta para onde estava */
+      mudar(() => lida)
+      avisar('Ficha aberta com ' + lida.pecas.length + ' layouts.', 'ok')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não deu para abrir este arquivo.', 'warn')
+    }
+  }
+
   return (
     <Pagina
       acima="Produção"
@@ -136,6 +157,20 @@ export function TelaFicha() {
           >
             {comDinheiro ? <Eye size={17} /> : <CurrencyDollar size={17} />}
             {comDinheiro ? 'Ocultar valores' : 'Mostrar valores'}
+          </Botao>
+          <Botao tom="limpo" icone title="Abrir uma ficha ou um .ft do editor v4" onClick={abrir}>
+            <FolderOpen size={18} />
+          </Botao>
+          <Botao
+            tom="limpo"
+            icone
+            title="Salvar em arquivo"
+            onClick={() => {
+              baixarFt(ficha)
+              avisar('Ficha salva em arquivo.', 'ok')
+            }}
+          >
+            <FloppyDisk size={18} />
           </Botao>
           <Botao
             tom="contorno"

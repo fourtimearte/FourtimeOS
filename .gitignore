@@ -16,5 +16,7 @@ testes/atual/
 testes/diferenca/
 
 testes/compilado/
+testes/compilado-ficha/
+testes/compilado-ficha-erros.txt
 
 testes/compilado-sessao/

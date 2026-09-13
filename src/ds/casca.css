@@ -298,6 +298,9 @@
     gap: 2px;
     overflow: hidden auto;
     scrollbar-width: none;
+    /* dois cliques no trilho encolhem o menu: sem isso o navegador aproveita
+       e pinta de azul a palavra que estiver embaixo do dedo */
+    user-select: none;
   }
   .lado::-webkit-scrollbar {
     display: none;

@@ -300,6 +300,7 @@ export function ModuloDeLayout({
               </section>
 
               {/* --- design: as técnicas e as cores lançadas nelas --- */}
+              {leitura && bloco.design.length === 0 ? null : (
               <section className="mod-cartao mod-design">
                 <header>
                   <span>Design</span>
@@ -344,13 +345,16 @@ export function ModuloDeLayout({
                             }
                           />
                         ))
-                      ) : (
+                      ) : leitura ? null : (
+                        /* o convite é para quem está preenchendo. Numa folha
+                           impressa ele vira uma etiqueta que não existe */
                         <span className="mod-fila-ph">Etiqueta</span>
                       )}
                     </div>
                   ))}
                 </div>
               </section>
+              )}
 
               <div className="mod-tabela">{tabela}</div>
 
@@ -479,7 +483,7 @@ function TecidoNaLinha({
         disabled={leitura}
         onClick={(e) => aoAbrirTecido(e.currentTarget)}
       >
-        {tecido.nome || 'Escolha o tecido'}
+        {tecido.nome || (leitura ? '-' : 'Escolha o tecido')}
       </button>
 
       <button
@@ -489,7 +493,7 @@ function TecidoNaLinha({
         title={tecido.cor || 'sem cor'}
         onClick={(e) => aoAbrirCor(e.currentTarget)}
       >
-        <span>{tecido.cor || 'sem cor'}</span>
+        <span>{tecido.cor || (leitura ? '-' : 'sem cor')}</span>
       </button>
 
       {leitura || !podeTirar ? null : (

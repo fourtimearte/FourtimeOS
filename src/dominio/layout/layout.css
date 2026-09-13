@@ -277,6 +277,19 @@
   height: auto;
   object-fit: contain;
 }
+/* em leitura a caixa vazia não é alvo de nada: sem moldura tracejada, sem
+   cursor de clique, e só a altura que o aviso precisa */
+.img-area.lendo:not(.tem) {
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: 18px;
+  border-style: solid;
+  cursor: default;
+}
+.img-sem {
+  font-size: 12px;
+  color: var(--text-3);
+}
 .img-convite {
   display: flex;
   flex-direction: column;

@@ -121,7 +121,7 @@ export function CaixaDeImagem({
     <div className="img-caixa">
       <div
         ref={area}
-        className={['img-area', sobre ? 'sobre' : '', naTela ? 'tem' : '']
+        className={['img-area', sobre ? 'sobre' : '', naTela ? 'tem' : '', leitura ? 'lendo' : '']
           .filter(Boolean)
           .join(' ')}
         onPointerEnter={() => (dentro.current = true)}
@@ -151,6 +151,11 @@ export function CaixaDeImagem({
       >
         {naTela ? (
           <img src={naTela} alt={arte || 'arte do produto'} />
+        ) : leitura ? (
+          /* EM LEITURA O CONVITE NÃO VALE. "Arraste, cole ou clique" numa
+             folha impressa é uma instrução para alguém que está segurando
+             papel: o que a fábrica precisa saber ali é que a arte falta. */
+          <span className="img-sem">sem imagem</span>
         ) : (
           <span className="img-convite">
             Arraste, cole ou clique

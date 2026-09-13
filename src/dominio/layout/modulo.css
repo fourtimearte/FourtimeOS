@@ -395,6 +395,19 @@
   min-height: 62px;
 }
 
+/* EM LEITURA O CAMPO É TEXTO. Moldura de campo numa folha impressa promete
+   que dá para digitar ali, e no papel não dá. A cor do gênero fica, porque
+   ela diz uma coisa que o texto não diz. */
+.mod-ref:has(.mod-ref-bt:disabled) {
+  border-color: transparent;
+  padding-left: 0;
+}
+.mod-ref[data-genero='masculino']:has(.mod-ref-bt:disabled),
+.mod-ref[data-genero='feminino']:has(.mod-ref-bt:disabled),
+.mod-ref[data-genero='infantil']:has(.mod-ref-bt:disabled) {
+  padding-left: 10px;
+}
+
 /* --- o módulo de informações --------------------------------------------- */
 .mod.info .mod-ref {
   border-color: var(--ink);

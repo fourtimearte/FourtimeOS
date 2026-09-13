@@ -27,10 +27,12 @@ import {
 import {
   NOME_DO_ESTADO_DA_COTACAO,
   acharCotacao,
+  DADO_DE_EXEMPLO,
   apagarCotacao,
   aprovar,
   baixarCft,
   listarCotacoes,
+  montarKitDeTeste,
   numeroDePedido,
   registrarEnvio,
   travada,
@@ -180,6 +182,26 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     salvarCotacao(c)
     setSujo(false)
     navegar('/cotacao/' + c.id + '/folha')
+  }
+
+  /* ==========================================================================
+     O KIT DE TESTE, herdado do editor v3.375.
+
+     Ele monta um orcamento inteiro com um toque: seis layouts em tres folhas,
+     com numeros, anotacoes e imagens desenhadas na hora. A razao de existir e
+     que a folha impressa so quebra em CASOS, e o caso quase nunca e o que a
+     gente digitou para testar. O kit monta sempre os mesmos casos, e eles
+     foram escolhidos por ja terem quebrado: duas imagens baixas, duas altas,
+     e uma alta com uma baixa, que e o mais traicoeiro dos tres.
+
+     Ele so aparece enquanto a base e de exemplo. No dia em que o Supabase
+     entrar, DADO_DE_EXEMPLO vira falso e o botao some sozinho, sem ninguem
+     precisar lembrar de tira-lo antes de a fabrica usar. */
+  async function kitDeTeste() {
+    const nova = await montarKitDeTeste(c)
+    setC(nova)
+    setSujo(true)
+    avisar('Kit de teste montado: 6 layouts, 3 folhas de impressão.', 'ok')
   }
 
   /* A FOLHA DO GALPAO. Mesma cotacao, outro leitor: ela nasce sem valor
@@ -531,6 +553,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             </Botao>
 
             <div className="ct-lado-miudos">
+              {DADO_DE_EXEMPLO ? (
+                <button type="button" onClick={kitDeTeste} title="Monta um orçamento de teste por cima deste">
+                  Kit de teste
+                </button>
+              ) : null}
               <button type="button" onClick={baixar}>
                 Baixar .cft
               </button>

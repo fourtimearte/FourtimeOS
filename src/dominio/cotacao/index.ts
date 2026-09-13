@@ -10,6 +10,7 @@ export {
   nomeDoArquivo,
   paraCft,
 } from './arquivo'
+export { montarKitDeTeste, MOTIVOS_DO_KIT } from './kit-de-teste'
 export {
   acharCotacao,
   apagarCotacao,

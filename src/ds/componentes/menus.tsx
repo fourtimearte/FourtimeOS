@@ -781,14 +781,18 @@ export function FaixaDeCores({
   aoAbrirMenuDaCor?: (ancora: HTMLElement, cod: string) => void
   impressao?: boolean
 }) {
-  const estiloB: CSSProperties = impressao
-    ? { background: 'transparent', boxShadow: 'none', border: '1px solid var(--border)' }
-    : {}
+  /* A trilha colorida nao e decoracao: ela diz "aqui dentro moram codigos de
+     cor". So DTF e sublimacao lancam codigo, e so depois que a primeira cor
+     entrou. Etiqueta, gola, bordado e acabamento sao pilula seca, sem caixa.
+     Na folha A4 vale a opcao B: borda de 1 px e nada de tingimento. */
+  const comTrilha = (tecnica === 'dtf' || tecnica === 'subli') && cores.length > 0
+  const classe = ['fx', impressao ? 'fx-b' : comTrilha ? 'trilha' : 'seca'].join(' ')
+  const temMais = !!aoAdicionar && !impressao
   return (
-    <div className="fx" style={{ ...estiloDaTecnica(tecnica), ...estiloB }}>
+    <div className={classe} style={estiloDaTecnica(tecnica)}>
       <div className="c1">
         <span
-          className="tec"
+          className={temMais ? 'tec com-mais' : 'tec'}
           onContextMenu={(e) => {
             if (!aoAbrirMenuDaPilula) return
             e.preventDefault()
@@ -796,7 +800,7 @@ export function FaixaDeCores({
           }}
         >
           {rotulo}
-          {aoAdicionar && !impressao ? (
+          {temMais ? (
             <button
               type="button"
               className="mais"

@@ -21,6 +21,11 @@ function posicionar(el: HTMLElement, ancora: HTMLElement, o: OpcoesFlutuante) {
   const vh = innerHeight
   const folga = 8
   const respiro = 6
+  /* soltar a altura para medir faz a lista de dentro caber inteira por um
+     instante, e o navegador zera o rolamento dela. Guardamos onde estava e
+     devolvemos: sem isto, rolar a grade de cores joga tudo de volta ao topo. */
+  const rolaveis = [...el.querySelectorAll<HTMLElement>('.mn-lista,.mn-grade')]
+  const onde = rolaveis.map((l) => l.scrollTop)
   el.style.maxHeight = 'none'
   const lm = Math.min(el.offsetWidth, vw - folga * 2)
   const am = el.offsetHeight
@@ -38,6 +43,9 @@ function posicionar(el: HTMLElement, ancora: HTMLElement, o: OpcoesFlutuante) {
   el.style.left = Math.round(left) + 'px'
   el.style.top = Math.round(top) + 'px'
   el.dataset.lado = paraCima ? 'cima' : 'baixo'
+  rolaveis.forEach((l, i) => {
+    if (l.scrollTop !== onde[i]) l.scrollTop = onde[i]
+  })
 }
 
 /* A régua: desenha o menu invisível, com todos os grupos abertos e nada
@@ -142,7 +150,14 @@ export function Flutuante({
 
   useEffect(() => {
     if (!aberto) return
-    const naRolagem = () => repor()
+    /* a rolagem que interessa e a da pagina atras do menu. A rolagem de dentro
+       do proprio menu nao muda onde ele mora, e remedir a cada tique era o que
+       fazia a grade de cores parecer travada. */
+    const naRolagem = (e: Event) => {
+      const alvo = e.target
+      if (alvo instanceof Node && el.current?.contains(alvo)) return
+      repor()
+    }
     addEventListener('scroll', naRolagem, true)
     addEventListener('resize', naRolagem)
     const naTecla = (e: KeyboardEvent) => {

@@ -824,10 +824,20 @@
 
 /* --- a faixa de cores C1 ------------------------------------------------- */
 .fx {
-  background: var(--ts);
   border-radius: var(--radius-lg);
-  box-shadow: inset 3px 0 0 var(--tc);
   max-width: 100%;
+}
+/* caixa tingida com a trilha de 3 px: so quando a tecnica lanca codigo de cor
+   e ja existe cor lancada */
+.fx.trilha {
+  background: var(--ts);
+  box-shadow: inset 3px 0 0 var(--tc);
+}
+/* opcao B da folha A4 e do arquivo do cliente */
+.fx.fx-b {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--border);
 }
 .c1 {
   display: flex;
@@ -841,9 +851,14 @@
   margin: 1px 0 0 5px;
   flex-shrink: 0;
   height: 32px;
-  padding: 0 6px 0 13px;
+  padding: 0 13px;
   font-size: 11.5px;
   cursor: context-menu;
+}
+/* o mais ja tem ar em volta: sem isso a pilula com botao fica gorda de um lado
+   e a pilula sem botao fica torta */
+.c1 > .tec.com-mais {
+  padding-right: 6px;
 }
 .c1 > .tec .mais {
   width: 22px;

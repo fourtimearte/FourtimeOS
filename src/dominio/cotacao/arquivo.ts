@@ -156,19 +156,52 @@ export function deCft(texto: string): Cotacao {
     )
   }
 
-  let corpo = (env.cotacao ?? {}) as Bruto
-  let v = versao
+  return arrumarCotacao(
+    (env.cotacao ?? {}) as Bruto,
+    versao,
+    Number(env.versaoDoBloco ?? 0),
+  )
+}
+
+/* --------------------------------------------------------------------------
+   A ESCADA NAO E SO DO ARQUIVO.
+
+   Ela nasceu dentro do deCft, e por um tempo isso pareceu suficiente: quem
+   sobe degrau e o arquivo que veio de fora. Mas uma cotacao guardada no
+   proprio navegador tambem e um registro antigo: ela foi gravada com o
+   formato daquele dia e fica ali, parada, enquanto o sistema anda. Quando a
+   fusao com a ficha entrou, toda cotacao ja gravada passou a estar um degrau
+   atras, sem o bloco de producao. A tela nova pedia c.producao.marcas e
+   encontrava nada.
+
+   Entao a escada e publica. Todo lugar que le uma cotacao que nao acabou de
+   nascer na memoria passa por aqui: o arquivo .cft, o armazenamento do
+   navegador, e amanha o Supabase. E a mesma porta, e e a unica.
+   -------------------------------------------------------------------------- */
+
+/**
+ * Sobe uma cotacao crua ate o formato de hoje.
+ *
+ * @param corpo a cotacao como esta gravada, seja em arquivo ou no navegador
+ * @param versao o formato em que ela foi gravada. 0 quer dizer "antes de tudo"
+ * @param versaoDoBloco o formato dos blocos daquele momento
+ */
+export function arrumarCotacao(corpo: Bruto, versao: number, versaoDoBloco: number): Cotacao {
+  let corpoAtual = corpo
+  let v = Math.max(0, Math.min(versao, VERSAO_DO_CFT))
   while (v < VERSAO_DO_CFT) {
-    corpo = DEGRAUS[v](corpo)
+    corpoAtual = DEGRAUS[v](corpoAtual)
     v++
   }
 
   /* os blocos sobem a propria escada, que e a mesma que a ficha de producao
      vai usar na fase 2 */
-  const versaoDoBloco = Number(env.versaoDoBloco ?? 0)
-  const produtosBrutos = Array.isArray(corpo.produtos) ? (corpo.produtos as Bruto[]) : []
+  const produtosBrutos = Array.isArray(corpoAtual.produtos) ? (corpoAtual.produtos as Bruto[]) : []
   const produtos = produtosBrutos.map((p) => {
-    const bruto = { ...((p.bloco ?? {}) as Bruto), versao: versaoDoBloco }
+    const guardada = (p.bloco ?? {}) as Bruto
+    /* a versao gravada no proprio bloco manda, quando ela existe: no
+       navegador cada bloco carrega a sua, e no arquivo ela vem do envelope */
+    const bruto = { ...guardada, versao: Number(guardada.versao ?? versaoDoBloco) }
     return {
       bloco: migrarBloco(bruto) as Bloco,
       precoPorTamanho: (p.precoPorTamanho ?? {}) as Record<string, number>,
@@ -176,16 +209,22 @@ export function deCft(texto: string): Cotacao {
     }
   })
 
-  /* o molde em branco preenche o que faltar: arquivo antigo sem campo novo
-     abre com o campo no padrao, e nao quebra a tela */
-  const molde = cotacaoEmBranco(String(corpo.numero ?? ''))
+  /* o molde em branco preenche o que faltar: registro antigo sem campo novo
+     abre com o campo no padrao, e nao quebra a tela. Os objetos de dentro
+     precisam ser espalhados um a um, porque o espalhar de cima troca o objeto
+     inteiro: um `informe` gravado sem `entrega` apagaria o `entrega` do molde */
+  const molde = cotacaoEmBranco(String(corpoAtual.numero ?? ''))
   return {
     ...molde,
-    ...(corpo as unknown as Cotacao),
-    cliente: { ...molde.cliente, ...((corpo.cliente ?? {}) as object) },
-    informe: { ...molde.informe, ...((corpo.informe ?? {}) as object) },
-    ajustes: Array.isArray(corpo.ajustes) ? (corpo.ajustes as Cotacao['ajustes']) : [],
-    enviadas: Array.isArray(corpo.enviadas) ? (corpo.enviadas as Cotacao['enviadas']) : [],
+    ...(corpoAtual as unknown as Cotacao),
+    cliente: { ...molde.cliente, ...((corpoAtual.cliente ?? {}) as object) },
+    informe: { ...molde.informe, ...((corpoAtual.informe ?? {}) as object) },
+    producao: { ...molde.producao, ...((corpoAtual.producao ?? {}) as object) },
+    informes: Array.isArray(corpoAtual.informes)
+      ? (corpoAtual.informes as Cotacao['informes'])
+      : molde.informes,
+    ajustes: Array.isArray(corpoAtual.ajustes) ? (corpoAtual.ajustes as Cotacao['ajustes']) : [],
+    enviadas: Array.isArray(corpoAtual.enviadas) ? (corpoAtual.enviadas as Cotacao['enviadas']) : [],
     produtos,
     versaoDoFormato: VERSAO_DO_CFT,
   }

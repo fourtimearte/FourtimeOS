@@ -2,6 +2,7 @@
 export * from './tipos'
 export {
   abrirCft,
+  arrumarCotacao,
   ArquivoRecusado,
   baixarCft,
   deCft,

@@ -21,7 +21,13 @@ import {
   travada,
   VERSAO_DO_CFT,
 } from './compilado/cotacao/tipos.js'
-import { paraCft, deCft, nomeDoArquivo, ArquivoRecusado } from './compilado/cotacao/arquivo.js'
+import {
+  paraCft,
+  deCft,
+  nomeDoArquivo,
+  arrumarCotacao,
+  ArquivoRecusado,
+} from './compilado/cotacao/arquivo.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
 
@@ -131,6 +137,52 @@ ok('arquivo antigo nao ganha aprovacao inventada', subiu.aprovacao === null)
 ok('arquivo antigo nao fica travado', !travada(subiu))
 ok('o envio antigo mantem o total', subiu.enviadas[0].total === 60)
 ok('o envio antigo ganha pecas zero, e nao indefinido', subiu.enviadas[0].pecas === 0)
+
+/* --- a escada tambem vale para o que esta guardado ------------------------
+   O erro que isto pega: uma cotacao gravada no navegador ANTES da fusao com a
+   ficha nao tem o bloco de producao. Ate aqui a escada so rodava ao abrir um
+   arquivo, entao esse registro chegava na tela cru, e a tela morria ao pedir
+   c.producao.marcas. Um registro guardado e tao antigo quanto um arquivo. */
+console.log('a escada do que esta guardado')
+const guardadaV3 = {
+  id: 'CT20260183',
+  numero: '2026-0183',
+  versaoDoFormato: 3,
+  estado: 'enviada',
+  cliente: { nome: 'Escola Girassol', cidade: 'Goiania', uf: 'GO' },
+  produtos: [{ bloco: { grade: { M: 10 } }, precoBase: 52, precoPorTamanho: {} }],
+  /* no formato 3 o MODO de entrega ainda se chamava envio */
+  informe: { prazo: '12 dias uteis', pagamento: 'A VISTA', envio: 'CORREIOS' },
+  enviadas: [],
+  aprovacao: null,
+}
+const daMemoria = arrumarCotacao(guardadaV3, 3, 5)
+ok('a guardada sobe ate o formato de hoje', daMemoria.versaoDoFormato === VERSAO_DO_CFT)
+ok('a guardada ganha o bloco de producao', !!daMemoria.producao)
+ok('as marcas chegam como lista, e nao indefinidas', Array.isArray(daMemoria.producao.marcas))
+ok('o envio virou entrega', daMemoria.informe.entrega === 'CORREIOS')
+ok('nao sobra campo fantasma chamado envio', daMemoria.informe.envio === undefined)
+ok('o pedido nao e inventado', daMemoria.producao.pedido === '')
+ok('o produto guardado continua la', daMemoria.produtos.length === 1)
+ok('o preco guardado continua la', daMemoria.produtos[0].precoBase === 52)
+ok('a lista de informes nunca chega indefinida', Array.isArray(daMemoria.informes))
+
+/* um registro JA no formato de hoje nao pode ser mexido pela escada */
+const deHoje = arrumarCotacao(
+  { ...guardadaV3, versaoDoFormato: VERSAO_DO_CFT, informe: { entrega: 'RETIRADA' },
+    producao: { pedido: 'PD004052', dataDeEnvio: '', departamento: 'Comercial',
+      embalagem: 'Sacola', marcas: ['URGENTE'], observacao: '' } },
+  VERSAO_DO_CFT,
+  5,
+)
+ok('o que ja esta no formato de hoje nao sobe degrau', deHoje.producao.pedido === 'PD004052')
+ok('a marca guardada fica', deHoje.producao.marcas.join() === 'URGENTE')
+ok('a entrega guardada fica', deHoje.informe.entrega === 'RETIRADA')
+
+/* um informe gravado sem um campo novo pega o padrao, e nao apaga o resto */
+const faltando = arrumarCotacao({ ...guardadaV3, informe: { prazo: '5 dias' } }, 3, 5)
+ok('o campo que falta no informe vem do molde', typeof faltando.informe.tabelaDePreco === 'string')
+ok('o campo gravado no informe nao se perde', faltando.informe.prazo === '5 dias')
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

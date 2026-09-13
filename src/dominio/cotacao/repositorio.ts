@@ -5,8 +5,9 @@ import {
   SB_CORES,
   refGenero,
 } from '@ds/kit/banco-de-exemplo'
-import type { Bloco, Design, Tecnica } from '../layout/bloco'
+import { VERSAO_DO_BLOCO, type Bloco, type Design, type Tecnica } from '../layout/bloco'
 import { DEPARTAMENTOS, EMBALAGENS, ENTREGAS, PAGAMENTOS } from '../banco/dados'
+import { arrumarCotacao } from './arquivo'
 import type { Faixa, Grade } from '../layout/grade'
 import {
   VERSAO_DO_CFT,
@@ -283,12 +284,36 @@ function montarExemplo(s: Semente, i: number): Cotacao {
 
 /* --- a base viva --------------------------------------------------------- */
 
+/* O QUE ESTA GUARDADO TAMBEM E ANTIGO.
+
+   Uma cotacao gravada no navegador ficou parada no formato do dia em que foi
+   gravada, enquanto o sistema andou. Quando a fusao com a ficha entrou, toda
+   cotacao ja guardada passou a estar sem o bloco de producao, e a tela nova
+   morria ao pedir um campo que nao existia ali.
+
+   Por isso ela sobe a MESMA escada do arquivo .cft, degrau por degrau, antes
+   de chegar na tela. Uma que ja esteja no formato de hoje nao sobe nada: a
+   escada so anda quando falta degrau.
+
+   E se uma cotacao vier torta demais para subir, ela e deixada de fora em vez
+   de derrubar a lista inteira. Perder uma cotacao de exemplo e um aborrecimento;
+   perder a tela de cotacoes e ficar sem trabalhar. */
 function lerGuardado(): Cotacao[] | null {
   try {
     const cru = localStorage.getItem(CHAVE)
     if (!cru) return null
-    const lista = JSON.parse(cru) as Cotacao[]
-    return Array.isArray(lista) ? lista : null
+    const lista = JSON.parse(cru)
+    if (!Array.isArray(lista)) return null
+    const boas: Cotacao[] = []
+    for (const item of lista) {
+      try {
+        const bruto = (item ?? {}) as Record<string, unknown>
+        boas.push(arrumarCotacao(bruto, Number(bruto.versaoDoFormato ?? 0), VERSAO_DO_BLOCO))
+      } catch {
+        /* essa uma nao subiu. As outras seguem */
+      }
+    }
+    return boas.length ? boas : null
   } catch {
     return null
   }

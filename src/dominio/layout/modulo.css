@@ -531,6 +531,16 @@
   min-height: 0;
   padding: 1.5mm 2mm;
 }
+/* NO PAPEL O NOME DO TECIDO NAO PODE CORTAR. Na tela a reticencia e aceitavel
+   porque o nome inteiro esta a um toque; numa folha na mesa de corte, "SUPLEX
+   84..." nao diz qual malha e, e ninguem pode passar o mouse em papel. */
+.fl .mod-tec-nome,
+.fl .mod-tec-cor span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
 .fl .mod-fila {
   padding: 1.2mm 1.5mm;
 }

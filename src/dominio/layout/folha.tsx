@@ -56,17 +56,47 @@ export function usarPaginacao(
   const [paginas, setPaginas] = useState<BlocoDaFolha[][]>([blocos])
   const [medido, setMedido] = useState(false)
   const ultima = useRef('')
+  /* o contador existe so para pedir um desenho novo quando o medidor muda de
+     tamanho sozinho, sem o React ter mexido em nada. Ver o observador abaixo.
+     O valor dele nao e lido em lugar nenhum: o que importa e a re-renderizacao
+     que ele provoca, e e por isso que ele nao entra em nenhuma conta. */
+  const [, setTique] = useState(0)
 
   const marca = chave + '|' + alturaUtil + '|' + maximo
 
+  /* A IMAGEM CHEGA DEPOIS. Esta foi a armadilha mais cara desta parte: a
+     medicao roda no primeiro desenho, e nesse instante as imagens do
+     documento ainda nao foram decodificadas, entao cada bloco mede a altura
+     que tem SEM a arte. A conta da pagina saia certa para um documento que
+     nao existe, e ninguem percebia, porque quando a folha aparecia na tela ela
+     ja estava com as imagens e com a divisao errada congelada.
+
+     Decodificar uma imagem nao e um evento do React: nenhuma re-renderizacao
+     acontece, e sem isto a medicao nunca seria refeita. O observador avisa. */
+  useEffect(() => {
+    const caixa = medidor.current
+    if (!caixa || typeof ResizeObserver === 'undefined') return
+    const olho = new ResizeObserver(() => setTique((t) => t + 1))
+    for (const filho of [...caixa.children]) olho.observe(filho)
+    return () => olho.disconnect()
+  }, [blocos.length])
+
+  /* SEM LISTA DE DEPENDENCIAS, de proposito. Quem decide se ha trabalho a
+     fazer e a ASSINATURA: a marca mais as alturas medidas agora. Enquanto ela
+     nao muda, o efeito sai sem tocar em estado nenhum, entao rodar a cada
+     desenho nao custa nem gera laco. Uma lista de dependencias aqui teria que
+     adivinhar quando uma imagem terminou de carregar, que e justamente o que
+     nao da para adivinhar. */
   useLayoutEffect(() => {
-    if (ultima.current === marca) return
     const caixa = medidor.current
     if (!caixa) return
     const filhos = [...caixa.children] as HTMLElement[]
     if (filhos.length !== blocos.length) return
 
     const alturas = filhos.map((f) => f.getBoundingClientRect().height)
+    const assinatura = marca + '|' + alturas.map((h) => Math.round(h)).join(',')
+    if (ultima.current === assinatura) return
+
     const saida: BlocoDaFolha[][] = []
     let atual: BlocoDaFolha[] = []
     let soma = 0
@@ -84,11 +114,10 @@ export function usarPaginacao(
       soma += h
     })
     if (atual.length) saida.push(atual)
-    ultima.current = marca
+    ultima.current = assinatura
     setPaginas(saida)
     setMedido(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marca])
+  })
 
   return { medidor, paginas, medido }
 }

@@ -1,0 +1,33 @@
+-- ============================================================
+-- Fourtime OS - 007 a view perdeu o grant
+-- ============================================================
+-- O QUE QUEBROU
+--
+-- A migracao 006 precisou derrubar e refazer a view meu_perfil, porque o
+-- e-mail entrou no meio das colunas e o Postgres nao aceita trocar a ordem com
+-- create or replace. O que eu nao sabia na hora:
+--
+--     DERRUBAR UMA VIEW APAGA JUNTO AS PERMISSOES DELA.
+--
+-- O grant que a 003 deu para authenticated foi embora com o drop, e a 006 nao
+-- devolveu. O efeito na tela foi cruel de diagnosticar: o login funcionava, o
+-- servidor aceitava a senha, e meio segundo depois o sistema derrubava a
+-- pessoa. Cinco vezes seguidas no log, Login seguido de logout.
+--
+-- Porque: o provedor da sessao entra, pergunta "quem sou eu" lendo meu_perfil,
+-- leva permissao negada, e faz a coisa certa para essa resposta, que e sair.
+-- Melhor sair do que deixar a pessoa dentro sem saber quem ela e. So que a
+-- mensagem que sobrava na tela falava de cadastro, e quem esta do outro lado
+-- conclui que errou a senha.
+--
+-- A LICAO, para a proxima vez
+--
+-- Grant nao mora na view, mora no objeto. Todo drop de tabela ou view leva os
+-- grants dele. Por isso o grant tem que estar no MESMO arquivo do create, logo
+-- embaixo, e nunca so na migracao antiga que criou o objeto pela primeira vez.
+--
+-- A conferencia do fim deste arquivo passou a fazer parte da rotina: ela lista
+-- qualquer coisa em public que ninguem consegue ler. O resultado esperado e
+-- nenhuma linha.
+
+grant select on public.meu_perfil to authenticated;

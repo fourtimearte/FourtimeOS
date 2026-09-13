@@ -12,6 +12,7 @@
     "arquitetura": "depcruise src",
     "contas": "sh testes/contas.sh",
     "visual": "node testes/visual.mjs && python3 testes/comparar.py",
+    "espelho": "sh testes/espelho.sh",
     "visual:aprovar": "python3 testes/comparar.py --aprovar",
     "classes": "node testes/classes.mjs",
     "arquivo": "sh testes/arquivo-ficha.sh",

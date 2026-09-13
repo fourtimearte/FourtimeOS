@@ -10,7 +10,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-4);
-  align-items: start;
+  /* as duas colunas com a MESMA altura: a caixa da arte vazia estica ate o
+     fim da ficha tecnica, como na v3.375. Alinhadas pelo topo, a esquerda
+     terminava na metade e sobrava um bloco de nada do lado da tabela, e o
+     alvo de arrastar a arte ficava pequeno bem onde havia espaco de sobra */
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -120,9 +124,23 @@
   letter-spacing: 0.08em;
 }
 
-/* a arte ocupa a altura que sobrar da coluna */
+/* a arte ocupa a altura que sobrar da coluna. COM imagem ela nao estica: a
+   moldura tem a altura exata da imagem e cola no topo, que e a regra da
+   v3.375 (largura total primeiro, a altura acompanha a proporcao). */
 .mod-arte {
+  flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.mod-arte > * {
+  flex: 1;
+  min-width: 0;
+}
+.mod-arte .img-caixa:has(.img-area.tem) {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 100%;
 }
 
 /* --- a coluna da direita: a ficha técnica ---------------------------------

@@ -15,6 +15,7 @@ playwright-report
 testes/atual/
 testes/diferenca/
 
+testes/espelho/
 testes/compilado/
 testes/compilado-ficha/
 testes/compilado-ficha-erros.txt

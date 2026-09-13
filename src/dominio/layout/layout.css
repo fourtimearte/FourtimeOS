@@ -231,6 +231,14 @@
   gap: 10px;
   min-width: 0;
 }
+/* vazia, ela cresce para ocupar a coluna: o alvo de arrastar a arte e a
+   metade esquerda inteira, e nao um retangulo no alto dela */
+.img-caixa > .img-area {
+  flex: 1;
+}
+.img-caixa > .img-area.tem {
+  flex: 0 0 auto;
+}
 /* SEM IMAGEM a caixa é um convite, e precisa de altura própria para ser um
    alvo de dedo. COM IMAGEM ela tem a altura EXATA da imagem: nada de
    proporção fixa. A proporção fixa era o defeito, e o efeito dela era

@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Aviso, Botao, FaixaDeCores, Pagina, Segmentado, Vazio } from '@ds'
+import { Aviso, Botao, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
 import {
+  CaixaDeImagem,
   Folha,
   GradeDeTamanhos,
+  ModuloDeLayout,
   Palco,
-  gradeEmTexto,
   imprimir,
   type BlocoDaFolha,
 } from '@dominio/layout'
@@ -169,11 +170,20 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
       <div ref={palco}>
       <Palco>
         {paginas.map((pagina, i) => (
+          /* O CABECALHO E DA FOLHA 1, E SO DELA.
+
+             A folha 1 e a folha dos dados: e ali que estao quem compra, o que
+             foi combinado e o resumo de todos os layouts. Da folha 2 em diante
+             so existem layouts, e repetir o cabecalho em cada uma delas era
+             gastar 30 mm de papel por folha para dizer de novo o que ja foi
+             dito uma vez. Esses 30 mm sao o que faltava para a arte ter
+             tamanho de conferencia. O rodape fica em todas: ele e quem diz de
+             que documento aquela folha solta veio. */
           <Folha
             key={i}
             numero={i + 1}
             de={paginas.length}
-            cabecalho={<Cabecalho cotacao={c} comValor={comValor} />}
+            cabecalho={i === 0 ? <Cabecalho cotacao={c} comValor={comValor} /> : undefined}
             rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} comValor={comValor} />}
           >
             {pagina.map((b) => (
@@ -258,47 +268,27 @@ function RodapeDaEmpresa({
   )
 }
 
-/* --- um produto na folha ------------------------------------------------- */
+/* --- um produto na folha -------------------------------------------------
+   O MESMO MODULO DA TELA, EM LEITURA. Nao e economia de codigo: e a promessa
+   de que o que o cliente le no papel e o que o vendedor viu na tela. Duas
+   montagens diferentes para a mesma peca e como nasce a cotacao que "na tela
+   estava certo".
+
+   A ARTE MANDA NO PAPEL. Quem confere um uniforme impresso olha a estampa
+   primeiro, e por isso a coluna da arte fica com 1.7 contra 1.3 da ficha, que
+   e a conta da v3.375: mais da metade da largura da folha. O bloco compacto
+   que morava aqui dava 48 mm de arte numa folha de 190 mm, e ninguem conferia
+   estampa nenhuma naquele selo. A medida esta no CSS, em .fl .mod. */
 function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValor: boolean }) {
   const b = produto.bloco
-  const tecido = b.tecidos[0]
   return (
-    <article className="dc-prod">
-      <div className="dc-prod-img">
-        {b.imagem ? (
-          <img src={b.imagem} alt={b.arte || b.referencia} />
-        ) : (
-          <span className="dc-sem-img">sem imagem</span>
-        )}
-        {b.arte ? <span className="dc-arte">{b.arte}</span> : null}
-      </div>
-
-      <div className="dc-prod-dados">
-        <h3 className="dc-prod-titulo">
-          <span className="dc-n">{b.n}</span>
-          {b.referencia} {b.nomeDaReferencia}
-        </h3>
-        <dl className="dc-lista">
-          {tecido?.nome ? <Par rotulo="Tecido" valor={tecido.nome} /> : null}
-          {tecido?.cor ? <Par rotulo="Cor" valor={tecido.cor} /> : null}
-          {b.genero ? <Par rotulo="Gênero" valor={b.genero} /> : null}
-          <Par rotulo="Grade" valor={gradeEmTexto(b.faixa, b.grade)} />
-        </dl>
-        {b.design.length ? (
-          <div className="dc-faixas">
-            {b.design.map((d) => (
-              <FaixaDeCores key={d.tag} tecnica={d.tecnica} rotulo={d.tag} cores={d.cores} impressao />
-            ))}
-          </div>
-        ) : null}
-        {/* já saneada na porta de entrada do bloco (migrarBloco), e só pode
-            conter cor, marca-texto e quebra de linha */}
-        {b.observacao ? (
-          <p className="dc-obs rico" dangerouslySetInnerHTML={{ __html: b.observacao }} />
-        ) : null}
-      </div>
-
-      <div className="dc-prod-tabela">
+    <ModuloDeLayout
+      bloco={b}
+      aoMudar={() => {}}
+      leitura
+      semValor={!comValor}
+      arte={<CaixaDeImagem imagem={b.imagem} arte={b.arte} leitura />}
+      tabela={
         <GradeDeTamanhos
           leitura
           faixa={b.faixa}
@@ -306,6 +296,8 @@ function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValo
           precoBase={comValor ? produto.precoBase : undefined}
           precoPorTamanho={produto.precoPorTamanho}
         />
+      }
+      pe={
         <div className="dc-prod-soma">
           {pecasDoProduto(produto)} peças
           {comValor ? (
@@ -315,8 +307,8 @@ function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValo
             </>
           ) : null}
         </div>
-      </div>
-    </article>
+      }
+    />
   )
 }
 
@@ -338,22 +330,28 @@ function Resumo({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) 
     <section className="dc-resumo">
       <h3 className="dc-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
 
+      {/* UMA FILEIRA POR LAYOUT, e o numero do layout na frente. Ele e a
+          unica coisa que amarra esta tabela as folhas de tras: quem le
+          "L-07 faltou" precisa achar o L-07 sem contar folha. A grade saiu
+          da linha: ela esta desenhada inteira, tamanho por tamanho, na folha
+          do proprio layout, e repetida aqui em texto corrido so gastava a
+          largura que o nome do produto precisava. */}
       <table className="dc-tab">
         <thead>
           <tr>
+            <th className="dc-col-l">Layout</th>
             <th>Produto</th>
-            <th>Grade</th>
-            <th className="num">Peças</th>
-            {comValor ? <th className="num">Total</th> : null}
+            <th className="num">Total de peças</th>
+            {comValor ? <th className="num">Preço total</th> : null}
           </tr>
         </thead>
         <tbody>
           {c.produtos.map((p) => (
             <tr key={p.bloco.id}>
+              <td className="dc-col-l">L-{String(p.bloco.n).padStart(2, '0')}</td>
               <td>
                 <b>{p.bloco.referencia}</b> {p.bloco.nomeDaReferencia}
               </td>
-              <td className="dc-grade-linha">{gradeEmTexto(p.bloco.faixa, p.bloco.grade)}</td>
               <td className="num">{pecasDoProduto(p)}</td>
               {comValor ? <td className="num">{dinheiro(totalDoProduto(p))}</td> : null}
             </tr>

@@ -93,137 +93,17 @@
   font-weight: 600;
 }
 
-/* --- um produto ---------------------------------------------------------- */
-.dc-prod {
-  /* A medida da coluna da imagem e do respiro foi escolhida contando folha, e
-     não no olho: com 52 mm e 4 mm de respiro o bloco media 419 px e a folha
-     comporta 809, então dois produtos não cabiam por 10 px e cada produto
-     gastava uma folha inteira. Com 48 e 3 o bloco cabe duas vezes. A
-     paginação continua medida, então produto grande continua indo sozinho:
-     isto só desfaz o desperdício do caso comum. */
-  display: grid;
-  grid-template-columns: 48mm minmax(0, 1fr);
-  gap: 3mm;
-  padding: 3mm 0;
-  border-bottom: 1px solid var(--fl-borda);
-}
-.dc-prod:last-child {
-  border-bottom: 0;
-}
-.dc-prod-img {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5mm;
-}
-.dc-prod-img img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: contain;
-  border: 1px solid var(--fl-borda);
-  border-radius: 1.5mm;
-  background: #fff;
-}
-.dc-sem-img {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 4 / 3;
-  border: 1px dashed var(--fl-borda);
-  border-radius: 1.5mm;
-  color: var(--fl-fraco);
-  font-size: 8pt;
-}
-.dc-arte {
-  font-size: 7.5pt;
-  color: var(--fl-fraco);
-  overflow-wrap: anywhere;
-}
-.dc-prod-dados {
-  min-width: 0;
-}
-.dc-prod-titulo {
-  display: flex;
-  align-items: center;
-  gap: 2mm;
-  margin: 0 0 2mm;
-  font-size: 10pt;
-  font-weight: 700;
-}
-.dc-n {
-  display: grid;
-  place-items: center;
-  width: 5mm;
-  height: 5mm;
-  flex: none;
-  border-radius: 50%;
-  background: #161a20;
-  color: #fff;
-  font-size: 7.5pt;
-}
-.dc-lista {
-  display: grid;
-  grid-template-columns: 20mm minmax(0, 1fr);
-  gap: 0.8mm 3mm;
-  margin: 0 0 2mm;
-  font-size: 8.5pt;
-}
-.dc-lista dt {
-  font-weight: 700;
-  color: var(--fl-fraco);
-}
-.dc-lista dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-.dc-faixas {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5mm;
-  margin-bottom: 2mm;
-}
-/* na folha a observação é só texto: a área editável do editor empresta a
-   classe .rico para a cor e o marca-texto sobreviverem, mas o recheio e a
-   altura mínima dela não valem no papel */
-.dc-obs {
-  margin: 0;
-  min-height: 0;
-  padding: 0;
-  font-size: 8.5pt;
-  line-height: 1.4;
-  color: var(--fl-fraco);
-}
-.dc-prod-tabela {
-  grid-column: 1 / -1;
-  min-width: 0;
-}
+/* --- um produto na folha --------------------------------------------------
+   O bloco compacto que morava aqui saiu inteiro. No lugar dele entrou o
+   proprio modulo de layout em leitura, e o que resta aqui e a roupa de papel
+   dele: as medidas em milimetro que a tela nao tem.
+
+   Ver o comentario de .fl .mod em dominio/layout/modulo.css para a conta das
+   colunas e do teto da imagem. */
 .dc-prod-soma {
-  margin-top: 1.5mm;
   text-align: right;
   font-size: 9pt;
   font-variant-numeric: tabular-nums;
-}
-
-/* a grade compartilhada, vestida de papel */
-.dc-prod-tabela .gr-rolo,
-.dc-resumo .gr-rolo {
-  border-color: var(--fl-borda);
-  background: transparent;
-  overflow: visible;
-}
-.dc-prod-tabela .gr-tab th,
-.dc-prod-tabela .gr-tab td {
-  height: 6mm;
-  font-size: 8.5pt;
-  color: inherit;
-  border-color: var(--fl-borda);
-}
-.dc-prod-tabela .gr-tab th {
-  background: var(--fl-fundo-2);
-  color: var(--fl-fraco);
-}
-.dc-prod-tabela .gr-tab tfoot td {
-  height: 6.5mm;
-  background: var(--fl-fundo-2);
-  border-color: var(--fl-borda);
 }
 
 /* --- o resumo ------------------------------------------------------------ */
@@ -261,9 +141,12 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.dc-grade-linha {
-  font-size: 8pt;
-  color: var(--fl-fraco);
+/* a coluna do L-NN: estreita, e o numero nunca quebra em duas linhas */
+.dc-col-l {
+  width: 16mm;
+  white-space: nowrap;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .dc-tab tfoot td {
   background: var(--fl-fundo-2);

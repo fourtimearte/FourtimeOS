@@ -451,3 +451,107 @@
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   O MÓDULO NO PAPEL.
+
+   Na tela as duas colunas são iguais, porque quem preenche precisa dos dois
+   lados do mesmo tamanho. No papel não: quem confere um uniforme impresso
+   olha a ESTAMPA primeiro, e a ficha técnica é o que ele lê depois. Por isso
+   a arte fica com 1.7 contra 1.3 da ficha, que é a conta da v3.375 e dá mais
+   da metade da largura da folha.
+
+   A REGRA DA IMAGEM é a mesma de sempre: largura total da coluna primeiro, a
+   altura acompanha a proporção natural. O teto existe só para o caso em que a
+   imagem em largura total não caberia na folha. Aí ela encolhe até caber, e a
+   folha nunca cresce: folha que cresce vira folha que corta a última linha.
+
+   Todas as medidas daqui para baixo são em milímetro, e não em pixel. A folha
+   é um objeto de 210 por 297 mm, e pixel numa folha é uma medida que muda de
+   tamanho conforme o monitor de quem abriu.
+   ========================================================================== */
+.fl .mod {
+  grid-template-columns: 1.7fr 1.3fr;
+  gap: 2.5mm;
+}
+.fl .mod + .mod,
+.fl .fc-folha-peca + .fc-folha-peca .mod {
+  margin-top: 4mm;
+}
+
+/* a barra da referência: uma linha, sem altura de dedo */
+.fl .mod-topo {
+  gap: 1.5mm;
+}
+.fl .mod-selo,
+.fl .mod-ref {
+  height: 7mm;
+  min-height: 0;
+  font-size: 9pt;
+}
+.fl .mod-selo {
+  min-width: 12mm;
+  padding: 0 2mm;
+  font-size: 7.5pt;
+}
+
+/* a arte: largura inteira da coluna, altura pela proporção, teto para caber */
+.fl .mod-arte .img-caixa {
+  gap: 1.5mm;
+}
+.fl .img-area {
+  min-height: 0;
+  border-radius: 1.5mm;
+}
+.fl .img-area img {
+  max-height: 112mm;
+  object-position: center top;
+}
+/* sem arte a moldura não pode esticar até o fim da ficha: no papel isso é um
+   retângulo vazio de meia folha, e quem recebe pergunta o que faltou */
+.fl .img-area:not(.tem) {
+  min-height: 40mm;
+  max-height: 40mm;
+}
+
+/* os cartões e a tabela, na letra do documento */
+.fl .mod-ficha {
+  gap: 2mm;
+}
+.fl .mod-cartao {
+  border-radius: 1.5mm;
+}
+.fl .mod-cartao > header {
+  padding: 1.2mm 2mm;
+}
+.fl .mod-cartao > header span {
+  font-size: 7pt;
+}
+.fl .mod-tec-linha {
+  min-height: 0;
+  padding: 1.5mm 2mm;
+}
+.fl .mod-fila {
+  padding: 1.2mm 1.5mm;
+}
+.fl .gr-rolo {
+  border-radius: 1.5mm;
+  overflow: visible;
+}
+.fl .gr-tab {
+  font-size: 8.5pt;
+}
+.fl .gr-tab th,
+.fl .gr-tab td {
+  height: 5.4mm;
+  padding: 0 2mm;
+}
+.fl .mod-obs .rico {
+  min-height: 8mm;
+  font-size: 8.5pt;
+}
+
+/* o pé do módulo no papel é uma linha de conta, e não uma faixa de campos */
+.fl .mod-pe {
+  padding-top: 1.5mm;
+}

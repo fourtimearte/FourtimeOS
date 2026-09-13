@@ -1073,3 +1073,66 @@
   margin: 0 2px;
   background: var(--border);
 }
+
+/* ==========================================================================
+   O visor de imagem em tela cheia (portado da v3.375)
+   ========================================================================== */
+.vs {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  overflow: hidden;
+  background: rgba(12, 14, 16, 0.93);
+  cursor: grab;
+  touch-action: none;
+}
+.vs.arrastando {
+  cursor: grabbing;
+}
+.vs-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  max-width: none;
+  max-height: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.vs-tools {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+}
+.vs-bt {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(17, 18, 20, 0.15);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+.vs-bt:hover {
+  color: var(--brand-text, var(--brand));
+}
+.vs-zoom {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

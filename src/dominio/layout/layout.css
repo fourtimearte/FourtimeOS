@@ -307,21 +307,25 @@
   color: var(--brand);
 }
 
-.img-lupa {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(10, 11, 13, 0.82);
-  cursor: zoom-out;
+/* o aviso de que a imagem esta sendo aliviada. Ele vive no canto e nao tapa
+   a arte: a pessoa ja pode seguir preenchendo a ficha enquanto isso corre */
+.img-tratando {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(12, 14, 16, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
 }
-.img-lupa img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: var(--radius);
+.img-area.tem {
+  position: relative;
+}
+.img-area.tem img {
+  cursor: zoom-in;
 }
 
 /* ==========================================================================

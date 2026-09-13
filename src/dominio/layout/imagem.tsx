@@ -1,13 +1,17 @@
-import { useRef, useState } from 'react'
-import { avisar } from '@ds'
+import { useEffect, useRef, useState } from 'react'
+import { VisorDeImagem, avisar } from '@ds'
+import { IMG_LIMITE_BYTES, pesoDoDataUrl, prepararImagem } from './compressao'
 import './layout.css'
 
 /* ==========================================================================
-   A caixa de imagem, com o nome da arte.
+   A caixa de imagem do layout.
 
-   Tres jeitos de por a imagem, porque na fabrica cada um faz de um jeito:
-   arrastar o arquivo, colar da area de transferencia (o mais usado: recorta a
-   arte no Illustrator e cola aqui), ou clicar e escolher.
+   Quatro jeitos de por a arte, porque na fabrica cada um faz de um jeito:
+   arrastar o arquivo, colar com Ctrl+V, clicar e escolher, ou colar com a
+   caixa nem sequer focada, que e o gesto mais usado de todos. Quem recorta a
+   arte no Illustrator volta para o navegador e aperta Ctrl+V sem clicar em
+   nada primeiro: por isso o colar tambem escuta a janela enquanto o ponteiro
+   estiver sobre a caixa.
 
    O NOME DA ARTE NAO E UM CAMPO. Na v3.375 ele nunca foi digitado a mao: era
    um botao de lupa que procurava o arquivo da arte, e esse botao esta
@@ -15,12 +19,18 @@ import './layout.css'
    O nome continua vivo no bloco (e ele que vai amarrar o layout ao arquivo no
    Drive), so nao tem mais campo para ser digitado.
 
+   TODA IMAGEM PASSA PELA COMPRESSAO ANTES DE SER GUARDADA. Ver compressao.ts
+   para o porque: em base64 uma foto de celular circula inteira a cada tecla
+   digitada, e com vinte layouts isso e o que travava o editor.
+
    A imagem vive como data URL dentro do proprio documento. Isso engorda o
-   .cft, e e de proposito enquanto nao existe servidor de arquivo: um .cft
-   mandado por e-mail tem que abrir com as imagens do outro lado.
+   arquivo, e e de proposito enquanto nao existe a ponte com o Drive: um
+   arquivo mandado por e-mail tem que abrir com as imagens do outro lado.
    ========================================================================== */
 
-const LIMITE = 3 * 1024 * 1024
+/* o teto de entrada e generoso porque a compressao vem logo depois: o que
+   interessa barrar e o arquivo que o navegador nem conseguiria ler */
+const LIMITE = 24 * 1024 * 1024
 
 export function CaixaDeImagem({
   imagem,
@@ -36,7 +46,28 @@ export function CaixaDeImagem({
 }) {
   const [sobre, setSobre] = useState(false)
   const [ampliada, setAmpliada] = useState(false)
+  /* A PREVIA E LOCAL DE PROPOSITO. A versao pesada aparece na tela na hora,
+     mas NAO entra no documento: so a leve e guardada. Guardar as duas daria
+     dois passos de historico para uma colagem so, e o Ctrl+Z devolveria a
+     foto de oito megas que a compressao acabou de tirar da frente. */
+  const [previa, setPrevia] = useState('')
   const arquivo = useRef<HTMLInputElement>(null)
+  const area = useRef<HTMLDivElement>(null)
+  const dentro = useRef(false)
+
+  async function guardar(dataUrl: string) {
+    if (!aoMudarImagem) return
+    if (pesoDoDataUrl(dataUrl) <= IMG_LIMITE_BYTES) {
+      aoMudarImagem(dataUrl)
+      return
+    }
+    setPrevia(dataUrl)
+    const leve = await prepararImagem(dataUrl)
+    aoMudarImagem(leve)
+    setPrevia('')
+  }
+
+  const naTela = previa || imagem
 
   function ler(f: File | null | undefined) {
     if (!f || !aoMudarImagem) return
@@ -45,18 +76,56 @@ export function CaixaDeImagem({
       return
     }
     if (f.size > LIMITE) {
-      avisar('Imagem acima de 3 MB. Salve em JPG antes de colar.', 'warn')
+      avisar('Imagem acima de 24 MB. Salve em JPG antes de colar.', 'warn')
       return
     }
     const leitor = new FileReader()
-    leitor.onload = () => aoMudarImagem(String(leitor.result))
+    leitor.onload = () => guardar(String(leitor.result))
     leitor.readAsDataURL(f)
   }
+
+  function daAreaDeTransferencia(dados: DataTransfer | null) {
+    if (!dados) return false
+    /* DataTransferItemList nao e uma lista comum: nao da para espalhar nem
+       usar find, so andar pelo indice */
+    const itens = dados.items
+    for (let i = 0; i < itens.length; i++) {
+      if (itens[i].type.startsWith('image/')) {
+        ler(itens[i].getAsFile())
+        return true
+      }
+    }
+    return false
+  }
+
+  /* COLAR SEM TER CLICADO NA CAIXA. O onPaste do elemento so dispara quando o
+     foco esta nele, e ninguem clica antes de apertar Ctrl+V. Enquanto o
+     ponteiro estiver sobre a caixa, ela e a dona do colar. */
+  useEffect(() => {
+    if (leitura || !aoMudarImagem) return
+    const naColagem = (e: ClipboardEvent) => {
+      if (!dentro.current) return
+      const alvo = document.activeElement
+      /* quem esta digitando num campo esta colando texto, e nao arte */
+      if (alvo instanceof HTMLElement && alvo.closest('input, textarea, [contenteditable="true"]')) {
+        return
+      }
+      if (daAreaDeTransferencia(e.clipboardData)) e.preventDefault()
+    }
+    document.addEventListener('paste', naColagem)
+    return () => document.removeEventListener('paste', naColagem)
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [leitura, aoMudarImagem])
 
   return (
     <div className="img-caixa">
       <div
-        className={['img-area', sobre ? 'sobre' : '', imagem ? 'tem' : ''].filter(Boolean).join(' ')}
+        ref={area}
+        className={['img-area', sobre ? 'sobre' : '', naTela ? 'tem' : '']
+          .filter(Boolean)
+          .join(' ')}
+        onPointerEnter={() => (dentro.current = true)}
+        onPointerLeave={() => (dentro.current = false)}
         onDragOver={(e) => {
           if (leitura) return
           e.preventDefault()
@@ -71,32 +140,24 @@ export function CaixaDeImagem({
         }}
         onPaste={(e) => {
           if (leitura) return
-          /* DataTransferItemList nao e uma lista comum: nao da para espalhar
-             nem usar find, so andar pelo indice */
-          const itens = e.clipboardData.items
-          for (let i = 0; i < itens.length; i++) {
-            if (itens[i].type.startsWith('image/')) {
-              ler(itens[i].getAsFile())
-              break
-            }
-          }
+          if (daAreaDeTransferencia(e.clipboardData)) e.preventDefault()
         }}
         tabIndex={leitura ? -1 : 0}
         role={leitura ? undefined : 'button'}
         onClick={() => {
-          if (leitura) setAmpliada(!!imagem)
-          else if (imagem) setAmpliada(true)
-          else arquivo.current?.click()
+          if (naTela) setAmpliada(true)
+          else if (!leitura) arquivo.current?.click()
         }}
       >
-        {imagem ? (
-          <img src={imagem} alt={arte || 'arte do produto'} />
+        {naTela ? (
+          <img src={naTela} alt={arte || 'arte do produto'} />
         ) : (
           <span className="img-convite">
             Arraste, cole ou clique
             <small>A arte aparece aqui do lado do tamanho e do valor</small>
           </span>
         )}
+        {previa ? <span className="img-tratando">aliviando a imagem...</span> : null}
         <input
           ref={arquivo}
           type="file"
@@ -106,7 +167,7 @@ export function CaixaDeImagem({
         />
       </div>
 
-      {imagem && !leitura ? (
+      {naTela && !leitura ? (
         <div className="img-acoes">
           <button type="button" className="img-bt" onClick={() => arquivo.current?.click()}>
             Trocar
@@ -117,10 +178,8 @@ export function CaixaDeImagem({
         </div>
       ) : null}
 
-      {ampliada ? (
-        <div className="img-lupa" role="presentation" onClick={() => setAmpliada(false)}>
-          <img src={imagem} alt={arte || 'arte do produto'} />
-        </div>
+      {ampliada && naTela ? (
+        <VisorDeImagem src={naTela} nome={arte || 'arte'} aoFechar={() => setAmpliada(false)} />
       ) : null}
     </div>
   )

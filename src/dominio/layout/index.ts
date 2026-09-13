@@ -14,6 +14,7 @@ export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
 export { ModuloDeLayout } from './modulo'
 export { CaixaDeImagem } from './imagem'
+export { comprimeImagem, jaEstaLeve, pesoDoDataUrl, prepararImagem } from './compressao'
 export { colarBloco, copiarBloco, temCopia } from './copia'
 export {
   ALTURA_DA_FOLHA,

@@ -1,0 +1,2324 @@
+[
+ {
+  "codigo": "001",
+  "hex": "#FFFFFF",
+  "nome": "Branco",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "002",
+  "hex": "#202121",
+  "nome": "Preto Ônix",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "003",
+  "hex": "#25251F",
+  "nome": "Grafite",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "004",
+  "hex": "#37363A",
+  "nome": "Carvão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "005",
+  "hex": "#494B59",
+  "nome": "Cinza Escuro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "006",
+  "hex": "#666877",
+  "nome": "Cinza Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "007",
+  "hex": "#626672",
+  "nome": "Cinza Escuro 2",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "008",
+  "hex": "#767985",
+  "nome": "Cinza Aço",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "009",
+  "hex": "#858994",
+  "nome": "Cinza Médio",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "010",
+  "hex": "#9698A4",
+  "nome": "Cinza",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "011",
+  "hex": "#BFC1CB",
+  "nome": "Cinza Prata",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "012",
+  "hex": "#000000",
+  "nome": "Preto",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "013",
+  "hex": "#BB8859",
+  "nome": "Bronze",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "014",
+  "hex": "#DB9B2C",
+  "nome": "Mel",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "015",
+  "hex": "#CE891D",
+  "nome": "Laranja 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "016",
+  "hex": "#A66B22",
+  "nome": "Caramelo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "017",
+  "hex": "#8B5B4B",
+  "nome": "Laranja Avermelhado Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "018",
+  "hex": "#C26F47",
+  "nome": "Cobre",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "019",
+  "hex": "#9E5127",
+  "nome": "Cobre Queimado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "020",
+  "hex": "#7B4936",
+  "nome": "Tabaco",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "021",
+  "hex": "#AA8665",
+  "nome": "Argila",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "022",
+  "hex": "#936B4F",
+  "nome": "Tabaco Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "023",
+  "hex": "#836449",
+  "nome": "Laranja Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "024",
+  "hex": "#604537",
+  "nome": "Castanho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "025",
+  "hex": "#452E29",
+  "nome": "Cacau",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "026",
+  "hex": "#BC2A4B",
+  "nome": "Framboesa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "027",
+  "hex": "#9D2943",
+  "nome": "Vermelho Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "028",
+  "hex": "#792F43",
+  "nome": "Marsala",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "029",
+  "hex": "#A92450",
+  "nome": "Rosa Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "030",
+  "hex": "#A21F48",
+  "nome": "Rosa Acinzentado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "031",
+  "hex": "#D1E9EE",
+  "nome": "Azul Gelo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "032",
+  "hex": "#C3E2EA",
+  "nome": "Ciano Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "033",
+  "hex": "#A8D5E1",
+  "nome": "Água Marinha",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "034",
+  "hex": "#80C5D6",
+  "nome": "Turquesa Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "035",
+  "hex": "#54B6CC",
+  "nome": "Turquesa Profundo Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "036",
+  "hex": "#00AAC2",
+  "nome": "Turquesa Profundo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "037",
+  "hex": "#008FA3",
+  "nome": "Turquesa 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "038",
+  "hex": "#007484",
+  "nome": "Turquesa Escuro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "039",
+  "hex": "#005A67",
+  "nome": "Petróleo Escuro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "040",
+  "hex": "#D1E9EE",
+  "nome": "Turquesa Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "041",
+  "hex": "#B5DCEC",
+  "nome": "Ciano Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "042",
+  "hex": "#93CDE4",
+  "nome": "Azul Celeste",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "043",
+  "hex": "#75C8DA",
+  "nome": "Turquesa Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "044",
+  "hex": "#42B6D9",
+  "nome": "Azul Piscina",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "045",
+  "hex": "#00ADC8",
+  "nome": "Turquesa 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "046",
+  "hex": "#009CB2",
+  "nome": "Turquesa 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "047",
+  "hex": "#008FA3",
+  "nome": "Turquesa 5",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "048",
+  "hex": "#008395",
+  "nome": "Turquesa Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "049",
+  "hex": "#CDDEF3",
+  "nome": "Holográfico",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "050",
+  "hex": "#BAE0F8",
+  "nome": "Azul Bebê",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "051",
+  "hex": "#90CEF4",
+  "nome": "Ciano Claro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "052",
+  "hex": "#65BFF1",
+  "nome": "Ciano Vivo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "053",
+  "hex": "#23B2EE",
+  "nome": "Ciano",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "054",
+  "hex": "#00ACEC",
+  "nome": "Azul Claro 2",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "055",
+  "hex": "#009DD7",
+  "nome": "Azul Lagoa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "056",
+  "hex": "#0083B2",
+  "nome": "Azul Oceano",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "057",
+  "hex": "#2B648F",
+  "nome": "Azul Denim",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "058",
+  "hex": "#D0E9FB",
+  "nome": "Azul Bem Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "059",
+  "hex": "#A6D7F6",
+  "nome": "Azul Serenity",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "060",
+  "hex": "#7CC6F2",
+  "nome": "Ciano Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "061",
+  "hex": "#4BB8EF",
+  "nome": "Azul Céu",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "062",
+  "hex": "#00ACEC",
+  "nome": "Ciano Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "063",
+  "hex": "#0090C5",
+  "nome": "Azul Médio",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "064",
+  "hex": "#0076A0",
+  "nome": "Azul Marítimo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "065",
+  "hex": "#005B7D",
+  "nome": "Azul Abissal",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "066",
+  "hex": "#004D6B",
+  "nome": "Azul Profundo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "067",
+  "hex": "#CAD4EC",
+  "nome": "Azul Névoa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "068",
+  "hex": "#95B5DD",
+  "nome": "Azul Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "069",
+  "hex": "#7197CF",
+  "nome": "Azul Aço",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "070",
+  "hex": "#0091CA",
+  "nome": "Azul Cerúleo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "071",
+  "hex": "#0083B8",
+  "nome": "Ciano 5",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "072",
+  "hex": "#067CB1",
+  "nome": "Ciano 6",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "073",
+  "hex": "#007BBC",
+  "nome": "Ciano 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "074",
+  "hex": "#0073BF",
+  "nome": "Ciano 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "075",
+  "hex": "#095282",
+  "nome": "Ciano Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "076",
+  "hex": "#C7CCE6",
+  "nome": "Azul Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "077",
+  "hex": "#A19BC8",
+  "nome": "Azul Cobalto Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "078",
+  "hex": "#7A80BD",
+  "nome": "Azul Cobalto Suave 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "079",
+  "hex": "#687DC4",
+  "nome": "Azul",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "080",
+  "hex": "#0073C1",
+  "nome": "Ciano 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "081",
+  "hex": "#205AA7",
+  "nome": "Azul Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "082",
+  "hex": "#264D8F",
+  "nome": "Azul Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "083",
+  "hex": "#2B3E71",
+  "nome": "Azul Naval",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "084",
+  "hex": "#2C3D5C",
+  "nome": "Azul Escuro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "085",
+  "hex": "#C5C3E0",
+  "nome": "Azul Cobalto Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "086",
+  "hex": "#9F8DC8",
+  "nome": "Violeta Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "087",
+  "hex": "#8D73B3",
+  "nome": "Violeta",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "088",
+  "hex": "#7261A6",
+  "nome": "Azul Cobalto",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "089",
+  "hex": "#52509E",
+  "nome": "Anil",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "090",
+  "hex": "#6353A1",
+  "nome": "Azul Cobalto 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "091",
+  "hex": "#2846A4",
+  "nome": "Azul Royal",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "092",
+  "hex": "#484185",
+  "nome": "Índigo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "093",
+  "hex": "#2B3881",
+  "nome": "Azul Acinzentado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "094",
+  "hex": "#CFC7E1",
+  "nome": "Violeta Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "095",
+  "hex": "#BF9DCF",
+  "nome": "Lilás",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "096",
+  "hex": "#A178B1",
+  "nome": "Roxo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "097",
+  "hex": "#9760AA",
+  "nome": "Roxo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "098",
+  "hex": "#784B97",
+  "nome": "Violeta 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "099",
+  "hex": "#5F4484",
+  "nome": "Violeta Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "100",
+  "hex": "#593F79",
+  "nome": "Violeta Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "101",
+  "hex": "#4C2477",
+  "nome": "Roxo Profundo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "102",
+  "hex": "#563270",
+  "nome": "Uva",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "103",
+  "hex": "#D9CAE2",
+  "nome": "Violeta Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "104",
+  "hex": "#B881BE",
+  "nome": "Roxo Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "105",
+  "hex": "#9865A3",
+  "nome": "Malva",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "106",
+  "hex": "#9760AA",
+  "nome": "Roxo 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "107",
+  "hex": "#8B4E97",
+  "nome": "Ameixa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "108",
+  "hex": "#8B4B97",
+  "nome": "Roxo 5",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "109",
+  "hex": "#89478C",
+  "nome": "Roxo Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "110",
+  "hex": "#673C7B",
+  "nome": "Roxo Acinzentado 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "111",
+  "hex": "#674575",
+  "nome": "Lilás Escuro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "112",
+  "hex": "#E3CFE3",
+  "nome": "Magenta Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "113",
+  "hex": "#D897CB",
+  "nome": "Magenta Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "114",
+  "hex": "#AE579D",
+  "nome": "Magenta",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "115",
+  "hex": "#CC33FF",
+  "nome": "Roxo Neon",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "116",
+  "hex": "#B535D1",
+  "nome": "Roxo 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "117",
+  "hex": "#9F37A4",
+  "nome": "Violeta 3",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "118",
+  "hex": "#883976",
+  "nome": "Magenta Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "119",
+  "hex": "#7A417C",
+  "nome": "Roxo Acinzentado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "120",
+  "hex": "#71477E",
+  "nome": "Roxo Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "121",
+  "hex": "#F0D4E4",
+  "nome": "Pink Bem Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "122",
+  "hex": "#F0B7CF",
+  "nome": "Rosa Bebê",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "123",
+  "hex": "#E284C4",
+  "nome": "Orquídea Rosa Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "124",
+  "hex": "#C367A6",
+  "nome": "Orquídea Rosa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "125",
+  "hex": "#C500B2",
+  "nome": "Magenta Neon",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "126",
+  "hex": "#B3458E",
+  "nome": "Pink 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "127",
+  "hex": "#AB518F",
+  "nome": "Vinho Rosado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "128",
+  "hex": "#994887",
+  "nome": "Ameixa Rosada",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "129",
+  "hex": "#82346D",
+  "nome": "Uva Rosada",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "130",
+  "hex": "#F1D3D9",
+  "nome": "Vermelho Bem Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "131",
+  "hex": "#EC89B3",
+  "nome": "Rosa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "132",
+  "hex": "#D765A7",
+  "nome": "Pink Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "133",
+  "hex": "#DC589D",
+  "nome": "Rosa Chiclete",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "134",
+  "hex": "#C9438A",
+  "nome": "Pink",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "135",
+  "hex": "#CA0088",
+  "nome": "Magenta 2",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "136",
+  "hex": "#A23B7E",
+  "nome": "Beterraba",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "137",
+  "hex": "#91316C",
+  "nome": "Amora",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "138",
+  "hex": "#72294D",
+  "nome": "Ameixa Escura",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "139",
+  "hex": "#F1D2D0",
+  "nome": "Rosa Quartzo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "140",
+  "hex": "#E995AB",
+  "nome": "Rosa Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "141",
+  "hex": "#F2789D",
+  "nome": "Rosa Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "142",
+  "hex": "#E34D89",
+  "nome": "Pink Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "143",
+  "hex": "#CF3D81",
+  "nome": "Fúcsia",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "144",
+  "hex": "#BA3575",
+  "nome": "Pink 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "145",
+  "hex": "#A33D6D",
+  "nome": "Pink Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "146",
+  "hex": "#863055",
+  "nome": "Pink Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "147",
+  "hex": "#67303A",
+  "nome": "Vermelho Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "148",
+  "hex": "#F1D2C9",
+  "nome": "Laranja Avermelhado Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "149",
+  "hex": "#FF9B92",
+  "nome": "Rosé",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "150",
+  "hex": "#E77981",
+  "nome": "Salmão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "151",
+  "hex": "#E53D33",
+  "nome": "Vermelho Tomate",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "152",
+  "hex": "#CD1C39",
+  "nome": "Rubi Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "153",
+  "hex": "#B31F37",
+  "nome": "Cereja",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "154",
+  "hex": "#A91328",
+  "nome": "Carmim",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "155",
+  "hex": "#802741",
+  "nome": "Grená",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "156",
+  "hex": "#683842",
+  "nome": "Terra Rosada",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "157",
+  "hex": "#E5A88F",
+  "nome": "Argila Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "158",
+  "hex": "#E9674B",
+  "nome": "Goiaba",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "159",
+  "hex": "#E9502A",
+  "nome": "Vermelho Coral",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "160",
+  "hex": "#F14434",
+  "nome": "Vermelho",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "161",
+  "hex": "#C54426",
+  "nome": "Páprica",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "162",
+  "hex": "#A7262C",
+  "nome": "Vermelho Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "163",
+  "hex": "#9B1D2B",
+  "nome": "Rubi",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "164",
+  "hex": "#732A34",
+  "nome": "Vinho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "165",
+  "hex": "#62383A",
+  "nome": "Vermelho Acinzentado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "166",
+  "hex": "#F4DBC6",
+  "nome": "Champagne",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "167",
+  "hex": "#FFC397",
+  "nome": "Pêssego",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "168",
+  "hex": "#EC801C",
+  "nome": "Abóbora",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "169",
+  "hex": "#FF8720",
+  "nome": "Laranja",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "170",
+  "hex": "#FF7A13",
+  "nome": "Laranja Neon 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "171",
+  "hex": "#EA7815",
+  "nome": "Cenoura",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "172",
+  "hex": "#EE6331",
+  "nome": "Laranja Avermelhado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "173",
+  "hex": "#ED5215",
+  "nome": "Laranja Avermelhado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "174",
+  "hex": "#B95527",
+  "nome": "Telha",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "175",
+  "hex": "#F8E5CA",
+  "nome": "Creme",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "176",
+  "hex": "#FFD699",
+  "nome": "Areia Dourada Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "177",
+  "hex": "#FFD262",
+  "nome": "Âmbar Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "178",
+  "hex": "#FFC148",
+  "nome": "Laranja Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "179",
+  "hex": "#FFB300",
+  "nome": "Âmbar Neon 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "180",
+  "hex": "#F49713",
+  "nome": "Açafrão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "181",
+  "hex": "#FB9221",
+  "nome": "Laranja Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "182",
+  "hex": "#EC801C",
+  "nome": "Laranja 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "183",
+  "hex": "#C85A1D",
+  "nome": "Laranja Avermelhado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "184",
+  "hex": "#FBEFD0",
+  "nome": "Âmbar Bem Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "185",
+  "hex": "#FAE3AA",
+  "nome": "Âmbar Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "186",
+  "hex": "#FEDC66",
+  "nome": "Milho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "187",
+  "hex": "#FCD300",
+  "nome": "Âmbar Neon 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "188",
+  "hex": "#FFC800",
+  "nome": "Girassol",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "189",
+  "hex": "#FAAF00",
+  "nome": "Âmbar Neon 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "190",
+  "hex": "#CB9E0F",
+  "nome": "Ouro Velho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "191",
+  "hex": "#B5975A",
+  "nome": "Ocre",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "192",
+  "hex": "#7B6742",
+  "nome": "Laranja Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "193",
+  "hex": "#FFFBD6",
+  "nome": "Amarelo Bem Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "194",
+  "hex": "#FFF68A",
+  "nome": "Amarelo Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "195",
+  "hex": "#FDEB09",
+  "nome": "Amarelo Neon 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "196",
+  "hex": "#FFF22D",
+  "nome": "Amarelo Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "197",
+  "hex": "#FFE000",
+  "nome": "Amarelo Canário",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "198",
+  "hex": "#FFD603",
+  "nome": "Âmbar Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "199",
+  "hex": "#CAB734",
+  "nome": "Dourado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "200",
+  "hex": "#B4AB22",
+  "nome": "Amarelo Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "201",
+  "hex": "#7F7F3F",
+  "nome": "Amarelo Acinzentado 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "202",
+  "hex": "#E9EDAF",
+  "nome": "Baunilha",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "203",
+  "hex": "#F3EE8E",
+  "nome": "Amarelo Bebê",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "204",
+  "hex": "#F1EB51",
+  "nome": "Amarelo Limão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "205",
+  "hex": "#F4EB09",
+  "nome": "Amarelo Neon 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "206",
+  "hex": "#F4EC6F",
+  "nome": "Amarelo Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "207",
+  "hex": "#D4D813",
+  "nome": "Amarelo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "208",
+  "hex": "#AFB351",
+  "nome": "Amarelo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "209",
+  "hex": "#7F8243",
+  "nome": "Amarelo Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "210",
+  "hex": "#6B7354",
+  "nome": "Verde Militar",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "211",
+  "hex": "#E7F0D5",
+  "nome": "Marfim",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "212",
+  "hex": "#D5E09C",
+  "nome": "Verde Chá",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "213",
+  "hex": "#E1ED84",
+  "nome": "Verde Limão Vivo",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "214",
+  "hex": "#D8DE3F",
+  "nome": "Amarelo Limão Escuro 2",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "215",
+  "hex": "#CEDA42",
+  "nome": "Amarelo Limão Escuro 3",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "216",
+  "hex": "#BAD147",
+  "nome": "Verde Limão",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "217",
+  "hex": "#9DB63E",
+  "nome": "Musgo Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "218",
+  "hex": "#7C864A",
+  "nome": "Verde Oliva",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "219",
+  "hex": "#6A7037",
+  "nome": "Verde Limão Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "220",
+  "hex": "#DDEBD4",
+  "nome": "Verde Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "221",
+  "hex": "#C9DEA3",
+  "nome": "Verde Limão Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "222",
+  "hex": "#CCEB80",
+  "nome": "Verde Limão Vivo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "223",
+  "hex": "#B2CE63",
+  "nome": "Verde Grama Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "224",
+  "hex": "#8FF700",
+  "nome": "Verde Neon",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "225",
+  "hex": "#A0C32D",
+  "nome": "Verde Abacate",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "226",
+  "hex": "#82A440",
+  "nome": "Verde Grama",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "227",
+  "hex": "#678433",
+  "nome": "Verde Limão Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "228",
+  "hex": "#41523F",
+  "nome": "Verde Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "229",
+  "hex": "#D3E7D3",
+  "nome": "Verde Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "230",
+  "hex": "#C9DEA3",
+  "nome": "Verde Limão Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "231",
+  "hex": "#B1FD90",
+  "nome": "Verde Maçã Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "232",
+  "hex": "#A4CA78",
+  "nome": "Verde Chá Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "233",
+  "hex": "#6DCC54",
+  "nome": "Verde Maçã",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "234",
+  "hex": "#77B566",
+  "nome": "Verde Grama Claro 2",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "235",
+  "hex": "#00C719",
+  "nome": "Verde",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "236",
+  "hex": "#478740",
+  "nome": "Verde Pinho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "237",
+  "hex": "#475C37",
+  "nome": "Verde Bosque",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "238",
+  "hex": "#D2E7DC",
+  "nome": "Verde Claro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "239",
+  "hex": "#BFD8C0",
+  "nome": "Verde Claro 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "240",
+  "hex": "#B2D6B3",
+  "nome": "Verde Sálvia",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "241",
+  "hex": "#89C18B",
+  "nome": "Verde Sálvia Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "242",
+  "hex": "#68D48F",
+  "nome": "Verde Jade Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "243",
+  "hex": "#33C477",
+  "nome": "Verde Jade",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "244",
+  "hex": "#55AB5C",
+  "nome": "Verde Bandeira",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "245",
+  "hex": "#638C4E",
+  "nome": "Verde Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "246",
+  "hex": "#4E804D",
+  "nome": "Verde Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "247",
+  "hex": "#D2E8E5",
+  "nome": "Verde Água Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "248",
+  "hex": "#B1D2C2",
+  "nome": "Verde Menta",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "249",
+  "hex": "#A8D0BB",
+  "nome": "Verde Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "250",
+  "hex": "#7AD8C4",
+  "nome": "Verde Piscina",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "251",
+  "hex": "#75CAB2",
+  "nome": "Verde Água Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "252",
+  "hex": "#44C6A6",
+  "nome": "Verde Piscina Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "253",
+  "hex": "#2BA478",
+  "nome": "Verde Lagoa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "254",
+  "hex": "#008550",
+  "nome": "Verde Esmeralda",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "255",
+  "hex": "#7F7F3F",
+  "nome": "Amarelo Acinzentado 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "256",
+  "hex": "#D1E9EE",
+  "nome": "Turquesa Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "257",
+  "hex": "#BBDBDC",
+  "nome": "Turquesa Claro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "258",
+  "hex": "#A0D4DA",
+  "nome": "Turquesa Claro 4",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "259",
+  "hex": "#7EC9D3",
+  "nome": "Ciano Claro 4",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "260",
+  "hex": "#63ADB5",
+  "nome": "Turquesa",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "261",
+  "hex": "#51B3B1",
+  "nome": "Azul Turquesa Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "262",
+  "hex": "#3EB8AF",
+  "nome": "Azul Turquesa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "263",
+  "hex": "#2B8184",
+  "nome": "Turquesa Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "264",
+  "hex": "#A2A247",
+  "nome": "Amarelo 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "265",
+  "hex": "#BD912A",
+  "nome": "Latão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "266",
+  "hex": "#C69520",
+  "nome": "Âmbar 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "267",
+  "hex": "#C29E43",
+  "nome": "Dourado Metálico",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "268",
+  "hex": "#CB9E0F",
+  "nome": "Âmbar 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "269",
+  "hex": "#D7AA1F",
+  "nome": "Ouro Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "270",
+  "hex": "#EBBA1D",
+  "nome": "Amarelo Ouro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "271",
+  "hex": "#D8B366",
+  "nome": "Âmbar Vivo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "272",
+  "hex": "#E2C27B",
+  "nome": "Areia Dourada",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "273",
+  "hex": "#F3D99B",
+  "nome": "Âmbar Claro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "274",
+  "hex": "#AC8F55",
+  "nome": "Bronze Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "275",
+  "hex": "#B09269",
+  "nome": "Laranja 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "276",
+  "hex": "#BB9768",
+  "nome": "Areia Escura",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "277",
+  "hex": "#BDA587",
+  "nome": "Bege Escuro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "278",
+  "hex": "#BCA580",
+  "nome": "Camurça",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "279",
+  "hex": "#B6A594",
+  "nome": "Taupe",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "280",
+  "hex": "#B4A78F",
+  "nome": "Laranja Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "281",
+  "hex": "#CCB49B",
+  "nome": "Amêndoa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "282",
+  "hex": "#EBDFCA",
+  "nome": "Linho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "283",
+  "hex": "#734773",
+  "nome": "Magenta Acinzentado 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "284",
+  "hex": "#4A3E7C",
+  "nome": "Azul Cobalto Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "285",
+  "hex": "#2E396A",
+  "nome": "Azul Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "286",
+  "hex": "#3D4341",
+  "nome": "Cinza Chumbo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "287",
+  "hex": "#A5B6C9",
+  "nome": "Cinza Azulado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "288",
+  "hex": "#B5ACAE",
+  "nome": "Cinza Mescla",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "289",
+  "hex": "#C9B1B2",
+  "nome": "Cinza Rosado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "290",
+  "hex": "#9F9F98",
+  "nome": "Cinza Esverdeado",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "291",
+  "hex": "#D8DA5E",
+  "nome": "Amarelo Vivo 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "292",
+  "hex": "#B62149",
+  "nome": "Rosa Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "293",
+  "hex": "#D12968",
+  "nome": "Pink 2",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "294",
+  "hex": "#DB244F",
+  "nome": "Vermelho 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "295",
+  "hex": "#726D45",
+  "nome": "Amarelo Acinzentado 5",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "296",
+  "hex": "#948E63",
+  "nome": "Caqui",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "297",
+  "hex": "#918865",
+  "nome": "Camurça Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "298",
+  "hex": "#A5A187",
+  "nome": "Âmbar",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "299",
+  "hex": "#ABAA91",
+  "nome": "Amarelo Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "300",
+  "hex": "#CACF4F",
+  "nome": "Amarelo Limão Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "S01",
+  "hex": "#1E1E1E",
+  "nome": "Preto Ônix",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S02",
+  "hex": "#141414",
+  "nome": "Preto",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S03",
+  "hex": "#000000",
+  "nome": "Preto 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S04",
+  "hex": "#3C3C3C",
+  "nome": "Grafite",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S05",
+  "hex": "#323232",
+  "nome": "Carvão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S06",
+  "hex": "#282828",
+  "nome": "Grafite 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S07",
+  "hex": "#E5E5E6",
+  "nome": "Cinza Pérola",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S08",
+  "hex": "#D0D1D2",
+  "nome": "Cinza Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S09",
+  "hex": "#BABBBE",
+  "nome": "Refletivo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S10",
+  "hex": "#C5A455",
+  "nome": "Dourado Metálico",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S11",
+  "hex": "#B1944D",
+  "nome": "Ocre",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S12",
+  "hex": "#9F8545",
+  "nome": "Bronze Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S13",
+  "hex": "#F2C92F",
+  "nome": "Milho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S14",
+  "hex": "#E3A709",
+  "nome": "Âmbar Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S15",
+  "hex": "#E39D09",
+  "nome": "Âmbar",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S16",
+  "hex": "#FFF86B",
+  "nome": "Amarelo Limão",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S17",
+  "hex": "#FEF100",
+  "nome": "Amarelo Canário",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S18",
+  "hex": "#F3DF39",
+  "nome": "Amarelo Neon",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S19",
+  "hex": "#FF5109",
+  "nome": "Laranja Neon",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S20",
+  "hex": "#CF4207",
+  "nome": "Vermelho Coral",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S21",
+  "hex": "#BA3B06",
+  "nome": "Páprica",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S22",
+  "hex": "#BB251D",
+  "nome": "Vermelho Escarlate",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S23",
+  "hex": "#A9221A",
+  "nome": "Vermelho",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S24",
+  "hex": "#971E17",
+  "nome": "Vermelho Escuro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S25",
+  "hex": "#851D18",
+  "nome": "Vermelho Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S26",
+  "hex": "#771A16",
+  "nome": "Vermelho Escuro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S27",
+  "hex": "#691713",
+  "nome": "Sangue de Boi",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S28",
+  "hex": "#5B213D",
+  "nome": "Ameixa Escura",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S29",
+  "hex": "#56143E",
+  "nome": "Pink Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S30",
+  "hex": "#50063E",
+  "nome": "Magenta Bem Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S31",
+  "hex": "#542467",
+  "nome": "Roxo Profundo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S32",
+  "hex": "#48235C",
+  "nome": "Violeta Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S33",
+  "hex": "#3D2152",
+  "nome": "Uva",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S34",
+  "hex": "#70139E",
+  "nome": "Violeta",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S35",
+  "hex": "#660F92",
+  "nome": "Violeta 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S36",
+  "hex": "#5C0A85",
+  "nome": "Roxo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S37",
+  "hex": "#CD2D96",
+  "nome": "Magenta Claro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "S38",
+  "hex": "#C00F82",
+  "nome": "Magenta",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S39",
+  "hex": "#9C0D69",
+  "nome": "Beterraba",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S40",
+  "hex": "#F0D5E4",
+  "nome": "Rosa Quartzo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S41",
+  "hex": "#E9C1D7",
+  "nome": "Rosa Bebê",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S42",
+  "hex": "#E4AECB",
+  "nome": "Pink Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S43",
+  "hex": "#E9E1D2",
+  "nome": "Areia Clara",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S44",
+  "hex": "#E5DAC8",
+  "nome": "Linho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S45",
+  "hex": "#E1D2BF",
+  "nome": "Cru",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S46",
+  "hex": "#C9A687",
+  "nome": "Café com Leite",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S47",
+  "hex": "#BB967D",
+  "nome": "Argila",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S48",
+  "hex": "#AD8672",
+  "nome": "Laranja Avermelhado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S49",
+  "hex": "#541D19",
+  "nome": "Vinho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S50",
+  "hex": "#481D19",
+  "nome": "Vermelho Escuro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S51",
+  "hex": "#3C1D19",
+  "nome": "Cacau",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S52",
+  "hex": "#213C27",
+  "nome": "Verde Floresta",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S53",
+  "hex": "#1D3422",
+  "nome": "Verde Bem Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S54",
+  "hex": "#182C1D",
+  "nome": "Verde Bem Escuro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S55",
+  "hex": "#49802F",
+  "nome": "Verde Pinho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S56",
+  "hex": "#3A6B23",
+  "nome": "Verde Pinho Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "S57",
+  "hex": "#385928",
+  "nome": "Verde Bosque",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S58",
+  "hex": "#7C864A",
+  "nome": "Verde Oliva",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S59",
+  "hex": "#525831",
+  "nome": "Verde Musgo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S60",
+  "hex": "#434728",
+  "nome": "Verde Militar",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S61",
+  "hex": "#B6E7AA",
+  "nome": "Verde Chá",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S62",
+  "hex": "#A3DDA6",
+  "nome": "Verde Sálvia",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S63",
+  "hex": "#90D2A2",
+  "nome": "Verde Suave",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S64",
+  "hex": "#97C62D",
+  "nome": "Verde Abacate",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S65",
+  "hex": "#8DB82D",
+  "nome": "Musgo Claro",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S66",
+  "hex": "#82AA2D",
+  "nome": "Verde Limão Acinzentado",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S67",
+  "hex": "#BBDBF0",
+  "nome": "Azul Bebê",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S68",
+  "hex": "#AAD2F0",
+  "nome": "Azul Serenity",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S69",
+  "hex": "#A0C8F0",
+  "nome": "Azul Claro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S70",
+  "hex": "#81D9D7",
+  "nome": "Verde Tiffany",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S71",
+  "hex": "#5CC0C0",
+  "nome": "Verde Tiffany Escuro",
+  "deOnde": "tecido com tom"
+ },
+ {
+  "codigo": "S72",
+  "hex": "#37A8A9",
+  "nome": "Azul Turquesa",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S73",
+  "hex": "#0085B7",
+  "nome": "Azul Oceano",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S74",
+  "hex": "#006C95",
+  "nome": "Azul Marítimo",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S75",
+  "hex": "#005779",
+  "nome": "Azul Abissal",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S76",
+  "hex": "#0F64A0",
+  "nome": "Azul Denim",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S77",
+  "hex": "#0A5AA0",
+  "nome": "Azul",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S78",
+  "hex": "#0550A0",
+  "nome": "Azul Royal",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S79",
+  "hex": "#182153",
+  "nome": "Azul Naval",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S80",
+  "hex": "#131A41",
+  "nome": "Azul Bem Escuro",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S81",
+  "hex": "#101534",
+  "nome": "Azul Meia-Noite",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S82",
+  "hex": "#182034",
+  "nome": "Azul Marinho",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S83",
+  "hex": "#141C2B",
+  "nome": "Azul Bem Escuro 2",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S84",
+  "hex": "#101722",
+  "nome": "Azul Bem Escuro 3",
+  "deOnde": "montado"
+ },
+ {
+  "codigo": "S85",
+  "hex": "#FFFBD5",
+  "nome": "Creme",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S86",
+  "hex": "#FFF8B9",
+  "nome": "Baunilha",
+  "deOnde": "tecido"
+ },
+ {
+  "codigo": "S87",
+  "hex": "#FFF69C",
+  "nome": "Amarelo Bebê",
+  "deOnde": "tecido"
+ }
+]

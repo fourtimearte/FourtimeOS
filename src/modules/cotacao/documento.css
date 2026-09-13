@@ -98,7 +98,7 @@
    proprio modulo de layout em leitura, e o que resta aqui e a roupa de papel
    dele: as medidas em milimetro que a tela nao tem.
 
-   Ver o comentario de .fl .mod em dominio/layout/modulo.css para a conta das
+   Ver o comentario de .papel .mod em dominio/layout/modulo.css para a conta das
    colunas e do teto da imagem. */
 .dc-prod-soma {
   text-align: right;

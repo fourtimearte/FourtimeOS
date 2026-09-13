@@ -102,7 +102,7 @@ export function Medidor({
   blocos: BlocoDaFolha[]
 }) {
   return (
-    <div className="fl-medidor" ref={aoMedir} aria-hidden="true">
+    <div className="fl-medidor papel" ref={aoMedir} aria-hidden="true">
       {blocos.map((b) => (
         <div key={b.id}>{b.conteudo}</div>
       ))}
@@ -124,7 +124,7 @@ export function Folha({
   children: ReactNode
 }) {
   return (
-    <section className="fl">
+    <section className="fl papel">
       {cabecalho ? <header className="fl-topo">{cabecalho}</header> : null}
       <div className="fl-corpo">{children}</div>
       <footer className="fl-pe">

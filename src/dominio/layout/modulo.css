@@ -469,99 +469,106 @@
    Todas as medidas daqui para baixo são em milímetro, e não em pixel. A folha
    é um objeto de 210 por 297 mm, e pixel numa folha é uma medida que muda de
    tamanho conforme o monitor de quem abriu.
+
+   A CLASSE É `.papel`, E NÃO `.fl`, POR UM MOTIVO CARO. A área invisível onde
+   os blocos são medidos não é uma folha: ela é um retângulo da largura da
+   folha, fora da vista. Enquanto estas regras se penduravam em `.fl`, o
+   módulo era medido com o desenho da TELA, que é mais alto, e a conta da
+   página achava que dois layouts nunca cabiam. Quem mede tem que usar a
+   mesma régua de quem imprime, então `.papel` está nos dois.
    ========================================================================== */
-.fl .mod {
+.papel .mod {
   grid-template-columns: 1.7fr 1.3fr;
   gap: 2.5mm;
 }
-.fl .mod + .mod,
-.fl .fc-folha-peca + .fc-folha-peca .mod {
+.papel .mod + .mod,
+.papel .fc-folha-peca + .fc-folha-peca .mod {
   margin-top: 4mm;
 }
 
 /* a barra da referência: uma linha, sem altura de dedo */
-.fl .mod-topo {
+.papel .mod-topo {
   gap: 1.5mm;
 }
-.fl .mod-selo,
-.fl .mod-ref {
+.papel .mod-selo,
+.papel .mod-ref {
   height: 7mm;
   min-height: 0;
   font-size: 9pt;
 }
-.fl .mod-selo {
+.papel .mod-selo {
   min-width: 12mm;
   padding: 0 2mm;
   font-size: 7.5pt;
 }
 
 /* a arte: largura inteira da coluna, altura pela proporção, teto para caber */
-.fl .mod-arte .img-caixa {
+.papel .mod-arte .img-caixa {
   gap: 1.5mm;
 }
-.fl .img-area {
+.papel .img-area {
   min-height: 0;
   border-radius: 1.5mm;
 }
-.fl .img-area img {
+.papel .img-area img {
   max-height: 112mm;
   object-position: center top;
 }
 /* sem arte a moldura não pode esticar até o fim da ficha: no papel isso é um
    retângulo vazio de meia folha, e quem recebe pergunta o que faltou */
-.fl .img-area:not(.tem) {
+.papel .img-area:not(.tem) {
   min-height: 40mm;
   max-height: 40mm;
 }
 
 /* os cartões e a tabela, na letra do documento */
-.fl .mod-ficha {
+.papel .mod-ficha {
   gap: 2mm;
 }
-.fl .mod-cartao {
+.papel .mod-cartao {
   border-radius: 1.5mm;
 }
-.fl .mod-cartao > header {
+.papel .mod-cartao > header {
   padding: 1.2mm 2mm;
 }
-.fl .mod-cartao > header span {
+.papel .mod-cartao > header span {
   font-size: 7pt;
 }
-.fl .mod-tec-linha {
+.papel .mod-tec-linha {
   min-height: 0;
   padding: 1.5mm 2mm;
 }
 /* NO PAPEL O NOME DO TECIDO NAO PODE CORTAR. Na tela a reticencia e aceitavel
    porque o nome inteiro esta a um toque; numa folha na mesa de corte, "SUPLEX
    84..." nao diz qual malha e, e ninguem pode passar o mouse em papel. */
-.fl .mod-tec-nome,
-.fl .mod-tec-cor span {
+.papel .mod-tec-nome,
+.papel .mod-tec-cor span {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   line-height: 1.25;
 }
-.fl .mod-fila {
+.papel .mod-fila {
   padding: 1.2mm 1.5mm;
 }
-.fl .gr-rolo {
+.papel .gr-rolo {
   border-radius: 1.5mm;
   overflow: visible;
 }
-.fl .gr-tab {
+.papel .gr-tab {
   font-size: 8.5pt;
 }
-.fl .gr-tab th,
-.fl .gr-tab td {
+.papel .gr-tab th,
+.papel .gr-tab td {
   height: 5.4mm;
   padding: 0 2mm;
 }
-.fl .mod-obs .rico {
+.papel .mod-obs .rico {
   min-height: 8mm;
   font-size: 8.5pt;
 }
 
 /* o pé do módulo no papel é uma linha de conta, e não uma faixa de campos */
-.fl .mod-pe {
+.papel .mod-pe {
   padding-top: 1.5mm;
 }

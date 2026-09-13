@@ -408,6 +408,16 @@
   padding-left: 10px;
 }
 
+/* O PÉ DO MÓDULO atravessa as duas colunas e fecha a caixa. Ele existe para
+   quem monta pendurar ali o que for do módulo inteiro, e não de uma coluna só:
+   na cotação são os campos sobre a peça. Vazio, ele não desenha nada. */
+.mod-pe {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
 /* --- o módulo de informações --------------------------------------------- */
 .mod.info .mod-ref {
   border-color: var(--ink);

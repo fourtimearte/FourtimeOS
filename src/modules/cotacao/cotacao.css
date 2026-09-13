@@ -672,3 +672,152 @@
 .ct-obs-rica .rico {
   min-height: 74px;
 }
+
+/* ==========================================================================
+   A FUSÃO: o cabeçalho do pedido e os campos sobre a peça
+
+   Ver claude/DECISAO-COTACAO-E-FICHA-UM-PEDIDO.md. O cabeçalho junta o que
+   era "Dados da cotação" com o cabeçalho da ficha de produção, em três
+   famílias separadas por um filete: quem compra, o que foi combinado, e o que
+   a fábrica precisa saber. A separação não é decoração: num orçamento em
+   montagem a terceira família está vazia, e misturar as três faria o vendedor
+   procurar o campo do cliente no meio de campo de galpão.
+   ========================================================================== */
+.ct-grupos {
+  display: flex;
+  flex-direction: column;
+}
+.ct-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+}
+.ct-grupo + .ct-grupo {
+  border-top: 1px solid var(--border);
+}
+.ct-grupo-nome {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-form .estreito {
+  max-width: 92px;
+}
+
+/* as marcas do documento, que vieram da ficha */
+.ct-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--btn-h);
+}
+.ct-selo-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px 3px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--c);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.ct-selo-marca button {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.ct-selo-marca button:hover {
+  background: color-mix(in srgb, var(--c) 24%, transparent);
+}
+.ct-mais-marca {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.ct-mais-marca:hover {
+  border-color: var(--brand);
+  color: var(--brand-text, var(--brand));
+}
+
+/* --- os campos sobre a peça, no pé do módulo ----------------------------- */
+.ct-sobre {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.ct-sobre-rot {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-sobre-itens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ct-atributo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 5px 11px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 12.5px;
+  color: var(--text);
+}
+.ct-atributo b {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-atributo.ct-sem {
+  border-style: dashed;
+  color: var(--text-3);
+}
+.ct-sobre-nota {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+/* --- o pé do produto ----------------------------------------------------- */
+.ct-produto-pe {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.ct-selo-conta {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}

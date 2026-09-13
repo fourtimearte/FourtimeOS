@@ -57,6 +57,7 @@ export function ModuloDeLayout({
   arte,
   tabela,
   acoes,
+  pe,
   leitura,
   semValor,
 }: {
@@ -68,6 +69,11 @@ export function ModuloDeLayout({
   tabela: ReactNode
   /** os botões do canto: informações, copiar e apagar */
   acoes?: ReactNode
+  /* O PÉ DO MÓDULO: uma faixa que atravessa as duas colunas, no fim e DENTRO
+     da caixa. Ela é um encaixe vazio de propósito, e quem monta decide o que
+     mora ali. A cotação usa para os campos sobre a peça; a ficha de produção
+     não passa nada, e por isso nada muda lá. */
+  pe?: ReactNode
   leitura?: boolean
   /** modo sem valor: a tabela encolhe e a ficha vira duas colunas */
   semValor?: boolean
@@ -378,6 +384,8 @@ export function ModuloDeLayout({
           </>
         )}
       </div>
+
+      {pe && !info ? <div className="mod-pe">{pe}</div> : null}
 
       {/* ================= os menus ========================================= */}
       <MenuReferencia

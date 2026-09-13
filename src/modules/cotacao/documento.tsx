@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, FaixaDeCores, Pagina, Vazio } from '@ds'
 import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
 import {
   Folha,
   GradeDeTamanhos,
-  Medidor,
   Palco,
   gradeEmTexto,
   imprimir,
-  usarPaginacao,
   type BlocoDaFolha,
 } from '@dominio/layout'
 import {
@@ -43,7 +41,9 @@ import './documento.css'
    alto. Ele serve so para o primeiro desenho; logo depois o corpo da primeira
    folha e MEDIDO e o numero certo toma o lugar. Palpite de altura e o jeito
    classico de perder a ultima linha de cada pagina. */
-const ALTURA_CHUTADA = 1123 - 91 - 150 - 64
+/* DOIS LAYOUTS POR FOLHA, a partir da folha 2. Ver o comentario da paginacao
+   dentro do componente: aqui e regra, e nao medicao. */
+const LAYOUTS_POR_FOLHA = 2
 
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
@@ -53,33 +53,33 @@ export function DocumentoDaCotacao() {
   const navegar = useNavigate()
   const c = acharCotacao(id)
 
-  const blocos: BlocoDaFolha[] = useMemo(() => {
+  /* A PAGINACAO AQUI E UMA REGRA, E NAO UMA MEDICAO.
+
+     A folha 1 e sempre a das informacoes: resumo, condicoes, informes legais
+     e o aceite. Os layouts comecam na folha 2, DOIS POR FOLHA. Foi assim que
+     o Henrique pediu, e a regra e melhor que a regua neste caso: com medicao,
+     um layout com observacao comprida empurraria o vizinho para a folha
+     seguinte e o PDF de um mesmo pedido mudaria de numero de paginas a cada
+     linha digitada. Com a regra, o cliente sabe que a folha 3 tem os layouts
+     3 e 4, e a producao sabe onde procurar.
+
+     O que a regra NAO resolve e um layout que nao caiba em meia folha. Esse e
+     o trabalho de apertar o conteudo, que ainda nao existe e esta anotado. */
+  const paginas: BlocoDaFolha[][] = useMemo(() => {
     if (!c) return []
-    const lista: BlocoDaFolha[] = c.produtos.map((p) => ({
-      id: p.bloco.id,
-      conteudo: <ProdutoNaFolha produto={p} />,
-    }))
-    lista.push({ id: 'resumo', conteudo: <Resumo cotacao={c} /> })
-    return lista
+    const folhas: BlocoDaFolha[][] = [[{ id: 'resumo', conteudo: <Resumo cotacao={c} /> }]]
+    for (let i = 0; i < c.produtos.length; i += LAYOUTS_POR_FOLHA) {
+      folhas.push(
+        c.produtos.slice(i, i + LAYOUTS_POR_FOLHA).map((p) => ({
+          id: p.bloco.id,
+          conteudo: <ProdutoNaFolha produto={p} />,
+        })),
+      )
+    }
+    return folhas
   }, [c])
 
-  /* a chave diz quando o conteudo mudou de verdade: sem ela a medicao rodaria
-     a cada desenho e nunca pararia */
-  const chave = c ? c.id + ':' + c.alteradaEm + ':' + c.produtos.length : ''
-  const [alturaUtil, setAlturaUtil] = useState(ALTURA_CHUTADA)
   const palco = useRef<HTMLDivElement>(null)
-  const { medidor, paginas } = usarPaginacao(blocos, alturaUtil, chave)
-
-  /* mede o corpo de verdade da primeira folha e refaz a conta com ele */
-  useEffect(() => {
-    const corpo = palco.current?.querySelector('.fl-corpo')
-    if (!corpo) return
-    /* clientHeight e nao getBoundingClientRect: o palco encolhe a folha com
-       transform quando a tela e estreita, e o retangulo sairia encolhido
-       junto. A conta da pagina e em milimetro de papel, nao em pixel de tela */
-    const h = corpo.clientHeight
-    if (h > 200 && Math.abs(h - alturaUtil) > 2) setAlturaUtil(h)
-  })
 
   if (!c) {
     return (
@@ -126,8 +126,6 @@ export function DocumentoDaCotacao() {
           </Aviso>
         </div>
       ) : null}
-
-      <Medidor aoMedir={medidor} blocos={blocos} />
 
       <div ref={palco}>
       <Palco>
@@ -326,7 +324,7 @@ function Resumo({ cotacao }: { cotacao: Cotacao }) {
       <dl className="dc-informe">
         <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
         <Par rotulo="Pagamento" valor={c.informe.pagamento} />
-        <Par rotulo="Envio" valor={c.informe.envio} />
+        <Par rotulo="Envio" valor={c.informe.entrega} />
         <Par rotulo="Tabela de preço" valor={c.informe.tabelaDePreco} />
         <Par rotulo="Validade desta proposta" valor={data(c.validaAte)} />
       </dl>

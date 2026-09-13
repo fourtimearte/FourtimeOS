@@ -6,7 +6,7 @@ import {
   refGenero,
 } from '@ds/kit/banco-de-exemplo'
 import type { Bloco, Design, Tecnica } from '../layout/bloco'
-import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
+import { DEPARTAMENTOS, EMBALAGENS, ENTREGAS, PAGAMENTOS } from '../banco/dados'
 import type { Faixa, Grade } from '../layout/grade'
 import {
   VERSAO_DO_CFT,
@@ -230,10 +230,20 @@ function montarExemplo(s: Semente, i: number): Cotacao {
     informe: {
       prazo: '12 dias úteis',
       pagamento: PAGAMENTOS[0],
-      envio: ENTREGAS[1],
+      entrega: ENTREGAS[1],
       tabelaDePreco: 'Atacado 2026',
     },
     informes: informesEmBranco(),
+    /* o bloco que veio da ficha de producao. Na base de exemplo ele so tem
+       numero de pedido depois do sim do cliente, que e quando ele nasce */
+    producao: {
+      pedido: s.estado === 'aprovada' ? 'PD004052' : '',
+      dataDeEnvio: '',
+      departamento: DEPARTAMENTOS[3],
+      embalagem: EMBALAGENS[0],
+      marcas: [],
+      observacao: '',
+    },
     enviadas:
       s.estado === 'rascunho'
         ? []

@@ -21,7 +21,15 @@ import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
       deu lugar a uma lista de informes, cada um com a sua marca de ir ou nao
       ir para o PDF. O vendedor tira um informe do documento sem apagar o
       texto, e e isso que faz a lista valer a pena. */
-export const VERSAO_DO_CFT = 3
+/* 4: a FUSÃO. A cotação passou a ser o documento inteiro do pedido, com o que
+      só existia na ficha de produção dentro dela: número do pedido, data de
+      envio, departamento, embalagem, marcas e a observação do documento.
+
+      E o campo `envio` do informe virou `entrega`. Ele sempre foi o MODO
+      (CORREIOS, TRANSPORTADORA), e a ficha chamava de `envio` a DATA. Manter
+      os dois com o mesmo nome no mesmo registro era a armadilha mais cara da
+      fusão: um dia alguém leria a data e mostraria "CORREIOS" no lugar dela. */
+export const VERSAO_DO_CFT = 4
 
 export type EstadoDaCotacao = 'rascunho' | 'enviada' | 'aprovada' | 'recusada' | 'vencida'
 
@@ -54,7 +62,8 @@ export type Ajuste = {
 export type InformeDeProducao = {
   prazo: string
   pagamento: string
-  envio: string
+  /** o MODO de entrega: CORREIOS, TRANSPORTADORA, MOTOBOY. Nao e data. */
+  entrega: string
   tabelaDePreco: string
 }
 
@@ -131,7 +140,7 @@ export function informesEmBranco(): InformeDoDocumento[] {
 export const INFORME_PADRAO: InformeDeProducao = {
   prazo: '12 dias úteis',
   pagamento: PAGAMENTOS[0],
-  envio: ENTREGAS[1],
+  entrega: ENTREGAS[1],
   tabelaDePreco: 'Atacado 2026',
 }
 
@@ -159,6 +168,44 @@ export type Aprovacao = {
   em: string
 }
 
+/* O QUE A FICHA DE PRODUÇÃO TRAZIA, e que agora mora aqui.
+
+   A decisão está em claude/DECISAO-COTACAO-E-FICHA-UM-PEDIDO.md: o orçamento
+   se preenche uma vez e serve aos dois destinos. Estes campos nunca foram do
+   comercial: eles são o que a fábrica precisa saber depois do sim, e por isso
+   ficam num bloco só, separados do que o cliente lê. */
+export const MARCAS = ['URGENTE', 'ATRASADO'] as const
+export type Marca = (typeof MARCAS)[number]
+
+export const COR_DA_MARCA: Record<string, string> = {
+  URGENTE: 'var(--brand)',
+  ATRASADO: '#e8590c',
+}
+
+export type DadosDeProducao = {
+  /** PD mais seis dígitos. É a chave do pedido lá na fábrica */
+  pedido: string
+  /** a DATA de envio, em ISO. Não confundir com informe.entrega, que é o modo */
+  dataDeEnvio: string
+  /** a técnica que a peça vai usar: Sublimação, DTF, Silk, e as combinações */
+  departamento: string
+  embalagem: string
+  marcas: string[]
+  /** o recado que vale para o pedido inteiro, e não para um layout */
+  observacao: string
+}
+
+export function producaoEmBranco(): DadosDeProducao {
+  return {
+    pedido: '',
+    dataDeEnvio: '',
+    departamento: '',
+    embalagem: '',
+    marcas: [],
+    observacao: '',
+  }
+}
+
 export type Cotacao = {
   id: string
   numero: string
@@ -182,6 +229,7 @@ export type Cotacao = {
   ajustes: Ajuste[]
   informe: InformeDeProducao
   informes: InformeDoDocumento[]
+  producao: DadosDeProducao
   enviadas: VersaoEnviada[]
   /** existe a partir do sim do cliente; antes disso e null */
   aprovacao: Aprovacao | null
@@ -193,6 +241,38 @@ export type Cotacao = {
    nova, e e por isso que ela nao e bloqueada em silencio: a tela diz por que. */
 export function travada(c: Cotacao): boolean {
   return !!c.aprovacao
+}
+
+/* --- o numero do pedido ---------------------------------------------------
+   PD mais seis digitos, como na v3.375. Aceita o que a pessoa digitar e
+   devolve o formato: "4052" vira "PD004052", "pd4052" tambem. Existe porque a
+   base antiga tem pedido cru e pedido com PD, e os dois apontando para o mesmo
+   pedido e o comeco de dois pedidos para um pedido so. */
+export function formataPedido(bruto: string): string {
+  const so = String(bruto || '').replace(/\D/g, '')
+  if (!so) return ''
+  return 'PD' + so.slice(-6).padStart(6, '0')
+}
+
+/* --- CPF e CNPJ -----------------------------------------------------------
+   A mascara acompanha o que esta sendo digitado em vez de decidir de saida
+   qual dos dois e: ate onze digitos ela escreve CPF, dai em diante CNPJ. E ela
+   NAO reescreve o campo inteiro a cada tecla, que era o defeito da versao
+   antiga do editor: quem digitava no meio do numero via o cursor pular para o
+   fim. Aqui a mascara e uma funcao pura, e quem chama decide quando aplicar. */
+export function mascaraDeDocumento(bruto: string): string {
+  const d = String(bruto || '').replace(/\D/g, '').slice(0, 14)
+  if (d.length <= 11) {
+    return d
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2')
+  }
+  return d
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
 }
 
 /* --- as contas ----------------------------------------------------------- */
@@ -261,6 +341,7 @@ export function cotacaoEmBranco(numero: string): Cotacao {
     ajustes: [],
     informe: { ...INFORME_PADRAO },
     informes: informesEmBranco(),
+    producao: producaoEmBranco(),
     enviadas: [],
     aprovacao: null,
   }

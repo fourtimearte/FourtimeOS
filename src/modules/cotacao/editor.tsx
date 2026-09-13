@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, Copy, FileText, FloppyDisk, Plus, Trash, WhatsappLogo, X } from '@phosphor-icons/react'
 import {
-  AreaDeTextoRico,
   AreaTexto,
   Aviso,
   Botao,
   Campo,
-  CampoDeData,
   Entrada,
   Pagina,
   Segmentado,
@@ -16,11 +14,9 @@ import {
   Vazio,
   avisar,
 } from '@ds'
-import { VENDEDORES, PAGAMENTOS, ENTREGAS } from '@dominio/banco'
 import {
   CaixaDeImagem,
-  FileiraDoLayout,
-  FileiraEmLeitura,
+  ModuloDeLayout,
   GradeDeTamanhos,
   blocoEmBranco,
   colarBloco,
@@ -53,6 +49,7 @@ import {
   type InformeDoDocumento,
   type ProdutoCotado,
 } from '@dominio/cotacao'
+import { CabecalhoDoPedido } from './cabecalho-do-pedido'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -79,14 +76,6 @@ const TOM_DO_ESTADO: Record<EstadoDaCotacao, 'neutro' | 'info' | 'ok' | 'warn' |
   recusada: 'brand',
   vencida: 'warn',
 }
-
-const ESTADOS = (Object.keys(NOME_DO_ESTADO_DA_COTACAO) as EstadoDaCotacao[]).map((e) => ({
-  valor: e,
-  rotulo: NOME_DO_ESTADO_DA_COTACAO[e],
-}))
-
-const TABELAS = ['Atacado 2026', 'Varejo 2026', 'Evento'].map((t) => ({ valor: t, rotulo: t }))
-const emOpcao = (lista: readonly string[]) => lista.map((x) => ({ valor: x, rotulo: x }))
 
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const dataCurta = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
@@ -298,93 +287,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
       <div className="ct-editor">
         <div className="ct-coluna">
-          {/* --- dados da cotacao --- */}
-          <section className="cartao ct-cartao">
-            <header className="ct-cab">
-              <h3>Dados da cotação</h3>
-              <span>vai para o cabeçalho da página 1</span>
-            </header>
-            <div className="ct-form">
-              <Campo rotulo="Cliente">
-                <Entrada
-                  value={c.cliente.nome}
-                  placeholder="Nome como sai na proposta"
-                  onChange={(e) => mudar({ cliente: { ...c.cliente, nome: e.target.value } })}
-                />
-              </Campo>
-              <Campo rotulo="CPF / CNPJ">
-                <Entrada
-                  value={c.cliente.documento}
-                  onChange={(e) => mudar({ cliente: { ...c.cliente, documento: e.target.value } })}
-                />
-              </Campo>
-              <Campo rotulo="Contato">
-                <Entrada
-                  value={c.cliente.contato}
-                  onChange={(e) => mudar({ cliente: { ...c.cliente, contato: e.target.value } })}
-                />
-              </Campo>
-              <Campo rotulo="Vendedor">
-                <Seletor
-                  bloco
-                  campo
-                  valor={c.vendedor}
-                  opcoes={emOpcao(VENDEDORES)}
-                  vazio="Escolher"
-                  aoEscolher={(v) => mudar({ vendedor: v })}
-                />
-              </Campo>
-              <Campo rotulo="Validade">
-                <CampoDeData bloco valor={c.validaAte} aoMudar={(d) => mudar({ validaAte: d })} />
-              </Campo>
-              <Campo rotulo="Prazo de produção">
-                <Entrada
-                  value={c.informe.prazo}
-                  onChange={(e) => mudar({ informe: { ...c.informe, prazo: e.target.value } })}
-                />
-              </Campo>
-              <Campo rotulo="Pagamento">
-                <Seletor
-                  bloco
-                  campo
-                  valor={c.informe.pagamento}
-                  opcoes={emOpcao(PAGAMENTOS)}
-                  vazio="Escolher"
-                  aoEscolher={(v) => mudar({ informe: { ...c.informe, pagamento: v } })}
-                />
-              </Campo>
-              <Campo rotulo="Envio">
-                <Seletor
-                  bloco
-                  campo
-                  valor={c.informe.envio}
-                  opcoes={emOpcao(ENTREGAS)}
-                  vazio="Escolher"
-                  aoEscolher={(v) => mudar({ informe: { ...c.informe, envio: v } })}
-                />
-              </Campo>
-              <Campo rotulo="Tabela de preço">
-                <Seletor
-                  bloco
-                  campo
-                  valor={c.informe.tabelaDePreco}
-                  opcoes={TABELAS}
-                  vazio="Escolher"
-                  aoEscolher={(v) => mudar({ informe: { ...c.informe, tabelaDePreco: v } })}
-                />
-              </Campo>
-              <Campo rotulo="Situação">
-                <Seletor
-                  bloco
-                  campo
-                  valor={c.estado}
-                  opcoes={ESTADOS}
-                  vazio="Rascunho"
-                  aoEscolher={(v) => mudar({ estado: (v || 'rascunho') as EstadoDaCotacao })}
-                />
-              </Campo>
-            </div>
-          </section>
+          <CabecalhoDoPedido c={c} mudar={mudar} travado={fechada} />
 
           {/* --- os informes --- */}
           <section className="cartao ct-cartao">
@@ -451,7 +354,6 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             <Produto
               key={p.bloco.id}
               produto={p}
-              indice={i}
               travado={fechada}
               comDinheiro={comDinheiro}
               aoMudarBloco={(b) => mudarBloco(i, b)}
@@ -712,7 +614,6 @@ function BarraDoEditor({
 /* --- um produto: selo, referencia, imagem, campos e grade ---------------- */
 function Produto({
   produto,
-  indice,
   travado,
   comDinheiro,
   aoMudarBloco,
@@ -721,7 +622,6 @@ function Produto({
   aoRemover,
 }: {
   produto: ProdutoCotado
-  indice: number
   travado?: boolean
   comDinheiro: boolean
   aoMudarBloco: (b: Bloco) => void
@@ -730,7 +630,10 @@ function Produto({
   aoRemover: () => void
 }) {
   const b = produto.bloco
-  const selo = <span className="ct-selo">P-{String(indice + 1).padStart(2, '0')}</span>
+  /* O SELO SAIU DAQUI. O módulo desenha o dele a partir do `bloco.n`, e desde
+     a fusão o produto da cotação e o layout da ficha são a mesma peça: dois
+     números para a mesma coisa era o que fazia o vendedor falar em P-02 e a
+     produção em L-02 sobre a mesma camiseta. */
   const acoes = (
     <span className="ct-produto-bts">
       <button type="button" className="ct-bt-icone" onClick={aoCopiar} title="Duplicar produto">
@@ -749,94 +652,117 @@ function Produto({
     </span>
   )
 
+  /* O MÓDULO DE LAYOUT DA v3.375 É O MESMO DOS DOIS LADOS desde a fusão. Ele
+     traz consigo o que a cotação não tinha: vários tecidos com a cor de cada
+     um, o cartão de design com as fileiras de etiqueta, técnica e acabamento,
+     e a observação em texto rico. Ver o comentário do topo deste arquivo. */
   return (
     <section className="cartao ct-produto">
-      {travado ? (
-        <div className="ct-produto-travado">
-          {selo}
-          <FileiraEmLeitura bloco={b} />
-        </div>
-      ) : null}
-
-      <div className="ct-produto-corpo">
-        <div className="ct-esq">
+      <ModuloDeLayout
+        bloco={b}
+        aoMudar={aoMudarBloco}
+        leitura={travado}
+        semValor={!comDinheiro}
+        acoes={acoes}
+        arte={
           <CaixaDeImagem
             leitura={travado}
             imagem={b.imagem}
             arte={b.arte}
             aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
           />
-          <p className="ct-nada">
-            Foto ou mockup do produto. Uma só, do jeito que o cliente vai ver.
-          </p>
-        </div>
-
-        <div className="ct-dir">
-          {travado ? null : (
-            <FileiraDoLayout
-              arranjo="campos"
-              bloco={b}
-              aoMudar={aoMudarBloco}
-              selo={selo}
-              acoes={acoes}
+        }
+        tabela={
+          <>
+            {!travado ? (
+              <div className="ct-preco-base">
+                <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
+                  <Entrada
+                    inputMode="decimal"
+                    value={produto.precoBase ? String(produto.precoBase) : ''}
+                    placeholder="0,00"
+                    onChange={(e) =>
+                      aoMudarProduto((p) => ({
+                        ...p,
+                        precoBase: Number(e.target.value.replace(',', '.')) || 0,
+                      }))
+                    }
+                  />
+                </Campo>
+              </div>
+            ) : null}
+            <GradeDeTamanhos
+              leitura={travado}
+              faixa={b.faixa}
+              grade={b.grade}
+              aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
+              aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
+              precoBase={comDinheiro ? produto.precoBase : undefined}
+              precoPorTamanho={produto.precoPorTamanho}
+              aoMudarPreco={(tamanho, valor) =>
+                aoMudarProduto((p) => {
+                  const novo = { ...p.precoPorTamanho }
+                  if (valor === null) delete novo[tamanho]
+                  else novo[tamanho] = valor
+                  return { ...p, precoPorTamanho: novo }
+                })
+              }
             />
-          )}
-          <Campo rotulo="Observações do produto">
-            <div className="ct-obs-rica">
-              <AreaDeTextoRico
-                valor={b.observacao}
-                aoMudar={(html) => aoMudarBloco({ ...b, observacao: html })}
-                convite="Detalhe que o cliente precisa ler (patrocinadores, posição do escudo, numeração)"
-              />
-            </div>
-          </Campo>
-        </div>
-      </div>
-
-      <div className="ct-grade">
-        <header className="ct-cab">
-          <h3>Tamanhos e valores</h3>
-          <span>
-            {pecasDoProduto(produto)} peças ·{' '}
-            {comDinheiro ? dinheiro(totalDoProduto(produto)) : '· · ·'}
-          </span>
-        </header>
-        {!travado ? (
-          <div className="ct-preco-base">
-            <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
-              <Entrada
-                inputMode="decimal"
-                value={produto.precoBase ? String(produto.precoBase) : ''}
-                placeholder="0,00"
-                onChange={(e) =>
-                  aoMudarProduto((p) => ({
-                    ...p,
-                    precoBase: Number(e.target.value.replace(',', '.')) || 0,
-                  }))
-                }
-              />
-            </Campo>
-          </div>
-        ) : null}
-        <GradeDeTamanhos
-          leitura={travado}
-          faixa={b.faixa}
-          grade={b.grade}
-          aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
-          aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
-          precoBase={produto.precoBase}
-          precoPorTamanho={produto.precoPorTamanho}
-          aoMudarPreco={(tamanho, valor) =>
-            aoMudarProduto((p) => {
-              const novo = { ...p.precoPorTamanho }
-              if (valor === null) delete novo[tamanho]
-              else novo[tamanho] = valor
-              return { ...p, precoPorTamanho: novo }
-            })
-          }
-        />
-      </div>
+          </>
+        }
+        pe={<SobreAPeca bloco={b} travado={travado} />}
+      />
+      <footer className="ct-produto-pe">
+        <span className="ct-selo-conta">
+          {pecasDoProduto(produto)} peças
+          {comDinheiro ? ' · ' + dinheiro(totalDoProduto(produto)) : ''}
+        </span>
+      </footer>
     </section>
+  )
+}
+
+/* --- os campos sobre a peça ----------------------------------------------
+   PROVISÓRIO, E DE PROPÓSITO. O Henrique ainda não decidiu se estes atributos
+   ficam como pílula ou como dropdown, e o encaixe existe para a decisão poder
+   ser tomada olhando para a tela, e não para uma descrição.
+
+   Eles NÃO guardam um dado novo: apontam para os mesmos campos que os cartões
+   de tecido e design já mostram logo acima. Duas formas de mexer na mesma
+   coisa é aceitável enquanto se escolhe uma; duas cópias do mesmo dado nunca
+   seria, porque uma delas começaria a mentir no dia seguinte. */
+function SobreAPeca({ bloco, travado }: { bloco: Bloco; travado?: boolean }) {
+  const tecido = bloco.tecidos[0]
+  const tecnicas = bloco.design.map((d) => d.tag)
+  const cores = bloco.design.reduce((n, d) => n + d.cores.length, 0)
+
+  const itens = [
+    ['Tecido', bloco.tecidos.length > 1 ? bloco.tecidos.length + ' tecidos' : tecido?.nome || ''],
+    ['Cor do tecido', bloco.tecidos.length > 1 ? 'por tecido' : tecido?.cor || ''],
+    ['Técnica de estampa', tecnicas.length ? tecnicas.join(' + ') : ''],
+    ['Cores da estampa', cores ? cores + (cores === 1 ? ' código' : ' códigos') : ''],
+    ['Gênero', bloco.genero],
+    ['Grade', bloco.faixa === 'infantil' ? 'Infantil' : 'Adulto'],
+  ] as const
+
+  return (
+    <div className="ct-sobre">
+      <span className="ct-sobre-rot">Sobre a peça</span>
+      <div className="ct-sobre-itens">
+        {itens.map(([rotulo, valor]) => (
+          <span key={rotulo} className={valor ? 'ct-atributo' : 'ct-atributo ct-sem'}>
+            <b>{rotulo}</b>
+            {valor || 'a definir'}
+          </span>
+        ))}
+      </div>
+      {travado ? null : (
+        <p className="ct-sobre-nota">
+          Provisório: estes atributos leem o que já foi escolhido nos cartões acima. Falta decidir
+          se aqui eles viram pílula ou campo com lista.
+        </p>
+      )}
+    </div>
   )
 }
 

@@ -77,12 +77,46 @@ const DEGRAUS: ((c: Bruto) => Bruto)[] = [
       informe: {
         prazo: String(velho.prazo ?? '') || INFORME_PADRAO.prazo,
         pagamento: String(velho.pagamento ?? '') || INFORME_PADRAO.pagamento,
-        envio: String(velho.entrega ?? '') || INFORME_PADRAO.envio,
+        /* O DEGRAU CONGELA NO TEMPO. Aqui o campo ainda se chama `envio`, e o
+           valor de reserva e escrito a mao: um degrau que le uma constante de
+           hoje muda de comportamento toda vez que a constante muda, e ai um
+           arquivo de dois anos atras passa a abrir diferente do que abria
+           ontem. Quem renomeia `envio` para `entrega` e o degrau seguinte. */
+        envio: String(velho.entrega ?? '') || 'CORREIOS',
         tabelaDePreco: INFORME_PADRAO.tabelaDePreco,
       },
       informes: observacao
         ? [{ id: 'IF0', texto: observacao, noDocumento: true }, ...daCasa]
         : daCasa,
+    }
+  },
+  /* de 3 para 4: a FUSAO com a ficha de producao.
+
+     O bloco de producao entra VAZIO, e nao chutado: uma cotacao salva antes
+     da fusao nunca teve numero de pedido nem departamento, e inventar um
+     seria escrever na ficha um dado que ninguem digitou.
+
+     E o `envio` do informe vira `entrega`. Ele sempre foi o MODO, e a ficha
+     chamava de `envio` a DATA: manter os dois com o mesmo nome no mesmo
+     registro era a armadilha mais cara da fusao. O degrau renomeia e apaga o
+     nome velho, para nao sobrar campo fantasma no arquivo de amanha. */
+  (c) => {
+    const informe = { ...((c.informe ?? {}) as Bruto) }
+    if (informe.envio !== undefined && informe.entrega === undefined) {
+      informe.entrega = informe.envio
+    }
+    delete informe.envio
+    return {
+      ...c,
+      informe,
+      producao: c.producao ?? {
+        pedido: '',
+        dataDeEnvio: '',
+        departamento: '',
+        embalagem: '',
+        marcas: [],
+        observacao: '',
+      },
     }
   },
 ]

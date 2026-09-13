@@ -1,257 +1,508 @@
 /* ==========================================================================
    Banco de dados.
 
-   Abas com contagem, e cada categoria com o corpo que ela pede. As abas rolam
-   para o lado dentro da própria caixa: são nove, e nove não cabem em 390 px.
+   Duas colunas: o menu das dez categorias à esquerda e o corpo da categoria à
+   direita, como no editor v3.375. No celular o menu vira uma faixa que rola
+   para o lado, porque dez categorias empilhadas empurrariam o conteúdo para
+   fora da primeira tela.
    ========================================================================== */
 
-.bc-abas {
+.bd {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+
+/* --- o menu das categorias ------------------------------------------------ */
+.bd-rail {
   display: flex;
-  gap: 4px;
-  margin-bottom: var(--sp-4);
-  padding: 4px;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  overflow-x: auto;
-  scrollbar-width: none;
+  box-shadow: var(--shadow-card);
+  position: sticky;
+  top: var(--sp-4);
   min-width: 0;
 }
-.bc-abas::-webkit-scrollbar {
-  display: none;
+.bd-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-.bc-aba {
-  flex: none;
-  display: inline-flex;
+.bd-secao h3 {
+  margin: 0 0 4px;
+  padding: 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.bd-item {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 14px;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-2);
   font: inherit;
   font-size: 13.5px;
-  font-weight: 500;
-  white-space: nowrap;
+  text-align: left;
   cursor: pointer;
   transition: background var(--t-fast) var(--ease-out);
 }
-.bc-aba:hover {
+.bd-item:hover {
   background: var(--surface-2);
   color: var(--text);
 }
-.bc-aba.ligada {
-  background: var(--surface-2);
-  color: var(--text);
+.bd-item.ligado {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand-text, var(--brand));
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px var(--border-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 26%, transparent);
 }
-.bc-aba .n {
+.bd-item > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bd-item > b {
+  flex: none;
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-
-.bc-nota {
-  margin: 0 0 var(--sp-4);
-  font-size: 12.5px;
-  color: var(--text-3);
+.bd-item.ligado > b {
+  color: inherit;
 }
 
-/* --- referências, em tabela ---------------------------------------------- */
-.bc-rolo {
-  padding: 0;
-  overflow-x: auto;
-  min-width: 0;
-}
-.bc-tab {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-.bc-tab th,
-.bc-tab td {
-  padding: 0 20px;
-  height: 44px;
-  text-align: left;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-}
-.bc-tab th {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  background: var(--surface-2);
-}
-.bc-tab tbody tr:last-child td {
-  border-bottom: 0;
-}
-.bc-tab tbody tr:hover td {
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
-}
-.bc-cod {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-2);
-}
-.bc-ref {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-/* a tarja de gênero, quadrada e com a letra só */
-.bc-ref .tag {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-}
-.bc-suave {
-  color: var(--text-3);
-}
-
-/* --- tecidos e cores, em cartões por grupo -------------------------------- */
-.bc-cartoes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
-  gap: 12px;
-  min-width: 0;
-}
-.bc-grupo {
+/* --- o corpo -------------------------------------------------------------- */
+.bd-corpo {
   display: flex;
   flex-direction: column;
+  gap: var(--sp-3);
   min-width: 0;
+}
+.bd-linha-da-categoria {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+.bd-conta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.bd-carregando {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- a barra de cima ------------------------------------------------------ */
+.bd-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  padding: var(--sp-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+.bd-barra .busca {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.bd-cresce {
+  flex: 2 1 220px;
+  min-width: 0;
+}
+.bd-fixa {
+  flex: 1 1 220px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* o prefixo do código não é campo: ele é a parte que não muda */
+.bd-codigo-novo {
+  display: flex;
+  align-items: center;
+  flex: none;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
   overflow: hidden;
 }
-.bc-grupo header {
+.bd-codigo-novo > span {
+  padding: 0 8px 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bd-codigo-novo .entrada {
+  width: 74px;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.bd-hex {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+  flex: none;
+}
+.bd-hex > i {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent);
+}
+.bd-hex .entrada {
+  width: 110px;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+/* --- os blocos que abrem e fecham ----------------------------------------- */
+.bd-blocos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
 }
-.bc-grupo .cod {
-  flex: none;
-  padding: 1px 7px;
-  border-radius: var(--radius-sm);
+.bd-bloco {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 1px solid var(--border-2);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-2);
+  overflow: hidden;
+  min-width: 0;
 }
-.bc-grupo .nm {
+.bd-bloco.aberto {
+  box-shadow: var(--shadow-card);
+}
+.bd-bloco-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bd-bloco-topo:hover {
+  background: var(--surface-2);
+}
+.bd-bloco-nome {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bc-grupo .n {
+.bd-bloco-conta {
   flex: none;
   font-size: 12px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.bc-itens {
-  display: flex;
-  flex-direction: column;
-  padding: 6px 0;
-  max-height: 300px;
-  overflow-y: auto;
-}
-.bc-itens > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  font-size: 12.5px;
-  color: var(--text-2);
-  min-width: 0;
-}
-.bc-itens > span:hover {
-  background: var(--surface-2);
-}
-.bc-amostra {
+.bd-seta {
   flex: none;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
-}
-.bc-cor-nome {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text);
-}
-.bc-itens small {
-  flex: none;
-  font-size: 11px;
   color: var(--text-3);
-  font-variant-numeric: tabular-nums;
+  transition: transform var(--t-fast) var(--ease-out);
 }
-
-/* --- as listas simples --------------------------------------------------- */
-.bc-simples {
-  padding: 0;
-  min-width: 0;
+.bd-bloco.aberto .bd-seta {
+  transform: rotate(180deg);
 }
-.bc-linha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 20px;
-  height: 48px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  min-width: 0;
+.bd-bloco-corpo {
+  border-top: 1px solid var(--border);
 }
-.bc-linha:last-child {
-  border-bottom: 0;
-}
-.bc-linha span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 700px) {
-  .bc-tab .esconde,
-  .bc-tab th.esconde {
-    display: none;
-  }
-}
-
-/* referência cadastrada só com o nome: erro de cadastro fica visível */
-.bc-sem {
-  padding: 1px 7px;
-  border-radius: var(--radius-pill);
+.bd-cod-grupo {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-text, var(--brand));
   font-size: 11px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
-.bc-alerta {
+
+/* a pilha de amostras que dá o tom do grupo antes de ele abrir */
+.bd-pilha {
+  display: inline-flex;
+  flex: none;
+}
+.bd-pilha i {
+  width: 16px;
+  height: 16px;
+  margin-right: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--surface), inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.bd-pilha i:last-child {
+  margin-right: 0;
+}
+
+/* --- a linha -------------------------------------------------------------- */
+.bd-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  min-width: 0;
+}
+.bd-linha:last-child {
+  border-bottom: 0;
+}
+.bd-linha:hover {
+  background: var(--surface-2);
+}
+.bd-linha-nome {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bd-cod {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.bd-hexadecimal {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.bd-amostra {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+/* lápis e X: alvo de dedo de 44 px, sem virar botão grande demais no olho */
+.bd-mao {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-block: 5px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.bd-mao:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.bd-mao.perigo:hover {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
   color: var(--brand-text, var(--brand));
+}
+
+/* --- a tarja de gênero ---------------------------------------------------- */
+.bd-genero {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+}
+.bd-genero.g-M {
+  background: color-mix(in srgb, #2f6fed 16%, transparent);
+  color: #2f6fed;
+}
+.bd-genero.g-F {
+  background: color-mix(in srgb, #e0459a 16%, transparent);
+  color: #e0459a;
+}
+.bd-genero.g-C {
+  background: color-mix(in srgb, #12a05c 16%, transparent);
+  color: #12a05c;
+}
+.bd-genero.g-U {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+/* --- o cartão da cor de impressão ----------------------------------------
+   A cor em cima, o número embaixo dela, o nome embaixo do número. A grade se
+   ajeita sozinha: em 390 px cabem três por linha, no monitor cabem doze. */
+.bd-grade-cores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+.bd-cartao-cor {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font: inherit;
+  text-align: center;
+  overflow: hidden;
+  min-width: 0;
+}
+.bd-cartao-cor.mexivel {
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+}
+.bd-cartao-cor.mexivel:hover {
+  border-color: var(--border-2);
+  box-shadow: var(--shadow-card);
+}
+.bd-cartao-cor.mexivel:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.bd-cor-amostra {
+  display: block;
+  height: 56px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.bd-cor-numero {
+  padding: 7px 6px 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.bd-cartao-cor .bd-cor-nome {
+  padding: 2px 8px 9px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+
+/* --- a sublimação, fora dos grupos ---------------------------------------- */
+.bd-sub {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  min-width: 0;
+}
+.bd-sub-amostra {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: conic-gradient(#e4402f, #f2b705, #2fa84f, #1f7ae0, #8b46d6, #e4402f);
+}
+.bd-sub > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bd-sub b {
+  font-size: 13.5px;
+}
+.bd-sub span {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.bd-lista-simples {
+  padding: 0;
+  min-width: 0;
+}
+.bd-aviso-apagar {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* --- no celular ----------------------------------------------------------
+   O menu vira faixa que rola para o lado, e as três seções viram três grupos
+   em linha com o título antes de cada um. */
+@media (max-width: 900px) {
+  .bd {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bd-rail {
+    position: static;
+    flex-direction: row;
+    gap: var(--sp-3);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bd-rail::-webkit-scrollbar {
+    display: none;
+  }
+  .bd-secao {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+  .bd-secao h3 {
+    margin: 0;
+    padding: 0 6px 0 0;
+    writing-mode: horizontal-tb;
+  }
+  .bd-item {
+    width: auto;
+    white-space: nowrap;
+  }
+  .bd-item > span {
+    overflow: visible;
+  }
 }

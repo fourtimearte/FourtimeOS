@@ -1,2 +1,2 @@
-/* A porta da frente do modulo. */
+/* A porta da frente do módulo. */
 export { TelaBanco } from './tela'

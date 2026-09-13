@@ -1,1 +1,5 @@
-export { TelaConfig } from './tela'
+/* A porta da frente do módulo. */
+export { AbasDaConfig } from './abas'
+export type { AbaDaConfig } from './abas'
+export { TelaEquipe } from './equipe'
+export { TelaEmpresa } from './empresa'

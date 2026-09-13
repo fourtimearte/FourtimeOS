@@ -47,6 +47,7 @@ import {
   useSessao,
 } from '@dominio/sessao'
 import type { Painel, Papel } from '@dominio/sessao'
+import { AbasDaConfig } from './abas'
 import './config.css'
 
 /* Configuracoes: quem entra, com qual papel, em quais paineis.
@@ -61,7 +62,7 @@ import './config.css'
 
 const OPCOES_DE_PAPEL = PAPEIS.map((p) => ({ valor: p, rotulo: NOME_DO_PAPEL[p] }))
 
-export function TelaConfig() {
+export function TelaEquipe() {
   const { estado } = useSessao()
   const eu = estado.fase === 'dentro' ? estado.pessoa : null
 
@@ -110,10 +111,12 @@ export function TelaConfig() {
 
   return (
     <Pagina
-      acima="Gestão"
-      titulo="Configurações"
+      acima="Configurações"
+      titulo="Pessoas"
       sub="Quem entra no sistema, com qual papel e em quais painéis."
     >
+      <AbasDaConfig atual="pessoas" />
+
       {falha ? (
         <Aviso tom="brand" titulo="Não consegui carregar">
           {falha}

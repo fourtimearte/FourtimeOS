@@ -209,3 +209,74 @@
   text-transform: uppercase;
   color: var(--text-3);
 }
+
+/* --- as subpáginas -------------------------------------------------------
+   Três destinos numa barra só, logo abaixo do título. Em 390 px ela rola para
+   o lado dentro da própria caixa em vez de empurrar a página. */
+.cfg-abas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--sp-4);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.cfg-abas::-webkit-scrollbar {
+  display: none;
+}
+.cfg-aba {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.cfg-aba:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.cfg-aba.ligada {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+
+/* --- os dados da empresa -------------------------------------------------- */
+.cfg-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-4) 0 0;
+}
+.cfg-dados > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cfg-dados dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.cfg-dados dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  word-break: break-word;
+}

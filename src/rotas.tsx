@@ -5,7 +5,7 @@ import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
 import type { Painel } from '@dominio/sessao'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
-import { TelaConfig } from '@modules/config'
+import { TelaEmpresa, TelaEquipe } from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
@@ -61,7 +61,8 @@ export const rotas = createBrowserRouter([
       { path: 'atividades', element: pede('atividades', <TelaAtividades />) },
       { path: 'relatorio', element: pede('relatorio', <TelaRelatorio />) },
       { path: 'banco', element: pede('banco', <TelaBanco />) },
-      { path: 'config', element: pede('config', <TelaConfig />) },
+      { path: 'config', element: pede('config', <TelaEquipe />) },
+      { path: 'config/empresa', element: pede('config', <TelaEmpresa />) },
 
       /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar
          inteiro: nenhum item leva a lugar nenhum. */

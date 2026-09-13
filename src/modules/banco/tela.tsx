@@ -1,216 +1,234 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Botao, Pagina, Selo, Vazio, avisar } from '@ds'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  CORES_POR_GRUPO,
-  LISTA_SIMPLES,
-  REFERENCIAS,
-  REFERENCIAS_SEM_CODIGO,
-  TECIDOS_POR_TIPO,
-  abas,
-  type Categoria,
+  Buildings,
+  CreditCard,
+  Drop,
+  Package,
+  Printer,
+  Stack,
+  Tag,
+  Truck,
+  User,
+} from '@phosphor-icons/react'
+import { Aviso, Cartao, Esqueleto, Pagina, Selo } from '@ds'
+import {
+  BANCO_VAZIO,
+  LINHA_DA_CATEGORIA,
+  NOME_DA_CATEGORIA,
+  SECOES,
+  carregarBanco,
+  contar,
+  ehListaSimples,
 } from '@dominio/banco'
-import { listarClientes } from '@dominio/cliente'
+import type {
+  Banco,
+  Categoria,
+  CorDeImpressao,
+  CorDeTecido,
+  ItemDeLista,
+  Referencia,
+  Tecido,
+  TipoDeLista,
+} from '@dominio/banco'
+import { AbasDaConfig } from '@modules/config'
+import { useSessao } from '@dominio/sessao'
+import { CoresDeImpressao, CoresDeTecido } from './cores'
+import { GavetaDeNome, ModalDeApagar } from './pecas'
+import type { AlvoDeApagar, AlvoDoNome } from './pecas'
+import { Listas } from './listas'
+import { Referencias } from './referencias'
+import { Tecidos } from './tecidos'
 import './banco.css'
 
 /* ==========================================================================
-   Banco de dados, no arranjo do v5.
+   Banco de dados: a subpágina de Configurações que guarda o cadastro da
+   fábrica.
 
-   Nove categorias em abas, e cada uma com o corpo que ela pede: referencia em
-   tabela, tecido e cor em cartoes por grupo, e o resto em lista simples.
+   O arranjo é o do editor v3.375, olhado na tela e copiado: menu à esquerda
+   com três seções (Layout, Cabeçalho, Cores), dez categorias com o número de
+   itens do lado, e o corpo da categoria à direita.
 
-   O conteudo e o do EDITOR, nao o do mockup. No mockup as listas eram de
-   enfeite; as de verdade sao outras, e sao estas.
+   Copiado de propósito. Quem mexe nisso mexe no editor todo dia, e não
+   deveria ter que reaprender onde ficam as coisas só porque a tela é outra.
+
+   Quem pode mexer é admin e gerente, e quem decide isso é a regra de acesso
+   escrita nas tabelas. Esconder os botões dos outros é educação, não tranca:
+   mudar o nome de uma referência muda o que sai impresso na ficha que vai
+   para a mesa de corte.
    ========================================================================== */
 
-const NOME_DO_GENERO: Record<string, string> = {
-  masculino: 'M',
-  feminino: 'F',
-  infantil: 'C',
-  '': 'U',
+const ICONE: Record<Categoria, typeof Tag> = {
+  referencias: Tag,
+  tecidos: Stack,
+  pagamento: CreditCard,
+  entrega: Truck,
+  embalagem: Package,
+  vendedor: User,
+  departamento: Buildings,
+  'cor-tecido': Drop,
+  dtf: Printer,
+  sublimacao: Drop,
 }
 
 export function TelaBanco() {
-  const navegar = useNavigate()
-  const clientes = useMemo(() => listarClientes().length, [])
-  const lista = useMemo(() => abas(clientes), [clientes])
-  const [aba, setAba] = useState<Categoria>('referencias')
+  const { estado } = useSessao()
+  const papel = estado.fase === 'dentro' ? estado.pessoa.papel : null
+  const podeMexer = papel === 'admin' || papel === 'gerente'
 
-  const total = lista.reduce((s, a) => s + a.conta, 0)
-  const naoMexe = () =>
-    avisar('Editar o banco entra junto com o Supabase. Por enquanto ele é só leitura.', 'info')
+  const [banco, setBanco] = useState<Banco>(BANCO_VAZIO)
+  const [carregando, setCarregando] = useState(true)
+  const [falha, setFalha] = useState('')
+  const [categoria, setCategoria] = useState<Categoria>('referencias')
+  const [procurado, setProcurado] = useState('')
+  const [aRenomear, setARenomear] = useState<AlvoDoNome | null>(null)
+  const [aApagar, setAApagar] = useState<AlvoDeApagar | null>(null)
+
+  useEffect(() => {
+    let vivo = true
+    carregarBanco()
+      .then((b) => vivo && setBanco(b))
+      .catch((e) => vivo && setFalha(e instanceof Error ? e.message : 'Não consegui carregar.'))
+      .finally(() => vivo && setCarregando(false))
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  /* Trocar de categoria zera a busca. Procurar "azul" em Referências e voltar
+     para Cores com a lista já filtrada por "azul" parece tela quebrada. */
+  const irPara = useCallback((c: Categoria) => {
+    setCategoria(c)
+    setProcurado('')
+  }, [])
+
+  const contas = useMemo(() => contar(banco), [banco])
+
+  /* Um mexedor para cada tabela. Trocar a linha no estado em vez de recarregar
+     o banco inteiro: renomear uma cor não deveria custar nove pedidos. */
+  const trocarReferencia = (r: Referencia) =>
+    setBanco((b) => ({ ...b, referencias: b.referencias.map((x) => (x.id === r.id ? r : x)) }))
+  const porReferencia = (r: Referencia) =>
+    setBanco((b) => ({ ...b, referencias: [...b.referencias, r] }))
+  const tirarReferencia = (id: string) =>
+    setBanco((b) => ({ ...b, referencias: b.referencias.filter((x) => x.id !== id) }))
+
+  const trocarTecido = (t: Tecido) =>
+    setBanco((b) => ({ ...b, tecidos: b.tecidos.map((x) => (x.id === t.id ? t : x)) }))
+  const porTecido = (t: Tecido) => setBanco((b) => ({ ...b, tecidos: [...b.tecidos, t] }))
+  const tirarTecido = (id: string) =>
+    setBanco((b) => ({ ...b, tecidos: b.tecidos.filter((x) => x.id !== id) }))
+
+  const trocarCorDeTecido = (c: CorDeTecido) =>
+    setBanco((b) => ({ ...b, coresDeTecido: b.coresDeTecido.map((x) => (x.id === c.id ? c : x)) }))
+  const porCorDeTecido = (c: CorDeTecido) =>
+    setBanco((b) => ({ ...b, coresDeTecido: [...b.coresDeTecido, c] }))
+  const tirarCorDeTecido = (id: string) =>
+    setBanco((b) => ({ ...b, coresDeTecido: b.coresDeTecido.filter((x) => x.id !== id) }))
+
+  const trocarCorDeImpressao = (c: CorDeImpressao) =>
+    setBanco((b) => ({
+      ...b,
+      coresDeImpressao: b.coresDeImpressao.map((x) => (x.codigo === c.codigo ? c : x)),
+    }))
+
+  const porItemDeLista = (i: ItemDeLista) => setBanco((b) => ({ ...b, listas: [...b.listas, i] }))
+  const tirarItemDeLista = (tipo: TipoDeLista, valor: string) =>
+    setBanco((b) => ({
+      ...b,
+      listas: b.listas.filter((x) => !(x.tipo === tipo && x.valor === valor)),
+    }))
+
+  const comum = {
+    banco,
+    podeMexer,
+    procurado,
+    aoProcurar: setProcurado,
+    pedirNome: setARenomear,
+    pedirApagar: setAApagar,
+  }
 
   return (
     <Pagina
-      acima="Banco · cadastro global do editor"
+      acima="Configurações"
       titulo="Banco de dados"
-      sub={
-        total.toLocaleString('pt-BR') +
-        ' itens em ' +
-        lista.length +
-        ' categorias · vindos do banco do editor, não inventados'
-      }
-      acoes={
-        <>
-          <Botao tom="contorno" onClick={naoMexe}>
-            Exportar DB
-          </Botao>
-          <Botao tom="contorno" onClick={naoMexe}>
-            Importar DB
-          </Botao>
-          <Botao tom="primario" onClick={naoMexe}>
-            Sincronizar
-          </Botao>
-        </>
-      }
+      sub="Estas listas alimentam os menus do orçamento e da ficha. O que mudar aqui vale para todos."
+      acoes={podeMexer ? null : <Selo tom="info">somente leitura</Selo>}
     >
-      <div className="bc-abas">
-        {lista.map((a) => (
-          <button
-            key={a.chave}
-            type="button"
-            className={aba === a.chave ? 'bc-aba ligada' : 'bc-aba'}
-            onClick={() => setAba(a.chave)}
-          >
-            {a.nome}
-            <span className="n">{a.conta.toLocaleString('pt-BR')}</span>
-          </button>
-        ))}
+      <AbasDaConfig atual="banco" />
+
+      {falha ? (
+        <Aviso tom="brand" titulo="Não consegui carregar o banco">
+          {falha}
+        </Aviso>
+      ) : null}
+
+      <div className="bd">
+        <nav className="bd-rail" aria-label="Categorias do banco">
+          {SECOES.map((s) => (
+            <div key={s.titulo} className="bd-secao">
+              <h3>{s.titulo}</h3>
+              {s.itens.map((c) => {
+                const Icone = ICONE[c]
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    className={c === categoria ? 'bd-item ligado' : 'bd-item'}
+                    onClick={() => irPara(c)}
+                    aria-current={c === categoria ? 'true' : undefined}
+                  >
+                    <Icone size={18} />
+                    <span>{NOME_DA_CATEGORIA[c]}</span>
+                    <b>{carregando ? '' : contas[c].toLocaleString('pt-BR')}</b>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </nav>
+
+        <div className="bd-corpo">
+          <p className="bd-linha-da-categoria">{LINHA_DA_CATEGORIA[categoria]}</p>
+
+          {carregando ? (
+            <Cartao>
+              <div className="bd-carregando">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <Esqueleto key={i} altura={38} raio="var(--radius)" />
+                ))}
+              </div>
+            </Cartao>
+          ) : categoria === 'referencias' ? (
+            <Referencias
+              {...comum}
+              aoTrocar={trocarReferencia}
+              aoPor={porReferencia}
+              aoTirar={tirarReferencia}
+            />
+          ) : categoria === 'tecidos' ? (
+            <Tecidos {...comum} aoTrocar={trocarTecido} aoPor={porTecido} aoTirar={tirarTecido} />
+          ) : categoria === 'cor-tecido' ? (
+            <CoresDeTecido
+              {...comum}
+              aoTrocar={trocarCorDeTecido}
+              aoPor={porCorDeTecido}
+              aoTirar={tirarCorDeTecido}
+            />
+          ) : categoria === 'dtf' || categoria === 'sublimacao' ? (
+            <CoresDeImpressao {...comum} tecnica={categoria === 'dtf' ? 'dtf' : 'sublimacao'} aoTrocarCor={trocarCorDeImpressao} />
+          ) : ehListaSimples(categoria) ? (
+            <Listas
+              {...comum}
+              tipo={categoria}
+              aoPor={porItemDeLista}
+              aoTirar={tirarItemDeLista}
+            />
+          ) : null}
+        </div>
       </div>
 
-      {aba === 'referencias' ? (
-        <>
-          <p className="bc-nota">
-            Código FT-CCC-NNNG: categoria, sequencial e gênero (M, F, U, C). O gênero sai da última
-            letra do código, e é ele que pinta a tarja.
-            {REFERENCIAS_SEM_CODIGO ? (
-              <>
-                {' '}
-                <b className="bc-alerta">
-                  {REFERENCIAS_SEM_CODIGO} referências estão sem código no banco do editor
-                </b>
-                , cadastradas só com o nome. Elas aparecem marcadas aqui em vez de sumirem.
-              </>
-            ) : null}
-          </p>
-          <div className="cartao bc-rolo">
-            <table className="bc-tab">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Referência</th>
-                  <th className="esconde">Categoria</th>
-                </tr>
-              </thead>
-              <tbody>
-                {REFERENCIAS.map((r) => (
-                  <tr key={r.cod}>
-                    <td className="bc-cod">
-                      {r.cod || <span className="bc-sem">sem código</span>}
-                    </td>
-                    <td>
-                      <span className="bc-ref">
-                        {r.cod ? (
-                          <span className={'tag gen-' + (r.genero || 'masculino')}>
-                            {NOME_DO_GENERO[r.genero] ?? 'U'}
-                          </span>
-                        ) : null}
-                        <b>{r.nome}</b>
-                      </span>
-                    </td>
-                    <td className="esconde bc-suave">{r.categoria}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : null}
-
-      {aba === 'tecidos' ? (
-        <>
-          <p className="bc-nota">
-            Tecidos agrupados por tipo, que é a família comercial e nunca a construção. Dentro do
-            tipo a ordem é alfabética, e o tipo vazio não some: é para onde vai o primeiro tecido.
-          </p>
-          <div className="bc-cartoes">
-            {TECIDOS_POR_TIPO.map((t) => (
-              <section key={t.cod || 'sem'} className="bc-grupo">
-                <header>
-                  <span className="cod">{t.cod || 'sem tipo'}</span>
-                  <span className="nm">{t.nome}</span>
-                  <span className="n">{t.itens.length}</span>
-                </header>
-                <div className="bc-itens">
-                  {t.itens.map((n) => (
-                    <span key={n}>{n}</span>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </>
-      ) : null}
-
-      {aba === 'cores' ? (
-        <>
-          <p className="bc-nota">
-            Cada cor tem nome, hexadecimal e grupo. O hexadecimal existe para pintar o quadrado, e
-            aparece aqui porque esta é a tela onde ele se conserta.
-          </p>
-          <div className="bc-cartoes">
-            {CORES_POR_GRUPO.map((g) => (
-              <section key={g.cod} className="bc-grupo">
-                <header>
-                  <span className="cod">{g.cod}</span>
-                  <span className="nm">{g.nome}</span>
-                  <span className="n">{g.cores.length}</span>
-                </header>
-                <div className="bc-itens">
-                  {g.cores.map((c) => (
-                    <span key={c.n + c.c}>
-                      <i className="bc-amostra" style={{ background: c.c }} />
-                      <span className="bc-cor-nome">{c.n}</span>
-                      <small>{c.c}</small>
-                    </span>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </>
-      ) : null}
-
-      {aba === 'clientes' ? (
-        <div className="cartao">
-          <Vazio
-            titulo="Clientes moram na tela Clientes"
-            texto="Os do banco do editor foram mesclados com a base Bling. Nome e documento são a chave."
-            acao={
-              <Botao tom="primario" onClick={() => navegar('/clientes')}>
-                Abrir Clientes
-              </Botao>
-            }
-          />
-        </div>
-      ) : null}
-
-      {LISTA_SIMPLES[aba] ? (
-        <>
-          <p className="bc-nota">
-            Esta lista é o que aparece no cabeçalho do orçamento. Ela vem do editor como está: o
-            nome que a fábrica usa, não o nome bonito.
-          </p>
-          <div className="cartao bc-simples">
-            {LISTA_SIMPLES[aba].map((v) => (
-              <div key={v} className="bc-linha">
-                <span>{v}</span>
-                <Selo>somente leitura</Selo>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : null}
+      <GavetaDeNome alvo={aRenomear} aoFechar={() => setARenomear(null)} />
+      <ModalDeApagar alvo={aApagar} aoFechar={() => setAApagar(null)} />
     </Pagina>
   )
 }

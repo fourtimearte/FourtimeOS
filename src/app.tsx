@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -136,10 +137,16 @@ export function App() {
   type Item = Omit<ItemDeNavegacao, 'filhos'> & { chave: Painel; filhos?: Item[] }
 
   const todas: { titulo: string; itens: Item[] }[] = [
+    /* O Início não pertence a nenhuma família: ele é a porta de entrada, e a
+       tela que ele abre vai ser diferente para cada papel. Título de seção em
+       cima de um item só seria um rótulo explicando o óbvio. */
+    {
+      titulo: '',
+      itens: [{ chave: 'inicio', para: '/', rotulo: 'Início', icone: <House {...icone} /> }],
+    },
     {
       titulo: 'Comercial',
       itens: [
-        { chave: 'inicio', para: '/', rotulo: 'Início', icone: <House {...icone} /> },
         {
           chave: 'funil',
           para: '/funil',
@@ -262,21 +269,52 @@ export function App() {
   const meusFilhos = (configuracoes.filhos ?? []).filter((f) => posso(f.chave))
   const ramoDeConfig = meusFilhos.length > 0 ? { ...configuracoes, filhos: meusFilhos } : undefined
 
-  /* cinco destinos na barra de baixo, os mesmos do v5 */
-  const rodapeTodos: Item[] = [
-    { chave: 'inicio', para: '/', rotulo: 'Início', icone: <House size={22} /> },
-    { chave: 'funil', para: '/funil', rotulo: 'Vendas', icone: <Kanban size={22} /> },
-    { chave: 'kanban', para: '/kanban', rotulo: 'Produção', icone: <Factory size={22} /> },
-    { chave: 'atividades', para: '/atividades', rotulo: 'Semana', icone: <CalendarCheck size={22} /> },
-    { chave: 'config', para: '/config', rotulo: 'Mais', icone: <DotsThree size={22} /> },
+  /* A barra de baixo é o menu inteiro, e não cinco telas escolhidas a dedo.
+     Cada categoria abre as telas dela para cima, perto do polegar. O Início
+     não abre nada porque não tem nada dentro: ele é uma tela só.
+
+     Os três pontos guardam o que não é navegação de trabalho: o próprio
+     perfil, as subpáginas de Configurações e a saída. */
+  const ICONE_DA_SECAO: Record<string, ReactNode> = {
+    Comercial: <Receipt size={21} />,
+    Produção: <Factory size={21} />,
+    Gestão: <ChartBar size={21} />,
+    Materiais: <Package size={21} />,
+  }
+
+  const maisNoPe: Item[] = [
+    { chave: 'inicio', para: '/perfil', rotulo: 'Meu perfil', icone: <UserCircle size={20} /> },
+    ...meusFilhos,
   ]
 
-  /* No celular a barra de baixo nunca fica vazia: quem ainda nao foi aprovado
-     tem pelo menos o proprio perfil para onde ir. */
-  const rodapeNav: ItemDeNavegacao[] = rodapeTodos.filter((i) => posso(i.chave))
-  if (rodapeNav.length === 0) {
-    rodapeNav.push({ para: '/perfil', rotulo: 'Perfil', icone: <UserCircle size={22} /> })
-  }
+  const rodapeNav: ItemDeNavegacao[] = [
+    ...secoes.map((s) =>
+      s.titulo === ''
+        ? { para: '/', rotulo: 'Início', icone: <House size={21} /> }
+        : {
+            para: '#' + s.titulo,
+            rotulo: s.titulo,
+            icone: ICONE_DA_SECAO[s.titulo] ?? <House size={21} />,
+            filhos: s.itens,
+          },
+    ),
+    {
+      para: '#mais',
+      rotulo: 'Mais',
+      icone: <DotsThree size={24} />,
+      filhos: [
+        ...maisNoPe,
+        {
+          para: '#sair',
+          rotulo: 'Sair',
+          icone: <SignOut size={20} />,
+          acao: () => {
+            void sair()
+          },
+        },
+      ],
+    },
+  ]
 
   const itensDaBusca: ItemBusca[] = [
     ...secoes.flatMap((s) => s.itens),

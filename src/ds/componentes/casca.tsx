@@ -13,6 +13,8 @@ export type ItemDeNavegacao = {
   ativo?: boolean
   /** quando o item nao e destino, e sim a raiz de uma arvore que abre abaixo */
   filhos?: ItemDeNavegacao[]
+  /** quando o item faz alguma coisa em vez de levar a algum lugar */
+  acao?: () => void
 }
 
 export type SecaoDeNavegacao = { titulo: string; itens: ItemDeNavegacao[] }
@@ -91,8 +93,11 @@ export function Casca({
         </div>
 
         {secoes.map((s) => (
-          <div key={s.titulo}>
-            <div className="secao">{s.titulo}</div>
+          <div key={s.titulo || 'sem-titulo'}>
+            {/* Uma secao sem titulo existe: o Inicio nao pertence a nenhuma
+                familia, ele e a porta de entrada. Titulo em cima de um item
+                so seria um rotulo explicando uma coisa obvia. */}
+            {s.titulo ? <div className="secao">{s.titulo}</div> : null}
             {s.itens.map((i) =>
               i.filhos && i.filhos.length > 0 ? (
                 <Ramo
@@ -145,19 +150,115 @@ export function Casca({
 
       <main className="vista">{children}</main>
 
-      <nav className="rodape-nav" aria-label="Navegação principal">
-        {rodapeNav.map((i) => (
-          <Link
-            key={i.para}
-            to={i.para}
-            className={i.ativo ?? ligado(i.para) ? 'ligado' : ''}
-          >
-            {i.icone}
-            <span>{i.rotulo}</span>
-          </Link>
-        ))}
-      </nav>
+      <BarraDeBaixo itens={rodapeNav} ligado={ligado} Link={Link} />
     </div>
+  )
+}
+
+/* --- a barra de baixo, no celular ----------------------------------------
+   No computador o menu inteiro cabe na lateral. No celular nao cabe, e por
+   isso a barra de baixo deixou de ser cinco telas escolhidas a dedo e virou
+   as proprias categorias: Inicio, Comercial, Producao, Gestao, Materiais e os
+   tres pontos. Tocar numa categoria abre as telas dela para cima, perto do
+   polegar, em vez de mandar a pessoa para uma tela que talvez nao fosse a que
+   ela queria. */
+function BarraDeBaixo({
+  itens,
+  ligado,
+  Link,
+}: {
+  itens: ItemDeNavegacao[]
+  ligado: (para: string) => boolean
+  Link: TipoDeLink
+}) {
+  const [aberta, setAberta] = useState<string | null>(null)
+  const categoria = itens.find((i) => i.para === aberta) ?? null
+
+  /* Quem esta dentro de uma categoria ganha a marca na barra, mesmo sem a
+     arvore aberta: a barra continua dizendo onde a pessoa esta. */
+  const dentro = (i: ItemDeNavegacao) =>
+    i.filhos && i.filhos.length > 0
+      ? i.filhos.some((f) => f.ativo ?? ligado(f.para))
+      : (i.ativo ?? ligado(i.para))
+
+  return (
+    <>
+      {categoria ? (
+        <>
+          <div className="pe-veu" onClick={() => setAberta(null)} aria-hidden="true" />
+          <div
+            className="pe-arvore"
+            role="menu"
+            aria-label={categoria.rotulo}
+            /* o Link chega de fora sem onClick, entao quem fecha a arvore e o
+               clique subindo: se ele passou por dentro de um link, foi embora */
+            onClick={(e) => {
+              const alvo = e.target as HTMLElement | null
+              if (alvo && alvo.closest('a')) setAberta(null)
+            }}
+          >
+            <b>{categoria.rotulo}</b>
+            {(categoria.filhos ?? []).map((f) =>
+              f.acao ? (
+                <button
+                  key={f.para}
+                  type="button"
+                  className="pe-item"
+                  onClick={() => {
+                    setAberta(null)
+                    f.acao?.()
+                  }}
+                >
+                  {f.icone}
+                  <span>{f.rotulo}</span>
+                </button>
+              ) : (
+                <Link
+                  key={f.para}
+                  to={f.para}
+                  className={
+                    (f.ativo ?? ligado(f.para)) ? 'pe-item ligado' : 'pe-item'
+                  }
+                >
+                  {f.icone}
+                  <span>{f.rotulo}</span>
+                </Link>
+              ),
+            )}
+          </div>
+        </>
+      ) : null}
+
+      <nav className="rodape-nav" aria-label="Navegação principal">
+        {itens.map((i) =>
+          i.filhos && i.filhos.length > 0 ? (
+            <button
+              key={i.para}
+              type="button"
+              className={
+                [dentro(i) ? 'ligado' : '', aberta === i.para ? 'aberta' : '']
+                  .filter(Boolean)
+                  .join(' ') || undefined
+              }
+              aria-expanded={aberta === i.para}
+              onClick={() => setAberta((a) => (a === i.para ? null : i.para))}
+            >
+              {i.icone}
+              <span>{i.rotulo}</span>
+            </button>
+          ) : (
+            <Link
+              key={i.para}
+              to={i.para}
+              className={dentro(i) ? 'ligado' : undefined}
+            >
+              {i.icone}
+              <span>{i.rotulo}</span>
+            </Link>
+          ),
+        )}
+      </nav>
+    </>
   )
 }
 

@@ -55,6 +55,17 @@ export async function listarEquipe(): Promise<PessoaDaEquipe[]> {
   return linhas.map(arrumar)
 }
 
+/* Quantas pessoas estao na fila.
+
+   Existe para o menu poder mostrar o numero em Configuracoes. Sem isso, uma
+   conta nova fica esperando indefinidamente: ninguem abre uma tela para
+   conferir se apareceu gente, e a fila so seria descoberta quando a pessoa
+   reclamasse. Le so o id, que e o suficiente para contar. */
+export async function contarEsperando(): Promise<number> {
+  const linhas = await tabela<{ id: string }[]>('pessoa?select=id&situacao=eq.esperando')
+  return linhas.length
+}
+
 async function mexer(id: string, mudanca: Record<string, unknown>): Promise<PessoaDaEquipe> {
   const linhas = await tabela<LinhaDaPessoa[]>(
     `pessoa?id=eq.${encodeURIComponent(id)}&select=${CAMPOS}`,

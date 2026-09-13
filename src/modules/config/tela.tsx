@@ -248,7 +248,6 @@ function FilaDeAprovacao({
                 <Botao
                   tom="primario"
                   tamanho="sm"
-                  icone
                   carregando={ocupado === p.id}
                   onClick={() => void liberar(p)}
                 >
@@ -459,7 +458,7 @@ function Convites({
           />
         </Campo>
 
-        <Botao tom="primario" type="submit" icone bloco carregando={salvando}>
+        <Botao tom="primario" type="submit" bloco carregando={salvando}>
           <UserPlus size={18} />
           Liberar e-mail
         </Botao>

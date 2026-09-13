@@ -3,6 +3,7 @@ export {
   aprovar,
   apagarPessoa,
   bloquear,
+  contarEsperando,
   convidar,
   desbloquear,
   listarConvites,

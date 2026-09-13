@@ -37,6 +37,7 @@ import {
 import { iniciaisDe, podeVer, primeiroNome, useSessao } from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
+import { contarEsperando } from '@dominio/equipe'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
    roteador e a lista de modulos ao mesmo tempo. A casca em si nao sabe o que e
@@ -54,6 +55,7 @@ export function App() {
     }
   })
   const [tema, setTema] = useState<Tema>(() => temaAtual())
+  const [naFila, setNaFila] = useState(0)
   const [busca, setBusca] = useState(false)
   usarAtalhoDaBusca(useCallback(() => setBusca(true), []))
 
@@ -64,6 +66,32 @@ export function App() {
       /* armazenamento bloqueado: vale so nesta aba */
     }
   }, [encolhida])
+
+  /* Quantas contas estao esperando aprovacao.
+
+     So o admin ve, e so ele consegue ler essa contagem: para qualquer outro
+     papel a regra de acesso devolve so a propria linha. Sem este numero no
+     menu, uma conta nova ficaria esperando ate a pessoa reclamar, porque
+     ninguem abre Configuracoes todo dia para conferir. Reconta a cada troca de
+     tela, que e barato e mantem o numero honesto depois de aprovar alguem. */
+  const souAdmin = pessoa?.papel === 'admin'
+  useEffect(() => {
+    if (!souAdmin) {
+      setNaFila(0)
+      return
+    }
+    let cancelado = false
+    void contarEsperando()
+      .then((n) => {
+        if (!cancelado) setNaFila(n)
+      })
+      .catch(() => {
+        /* numero de menu nao vale uma tela de erro */
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [souAdmin, local.pathname])
 
   /* o kit tem o seu proprio controle de tema: ao voltar de la, o icone do topo
      precisa concordar com o que esta na tela */
@@ -154,7 +182,13 @@ export function App() {
           icone: <ChartBar {...icone} />,
         },
         { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', icone: <Database {...icone} /> },
-        { chave: 'config', para: '/config', rotulo: 'Configurações', icone: <Gear {...icone} /> },
+        {
+          chave: 'config',
+          para: '/config',
+          rotulo: 'Configurações',
+          icone: <Gear {...icone} />,
+          contagem: naFila || undefined,
+        },
         { chave: 'kit', para: '/kit', rotulo: 'Design System', icone: <Palette {...icone} /> },
       ],
     },

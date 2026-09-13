@@ -77,7 +77,7 @@ export function TelaPerfil() {
       titulo="Meu perfil"
       sub={pessoa.email}
       acoes={
-        <Botao tom="contorno" icone onClick={() => void sair()} title="Sair do sistema">
+        <Botao tom="contorno" onClick={() => void sair()} title="Sair do sistema">
           <SignOut size={18} />
           Sair
         </Botao>
@@ -91,7 +91,6 @@ export function TelaPerfil() {
             <Botao
               tom="contorno"
               tamanho="sm"
-              icone
               carregando={conferindo}
               onClick={() => void conferirDeNovo()}
             >

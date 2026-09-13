@@ -36,6 +36,7 @@ import {
   type PecaDaFicha,
 } from '@dominio/ficha'
 import { CabecalhoDaProducao } from './cabecalho'
+import { FolhaDaFicha } from './folha'
 import './ficha.css'
 
 /* ==========================================================================
@@ -57,6 +58,11 @@ export function TelaFicha() {
   useAtalhosDoHistorico(h)
 
   const [comDinheiro, setComDinheiro] = useState(true)
+  /* A FOLHA NÃO É OUTRA ROTA, e sim outro estado desta tela. A ficha ainda
+     vive só na memória: uma rota separada abriria numa ficha em branco, que é
+     pior que não ter folha. Quando o Supabase for a casa dela, a folha vira
+     rota com o número do pedido no endereço. */
+  const [naFolha, setNaFolha] = useState(false)
   const ficha = h.valor
 
   const mudar = useCallback(
@@ -121,6 +127,17 @@ export function TelaFicha() {
     }
   }
 
+  if (naFolha) {
+    return (
+      <FolhaDaFicha
+        ficha={ficha}
+        comDinheiro={comDinheiro}
+        aoTrocarDinheiro={setComDinheiro}
+        aoVoltar={() => setNaFolha(false)}
+      />
+    )
+  }
+
   return (
     <Pagina
       acima="Produção"
@@ -172,12 +189,9 @@ export function TelaFicha() {
           >
             <FloppyDisk size={18} />
           </Botao>
-          <Botao
-            tom="contorno"
-            onClick={() => avisar('A impressão entra junto com a folha A4 da ficha.', 'info')}
-          >
+          <Botao tom="contorno" onClick={() => setNaFolha(true)}>
             <Printer size={17} />
-            Imprimir
+            Ver a folha
           </Botao>
           <Botao tom="primario" onClick={acrescentar}>
             <Plus size={17} />

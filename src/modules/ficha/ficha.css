@@ -388,3 +388,63 @@
   background: color-mix(in srgb, var(--brand) 10%, transparent);
   color: var(--brand-text, var(--brand));
 }
+
+/* ==========================================================================
+   A FOLHA A4 DA FICHA
+
+   O documento é o mesmo da tela; aqui só mora o que o papel pede a mais.
+   ========================================================================== */
+.fc-volta {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-2);
+}
+.fc-volta:hover {
+  text-decoration-color: currentColor;
+}
+
+/* uma peça por bloco, separadas por um respiro. Sem filete entre elas: o
+   espaço já separa, e um risco a cada layout enche a folha de linha */
+.fc-folha-peca + .fc-folha-peca {
+  margin-top: 5mm;
+}
+
+/* no papel o cabeçalho não é um cartão flutuante: ele é a primeira coisa
+   desenhada na folha, e sombra em papel não existe */
+.fl .fc-cab {
+  box-shadow: none;
+  border-radius: 0;
+  margin-bottom: 4mm;
+}
+
+.fc-rodape {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  font-size: 8.5pt;
+  color: var(--text-3);
+}
+.fc-rodape-empresa {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fc-rodape-conta {
+  flex: none;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.fc-rodape-conta b {
+  font-size: 11pt;
+  color: var(--text);
+}

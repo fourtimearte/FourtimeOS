@@ -9,9 +9,11 @@ import './layout.css'
    arrastar o arquivo, colar da area de transferencia (o mais usado: recorta a
    arte no Illustrator e cola aqui), ou clicar e escolher.
 
-   O nome da arte fica COLADO na imagem, e nao num campo solto do formulario,
-   porque e ele que liga o bloco ao arquivo de arte no servidor. Separado, ele
-   some.
+   O NOME DA ARTE NAO E UM CAMPO. Na v3.375 ele nunca foi digitado a mao: era
+   um botao de lupa que procurava o arquivo da arte, e esse botao esta
+   desligado la ate hoje. Aqui ele sai tambem, e volta quando a busca existir.
+   O nome continua vivo no bloco (e ele que vai amarrar o layout ao arquivo no
+   Drive), so nao tem mais campo para ser digitado.
 
    A imagem vive como data URL dentro do proprio documento. Isso engorda o
    .cft, e e de proposito enquanto nao existe servidor de arquivo: um .cft
@@ -24,13 +26,12 @@ export function CaixaDeImagem({
   imagem,
   arte,
   aoMudarImagem,
-  aoMudarArte,
   leitura,
 }: {
   imagem: string
+  /** o nome do arquivo da arte. Hoje so serve de texto alternativo da imagem */
   arte: string
   aoMudarImagem?: (dataUrl: string) => void
-  aoMudarArte?: (nome: string) => void
   leitura?: boolean
 }) {
   const [sobre, setSobre] = useState(false)
@@ -115,19 +116,6 @@ export function CaixaDeImagem({
           </button>
         </div>
       ) : null}
-
-      <label className="img-arte">
-        <span className="lb">ARTE</span>
-        {leitura ? (
-          <span className="v">{arte || 'sem nome'}</span>
-        ) : (
-          <input
-            value={arte}
-            placeholder="nome do arquivo da arte"
-            onChange={(e) => aoMudarArte?.(e.target.value)}
-          />
-        )}
-      </label>
 
       {ampliada ? (
         <div className="img-lupa" role="presentation" onClick={() => setAmpliada(false)}>

@@ -223,7 +223,6 @@ function PecaNaFicha({
             imagem={b.imagem}
             arte={b.arte}
             aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
-            aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
           />
         }
         tabela={

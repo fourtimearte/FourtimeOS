@@ -74,6 +74,8 @@ export type {
   TipoDeTecido,
 } from './componentes/menus'
 
+export { AreaDeTextoRico } from './componentes/texto-rico'
+
 export { Kpi, Paginador, Seletor } from './componentes/seletor'
 export type { OpcaoDoSeletor } from './componentes/seletor'
 

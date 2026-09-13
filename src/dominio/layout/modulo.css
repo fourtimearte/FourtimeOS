@@ -63,6 +63,30 @@
 .mod-ref:focus-within {
   border-color: var(--brand);
 }
+/* A COR DO CAMPO É A RESPOSTA DA BOLINHA. Sem isto o clique na bolinha não
+   tinha efeito visível nenhum no campo, e a única confirmação de que o
+   gênero mudou era a própria bolinha acesa. Vem da v3.375. */
+.mod-ref[data-genero='masculino'] {
+  background: var(--gen-masc-bg);
+  border-color: color-mix(in srgb, var(--gen-masc-fg) 26%, transparent);
+}
+.mod-ref[data-genero='feminino'] {
+  background: var(--gen-fem-bg);
+  border-color: color-mix(in srgb, var(--gen-fem-fg) 26%, transparent);
+}
+.mod-ref[data-genero='infantil'] {
+  background: var(--gen-inf-bg);
+  border-color: color-mix(in srgb, var(--gen-inf-fg) 26%, transparent);
+}
+.mod-ref[data-genero='masculino'] .mod-ref-bt {
+  color: var(--gen-masc-fg);
+}
+.mod-ref[data-genero='feminino'] .mod-ref-bt {
+  color: var(--gen-fem-fg);
+}
+.mod-ref[data-genero='infantil'] .mod-ref-bt {
+  color: var(--gen-inf-fg);
+}
 .mod-ref-bt {
   flex: 1;
   min-width: 0;
@@ -253,44 +277,42 @@
 }
 
 /* --- o cartão de design --------------------------------------------------- */
+/* Fileiras, e não uma pilha. Etiqueta em cima, cada técnica com cor na sua
+   fileira (a bandeja de códigos precisa da largura), as técnicas sem cor
+   juntas numa linha só, e o acabamento fechando. Dentro de cada fileira as
+   pílulas correm lado a lado e só quebram quando acabar a largura: uma
+   coluna de pílulas com a metade direita vazia é largura jogada fora. */
 .mod-faixas {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
   min-width: 0;
 }
-.mod-vazio {
-  margin: 0;
-  padding: 10px 12px 12px;
+.mod-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 8px;
+  min-width: 0;
+}
+.mod-fila + .mod-fila {
+  border-top: 1px solid var(--border);
+}
+/* o convite mora no lugar da primeira etiqueta, e some assim que existir uma */
+.mod-fila-ph {
+  padding: 4px 5px;
   font-size: 11.5px;
-  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--text-3);
 }
 
-/* --- a observação --------------------------------------------------------- */
-.mod-obs textarea {
-  width: 100%;
+/* --- a observação ---------------------------------------------------------
+   Ela é texto rico desde que o marca-texto voltou: quem escreve para a mesa
+   de corte pinta de vermelho o que não pode passar batido. O corpo da área
+   vem do ds (.rico); aqui só mora o encaixe dela no cartão. */
+.mod-obs .rico {
   min-height: 62px;
-  border: 0;
-  background: transparent;
-  padding: 10px 12px;
-  font: inherit;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text);
-  resize: vertical;
-  outline: 0;
-}
-.mod-obs textarea::placeholder {
-  color: var(--text-3);
-}
-.mod-obs p {
-  margin: 0;
-  padding: 10px 12px;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-2);
 }
 
 /* --- o módulo de informações --------------------------------------------- */

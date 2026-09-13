@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as EventoDePonteiro } from 'react'
-import { Segmentado } from '@ds'
 import {
   faixaDoTamanho,
   tamanhosNaOrdem,
@@ -28,11 +27,6 @@ import './layout.css'
    valor desce para as celulas cobertas. Um orcamento de vinte layouts com o
    mesmo preco em dez tamanhos e duzentas digitacoes sem ela.
    ========================================================================== */
-
-const FAIXAS: { valor: Faixa; rotulo: string }[] = [
-  { valor: 'adulto', rotulo: 'Adulto' },
-  { valor: 'infantil', rotulo: 'Infantil' },
-]
 
 type Coluna = 'q' | 'u'
 type Arrasto = { col: Coluna; de: number; ate: number }
@@ -169,20 +163,40 @@ export function GradeDeTamanhos({
 
   return (
     <div className={arrasto ? 'gr arrastando' : 'gr'}>
-      {aoTrocarFaixa ? (
-        <div className="gr-topo">
-          <Segmentado valor={faixa} opcoes={FAIXAS} aoMudar={aoTrocarFaixa} />
-          <span className="gr-dica">
-            Tamanho da outra faixa aparece destacado e fora da ordem, de propósito.
-          </span>
-        </div>
-      ) : null}
-
       <div className="gr-rolo">
         <table className="gr-tab">
           <thead>
             <tr>
-              <th>Tamanho</th>
+              <th className="gr-th-tam">
+                {/* O BOTÃO OCUPA O LUGAR DA PALAVRA "TAMANHO". É assim na
+                    v3.375, e a razão é de espaço: a coluna do tamanho é a
+                    mais estreita da tabela, e um controle fora dela roubava
+                    uma linha inteira da ficha. O ícone diz qual grade está
+                    no ar, e o clique troca. */}
+                {aoTrocarFaixa ? (
+                  <button
+                    type="button"
+                    className="gr-modo"
+                    title={
+                      faixa === 'infantil'
+                        ? 'Grade infantil, clique para adulto'
+                        : 'Grade adulto, clique para infantil'
+                    }
+                    aria-label={
+                      faixa === 'infantil'
+                        ? 'Grade infantil, clique para adulto'
+                        : 'Grade adulto, clique para infantil'
+                    }
+                    onClick={() => aoTrocarFaixa(faixa === 'infantil' ? 'adulto' : 'infantil')}
+                  >
+                    {faixa === 'infantil' ? <IconeInfantil /> : <IconeAdulto />}
+                  </button>
+                ) : (
+                  <span className="gr-modo estatico">
+                    {faixa === 'infantil' ? <IconeInfantil /> : <IconeAdulto />}
+                  </span>
+                )}
+              </th>
               <th className="num">Peças</th>
               {comDinheiro ? <th className="num">Valor</th> : null}
               {comDinheiro ? <th className="num">Total</th> : null}
@@ -255,6 +269,35 @@ export function GradeDeTamanhos({
         </table>
       </div>
     </div>
+  )
+}
+
+/* Os mesmos dois ícones da v3.375: a pessoa e o carrinho de bebê. Quem usa a
+   ficha na fábrica reconhece a grade pelo desenho antes de ler qualquer
+   palavra, e trocar o desenho seria trocar o vocabulário deles. */
+function IconeAdulto() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
+      <g stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+        <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+      </g>
+    </svg>
+  )
+}
+
+function IconeInfantil() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
+      <g stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+        <path d="M16 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+        <path d="M2 5h2.5l1.632 4.897a6 6 0 0 0 5.693 4.103h2.675a5.5 5.5 0 0 0 0 -11h-.5v6" />
+        <path d="M6 9h14" />
+        <path d="M9 17l1 -3" />
+        <path d="M16 14l1 3" />
+      </g>
+    </svg>
   )
 }
 

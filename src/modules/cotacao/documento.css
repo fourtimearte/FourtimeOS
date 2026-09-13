@@ -180,9 +180,15 @@
   gap: 1.5mm;
   margin-bottom: 2mm;
 }
+/* na folha a observação é só texto: a área editável do editor empresta a
+   classe .rico para a cor e o marca-texto sobreviverem, mas o recheio e a
+   altura mínima dela não valem no papel */
 .dc-obs {
   margin: 0;
+  min-height: 0;
+  padding: 0;
   font-size: 8.5pt;
+  line-height: 1.4;
   color: var(--fl-fraco);
 }
 .dc-prod-tabela {

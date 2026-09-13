@@ -992,3 +992,84 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ==========================================================================
+   A área de texto rico e a barra de marca-texto (portadas da v3.375)
+   ========================================================================== */
+.rico {
+  min-height: 62px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+  outline: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rico:empty::before {
+  content: attr(data-convite);
+  color: var(--text-3);
+}
+.rico:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+  border-radius: var(--radius);
+}
+/* O TEXTO MARCADO VOLTA A SER ESCURO. O marca-texto pinta o fundo e não a
+   letra, então no tema escuro o amarelo ficava com letra clara por cima:
+   ilegível justamente no trecho que alguém marcou por ser importante. */
+.rico [style*='background-color'] {
+  color: #111214;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.selbar {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 2147483000;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+.selbar.on {
+  display: flex;
+}
+.selbar::backdrop {
+  background: transparent;
+}
+.selbar button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(17, 18, 20, 0.14);
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.selbar button:hover {
+  transform: scale(1.1);
+}
+.selbar .sb-marca {
+  color: #111214;
+}
+.selbar .sb-limpar {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.selbar .sb-fio {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--border);
+}

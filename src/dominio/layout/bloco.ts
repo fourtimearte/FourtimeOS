@@ -1,3 +1,4 @@
+import { sanitizarTextoRico } from './texto'
 import type { Faixa, Grade } from './grade'
 
 /* ==========================================================================
@@ -24,7 +25,7 @@ import type { Faixa, Grade } from './grade'
       nenhuma. Ate a v3.330 o editor adivinhava isso pela imagem, e
       atrapalhava quem estava montando; virou botao, e a decisao fica
       gravada. */
-export const VERSAO_DO_BLOCO = 4
+export const VERSAO_DO_BLOCO = 5
 
 export type Tecnica =
   | 'dtf'
@@ -140,6 +141,21 @@ const DEGRAUS: ((b: Bruto) => Bruto)[] = [
      preenchido alem dela) so vale para arquivo .ft salvo antes da v3.329, e
      esse caminho e a importacao do .ft, nao esta escada. */
   (b) => ({ informacoes: false, ...b }),
+
+  /* de 4 para 5: a observacao vira HTML.
+     Ela ganhou marca-texto e cor de letra, e para isso precisa guardar
+     marcacao. O que ja estava escrito e texto puro: passa escapado, senao um
+     "<" digitado por alguem viraria etiqueta e comeria o resto da frase. A
+     quebra de linha vira <br> porque no texto puro ela era a quebra. */
+  (b) => {
+    const cru = typeof b.observacao === 'string' ? b.observacao : ''
+    const html = cru
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>')
+    return { ...b, observacao: html }
+  },
 ]
 
 export function migrarBloco(bruto: Bruto): Bloco {
@@ -149,5 +165,10 @@ export function migrarBloco(bruto: Bruto): Bloco {
     atual = DEGRAUS[v](atual)
     v++
   }
-  return { ...(atual as unknown as Bloco) }
+  const b = { ...(atual as unknown as Bloco) }
+  /* A PORTA DE ENTRADA E AQUI. Um bloco que ja chega na versao de hoje nao
+     passa por degrau nenhum, e e justamente ele que pode trazer HTML escrito
+     por outra mao: a faxina vale para todos, e nao so para os antigos. */
+  b.observacao = sanitizarTextoRico(b.observacao)
+  return b
 }

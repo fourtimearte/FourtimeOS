@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import {
+  AreaDeTextoRico,
   BolinhasDeGenero,
   FaixaDeCores,
   MenuCodigoDeCor,
@@ -21,6 +22,7 @@ import {
   TIPOS_DE_TECIDO,
   TODAS_AS_TAGS,
   lancaCor,
+  secaoDaTag,
   tecnicaDaTag,
 } from './banco'
 import type { Bloco, Design, TecidoDoBloco } from './bloco'
@@ -163,6 +165,36 @@ export function ModuloDeLayout({
 
   const aberta = bloco.design.find((d) => d.tag === tagAberta)
 
+  /* AS FILEIRAS DO CARTAO DE DESIGN, na regra da v3.375:
+
+       1a  as etiquetas, todas juntas. Sem nenhuma, ela vira o convite
+           "Etiqueta", porque a fileira existe sempre: é a primeira coisa
+           que a produção procura no cartão.
+       2a  uma fileira para cada técnica QUE TEM COR lançada, porque a
+           bandeja de códigos precisa da largura inteira.
+       3a  todas as técnicas sem cor juntas, lado a lado.
+       4a  o acabamento fecha o cartão, e só existe se houver acabamento.
+
+   Elas são fileiras de verdade, e não quebra de linha, porque entre uma e
+   outra corre um filete e não há onde desenhá-lo numa quebra. */
+  const fileiras = (() => {
+    const naOrdem = TODAS_AS_TAGS.map((t) => bloco.design.find((d) => d.tag === t)).filter(
+      (d): d is Design => !!d,
+    )
+    const lista: { chave: string; tipo: string; itens: Design[] }[] = [
+      { chave: 'eti', tipo: 'eti', itens: naOrdem.filter((d) => secaoDaTag(d.tag) === 'etiqueta') },
+    ]
+    const tecnicas = naOrdem.filter((d) => secaoDaTag(d.tag) === 'tecnica')
+    tecnicas
+      .filter((d) => d.cores.length > 0)
+      .forEach((d) => lista.push({ chave: 'cor:' + d.tag, tipo: 'cor', itens: [d] }))
+    const semCor = tecnicas.filter((d) => d.cores.length === 0)
+    if (semCor.length) lista.push({ chave: 'tec', tipo: 'tec', itens: semCor })
+    const acab = naOrdem.filter((d) => secaoDaTag(d.tag) === 'acabamento')
+    if (acab.length) lista.push({ chave: 'acab', tipo: 'acab', itens: acab })
+    return lista
+  })()
+
   return (
     <div className={info ? 'mod info' : 'mod'}>
       {/* ================= coluna da esquerda: referência e arte ============ */}
@@ -190,13 +222,13 @@ export function ModuloDeLayout({
                     : 'Referência'}
               </span>
             </button>
+            {/* A BOLINHA SÓ PINTA O CAMPO. Ela não mexe na grade de tamanhos,
+                e isso é da v3.375: quem troca a grade é o botão dentro da
+                tabela, e só ele. Gênero infantil e grade infantil são duas
+                perguntas diferentes, e uma peça infantil pode muito bem ser
+                vendida na grade adulta do mesmo pedido. */}
             {info ? null : (
-              <BolinhasDeGenero
-                genero={bloco.genero}
-                aoEscolher={(g) =>
-                  mudar({ genero: g, faixa: g === 'infantil' ? 'infantil' : bloco.faixa })
-                }
-              />
+              <BolinhasDeGenero genero={bloco.genero} aoEscolher={(g) => mudar({ genero: g })} />
             )}
           </div>
 
@@ -276,52 +308,49 @@ export function ModuloDeLayout({
                   )}
                 </header>
 
-                {bloco.design.length ? (
-                  <div className="mod-faixas">
-                    {bloco.design.map((d) => (
-                      <FaixaDeCores
-                        key={d.tag}
-                        tecnica={d.tecnica}
-                        rotulo={d.tag}
-                        cores={d.cores}
-                        aoAdicionar={
-                          leitura || !lancaCor(d.tecnica)
-                            ? undefined
-                            : (el) => {
-                                ancoraSolta.current = el
-                                setTagAberta(d.tag)
-                                setMenu('codigo')
-                              }
-                        }
-                        aoAbrirMenuDaPilula={
-                          leitura ? undefined : (el) => contextoDaPilula(el, d)
-                        }
-                        aoAbrirMenuDaCor={
-                          leitura ? undefined : (el, cod) => contextoDaCor(el, d, cod)
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mod-vazio">
-                    Etiqueta, técnica de impressão e acabamento. Só DTF e sublimação lançam código
-                    de cor.
-                  </p>
-                )}
+                <div className="mod-faixas">
+                  {fileiras.map((f) => (
+                    <div className={'mod-fila mod-fila-' + f.tipo} key={f.chave}>
+                      {f.itens.length ? (
+                        f.itens.map((d) => (
+                          <FaixaDeCores
+                            key={d.tag}
+                            tecnica={d.tecnica}
+                            rotulo={d.tag}
+                            cores={d.cores}
+                            aoAdicionar={
+                              leitura || !lancaCor(d.tecnica)
+                                ? undefined
+                                : (el) => {
+                                    ancoraSolta.current = el
+                                    setTagAberta(d.tag)
+                                    setMenu('codigo')
+                                  }
+                            }
+                            aoAbrirMenuDaPilula={
+                              leitura ? undefined : (el) => contextoDaPilula(el, d)
+                            }
+                            aoAbrirMenuDaCor={
+                              leitura ? undefined : (el, cod) => contextoDaCor(el, d, cod)
+                            }
+                          />
+                        ))
+                      ) : (
+                        <span className="mod-fila-ph">Etiqueta</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </section>
 
               {/* --- a observação do layout --- */}
               <section className="mod-cartao mod-obs">
-                {leitura ? (
-                  bloco.observacao ? (
-                    <p>{bloco.observacao}</p>
-                  ) : null
-                ) : (
-                  <textarea
-                    rows={2}
-                    value={bloco.observacao}
-                    placeholder="Observações do layout..."
-                    onChange={(e) => mudar({ observacao: e.target.value })}
+                {leitura && !bloco.observacao ? null : (
+                  <AreaDeTextoRico
+                    valor={bloco.observacao}
+                    aoMudar={(html) => mudar({ observacao: html })}
+                    convite="Observações do layout..."
+                    leitura={leitura}
                   />
                 )}
               </section>

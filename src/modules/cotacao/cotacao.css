@@ -661,3 +661,14 @@
   flex-direction: column;
   gap: 8px;
 }
+
+/* a observação do produto virou texto rico: a moldura do campo continua
+   sendo a do formulário, e o miolo é a área editável */
+.ct-obs-rica {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ct-obs-rica .rico {
+  min-height: 74px;
+}

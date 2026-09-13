@@ -79,6 +79,18 @@ export const TAGS_DE_TECNICA = TAG_TECNICA
 export const TAGS_DE_ACABAMENTO = TAG_ACABAMENTO
 export const TODAS_AS_TAGS = [...TAG_ETIQUETA, ...TAG_TECNICA, ...TAG_ACABAMENTO]
 
+/* A que fileira do cartao de design a tag pertence. Sao tres seçoes de
+   verdade, e nao rotulos: etiqueta e o que vai costurado na peça, tecnica e
+   como a arte e impressa, acabamento e como a peça e montada. No cartao cada
+   uma ganha a sua fileira, com um filete entre elas. */
+export type SecaoDaTag = 'etiqueta' | 'tecnica' | 'acabamento'
+
+export function secaoDaTag(tag: string): SecaoDaTag {
+  if (TAG_ETIQUETA.includes(tag)) return 'etiqueta'
+  if (TAG_ACABAMENTO.includes(tag)) return 'acabamento'
+  return 'tecnica'
+}
+
 /** A familia de cor de uma tag. Toda etiqueta pinta de etiqueta. */
 export function tecnicaDaTag(tag: string): Tecnica {
   if (TAG_ETIQUETA.includes(tag)) return 'etiqueta'

@@ -50,16 +50,37 @@
 .gr {
   min-width: 0;
 }
-.gr-topo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+/* O BOTÃO DA GRADE MORA NO CABEÇALHO DA COLUNA DO TAMANHO, no lugar da
+   palavra. Ele não é um controle a mais: é o próprio título da coluna
+   dizendo qual grade está no ar. */
+.gr-modo {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
 }
-.gr-dica {
-  font-size: 12.5px;
-  color: var(--text-3);
+.gr-modo:hover {
+  border-color: var(--brand);
+  color: var(--brand-text, var(--brand));
+}
+.gr-modo.estatico {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.gr-tab th.gr-th-tam {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 /* a tabela rola dentro da própria caixa, nunca empurrando a página */
@@ -189,11 +210,17 @@
   gap: 10px;
   min-width: 0;
 }
+/* SEM IMAGEM a caixa é um convite, e precisa de altura própria para ser um
+   alvo de dedo. COM IMAGEM ela tem a altura EXATA da imagem: nada de
+   proporção fixa. A proporção fixa era o defeito, e o efeito dela era
+   exatamente o que se via, uma arte deitada dentro de uma moldura 4:3 com o
+   fundo cortado em cima e embaixo. Regra da v3.375: largura total primeiro,
+   a altura acompanha a proporção natural. */
 .img-area {
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  min-height: 168px;
   max-width: 100%;
   overflow: hidden;
   border: 1px dashed var(--border-2);
@@ -205,6 +232,8 @@
     background var(--t-fast) var(--ease-out);
 }
 .img-area.tem {
+  display: block;
+  min-height: 0;
   border-style: solid;
   background: var(--surface);
 }
@@ -214,8 +243,9 @@
   background: var(--surface);
 }
 .img-area img {
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: contain;
 }
 .img-convite {
@@ -254,38 +284,6 @@
 .img-bt.risco:hover {
   border-color: var(--brand);
   color: var(--brand);
-}
-
-.img-arte {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--btn-h);
-  padding: 0 12px;
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius);
-  background: var(--surface);
-  min-width: 0;
-}
-.img-arte .lb {
-  flex: none;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-3);
-}
-.img-arte input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  background: transparent;
-  font-size: 14px;
-}
-.img-arte .v {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
 }
 
 .img-lupa {

@@ -238,7 +238,11 @@ function ProdutoNaFolha({ produto }: { produto: ProdutoCotado }) {
             ))}
           </div>
         ) : null}
-        {b.observacao ? <p className="dc-obs">{b.observacao}</p> : null}
+        {/* já saneada na porta de entrada do bloco (migrarBloco), e só pode
+            conter cor, marca-texto e quebra de linha */}
+        {b.observacao ? (
+          <p className="dc-obs rico" dangerouslySetInnerHTML={{ __html: b.observacao }} />
+        ) : null}
       </div>
 
       <div className="dc-prod-tabela">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, Copy, FileText, FloppyDisk, Plus, Trash, WhatsappLogo, X } from '@phosphor-icons/react'
 import {
+  AreaDeTextoRico,
   AreaTexto,
   Aviso,
   Botao,
@@ -764,7 +765,6 @@ function Produto({
             imagem={b.imagem}
             arte={b.arte}
             aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
-            aoMudarArte={(arte) => aoMudarBloco({ ...b, arte })}
           />
           <p className="ct-nada">
             Foto ou mockup do produto. Uma só, do jeito que o cliente vai ver.
@@ -782,12 +782,13 @@ function Produto({
             />
           )}
           <Campo rotulo="Observações do produto">
-            <AreaTexto
-              rows={3}
-              value={b.observacao}
-              placeholder="Detalhe que o cliente precisa ler (patrocinadores, posição do escudo, numeração)"
-              onChange={(e) => aoMudarBloco({ ...b, observacao: e.target.value })}
-            />
+            <div className="ct-obs-rica">
+              <AreaDeTextoRico
+                valor={b.observacao}
+                aoMudar={(html) => aoMudarBloco({ ...b, observacao: html })}
+                convite="Detalhe que o cliente precisa ler (patrocinadores, posição do escudo, numeração)"
+              />
+            </div>
           </Campo>
         </div>
       </div>

@@ -5,6 +5,10 @@
    sistema: a mesma cotacao pode ter um produto em grade adulta e outro em
    infantil.
 
+   A grade infantil comeca em 2A e tem sete tamanhos, conferido contra a
+   v3.375 em 13/09/2026. O 1A que estava aqui antes eu inventei, e ele nunca
+   existiu na fabrica.
+
    A regra de ordem vem do editor v4 e existe porque ninguem digita tamanho
    fora de faixa por acidente: quando acontece, e de proposito, e precisa
    aparecer. Na grade adulta, tamanho infantil preenchido sobe para o topo,
@@ -16,7 +20,7 @@
 export type Faixa = 'adulto' | 'infantil'
 
 export const TAMANHOS_ADULTO = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4'] as const
-export const TAMANHOS_INFANTIL = ['1A', '2A', '4A', '6A', '8A', '10A', '12A', '14A'] as const
+export const TAMANHOS_INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A'] as const
 
 export type Tamanho = (typeof TAMANHOS_ADULTO)[number] | (typeof TAMANHOS_INFANTIL)[number]
 

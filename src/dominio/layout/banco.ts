@@ -98,7 +98,12 @@ export const ABAS_DE_COR: AbaDeCores[] = [
   { id: 'sub', rotulo: 'SUB', cor: 'var(--tec-subli-vivo)', cores: SB_CORES },
 ]
 
-/** Quais tecnicas lancam codigo de cor. Bordado e gola nao lancam. */
+/* Quais tecnicas lancam codigo de cor.
+
+   DUAS, e so duas: DTF e sublimacao. E o que a v3.375 faz, e o motivo esta na
+   fabrica e nao no sistema: DTF e sublimacao tem tabela de cor numerada na
+   maquina, e o silk e misturado na hora pelo operador. Lancar codigo no silk
+   seria pedir um numero que nao existe em lugar nenhum. */
 export function lancaCor(tecnica: Tecnica) {
-  return tecnica === 'dtf' || tecnica === 'subli' || tecnica === 'silk'
+  return tecnica === 'dtf' || tecnica === 'subli'
 }

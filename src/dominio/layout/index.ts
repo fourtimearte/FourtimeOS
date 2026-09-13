@@ -8,7 +8,6 @@
 export * from './grade'
 export * from './bloco'
 export * from './banco'
-export * from './vocabulario'
 export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
 export { CaixaDeImagem } from './imagem'

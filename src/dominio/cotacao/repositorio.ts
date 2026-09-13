@@ -6,7 +6,6 @@ import {
   refGenero,
 } from '@ds/kit/banco-de-exemplo'
 import type { Bloco, Design, Tecnica } from '../layout/bloco'
-import { ETIQUETAS, GOLAS, KITS, MANGAS, NUMERACOES } from '../layout/vocabulario'
 import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
 import type { Faixa, Grade } from '../layout/grade'
 import {
@@ -118,11 +117,6 @@ function blocoSorteado(n: number, semente: number): Bloco {
     grade: gradeSorteada(faixa, r),
     tecidos: [{ nome: tecido, cor: corNome, hex: corHex }],
     design: designSorteado(r),
-    kit: KITS[Math.floor(r() * 2)],
-    manga: MANGAS[Math.floor(r() * 2)],
-    gola: GOLAS[Math.floor(r() * GOLAS.length)],
-    etiqueta: ETIQUETAS[0],
-    numeracao: NUMERACOES[Math.floor(r() * NUMERACOES.length)],
     arte: ARTES[Math.floor(r() * ARTES.length)],
     imagem: '',
     observacao: '',

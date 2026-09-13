@@ -12,11 +12,14 @@ import type { Faixa, Grade } from './grade'
    ========================================================================== */
 
 /* 1: o formato de nascimento.
-   2: entraram os cinco campos que o cliente le e a fabrica costura: tipo de
-      kit, manga, gola/ribana, etiqueta e numeracao. Eles estavam sendo
-      adivinhados pelo codigo da referencia, e adivinhar como a peca e feita
-      e o jeito de costurar errado. */
-export const VERSAO_DO_BLOCO = 2
+   2: entraram cinco campos que eu inventei a partir do mockup: tipo de kit,
+      manga, gola/ribana, etiqueta e numeracao.
+   3: os cinco sairam. Eles nao existem no editor v3.375, que e o que a
+      fabrica usa todo dia, e campo que ninguem preenche vira campo que todo
+      mundo ignora. O que descreve como a peca e feita e o cartao de design,
+      com as tres familias da v3.375: etiqueta, tecnica e acabamento. Gola e
+      ribana ja moram la, como acabamento. */
+export const VERSAO_DO_BLOCO = 3
 
 export type Tecnica =
   | 'dtf'
@@ -55,15 +58,6 @@ export type Bloco = {
   grade: Grade
   tecidos: TecidoDoBloco[]
   design: Design[]
-  /** o que se vende junto: camisa, camisa + calcao, conjunto completo */
-  kit: string
-  /** curta, longa, regata, raglan */
-  manga: string
-  /** gola careca na mesma cor, gola V, polo retilinea, sem ribana */
-  gola: string
-  etiqueta: string
-  /** nome e numero nas costas, so numero, sem nome e numero */
-  numeracao: string
   /** o nome da arte, que e o que liga o bloco ao arquivo de arte */
   arte: string
   /** a imagem em data URL, ou vazio */
@@ -82,11 +76,6 @@ export function blocoEmBranco(n: number): Bloco {
     grade: {},
     tecidos: [],
     design: [],
-    kit: '',
-    manga: '',
-    gola: '',
-    etiqueta: '',
-    numeracao: '',
     arte: '',
     imagem: '',
     observacao: '',
@@ -113,6 +102,30 @@ const DEGRAUS: ((b: Bruto) => Bruto)[] = [
      vazio a tela mostra como "a definir", que e a verdade; campo preenchido
      por chute vira instrucao de costura que ninguem escreveu. */
   (b) => ({ kit: '', manga: '', gola: '', etiqueta: '', numeracao: '', ...b }),
+
+  /* de 2 para 3: os cinco saem.
+     O degrau nao apaga em silencio: o que a pessoa tinha escrito em gola e em
+     etiqueta vai para a observacao do bloco, com o rotulo na frente. Campo que
+     some levando junto o que estava dentro e a pior forma de migrar. */
+  (b) => {
+    const resto = [
+      ['Kit', b.kit],
+      ['Manga', b.manga],
+      ['Gola', b.gola],
+      ['Etiqueta', b.etiqueta],
+      ['Numeração', b.numeracao],
+    ]
+      .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+      .map(([r, v]) => r + ': ' + v)
+      .join('. ')
+
+    const anterior = typeof b.observacao === 'string' ? b.observacao : ''
+    const nova = [anterior, resto].filter((x) => x.trim() !== '').join('. ')
+
+    const limpo: Bruto = { ...b, observacao: nova }
+    for (const k of ['kit', 'manga', 'gola', 'etiqueta', 'numeracao']) delete limpo[k]
+    return limpo
+  },
 ]
 
 export function migrarBloco(bruto: Bruto): Bloco {

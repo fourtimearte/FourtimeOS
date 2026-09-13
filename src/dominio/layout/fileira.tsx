@@ -9,7 +9,6 @@ import {
   MenuReferencia,
   MenuTecido,
   MenuTecnica,
-  Seletor,
   type ItemDeContexto,
 } from '@ds'
 import {
@@ -26,7 +25,6 @@ import {
 } from './banco'
 import type { Bloco, Design } from './bloco'
 import { faixaDoTamanho } from './grade'
-import { ETIQUETAS, GOLAS, KITS, MANGAS, NUMERACOES, emOpcoes } from './vocabulario'
 import './layout.css'
 
 /* ==========================================================================
@@ -254,26 +252,6 @@ export function FileiraDoLayout({
 
   const campos = arranjo === 'campos'
 
-  const menuDeTexto = (
-    rotulo: string,
-    lista: string[],
-    valor: string,
-    aoEscolher: (v: string) => void,
-  ) => (
-    <label className="lay-campo" key={rotulo}>
-      <span>{rotulo}</span>
-      <Seletor
-        bloco
-        campo
-        tamanho="sm"
-        valor={valor}
-        opcoes={emOpcoes(lista)}
-        vazio="a definir"
-        aoEscolher={aoEscolher}
-      />
-    </label>
-  )
-
   if (campos) {
     return (
       <>
@@ -298,9 +276,6 @@ export function FileiraDoLayout({
         </div>
 
         <div className="lay-campos">
-          {menuDeTexto('Tipo de kit vendido', KITS, bloco.kit, (v) => mudar({ kit: v }))}
-          {menuDeTexto('Manga / modelo', MANGAS, bloco.manga, (v) => mudar({ manga: v }))}
-
           <label className="lay-campo">
             <span>Tecido</span>
             <button
@@ -326,9 +301,6 @@ export function FileiraDoLayout({
             </button>
           </label>
 
-          {menuDeTexto('Ribana / gola', GOLAS, bloco.gola, (v) => mudar({ gola: v }))}
-          {menuDeTexto('Etiqueta', ETIQUETAS, bloco.etiqueta, (v) => mudar({ etiqueta: v }))}
-
           <label className="lay-campo">
             <span>Técnica de estampa</span>
             <button
@@ -342,10 +314,6 @@ export function FileiraDoLayout({
               </span>
             </button>
           </label>
-
-          {menuDeTexto('Nomes e números', NUMERACOES, bloco.numeracao, (v) =>
-            mudar({ numeracao: v }),
-          )}
 
           <div className="lay-campo largo">
             <span>Cores da estampa</span>

@@ -1,0 +1,17 @@
+# O index.html de uma pagina-so nunca pode ficar guardado em cache.
+#
+# Ele e o unico arquivo com nome fixo: os outros levam o resumo do conteudo no
+# proprio nome (index-D2sL0bkT.js) e por isso podem ser guardados para sempre.
+# Se o index.html for guardado, ele continua apontando para o pacote velho
+# depois de uma publicacao, e o sistema no galpao fica parado numa versao
+# antiga sem ninguem entender por que. Foi exatamente isso que aconteceu em
+# 13/09/2026: a publicacao subiu certa e a borda da Cloudflare continuou
+# servindo o index.html anterior por mais de meia hora.
+#
+# A ordem importa: o que e mais especifico vem antes.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  Cache-Control: no-store

@@ -39,6 +39,7 @@ export function Casca({
   Link,
   aoAbrirBusca,
   acoesDoTopo,
+  ramoDoPe,
   peDoLado,
   children,
 }: {
@@ -53,6 +54,8 @@ export function Casca({
   Link: TipoDeLink
   aoAbrirBusca: () => void
   acoesDoTopo?: ReactNode
+  /** a arvore que mora colada no pe do menu e abre para cima */
+  ramoDoPe?: ItemDeNavegacao
   /** o pe do menu lateral: quem esta usando, e o que ele faz daqui */
   peDoLado?: ReactNode
   children: ReactNode
@@ -107,6 +110,23 @@ export function Casca({
             )}
           </div>
         ))}
+
+        {/* Configuracoes fica colada no pe, que e onde ela mora em todo
+            sistema que a pessoa ja usou, e a arvore dela abre para cima
+            porque abaixo dela so tem o pe. */}
+        {ramoDoPe && ramoDoPe.filhos && ramoDoPe.filhos.length > 0 ? (
+          <div className="lado-fim">
+            <Ramo
+              item={ramoDoPe}
+              filhos={ramoDoPe.filhos}
+              ligado={ligado}
+              Link={Link}
+              encolhida={encolhida}
+              aoEncolher={aoEncolher}
+              paraCima
+            />
+          </div>
+        ) : null}
 
         {peDoLado ? <div className="lado-pe">{peDoLado}</div> : null}
       </nav>
@@ -181,6 +201,7 @@ function Ramo({
   Link,
   encolhida,
   aoEncolher,
+  paraCima,
 }: {
   item: ItemDeNavegacao
   filhos: ItemDeNavegacao[]
@@ -188,6 +209,8 @@ function Ramo({
   Link: TipoDeLink
   encolhida: boolean
   aoEncolher: () => void
+  /** a arvore abre acima do item, para quando ele mora no pe do menu */
+  paraCima?: boolean
 }) {
   const dentro = filhos.some((f) => f.ativo ?? ligado(f.para))
   const [aberto, setAberto] = useState(dentro)
@@ -207,33 +230,46 @@ function Ramo({
     setAberto((a) => !a)
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        className={['item', 'ramo', dentro ? 'dentro' : ''].filter(Boolean).join(' ')}
-        onClick={clicar}
-        aria-expanded={aberto && !encolhida}
-      >
-        {item.icone}
-        <span className="rotulo">{item.rotulo}</span>
-        {item.contagem != null ? (
-          <span className={['cnt', item.aviso ? 'aviso' : ''].filter(Boolean).join(' ')}>
-            {item.contagem}
-          </span>
-        ) : null}
-        <span className={aberto ? 'galho-seta virada' : 'galho-seta'} aria-hidden="true">
-          <SetaDeGalho />
-        </span>
-      </button>
+  const galho = aberto ? (
+    <div className={paraCima ? 'galho para-cima' : 'galho'}>
+      {filhos.map((f) => (
+        <ItemDoMenu key={f.para} item={f} ligado={ligado} Link={Link} filho />
+      ))}
+    </div>
+  ) : null
 
-      {aberto ? (
-        <div className="galho">
-          {filhos.map((f) => (
-            <ItemDoMenu key={f.para} item={f} ligado={ligado} Link={Link} filho />
-          ))}
-        </div>
+  const botao = (
+    <button
+      type="button"
+      className={['item', 'ramo', dentro ? 'dentro' : ''].filter(Boolean).join(' ')}
+      onClick={clicar}
+      aria-expanded={aberto && !encolhida}
+    >
+      {item.icone}
+      <span className="rotulo">{item.rotulo}</span>
+      {item.contagem != null ? (
+        <span className={['cnt', item.aviso ? 'aviso' : ''].filter(Boolean).join(' ')}>
+          {item.contagem}
+        </span>
       ) : null}
+      <span
+        className={aberto !== !!paraCima ? 'galho-seta virada' : 'galho-seta'}
+        aria-hidden="true"
+      >
+        <SetaDeGalho />
+      </span>
+    </button>
+  )
+
+  return paraCima ? (
+    <>
+      {galho}
+      {botao}
+    </>
+  ) : (
+    <>
+      {botao}
+      {galho}
     </>
   )
 }

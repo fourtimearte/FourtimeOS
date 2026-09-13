@@ -191,65 +191,63 @@ export function App() {
           rotulo: 'Relatório mensal',
           icone: <ChartBar {...icone} />,
         },
-        /* Configurações não é destino: é a raiz de uma árvore. Banco de dados e
-           Design System moraram soltos no menu enquanto não tinham casa, e
-           agora têm: os dois são cadastro do sistema, e cadastro do sistema é
-           configuração. Um menu com treze itens soltos não é um menu, é uma
-           lista de tudo que existe. */
-        {
-          chave: 'config',
-          para: '/config',
-          rotulo: 'Configurações',
-          icone: <Gear {...icone} />,
-          contagem: naFila || undefined,
-          filhos: [
-            {
-              chave: 'config',
-              para: '/config',
-              rotulo: 'Pessoas',
-              icone: <UsersThree size={18} />,
-              ativo: local.pathname === '/config',
-            },
-            {
-              chave: 'banco',
-              para: '/banco',
-              rotulo: 'Banco de dados',
-              icone: <Database size={18} />,
-            },
-            {
-              chave: 'config',
-              para: '/config/empresa',
-              rotulo: 'Empresa',
-              icone: <Buildings size={18} />,
-              ativo: local.pathname === '/config/empresa',
-            },
-            {
-              chave: 'kit',
-              para: '/kit',
-              rotulo: 'Design System',
-              icone: <Palette size={18} />,
-            },
-          ],
-        },
       ],
     },
   ]
 
+  /* Configurações não entra em nenhuma seção: ela mora colada no pé do menu,
+     encostada em quem está usando o sistema, que é onde toda pessoa já
+     aprendeu a procurar. Banco de dados e Design System moraram soltos na
+     lista enquanto não tinham casa, e agora têm: os dois são cadastro do
+     sistema, e cadastro do sistema é configuração. */
+  const configuracoes: Item = {
+    chave: 'config',
+    para: '/config',
+    rotulo: 'Configurações',
+    icone: <Gear {...icone} />,
+    contagem: naFila || undefined,
+    filhos: [
+      {
+        chave: 'config',
+        para: '/config',
+        rotulo: 'Pessoas',
+        icone: <UsersThree size={18} />,
+        ativo: local.pathname === '/config',
+      },
+      {
+        chave: 'banco',
+        para: '/banco',
+        rotulo: 'Banco de dados',
+        icone: <Database size={18} />,
+      },
+      {
+        chave: 'config',
+        para: '/config/empresa',
+        rotulo: 'Empresa',
+        icone: <Buildings size={18} />,
+        ativo: local.pathname === '/config/empresa',
+      },
+      {
+        chave: 'kit',
+        para: '/kit',
+        rotulo: 'Design System',
+        icone: <Palette size={18} />,
+      },
+    ],
+  }
+
   const posso = (chave: Painel) => !!pessoa && podeVer(pessoa, chave)
 
   /* Secao sem nenhum item vira titulo solto pairando sobre nada, entao ela
-     some junto. E uma arvore sem nenhum galho que a pessoa alcance nao vira
-     item vazio: ela some tambem. */
+     some junto. */
   const secoes: SecaoDeNavegacao[] = todas
-    .map((s) => ({
-      titulo: s.titulo,
-      itens: s.itens
-        .map((i) =>
-          i.filhos ? { ...i, filhos: i.filhos.filter((f) => posso(f.chave)) } : i,
-        )
-        .filter((i) => (i.filhos ? i.filhos.length > 0 : posso(i.chave))),
-    }))
+    .map((s) => ({ titulo: s.titulo, itens: s.itens.filter((i) => posso(i.chave)) }))
     .filter((s) => s.itens.length > 0)
+
+  /* Uma arvore sem nenhum galho que a pessoa alcance nao vira item vazio no
+     pe do menu: ela some inteira. */
+  const meusFilhos = (configuracoes.filhos ?? []).filter((f) => posso(f.chave))
+  const ramoDeConfig = meusFilhos.length > 0 ? { ...configuracoes, filhos: meusFilhos } : undefined
 
   /* cinco destinos na barra de baixo, os mesmos do v5 */
   const rodapeTodos: Item[] = [
@@ -267,15 +265,16 @@ export function App() {
     rodapeNav.push({ para: '/perfil', rotulo: 'Perfil', icone: <UserCircle size={22} /> })
   }
 
-  const itensDaBusca: ItemBusca[] = secoes.flatMap((s) =>
-    s.itens.flatMap((i) => (i.filhos ? i.filhos : [i])).map((i) => ({
-      id: i.para,
-      grupo: 'Telas',
-      titulo: i.rotulo,
-      lado: 'ir para',
-      aoEscolher: () => navegar(i.para),
-    })),
-  )
+  const itensDaBusca: ItemBusca[] = [
+    ...secoes.flatMap((s) => s.itens),
+    ...meusFilhos,
+  ].map((i) => ({
+    id: i.para,
+    grupo: 'Telas',
+    titulo: i.rotulo,
+    lado: 'ir para',
+    aoEscolher: () => navegar(i.para),
+  }))
 
   return (
     <>
@@ -287,6 +286,7 @@ export function App() {
         ligado={ligado}
         Link={Link}
         aoAbrirBusca={() => setBusca(true)}
+        ramoDoPe={ramoDeConfig}
         acoesDoTopo={
           <>
             <button
@@ -323,10 +323,10 @@ export function App() {
         }
         peDoLado={
           pessoa ? (
-            <>
-              {/* Quem esta usando o sistema fica no pe do menu, e nao so numa
-                  bolinha no canto do topo: o papel manda no que a pessoa ve, e
-                  ela precisa poder conferir de relance com que crachá entrou. */}
+            /* Quem está usando o sistema fica no pé do menu, e não só numa
+               bolinha no canto do topo: o papel manda no que a pessoa vê, e ela
+               precisa poder conferir de relance com que crachá entrou. */
+            <div className="lado-eu-linha">
               <Link to="/perfil" className="lado-eu" title="Meu perfil">
                 <Avatar iniciais={iniciaisDe(pessoa.nome)} foto={fotoDe(pessoa)} tamanho={34} />
                 <div>
@@ -334,31 +334,19 @@ export function App() {
                   <span>{NOME_DO_PAPEL[pessoa.papel]}</span>
                 </div>
               </Link>
-
-              <div className="lado-acoes">
-                {podeVer(pessoa, 'config') ? (
-                  <Link
-                    to="/config"
-                    className={ligado('/config') ? 'lado-acao ligado' : 'lado-acao'}
-                  >
-                    <Gear size={18} />
-                    <span>Configurações</span>
-                  </Link>
-                ) : null}
-                <span className="lado-risco" aria-hidden="true" />
-                <button
-                  type="button"
-                  className="bt-icone"
-                  aria-label="Sair"
-                  title="Sair"
-                  onClick={() => {
-                    void sair()
-                  }}
-                >
-                  <SignOut size={18} />
-                </button>
-              </div>
-            </>
+              <span className="lado-risco" aria-hidden="true" />
+              <button
+                type="button"
+                className="bt-icone"
+                aria-label="Sair"
+                title="Sair"
+                onClick={() => {
+                  void sair()
+                }}
+              >
+                <SignOut size={18} />
+              </button>
+            </div>
           ) : null
         }
       >

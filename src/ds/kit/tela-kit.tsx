@@ -59,7 +59,10 @@ const SECOES: [string, string][] = [
 /* A rota /kit: a página viva do Design System. Nenhum componente aparece numa
    tela do sistema antes de nascer aqui, com todos os seus estados e nos dois
    temas. É isso que impede o kit de virar uma cópia do app. */
-export function TelaKit() {
+/* O `abas` e a barra das subpaginas de Configuracoes, e ela chega de fora
+   porque o ds/ nao pode saber que Configuracoes existe. Quem passa e a raiz
+   que monta as rotas: e la que as duas camadas se encontram. */
+export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
   const [tema, setTema] = useState<Tema>(() => temaGuardado() ?? temaAtual())
   const [secao, setSecao] = useState('cor')
 
@@ -110,6 +113,8 @@ export function TelaKit() {
           </button>
         </div>
       </header>
+
+      {abas ? <div className="kit-abas">{abas}</div> : null}
 
       <div className="kit-casca">
         <nav className="kit-rail" aria-label="Seções do kit">

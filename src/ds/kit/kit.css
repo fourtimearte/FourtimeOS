@@ -409,3 +409,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+
+/* A barra das subpáginas de Configurações. O Design System é uma delas, e sem
+   esta barra ele era o único lugar de onde não dava para voltar para as
+   outras três sem passar pelo menu. */
+.kit-abas {
+  padding: var(--sp-3) var(--gutter) 0;
+}

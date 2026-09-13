@@ -5,7 +5,7 @@ import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
 import type { Painel } from '@dominio/sessao'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
-import { TelaEmpresa, TelaEquipe } from '@modules/config'
+import { AbasDaConfig, TelaEmpresa, TelaEquipe } from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
@@ -57,7 +57,7 @@ export const rotas = createBrowserRouter([
       { path: 'ficha', element: pede('ficha', <TelaFicha />) },
       { path: 'kanban', element: pede('kanban', <TelaKanban />) },
       { path: 'estoque', element: pede('estoque', <TelaEstoque />) },
-      { path: 'kit', element: pede('kit', <TelaKit />) },
+      { path: 'kit', element: pede('kit', <TelaKit abas={<AbasDaConfig atual="kit" />} />) },
       { path: 'atividades', element: pede('atividades', <TelaAtividades />) },
       { path: 'relatorio', element: pede('relatorio', <TelaRelatorio />) },
       { path: 'banco', element: pede('banco', <TelaBanco />) },

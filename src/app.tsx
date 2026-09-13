@@ -33,7 +33,7 @@ import {
   type SecaoDeNavegacao,
   type Tema,
 } from '@ds'
-import { sair } from '@dominio/sessao'
+import { iniciaisDe, primeiroNome, useSessao } from '@dominio/sessao'
 import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
@@ -42,6 +42,8 @@ import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 export function App() {
   const navegar = useNavigate()
   const local = useLocation()
+  const { estado, sair } = useSessao()
+  const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
   const [encolhida, setEncolhida] = useState(() => {
     try {
       return localStorage.getItem('ft.menu') === 'encolhido'
@@ -169,14 +171,13 @@ export function App() {
             <button
               type="button"
               className="pessoa"
-              title="Sair"
-              aria-label="Sair"
+              title={pessoa ? `${pessoa.nome} · sair` : 'Sair'}
+              aria-label={pessoa ? `${primeiroNome(pessoa.nome)}, sair do sistema` : 'Sair'}
               onClick={() => {
-                sair()
-                navegar('/entrar', { replace: true })
+                void sair()
               }}
             >
-              AD
+              {pessoa ? iniciaisDe(pessoa.nome) : '··'}
             </button>
           </>
         }
@@ -187,8 +188,7 @@ export function App() {
             aria-label="Sair"
             title="Sair"
             onClick={() => {
-              sair()
-              navegar('/entrar', { replace: true })
+              void sair()
             }}
           >
             <SignOut size={18} />

@@ -122,6 +122,19 @@ export function informesEmBranco(): InformeDoDocumento[] {
   return INFORMES_PADRAO.map((x, i) => ({ id: 'IF' + (i + 1), ...x }))
 }
 
+/* As condicoes que a casa pratica hoje. Ficam num lugar so porque duas partes
+   do sistema precisam delas: a cotacao nova, que nasce com elas preenchidas, e
+   a escada do .cft, que usa a mesma coisa como recheio quando abre um arquivo
+   antigo em que o campo nem existia. Antes disso o arquivo antigo abria com o
+   prazo em branco, e prazo em branco vai impresso no documento que o cliente
+   le. */
+export const INFORME_PADRAO: InformeDeProducao = {
+  prazo: '12 dias úteis',
+  pagamento: PAGAMENTOS[0],
+  envio: ENTREGAS[1],
+  tabelaDePreco: 'Atacado 2026',
+}
+
 /** cada envio guarda o que foi enviado, para a conversa nao virar palavra
     contra palavra tres semanas depois */
 export type VersaoEnviada = {
@@ -246,12 +259,7 @@ export function cotacaoEmBranco(numero: string): Cotacao {
     },
     produtos: [],
     ajustes: [],
-    informe: {
-      prazo: '12 dias úteis',
-      pagamento: PAGAMENTOS[0],
-      envio: ENTREGAS[1],
-      tabelaDePreco: 'Atacado 2026',
-    },
+    informe: { ...INFORME_PADRAO },
     informes: informesEmBranco(),
     enviadas: [],
     aprovacao: null,

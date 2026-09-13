@@ -1,44 +1,55 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { entrar } from '@dominio/sessao'
+import { Navigate, useLocation } from 'react-router-dom'
+import { useSessao } from '@dominio/sessao'
 import fundo from '../../assets/fundo-entrar.jpg'
 import './entrar.css'
 
 type DeOnde = { de?: string }
 
 export function TelaEntrar() {
-  const navegar = useNavigate()
   const local = useLocation()
   const destino = (local.state as DeOnde | null)?.de || '/'
+  const { estado, entrar } = useSessao()
 
-  const [usuario, setUsuario] = useState('')
+  const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [vendo, setVendo] = useState(false)
   const [erro, setErro] = useState('')
+  const [entrando, setEntrando] = useState(false)
   const [fotoPronta, setFotoPronta] = useState(false)
-  const campoUsuario = useRef<HTMLInputElement>(null)
+  const campoEmail = useRef<HTMLInputElement>(null)
 
   /* a foto so aparece depois de carregada, para nao piscar cinza no celular */
   useEffect(() => {
     const img = new Image()
     img.onload = () => setFotoPronta(true)
     img.src = fundo
-    campoUsuario.current?.focus()
+    campoEmail.current?.focus()
   }, [])
 
-  function enviar(e: FormEvent) {
+  /* Quem ja entrou nao ve a tela de entrada. Acontece de verdade: a pessoa
+     aperta voltar depois de entrar, ou abre o link salvo de /entrar. */
+  if (estado.fase === 'dentro') return <Navigate to={destino} replace />
+
+  async function enviar(e: FormEvent) {
     e.preventDefault()
-    if (!usuario.trim() || !senha) {
-      setErro('Preencha usuário e senha.')
+    if (entrando) return
+    if (!email.trim() || !senha) {
+      setErro('Preencha o e-mail e a senha.')
       return
     }
-    if (entrar(usuario, senha)) {
-      navegar(destino, { replace: true })
-      return
+    setErro('')
+    setEntrando(true)
+    try {
+      await entrar(email, senha)
+      /* nao navega aqui: assim que o estado vira dentro, o Navigate la em cima
+         leva para o destino. Uma porta so, em vez de duas discordando. */
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : 'Não consegui entrar agora.')
+      setSenha('')
+      setEntrando(false)
     }
-    setErro('Usuário ou senha não conferem.')
-    setSenha('')
   }
 
   return (
@@ -62,20 +73,22 @@ export function TelaEntrar() {
 
         <div className="ent-campos">
           <label className="ent-campo">
-            <span>Usuário</span>
+            <span>E-mail</span>
             <div className={'ent-caixa' + (erro ? ' errada' : '')}>
               <input
-                ref={campoUsuario}
-                type="text"
-                name="usuario"
+                ref={campoEmail}
+                type="email"
+                name="email"
+                inputMode="email"
                 autoComplete="username"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="seu usuário"
-                value={usuario}
+                placeholder="voce@fourtimefit.com.br"
+                value={email}
+                disabled={entrando}
                 onChange={(e) => {
-                  setUsuario(e.target.value)
+                  setEmail(e.target.value)
                   setErro('')
                 }}
               />
@@ -91,6 +104,7 @@ export function TelaEntrar() {
                 autoComplete="current-password"
                 placeholder="sua senha"
                 value={senha}
+                disabled={entrando}
                 onChange={(e) => {
                   setSenha(e.target.value)
                   setErro('')
@@ -116,8 +130,8 @@ export function TelaEntrar() {
           </p>
         ) : null}
 
-        <button className="ent-botao" type="submit">
-          Entrar
+        <button className="ent-botao" type="submit" disabled={entrando}>
+          {entrando ? 'Entrando...' : 'Entrar'}
         </button>
 
         <p className="ent-pe">Acesso restrito à equipe Fourtime.</p>

@@ -188,6 +188,25 @@
   border-top-color: transparent;
 }
 
+/* --- o girando solto ------------------------------------------------------
+   O mesmo circulo do botao carregando, sem botao em volta. Serve para a espera
+   curta de uma tela inteira, como conferir o cracha ao abrir o sistema. */
+.girando {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: a-girar 700ms linear infinite;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .girando {
+    animation-duration: 2400ms;
+  }
+}
+
 /* --- chip ---------------------------------------------------------------- */
 .chip {
   height: var(--btn-h);

@@ -1,5 +1,11 @@
 import { migrarBloco, VERSAO_DO_BLOCO, type Bloco } from '../layout/bloco'
-import { VERSAO_DO_CFT, cotacaoEmBranco, informesEmBranco, type Cotacao } from './tipos'
+import {
+  INFORME_PADRAO,
+  VERSAO_DO_CFT,
+  cotacaoEmBranco,
+  informesEmBranco,
+  type Cotacao,
+} from './tipos'
 
 /* ==========================================================================
    O arquivo .cft
@@ -69,10 +75,10 @@ const DEGRAUS: ((c: Bruto) => Bruto)[] = [
     return {
       ...c,
       informe: {
-        prazo: String(velho.prazo ?? ''),
-        pagamento: String(velho.pagamento ?? ''),
-        envio: String(velho.entrega ?? ''),
-        tabelaDePreco: 'Atacado 2026',
+        prazo: String(velho.prazo ?? '') || INFORME_PADRAO.prazo,
+        pagamento: String(velho.pagamento ?? '') || INFORME_PADRAO.pagamento,
+        envio: String(velho.entrega ?? '') || INFORME_PADRAO.envio,
+        tabelaDePreco: INFORME_PADRAO.tabelaDePreco,
       },
       informes: observacao
         ? [{ id: 'IF0', texto: observacao, noDocumento: true }, ...daCasa]

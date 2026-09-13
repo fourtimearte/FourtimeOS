@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { rotas } from './rotas'
 import { aplicarTema, temaGuardado } from '@ds'
+import { ProvedorDeSessao } from '@dominio/sessao'
 import './estilo.css'
 
 /* o tema escolhido antes vale desde o primeiro quadro, sem piscar */
@@ -14,6 +15,8 @@ if (!raiz) throw new Error('Elemento #raiz não encontrado no index.html')
 
 createRoot(raiz).render(
   <StrictMode>
-    <RouterProvider router={rotas} />
+    <ProvedorDeSessao>
+      <RouterProvider router={rotas} />
+    </ProvedorDeSessao>
   </StrictMode>,
 )

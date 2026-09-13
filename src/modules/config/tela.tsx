@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Check, Envelope, Prohibit, Trash, UserPlus } from '@phosphor-icons/react'
 import {
+  Avatar,
   Aviso,
   avisar,
   Botao,
@@ -37,6 +38,8 @@ import {
 } from '@dominio/equipe'
 import type { Convite, PainelDoSistema, PessoaDaEquipe } from '@dominio/equipe'
 import {
+  fotoDe,
+  iniciaisDe,
   LINHA_DO_PAPEL,
   NOME_DA_SITUACAO,
   NOME_DO_PAPEL,
@@ -232,8 +235,11 @@ function FilaDeAprovacao({
           return (
             <li key={p.id} className="cfg-item">
               <div className="cfg-quem">
-                <b>{p.nome}</b>
-                <span>{p.email}</span>
+                <Avatar iniciais={iniciaisDe(p.nome)} foto={fotoDe(p)} tamanho={36} />
+                <div>
+                  <b>{p.nome}</b>
+                  <span>{p.email}</span>
+                </div>
               </div>
 
               <div className="cfg-acoes">
@@ -321,11 +327,14 @@ function LinhaDaPessoa({
   return (
     <li className="cfg-item">
       <div className="cfg-quem">
-        <b>
-          {p.nome}
-          {souEu ? <span className="cfg-voce">você</span> : null}
-        </b>
-        <span>{p.email}</span>
+        <Avatar iniciais={iniciaisDe(p.nome)} foto={fotoDe(p)} tamanho={36} />
+        <div>
+          <b>
+            {p.nome}
+            {souEu ? <span className="cfg-voce">você</span> : null}
+          </b>
+          <span>{p.email}</span>
+        </div>
       </div>
 
       <div className="cfg-acoes">

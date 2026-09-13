@@ -150,3 +150,31 @@ export function ChipTecnica({ tecnica, children }: { tecnica: Tecnica; children:
 export function Amostra({ cor }: { cor?: string }) {
   return <span className="amostra" style={{ '--cor-amostra': cor } as CSSProperties} />
 }
+
+/* --- avatar --------------------------------------------------------------
+   A bolinha redonda da pessoa: foto quando existe, iniciais quando nao.
+
+   Recebe as iniciais prontas em vez de tirar do nome sozinho. Nao e preciosismo
+   de camada: quem sabe o que e "nome de pessoa" na Fourtime e o dominio, e o
+   Design System nunca precisou saber. */
+export function Avatar({
+  iniciais,
+  foto,
+  tamanho = 32,
+  titulo,
+}: {
+  iniciais: string
+  foto?: string | null
+  tamanho?: number
+  titulo?: string
+}) {
+  return (
+    <span
+      className="avatar"
+      style={{ width: tamanho, height: tamanho, fontSize: Math.round(tamanho * 0.36) }}
+      title={titulo}
+    >
+      {foto ? <img src={foto} alt="" loading="lazy" /> : iniciais}
+    </span>
+  )
+}

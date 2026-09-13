@@ -1,3 +1,5 @@
+import { enderecoPublico } from '@shared/supabase'
+
 /* Quem esta usando o sistema, e o que essa pessoa pode. */
 
 export type Papel = 'admin' | 'gerente' | 'vendedor' | 'producao' | 'estoquista' | 'analista'
@@ -65,6 +67,22 @@ export type Pessoa = {
   /** ja vem resolvido pelo banco: o padrao do papel, ou a lista so dela */
   paineis: Painel[]
   email: string
+  /** quando a foto foi trocada pela ultima vez; nulo significa sem foto */
+  fotoEm: string | null
+}
+
+/** O balde e o caminho da foto de perfil. O id no comeco do caminho e o que
+    deixa a regra de acesso dizer "voce so mexe no que esta na sua pasta". */
+export const BALDE_DAS_FOTOS = 'avatares'
+
+export function caminhoDaFoto(id: string): string {
+  return `${id}/foto.jpg`
+}
+
+/** O endereco da foto para usar num <img>, ou nulo quando nao tem foto. */
+export function fotoDe(p: { id: string; fotoEm: string | null }): string | null {
+  if (!p.fotoEm) return null
+  return enderecoPublico(BALDE_DAS_FOTOS, caminhoDaFoto(p.id), p.fotoEm)
 }
 
 /* Tres fases, e a esquecida e 'conferindo'. Ao abrir o sistema o cracha

@@ -69,9 +69,15 @@
 
 .cfg-quem {
   display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 180px;
+}
+.cfg-quem > div {
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 180px;
+  min-width: 0;
 }
 .cfg-quem b {
   display: flex;

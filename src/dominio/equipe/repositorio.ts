@@ -9,7 +9,7 @@ import type { Convite, PainelDoSistema, PessoaDaEquipe } from './tipos'
    nao vale nada. Quem recusa e a regra de acesso da tabela. Se um vendedor
    chamar aprovar() na mao, o banco devolve zero linhas alteradas. */
 
-const CAMPOS = 'id,nome,email,papel,situacao,paineis,criado_em,aprovado_em'
+const CAMPOS = 'id,nome,email,papel,situacao,paineis,criado_em,aprovado_em,foto_em'
 
 /** Os paineis que existem, na ordem do menu. Qualquer pessoa que entrou le. */
 export function listarPaineis(): Promise<PainelDoSistema[]> {
@@ -35,6 +35,7 @@ type LinhaDaPessoa = {
   paineis: Painel[] | null
   criado_em: string
   aprovado_em: string | null
+  foto_em: string | null
 }
 
 function arrumar(l: LinhaDaPessoa): PessoaDaEquipe {
@@ -47,6 +48,7 @@ function arrumar(l: LinhaDaPessoa): PessoaDaEquipe {
     paineis: l.paineis,
     criadoEm: l.criado_em,
     aprovadoEm: l.aprovado_em,
+    fotoEm: l.foto_em,
   }
 }
 

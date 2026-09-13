@@ -4,3 +4,4 @@ export { cadastrar, crachaValido, entrarComEmail, renovarAgora, sairDoSupabase }
 export type { Cracha } from './auth'
 export { chamar, SESSAO_VENCIDA, tabela } from './rest'
 export type { Metodo, Pedido } from './rest'
+export { apagarArquivo, enderecoPublico, subirArquivo } from './arquivos'

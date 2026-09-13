@@ -6,6 +6,8 @@ export type Sessao = {
   entrar: (email: string, senha: string) => Promise<void>
   criarConta: (nome: string, email: string, senha: string) => Promise<void>
   mudarMeuNome: (nome: string) => Promise<void>
+  trocarMinhaFoto: (arquivo: Blob) => Promise<void>
+  tirarMinhaFoto: () => Promise<void>
   /** pergunta de novo ao banco quem eu sou: usada depois que o admin aprova */
   reconferir: () => Promise<void>
   sair: () => Promise<void>

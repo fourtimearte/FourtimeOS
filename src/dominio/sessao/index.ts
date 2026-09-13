@@ -3,6 +3,9 @@ export { ProvedorDeSessao } from './provedor'
 export { useSessao } from './contexto'
 export type { Sessao } from './contexto'
 export {
+  BALDE_DAS_FOTOS,
+  caminhoDaFoto,
+  fotoDe,
   iniciaisDe,
   liberada,
   LINHA_DO_PAPEL,

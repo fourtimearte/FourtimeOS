@@ -1,11 +1,33 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
-import { ArrowClockwise, SignOut } from '@phosphor-icons/react'
-import { Aviso, avisar, Botao, Campo, Cartao, Entrada, Pagina, Selo, TituloCartao } from '@ds'
+import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { ArrowClockwise, Camera, SignOut, Trash } from '@phosphor-icons/react'
+import {
+  Avatar,
+  Aviso,
+  avisar,
+  Botao,
+  Campo,
+  Cartao,
+  Entrada,
+  Pagina,
+  Selo,
+  TituloCartao,
+} from '@ds'
 import { listarPaineis } from '@dominio/equipe'
 import type { PainelDoSistema } from '@dominio/equipe'
-import { NOME_DA_SITUACAO, NOME_DO_PAPEL, useSessao } from '@dominio/sessao'
+import {
+  fotoDe,
+  iniciaisDe,
+  NOME_DA_SITUACAO,
+  NOME_DO_PAPEL,
+  useSessao,
+} from '@dominio/sessao'
 import './perfil.css'
+
+/* A camera do tablet entrega arquivo de 4 a 8 MB. O balde recusa acima de
+   512 KB, mas quem encolhe e o navegador antes de subir: este limite aqui e
+   so para nao pedir ao navegador que abra um arquivo absurdo. */
+const MAIOR_ARQUIVO = 25 * 1024 * 1024
 
 /* Meu perfil.
 
@@ -14,13 +36,15 @@ import './perfil.css'
    conta, e agora?". Um menu vazio sem explicacao parece defeito. */
 
 export function TelaPerfil() {
-  const { estado, mudarMeuNome, reconferir, sair } = useSessao()
+  const { estado, mudarMeuNome, trocarMinhaFoto, tirarMinhaFoto, reconferir, sair } = useSessao()
   const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
 
   const [nome, setNome] = useState(pessoa?.nome ?? '')
   const [salvando, setSalvando] = useState(false)
   const [conferindo, setConferindo] = useState(false)
   const [paineis, setPaineis] = useState<PainelDoSistema[]>([])
+  const [mexendoNaFoto, setMexendoNaFoto] = useState(false)
+  const escolherArquivo = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (pessoa) setNome(pessoa.nome)
@@ -57,6 +81,43 @@ export function TelaPerfil() {
       avisar(falha instanceof Error ? falha.message : 'Não consegui salvar o nome.', 'brand')
     } finally {
       setSalvando(false)
+    }
+  }
+
+  async function pegarFoto(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    /* limpa o campo na hora: sem isso, escolher a MESMA foto de novo depois de
+       um erro nao dispara evento nenhum e parece que o botao morreu */
+    e.target.value = ''
+    if (!arquivo) return
+    if (!arquivo.type.startsWith('image/')) {
+      avisar('Escolha uma imagem.', 'brand')
+      return
+    }
+    if (arquivo.size > MAIOR_ARQUIVO) {
+      avisar('Essa imagem é grande demais.', 'brand')
+      return
+    }
+    setMexendoNaFoto(true)
+    try {
+      await trocarMinhaFoto(arquivo)
+      avisar('Foto trocada.', 'ok')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não consegui trocar a foto.', 'brand')
+    } finally {
+      setMexendoNaFoto(false)
+    }
+  }
+
+  async function removerFoto() {
+    setMexendoNaFoto(true)
+    try {
+      await tirarMinhaFoto()
+      avisar('Foto removida.', 'ok')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não consegui remover a foto.', 'brand')
+    } finally {
+      setMexendoNaFoto(false)
     }
   }
 
@@ -113,6 +174,41 @@ export function TelaPerfil() {
       <div className="pf-grade">
         <Cartao>
           <TituloCartao>Seus dados</TituloCartao>
+          <div className="pf-foto">
+            <Avatar iniciais={iniciaisDe(pessoa.nome)} foto={fotoDe(pessoa)} tamanho={72} />
+            <div>
+              <Botao
+                tom="contorno"
+                tamanho="sm"
+                carregando={mexendoNaFoto}
+                onClick={() => escolherArquivo.current?.click()}
+              >
+                <Camera size={16} />
+                {fotoDe(pessoa) ? 'Trocar foto' : 'Pôr uma foto'}
+              </Botao>
+              {fotoDe(pessoa) ? (
+                <Botao
+                  tom="limpo"
+                  tamanho="sm"
+                  icone
+                  title="Remover a foto"
+                  disabled={mexendoNaFoto}
+                  onClick={() => void removerFoto()}
+                >
+                  <Trash size={16} />
+                </Botao>
+              ) : null}
+              <p>Ela é cortada no quadrado e encolhida aqui no navegador antes de subir.</p>
+            </div>
+            <input
+              ref={escolherArquivo}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => void pegarFoto(e)}
+            />
+          </div>
+
           <form className="pf-form" onSubmit={salvarNome}>
             <Campo rotulo="Nome" dica="É como você aparece para o resto da equipe.">
               <Entrada

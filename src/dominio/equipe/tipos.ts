@@ -34,6 +34,7 @@ export type PessoaDaEquipe = {
   paineis: Painel[] | null
   criadoEm: string
   aprovadoEm: string | null
+  fotoEm: string | null
 }
 
 /** Um e-mail liberado para se cadastrar. Sem ele a conta nao nasce. */

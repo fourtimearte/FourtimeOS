@@ -41,6 +41,7 @@ export type { ItemBusca } from './componentes/busca-global'
 
 export {
   Amostra,
+  Avatar,
   Cartao,
   ChipTecnica,
   PilulaTecnica,

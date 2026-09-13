@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
+  apagarArquivo,
   cadastrar,
   chamar,
   crachaValido,
   entrarComEmail,
   sairDoSupabase,
+  subirArquivo,
   SUPABASE_LIGADO,
   tabela,
 } from '@shared/supabase'
+import { quadradoPequeno } from '@shared'
 import { ContextoDaSessao } from './contexto'
 import type { Sessao } from './contexto'
+import { BALDE_DAS_FOTOS, caminhoDaFoto } from './tipos'
 import type { Estado, Painel, Papel, Pessoa, Situacao } from './tipos'
 
 /* A sessao de verdade, com o Supabase por tras.
@@ -27,9 +31,11 @@ import type { Estado, Painel, Papel, Pessoa, Situacao } from './tipos'
 type LinhaDoPerfil = {
   id: string
   nome: string
+  email: string
   papel: Papel
   situacao: Situacao
   paineis: Painel[] | null
+  foto_em: string | null
 }
 
 const SEM_CADASTRO =
@@ -47,7 +53,8 @@ async function lerPerfil(email: string): Promise<Pessoa> {
     papel: linha.papel,
     situacao: linha.situacao,
     paineis: linha.paineis ?? [],
-    email,
+    email: linha.email || email,
+    fotoEm: linha.foto_em,
   }
 }
 
@@ -129,6 +136,35 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
     [depoisDoCracha],
   )
 
+  const eu = estado.fase === 'dentro' ? estado.pessoa : null
+
+  /* Trocar a foto sao tres passos, nesta ordem, e a ordem importa: encolhe,
+     sobe, e so entao avisa o banco. Se avisasse antes e o envio falhasse, a
+     pessoa ficaria com um endereco de foto que nao existe, e o que aparece
+     na tela e um retangulo quebrado em vez das iniciais. */
+  const trocarMinhaFoto = useCallback(
+    async (arquivo: Blob) => {
+      if (!eu) return
+      const pequena = await quadradoPequeno(arquivo)
+      await subirArquivo(BALDE_DAS_FOTOS, caminhoDaFoto(eu.id), pequena)
+      const quando = await chamar<string>('marcar_minha_foto', { tem: true })
+      if (vivo.current) {
+        setEstado({ fase: 'dentro', pessoa: { ...eu, fotoEm: quando } })
+      }
+    },
+    [eu],
+  )
+
+  /* Tirar e o contrario: some do banco primeiro, apaga o arquivo depois. Se o
+     apagar falhar, sobra um arquivo orfao que ninguem alcanca, e isso e bem
+     melhor do que a tela apontar para um arquivo que sumiu. */
+  const tirarMinhaFoto = useCallback(async () => {
+    if (!eu) return
+    await chamar<null>('marcar_minha_foto', { tem: false })
+    if (vivo.current) setEstado({ fase: 'dentro', pessoa: { ...eu, fotoEm: null } })
+    await apagarArquivo(BALDE_DAS_FOTOS, caminhoDaFoto(eu.id))
+  }, [eu])
+
   const mudarMeuNome = useCallback(async (nome: string) => {
     await chamar<null>('mudar_meu_nome', { novo: nome })
     if (vivo.current) {
@@ -146,8 +182,26 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
   }, [])
 
   const valor = useMemo<Sessao>(
-    () => ({ estado, entrar, criarConta, mudarMeuNome, reconferir, sair }),
-    [estado, entrar, criarConta, mudarMeuNome, reconferir, sair],
+    () => ({
+      estado,
+      entrar,
+      criarConta,
+      mudarMeuNome,
+      trocarMinhaFoto,
+      tirarMinhaFoto,
+      reconferir,
+      sair,
+    }),
+    [
+      estado,
+      entrar,
+      criarConta,
+      mudarMeuNome,
+      trocarMinhaFoto,
+      tirarMinhaFoto,
+      reconferir,
+      sair,
+    ],
   )
 
   return <ContextoDaSessao.Provider value={valor}>{children}</ContextoDaSessao.Provider>

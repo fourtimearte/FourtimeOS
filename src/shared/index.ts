@@ -11,3 +11,5 @@ export {
   linkDoWhatsApp,
   semAcento,
 } from './formatar'
+
+export { quadradoPequeno } from './imagem'

@@ -34,7 +34,7 @@ import {
   type SecaoDeNavegacao,
   type Tema,
 } from '@ds'
-import { iniciaisDe, podeVer, primeiroNome, useSessao } from '@dominio/sessao'
+import { fotoDe, iniciaisDe, podeVer, primeiroNome, useSessao } from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
 import { contarEsperando } from '@dominio/equipe'
@@ -262,7 +262,13 @@ export function App() {
               }
               onClick={() => navegar('/perfil')}
             >
-              {pessoa ? iniciaisDe(pessoa.nome) : '··'}
+              {pessoa && fotoDe(pessoa) ? (
+                <img src={fotoDe(pessoa) ?? ''} alt="" />
+              ) : pessoa ? (
+                iniciaisDe(pessoa.nome)
+              ) : (
+                '··'
+              )}
             </button>
           </>
         }

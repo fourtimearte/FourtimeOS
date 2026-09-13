@@ -658,36 +658,43 @@ function Produto({
      e a observação em texto rico. Ver o comentário do topo deste arquivo. */
   return (
     <section className="cartao ct-produto">
-      <ModuloDeLayout
-        bloco={b}
-        aoMudar={aoMudarBloco}
-        leitura={travado}
-        semValor={!comDinheiro}
-        acoes={acoes}
-        arte={
-          <CaixaDeImagem
-            leitura={travado}
-            imagem={b.imagem}
-            arte={b.arte}
-            aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
-          />
-        }
-        tabela={
-          <>
-            {!travado ? (
-              <div className="ct-preco-base">
-                <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
-                  <Entrada
-                    inputMode="decimal"
-                    value={produto.precoBase ? String(produto.precoBase) : ''}
-                    placeholder="0,00"
-                    onChange={(e) =>
-                      aoMudarProduto((p) => ({
-                        ...p,
-                        precoBase: Number(e.target.value.replace(',', '.')) || 0,
-                      }))
-                    }
-                  />
+      {/* O MIOLO EXISTE POR CAUSA DA MARGEM. O corpo antigo do produto era um
+          .ct-produto-corpo, e era ELE que tinha o respiro de 20px. Quando o
+          corpo virou o modulo de layout, o respiro foi junto e o modulo passou
+          a encostar nas quatro bordas do cartao, enquanto todos os outros
+          cartoes da tela seguiam com 20px. O rodape fica de fora porque ele e
+          uma faixa que atravessa o cartao inteiro e tem o respiro dele. */}
+      <div className="ct-produto-miolo">
+        <ModuloDeLayout
+          bloco={b}
+          aoMudar={aoMudarBloco}
+          leitura={travado}
+          semValor={!comDinheiro}
+          acoes={acoes}
+          arte={
+            <CaixaDeImagem
+              leitura={travado}
+              imagem={b.imagem}
+              arte={b.arte}
+              aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
+            />
+          }
+          tabela={
+            <>
+              {!travado ? (
+                <div className="ct-preco-base">
+                  <Campo rotulo="Valor base" dica="Vale para todo tamanho sem valor próprio">
+                    <Entrada
+                      inputMode="decimal"
+                      value={produto.precoBase ? String(produto.precoBase) : ''}
+                      placeholder="0,00"
+                      onChange={(e) =>
+                        aoMudarProduto((p) => ({
+                          ...p,
+                          precoBase: Number(e.target.value.replace(',', '.')) || 0,
+                        }))
+                      }
+                    />
                 </Campo>
               </div>
             ) : null}
@@ -710,8 +717,9 @@ function Produto({
             />
           </>
         }
-        pe={<SobreAPeca bloco={b} travado={travado} />}
-      />
+          pe={<SobreAPeca bloco={b} travado={travado} />}
+        />
+      </div>
       <footer className="ct-produto-pe">
         <span className="ct-selo-conta">
           {pecasDoProduto(produto)} peças

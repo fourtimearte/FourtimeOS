@@ -101,6 +101,16 @@
   overflow: hidden;
   min-width: 0;
 }
+/* O RESPIRO DO PRODUTO. Ele estava no .ct-produto-corpo, que era o corpo
+   antigo; com o modulo de layout no lugar dele o respiro sumiu e o modulo
+   passou a encostar nas quatro bordas. Os 20px sao os mesmos de todo cartao
+   desta tela, e a ficha de producao usa o mesmo desenho no .fc-peca. O rodape
+   nao entra aqui: ele e faixa de borda a borda e tem o respiro dele. */
+.ct-produto-miolo {
+  padding: var(--sp-5);
+  min-width: 0;
+}
+
 .ct-produto-topo {
   display: flex;
   flex-wrap: wrap;

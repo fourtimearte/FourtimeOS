@@ -176,9 +176,16 @@
   padding: 0 var(--sp-5) var(--sp-5);
   min-width: 0;
 }
+/* O TETO E DO CAMPO, NAO DA DICA. Os 200px foram medidos para a coluna de
+   280px do corpo antigo; com o modulo de layout a coluna passou a 372px e o
+   teto continuou apertando a dica, que quebrava em duas linhas ao lado de um
+   palmo de espaco vazio. Agora o valor continua estreito, que e o certo para
+   dinheiro, e a dica usa a coluna inteira. */
 .ct-preco-base {
-  max-width: 200px;
   margin-bottom: var(--sp-4);
+}
+.ct-preco-base input {
+  max-width: 200px;
 }
 
 .ct-acoes-produto {

@@ -90,6 +90,9 @@ export type AlvoDoNome = {
   rotulo: string
   dica?: string
   valor: string
+  /** o hexadecimal, quando o que se renomeia e uma cor: sem ver a cor ao lado
+      do campo, nomear cor e chute */
+  cor?: string
   gravar: (novo: string) => Promise<void>
 }
 
@@ -139,6 +142,11 @@ export function GavetaDeNome({ alvo, aoFechar }: { alvo: AlvoDoNome | null; aoFe
         </>
       }
     >
+      {alvo?.cor ? (
+        <div className="bd-cor-grande" style={{ background: alvo.cor }}>
+          <span>{alvo.cor.toUpperCase()}</span>
+        </div>
+      ) : null}
       {alvo ? (
         <Campo rotulo={alvo.rotulo} dica={alvo.dica}>
           <Entrada

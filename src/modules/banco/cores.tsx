@@ -97,9 +97,9 @@ export function CoresDeImpressao({
           onChange={(e) => aoProcurar(e.target.value)}
           placeholder="Buscar número, nome ou hexadecimal..."
         />
-        <span className="bd-fixa">
-          Tabela fixa da máquina: o número não muda. {podeMexer ? 'Clique num cartão para trocar o nome.' : null}
-        </span>
+        {podeMexer ? (
+          <span className="bd-fixa">Clique num cartão para trocar o nome.</span>
+        ) : null}
       </div>
 
       <p className="bd-conta">
@@ -122,6 +122,7 @@ export function CoresDeImpressao({
                   rotulo: 'Nome da cor',
                   dica: 'É este nome que sai no orçamento do cliente. O número continua o mesmo.',
                   valor: c.nome,
+                  cor: c.hex,
                   gravar: async (novo) => {
                     aoTrocarCor(await renomearCorDeImpressao(c.codigo, novo))
                     avisar(`${c.codigo} agora é ${novo}.`, 'ok')
@@ -301,6 +302,7 @@ export function CoresDeTecido({
                       titulo: c.nome,
                       rotulo: 'Nome da cor',
                       valor: c.nome,
+                      cor: c.hex,
                       gravar: async (novo) => {
                         aoTrocar(await mudarCorDeTecido(c.id, { nome: novo }))
                         avisar('Nome trocado.', 'ok')

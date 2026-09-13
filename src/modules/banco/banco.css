@@ -177,7 +177,10 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent);
+  /* tracejado enquanto nao tem cor: um quadrado invisivel ao lado do campo
+     parece falha de desenho, e nao "ainda nao escrevi o hexadecimal" */
+  border: 1px dashed var(--border-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 .bd-hex .entrada {
   width: 110px;
@@ -375,7 +378,7 @@
    ajeita sozinha: em 390 px cabem três por linha, no monitor cabem doze. */
 .bd-grade-cores {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   gap: 10px;
   min-width: 0;
 }
@@ -419,6 +422,9 @@
   letter-spacing: 0.02em;
 }
 .bd-cartao-cor .bd-cor-nome {
+  /* duas linhas reservadas, e nunca cortado: o nome comprido cresce e a
+     fileira acompanha. Cortar nome em tela de cadastro e esconder o dado. */
+  min-height: 2.7em;
   padding: 2px 8px 9px;
   font-size: 11px;
   line-height: 1.35;
@@ -505,4 +511,23 @@
   .bd-item > span {
     overflow: visible;
   }
+}
+
+/* a cor em tamanho de olhar, na gaveta que renomeia */
+.bd-cor-grande {
+  display: grid;
+  place-items: center;
+  height: 96px;
+  margin-bottom: var(--sp-4);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.bd-cor-grande span {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }

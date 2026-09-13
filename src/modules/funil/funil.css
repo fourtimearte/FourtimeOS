@@ -77,14 +77,35 @@
   padding: 10px 4px 12px;
   border-bottom: 2px solid var(--c, var(--border-2));
 }
+/* O NOME DA COLUNA É UMA PÍLULA NA COR DO ESTÁGIO. Ele estava em cinza de
+   texto comum, e a única cor do topo era o filete de 2px embaixo, que a essa
+   altura já estava longe do nome. Com a pílula, a cor fica ONDE está o nome,
+   e o cartão lá embaixo repete a mesma cor no filete: o olho liga os dois
+   sem precisar de legenda.
+
+   O `margin-right: auto` faz o trabalho que o `flex: 1` fazia: empurra a
+   contagem e o valor para a direita. A diferença é que agora a pílula tem a
+   largura do nome, e não a da coluna inteira, que é o que faz dela pílula. */
 .fn-col-topo .t {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
+  margin-right: auto;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--c, var(--ink)) 13%, transparent);
+  color: var(--c, var(--text));
+  font-size: 12.5px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* No escuro o hexadecimal do estágio fica escuro demais sobre o fundo
+   escuro. A cor continua sendo a mesma: ela só é clareada o bastante para
+   ser lida, e o fundo da pílula ganha um pouco mais de presença. */
+[data-theme='dark'] .fn-col-topo .t {
+  background: color-mix(in srgb, var(--c, var(--ink)) 22%, transparent);
+  color: color-mix(in srgb, var(--c, var(--ink)) 55%, #ffffff);
 }
 .fn-col-topo .n {
   flex: none;
@@ -125,7 +146,11 @@
   gap: 8px;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  /* A ESQUERDA É RETA. O filete de accento vai de canto a canto daquele lado,
+     e canto arredondado por cima de um filete reto deixa duas pontas de fundo
+     aparecendo, uma em cima e outra embaixo. Reto dos dois lados, o filete
+     vira a borda esquerda do cartão, e não um adesivo colado nela. */
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   background: var(--surface);
   box-shadow: var(--shadow-card);
   cursor: grab;
@@ -136,26 +161,39 @@
     box-shadow var(--t-fast) var(--ease-out),
     border-color var(--t-fast) var(--ease-out);
 }
-/* o filete na lateral esquerda, como no v5 */
+/* O FILETE NA LATERAL ESQUERDA, NA COR DO ESTÁGIO. Ele era cinza em todas as
+   colunas, e um filete cinza igual em seis colunas não informa nada: era
+   enfeite. Agora ele carrega a cor da coluna em que o cartão está, então um
+   cartão arrastado para a coluna errada se denuncia pela cor antes de alguém
+   ler o nome dele.
+
+   O `--c` vem da coluna, por herança. Um cartão fora de coluna nenhuma (o
+   fantasma do arrasto) cai no cinza de borda, que é o certo: durante o
+   arrasto ele ainda não pertence a lugar nenhum. */
 .fn-card::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--border-2);
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--c, var(--border-2));
+  transition: width var(--t-fast) var(--ease-out);
 }
 .fn-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
 }
+/* A BORDA DE SELEÇÃO TAMBÉM É A COR DO ESTÁGIO. Era preta, e preto é a cor
+   de "selecionado" de qualquer lugar do sistema: aqui ela apagava a única
+   informação que o cartão dava de longe. Selecionado agora é o mesmo cartão
+   com a própria cor mais forte e o filete mais grosso. */
 .fn-card.aberto {
-  border-color: var(--ink);
+  border-color: var(--c, var(--ink));
+  box-shadow: var(--shadow);
 }
 .fn-card.aberto::before {
-  background: var(--ink);
+  width: 7px;
 }
 .fn-card.carregando {
   opacity: 0.45;

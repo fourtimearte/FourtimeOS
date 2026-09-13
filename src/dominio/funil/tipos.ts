@@ -32,11 +32,36 @@ export const NOME_DO_ESTAGIO: Record<Estagio, string> = {
 /** Os dois estagios em que o relogio nao corre mais. */
 export const ESTAGIO_FECHADO: Estagio[] = ['fechado', 'perdido']
 
-/** A cor da barra de cada coluna, como no v5: fechado verde, perdido apagado. */
+/* ==========================================================================
+   A COR DE CADA ESTÁGIO É UMA PROGRESSÃO, E NÃO UMA PALETA.
+
+   As quatro primeiras esquentam na ordem em que a negociação anda: ardósia
+   fria no lead que ninguém tocou, azul quando alguém está falando com ele,
+   turquesa quando o número já saiu, âmbar quando está quente e esperando
+   resposta. Quem bate o olho no quadro lê o avanço pela temperatura, antes
+   de ler o nome da coluna.
+
+   As duas últimas saem da rampa DE PROPÓSITO, porque não são degraus do
+   mesmo caminho: são os dois fins. Verde é o sim, e cinza lavado é o não,
+   que some da vista em vez de disputar atenção com quem ainda está vivo.
+
+   São hexadecimais e não tokens do tema: a cor aqui é significado, e não
+   superfície. Ela tem que dizer a mesma coisa no claro e no escuro, e um
+   token de tema mudaria de valor entre os dois. A saturação é média de
+   propósito, para o filete continuar legível sobre fundo claro e escuro.
+   ========================================================================== */
+export const COR_DO_ESTAGIO: Record<Estagio, string> = {
+  novo: '#64748B',
+  atendimento: '#2F6FB8',
+  cotacao: '#0E8C93',
+  negociando: '#B7791F',
+  fechado: '#1F8A50',
+  perdido: '#A8B0BA',
+}
+
+/** A cor da coluna, do filete do cartão e da pílula do topo. */
 export function corDoEstagio(e: Estagio): string {
-  if (e === 'fechado') return 'var(--ok)'
-  if (e === 'perdido') return 'var(--text-3)'
-  return 'var(--ink)'
+  return COR_DO_ESTAGIO[e] ?? 'var(--ink)'
 }
 
 export type Mensagem = {

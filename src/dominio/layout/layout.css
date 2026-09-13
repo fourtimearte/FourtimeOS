@@ -103,6 +103,14 @@
   text-align: left;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
+  /* O FIO ENTRE AS COLUNAS. Sem ele a grade era uma lista de números soltos:
+     com quatro colunas de número, o olho precisa da coluna desenhada para
+     saber onde a quantidade acaba e o valor começa. Ele morre na última
+     coluna, senão dobraria com a borda da caixa. */
+  border-right: 1px solid var(--border);
+}
+.gr-tab tr > :last-child {
+  border-right: 0;
 }
 .gr-tab th {
   font-size: 12px;

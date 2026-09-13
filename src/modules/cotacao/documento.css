@@ -199,8 +199,13 @@
 }
 
 /* --- os informes na folha ------------------------------------------------ */
+/* OS INFORMES SAO NOVE PARAGRAFOS DE LETRA MIUDA, e eles nao competem com o
+   resumo nem com o aceite pela atencao de ninguem: quem le um orcamento le a
+   tabela e a assinatura, e passa o olho nas clausulas. Apertados, os tres
+   blocos da folha de dados cabem numa folha so ate um pedido de umas seis
+   pecas; dai para cima eles paginam, que e o certo. */
 .dc-informes {
-  margin-top: 6mm;
+  margin-top: 4mm;
 }
 .dc-informes h3 {
   margin: 0 0 2mm;
@@ -211,11 +216,11 @@
 }
 .dc-informes ol {
   margin: 0;
-  padding-left: 5mm;
+  padding-left: 4.5mm;
   display: grid;
-  gap: 1.4mm;
+  gap: 1mm;
 }
 .dc-informes li {
-  font-size: 8.4pt;
-  line-height: 1.45;
+  font-size: 8pt;
+  line-height: 1.35;
 }

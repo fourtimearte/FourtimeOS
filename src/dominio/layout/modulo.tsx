@@ -220,9 +220,11 @@ export function ModuloDeLayout({
               <span className="v">
                 {bloco.referencia
                   ? bloco.referencia + '  ' + bloco.nomeDaReferencia
-                  : info
-                    ? 'do que se trata este anexo'
-                    : 'Referência'}
+                  : leitura
+                    ? 'sem referência'
+                    : info
+                      ? 'do que se trata este anexo'
+                      : 'Referência'}
               </span>
             </button>
             {/* A BOLINHA SÓ PINTA O CAMPO. Ela não mexe na grade de tamanhos,
@@ -230,7 +232,10 @@ export function ModuloDeLayout({
                 tabela, e só ele. Gênero infantil e grade infantil são duas
                 perguntas diferentes, e uma peça infantil pode muito bem ser
                 vendida na grade adulta do mesmo pedido. */}
-            {info ? null : (
+            {/* AS BOLINHAS SÃO UM CONTROLE, e somem no papel: na v3.375 elas
+                têm @media print{display:none} pelo mesmo motivo. O gênero
+                continua dito pela cor do campo, que imprime. */}
+            {info || leitura ? null : (
               <BolinhasDeGenero genero={bloco.genero} aoEscolher={(g) => mudar({ genero: g })} />
             )}
           </div>
@@ -359,16 +364,17 @@ export function ModuloDeLayout({
               <div className="mod-tabela">{tabela}</div>
 
               {/* --- a observação do layout --- */}
-              <section className="mod-cartao mod-obs">
-                {leitura && !bloco.observacao ? null : (
+              {/* cartao vazio no papel e um retangulo que nao diz nada */}
+              {leitura && !bloco.observacao ? null : (
+                <section className="mod-cartao mod-obs">
                   <AreaDeTextoRico
                     valor={bloco.observacao}
                     aoMudar={(html) => mudar({ observacao: html })}
                     convite="Observações do layout..."
                     leitura={leitura}
                   />
-                )}
-              </section>
+                </section>
+              )}
           </>
         )}
       </div>

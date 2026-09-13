@@ -25,7 +25,7 @@
 .fc-cab {
   display: grid;
   grid-template-columns: 186px repeat(6, minmax(0, 1fr));
-  grid-auto-rows: minmax(58px, auto);
+  grid-auto-rows: minmax(64px, auto);
   gap: 1px;
   padding: 1px;
   background: var(--border);
@@ -55,8 +55,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 8px 14px;
+  gap: 4px;
+  padding: 10px 14px;
 }
 .fc-cnpj-num {
   font-size: 12.5px;
@@ -69,7 +69,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  padding: 8px 14px;
+  padding: 10px 14px;
 }
 .fc-selo {
   display: inline-flex;
@@ -119,8 +119,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
-  padding: 7px 12px;
+  gap: 5px;
+  padding: 10px 14px;
   min-width: 0;
 }
 /* um campo comum ocupa duas meias colunas; Pedido e Envio, uma cada */
@@ -171,16 +171,71 @@
   box-shadow: 0 2px 0 -1px var(--brand);
 }
 
-/* o Seletor dentro da célula não é um campo de formulário: ele é o valor */
-.fc-campo .seletor,
-.fc-campo .btn-seletor {
-  border: 0;
-  background: transparent;
-  padding: 0;
+/* O SELETOR E A DATA DENTRO DA CÉLULA NÃO SÃO CAMPOS DE FORMULÁRIO: eles são
+   o VALOR, como o texto digitado ao lado. Estas regras já existiam e não
+   valiam nada: miravam ".seletor" e ".btn-seletor", nomes que o Design System
+   não usa. As classes de verdade são .sel e .cb, e é por isso que a célula do
+   Vendedor aparecia com uma caixa de 34 px e a do Envio com outra de 40, ao
+   lado de um Cliente que era só texto. Três alturas na mesma fileira.
+
+   Aqui as três viram a mesma coisa: 14 px, sem moldura, coladas na mesma
+   linha de base, com a seta e o calendário miúdos no canto direito. O sinal
+   de foco é o mesmo fio vermelho embaixo que o campo digitado usa. */
+.fc-campo .sel,
+.fc-campo .data {
+  width: 100%;
+  min-width: 0;
+}
+.fc-campo .sel > .cb,
+.fc-campo .data {
   height: auto;
-  min-height: 21px;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   font-size: 14px;
   font-weight: 500;
+  color: var(--text);
+  gap: 6px;
+}
+.fc-campo .sel > .cb .v {
+  font-weight: 500;
+}
+.fc-campo .sel:not(.marcado) > .cb .v,
+.fc-campo .data .data-campo::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+.fc-campo .sel > .cb .seta {
+  font-size: 8px;
+}
+.fc-campo .data-campo {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0;
+}
+/* o botão do calendário encolhe para o tamanho da seta do seletor: eram os
+   dois ícones, e não o texto, que mandavam na altura da fileira */
+.fc-campo .data-bt {
+  width: 22px;
+  height: 22px;
+}
+.fc-campo .sel > .cb:hover,
+.fc-campo .data:hover {
+  border: 0;
+  box-shadow: none;
+}
+.fc-campo .sel > .cb:hover .seta,
+.fc-campo .data:hover .data-bt {
+  color: var(--text-2);
+}
+.fc-campo .sel.aberto > .cb,
+.fc-campo .data:focus-within,
+.fc-campo .data.aberto {
+  border: 0;
+  box-shadow: 0 2px 0 -1px var(--brand);
 }
 
 .fc-caixa-total {

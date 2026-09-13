@@ -25,7 +25,7 @@
 .mod-topo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -33,9 +33,9 @@
   flex: none;
   display: inline-grid;
   place-items: center;
-  min-width: 46px;
-  height: 34px;
-  padding: 0 9px;
+  min-width: 50px;
+  height: 38px;
+  padding: 0 10px;
   border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--brand) 10%, transparent);
@@ -53,8 +53,8 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  height: 34px;
-  padding: 0 8px 0 12px;
+  height: 38px;
+  padding: 0 10px 0 12px;
   border: 1px solid var(--border-2);
   border-radius: var(--radius);
   background: var(--surface);
@@ -94,7 +94,7 @@
   background: transparent;
   padding: 0;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
   text-align: left;
@@ -157,7 +157,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 8px 7px 12px;
+  padding: 8px 8px 8px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
@@ -171,8 +171,8 @@
 .mod-add {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   flex: none;
   border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
@@ -199,8 +199,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0 6px;
-  padding: 6px 8px 6px 6px;
+  gap: 1px 8px;
+  padding: 8px 8px 8px 8px;
   border-bottom: 1px solid var(--border);
   min-width: 0;
 }
@@ -225,7 +225,7 @@
 }
 .mod-tec-nome {
   grid-row: 1;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text);
 }
 /* a cor é a legenda do tecido, e legenda é menor: em corpo igual as duas

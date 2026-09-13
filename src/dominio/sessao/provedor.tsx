@@ -40,6 +40,20 @@ type LinhaDoPerfil = {
 
 const SEM_CADASTRO =
   'Sua conta entrou, mas não tem cadastro no sistema. Fale com o administrador.'
+
+/* A senha estava certa e mesmo assim nao deu.
+
+   Esta frase existe por causa de um dia especifico: um grant perdido no banco
+   fazia o login ser aceito e a sessao cair meio segundo depois. A tela dizia
+   'seu acesso não permite fazer isso', a pessoa lia aquilo numa tela de
+   entrada, concluia que tinha errado a senha, e foi procurar a senha certa
+   que ja estava certa.
+
+   Quando a senha passa e o cadastro nao carrega, o problema e do sistema, e a
+   frase tem que dizer isso, para ninguem perder vinte minutos no lugar errado. */
+const SENHA_OK_MAS_NAO_CARREGOU =
+  'Sua senha está certa, mas o sistema não conseguiu carregar seu cadastro. ' +
+  'Isso é problema aqui, não seu. Tente de novo em um minuto e avise o administrador.'
 const DESLIGADO =
   'O sistema ainda não está ligado ao banco. Falta configurar o endereço e a chave do Supabase.'
 
@@ -114,7 +128,10 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
     } catch (e) {
       await sairDoSupabase()
       if (vivo.current) setEstado({ fase: 'fora' })
-      throw e
+      /* 'sem cadastro' a pessoa entende e sabe o que fazer. Qualquer outra
+         falha aqui e defeito nosso, e a tela nao pode deixar parecer senha. */
+      const recado = e instanceof Error ? e.message : ''
+      throw new Error(recado === SEM_CADASTRO ? recado : SENHA_OK_MAS_NAO_CARREGOU)
     }
   }, [])
 

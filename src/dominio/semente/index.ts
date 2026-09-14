@@ -237,9 +237,28 @@ export async function semearCotacoes(): Promise<ResultadoDaSemente> {
   let recusados = 0
   const recados: string[] = []
 
+  /* A cotação de exemplo traz o cliente com o id da era do Bling ("C0001"), que
+     não é um uuid e não vincula nada. Semear assim daria seis cotações soltas,
+     e a ficha do cliente continuaria dizendo "nenhum pedido neste sistema"
+     depois de uma delas ser aprovada.
+
+     Então o vínculo é refeito pelo NOME, que é a identidade do cliente neste
+     sistema (a trava de nome único existe por isso). O que não achar cliente
+     fica sem vínculo mesmo: cotação sem cliente cadastrado é uma situação real,
+     e semear uma dessas exercita a tela que a mostra. */
+  const porNome = new Map<string, string>()
+  try {
+    const lista = await tabela<{ id: string; nome: string }[]>('cliente?select=id,nome')
+    for (const cl of lista) porNome.set(cl.nome.trim().toLowerCase(), cl.id)
+  } catch {
+    /* sem a lista, as cotações entram sem vínculo */
+  }
+
   for (let i = 0; i < COTACOES_DE_EXEMPLO.length; i++) {
     try {
       const c = montarCotacaoDeExemplo(COTACOES_DE_EXEMPLO[i], i)
+      const clienteId = porNome.get(c.cliente.nome.trim().toLowerCase()) ?? ''
+      c.cliente = { ...c.cliente, id: clienteId }
       const numero = await chamar<string>('proximo_numero_de_cotacao')
       const { id: _id, criadaEm: _c, alteradaEm: _a, ...corpo } = { ...c, numero }
       await tabela('cotacao', {
@@ -248,6 +267,7 @@ export async function semearCotacoes(): Promise<ResultadoDaSemente> {
           {
             numero,
             corpo,
+            cliente_id: clienteId || null,
             versao_do_formato: VERSAO_DO_CFT,
             cliente_nome: c.cliente.nome,
             cliente_cidade: c.cliente.cidade,

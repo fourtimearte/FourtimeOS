@@ -1,3 +1,4 @@
+import { vinculo } from '@shared'
 import { tabela } from '@shared/supabase'
 import { ESTAGIOS, type Estagio, type Lead, type Mensagem } from './tipos'
 
@@ -71,10 +72,10 @@ function paraLinha(l: Lead) {
     nome: l.nomeLivre.trim() || 'Novo lead',
     contato: l.contato,
     telefone: l.telefone,
-    cliente_id: l.clienteId || null,
+    cliente_id: vinculo(l.clienteId),
     estagio: l.estagio,
     valor: l.valor,
-    vendedor_id: l.vendedorId || null,
+    vendedor_id: vinculo(l.vendedorId),
   }
 }
 

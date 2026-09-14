@@ -1,3 +1,4 @@
+import { vinculo } from '@shared'
 import { chamar, tabela } from '@shared/supabase'
 import { VERSAO_DO_BLOCO } from '../layout/bloco'
 import { arrumarCotacao } from './arquivo'
@@ -164,12 +165,19 @@ function corpoDe(c: Cotacao) {
    banco nao merece um degrau. */
 export type LigacoesDaCotacao = { leadId?: string }
 
+/* O ID DO CLIENTE PASSA PELA PENEIRA DE shared/id.
+
+   O documento carrega o id do cliente dentro dele, e esse id nem sempre e um
+   uuid: as cotacoes da era do Bling tem "C0001", e todo .cft salvo antes desta
+   virada tambem. Foi assim que a primeira aprovacao de uma cotacao semeada
+   falhou em silencio: o botao nao fazia nada, porque o PATCH voltava 400 antes
+   de chegar na aprovacao. */
 function colunasDe(c: Cotacao, l: LigacoesDaCotacao = {}) {
   return {
-    ...(l.leadId ? { lead_id: l.leadId } : {}),
+    ...(l.leadId ? { lead_id: vinculo(l.leadId) } : {}),
     corpo: corpoDe(c),
     versao_do_formato: VERSAO_DO_CFT,
-    cliente_id: c.cliente.id || null,
+    cliente_id: vinculo(c.cliente.id),
     cliente_nome: c.cliente.nome,
     cliente_cidade: c.cliente.cidade,
     cliente_uf: c.cliente.uf,

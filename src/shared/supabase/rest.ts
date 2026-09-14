@@ -35,6 +35,12 @@ type ErroDoBanco = { message?: string; hint?: string; details?: string; code?: s
 /* O nome que a pessoa entende para os erros que o banco tem nome tecnico. */
 function recadoDoBanco(erro: ErroDoBanco, situacao: number): string {
   if (erro.code === '23505') return 'Já existe um cadastro com esse nome.'
+  /* 22P02 e 23503 sao erros de LIGACAO entre tabelas, e a mensagem crua deles
+     fala de uuid e de chave estrangeira, que nao diz nada para quem esta
+     vendendo. Eles quase sempre significam a mesma coisa do lado de ca: um id
+     guardado num documento antigo que nao existe mais no banco. */
+  if (erro.code === '22P02') return 'Um dos vínculos deste registro está com um código antigo.'
+  if (erro.code === '23503') return 'Este registro aponta para algo que não existe mais no banco.'
   if (erro.code === '42501' || /permission denied/i.test(erro.message ?? '')) {
     return 'Seu acesso não permite fazer isso.'
   }

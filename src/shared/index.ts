@@ -13,3 +13,4 @@ export {
 } from './formatar'
 
 export { quadradoPequeno } from './imagem'
+export { ehUuid, vinculo } from './id'

@@ -33,7 +33,7 @@ delete from public.lead where nome='Time Novo';
 
 \echo '--- aprovar a mesma cotacao duas vezes ---'
 do $$ begin
-  perform public.aprovar_cotacao((select id from public.cotacao where numero='2026-0001'));
+  perform public.aprovar_cotacao((select id from public.cotacao where numero like 'CO%-0001'));
   raise notice 'FALHA DO TESTE: aprovou duas vezes';
 exception when unique_violation then
   raise notice 'ok: recusou a segunda aprovacao (%)', sqlerrm;

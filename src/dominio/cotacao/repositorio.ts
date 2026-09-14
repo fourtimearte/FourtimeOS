@@ -137,7 +137,7 @@ type Semente = {
 
 const SEMENTES: Semente[] = [
   {
-    numero: '2026-0184',
+    numero: 'CO2026-0184',
     estado: 'rascunho',
     cliente: { id: 'C0001', nome: 'CrossBox Delta', cidade: 'Uberlândia', uf: 'MG', contato: 'Diego' },
     vendedor: 'Dani',
@@ -145,7 +145,7 @@ const SEMENTES: Semente[] = [
     produtos: 2,
   },
   {
-    numero: '2026-0183',
+    numero: 'CO2026-0183',
     estado: 'enviada',
     cliente: { id: 'C0002', nome: 'Escola Girassol', cidade: 'Goiânia', uf: 'GO', contato: 'Paulo' },
     vendedor: 'Lucas',
@@ -153,7 +153,7 @@ const SEMENTES: Semente[] = [
     produtos: 3,
   },
   {
-    numero: '2026-0182',
+    numero: 'CO2026-0182',
     estado: 'aprovada',
     cliente: { id: 'C0003', nome: 'Igreja Rio Claro', cidade: 'Rio Verde', uf: 'GO', contato: 'Renata' },
     vendedor: 'Dani',
@@ -161,7 +161,7 @@ const SEMENTES: Semente[] = [
     produtos: 1,
   },
   {
-    numero: '2026-0181',
+    numero: 'CO2026-0181',
     estado: 'enviada',
     cliente: { id: 'C0007', nome: 'Time Aliança', cidade: 'Anápolis', uf: 'GO', contato: 'Bruno' },
     vendedor: 'Lucas',
@@ -169,7 +169,7 @@ const SEMENTES: Semente[] = [
     produtos: 2,
   },
   {
-    numero: '2026-0180',
+    numero: 'CO2026-0180',
     estado: 'recusada',
     cliente: { id: 'C0011', nome: 'Academia Pulso', cidade: 'Brasília', uf: 'DF', contato: 'Sara' },
     vendedor: 'Dani',
@@ -177,7 +177,7 @@ const SEMENTES: Semente[] = [
     produtos: 1,
   },
   {
-    numero: '2026-0179',
+    numero: 'CO2026-0179',
     estado: 'vencida',
     cliente: { id: 'C0015', nome: 'Colégio Nova Era', cidade: 'Goiânia', uf: 'GO', contato: 'Heitor' },
     vendedor: 'Lucas',
@@ -205,7 +205,7 @@ function montarExemplo(s: Semente, i: number): Cotacao {
   }
 
   return {
-    id: 'CT' + s.numero.replace('-', ''),
+    id: 'CT' + s.numero.replace(/\D/g, ''),
     numero: s.numero,
     versaoDoFormato: VERSAO_DO_CFT,
     estado: s.estado,
@@ -337,15 +337,29 @@ export function acharCotacao(id: string): Cotacao | null {
   return base.find((c) => c.id === id) ?? null
 }
 
-/** O proximo numero da serie, no formato ano-sequencia. */
+/* O proximo numero da serie: CO, o ano, e quatro digitos que reiniciam todo
+   ano. O CO na frente existe porque o numero da cotacao anda ao lado do numero
+   do pedido, e "2026-0001" sozinho numa conversa de WhatsApp nao diz o que e:
+   parece data. CO2026-0001 e PD004053 se leem de longe e sem legenda.
+
+   A leitura aceita o formato antigo, sem o CO. Nao e zelo exagerado: cotacao
+   guardada no navegador antes da troca continua com o numero velho, e se ela
+   ficasse de fora da conta o proximo numero repetiria um que ja existe. */
+export const PREFIXO_DA_COTACAO = 'CO'
+
+export function sequenciaDoNumero(numero: string, ano: number): number | null {
+  const m = /^(?:CO)?(\d{4})-(\d{1,6})$/.exec(String(numero || ''))
+  if (!m || Number(m[1]) !== ano) return null
+  return Number(m[2]) || 0
+}
+
 export function proximoNumero(): string {
   const ano = new Date().getFullYear()
   const doAno = base
-    .map((c) => c.numero)
-    .filter((n) => n.startsWith(ano + '-'))
-    .map((n) => Number(n.slice(5)) || 0)
+    .map((c) => sequenciaDoNumero(c.numero, ano))
+    .filter((n): n is number => n !== null)
   const proximo = (doAno.length ? Math.max(...doAno) : 0) + 1
-  return ano + '-' + String(proximo).padStart(4, '0')
+  return PREFIXO_DA_COTACAO + ano + '-' + String(proximo).padStart(4, '0')
 }
 
 export function salvarCotacao(c: Cotacao): Cotacao {

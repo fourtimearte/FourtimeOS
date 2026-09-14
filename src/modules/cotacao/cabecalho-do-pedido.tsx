@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { Plus, X } from '@phosphor-icons/react'
 import { Campo, CampoDeData, Entrada, Flutuante, Seletor } from '@ds'
 import {
+  opcoesDeDepartamento,
   DEPARTAMENTOS,
   EMBALAGENS,
   ENTREGAS,
@@ -241,7 +242,7 @@ export function CabecalhoDoPedido({
                 bloco
                 campo
                 valor={c.producao.departamento}
-                opcoes={emOpcao(DEPARTAMENTOS)}
+                opcoes={opcoesDeDepartamento(DEPARTAMENTOS)}
                 vazio="Escolher"
                 aoEscolher={(v) => mudarProducao({ departamento: v })}
               />

@@ -186,3 +186,9 @@ export function combina(procurado: string, ...campos: string[]): boolean {
   if (!p) return true
   return campos.some((c) => chave(c).includes(p))
 }
+export {
+  SeloDeDepartamento,
+  familiaDoDepartamento,
+  opcoesDeDepartamento,
+  pilulaDoDepartamento,
+} from './departamento'

@@ -8,6 +8,7 @@ import {
   itensDaLista,
   renomearItemDeLista,
 } from '@dominio/banco'
+import { SeloDeDepartamento } from '@dominio/banco'
 import type { Banco, ItemDeLista, TipoDeLista } from '@dominio/banco'
 import { Linha } from './pecas'
 import type { AlvoDeApagar, AlvoDoNome } from './pecas'
@@ -116,7 +117,10 @@ export function Listas({
           {lista.map((i) => (
             <Linha
               key={i.valor}
-              nome={i.valor}
+              /* o departamento é família de técnica, e a cor diz qual antes de
+                 alguém ler a palavra. As outras quatro listas são texto solto
+                 mesmo, e uma pílula nelas seria enfeite. */
+              nome={tipo === 'departamento' ? <SeloDeDepartamento nome={i.valor} /> : i.valor}
               podeMexer={podeMexer}
               aoRenomear={() =>
                 pedirNome({

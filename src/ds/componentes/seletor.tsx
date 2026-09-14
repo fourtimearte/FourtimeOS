@@ -2,7 +2,20 @@ import { useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Flutuante, semAcento } from './flutuante'
 
-export type OpcaoDoSeletor = { valor: string; rotulo: string; contagem?: number }
+export type OpcaoDoSeletor = {
+  valor: string
+  rotulo: string
+  contagem?: number
+  /* A PÍLULA É DA OPÇÃO, E NÃO DO SELETOR. Algumas listas do banco não são
+     texto solto: departamento é uma família de técnica, e a cor diz qual
+     antes de alguém ler a palavra. Quando a opção traz as duas cores, o
+     rótulo é desenhado dentro de uma pílula clara, no botão e na lista.
+
+     O `rotulo` continua sendo TEXTO de propósito: é por ele que a busca do
+     seletor filtra, e uma busca que não acha "bordado" porque o rótulo virou
+     um elemento seria um defeito escondido atrás de uma cor bonita. */
+  pilula?: { fundo: string; texto: string }
+}
 
 /* ==========================================================================
    O seletor: o dropdown proprio do sistema.
@@ -76,7 +89,16 @@ export function Seletor({
     >
       <button ref={bt} type="button" className="cb" onClick={() => setAberto((a) => !a)}>
         {rotulo ? <span className="lb">{rotulo}</span> : null}
-        <span className="v">{escolhida ? escolhida.rotulo : vazio}</span>
+        {escolhida?.pilula ? (
+          <span
+            className="v pilula"
+            style={{ background: escolhida.pilula.fundo, color: escolhida.pilula.texto }}
+          >
+            {escolhida.rotulo}
+          </span>
+        ) : (
+          <span className="v">{escolhida ? escolhida.rotulo : vazio}</span>
+        )}
         <span className="seta">▼</span>
       </button>
 
@@ -135,7 +157,16 @@ export function Seletor({
                   fechar()
                 }}
               >
-                <span className="nm">{o.rotulo}</span>
+                {o.pilula ? (
+                  <span
+                    className="nm pilula"
+                    style={{ background: o.pilula.fundo, color: o.pilula.texto }}
+                  >
+                    {o.rotulo}
+                  </span>
+                ) : (
+                  <span className="nm">{o.rotulo}</span>
+                )}
                 {o.contagem != null ? (
                   <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--text-3)' }}>
                     {o.contagem}

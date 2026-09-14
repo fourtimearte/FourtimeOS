@@ -1314,6 +1314,23 @@ dialog.cmdk .caixa {
   font-size: 12.5px;
   flex: none;
 }
+/* A PÍLULA DENTRO DO SELETOR. Ela é clara de propósito: a cor está ali para
+   dizer de que família a opção é, e não para disputar atenção com o valor.
+   `flex: 0 0 auto` porque a pílula tem a largura da palavra: esticada até o
+   fim do campo ela deixaria de ser pílula e viraria uma faixa. */
+.sel .pilula {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .sel > .cb .v {
   flex: 1;
   min-width: 0;
@@ -1800,4 +1817,20 @@ dialog.cmdk .caixa {
   display: flex;
   flex-wrap: wrap;
   gap: var(--gap-btn);
+}
+
+/* A PÍLULA DO DEPARTAMENTO. Ela nasceu no banco de dados e apareceu no
+   cabeçalho do pedido no mesmo dia, então o desenho dela mora aqui, num lugar
+   só: duas cópias de uma pílula divergem na primeira vez que alguém acerta o
+   espaçamento de uma delas. As CORES não vêm daqui, e sim de quem a usa: elas
+   são da família de técnica do departamento. Ver dominio/banco/departamento. */
+.selo-depto {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
 }

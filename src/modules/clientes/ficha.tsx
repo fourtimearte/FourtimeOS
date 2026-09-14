@@ -27,7 +27,6 @@ import {
   type Cliente,
   type Pedido,
   type Segmento,
-  listarClientes,
 } from '@dominio/cliente'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
 import './clientes.css'
@@ -49,15 +48,22 @@ const UFS = ['GO', 'DF', 'MG', 'SP', 'BA', 'MT', 'MS', 'TO', 'PR', 'RJ'].map((u)
    entra nela, resolve, e sai. */
 export function FichaDoCliente({
   cliente,
+  base,
   aoFechar,
   aoSalvar,
 }: {
   cliente: Cliente | null
+  /* A base inteira, para achar o CEP da cidade. Vem de cima em vez de a ficha
+     pedir ao banco: a lista já está carregada do outro lado, e um segundo
+     pedido só para descobrir o CEP de Goiânia seria a mesma consulta duas
+     vezes na mesma tela. */
+  base: Cliente[]
   aoFechar: () => void
   aoSalvar: (c: Cliente) => void
 }) {
   const [rascunho, setRascunho] = useState<Cliente | null>(cliente)
   const [editando, setEditando] = useState(false)
+  const [gravando, setGravando] = useState(false)
 
   useEffect(() => {
     setRascunho(cliente)
@@ -74,25 +80,36 @@ export function FichaDoCliente({
      clientes, ao clicar na cidade. */
   const frete = useMemo(() => {
     if (!c) return null
-    const achadas = transportadorasPara(c, cepsPorCidade(listarClientes()))
+    const achadas = transportadorasPara(c, cepsPorCidade(base))
     return achadas[0] ?? null
-  }, [c])
+  }, [c, base])
 
   if (!c) return null
 
   const mudar = (campo: keyof Cliente, valor: string) =>
     setRascunho((x) => (x ? { ...x, [campo]: valor } : x))
 
-  function salvar() {
-    if (!c) return
+  async function salvar() {
+    if (!c || gravando) return
     if (!c.nome.trim()) {
       avisar('O nome do cliente não pode ficar vazio', 'warn')
       return
     }
-    const salvo = salvarCliente(c)
-    aoSalvar(salvo)
-    setEditando(false)
-    avisar(novo ? 'Cliente cadastrado' : 'Cliente salvo', 'ok')
+    setGravando(true)
+    try {
+      const salvo = await salvarCliente(c)
+      aoSalvar(salvo)
+      setEditando(false)
+      avisar(novo ? 'Cliente cadastrado' : 'Cliente salvo', 'ok')
+    } catch (e) {
+      /* O erro do banco vai inteiro para a tela, e a ficha CONTINUA ABERTA em
+         modo de edição. O nome repetido cai aqui ("Já existe um cadastro com
+         esse nome"), e fechar a ficha nesse caso jogaria fora o que a pessoa
+         acabou de digitar. */
+      avisar(e instanceof Error ? e.message : 'Não consegui salvar o cliente', 'warn')
+    } finally {
+      setGravando(false)
+    }
   }
 
   const situacao = c.id ? situacaoDoCliente(c) : null
@@ -162,7 +179,7 @@ export function FichaDoCliente({
             >
               Cancelar
             </Botao>
-            <Botao tom="primario" onClick={salvar}>
+            <Botao tom="primario" onClick={() => void salvar()} disabled={gravando}>
               {novo ? 'Cadastrar' : 'Salvar'}
             </Botao>
           </>

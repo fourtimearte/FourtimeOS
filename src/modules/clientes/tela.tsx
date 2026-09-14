@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Buildings, MapPin, Trash, Truck, User } from '@phosphor-icons/react'
-import { Botao, Busca, Gaveta, Kpi, Pagina, Seletor, Vazio, avisar } from '@ds'
+import { Botao, Busca, Esqueleto, Gaveta, Kpi, Pagina, Seletor, Vazio, avisar } from '@ds'
 import { formatarCep, semAcento } from '@shared'
 import { FichaDoCliente } from './ficha'
 import {
@@ -11,7 +11,7 @@ import {
   formatarDocumento,
   formatarTelefone,
   idsDuplicados,
-  listarClientes,
+  carregarClientes,
   numeroDeWhatsApp,
   temContato,
   temPedidoNoSistema,
@@ -77,9 +77,39 @@ const SEM = '__vazio__'
 const so = (s: string) => (s || '').replace(/\D/g, '')
 
 export function TelaClientes() {
-  const [versao, setVersao] = useState(0)
-  const todos = useMemo(() => listarClientes(), [versao])
+  /* A base inteira de uma vez, e não paginada no banco.
+
+     São 1.901 contatos, e os seis números do topo são contas sobre a base
+     COMPLETA: "cadastro incompleto: 340" não pode virar "incompletos nesta
+     página". Paginar no banco obrigaria a fazer essas contas lá também, em SQL
+     que duplicaria as regras que já estão escritas em tipos.ts. A paginação
+     aqui é da tela, e é só isso que ela precisa ser. */
+  const [todos, setTodos] = useState<Cliente[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [falha, setFalha] = useState('')
   const hoje = useMemo(() => Date.now(), [])
+
+  const recarregar = useCallback(() => {
+    setFalha('')
+    return carregarClientes()
+      .then(setTodos)
+      .catch((e) => setFalha(e instanceof Error ? e.message : 'Não consegui carregar os clientes.'))
+      .finally(() => setCarregando(false))
+  }, [])
+
+  useEffect(() => {
+    let vivo = true
+    carregarClientes()
+      .then((l) => vivo && setTodos(l))
+      .catch(
+        (e) =>
+          vivo && setFalha(e instanceof Error ? e.message : 'Não consegui carregar os clientes.'),
+      )
+      .finally(() => vivo && setCarregando(false))
+    return () => {
+      vivo = false
+    }
+  }, [])
   const duplicados = useMemo(() => idsDuplicados(todos), [todos])
   const cepsDaCidade = useMemo(() => cepsPorCidade(todos), [todos])
 
@@ -498,14 +528,46 @@ export function TelaClientes() {
               <Numeros pagina={paginaSegura} paginas={paginas} aoIr={setPagina} />
             </div>
           </>
+        ) : carregando ? (
+          <div className="cl-carregando">
+            <Esqueleto altura={44} />
+            <Esqueleto altura={44} />
+            <Esqueleto altura={44} />
+            <Esqueleto altura={44} />
+            <Esqueleto altura={44} />
+          </div>
+        ) : falha ? (
+          <Vazio
+            titulo="Não consegui carregar os clientes"
+            texto={falha}
+            acao={
+              <Botao
+                tom="forte"
+                onClick={() => {
+                  setCarregando(true)
+                  void recarregar()
+                }}
+              >
+                Tentar de novo
+              </Botao>
+            }
+          />
         ) : (
           <Vazio
-            titulo="Nenhum cliente encontrado"
-            texto="Ajuste a busca ou limpe os filtros para ver a base completa."
+            titulo={
+              todos.length ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'
+            }
+            texto={
+              todos.length
+                ? 'Ajuste a busca ou limpe os filtros para ver a base completa.'
+                : 'A base do Bling ainda não foi importada. Você pode semear conteúdo de teste em Configurações para conferir a tela.'
+            }
             acao={
-              <Botao tom="forte" onClick={limparTudo}>
-                Limpar filtros
-              </Botao>
+              todos.length ? (
+                <Botao tom="forte" onClick={limparTudo}>
+                  Limpar filtros
+                </Botao>
+              ) : undefined
             }
           />
         )}
@@ -513,9 +575,13 @@ export function TelaClientes() {
 
       <FichaDoCliente
         cliente={naFicha}
+        base={todos}
         aoFechar={() => setNaFicha(null)}
         aoSalvar={(c) => {
-          setVersao((v) => v + 1)
+          /* A lista volta do banco, e não do que a ficha devolveu: gravar um
+             cliente pode mexer em mais coisa do que o campo que a pessoa
+             editou, e a tela que adivinha o resultado é a tela que mente. */
+          void recarregar()
           setNaFicha(c)
         }}
       />

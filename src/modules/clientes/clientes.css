@@ -522,3 +522,12 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* O lugar da lista enquanto ela vem do banco. Cinco barras da altura exata de
+   uma linha da tabela: a tela nao pula quando o conteudo chega, que e o que
+   acontece quando o vazio e menor que o cheio. */
+.cl-carregando {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}

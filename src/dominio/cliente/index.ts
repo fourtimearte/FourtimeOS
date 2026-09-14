@@ -3,8 +3,9 @@ export * from './tipos'
 export * from './pedidos'
 export {
   acharCliente,
+  apagarCliente,
+  carregarClientes,
   clienteEmBranco,
-  DADO_DE_EXEMPLO,
-  listarClientes,
   salvarCliente,
 } from './repositorio'
+export { CLIENTES_DE_EXEMPLO } from './exemplo'

@@ -135,3 +135,37 @@ select * from public.dado_de_teste order by tabela;
 select (select count(*) from public.cliente) as clientes,
        (select count(*) from public.pedido)  as pedidos,
        (select count(*) from public.cotacao) as cotacoes;
+
+\echo ''
+\echo '=== 015: as tres contas do cliente ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+\echo '--- cliente so com historico do Bling, sem pedido aqui dentro ---'
+insert into public.cliente (nome, pedidos_antigos, total_antigo, ultimo_pedido_antigo)
+ values ('Cliente Antigo do Bling', 14, 66280, date '2024-05-15');
+select nome, pedidos, total, ultimo_pedido from public.cliente_na_lista
+ where nome = 'Cliente Antigo do Bling';
+
+\echo '--- cliente com historico E pedido novo: soma os dois, e a data e a mais nova ---'
+update public.cliente set pedidos_antigos = 3, total_antigo = 1000,
+       ultimo_pedido_antigo = date '2020-01-01'
+ where nome = 'Cliente Antigo do Bling';
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_id, cliente_nome,
+                            estado, vendedor_id, total, pecas)
+ select public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, id, nome, 'enviada',
+        '22222222-2222-2222-2222-222222222222', 2500, 50
+   from public.cliente where nome = 'Cliente Antigo do Bling';
+select numero from public.aprovar_cotacao(
+  (select id from public.cotacao where cliente_nome = 'Cliente Antigo do Bling'));
+select nome, pedidos_antigos, pedidos, total, ultimo_pedido
+  from public.cliente_na_lista where nome = 'Cliente Antigo do Bling';
+
+\echo '--- cliente que nunca comprou: zero e data vazia, e nao NULL ---'
+insert into public.cliente (nome) values ('Cliente Novinho');
+select nome, pedidos, total, ultimo_pedido = '' as data_vazia
+  from public.cliente_na_lista where nome = 'Cliente Novinho';
+
+\echo '--- pedido cancelado nao conta ---'
+update public.pedido set estado = 'cancelado';
+select nome, pedidos, total from public.cliente_na_lista where nome = 'Cliente Antigo do Bling';
+update public.pedido set estado = 'producao';

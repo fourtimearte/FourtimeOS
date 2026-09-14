@@ -191,3 +191,35 @@ select numero from public.aprovar_cotacao(
   (select id from public.cotacao where cliente_nome='Colégio da Lista'));
 select numero, estado, pedido_numero from public.cotacao_na_lista
  where cliente_nome = 'Colégio da Lista';
+
+\echo ''
+\echo '=== 017: a costura do vendedor ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+\echo '--- cotacao com o NOME da vendedora acha a pessoa sozinha ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vendedor_nome,
+                            estado, total, pecas)
+ values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Costura Um', 'Carla', 'enviada', 1000, 10);
+select c.numero, c.vendedor_nome, e.nome as pessoa_achada
+  from public.cotacao c left join public.equipe e on e.id = c.vendedor_id
+ where c.cliente_nome = 'Costura Um';
+
+\echo '--- sem acento e sem caixa tambem acha ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vendedor_nome,
+                            estado, total, pecas)
+ values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Costura Dois', 'cárla', 'enviada', 1000, 10);
+select c.cliente_nome, e.nome as pessoa_achada
+  from public.cotacao c left join public.equipe e on e.id = c.vendedor_id
+ where c.cliente_nome = 'Costura Dois';
+
+\echo '--- nome que nao existe fica sem dono, e aparece na lista de sem vendedor ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vendedor_nome,
+                            estado, total, pecas)
+ values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Costura Tres', 'Ninguem', 'enviada', 1000, 10);
+select cliente_nome, vendedor_nome from public.cotacao_sem_vendedor where cliente_nome like 'Costura%';
+
+\echo '--- e AGORA a comissao chega na pessoa certa ---'
+select numero, vendedor_nome, comissao_pct
+  from public.aprovar_cotacao((select id from public.cotacao where cliente_nome='Costura Um'));
+select vendedor_nome, sum(comissao) as comissao from public.comissao_por_mes
+ group by vendedor_nome;

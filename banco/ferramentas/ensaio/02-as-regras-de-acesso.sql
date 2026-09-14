@@ -169,3 +169,25 @@ select nome, pedidos, total, ultimo_pedido = '' as data_vazia
 update public.pedido set estado = 'cancelado';
 select nome, pedidos, total from public.cliente_na_lista where nome = 'Cliente Antigo do Bling';
 update public.pedido set estado = 'producao';
+
+\echo ''
+\echo '=== 016: a lista de cotacoes ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
+\echo '--- a lista NAO tem a coluna corpo ---'
+select count(*) as coluna_corpo_na_view from information_schema.columns
+ where table_schema='public' and table_name='cotacao_na_lista' and column_name='corpo';
+
+\echo '--- cidade, vendedor e o pedido que saiu dela ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, cliente_cidade,
+                            cliente_uf, vendedor_nome, estado, vendedor_id, total, pecas)
+ values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Colégio da Lista', 'Goiânia',
+         'GO', 'Carla', 'enviada', '22222222-2222-2222-2222-222222222222', 3200, 64);
+select numero, cliente_nome, cliente_cidade, vendedor_nome, pedido_numero
+  from public.cotacao_na_lista where cliente_nome = 'Colégio da Lista';
+
+\echo '--- depois de aprovada, a lista mostra o pedido ---'
+select numero from public.aprovar_cotacao(
+  (select id from public.cotacao where cliente_nome='Colégio da Lista'));
+select numero, estado, pedido_numero from public.cotacao_na_lista
+ where cliente_nome = 'Colégio da Lista';

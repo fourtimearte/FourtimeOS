@@ -5,6 +5,7 @@ import {
   apagarDadosDeTeste,
   contarDadosDeTeste,
   semearClientes,
+  semearCotacoes,
   semearLeads,
   totalDeTeste,
   type ContaDeTeste,
@@ -60,11 +61,16 @@ export function TelaEnsaio() {
 
   const total = totalDeTeste(contas)
 
-  async function semear(oQue: 'clientes' | 'leads') {
+  async function semear(oQue: 'clientes' | 'leads' | 'cotações') {
     if (ocupado) return
     setOcupado(oQue)
     try {
-      const r = oQue === 'clientes' ? await semearClientes() : await semearLeads()
+      const r =
+        oQue === 'clientes'
+          ? await semearClientes()
+          : oQue === 'leads'
+            ? await semearLeads()
+            : await semearCotacoes()
       await recontar()
       if (r.gravados && !r.recusados) {
         avisar(r.gravados + ' ' + oQue + ' de teste gravados no banco', 'ok')
@@ -134,6 +140,11 @@ export function TelaEnsaio() {
           do nome recusa o repetido e diz quantos ficaram de fora.
         </p>
         <p className="cfg-nota">
+          <b>Cotações</b>: grava seis com layouts, grades e preços, uma em cada situação. O número
+          sai do contador do banco, e não do exemplo: assim a primeira cotação de verdade não
+          esbarra num número já usado.
+        </p>
+        <p className="cfg-nota">
           <b>Leads</b>: grava os oito do funil com a conversa de cada um. O tempo vira data na
           hora de semear, então os cartões nascem com o relógio certo e ele anda de verdade
           enquanto a tela fica aberta.
@@ -146,6 +157,10 @@ export function TelaEnsaio() {
           <Botao tom="forte" onClick={() => void semear('leads')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
             {ocupado === 'leads' ? 'Semeando...' : 'Semear leads'}
+          </Botao>
+          <Botao tom="contorno" onClick={() => void semear('cotações')} disabled={!!ocupado}>
+            <Flask size={16} weight="bold" />
+            {ocupado === 'cotações' ? 'Semeando...' : 'Semear cotações'}
           </Botao>
         </div>
       </Cartao>

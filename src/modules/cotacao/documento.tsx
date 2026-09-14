@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Aviso, Botao, LogoFourtime, Pagina, Segmentado, Vazio } from '@ds'
+import { Aviso, Botao, Esqueleto, LogoFourtime, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, empresaAConferir } from '@dominio/empresa'
 import {
   CaixaDeImagem,
@@ -16,7 +16,6 @@ import {
 } from '@dominio/layout'
 import {
   NOME_DO_ESTADO_DA_COTACAO,
-  acharCotacao,
   pecasDaCotacao,
   pecasDoProduto,
   precoMedioPorPeca,
@@ -28,6 +27,7 @@ import {
   type ProdutoCotado,
 } from '@dominio/cotacao'
 import './documento.css'
+import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
    O documento A4 da cotacao.
@@ -86,7 +86,7 @@ export type DestinoDaFolha = 'cliente' | 'producao'
 export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha }) {
   const { id = '' } = useParams()
   const navegar = useNavigate()
-  const c = acharCotacao(id)
+  const { cotacao: c, carregando, falha } = usarCotacao(id)
   /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
   const [comValor, setComValor] = useState(para !== 'producao')
 
@@ -200,12 +200,20 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
     }
   })
 
+  if (carregando) {
+    return (
+      <Pagina acima="Comercial" titulo="Abrindo a folha...">
+        <Esqueleto altura={420} />
+      </Pagina>
+    )
+  }
+
   if (!c) {
     return (
-      <Pagina acima="Comercial" titulo="Cotação não encontrada">
+      <Pagina acima="Comercial" titulo={falha ? 'Não consegui abrir' : 'Cotação não encontrada'}>
         <Vazio
-          titulo="Esta cotação não existe mais"
-          texto="Volte para a lista e escolha outra."
+          titulo={falha ? 'Não consegui abrir esta cotação' : 'Esta cotação não existe mais'}
+          texto={falha || 'Volte para a lista e escolha outra.'}
           acao={
             <Botao tom="primario" onClick={() => navegar('/cotacao')}>
               Voltar para a lista

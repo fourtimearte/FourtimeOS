@@ -319,7 +319,10 @@ export function cotacaoEmBranco(numero: string): Cotacao {
   const hoje = new Date()
   const validade = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000)
   return {
-    id: 'CT' + Math.random().toString(36).slice(2, 9),
+    /* Sem id: quem da o id e o banco, na hora de gravar. Inventar um aqui
+       criaria uma cotacao com dois ids ao longo da vida, e o primeiro deles
+       ficaria escrito no endereco da aba enquanto o segundo mora no banco. */
+    id: '',
     numero,
     versaoDoFormato: VERSAO_DO_CFT,
     estado: 'rascunho',

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { emEnsaio } from '@dominio/regulagem'
 import { Check, Copy, FileText, FloppyDisk, Plus, Trash, WhatsappLogo, X } from '@phosphor-icons/react'
 import {
   AreaTexto,
@@ -9,6 +10,7 @@ import {
   Segmentado,
   Selo,
   Seletor,
+  Esqueleto,
   Vazio,
   avisar,
 } from '@ds'
@@ -26,14 +28,13 @@ import {
 } from '@dominio/layout'
 import {
   NOME_DO_ESTADO_DA_COTACAO,
-  acharCotacao,
-  DADO_DE_EXEMPLO,
   apagarCotacao,
   aprovar,
   baixarCft,
-  listarCotacoes,
+  aprovarNoBanco,
+  carregarCotacoes,
+  type CotacaoNaLista,
   montarKitDeTeste,
-  numeroDePedido,
   registrarEnvio,
   travada,
   pecasDaCotacao,
@@ -51,6 +52,7 @@ import {
 } from '@dominio/cotacao'
 import { CabecalhoDoPedido } from './cabecalho-do-pedido'
 import './cotacao.css'
+import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
    O editor de cotacao, no arranjo do mockup v5.
@@ -85,14 +87,25 @@ const dataCurta = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-B
 export function EditorDeCotacao() {
   const { id = '' } = useParams()
   const navegar = useNavigate()
-  const original = acharCotacao(id)
+  const { cotacao: original, carregando, falha } = usarCotacao(id)
+
+  if (carregando) {
+    return (
+      <Pagina acima="Comercial" titulo="Abrindo a cotação...">
+        <Esqueleto altura={480} />
+      </Pagina>
+    )
+  }
 
   if (!original) {
     return (
-      <Pagina acima="Comercial" titulo="Cotação não encontrada">
+      <Pagina acima="Comercial" titulo={falha ? 'Não consegui abrir' : 'Cotação não encontrada'}>
         <Vazio
-          titulo="Esta cotação não existe mais"
-          texto="Ela pode ter sido apagada nesta mesma aba. Volte para a lista e escolha outra."
+          titulo={falha ? 'Não consegui abrir esta cotação' : 'Esta cotação não existe mais'}
+          texto={
+            falha ||
+            'Ela pode ter sido apagada por outra pessoa. Volte para a lista e escolha outra.'
+          }
           acao={
             <Botao tom="primario" onClick={() => navegar('/cotacao')}>
               Voltar para a lista
@@ -115,6 +128,20 @@ function Editor({ inicial }: { inicial: Cotacao }) {
      no balcao antes de fechar o preco */
   const [comDinheiro, setComDinheiro] = useState(true)
   const [confirmando, setConfirmando] = useState(false)
+  const [gravando, setGravando] = useState(false)
+  /* Comeca falso: o botao de conferencia aparecendo meio segundo depois e
+     inofensivo; ele aparecer indevidamente num sistema que ja esta valendo,
+     nao. */
+  const [ensaio, setEnsaio] = useState(false)
+  useEffect(() => {
+    let vivo = true
+    emEnsaio()
+      .then((e) => vivo && setEnsaio(e))
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!sujo) return
@@ -160,28 +187,62 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     })
   }
 
-  function salvar() {
-    salvarCotacao(c)
-    setSujo(false)
-    avisar('Cotação ' + c.numero + ' salva', 'ok')
+  /* GRAVAR E UMA COISA SO, E TODO MUNDO PASSA POR AQUI.
+
+     Antes cada botao gravava do seu jeito, e como gravar era instantaneo isso
+     nao aparecia. Agora nao e: ver a folha, baixar o .cft e enviar comecam
+     todos por uma ida ao banco que pode demorar ou falhar, e cada um deles
+     tinha que tratar isso. Um lugar so, e quem chama recebe a cotacao salva ou
+     nada, e decide o que fazer. */
+  async function gravar(qual: Cotacao = c): Promise<Cotacao | null> {
+    if (gravando) return null
+    setGravando(true)
+    try {
+      const salva = await salvarCotacao(qual)
+      setC(salva)
+      setSujo(false)
+      return salva
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui salvar a cotação', 'warn')
+      return null
+    } finally {
+      setGravando(false)
+    }
   }
 
-  function baixar() {
-    salvarCotacao(c)
-    setSujo(false)
-    baixarCft(c)
+  async function salvar() {
+    const salva = await gravar()
+    if (salva) avisar('Cotação ' + salva.numero + ' salva', 'ok')
   }
 
-  function apagar() {
-    apagarCotacao(c.id)
-    avisar('Cotação ' + c.numero + ' apagada', 'ok')
-    navegar('/cotacao')
+  /* O .cft sai do que ESTA NA TELA, mesmo que a gravacao falhe.
+
+     Baixar o arquivo e a ultima saida de quem esta com a internet caindo: ele
+     leva o trabalho embora num arquivo que abre de volta depois. Recusar o
+     download porque o banco nao respondeu seria tirar a corda de quem esta
+     justamente afundando. */
+  async function baixar() {
+    const salva = await gravar()
+    baixarCft(salva ?? c)
   }
 
-  function verDocumento() {
-    salvarCotacao(c)
-    setSujo(false)
-    navegar('/cotacao/' + c.id + '/folha')
+  async function apagar() {
+    const numero = c.numero
+    try {
+      await apagarCotacao(c.id)
+      avisar('Cotação ' + numero + ' apagada', 'ok')
+      navegar('/cotacao')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui apagar a cotação', 'warn')
+    }
+  }
+
+  /* A folha e feita do que esta GRAVADO, e por isso ela so abre depois de
+     gravar. Abrir a folha com o banco tendo recusado mostraria ao cliente uma
+     versao do documento que nao existe em lugar nenhum. */
+  async function verDocumento() {
+    const salva = await gravar()
+    if (salva) navegar('/cotacao/' + salva.id + '/folha')
   }
 
   /* ==========================================================================
@@ -194,9 +255,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
      foram escolhidos por ja terem quebrado: duas imagens baixas, duas altas,
      e uma alta com uma baixa, que e o mais traicoeiro dos tres.
 
-     Ele so aparece enquanto a base e de exemplo. No dia em que o Supabase
-     entrar, DADO_DE_EXEMPLO vira falso e o botao some sozinho, sem ninguem
-     precisar lembrar de tira-lo antes de a fabrica usar. */
+     Ele so aparece enquanto o sistema esta em ENSAIO, que e a mesma chave que
+     faz o pedido nascer PD-TESTE-0001 (migracao 013). No dia do lancamento a
+     chave vira e o botao some sozinho, sem ninguem precisar lembrar de tira-lo
+     antes de a fabrica usar. Uma chave so para as duas coisas: duas chaves
+     seriam duas oportunidades de alguem virar uma e esquecer a outra. */
   async function kitDeTeste() {
     const nova = await montarKitDeTeste(c)
     setC(nova)
@@ -206,38 +269,55 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
   /* A FOLHA DO GALPAO. Mesma cotacao, outro leitor: ela nasce sem valor
      nenhum, e nao por um botao que alguem tem que lembrar de apertar. */
-  function verFolhaDaProducao() {
-    salvarCotacao(c)
-    setSujo(false)
-    navegar('/cotacao/' + c.id + '/producao')
+  async function verFolhaDaProducao() {
+    const salva = await gravar()
+    if (salva) navegar('/cotacao/' + salva.id + '/producao')
   }
 
   /* Enviar grava o que saiu. O total vai congelado junto, e nao recalculado
      depois: a conversa tres semanas depois e sobre o numero que o cliente viu,
      e nao sobre o de hoje. */
-  function enviar() {
+  async function enviar() {
     const nova = registrarEnvio(c, c.cliente.contato || c.cliente.nome, '')
-    setC(nova)
-    salvarCotacao(nova)
-    setSujo(false)
-    avisar('Envio ' + nova.enviadas.length + ' registrado. Esta é a folha que vai para ele.', 'ok')
+    const salva = await gravar(nova)
+    if (!salva) return
+    avisar('Envio ' + salva.enviadas.length + ' registrado. Esta é a folha que vai para ele.', 'ok')
     /* O QUE VAI PARA O CLIENTE VAI COM VALOR, SEMPRE. Registrar o envio e
        depois deixar a pessoa procurar o PDF era onde o erro cabia: bastava
        estar com o R$ oculto na tela para mandar uma proposta sem preco. */
-    navegar('/cotacao/' + nova.id + '/folha')
+    navegar('/cotacao/' + salva.id + '/folha')
   }
 
-  function dizerSim() {
-    const pedido = numeroDePedido(
-      listarCotacoes()
-        .map((x) => x.aprovacao?.pedido ?? '')
-        .filter(Boolean),
-    )
-    const nova = aprovar(c, pedido, c.vendedor || 'admin')
-    setC(nova)
-    salvarCotacao(nova)
-    setSujo(false)
-    avisar('Pedido ' + pedido + ' gerado. A grade está travada a partir de agora.', 'ok')
+  /* O SIM DO CLIENTE ACONTECE NO BANCO, E NAO AQUI.
+
+     Antes o numero do pedido saia de uma conta sobre a lista de cotacoes: pegar
+     o maior PD ja usado e somar um. Isso funcionava com uma pessoa mexendo.
+     Com duas aprovando no mesmo minuto, as duas leriam a mesma lista, achariam
+     o mesmo maior numero, e nasceriam dois pedidos com o mesmo PD.
+
+     Agora quem tira o numero e o banco, numa chamada que faz cinco coisas de
+     uma vez ou nenhuma: numero do pedido, comissao do vendedor CONGELADA no
+     percentual daquele dia, linha do pedido criada, cotacao marcada como
+     aprovada e o lead fechado. Meia aprovacao gravada e uma cotacao que a tela
+     mostra aprovada e a fabrica nunca ve.
+
+     A cotacao precisa estar GRAVADA antes: o banco aprova uma linha que existe,
+     e nao o que esta na tela. */
+  async function dizerSim() {
+    const salva = await gravar()
+    if (!salva) return
+    try {
+      const pedido = await aprovarNoBanco(salva.id, salva.enviadas.length || 1)
+      const nova = aprovar(salva, pedido.numero, salva.vendedor || 'admin')
+      await gravar(nova)
+      avisar(
+        'Pedido ' + pedido.numero + ' gerado. A grade está travada a partir de agora.' +
+          (pedido.teste ? ' (número de ensaio, o real sai no lançamento)' : ''),
+        'ok',
+      )
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui aprovar a cotação', 'warn')
+    }
   }
 
   function mudarInforme(id: string, troca: (x: InformeDoDocumento) => InformeDoDocumento) {
@@ -517,18 +597,18 @@ function Editor({ inicial }: { inicial: Cotacao }) {
               ferramenta mora no cartão de baixo. */}
           <div className="ct-lado-bts">
             {!fechada && c.produtos.length ? (
-              <Botao tom="primario" bloco onClick={dizerSim}>
+              <Botao tom="primario" bloco onClick={() => void dizerSim()}>
                 <Check size={17} />
                 Aprovar e gerar ficha
               </Botao>
             ) : null}
             {!fechada ? (
-              <Botao tom="wa" bloco onClick={enviar}>
+              <Botao tom="wa" bloco onClick={() => void enviar()}>
                 <WhatsappLogo size={17} />
                 Enviar ao cliente
               </Botao>
             ) : null}
-            <Botao tom="contorno" bloco onClick={salvar}>
+            <Botao tom="contorno" bloco onClick={() => void salvar()} disabled={gravando}>
               <FloppyDisk size={17} />
               Salvar
             </Botao>
@@ -556,7 +636,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
                 { valor: 'documento', rotulo: 'Documento' },
               ]}
               aoMudar={(v) => {
-                if (v === 'documento') verDocumento()
+                if (v === 'documento') void verDocumento()
               }}
             />
 
@@ -572,26 +652,26 @@ function Editor({ inicial }: { inicial: Cotacao }) {
                 o que cortar, e oferecer papel de galpão para um orçamento em
                 rascunho é como uma peça sai antes do cliente aprovar. */}
             {fechada ? (
-              <Botao tom="contorno" bloco onClick={verFolhaDaProducao}>
+              <Botao tom="contorno" bloco onClick={() => void verFolhaDaProducao()}>
                 <FileText size={17} />
                 Folha da produção
               </Botao>
             ) : null}
 
-            {DADO_DE_EXEMPLO ? (
-              <Botao tom="contorno" bloco onClick={kitDeTeste}>
+            {ensaio ? (
+              <Botao tom="contorno" bloco onClick={() => void kitDeTeste()}>
                 Kit de teste
               </Botao>
             ) : null}
 
-            <Botao tom="contorno" bloco onClick={baixar}>
+            <Botao tom="contorno" bloco onClick={() => void baixar()}>
               Baixar .cft
             </Botao>
 
             <Botao
               tom={confirmando ? 'perigo' : 'limpo'}
               bloco
-              onClick={() => (confirmando ? apagar() : setConfirmando(true))}
+              onClick={() => (confirmando ? void apagar() : setConfirmando(true))}
               onBlur={() => setConfirmando(false)}
             >
               {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
@@ -608,7 +688,19 @@ function Editor({ inicial }: { inicial: Cotacao }) {
    conteudo, e e ali que fazem sentido: quem atende tres clientes ao mesmo
    tempo troca de aba, nao volta para a lista. */
 function BarraDoEditor({ atual, aoIr }: { atual: string; aoIr: (id: string) => void }) {
-  const abertas = listarCotacoes().slice(0, 6)
+  /* As seis mais recentes, e da VIEW: esta barra mostra nome e nada mais, e
+     pedir a cotacao inteira para desenhar seis nomes baixaria as imagens dos
+     layouts de seis orcamentos. */
+  const [abertas, setAbertas] = useState<CotacaoNaLista[]>([])
+  useEffect(() => {
+    let vivo = true
+    carregarCotacoes()
+      .then((l) => vivo && setAbertas(l.slice(0, 6)))
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [])
   return (
     <div className="ct-barra">
       <div className="ct-abas">
@@ -619,7 +711,7 @@ function BarraDoEditor({ atual, aoIr }: { atual: string; aoIr: (id: string) => v
             className={x.id === atual ? 'ct-aba ligada' : 'ct-aba'}
             onClick={() => aoIr(x.id)}
           >
-            {(x.cliente.nome || x.numero).split(' ').slice(0, 2).join(' ')}
+            {(x.clienteNome || x.numero).split(' ').slice(0, 2).join(' ')}
           </button>
         ))}
       </div>

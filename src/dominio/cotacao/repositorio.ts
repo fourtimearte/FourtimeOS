@@ -1,383 +1,244 @@
-import {
-  DTF_CORES,
-  GRUPOS_DE_COR,
-  REFS,
-  SB_CORES,
-  refGenero,
-} from '@ds/kit/banco-de-exemplo'
-import { VERSAO_DO_BLOCO, type Bloco, type Design, type Tecnica } from '../layout/bloco'
-import { DEPARTAMENTOS, EMBALAGENS, ENTREGAS, PAGAMENTOS } from '../banco/dados'
+import { chamar, tabela } from '@shared/supabase'
+import { VERSAO_DO_BLOCO } from '../layout/bloco'
 import { arrumarCotacao } from './arquivo'
-import type { Faixa, Grade } from '../layout/grade'
 import {
   VERSAO_DO_CFT,
-  informesEmBranco,
+  pecasDaCotacao,
+  totalDaCotacao,
   type Cotacao,
   type EstadoDaCotacao,
-  type ProdutoCotado,
 } from './tipos'
 
 /* ==========================================================================
-   A porta de entrada da cotacao.
+   A conversa da cotação com o Supabase.
 
-   Igual a de cliente: hoje ela monta uma lista de exemplo aqui dentro e guarda
-   as alteracoes no proprio navegador. Quando o Supabase entrar, SO ESTE
-   ARQUIVO muda. A tela, o editor e a folha A4 continuam iguais, porque
-   conversam com estas funcoes e nao com o banco.
+   O DOCUMENTO INTEIRO VAI NUMA COLUNA SÓ, e isso está decidido na migração 011.
+   O motivo, em uma frase: a cotação já é um formato versionado, o .cft, com
+   uma escada de migração própria. Espalhar ele em cinco tabelas criaria uma
+   SEGUNDA escada, a do banco, que teria que andar junto com a primeira para
+   sempre, e o dia em que as duas discordassem seria o dia em que uma cotação
+   aprovada abriria errada.
 
-   ATENCAO: as cotacoes abaixo sao inventadas.
+   A CONSEQUÊNCIA PRÁTICA, e ela não pode ser esquecida: dentro do corpo vão
+   as imagens dos layouts. Uma lista de sessenta cotações pedindo o corpo
+   baixaria dezenas de megabytes para desenhar sessenta linhas de texto.
+
+   Por isso são DUAS leituras, e elas devolvem tipos diferentes de propósito:
+
+     carregarCotacoes()  ->  CotacaoNaLista[]   sem corpo, para a tela de lista
+     acharCotacao(id)    ->  Cotacao            com corpo, para o editor
+
+   Tipos diferentes, e não o mesmo tipo pela metade: assim não existe o caminho
+   em que alguém pega a lista e tenta desenhar um layout que não veio.
    ========================================================================== */
 
-export const DADO_DE_EXEMPLO = true
+/* --- a lista ------------------------------------------------------------- */
 
-const CHAVE = 'ft.cotacoes'
-
-/* --- o sorteio que sempre da o mesmo resultado --------------------------- */
-function sorteio(semente: number) {
-  let x = semente
-  return () => {
-    x = (x * 1103515245 + 12345) % 2147483648
-    return x / 2147483648
-  }
-}
-
-const CORES_DE_TECIDO = GRUPOS_DE_COR.flatMap((g) => g.cores)
-
-const TECIDOS_COMUNS = [
-  'DRYFIT POLIESTER 100%',
-  'ALGODAO 100%',
-  'PIQUET COM ELASTANO',
-  'MOLETOM FLANELADO',
-  'POLIAMIDA FRESH',
-  'SUPLEX 84% POLIESTER 16% ELASTANO',
-]
-
-const TAG_DA_TECNICA: Record<Tecnica, string> = {
-  dtf: 'DTF',
-  subli: 'Subli',
-  silk: 'Silk',
-  patch: 'Patch',
-  bordado: 'Bordado',
-  gola: 'Gola Tecido',
-  ribana: 'Ribana',
-  etiqueta: 'Eti. Fourtime',
-}
-
-const ARTES = [
-  'uniforme-2026-frente',
-  'escudo-peito',
-  'manga-patrocinio',
-  'costas-numeracao',
-  'logo-bordado',
-]
-
-function gradeSorteada(faixa: Faixa, r: () => number): Grade {
-  const tamanhos: string[] =
-    faixa === 'adulto' ? ['P', 'M', 'G', 'GG', 'XG', 'G1'] : ['4A', '6A', '8A', '10A', '12A']
-  const g: Grade = {}
-  for (const t of tamanhos) {
-    const n = Math.round(r() * 26)
-    if (n > 0) (g as Record<string, number>)[t] = n
-  }
-  /* grade vazia nao existe na vida real: o M sempre tem alguem */
-  if (!Object.keys(g).length) (g as Record<string, number>)[faixa === 'adulto' ? 'M' : '8A'] = 12
-  return g
-}
-
-function designSorteado(r: () => number): Design[] {
-  const lista: Design[] = []
-  const principal: Tecnica = r() > 0.5 ? 'dtf' : 'subli'
-  const banco = principal === 'dtf' ? DTF_CORES : SB_CORES
-  const quantas = 2 + Math.floor(r() * 3)
-  const cores: { cod: string; hex: string }[] = []
-  for (let i = 0; i < quantas; i++) {
-    const [cod, hex] = banco[Math.floor(r() * banco.length)]
-    if (!cores.some((c) => c.cod === cod)) cores.push({ cod, hex })
-  }
-  lista.push({ tag: TAG_DA_TECNICA[principal], tecnica: principal, cores })
-  if (r() > 0.6) lista.push({ tag: TAG_DA_TECNICA.bordado, tecnica: 'bordado', cores: [] })
-  if (r() > 0.75) lista.push({ tag: TAG_DA_TECNICA.etiqueta, tecnica: 'etiqueta', cores: [] })
-  return lista
-}
-
-function blocoSorteado(n: number, semente: number): Bloco {
-  const r = sorteio(semente)
-  const ref = REFS[Math.floor(r() * REFS.length)]
-  const [codigo, nome] = ref.split(' — ')
-  const genero = refGenero(codigo)
-  const faixa: Faixa = genero === 'infantil' ? 'infantil' : 'adulto'
-  const tecido = TECIDOS_COMUNS[Math.floor(r() * TECIDOS_COMUNS.length)]
-  const [corNome, corHex] = CORES_DE_TECIDO[Math.floor(r() * CORES_DE_TECIDO.length)]
-  return {
-    id: 'B' + semente.toString(36) + n,
-    n,
-    referencia: codigo,
-    nomeDaReferencia: nome ?? '',
-    genero,
-    faixa,
-    grade: gradeSorteada(faixa, r),
-    tecidos: [{ nome: tecido, cor: corNome, hex: corHex }],
-    design: designSorteado(r),
-    arte: ARTES[Math.floor(r() * ARTES.length)],
-    imagem: '',
-    observacao: '',
-  }
-}
-
-/* --- as cotacoes de exemplo ---------------------------------------------- */
-
-type Semente = {
+export type CotacaoNaLista = {
+  id: string
   numero: string
+  clienteId: string
+  clienteNome: string
+  clienteCidade: string
+  clienteUf: string
+  leadId: string
   estado: EstadoDaCotacao
-  cliente: { id: string; nome: string; cidade: string; uf: string; contato: string }
   vendedor: string
-  dias: number
-  produtos: number
+  total: number
+  pecas: number
+  validaAte: string
+  criadaEm: string
+  alteradaEm: string
+  /** o número do pedido, quando ela já virou um */
+  pedido: string
+  teste: boolean
 }
 
-const SEMENTES: Semente[] = [
-  {
-    numero: 'CO2026-0184',
-    estado: 'rascunho',
-    cliente: { id: 'C0001', nome: 'CrossBox Delta', cidade: 'Uberlândia', uf: 'MG', contato: 'Diego' },
-    vendedor: 'Dani',
-    dias: 1,
-    produtos: 2,
-  },
-  {
-    numero: 'CO2026-0183',
-    estado: 'enviada',
-    cliente: { id: 'C0002', nome: 'Escola Girassol', cidade: 'Goiânia', uf: 'GO', contato: 'Paulo' },
-    vendedor: 'Lucas',
-    dias: 3,
-    produtos: 3,
-  },
-  {
-    numero: 'CO2026-0182',
-    estado: 'aprovada',
-    cliente: { id: 'C0003', nome: 'Igreja Rio Claro', cidade: 'Rio Verde', uf: 'GO', contato: 'Renata' },
-    vendedor: 'Dani',
-    dias: 9,
-    produtos: 1,
-  },
-  {
-    numero: 'CO2026-0181',
-    estado: 'enviada',
-    cliente: { id: 'C0007', nome: 'Time Aliança', cidade: 'Anápolis', uf: 'GO', contato: 'Bruno' },
-    vendedor: 'Lucas',
-    dias: 12,
-    produtos: 2,
-  },
-  {
-    numero: 'CO2026-0180',
-    estado: 'recusada',
-    cliente: { id: 'C0011', nome: 'Academia Pulso', cidade: 'Brasília', uf: 'DF', contato: 'Sara' },
-    vendedor: 'Dani',
-    dias: 21,
-    produtos: 1,
-  },
-  {
-    numero: 'CO2026-0179',
-    estado: 'vencida',
-    cliente: { id: 'C0015', nome: 'Colégio Nova Era', cidade: 'Goiânia', uf: 'GO', contato: 'Heitor' },
-    vendedor: 'Lucas',
-    dias: 40,
-    produtos: 2,
-  },
-]
+type LinhaDaLista = {
+  id: string
+  numero: string
+  cliente_id: string | null
+  cliente_nome: string
+  cliente_cidade: string
+  cliente_uf: string
+  lead_id: string | null
+  estado: EstadoDaCotacao
+  vendedor_nome: string
+  total: number
+  pecas: number
+  valida_ate: string | null
+  criada_em: string
+  atualizado_em: string
+  pedido_numero: string | null
+  teste: boolean
+}
 
-const DIA = 24 * 60 * 60 * 1000
+export async function carregarCotacoes(): Promise<CotacaoNaLista[]> {
+  const linhas = await tabela<LinhaDaLista[]>(
+    'cotacao_na_lista?select=id,numero,cliente_id,cliente_nome,cliente_cidade,cliente_uf,' +
+      'lead_id,estado,vendedor_nome,total,pecas,valida_ate,criada_em,atualizado_em,' +
+      'pedido_numero,teste&order=criada_em.desc',
+  )
+  return linhas.map((l) => ({
+    id: l.id,
+    numero: l.numero,
+    clienteId: l.cliente_id ?? '',
+    clienteNome: l.cliente_nome ?? '',
+    clienteCidade: l.cliente_cidade ?? '',
+    clienteUf: l.cliente_uf ?? '',
+    leadId: l.lead_id ?? '',
+    estado: l.estado,
+    vendedor: l.vendedor_nome ?? '',
+    total: Number(l.total) || 0,
+    pecas: Number(l.pecas) || 0,
+    validaAte: l.valida_ate ?? '',
+    criadaEm: l.criada_em,
+    alteradaEm: l.atualizado_em,
+    pedido: l.pedido_numero ?? '',
+    teste: !!l.teste,
+  }))
+}
 
-function montarExemplo(s: Semente, i: number): Cotacao {
-  const semente = 7919 * (i + 3)
-  const r = sorteio(semente)
-  const criada = new Date(Date.now() - s.dias * DIA)
-  const validade = new Date(criada.getTime() + 15 * DIA)
+/* --- o documento --------------------------------------------------------- */
 
-  const produtos: ProdutoCotado[] = []
-  for (let n = 1; n <= s.produtos; n++) {
-    const bloco = blocoSorteado(n, semente + n * 101)
-    produtos.push({
-      bloco,
-      precoPorTamanho: {},
-      precoBase: 45 + Math.round(r() * 70),
-    })
-  }
+type LinhaDaCotacao = {
+  id: string
+  numero: string
+  corpo: Record<string, unknown>
+  versao_do_formato: number
+  estado: EstadoDaCotacao
+  criada_em: string
+  atualizado_em: string
+}
 
+/* O QUE ESTÁ GUARDADO TAMBÉM É ANTIGO.
+
+   Uma cotação gravada ontem ficou parada no formato do dia em que foi gravada,
+   enquanto o sistema andou. Por isso ela sobe a MESMA escada do arquivo .cft
+   antes de chegar na tela, degrau por degrau. Uma que já esteja no formato de
+   hoje não sobe nada: a escada só anda quando falta degrau.
+
+   As colunas de fora mandam sobre o corpo no que elas sabem melhor: o número,
+   o estado e as datas são gravados pelo banco, e o corpo pode estar com uma
+   cópia velha deles se alguém gravou de duas abas. */
+function deLinha(l: LinhaDaCotacao): Cotacao {
+  const c = arrumarCotacao(l.corpo, Number(l.versao_do_formato ?? 0), VERSAO_DO_BLOCO)
   return {
-    id: 'CT' + s.numero.replace(/\D/g, ''),
-    numero: s.numero,
-    versaoDoFormato: VERSAO_DO_CFT,
-    estado: s.estado,
-    criadaEm: criada.toISOString(),
-    alteradaEm: criada.toISOString(),
-    validaAte: validade.toISOString().slice(0, 10),
-    vendedor: s.vendedor,
-    cliente: {
-      id: s.cliente.id,
-      nome: s.cliente.nome,
-      documento: '',
-      contato: s.cliente.contato,
-      telefone: '',
-      email: '',
-      cidade: s.cliente.cidade,
-      uf: s.cliente.uf,
-    },
-    produtos,
-    ajustes:
-      s.estado === 'aprovada'
-        ? [{ id: 'AJ1', descricao: 'Desconto fechamento', tipo: 'porcento', valor: -5 }]
-        : [],
-    informe: {
-      prazo: '12 dias úteis',
-      pagamento: PAGAMENTOS[0],
-      entrega: ENTREGAS[1],
-      tabelaDePreco: 'Atacado 2026',
-    },
-    informes: informesEmBranco(),
-    /* o bloco que veio da ficha de producao. Na base de exemplo ele so tem
-       numero de pedido depois do sim do cliente, que e quando ele nasce */
-    producao: {
-      pedido: s.estado === 'aprovada' ? 'PD004052' : '',
-      dataDeEnvio: '',
-      departamento: DEPARTAMENTOS[3],
-      embalagem: EMBALAGENS[0],
-      marcas: [],
-      observacao: '',
-    },
-    enviadas:
-      s.estado === 'rascunho'
-        ? []
-        : [
-            {
-              numero: 1,
-              data: new Date(criada.getTime() + DIA).toISOString(),
-              total: produtos.reduce(
-                (soma, p) =>
-                  soma +
-                  Object.entries(p.bloco.grade).reduce(
-                    (t, [, q]) => t + (q ?? 0) * p.precoBase,
-                    0,
-                  ),
-                0,
-              ),
-              pecas: produtos.reduce(
-                (soma, p) =>
-                  soma + Object.values(p.bloco.grade).reduce((t: number, q) => t + (q ?? 0), 0),
-                0,
-              ),
-              para: s.cliente.contato,
-              observacao: 'Primeiro envio',
-            },
-          ],
-    aprovacao:
-      s.estado === 'aprovada'
-        ? {
-            pedido: 'PD' + new Date().getFullYear() + '0001',
-            versao: 1,
-            quem: s.vendedor,
-            em: new Date(criada.getTime() + 3 * DIA).toISOString(),
-          }
-        : null,
+    ...c,
+    id: l.id,
+    numero: l.numero,
+    estado: l.estado,
+    criadaEm: l.criada_em,
+    alteradaEm: l.atualizado_em,
   }
 }
 
-/* --- a base viva --------------------------------------------------------- */
+export async function acharCotacao(id: string): Promise<Cotacao | null> {
+  if (!id) return null
+  const linhas = await tabela<LinhaDaCotacao[]>(
+    'cotacao?select=id,numero,corpo,versao_do_formato,estado,criada_em,atualizado_em&id=eq.' +
+      encodeURIComponent(id),
+  )
+  return linhas.length ? deLinha(linhas[0]) : null
+}
 
-/* O QUE ESTA GUARDADO TAMBEM E ANTIGO.
+/* O corpo vai sem as colunas que são do banco.
 
-   Uma cotacao gravada no navegador ficou parada no formato do dia em que foi
-   gravada, enquanto o sistema andou. Quando a fusao com a ficha entrou, toda
-   cotacao ja guardada passou a estar sem o bloco de producao, e a tela nova
-   morria ao pedir um campo que nao existia ali.
+   O id e as datas moram fora, e mandar eles de volta dentro do corpo criaria
+   duas verdades sobre a mesma coisa. O dia em que elas discordassem, ninguém
+   saberia qual abrir. */
+function corpoDe(c: Cotacao) {
+  const { id: _id, criadaEm: _criadaEm, alteradaEm: _alteradaEm, ...resto } = c
+  return resto
+}
 
-   Por isso ela sobe a MESMA escada do arquivo .cft, degrau por degrau, antes
-   de chegar na tela. Uma que ja esteja no formato de hoje nao sobe nada: a
-   escada so anda quando falta degrau.
+/* As ligacoes de LINHA, que nao sao conteudo do documento.
 
-   E se uma cotacao vier torta demais para subir, ela e deixada de fora em vez
-   de derrubar a lista inteira. Perder uma cotacao de exemplo e um aborrecimento;
-   perder a tela de cotacoes e ficar sem trabalhar. */
-function lerGuardado(): Cotacao[] | null {
-  try {
-    const cru = localStorage.getItem(CHAVE)
-    if (!cru) return null
-    const lista = JSON.parse(cru)
-    if (!Array.isArray(lista)) return null
-    const boas: Cotacao[] = []
-    for (const item of lista) {
-      try {
-        const bruto = (item ?? {}) as Record<string, unknown>
-        boas.push(arrumarCotacao(bruto, Number(bruto.versaoDoFormato ?? 0), VERSAO_DO_BLOCO))
-      } catch {
-        /* essa uma nao subiu. As outras seguem */
-      }
-    }
-    return boas.length ? boas : null
-  } catch {
-    return null
+   O lead de onde a cotacao veio e um vinculo entre duas linhas do banco, e nao
+   um campo do orcamento: ele nao sai impresso, o cliente nunca o ve, e um .cft
+   aberto em outro computador nao deveria carregar o id de um lead que la nao
+   existe. Por isso ele entra por FORA do corpo.
+
+   O que se ganha com isso e a escada do .cft ficar parada: acrescentar um campo
+   ao documento obriga a um degrau novo, e degrau e para sempre. Um vinculo de
+   banco nao merece um degrau. */
+export type LigacoesDaCotacao = { leadId?: string }
+
+function colunasDe(c: Cotacao, l: LigacoesDaCotacao = {}) {
+  return {
+    ...(l.leadId ? { lead_id: l.leadId } : {}),
+    corpo: corpoDe(c),
+    versao_do_formato: VERSAO_DO_CFT,
+    cliente_id: c.cliente.id || null,
+    cliente_nome: c.cliente.nome,
+    cliente_cidade: c.cliente.cidade,
+    cliente_uf: c.cliente.uf,
+    estado: c.estado,
+    vendedor_nome: c.vendedor,
+    /* O total e as peças são recalculados AQUI, e não lidos de um campo. São a
+       mesma conta que a tela mostra, feita pela mesma função: se a lista e o
+       editor discordassem sobre o total de uma cotação, quem veria primeiro
+       seria o cliente. */
+    total: totalDaCotacao(c),
+    pecas: pecasDaCotacao(c),
+    valida_ate: c.validaAte || null,
   }
 }
 
-function guardar(lista: Cotacao[]) {
-  try {
-    localStorage.setItem(CHAVE, JSON.stringify(lista))
-  } catch {
-    /* navegador anonimo ou armazenamento cheio: a base vive so nesta aba */
+export async function salvarCotacao(
+  c: Cotacao,
+  ligacoes: LigacoesDaCotacao = {},
+): Promise<Cotacao> {
+  if (c.id) {
+    await tabela(`cotacao?id=eq.${encodeURIComponent(c.id)}`, {
+      metodo: 'PATCH',
+      corpo: colunasDe(c, ligacoes),
+    })
+    const salva = await acharCotacao(c.id)
+    if (!salva) throw new Error('Gravei, mas não consegui ler a cotação de volta.')
+    return salva
   }
-}
 
-let base: Cotacao[] = lerGuardado() ?? SEMENTES.map(montarExemplo)
-
-export function listarCotacoes(): Cotacao[] {
-  return base
-}
-
-export function acharCotacao(id: string): Cotacao | null {
-  return base.find((c) => c.id === id) ?? null
-}
-
-/* O proximo numero da serie: CO, o ano, e quatro digitos que reiniciam todo
-   ano. O CO na frente existe porque o numero da cotacao anda ao lado do numero
-   do pedido, e "2026-0001" sozinho numa conversa de WhatsApp nao diz o que e:
-   parece data. CO2026-0001 e PD004053 se leem de longe e sem legenda.
-
-   A leitura aceita o formato antigo, sem o CO. Nao e zelo exagerado: cotacao
-   guardada no navegador antes da troca continua com o numero velho, e se ela
-   ficasse de fora da conta o proximo numero repetiria um que ja existe. */
-export const PREFIXO_DA_COTACAO = 'CO'
-
-export function sequenciaDoNumero(numero: string, ano: number): number | null {
-  const m = /^(?:CO)?(\d{4})-(\d{1,6})$/.exec(String(numero || ''))
-  if (!m || Number(m[1]) !== ano) return null
-  return Number(m[2]) || 0
-}
-
-export function proximoNumero(): string {
-  const ano = new Date().getFullYear()
-  const doAno = base
-    .map((c) => sequenciaDoNumero(c.numero, ano))
-    .filter((n): n is number => n !== null)
-  const proximo = (doAno.length ? Math.max(...doAno) : 0) + 1
-  return PREFIXO_DA_COTACAO + ano + '-' + String(proximo).padStart(4, '0')
-}
-
-export function salvarCotacao(c: Cotacao): Cotacao {
-  const salva: Cotacao = { ...c, alteradaEm: new Date().toISOString() }
-  const i = base.findIndex((x) => x.id === salva.id)
-  if (i >= 0) base = base.map((x, k) => (k === i ? salva : x))
-  else base = [salva, ...base]
-  guardar(base)
+  const criada = await tabela<{ id: string }[]>('cotacao', {
+    metodo: 'POST',
+    devolver: true,
+    corpo: [{ numero: c.numero, ...colunasDe(c, ligacoes) }],
+  })
+  const id = criada[0]?.id
+  if (!id) throw new Error('O banco aceitou mas não devolveu a linha.')
+  const salva = await acharCotacao(id)
+  if (!salva) throw new Error('Gravei, mas não consegui ler a cotação de volta.')
   return salva
 }
 
-export function apagarCotacao(id: string) {
-  base = base.filter((c) => c.id !== id)
-  guardar(base)
+export async function apagarCotacao(id: string): Promise<void> {
+  await tabela(`cotacao?id=eq.${encodeURIComponent(id)}`, { metodo: 'DELETE' })
 }
 
-/** Volta a base ao exemplo de fabrica. Existe para a conferencia da tela. */
-export function recomecarDoExemplo() {
-  base = SEMENTES.map(montarExemplo)
-  guardar(base)
+/* O número sai do banco, e não de uma conta sobre a lista.
+
+   Contar do lado de cá funcionaria enquanto uma pessoa estivesse mexendo. Duas
+   pessoas criando cotação no mesmo minuto leriam a mesma lista, achariam o
+   mesmo maior número e tirariam o mesmo próximo, e aí existiriam duas
+   CO2026-0184. O contador no banco é uma linha só, e o update dele é atômico. */
+export async function proximoNumero(): Promise<string> {
+  return chamar<string>('proximo_numero_de_cotacao')
+}
+
+/* O SIM DO CLIENTE ACONTECE NO BANCO, NUMA CHAMADA SÓ.
+
+   Aprovar não é só carimbar a cotação: é tirar o número do pedido, congelar o
+   percentual de comissão do vendedor daquele dia, criar a linha do pedido e
+   fechar o lead. As cinco coisas têm que acontecer juntas ou nenhuma, senão
+   sobra uma cotação que a tela mostra aprovada e a fábrica nunca vê.
+
+   Enquanto o sistema estiver em ensaio, o número volta como PD-TESTE-0001. */
+export type PedidoGerado = { numero: string; teste: boolean; comissao_pct: number }
+
+export async function aprovarNoBanco(cotacaoId: string, versao: number): Promise<PedidoGerado> {
+  const p = await chamar<PedidoGerado | PedidoGerado[]>('aprovar_cotacao', {
+    p_cotacao: cotacaoId,
+    p_versao: versao,
+  })
+  return Array.isArray(p) ? p[0] : p
 }

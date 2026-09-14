@@ -142,7 +142,7 @@ export function TelaFunil() {
   /* A cotacao nasce do lead com o que ja se sabe, e o lead passa a apontar
      para ela. E aqui que o funil encosta na cotacao, e so aqui. */
   async function montarCotacao(l: Lead) {
-    const c = cotacaoEmBranco(proximoNumero())
+    const c = cotacaoEmBranco(await proximoNumero())
     /* o vendedor sai do banco, e nao de um nome escrito a mao: se ele nao
        estiver na lista, o campo da cotacao abre vazio */
     c.vendedor = l.vendedorNome || VENDEDORES[0]
@@ -153,7 +153,16 @@ export function TelaFunil() {
       contato: l.contato,
       telefone: l.telefone,
     }
-    salvarCotacao(c)
+    /* O LEAD ENTRA NA COTACAO, e e por isso que ela nasce ligada a ele: e essa
+       ligacao que faz a comissao chegar na pessoa certa la no fim, quando o
+       pedido for aprovado. */
+    let salva
+    try {
+      salva = await salvarCotacao(c, { leadId: l.id })
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui criar a cotação', 'warn')
+      return
+    }
     try {
       await salvarLead({
         ...l,
@@ -163,8 +172,8 @@ export function TelaFunil() {
     } catch {
       /* a cotacao ja existe; o estagio do lead pode ser arrastado a mao */
     }
-    avisar('Cotação ' + c.numero + ' criada a partir do lead', 'ok')
-    navegar('/cotacao/' + c.id)
+    avisar('Cotação ' + salva.numero + ' criada a partir do lead', 'ok')
+    navegar('/cotacao/' + salva.id)
   }
 
   /* o que foi mandado pelo WhatsApp entra na conversa, senao o funil mente

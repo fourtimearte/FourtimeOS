@@ -1,6 +1,13 @@
 import { chamar, tabela } from '@shared/supabase'
 import { CLIENTES_DE_EXEMPLO } from '@dominio/cliente'
 import { ESTAGIOS, LEADS_DE_EXEMPLO, type LeadDeExemplo } from '@dominio/funil'
+import {
+  COTACOES_DE_EXEMPLO,
+  montarCotacaoDeExemplo,
+  pecasDaCotacao,
+  totalDaCotacao,
+  VERSAO_DO_CFT,
+} from '@dominio/cotacao'
 
 /* ==========================================================================
    A semente.
@@ -207,6 +214,57 @@ export async function semearLeads(): Promise<ResultadoDaSemente> {
     } catch (e) {
       recusados++
       const recado = e instanceof Error ? e.message : 'lead recusado'
+      if (!recados.includes(recado)) recados.push(recado)
+    }
+  }
+
+  return { gravados, recusados, recados }
+}
+
+
+/* --- as cotacoes ---------------------------------------------------------
+   Seis, com layouts, grades e precos sorteados sempre do mesmo jeito. Elas sao
+   as mais pesadas da semente porque o corpo do documento vai inteiro numa
+   coluna, e por isso entram uma a uma em vez de num lote so: um erro no meio
+   de um lote gigante derruba o lote inteiro e a mensagem nao diz qual linha
+   causou.
+
+   O numero NAO e o do exemplo. Ele sai do contador do banco, como o de
+   qualquer cotacao nova, senao a primeira cotacao de verdade depois da semente
+   esbarraria num numero ja usado. */
+export async function semearCotacoes(): Promise<ResultadoDaSemente> {
+  let gravados = 0
+  let recusados = 0
+  const recados: string[] = []
+
+  for (let i = 0; i < COTACOES_DE_EXEMPLO.length; i++) {
+    try {
+      const c = montarCotacaoDeExemplo(COTACOES_DE_EXEMPLO[i], i)
+      const numero = await chamar<string>('proximo_numero_de_cotacao')
+      const { id: _id, criadaEm: _c, alteradaEm: _a, ...corpo } = { ...c, numero }
+      await tabela('cotacao', {
+        metodo: 'POST',
+        corpo: [
+          {
+            numero,
+            corpo,
+            versao_do_formato: VERSAO_DO_CFT,
+            cliente_nome: c.cliente.nome,
+            cliente_cidade: c.cliente.cidade,
+            cliente_uf: c.cliente.uf,
+            vendedor_nome: c.vendedor,
+            estado: c.estado,
+            total: totalDaCotacao(c),
+            pecas: pecasDaCotacao(c),
+            valida_ate: c.validaAte || null,
+            teste: true,
+          },
+        ],
+      })
+      gravados++
+    } catch (e) {
+      recusados++
+      const recado = e instanceof Error ? e.message : 'cotação recusada'
       if (!recados.includes(recado)) recados.push(recado)
     }
   }

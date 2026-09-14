@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Botao,
@@ -7,6 +7,7 @@ import {
   Pagina,
   Selo,
   Seletor,
+  Esqueleto,
   Tabela,
   Vazio,
   avisar,
@@ -17,12 +18,10 @@ import {
   NOME_DO_ESTADO_DA_COTACAO,
   abrirCft,
   cotacaoEmBranco,
-  listarCotacoes,
-  pecasDaCotacao,
+  carregarCotacoes,
+  type CotacaoNaLista,
   proximoNumero,
   salvarCotacao,
-  totalDaCotacao,
-  type Cotacao,
   type EstadoDaCotacao,
 } from '@dominio/cotacao'
 import './cotacao.css'
@@ -53,8 +52,32 @@ const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') :
 
 export function TelaCotacao() {
   const navegar = useNavigate()
-  const [versao, setVersao] = useState(0)
-  const todas = useMemo(() => listarCotacoes(), [versao])
+
+  /* A LISTA VEM DA VIEW, SEM O CORPO DO DOCUMENTO.
+
+     Dentro do corpo vao as imagens dos layouts. Pedir a cotacao inteira para
+     desenhar uma tabela de texto seria baixar dezenas de megabytes para
+     mostrar sessenta linhas. Por isso o tipo aqui e CotacaoNaLista, e nao
+     Cotacao: assim nao existe o caminho em que alguem tenta desenhar um
+     layout que nunca veio. */
+  const [todas, setTodas] = useState<CotacaoNaLista[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [falha, setFalha] = useState('')
+
+  const recarregar = useCallback(async () => {
+    try {
+      setTodas(await carregarCotacoes())
+      setFalha('')
+    } catch (e) {
+      setFalha(e instanceof Error ? e.message : 'Não consegui carregar as cotações.')
+    } finally {
+      setCarregando(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void recarregar()
+  }, [recarregar])
 
   const [busca, setBusca] = useState('')
   const [estado, setEstado] = useState('')
@@ -71,7 +94,7 @@ export function TelaCotacao() {
       if (estado && c.estado !== estado) return false
       if (vendedor && c.vendedor !== vendedor) return false
       if (!b) return true
-      return limpar(c.numero + ' ' + c.cliente.nome + ' ' + c.cliente.cidade).includes(b)
+      return limpar(c.numero + ' ' + c.clienteNome + ' ' + c.clienteCidade).includes(b)
     })
   }, [todas, busca, estado, vendedor])
 
@@ -82,22 +105,33 @@ export function TelaCotacao() {
       rascunho: conta('rascunho'),
       enviada: emAberto.length,
       aprovada: conta('aprovada'),
-      valorEmAberto: emAberto.reduce((s, c) => s + totalDaCotacao(c), 0),
+      valorEmAberto: emAberto.reduce((s, c) => s + c.total, 0),
     }
   }, [todas])
 
-  function nova() {
-    const c = cotacaoEmBranco(proximoNumero())
-    salvarCotacao(c)
-    navegar('/cotacao/' + c.id)
+  /* O NUMERO SAI DO BANCO, e nao de uma conta sobre a lista. Duas pessoas
+     criando cotacao no mesmo minuto leriam a mesma lista e tirariam o mesmo
+     proximo numero; o contador la dentro e uma linha so, e o update dele e
+     atomico. */
+  async function nova() {
+    try {
+      const c = cotacaoEmBranco(await proximoNumero())
+      const salva = await salvarCotacao(c)
+      navegar('/cotacao/' + salva.id)
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui criar a cotação', 'warn')
+    }
   }
 
   async function abrirArquivo() {
     try {
       const c = await abrirCft()
       if (!c) return
-      const salva = salvarCotacao(c)
-      setVersao((v) => v + 1)
+      /* Arquivo aberto vira cotacao NOVA no banco, com numero novo. Ele pode
+         ter vindo de outro computador, de um backup ou de uma versao antiga, e
+         gravar por cima do id que estava escrito dentro dele sobrescreveria
+         silenciosamente uma cotacao que alguem esta editando. */
+      const salva = await salvarCotacao({ ...c, id: '', numero: c.numero || (await proximoNumero()) })
       avisar('Cotação ' + salva.numero + ' aberta do arquivo', 'ok')
       navegar('/cotacao/' + salva.id)
     } catch (e) {
@@ -105,7 +139,7 @@ export function TelaCotacao() {
     }
   }
 
-  const colunas: Coluna<Cotacao>[] = [
+  const colunas: Coluna<CotacaoNaLista>[] = [
     {
       chave: 'numero',
       titulo: 'Cotação',
@@ -121,23 +155,23 @@ export function TelaCotacao() {
       titulo: 'Cliente',
       celula: (c) => (
         <span className="ct-num">
-          <b>{c.cliente.nome || 'sem cliente'}</b>
+          <b>{c.clienteNome || 'sem cliente'}</b>
           <span>
-            {c.cliente.cidade}
-            {c.cliente.uf ? ', ' + c.cliente.uf : ''}
+            {c.clienteCidade}
+            {c.clienteUf ? ', ' + c.clienteUf : ''}
           </span>
         </span>
       ),
     },
     { chave: 'criadaEm', titulo: 'Criada', celula: (c) => data(c.criadaEm) },
     { chave: 'validaAte', titulo: 'Vale até', celula: (c) => data(c.validaAte) },
-    { chave: 'pecas', titulo: 'Peças', numero: true, celula: (c) => pecasDaCotacao(c) },
+    { chave: 'pecas', titulo: 'Peças', numero: true, celula: (c) => c.pecas },
     {
       chave: 'estado',
       titulo: 'Situação',
       celula: (c) => <Selo tom={TOM_DO_ESTADO[c.estado]}>{NOME_DO_ESTADO_DA_COTACAO[c.estado]}</Selo>,
     },
-    { chave: 'total', titulo: 'Total', numero: true, celula: (c) => dinheiro(totalDaCotacao(c)) },
+    { chave: 'total', titulo: 'Total', numero: true, celula: (c) => dinheiro(c.total) },
   ]
 
   return (
@@ -147,10 +181,10 @@ export function TelaCotacao() {
       sub="A proposta que vai para o cliente, e o arquivo .cft que ela vira."
       acoes={
         <>
-          <Botao tom="contorno" onClick={abrirArquivo}>
+          <Botao tom="contorno" onClick={() => void abrirArquivo()}>
             Abrir .cft
           </Botao>
-          <Botao tom="primario" onClick={nova}>
+          <Botao tom="primario" onClick={() => void nova()}>
             Nova cotação
           </Botao>
         </>
@@ -191,10 +225,34 @@ export function TelaCotacao() {
         chaveDaLinha={(c) => c.id}
         aoClicarNaLinha={(c) => navegar('/cotacao/' + c.id)}
         vazio={
-          <Vazio
-            titulo="Nenhuma cotação por aqui"
-            texto="Mude os filtros, abra um arquivo .cft, ou comece uma cotação nova."
-          />
+          carregando ? (
+            <Esqueleto altura={200} />
+          ) : falha ? (
+            <Vazio
+              titulo="Não consegui carregar as cotações"
+              texto={falha}
+              acao={
+                <Botao
+                  tom="forte"
+                  onClick={() => {
+                    setCarregando(true)
+                    void recarregar()
+                  }}
+                >
+                  Tentar de novo
+                </Botao>
+              }
+            />
+          ) : (
+            <Vazio
+              titulo="Nenhuma cotação por aqui"
+              texto={
+                todas.length
+                  ? 'Mude os filtros para ver o resto da base.'
+                  : 'Abra um arquivo .cft, comece uma cotação nova, ou semeie conteúdo de teste em Configurações.'
+              }
+            />
+          )
         }
       />
     </Pagina>

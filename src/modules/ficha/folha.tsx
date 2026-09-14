@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Aviso, Botao, Pagina } from '@ds'
-import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
+import { EMPRESA, empresaAConferir } from '@dominio/empresa'
 import {
   CaixaDeImagem,
   Folha,
@@ -112,11 +112,11 @@ export function FolhaDaFicha({
         </>
       }
     >
-      {EMPRESA_A_CONFERIR ? (
+      {empresaAConferir() ? (
         <div className="fl-nao-imprime" style={{ marginBottom: 'var(--sp-5)' }}>
           <Aviso tom="warn" titulo="O rodapé ainda está com dados de molde">
-            Endereço e CNPJ da Fourtime ainda não foram preenchidos no sistema. Eles aparecem no
-            rodapé de toda folha impressa.
+            Os dados da empresa ainda não foram preenchidos, e eles saem no rodapé de toda folha
+            impressa. Preencha em Configurações · Empresa.
           </Aviso>
         </div>
       ) : null}

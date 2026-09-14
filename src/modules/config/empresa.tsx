@@ -1,64 +1,152 @@
-import { Aviso, Cartao, Pagina, Selo, TituloCartao } from '@ds'
-import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
+import { useState } from 'react'
+import { Aviso, Botao, Campo, Cartao, Entrada, Pagina, TituloCartao, avisar } from '@ds'
+import {
+  CAMPOS_DO_DOCUMENTO,
+  EMPRESA,
+  camposEmBranco,
+  mascaraDeCep,
+  mascaraDeCnpj,
+  mascaraDeTelefone,
+  salvarEmpresa,
+  type DadosDaEmpresa,
+} from '@dominio/empresa'
 import { AbasDaConfig } from './abas'
 import './config.css'
 
 /* ==========================================================================
-   Os dados da fábrica.
+   Os dados da fábrica, agora preenchidos aqui.
 
-   Eles saem impressos no rodapé de toda folha e no cabeçalho do PDF que vai
-   para o cliente. Hoje moram num arquivo do código, e por isso esta tela é de
-   leitura: mostrar um campo editável que não grava seria pior que mostrar o
-   valor como ele é.
+   Eles saem impressos no rodapé de toda folha, no cabeçalho do PDF que o
+   cliente recebe e na ficha que vai para o galpão. Até ontem moravam num
+   arquivo do código e esta tela só mostrava; agora ela grava.
 
-   O que ela faz de útil é a única coisa que importa agora: apontar, em
-   vermelho, os campos que ainda são molde. Endereço "a conferir" no rodapé de
-   um orçamento é o tipo de erro que só aparece depois de o cliente receber.
+   OS CAMPOS QUE SAEM NO PAPEL SÃO COBRADOS, E OS OUTROS NÃO. Um endereço em
+   branco no rodapé de um orçamento é o tipo de erro que só aparece depois de
+   o cliente receber, e por isso ele fica marcado em vermelho até ser
+   preenchido. Inscrição estadual e e-mail não estão no papel hoje: cobrá-los
+   junto ensinaria a ignorar o aviso inteiro.
+
+   A MÁSCARA MORA NO DOMÍNIO, e não aqui. O formato do CNPJ e do CEP é do
+   dado: um arquivo importado amanhã tem que passar pela mesma régua que o
+   campo digitado hoje.
    ========================================================================== */
 
-const CAMPOS: { rotulo: string; valor: string }[] = [
-  { rotulo: 'Nome', valor: EMPRESA.nome },
-  { rotulo: 'Descrição', valor: EMPRESA.descricao },
-  { rotulo: 'CNPJ', valor: EMPRESA.cnpj },
-  { rotulo: 'Endereço', valor: EMPRESA.endereco },
-  { rotulo: 'Cidade', valor: `${EMPRESA.cidade} · ${EMPRESA.uf}` },
-  { rotulo: 'Telefone', valor: EMPRESA.telefone },
-  { rotulo: 'Site', valor: EMPRESA.site },
-]
+const ROTULOS: Record<keyof DadosDaEmpresa, string> = {
+  nome: 'Nome',
+  razaoSocial: 'Razão social',
+  descricao: 'Descrição',
+  cnpj: 'CNPJ',
+  inscricaoEstadual: 'Inscrição estadual',
+  endereco: 'Endereço',
+  bairro: 'Bairro',
+  cidade: 'Cidade',
+  uf: 'UF',
+  cep: 'CEP',
+  telefone: 'Telefone',
+  whatsapp: 'WhatsApp',
+  email: 'E-mail',
+  site: 'Site',
+}
 
 export function TelaEmpresa() {
-  const faltando = CAMPOS.filter((c) => c.valor === 'a conferir')
+  const [d, setD] = useState<DadosDaEmpresa>({ ...EMPRESA })
+  const [sujo, setSujo] = useState(false)
+
+  const mudar = (parte: Partial<DadosDaEmpresa>) => {
+    setD((x) => ({ ...x, ...parte }))
+    setSujo(true)
+  }
+
+  const faltando = camposEmBranco(d)
+  const noPapel = (k: keyof DadosDaEmpresa) => CAMPOS_DO_DOCUMENTO.includes(k)
+
+  function gravar() {
+    salvarEmpresa(d)
+    setSujo(false)
+    avisar('Dados da empresa salvos', 'ok')
+  }
+
+  /* o campo, com a dica de onde ele aparece e o aviso de que está em branco */
+  const campo = (
+    k: keyof DadosDaEmpresa,
+    opcoes?: { largo?: boolean; estreito?: boolean; mascara?: (v: string) => string; dica?: string },
+  ) => (
+    <Campo
+      rotulo={ROTULOS[k]}
+      dica={opcoes?.dica ?? (noPapel(k) ? 'sai no documento impresso' : undefined)}
+      className={opcoes?.largo ? 'col-2' : opcoes?.estreito ? 'estreito' : undefined}
+    >
+      <Entrada
+        value={d[k]}
+        placeholder={noPapel(k) ? 'precisa ser preenchido' : ''}
+        onChange={(e) =>
+          mudar({ [k]: opcoes?.mascara ? opcoes.mascara(e.target.value) : e.target.value } as Partial<DadosDaEmpresa>)
+        }
+      />
+    </Campo>
+  )
 
   return (
     <Pagina
       acima="Configurações"
       titulo="Empresa"
-      sub="O que vai impresso no rodapé da folha e no cabeçalho do PDF do cliente."
+      sub="O que vai impresso no rodapé da folha, no cabeçalho do PDF do cliente e na ficha da produção."
+      acoes={
+        <Botao tom="primario" onClick={gravar} disabled={!sujo}>
+          {sujo ? 'Salvar' : 'Salvo'}
+        </Botao>
+      }
     >
       <AbasDaConfig atual="empresa" />
 
-      {EMPRESA_A_CONFERIR ? (
-        <Aviso tom="brand" titulo={`${faltando.length} campos ainda são molde`}>
-          Enquanto estiverem assim, eles saem escritos "a conferir" no documento que o cliente
-          recebe. Me passe os valores de verdade e eu troco.
+      {faltando.length ? (
+        <Aviso
+          tom="brand"
+          titulo={
+            faltando.length === 1
+              ? 'Falta 1 campo que sai no documento'
+              : 'Faltam ' + faltando.length + ' campos que saem no documento'
+          }
+        >
+          {faltando.map((k) => ROTULOS[k]).join(', ')}. Enquanto estiverem em branco, eles saem
+          como um buraco no documento que o cliente recebe.
         </Aviso>
       ) : null}
 
       <Cartao>
-        <TituloCartao>Dados da fábrica</TituloCartao>
-        <dl className="cfg-dados">
-          {CAMPOS.map((c) => (
-            <div key={c.rotulo}>
-              <dt>{c.rotulo}</dt>
-              <dd>
-                {c.valor === 'a conferir' ? <Selo tom="brand">a conferir</Selo> : c.valor}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <TituloCartao>Quem é a empresa</TituloCartao>
+        <div className="cfg-grade">
+          {campo('nome')}
+          {campo('descricao', { largo: true })}
+          {campo('razaoSocial', { largo: true })}
+          {campo('cnpj', { mascara: mascaraDeCnpj })}
+          {campo('inscricaoEstadual')}
+        </div>
+      </Cartao>
+
+      <Cartao>
+        <TituloCartao>Onde ela fica</TituloCartao>
+        <div className="cfg-grade">
+          {campo('endereco', { largo: true })}
+          {campo('bairro')}
+          {campo('cep', { mascara: mascaraDeCep })}
+          {campo('cidade')}
+          {campo('uf', { estreito: true })}
+        </div>
+      </Cartao>
+
+      <Cartao>
+        <TituloCartao>Como falam com ela</TituloCartao>
+        <div className="cfg-grade">
+          {campo('telefone', { mascara: mascaraDeTelefone })}
+          {campo('whatsapp', { mascara: mascaraDeTelefone })}
+          {campo('email')}
+          {campo('site')}
+        </div>
         <p className="cfg-nada">
-          Estes campos moram no código hoje, e por isso a tela só mostra. Eles ficam editáveis
-          quando a tabela da empresa entrar no banco, junto com logo e dados bancários.
+          Hoje estes dados ficam gravados neste navegador. Quando a tabela da empresa entrar no
+          banco, eles passam a valer para todo mundo da fábrica, e este arquivo é o único que
+          muda: quem imprime continua lendo do mesmo lugar.
         </p>
       </Cartao>
     </Pagina>

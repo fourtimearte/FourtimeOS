@@ -455,127 +455,258 @@
 /* ==========================================================================
    O MÓDULO NO PAPEL.
 
-   Na tela as duas colunas são iguais, porque quem preenche precisa dos dois
-   lados do mesmo tamanho. No papel não: quem confere um uniforme impresso
-   olha a ESTAMPA primeiro, e a ficha técnica é o que ele lê depois. Por isso
-   a arte fica com 1.7 contra 1.3 da ficha, que é a conta da v3.375 e dá mais
-   da metade da largura da folha.
+   A tela e o papel são o mesmo módulo, e não podem ser o mesmo TAMANHO. Na
+   tela cada peça tem altura de dedo, porque alguém vai tocar nela num tablet
+   no meio da fábrica. No papel ninguém toca em nada: o que importa ali é
+   caber duas peças na folha e continuar legível de braço esticado.
 
-   A REGRA DA IMAGEM é a mesma de sempre: largura total da coluna primeiro, a
-   altura acompanha a proporção natural. O teto existe só para o caso em que a
-   imagem em largura total não caberia na folha. Aí ela encolhe até caber, e a
-   folha nunca cresce: folha que cresce vira folha que corta a última linha.
+   AS MEDIDAS DAQUI SÃO AS DA v3.375, medidas nela e copiadas uma a uma. Ela
+   não tem dois desenhos: o editor dela É a folha A4, então tudo o que está
+   nela já é medida de papel e já passou por quatro anos de impressão na
+   fábrica. Onde este arquivo diz 16px de pílula ou 7,78mm de campo, o número
+   veio de lá, e mudar um deles é mudar o documento que a fábrica conhece.
 
-   Todas as medidas daqui para baixo são em milímetro, e não em pixel. A folha
-   é um objeto de 210 por 297 mm, e pixel numa folha é uma medida que muda de
-   tamanho conforme o monitor de quem abriu.
+   A régua é milímetro, e não pixel, em tudo que é caixa: a folha é um objeto
+   de 210 por 297 mm. Onde o número é em pixel (as pílulas, as letras) é
+   porque a v3.375 é assim, e porque uma folha A4 tem 794px de largura em CSS
+   fixos: nessa largura, pixel e milímetro são a mesma régua.
 
    A CLASSE É `.papel`, E NÃO `.fl`, POR UM MOTIVO CARO. A área invisível onde
    os blocos são medidos não é uma folha: ela é um retângulo da largura da
    folha, fora da vista. Enquanto estas regras se penduravam em `.fl`, o
    módulo era medido com o desenho da TELA, que é mais alto, e a conta da
-   página achava que dois layouts nunca cabiam. Quem mede tem que usar a
-   mesma régua de quem imprime, então `.papel` está nos dois.
+   página achava que dois layouts nunca cabiam. Quem mede tem que usar a mesma
+   régua de quem imprime, então `.papel` está nos dois.
    ========================================================================== */
+
+/* a altura de campo do módulo, da v3.375: o selo L-NN, a caixa da referência
+   e o cabeçalho dos cartões têm a MESMA, e é por isso que as duas colunas
+   começam alinhadas no alto, que é onde o olho entra */
 .papel .mod {
+  --pp-campo: 7.78mm;
+  --pp-linha: 1px solid var(--fl-borda, #dfe3e8);
+
   grid-template-columns: 1.7fr 1.3fr;
-  gap: 2.5mm;
-}
-.papel .mod + .mod,
-.papel .fc-folha-peca + .fc-folha-peca .mod {
-  margin-top: 4mm;
+  gap: 3.33mm;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
-/* a barra da referência: uma linha, sem altura de dedo */
+/* --- a barra da referência ------------------------------------------------ */
 .papel .mod-topo {
   gap: 1.5mm;
-  margin-bottom: -1mm;
+  align-items: stretch;
 }
 .papel .mod-selo,
 .papel .mod-ref {
-  height: 7mm;
+  height: var(--pp-campo);
   min-height: 0;
-  font-size: 9pt;
+  border-radius: 5.6px;
+  font-size: 11px;
 }
 .papel .mod-selo {
-  min-width: 12mm;
+  min-width: 11mm;
   padding: 0 2mm;
-  font-size: 7.5pt;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.papel .mod-ref {
+  padding: 0 2.2mm;
+}
+.papel .mod-ref-bt {
+  font-size: 11px;
 }
 
-/* a arte: largura inteira da coluna, altura pela proporção, teto para caber */
+/* --- a arte ---------------------------------------------------------------
+   Largura total da coluna primeiro, e a altura acompanha a proporção. O teto
+   existe só para a arte que, em largura total, não caberia na folha: aí ela
+   encolhe até caber, e a folha nunca cresce. Com as proporções que a fábrica
+   usa de verdade (2800x2400 deitada, 2800x3300 em pé) ele quase nunca entra:
+   a coluna tem 106mm, então a deitada dá 91mm e a em pé dá 125mm. */
 .papel .mod-arte .img-caixa {
-  gap: 1.5mm;
+  gap: 1.4mm;
 }
 .papel .img-area {
   min-height: 0;
-  border-radius: 1.5mm;
+  border-radius: 7px;
 }
-/* O TETO DA IMAGEM É A CONTA DE CABER DOIS. Com 112 mm um par de artes em
-   retrato dava 1.011 px numa folha de 984, e o segundo layout ia sozinho para
-   a folha seguinte: seis layouts viravam cinco folhas. Com 92 mm o par cabe,
-   e 92 mm de altura por 103 de largura ainda é arte de conferir estampa, e
-   não selo. Quem tiver uma arte que precise de mais que isso imprime um
-   layout por folha, que continua acontecendo sozinho quando não couber. */
 .papel .img-area img {
-  max-height: 92mm;
+  max-height: 150mm;
   object-position: center top;
 }
-/* sem arte a moldura não pode esticar até o fim da ficha: no papel isso é um
-   retângulo vazio de meia folha, e quem recebe pergunta o que faltou */
+/* SEM ARTE a moldura para de esticar até o fim da ficha: no papel aquilo é
+   meia folha de retângulo vazio, e quem recebe pergunta o que faltou. 44,45mm
+   é a altura de convite da v3.375. */
 .papel .img-area:not(.tem) {
-  min-height: 40mm;
-  max-height: 40mm;
+  min-height: 44.45mm;
+  max-height: 44.45mm;
+}
+.papel .img-sem {
+  font-size: 9px;
 }
 
-/* os cartões e a tabela, na letra do documento */
+/* --- a ficha técnica ------------------------------------------------------ */
 .papel .mod-ficha {
-  gap: 1.5mm;
+  gap: 2.59mm;
 }
 .papel .mod-cartao {
-  border-radius: 1.5mm;
+  border-radius: 5.6px;
 }
 .papel .mod-cartao > header {
-  padding: 0.8mm 2mm;
+  min-height: var(--pp-campo);
+  padding: 0 1.4mm 0 2.2mm;
 }
 .papel .mod-cartao > header span {
-  font-size: 6.5pt;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
+
+/* o par tecido e cor: nome em cima, cor embaixo em corpo menor, quadrado na
+   ponta cobrindo as duas alturas */
 .papel .mod-tec-linha {
   min-height: 0;
-  padding: 1mm 2mm;
+  padding: 1.1mm 1.4mm 1.1mm 2.2mm;
+  gap: 0.2mm 1.4mm;
 }
-/* NO PAPEL O NOME DO TECIDO NAO PODE CORTAR. Na tela a reticencia e aceitavel
-   porque o nome inteiro esta a um toque; numa folha na mesa de corte, "SUPLEX
-   84..." nao diz qual malha e, e ninguem pode passar o mouse em papel. */
 .papel .mod-tec-nome,
+.papel .mod-tec-cor {
+  padding: 0;
+}
+.papel .mod-tec-nome {
+  font-size: 11px;
+  line-height: 1.2;
+}
+.papel .mod-tec-cor {
+  font-size: 8.6px;
+  line-height: 1.2;
+}
+/* NO PAPEL O NOME DO TECIDO NAO PODE CORTAR. Na tela a reticência é aceitável
+   porque o nome inteiro está a um toque; numa folha na mesa de corte, "SUPLEX
+   84..." não diz qual malha é, e ninguém passa o mouse em papel. */
+.papel .mod-tec-nome,
+.papel .mod-tec-cor,
 .papel .mod-tec-cor span {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  line-height: 1.25;
 }
+/* o quadrado cobre as duas linhas: ele é do PAR, e não do nome da cor */
+.papel .mod-tec-sw {
+  width: 6.4mm;
+  height: 6.4mm;
+}
+.papel .mod-sw {
+  width: 6.4mm;
+  height: 6.4mm;
+  border-radius: 5px;
+}
+
+/* --- as fileiras de design ------------------------------------------------ */
 .papel .mod-fila {
-  padding: 0.8mm 1.5mm;
+  gap: 3.5px;
+  padding: calc(0.62mm + 2px) 1.4mm calc(0.62mm + 2px) 2.2mm;
+  min-height: var(--pp-campo);
 }
+.papel .mod-fila-ph {
+  padding: 0;
+  font-size: 8.4px;
+  letter-spacing: 0.06em;
+}
+
+/* A FAIXA DE CORES NO PAPEL É OUTRA PEÇA, e esta é a parte que estava mais
+   fora de escala: na tela a pílula tem 32px de altura e a ficha de cor tem
+   70 por 32, porque as duas são alvo de dedo. Impressas nesse tamanho, ao
+   lado de um texto de 11px, elas viravam o assunto da folha.
+
+   Na v3.375 a pílula tem 16px e a ficha de cor também, e as cores são UM
+   retângulo só: as divisórias entre um código e o outro são as próprias
+   amostras de cor, sem linha desenhada e sem vão. Seis códigos deixam de ser
+   seis objetos soltos e viram uma barra. */
+.papel .fx {
+  border-radius: 4px;
+}
+.papel .c1 {
+  gap: 3.5px;
+  padding: 0;
+  align-items: center;
+}
+.papel .c1 > .tec {
+  margin: 0;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 7px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+.papel .c1 .sep {
+  display: none;
+}
+.papel .c1 .bandeja {
+  gap: 0;
+  padding: 0;
+  align-items: stretch;
+  align-content: flex-start;
+  border: var(--pp-linha);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+.papel .cor {
+  width: auto;
+  height: 16px;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  align-items: stretch;
+}
+/* A AMOSTRA É A DIVISÓRIA, e por isso ela é meio quadrado colado na borda:
+   o que separa um código do seguinte é a própria cor do seguinte. */
+.papel .cor .am {
+  width: 8px;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* largura igual para todos: é o que faz a segunda fileira virar grade em vez
+   de escada. Os códigos têm três caracteres (120, S01). */
+.papel .cor .cod {
+  min-width: 3ch;
+  padding: 0 4.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+/* --- a tabela de tamanhos ------------------------------------------------- */
 .papel .gr-rolo {
-  border-radius: 1.5mm;
+  border-radius: 4px;
   overflow: visible;
 }
 .papel .gr-tab {
-  font-size: 8.5pt;
+  font-size: 11px;
 }
 .papel .gr-tab th,
 .papel .gr-tab td {
-  height: 4.6mm;
-  padding: 0 2mm;
-}
-.papel .mod-obs .rico {
-  min-height: 8mm;
-  font-size: 8.5pt;
+  height: auto;
+  padding: 1.2mm 1.8mm;
+  line-height: 1.4;
 }
 
-/* o pé do módulo no papel é uma linha de conta, e não uma faixa de campos */
+/* --- a observação --------------------------------------------------------- */
+.papel .mod-obs .rico {
+  min-height: 7mm;
+  padding: 1.1mm 2.2mm;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* --- o pé do módulo ------------------------------------------------------- */
 .papel .mod-pe {
-  padding-top: 1.5mm;
+  padding-top: 1.4mm;
+  font-size: 11px;
 }

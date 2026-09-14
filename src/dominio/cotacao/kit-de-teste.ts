@@ -34,9 +34,17 @@ import { VERSAO_DO_CFT, informesEmBranco, type Cotacao, type ProdutoCotado } fro
    testa o que acontece na mesa.
    ========================================================================== */
 
-/** os dois formatos que o kit usa, em pixel */
-const BAIXA = { l: 1600, a: 1000 }
-const ALTA = { l: 1000, a: 1600 }
+/* OS DOIS FORMATOS SAO OS DA FABRICA, e nao dois retangulos inventados. A
+   arte deitada que sai do Illustrator mede 2800 por 2400, e a em pe mede 2800
+   por 3300. O que importa aqui e a PROPORCAO, nao o numero de pixels: o teste
+   e sobre como a folha se comporta com uma arte quase quadrada e com uma um
+   pouco mais alta que larga, que sao as duas que existem de verdade.
+
+   Sao desenhadas na metade do tamanho porque o dobro nao acrescenta nada a
+   uma imagem de faixas e cruz, e um documento de teste com seis fotos grandes
+   demora a abrir sem ensinar nada. */
+const BAIXA = { l: 1400, a: 1200 }
+const ALTA = { l: 1400, a: 1650 }
 
 /* Desenha uma imagem de teste do tamanho pedido e devolve o data URL.
 

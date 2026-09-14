@@ -105,7 +105,7 @@ export type Lead = {
   pedido: string
   /** quando a janela de 24 h do WhatsApp fecha, em ISO */
   janelaAte: string
-  /** de quem e o lead: e por aqui que a comissao anda */
+  /** de quem e o lead: e por aqui que a venda e creditada la no fim */
   vendedorId: string
   vendedorNome: string
   teste: boolean

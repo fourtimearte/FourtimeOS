@@ -10,10 +10,6 @@ update public.pessoa set papel='admin', situacao='aprovado' where id='11111111-1
 update public.pessoa set papel='vendedor', situacao='aprovado' where id in
  ('22222222-2222-2222-2222-222222222222','33333333-3333-3333-3333-333333333333');
 
-insert into public.comissao_do_vendedor (pessoa_id, pct) values
- ('22222222-2222-2222-2222-222222222222', 3.5),
- ('33333333-3333-3333-3333-333333333333', 3.0);
-
 insert into public.rodizio (pessoa_id, ordem) values
  ('22222222-2222-2222-2222-222222222222', 1),
  ('33333333-3333-3333-3333-333333333333', 2);
@@ -45,20 +41,20 @@ select public.proximo_numero_de_cotacao(), '{"produtos":[]}'::jsonb, 4, l.client
   from public.lead l where public.fim_do_telefone(l.telefone)='93214455';
 select numero from public.cotacao;
 
-\echo '--- a aprovacao: numero de pedido, comissao congelada, lead fechado ---'
-select numero, vendedor_nome, comissao_pct, total from public.aprovar_cotacao((select id from public.cotacao));
+\echo '--- a aprovacao: numero de pedido, vendedor congelado, lead fechado ---'
+select numero, vendedor_nome, total from public.aprovar_cotacao((select id from public.cotacao));
 select estagio, valor from public.lead where public.fim_do_telefone(telefone)='93214455';
 select estado from public.cotacao;
 
-\echo '--- o relatorio da Carla, visto pela Carla ---'
-select vendedor_nome, mes, pedidos, vendido, comissao from public.comissao_por_mes;
+\echo '--- o que a Carla vendeu, visto pela Carla ---'
+select vendedor_nome, mes, pedidos, vendido from public.venda_por_mes;
 
 \echo '--- a mesma consulta vista pelo Tiago: nao e dele, some ---'
 set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
-select count(*) as linhas_para_o_tiago from public.comissao_por_mes;
+select count(*) as linhas_para_o_tiago from public.venda_por_mes;
 
 \echo '--- vista pelo admin: aparece ---'
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
-select count(*) as linhas_para_o_admin from public.comissao_por_mes;
+select count(*) as linhas_para_o_admin from public.venda_por_mes;
 
 \echo '--- aprovar duas vezes tem que recusar ---'

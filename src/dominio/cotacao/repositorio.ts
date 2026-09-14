@@ -235,13 +235,18 @@ export async function proximoNumero(): Promise<string> {
 
 /* O SIM DO CLIENTE ACONTECE NO BANCO, NUMA CHAMADA SÓ.
 
-   Aprovar não é só carimbar a cotação: é tirar o número do pedido, congelar o
-   percentual de comissão do vendedor daquele dia, criar a linha do pedido e
-   fechar o lead. As cinco coisas têm que acontecer juntas ou nenhuma, senão
+   Aprovar não é só carimbar a cotação: é tirar o número do pedido, criar a
+   linha do pedido com o VENDEDOR copiado, marcar a cotação como aprovada e
+   fechar o lead. As quatro coisas têm que acontecer juntas ou nenhuma, senão
    sobra uma cotação que a tela mostra aprovada e a fábrica nunca vê.
 
+   O vendedor é copiado, e não referenciado: ele pode sair da empresa e o pedido
+   continua sabendo de quem foi. QUANTO isso vale para ele não está aqui e nem
+   deve estar (migração 018): o sistema guarda de quem foi a venda, e a conta do
+   pagamento é da gerência, fora do aplicativo.
+
    Enquanto o sistema estiver em ensaio, o número volta como PD-TESTE-0001. */
-export type PedidoGerado = { numero: string; teste: boolean; comissao_pct: number }
+export type PedidoGerado = { numero: string; teste: boolean; vendedor_nome: string }
 
 export async function aprovarNoBanco(cotacaoId: string, versao: number): Promise<PedidoGerado> {
   const p = await chamar<PedidoGerado | PedidoGerado[]>('aprovar_cotacao', {

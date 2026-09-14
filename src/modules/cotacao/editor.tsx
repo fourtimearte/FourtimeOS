@@ -295,11 +295,15 @@ function Editor({ inicial }: { inicial: Cotacao }) {
      Com duas aprovando no mesmo minuto, as duas leriam a mesma lista, achariam
      o mesmo maior numero, e nasceriam dois pedidos com o mesmo PD.
 
-     Agora quem tira o numero e o banco, numa chamada que faz cinco coisas de
-     uma vez ou nenhuma: numero do pedido, comissao do vendedor CONGELADA no
-     percentual daquele dia, linha do pedido criada, cotacao marcada como
-     aprovada e o lead fechado. Meia aprovacao gravada e uma cotacao que a tela
-     mostra aprovada e a fabrica nunca ve.
+     Agora quem tira o numero e o banco, numa chamada que faz quatro coisas de
+     uma vez ou nenhuma: numero do pedido, linha do pedido criada com o VENDEDOR
+     copiado, cotacao marcada como aprovada e o lead fechado. Meia aprovacao
+     gravada e uma cotacao que a tela mostra aprovada e a fabrica nunca ve.
+
+     O vendedor e copiado e nao referenciado: ele pode sair da empresa e o
+     pedido continua sabendo de quem foi. QUANTO isso vale para ele nao esta
+     aqui, e nem deve: o sistema guarda de quem foi a venda, e a conta do
+     pagamento e da gerencia, fora do aplicativo.
 
      A cotacao precisa estar GRAVADA antes: o banco aprova uma linha que existe,
      e nao o que esta na tela. */

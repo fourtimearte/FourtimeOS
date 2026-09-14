@@ -154,7 +154,7 @@ export function TelaFunil() {
       telefone: l.telefone,
     }
     /* O LEAD ENTRA NA COTACAO, e e por isso que ela nasce ligada a ele: e essa
-       ligacao que faz a comissao chegar na pessoa certa la no fim, quando o
+       ligacao que faz a venda ser creditada a pessoa certa la no fim, quando o
        pedido for aprovado. */
     let salva
     try {

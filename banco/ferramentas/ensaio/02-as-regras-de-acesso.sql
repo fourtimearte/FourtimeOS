@@ -13,9 +13,6 @@ insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, esta
  values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Teste Carla', 'rascunho','22222222-2222-2222-2222-222222222222', 900, 20);
 select numero from public.cotacao order by criada_em desc limit 1;
 
-\echo '--- a Carla NAO ve o percentual do Tiago ---'
-select count(*) as percentuais_visiveis_para_carla from public.comissao_do_vendedor;
-
 \echo '--- a Carla NAO transfere lead (so o admin) ---'
 do $$ begin
   perform public.transferir_lead(
@@ -218,8 +215,33 @@ insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vend
  values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Costura Tres', 'Ninguem', 'enviada', 1000, 10);
 select cliente_nome, vendedor_nome from public.cotacao_sem_vendedor where cliente_nome like 'Costura%';
 
-\echo '--- e AGORA a comissao chega na pessoa certa ---'
-select numero, vendedor_nome, comissao_pct
+\echo '--- e AGORA a venda chega na pessoa certa ---'
+select numero, vendedor_nome
   from public.aprovar_cotacao((select id from public.cotacao where cliente_nome='Costura Um'));
-select vendedor_nome, sum(comissao) as comissao from public.comissao_por_mes
- group by vendedor_nome;
+
+\echo ''
+\echo '=== 018: o quanto saiu, o de quem ficou ==='
+\echo '--- nao existe mais coluna nem tabela de comissao ---'
+select (select count(*) from information_schema.columns
+         where table_schema='public' and table_name='pedido' and column_name='comissao_pct') as coluna_comissao,
+       (select count(*) from information_schema.tables
+         where table_schema='public' and table_name='comissao_do_vendedor') as tabela_comissao,
+       (select count(*) from information_schema.views
+         where table_schema='public' and table_name like 'comissao%') as views_de_comissao;
+
+\echo '--- e a separacao do que cada um fez continua ---'
+select vendedor_nome, pedidos, pecas, vendido from public.venda_por_mes order by vendedor_nome;
+
+\echo ''
+\echo '=== 019: o nome do vendedor nao se perde ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+\echo '--- cotacao com vendedor que NAO tem conta: o pedido guarda o nome mesmo assim ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vendedor_nome,
+                            estado, total, pecas)
+ values (public.proximo_numero_de_cotacao(), '{}'::jsonb, 4, 'Sem Conta', 'Fabricio', 'enviada', 2000, 40);
+select numero, vendedor_nome, vendedor_id is null as sem_vinculo
+  from public.aprovar_cotacao((select id from public.cotacao where cliente_nome='Sem Conta'));
+
+\echo '--- e ele entra na separacao do que cada um fez ---'
+select vendedor_nome, pedidos, vendido from public.venda_por_mes order by vendedor_nome;

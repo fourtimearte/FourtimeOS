@@ -530,8 +530,17 @@
   min-height: 0;
   border-radius: 7px;
 }
+/* O TETO DA ARTE É UMA VARIÁVEL, e não um número escrito aqui, porque é por
+   ela que a compressão vertical encolhe a arte quando dois layouts não cabem
+   na folha. Variável, e não `style.maxHeight` direto no <img>: o valor entra
+   no módulo inteiro, de uma vez, e o desenho continua sendo decidido num
+   lugar só, aqui, em vez de meio aqui e meio no JavaScript.
+
+   Os 150 mm do padrão são freio de emergência, e não medida: com as
+   proporções da fábrica, numa coluna de 106 mm a arte deitada dá 91 mm e a em
+   pé dá 125 mm, então ele quase nunca entra. */
 .papel .img-area img {
-  max-height: 150mm;
+  max-height: var(--teto-arte, 150mm);
   object-position: center top;
 }
 /* SEM ARTE a moldura para de esticar até o fim da ficha: no papel aquilo é

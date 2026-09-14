@@ -182,7 +182,22 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
      A própria função devolve o estado limpo antes de apertar, então rodar de
      novo sem necessidade não custa nada além de uma medição. */
   useEffect(() => {
-    compactarPalco(palco.current)
+    const p = palco.current
+    if (!p) return
+    compactarPalco(p)
+    /* E DE NOVO QUANDO A ARTE CHEGAR. Decodificar imagem não é evento do
+       React: a altura da folha muda sem nenhuma re-renderização acontecer, e
+       sem isto a folha ficaria apertada pela medida de quando a arte ainda
+       não existia. */
+    let vivo = true
+    const artes = [...p.querySelectorAll('img')].filter((im) => !im.complete)
+    if (!artes.length) return
+    Promise.all(artes.map((im) => im.decode().catch(() => undefined))).then(() => {
+      if (vivo) compactarPalco(p)
+    })
+    return () => {
+      vivo = false
+    }
   })
 
   if (!c) {

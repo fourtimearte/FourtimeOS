@@ -66,24 +66,42 @@ function excede(corpo: HTMLElement) {
   return corpo.scrollHeight - corpo.clientHeight
 }
 
-/** Encolhe as imagens um passo. Devolve o estado anterior, ou null se nenhuma
+/* O TETO DA ARTE ENTRA PELO MÓDULO, numa variável, e não como max-height
+   direto no <img>. Dois motivos, e o segundo é o que decide: primeiro, o
+   desenho continua morando no CSS, que é onde se procura por ele; segundo, e
+   pior, um `style.maxHeight` escrito no <img> desta tela não vencia a regra
+   da folha, e a arte simplesmente não encolhia enquanto a tabela era
+   espremida até o mínimo à toa. A variável é lida pela própria regra, então
+   não existe disputa nenhuma. */
+function tetoDe(mod: HTMLElement): number {
+  const v = mod.style.getPropertyValue('--teto-arte')
+  return v ? parseFloat(v) : 0
+}
+
+function alturaDaArte(mod: HTMLElement): number {
+  const im = mod.querySelector('.img-area.tem img')
+  return im instanceof HTMLElement ? im.getBoundingClientRect().height : 0
+}
+
+/** Encolhe as artes um passo. Devolve o estado anterior, ou null se nenhuma
     pôde encolher porque já estão todas no piso. */
-function cederImagens(imgs: HTMLImageElement[]) {
-  const antes = imgs.map((im) => im.style.maxHeight)
+function cederImagens(mods: HTMLElement[]) {
+  const antes = mods.map((m) => m.style.getPropertyValue('--teto-arte'))
   let mexeu = false
-  for (const im of imgs) {
-    const h = im.getBoundingClientRect().height
-    if (h - IMG_PASSO > IMG_PISO) {
-      im.style.maxHeight = h - IMG_PASSO + 'px'
+  for (const m of mods) {
+    const h = tetoDe(m) || alturaDaArte(m)
+    if (h && h - IMG_PASSO > IMG_PISO) {
+      m.style.setProperty('--teto-arte', h - IMG_PASSO + 'px')
       mexeu = true
     }
   }
   return mexeu ? antes : null
 }
 
-function desfazerImagens(imgs: HTMLImageElement[], antes: string[]) {
-  imgs.forEach((im, i) => {
-    im.style.maxHeight = antes[i]
+function desfazerImagens(mods: HTMLElement[], antes: string[]) {
+  mods.forEach((m, i) => {
+    if (antes[i]) m.style.setProperty('--teto-arte', antes[i])
+    else m.style.removeProperty('--teto-arte')
   })
 }
 
@@ -101,14 +119,16 @@ export function compactarFolha(folha: HTMLElement) {
   const tabelas = [...folha.querySelectorAll('.mod-tabela')].filter(
     (e): e is HTMLElement => e instanceof HTMLElement,
   )
-  const imgs = [...folha.querySelectorAll('.img-area.tem img')].filter(
-    (e): e is HTMLImageElement => e instanceof HTMLImageElement,
+  /* só os módulos QUE TÊM ARTE cedem altura: um módulo sem imagem não tem o
+     que ceder, e pôr um teto nele não muda nada além de sujar o estilo */
+  const comArte = [...folha.querySelectorAll('.mod')].filter(
+    (e): e is HTMLElement => e instanceof HTMLElement && !!e.querySelector('.img-area.tem img'),
   )
-  if (!tabelas.length && !imgs.length) return
+  if (!tabelas.length && !comArte.length) return
 
-  /* 1. estado limpo: tabela no padrão, imagem sem teto forçado */
+  /* 1. estado limpo: tabela no padrão, arte sem teto forçado */
   if (tabelas.length) aplicarNivel(tabelas, 0)
-  for (const im of imgs) im.style.maxHeight = ''
+  for (const m of comArte) m.style.removeProperty('--teto-arte')
   if (excede(corpo) <= FOLGA) return
 
   /* 2. falta espaço: a imagem cede, a tabela só se a imagem não resolver */
@@ -116,10 +136,10 @@ export function compactarFolha(folha: HTMLElement) {
   let guarda = 0
   while (excede(corpo) > FOLGA && guarda++ < 400) {
     const antes = excede(corpo)
-    const estado = cederImagens(imgs)
+    const estado = cederImagens(comArte)
     if (estado) {
-      if (excede(corpo) < antes - 0.25) continue /* a imagem resolveu: segue */
-      desfazerImagens(imgs, estado) /* não resolveu: quem dita é a ficha */
+      if (excede(corpo) < antes - 0.25) continue /* a arte resolveu: segue */
+      desfazerImagens(comArte, estado) /* não resolveu: quem dita é a ficha */
     }
     if (nivel < NIVEIS_DA_TABELA.length - 1) {
       aplicarNivel(tabelas, ++nivel)
@@ -132,12 +152,12 @@ export function compactarFolha(folha: HTMLElement) {
      ENQUANTO ADIANTAR. Sem esta checagem, quando quem estoura é a ficha, o
      laço espreme a imagem até o piso sem resolver nada e a arte vira selo. */
   let g2 = 0
-  while (excede(corpo) > FOLGA && imgs.length && g2++ < 200) {
+  while (excede(corpo) > FOLGA && comArte.length && g2++ < 200) {
     const antes = excede(corpo)
-    const estado = cederImagens(imgs)
+    const estado = cederImagens(comArte)
     if (!estado) break
     if (excede(corpo) >= antes - 0.25) {
-      desfazerImagens(imgs, estado)
+      desfazerImagens(comArte, estado)
       break
     }
   }
@@ -154,16 +174,16 @@ export function compactarFolha(folha: HTMLElement) {
       break
     }
   }
-  /* a imagem desceu de 4 em 4 px, então quase sempre passou do necessário */
+  /* a arte desceu de 4 em 4 px, então quase sempre passou do necessário */
   let v = 0
   while (v++ < 900) {
     let cresceu = false
-    for (const im of imgs) {
-      const teto = parseFloat(im.style.maxHeight) || 0
+    for (const m of comArte) {
+      const teto = tetoDe(m)
       if (!teto) continue
-      im.style.maxHeight = teto + 1 + 'px'
+      m.style.setProperty('--teto-arte', teto + 1 + 'px')
       if (excede(corpo) > FOLGA) {
-        im.style.maxHeight = teto + 'px'
+        m.style.setProperty('--teto-arte', teto + 'px')
         continue
       }
       cresceu = true

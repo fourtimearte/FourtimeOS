@@ -190,9 +190,14 @@ export function ModuloDeLayout({
     const naOrdem = TODAS_AS_TAGS.map((t) => bloco.design.find((d) => d.tag === t)).filter(
       (d): d is Design => !!d,
     )
-    const lista: { chave: string; tipo: string; itens: Design[] }[] = [
-      { chave: 'eti', tipo: 'eti', itens: naOrdem.filter((d) => secaoDaTag(d.tag) === 'etiqueta') },
-    ]
+    const etiquetas = naOrdem.filter((d) => secaoDaTag(d.tag) === 'etiqueta')
+    /* A FILEIRA VAZIA DA ETIQUETA É UM CONVITE, E CONVITE SÓ VALE PARA QUEM
+       ESTÁ PREENCHENDO. Em leitura ela não tem o que convidar: sai uma faixa
+       em branco de 7,78 mm com um filete embaixo, e numa folha impressa isso
+       lê como "faltou alguma coisa aqui". Quando não há etiqueta e ninguém
+       vai digitar, a fileira não existe. */
+    const lista: { chave: string; tipo: string; itens: Design[] }[] =
+      etiquetas.length || !leitura ? [{ chave: 'eti', tipo: 'eti', itens: etiquetas }] : []
     const tecnicas = naOrdem.filter((d) => secaoDaTag(d.tag) === 'tecnica')
     tecnicas
       .filter((d) => d.cores.length > 0)

@@ -46,7 +46,7 @@ import {
   useSessao,
 } from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
-import { ESTAGIO_FECHADO, listarLeads } from '@dominio/funil'
+import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
 import { contarEsperando } from '@dominio/equipe'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
@@ -122,8 +122,26 @@ export function App() {
 
   /* o contador do funil e o do v5: leads que ainda andam. Os do kanban e do
      estoque so aparecem quando os modulos existirem, porque numero inventado
-     em contador de menu e pior que contador nenhum */
-  const leadsAtivos = listarLeads().filter((l) => !ESTAGIO_FECHADO.includes(l.estagio)).length
+     em contador de menu e pior que contador nenhum
+
+     Ele comeca em zero e aparece quando a conta chega. Zero nao e mentira: e o
+     menu dizendo que ainda nao sabe, e o contador so e desenhado quando ha
+     numero. Segurar o menu inteiro esperando uma consulta seria trocar o que a
+     pessoa quer, que e navegar, por um numero que ela talvez nem olhe. */
+  const [leadsAtivos, setLeadsAtivos] = useState(0)
+  useEffect(() => {
+    if (!pessoa) return
+    let vivo = true
+    carregarLeads()
+      .then((l) => vivo && setLeadsAtivos(l.filter((x) => !ESTAGIO_FECHADO.includes(x.estagio)).length))
+      .catch(() => {
+        /* o menu nao e o lugar de gritar que o banco caiu: a tela que a pessoa
+           abrir vai dizer isso com todas as letras */
+      })
+    return () => {
+      vivo = false
+    }
+  }, [pessoa])
 
   /* Os doze destinos do v5, na ordem e com os nomes dele. O Design System e a
      unica linha que nao esta no mockup: ele e ferramenta nossa, e sem ele o

@@ -526,3 +526,16 @@
   gap: 6px;
   padding: 0 10px 10px;
 }
+
+/* O recado dentro da lista de mensagens, quando ela esta vazia ou carregando.
+   Fica centralizado na altura toda porque a area e alta: um texto colado no
+   topo de um espaco vazio grande parece conteudo que nao terminou de chegar. */
+.fn-in-vazio {
+  margin: auto;
+  padding: 24px 18px;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.6;
+  max-width: 34ch;
+}

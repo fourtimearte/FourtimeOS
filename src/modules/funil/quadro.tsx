@@ -9,6 +9,7 @@ import {
   iniciais,
   nomeDoLead,
   porEstagio,
+  minutosDesde,
   semResposta,
   tempoCurto,
   type Estagio,
@@ -44,11 +45,17 @@ export function Quadro({
   aberto,
   aoMover,
   aoAbrir,
+  relogio,
 }: {
   leads: Lead[]
   aberto: string
   aoMover: (id: string, estagio: Estagio) => void
   aoAbrir: (l: Lead) => void
+  /* O instante que a tela esta usando para ler o tempo. Vem de cima para o
+     quadro inteiro contar pelo mesmo relogio: dois cartoes que chegaram juntos
+     nao podem dizer 47 e 48 min so porque foram desenhados em milissegundos
+     diferentes. */
+  relogio: number
 }) {
   const colunas = porEstagio(leads)
   const [arrasto, setArrasto] = useState<Arrasto | null>(null)
@@ -176,6 +183,7 @@ export function Quadro({
                   <Cartao
                     key={l.id}
                     lead={l}
+                    relogio={relogio}
                     aberto={aberto === l.id}
                     carregando={arrasto?.id === l.id && arrasto.valendo}
                     aoPegar={(ev) => pegar(ev, l)}
@@ -218,6 +226,7 @@ export function Quadro({
    vermelho, duas linhas da ultima mensagem, e embaixo o valor com o tempo. */
 function Cartao({
   lead,
+  relogio,
   aberto,
   carregando,
   aoPegar,
@@ -225,6 +234,7 @@ function Cartao({
   aoAbrir,
 }: {
   lead: Lead
+  relogio: number
   aberto: boolean
   carregando: boolean
   aoPegar: (e: PointerEventoReact<HTMLElement>) => void
@@ -266,8 +276,8 @@ function Cartao({
         <span className="fn-valor">{formatarDinheiro(lead.valor)}</span>
         <span className="fn-meta">
           <Relogio />
-          <span className={semResposta(lead) ? 'fn-tempo atrasado' : 'fn-tempo'}>
-            {tempoCurto(lead.min)}
+          <span className={semResposta(lead, relogio) ? 'fn-tempo atrasado' : 'fn-tempo'}>
+            {tempoCurto(minutosDesde(lead.ultimaMsgEm, relogio))}
           </span>
           {lead.cotacao ? <span className="fn-tag">{lead.cotacao}</span> : null}
           {lead.pedido ? <span className="fn-tag">{lead.pedido}</span> : null}

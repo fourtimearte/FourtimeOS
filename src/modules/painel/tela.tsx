@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Botao, Kpi, Pagina, PilulaTecnica, Selo, Vazio } from '@ds'
 import { abaixoDoMinimo, corDoNivel, nivel, quantidade } from '@dominio/estoque'
@@ -14,7 +14,14 @@ import {
   saiEm7Dias,
   type Pedido,
 } from '@dominio/producao'
-import { iniciais, listarLeads, nomeDoLead, tempoCurto } from '@dominio/funil'
+import {
+  carregarLeads,
+  iniciais,
+  minutosDesde,
+  nomeDoLead,
+  tempoCurto,
+  type Lead,
+} from '@dominio/funil'
 import './painel.css'
 
 /* ==========================================================================
@@ -55,7 +62,16 @@ function semanaDoAno(d: Date): number {
 export function TelaPainel() {
   const navegar = useNavigate()
   const pedidos = useMemo(() => listarPedidos(), [])
-  const leads = useMemo(() => listarLeads(), [])
+  const [leads, setLeads] = useState<Lead[]>([])
+  useEffect(() => {
+    let vivo = true
+    carregarLeads()
+      .then((l) => vivo && setLeads(l))
+      .catch(() => vivo && setLeads([]))
+    return () => {
+      vivo = false
+    }
+  }, [])
   const baixo = useMemo(() => abaixoDoMinimo(), [])
 
   const hoje = new Date()
@@ -208,7 +224,7 @@ export function TelaPainel() {
                   <span className="pn-conversa">
                     <span className="pn-conversa-topo">
                       <b>{nomeDoLead(l)}</b>
-                      <small>{tempoCurto(l.min)}</small>
+                      <small>{tempoCurto(minutosDesde(l.ultimaMsgEm))}</small>
                     </span>
                     <small className="pn-previa">{l.msg}</small>
                   </span>

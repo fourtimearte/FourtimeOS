@@ -6,9 +6,11 @@ import {
   iniciais,
   linkDoWhatsApp,
   nomeDoLead,
+  minutosDesde,
   preencher,
   tempoCurto,
   type Lead,
+  type Mensagem,
 } from '@dominio/funil'
 
 /* ==========================================================================
@@ -30,8 +32,15 @@ export function Inbox({
   aoAbrirCotacao,
   aoMontarCotacao,
   aoRegistrar,
+  conversa,
+  carregandoConversa,
 }: {
   lead: Lead | null
+  /* A conversa vem de cima, e não de dentro. O quadro já carrega os cartões;
+     a troca de mensagens é uma segunda leitura que só acontece quando esta
+     gaveta abre, e quem decide quando ela abre é a tela. */
+  conversa: Mensagem[]
+  carregandoConversa: boolean
   aoFechar: () => void
   aoAbrirCliente: (id: string) => void
   aoAbrirCotacao: (numero: string) => void
@@ -79,12 +88,23 @@ export function Inbox({
       </header>
 
       <div className="fn-in-msgs">
-        {l.conversa.map((m) => (
-          <div key={m.id} className={m.quem === 'nos' ? 'fn-balao nos' : 'fn-balao'}>
-            {m.texto}
-            <time>{m.quem === 'nos' && m.lida ? 'lida' : 'há ' + tempoCurto(m.min)}</time>
-          </div>
-        ))}
+        {carregandoConversa ? (
+          <p className="fn-in-vazio">Buscando a conversa...</p>
+        ) : conversa.length ? (
+          conversa.map((m) => (
+            <div key={m.id} className={m.quem === 'nos' ? 'fn-balao nos' : 'fn-balao'}>
+              {m.texto}
+              <time>
+                {m.quem === 'nos' && m.lida ? 'lida' : 'há ' + tempoCurto(minutosDesde(m.em))}
+              </time>
+            </div>
+          ))
+        ) : (
+          <p className="fn-in-vazio">
+            Nenhuma mensagem registrada ainda. O que você mandar por aqui fica gravado na
+            conversa.
+          </p>
+        )}
       </div>
 
       <div className="fn-in-rapidas">

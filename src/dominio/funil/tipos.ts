@@ -66,10 +66,14 @@ export function corDoEstagio(e: Estagio): string {
 
 export type Mensagem = {
   id: string
-  quem: 'nos' | 'cliente'
+  quem: 'nos' | 'cliente' | 'sistema'
+  tipo: 'texto' | 'audio' | 'imagem' | 'arquivo' | 'modelo'
   texto: string
-  /** minutos atras, para a conversa nao envelhecer sozinha entre recargas */
-  min: number
+  /** caminho do arquivo no balde, para audio, imagem e arquivo */
+  arquivo: string
+  nomeDoArquivo: string
+  /** QUANDO, em ISO. Nao "ha quantos minutos". */
+  em: string
   lida?: boolean
 }
 
@@ -84,16 +88,35 @@ export type Lead = {
   estagio: Estagio
   /** a ultima mensagem, que e o que o cartao mostra */
   msg: string
-  /** minutos desde a ultima mensagem */
-  min: number
+  /* QUANDO foi a ultima mensagem, em ISO, e nao ha quantos minutos.
+
+     Esta foi a troca que mais importou na virada para o banco. Guardar
+     "47 minutos" congela o relogio: o cartao que dizia 47 min as nove da manha
+     continuava dizendo 47 min ao meio-dia, porque o numero foi gravado e nao
+     medido. E o funil inteiro existe para responder de quem a conversa esta
+     esperando, o que e uma pergunta sobre o relogio de agora. */
+  ultimaMsgEm: string
   /** quantas nao lidas: o numero vermelho no cartao */
   novo: number
   valor: number
-  /** numero da cotacao ligada, quando existe */
+  /** id da cotacao ligada, quando existe */
   cotacao: string
   /** numero do pedido, quando fechou */
   pedido: string
-  conversa: Mensagem[]
+  /** quando a janela de 24 h do WhatsApp fecha, em ISO */
+  janelaAte: string
+  /** de quem e o lead: e por aqui que a comissao anda */
+  vendedorId: string
+  vendedorNome: string
+  teste: boolean
+}
+
+/** Quantos minutos desde um instante em ISO. Vazio devolve zero. */
+export function minutosDesde(iso: string, agora = Date.now()): number {
+  if (!iso) return 0
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return 0
+  return Math.max(0, Math.round((agora - t) / 60000))
 }
 
 /** O tempo do cartao: 12 min, 3 h, 1 d. */
@@ -106,8 +129,11 @@ export function tempoCurto(min: number): string {
 /* No v5 o vermelho do tempo so aparece nas duas primeiras colunas: uma hora
    sem responder quem acabou de chegar e ruim, uma hora esperando o cliente
    decidir e normal. */
-export function semResposta(l: Lead): boolean {
-  return (l.estagio === 'novo' || l.estagio === 'atendimento') && l.min > 60
+export function semResposta(l: Lead, agora = Date.now()): boolean {
+  return (
+    (l.estagio === 'novo' || l.estagio === 'atendimento') &&
+    minutosDesde(l.ultimaMsgEm, agora) > 60
+  )
 }
 
 export function nomeDoLead(l: Lead): string {
@@ -121,19 +147,22 @@ export function iniciais(nome: string): string {
 
 export function leadEmBranco(): Lead {
   return {
-    id: 'L-' + Math.random().toString(36).slice(2, 7),
+    id: '',
     clienteId: '',
     nomeLivre: 'Novo lead',
     contato: '',
     telefone: '',
     estagio: 'novo',
     msg: '',
-    min: 0,
+    ultimaMsgEm: '',
     novo: 0,
     valor: 0,
     cotacao: '',
     pedido: '',
-    conversa: [],
+    janelaAte: '',
+    vendedorId: '',
+    vendedorNome: '',
+    teste: false,
   }
 }
 

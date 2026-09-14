@@ -5,6 +5,7 @@ import {
   apagarDadosDeTeste,
   contarDadosDeTeste,
   semearClientes,
+  semearLeads,
   totalDeTeste,
   type ContaDeTeste,
 } from '@dominio/semente'
@@ -59,18 +60,18 @@ export function TelaEnsaio() {
 
   const total = totalDeTeste(contas)
 
-  async function semear() {
+  async function semear(oQue: 'clientes' | 'leads') {
     if (ocupado) return
-    setOcupado('semeando')
+    setOcupado(oQue)
     try {
-      const r = await semearClientes()
+      const r = oQue === 'clientes' ? await semearClientes() : await semearLeads()
       await recontar()
       if (r.gravados && !r.recusados) {
-        avisar(r.gravados + ' clientes de teste gravados no banco', 'ok')
+        avisar(r.gravados + ' ' + oQue + ' de teste gravados no banco', 'ok')
       } else if (r.gravados) {
         avisar(r.gravados + ' gravados, ' + r.recusados + ' recusados: ' + r.recados[0], 'warn')
       } else {
-        avisar('Nenhum cliente entrou. ' + (r.recados[0] ?? ''), 'warn')
+        avisar('Nada entrou. ' + (r.recados[0] ?? ''), 'warn')
       }
     } catch (e) {
       avisar(e instanceof Error ? e.message : 'Não consegui semear', 'warn')
@@ -128,14 +129,23 @@ export function TelaEnsaio() {
       <Cartao>
         <TituloCartao>Semear</TituloCartao>
         <p className="cfg-nota">
-          Grava os clientes de exemplo no banco, com o histórico de compras no lugar em que a
+          <b>Clientes</b>: grava os 136 de exemplo com o histórico de compras no lugar em que a
           importação do Bling vai colocar o dela. Semear duas vezes não duplica ninguém: a trava
           do nome recusa o repetido e diz quantos ficaram de fora.
         </p>
+        <p className="cfg-nota">
+          <b>Leads</b>: grava os oito do funil com a conversa de cada um. O tempo vira data na
+          hora de semear, então os cartões nascem com o relógio certo e ele anda de verdade
+          enquanto a tela fica aberta.
+        </p>
         <div className="cfg-botoes">
-          <Botao tom="primario" onClick={() => void semear()} disabled={!!ocupado}>
+          <Botao tom="primario" onClick={() => void semear('clientes')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'semeando' ? 'Semeando...' : 'Semear clientes'}
+            {ocupado === 'clientes' ? 'Semeando...' : 'Semear clientes'}
+          </Botao>
+          <Botao tom="forte" onClick={() => void semear('leads')} disabled={!!ocupado}>
+            <Flask size={16} weight="bold" />
+            {ocupado === 'leads' ? 'Semeando...' : 'Semear leads'}
           </Botao>
         </div>
       </Cartao>

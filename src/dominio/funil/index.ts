@@ -1,13 +1,14 @@
 /* A porta da frente do funil. */
 export * from './tipos'
+export { LEADS_DE_EXEMPLO, type LeadDeExemplo } from './exemplo'
 export {
-  DADO_DE_EXEMPLO,
   acharLead,
   apagarLead,
-  listarLeads,
+  carregarConversa,
+  carregarLeads,
   marcarLido,
   moverLead,
   porEstagio,
-  recomecarDoExemplo,
+  registrarMensagem,
   salvarLead,
 } from './repositorio'

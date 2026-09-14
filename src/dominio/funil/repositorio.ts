@@ -1,242 +1,191 @@
+import { tabela } from '@shared/supabase'
 import { ESTAGIOS, type Estagio, type Lead, type Mensagem } from './tipos'
 
 /* ==========================================================================
-   A porta de entrada do funil.
+   A conversa do funil com o Supabase.
 
-   Os oito leads sao os mesmos do mockup v5, com os mesmos textos, valores e
-   tempos, para a tela do sistema poder ser conferida foto contra foto com o
-   desenho. Quando o Supabase entrar, SO ESTE ARQUIVO muda.
+   DUAS LEITURAS SEPARADAS, E ISSO É O DESENHO.
 
-   ATENCAO: sao inventados. Nenhum nome ou telefone aqui pertence a alguem.
+   O quadro mostra oito, vinte, cem cartões, e de cada um ele precisa de uma
+   linha só: o trecho da última mensagem e há quanto tempo ela chegou. A
+   conversa inteira, com os áudios, só interessa quando alguém abre um cartão
+   para conversar.
+
+   Se a conversa viesse junto com o quadro, abrir o funil baixaria toda a
+   troca de mensagens de todo mundo para mostrar cem trechos de uma linha. Por
+   isso `lead` guarda a última mensagem repetida numa coluna sua, e
+   `carregarConversa` só roda quando o inbox abre.
    ========================================================================== */
 
-export const DADO_DE_EXEMPLO = true
-
-const CHAVE = 'ft.funil.v5'
-
-type Semente = {
+type LinhaDoLead = {
   id: string
   nome: string
   contato: string
   telefone: string
-  clienteId: string
+  cliente_id: string | null
   estagio: Estagio
-  msg: string
-  min: number
-  novo?: number
   valor: number
-  cotacao?: string
-  pedido?: string
+  vendedor_id: string | null
+  ultima_msg: string
+  ultima_msg_em: string | null
+  nao_lidas: number
+  janela_ate: string | null
+  teste: boolean
+  equipe: { nome: string } | null
+  cotacao: { id: string }[] | null
+  pedido: { numero: string }[] | null
 }
 
-const SEMENTES: Semente[] = [
-  {
-    id: 'L-118',
-    nome: 'Futsal Vila Nova',
-    contato: 'Anderson Luz',
-    telefone: '62993214455',
-    clienteId: '',
-    estagio: 'novo',
-    msg: 'Boa tarde! Quanto fica 18 camisas de futsal com número nas costas?',
-    min: 12,
-    novo: 2,
-    valor: 1620,
-  },
-  {
-    id: 'L-119',
-    nome: 'Studio Pilates Flor',
-    contato: 'Nice Prado',
-    telefone: '62990102030',
-    clienteId: '',
-    estagio: 'novo',
-    msg: 'Vi o trabalho de vocês no Instagram. Fazem legging com logo?',
-    min: 47,
-    novo: 1,
-    valor: 2400,
-  },
-  {
-    id: 'L-115',
-    nome: 'Supermercado Bom Preço',
-    contato: 'Juliana Prado',
-    telefone: '6233556677',
-    clienteId: '',
-    estagio: 'atendimento',
-    msg: 'Pode ser 40 camisetas polo azul marinho, bordado no peito.',
-    min: 180,
-    valor: 2800,
-  },
-  {
-    id: 'L-116',
-    nome: 'Atlética Medicina UFX',
-    contato: 'Bruno Sá',
-    telefone: '62996667788',
-    clienteId: '',
-    estagio: 'atendimento',
-    msg: 'Vamos precisar de 60 regatas para o interatlética.',
-    min: 320,
-    valor: 3300,
-  },
-  {
-    id: 'L-113',
-    nome: 'Vôlei Clube Araras',
-    contato: 'Juliana Prado',
-    telefone: '64997772211',
-    clienteId: '',
-    estagio: 'cotacao',
-    msg: 'Recebi a cotação, vou mostrar pra diretoria amanhã.',
-    min: 1440,
-    valor: 1860,
-    cotacao: 'CT20260183',
-  },
-  {
-    id: 'L-110',
-    nome: 'Escola Girassol',
-    contato: 'Paulo',
-    telefone: '62975279785',
-    clienteId: 'C0002',
-    estagio: 'negociando',
-    msg: 'Se fechar o 2º lote junto, consegue 10% no total?',
-    min: 2880,
-    valor: 4140,
-  },
-  {
-    id: 'L-104',
-    nome: 'Igreja Rio Claro',
-    contato: 'Renata',
-    telefone: '62943742169',
-    clienteId: 'C0003',
-    estagio: 'fechado',
-    msg: 'Fechado. Segue o pagamento da entrada.',
-    min: 9800,
-    valor: 14700,
-    cotacao: 'CT20260182',
-    pedido: 'PD20260001',
-  },
-  {
-    id: 'L-101',
-    nome: 'Corrida Noturna 5k',
-    contato: 'Dona Lia',
-    telefone: '62991234567',
-    clienteId: '',
-    estagio: 'perdido',
-    msg: 'Fechamos com outro fornecedor pelo prazo, obrigado.',
-    min: 12000,
-    valor: 5200,
-  },
-]
+/* O PostgREST monta o join pelo nome da tabela apontada. `cotacao(id)` e
+   `pedido(numero)` vêm como lista porque a chave estrangeira está do lado
+   deles: um lead pode ter mais de uma cotação, e é a mais recente que o cartão
+   mostra. */
+const COLUNAS =
+  'id,nome,contato,telefone,cliente_id,estagio,valor,vendedor_id,ultima_msg,' +
+  'ultima_msg_em,nao_lidas,janela_ate,teste,equipe(nome),' +
+  'cotacao(id),pedido(numero)'
 
-/* A conversa nasce do estagio, como no v5: quanto mais longe o lead andou,
-   mais coisa foi dita. */
-function conversaDe(s: Semente): Mensagem[] {
-  const ordem = ESTAGIOS.indexOf(s.estagio)
-  const c: Mensagem[] = [{ id: s.id + 'm1', quem: 'cliente', texto: s.msg, min: s.min }]
-  if (ordem >= 1) {
-    c.push({
-      id: s.id + 'm2',
-      quem: 'nos',
-      texto:
-        'Oi ' +
-        (s.contato.split(' ')[0] || '') +
-        '! Aqui é a Carla da Fourtime. Consigo sim, me passa a grade de tamanhos?',
-      min: Math.max(1, s.min - 40),
-      lida: true,
-    })
-    c.push({
-      id: s.id + 'm3',
-      quem: 'cliente',
-      texto: 'Manda o que precisa que eu levanto aqui.',
-      min: Math.max(1, s.min - 60),
-    })
-  }
-  if (s.cotacao) {
-    c.push({
-      id: s.id + 'm4',
-      quem: 'nos',
-      texto: 'Cotação ' + s.cotacao + ' enviada em PDF. Válida até 22/09.',
-      min: Math.max(1, Math.round(s.min / 2)),
-      lida: true,
-    })
-  }
-  return c
-}
-
-function montar(s: Semente): Lead {
+function deLinha(l: LinhaDoLead): Lead {
   return {
-    id: s.id,
-    clienteId: s.clienteId,
-    nomeLivre: s.nome,
-    contato: s.contato,
-    telefone: s.telefone,
-    estagio: s.estagio,
-    msg: s.msg,
-    min: s.min,
-    novo: s.novo ?? 0,
-    valor: s.valor,
-    cotacao: s.cotacao ?? '',
-    pedido: s.pedido ?? '',
-    conversa: conversaDe(s),
+    id: l.id,
+    clienteId: l.cliente_id ?? '',
+    nomeLivre: l.nome,
+    contato: l.contato ?? '',
+    telefone: l.telefone ?? '',
+    estagio: l.estagio,
+    msg: l.ultima_msg ?? '',
+    ultimaMsgEm: l.ultima_msg_em ?? '',
+    novo: Number(l.nao_lidas) || 0,
+    valor: Number(l.valor) || 0,
+    cotacao: l.cotacao?.[0]?.id ?? '',
+    pedido: l.pedido?.[0]?.numero ?? '',
+    janelaAte: l.janela_ate ?? '',
+    vendedorId: l.vendedor_id ?? '',
+    vendedorNome: l.equipe?.nome ?? '',
+    teste: !!l.teste,
   }
 }
 
-function lerGuardado(): Lead[] | null {
-  try {
-    const cru = localStorage.getItem(CHAVE)
-    if (!cru) return null
-    const lista = JSON.parse(cru) as Lead[]
-    return Array.isArray(lista) && lista.length ? lista : null
-  } catch {
-    return null
+function paraLinha(l: Lead) {
+  return {
+    nome: l.nomeLivre.trim() || 'Novo lead',
+    contato: l.contato,
+    telefone: l.telefone,
+    cliente_id: l.clienteId || null,
+    estagio: l.estagio,
+    valor: l.valor,
+    vendedor_id: l.vendedorId || null,
   }
 }
 
-function guardar(lista: Lead[]) {
-  try {
-    localStorage.setItem(CHAVE, JSON.stringify(lista))
-  } catch {
-    /* armazenamento bloqueado: o funil vive so nesta aba */
+export async function carregarLeads(): Promise<Lead[]> {
+  const linhas = await tabela<LinhaDoLead[]>(
+    `lead?select=${COLUNAS}&order=ultima_msg_em.desc.nullslast,criado_em.desc`,
+  )
+  return linhas.map(deLinha)
+}
+
+export async function acharLead(id: string): Promise<Lead | null> {
+  const linhas = await tabela<LinhaDoLead[]>(
+    `lead?select=${COLUNAS}&id=eq.${encodeURIComponent(id)}`,
+  )
+  return linhas.length ? deLinha(linhas[0]) : null
+}
+
+export async function salvarLead(l: Lead): Promise<Lead> {
+  if (l.id) {
+    await tabela(`lead?id=eq.${encodeURIComponent(l.id)}`, { metodo: 'PATCH', corpo: paraLinha(l) })
+    const salvo = await acharLead(l.id)
+    if (!salvo) throw new Error('Gravei, mas não consegui ler o lead de volta.')
+    return salvo
   }
+  const criado = await tabela<{ id: string }[]>('lead', {
+    metodo: 'POST',
+    devolver: true,
+    corpo: [paraLinha(l)],
+  })
+  const id = criado[0]?.id
+  if (!id) throw new Error('O banco aceitou mas não devolveu a linha.')
+  const salvo = await acharLead(id)
+  if (!salvo) throw new Error('Gravei, mas não consegui ler o lead de volta.')
+  return salvo
 }
 
-let base: Lead[] = lerGuardado() ?? SEMENTES.map(montar)
+/* Mover e mexer: as não lidas somem, porque alguém olhou.
 
-export function listarLeads(): Lead[] {
-  return base
-}
-
-export function acharLead(id: string): Lead | null {
-  return base.find((l) => l.id === id) ?? null
-}
-
-export function salvarLead(l: Lead): Lead {
-  const i = base.findIndex((x) => x.id === l.id)
-  if (i >= 0) base = base.map((x, k) => (k === i ? l : x))
-  else base = [l, ...base]
-  guardar(base)
-  return l
-}
-
-/** Mover e mexer: as nao lidas somem, porque alguem olhou. */
-export function moverLead(id: string, estagio: Estagio): Lead | null {
-  const l = acharLead(id)
-  if (!l || l.estagio === estagio) return l
-  return salvarLead({ ...l, estagio, novo: 0 })
+   Só as duas colunas vão no PATCH, e não o lead inteiro. Arrastar um cartão
+   enquanto outra pessoa corrige o telefone do mesmo lead não pode desfazer a
+   correção dela, e mandar o objeto inteiro é exatamente o que faria isso. */
+export async function moverLead(id: string, estagio: Estagio): Promise<Lead | null> {
+  await tabela(`lead?id=eq.${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: { estagio, nao_lidas: 0 },
+  })
+  return acharLead(id)
 }
 
 /** Abrir a conversa zera o contador vermelho, como em qualquer mensageiro. */
-export function marcarLido(id: string): Lead | null {
-  const l = acharLead(id)
-  if (!l || !l.novo) return l
-  return salvarLead({ ...l, novo: 0 })
+export async function marcarLido(id: string): Promise<void> {
+  await tabela(`lead?id=eq.${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: { nao_lidas: 0 },
+  })
 }
 
-export function apagarLead(id: string) {
-  base = base.filter((l) => l.id !== id)
-  guardar(base)
+export async function apagarLead(id: string): Promise<void> {
+  await tabela(`lead?id=eq.${encodeURIComponent(id)}`, { metodo: 'DELETE' })
 }
 
-export function recomecarDoExemplo() {
-  base = SEMENTES.map(montar)
-  guardar(base)
+/* --- a conversa ---------------------------------------------------------- */
+
+type LinhaDaMensagem = {
+  id: string
+  quem: 'nos' | 'cliente' | 'sistema'
+  tipo: 'texto' | 'audio' | 'imagem' | 'arquivo' | 'modelo'
+  texto: string
+  arquivo: string
+  nome_do_arquivo: string
+  situacao: string
+  em: string
+}
+
+export async function carregarConversa(leadId: string): Promise<Mensagem[]> {
+  if (!leadId) return []
+  const linhas = await tabela<LinhaDaMensagem[]>(
+    'mensagem?select=id,quem,tipo,texto,arquivo,nome_do_arquivo,situacao,em' +
+      '&lead_id=eq.' +
+      encodeURIComponent(leadId) +
+      '&order=em.asc',
+  )
+  return linhas.map((m) => ({
+    id: m.id,
+    quem: m.quem,
+    tipo: m.tipo,
+    texto: m.texto ?? '',
+    arquivo: m.arquivo ?? '',
+    nomeDoArquivo: m.nome_do_arquivo ?? '',
+    em: m.em,
+    lida: m.situacao === 'lida',
+  }))
+}
+
+/* Registrar o que foi mandado por fora.
+
+   Enquanto a integração do WhatsApp não existe, quem manda a mensagem é o
+   vendedor, no celular dele, e isto aqui é o registro do que ele mandou. Por
+   isso grava DUAS coisas: a linha na conversa e o resumo no cartão. Gravar só
+   a conversa deixaria o cartão dizendo que o cliente falou por último. */
+export async function registrarMensagem(leadId: string, texto: string): Promise<Mensagem[]> {
+  const agora = new Date().toISOString()
+  await tabela('mensagem', {
+    metodo: 'POST',
+    corpo: [{ lead_id: leadId, quem: 'nos', tipo: 'texto', texto, em: agora }],
+  })
+  await tabela(`lead?id=eq.${encodeURIComponent(leadId)}`, {
+    metodo: 'PATCH',
+    corpo: { ultima_msg: texto, ultima_msg_em: agora, nao_lidas: 0 },
+  })
+  return carregarConversa(leadId)
 }
 
 export function porEstagio(leads: Lead[]): Record<Estagio, Lead[]> {

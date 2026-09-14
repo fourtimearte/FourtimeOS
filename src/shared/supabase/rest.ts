@@ -94,8 +94,25 @@ export async function tabela<T>(caminho: string, pedido: Pedido = {}): Promise<T
     throw new Error(recadoDoBanco(erro, resposta.status))
   }
 
+  /* RESPOSTA VAZIA NAO E RESPOSTA QUEBRADA.
+
+     Gravar sem pedir a linha de volta responde 201 com o corpo VAZIO, e nao
+     204. Chamar json() ali estoura com "Unexpected end of JSON input", e o
+     estouro acontece DEPOIS de o banco ter gravado: a tela diz que nao deu
+     certo enquanto as linhas estao la dentro.
+
+     Foi assim que a primeira semeadura de clientes gravou os 136 e avisou
+     "nenhum cliente entrou". Nao da para confiar no 204 sozinho, nem no
+     content-length, que o PostgREST as vezes nao manda. Le como texto, e o
+     texto vazio e um resultado legitimo. */
   if (resposta.status === 204) return undefined as T
-  return (await resposta.json()) as T
+  const texto = await resposta.text()
+  if (!texto) return undefined as T
+  try {
+    return JSON.parse(texto) as T
+  } catch {
+    throw new Error('O banco respondeu algo que não consegui ler.')
+  }
 }
 
 /* Uma funcao do banco chamada pelo nome. Serve para o que nao cabe em ler ou

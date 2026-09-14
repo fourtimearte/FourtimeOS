@@ -15,4 +15,7 @@ join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public'
   and c.relkind in ('r', 'v')
   and not has_table_privilege('authenticated', c.oid, 'SELECT')
+  -- contador fica de fora DE PROPOSITO (011): ninguem tira numero de cotacao
+  -- nem de pedido na mao, so as duas funcoes security definer que mexem nele.
+  and c.relname <> 'contador'
 order by 1;

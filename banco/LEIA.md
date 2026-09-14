@@ -31,3 +31,29 @@ ela diz que rodou. Foi assim que a carga do banco do editor pareceu ter
 funcionado com as tabelas vazias.
 
 Depois de carregar dados, conte as linhas. Nunca confie no "Success".
+
+## A regra do corpo da cotacao (011)
+
+A cotacao inteira mora numa coluna `jsonb` chamada `corpo`, e nao espalhada em
+cinco tabelas. O motivo esta escrito dentro do proprio 011: o documento ja tem
+uma escada de migracao, a do `.cft`, e espalhar ele no banco criaria uma
+segunda escada que teria que andar junto com a primeira para sempre.
+
+Do lado do aplicativo isso vira UMA regra, e ela nao pode ser esquecida:
+
+**A lista de cotacoes NUNCA pede a coluna `corpo`.** Dentro dela vao as imagens
+dos layouts. Uma lista de sessenta cotacoes pedindo o corpo baixa dezenas de
+megabytes para mostrar sessenta linhas de texto.
+
+Para isso existe a view `cotacao_na_lista`, que nao tem a coluna. Use ela.
+
+## A view `equipe`
+
+`public.equipe` e a unica view do banco sem `security_invoker`, ou seja, a
+unica que passa por cima da regra de acesso da tabela por baixo. E de
+proposito, e esta explicado no 011: o funil precisa escrever o nome do vendedor
+no cartao, e a tabela `pessoa` so deixa cada um ler o proprio cadastro porque e
+ali que mora email e foto.
+
+Ela expoe quatro colunas: id, nome, papel, ativo. Se um dia alguem for
+acrescentar coluna nela, pense duas vezes.

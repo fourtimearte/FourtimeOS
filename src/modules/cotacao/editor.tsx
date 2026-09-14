@@ -275,13 +275,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
          enquanto a pagina rola. */
     >
       {/* --- a barra de abas do v5 --- */}
-      <BarraDoEditor
-        atual={c.id}
-        comDinheiro={comDinheiro}
-        aoTrocarDinheiro={() => setComDinheiro((v) => !v)}
-        aoIr={(id) => navegar('/cotacao/' + id)}
-        aoVerDocumento={verDocumento}
-      />
+      <BarraDoEditor atual={c.id} aoIr={(id) => navegar('/cotacao/' + id)} />
 
       {fechada && c.aprovacao ? (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
@@ -516,15 +510,11 @@ function Editor({ inicial }: { inicial: Cotacao }) {
             </p>
           </section>
 
-          {/* ================= o que dá para fazer com esta cotação ==========
-              O cartão Documento saiu. Ele descrevia o PDF em três linhas de
-              texto que ninguém lia duas vezes, e a contagem de páginas está
-              na própria folha, escrita no subtítulo dela.
-
-              Os botões que estavam aqui e os que estavam no topo viraram um
-              grupo só, em duas alturas: em cima o que move o pedido adiante,
-              embaixo, miúdo, o que quase nunca se usa. Apagar não merece o
-              mesmo tamanho que aprovar. */}
+          {/* ================= o que move o pedido adiante ==================
+              Três botões, e é de propósito que sejam só três: são os que têm
+              consequência fora da tela. Aprovar vira pedido, Enviar registra
+              o que o cliente viu, e Salvar grava. O resto é ferramenta, e
+              ferramenta mora no cartão de baixo. */}
           <div className="ct-lado-bts">
             {!fechada && c.produtos.length ? (
               <Botao tom="primario" bloco onClick={dizerSim}>
@@ -538,6 +528,46 @@ function Editor({ inicial }: { inicial: Cotacao }) {
                 Enviar ao cliente
               </Botao>
             ) : null}
+            <Botao tom="contorno" bloco onClick={salvar}>
+              <FloppyDisk size={17} />
+              Salvar
+            </Botao>
+          </div>
+
+          {/* ================= as ferramentas ================================
+              Tudo o que era botão solto espalhado pela tela veio para cá: o
+              Editor/Documento que morava na barra de abas, o R$ visível que
+              morava ao lado dele, e os miúdos que estavam soltos embaixo.
+
+              Estavam em três lugares diferentes porque foram nascendo em
+              momentos diferentes, e não porque pertencessem a lugares
+              diferentes. São todos a mesma coisa: o que se faz COM a cotação,
+              e não o que se faz NELA. Num cartão só, um por linha, a mão
+              procura num lugar em vez de três. */}
+          <section className="cartao ct-cartao ct-ferramentas">
+            <header className="ct-cab">
+              <h3>Ferramentas</h3>
+            </header>
+
+            <Segmentado
+              valor="editor"
+              opcoes={[
+                { valor: 'editor', rotulo: 'Editor' },
+                { valor: 'documento', rotulo: 'Documento' },
+              ]}
+              aoMudar={(v) => {
+                if (v === 'documento') verDocumento()
+              }}
+            />
+
+            {/* O R$ DA TELA, e não o do documento. Ele esconde valor enquanto
+                a cotação está sendo mostrada ao cliente no balcão antes de
+                fechar o preço. O que sai no papel quem decide é o destino da
+                folha, e o botão de imprimir dela. */}
+            <Botao tom="contorno" bloco onClick={() => setComDinheiro((v) => !v)}>
+              {comDinheiro ? 'Esconder os valores' : 'Mostrar os valores'}
+            </Botao>
+
             {/* A FOLHA DA PRODUÇÃO SÓ EXISTE DEPOIS DO SIM. Antes disso não há
                 o que cortar, e oferecer papel de galpão para um orçamento em
                 rascunho é como uma peça sai antes do cliente aprovar. */}
@@ -547,30 +577,26 @@ function Editor({ inicial }: { inicial: Cotacao }) {
                 Folha da produção
               </Botao>
             ) : null}
-            <Botao tom="contorno" bloco onClick={salvar}>
-              <FloppyDisk size={17} />
-              Salvar
+
+            {DADO_DE_EXEMPLO ? (
+              <Botao tom="contorno" bloco onClick={kitDeTeste}>
+                Kit de teste
+              </Botao>
+            ) : null}
+
+            <Botao tom="contorno" bloco onClick={baixar}>
+              Baixar .cft
             </Botao>
 
-            <div className="ct-lado-miudos">
-              {DADO_DE_EXEMPLO ? (
-                <button type="button" onClick={kitDeTeste} title="Monta um orçamento de teste por cima deste">
-                  Kit de teste
-                </button>
-              ) : null}
-              <button type="button" onClick={baixar}>
-                Baixar .cft
-              </button>
-              <button
-                type="button"
-                className={confirmando ? 'risco' : undefined}
-                onClick={() => (confirmando ? apagar() : setConfirmando(true))}
-                onBlur={() => setConfirmando(false)}
-              >
-                {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
-              </button>
-            </div>
-          </div>
+            <Botao
+              tom={confirmando ? 'perigo' : 'limpo'}
+              bloco
+              onClick={() => (confirmando ? apagar() : setConfirmando(true))}
+              onBlur={() => setConfirmando(false)}
+            >
+              {confirmando ? 'Confirmar que apaga' : 'Apagar cotação'}
+            </Botao>
+          </section>
         </aside>
       </div>
     </Pagina>
@@ -581,19 +607,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
    As abas sao as cotacoes abertas. No v5 elas vivem entre o titulo e o
    conteudo, e e ali que fazem sentido: quem atende tres clientes ao mesmo
    tempo troca de aba, nao volta para a lista. */
-function BarraDoEditor({
-  atual,
-  comDinheiro,
-  aoTrocarDinheiro,
-  aoIr,
-  aoVerDocumento,
-}: {
-  atual: string
-  comDinheiro: boolean
-  aoTrocarDinheiro: () => void
-  aoIr: (id: string) => void
-  aoVerDocumento: () => void
-}) {
+function BarraDoEditor({ atual, aoIr }: { atual: string; aoIr: (id: string) => void }) {
   const abertas = listarCotacoes().slice(0, 6)
   return (
     <div className="ct-barra">
@@ -609,25 +623,6 @@ function BarraDoEditor({
           </button>
         ))}
       </div>
-      <span className="ct-empurra" />
-      <Segmentado
-        valor="editor"
-        opcoes={[
-          { valor: 'editor', rotulo: 'Editor' },
-          { valor: 'documento', rotulo: 'Documento' },
-        ]}
-        aoMudar={(v) => {
-          if (v === 'documento') aoVerDocumento()
-        }}
-      />
-      <button
-        type="button"
-        className={comDinheiro ? 'ct-chip' : 'ct-chip ligado'}
-        onClick={aoTrocarDinheiro}
-        title="Esconde todo valor da tela, para mostrar a cotação ao cliente antes de fechar o preço"
-      >
-        {comDinheiro ? 'R$ visível' : 'R$ oculto'}
-      </button>
     </div>
   )
 }

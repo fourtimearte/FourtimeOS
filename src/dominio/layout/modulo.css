@@ -687,14 +687,23 @@
   border-radius: 4px;
   overflow: visible;
 }
+/* AS TRÊS MEDIDAS SÃO VARIÁVEIS, e não números escritos aqui, porque é por
+   elas que a compressão vertical aperta a tabela quando dois layouts não
+   cabem na folha. Os valores abaixo são o nível 0, o padrão; os outros seis
+   estão em dominio/layout/compactar.ts, que é quem os grava na hora. */
+.papel .mod-tabela {
+  --tp: 1.2mm;
+  --tf: 11px;
+  --tlh: 1.4;
+}
 .papel .gr-tab {
-  font-size: 11px;
+  font-size: var(--tf, 11px);
 }
 .papel .gr-tab th,
 .papel .gr-tab td {
   height: auto;
-  padding: 1.2mm 1.8mm;
-  line-height: 1.4;
+  padding: var(--tp, 1.2mm) 1.8mm;
+  line-height: var(--tlh, 1.4);
 }
 
 /* --- a observação --------------------------------------------------------- */

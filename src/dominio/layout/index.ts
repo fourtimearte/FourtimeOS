@@ -16,6 +16,7 @@ export { ModuloDeLayout } from './modulo'
 export { CaixaDeImagem } from './imagem'
 export { comprimeImagem, jaEstaLeve, pesoDoDataUrl, prepararImagem } from './compressao'
 export { colarBloco, copiarBloco, temCopia } from './copia'
+export { compactarFolha, compactarPalco, NIVEIS_DA_TABELA } from './compactar'
 export {
   ALTURA_DA_FOLHA,
   Folha,

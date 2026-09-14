@@ -9,6 +9,7 @@ import {
   GradeDeTamanhos,
   ModuloDeLayout,
   Palco,
+  compactarPalco,
   imprimir,
   usarPaginacao,
   type BlocoDaFolha,
@@ -53,13 +54,14 @@ const LAYOUTS_POR_FOLHA = 2
    A folha tem 297 mm e 12 mm de margem de cada lado, o que deixa 273 mm de
    corpo; o rodape come uns 12 mm. Sobram 261 mm, que sao 984 px. O cabecalho
    tem altura FIXA por construcao (tres fileiras de mesma altura, ver o
-   comentario do Cabecalho), e mede 178 px.
+   comentario do Cabecalho) e mede 178 px, o que deixa 806 px de corpo na
+   folha 1. So os DADOS usam este numero: os layouts sao contados, e nao
+   medidos.
 
    Sao palpites, e nao verdades: logo depois do primeiro desenho as duas
    alturas sao MEDIDAS na folha de verdade e tomam o lugar destes numeros.
    Palpite de altura sem medicao depois e o jeito classico de perder a ultima
    linha de cada pagina. */
-const ALTURA_SEM_CABECALHO = 984
 const ALTURA_COM_CABECALHO = 806
 
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -143,13 +145,20 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
   )
 
   const [altoComCab, setAltoComCab] = useState(ALTURA_COM_CABECALHO)
-  const [altoSemCab, setAltoSemCab] = useState(ALTURA_SEM_CABECALHO)
   const dados = usarPaginacao(blocosDeDados, altoComCab, 'dados:' + chave)
-  const layouts = usarPaginacao(blocosDeLayout, altoSemCab, 'layouts:' + chave, LAYOUTS_POR_FOLHA)
+
+  /* OS LAYOUTS NÃO SÃO MEDIDOS: eles são CONTADOS. Dois por folha, sempre,
+     qualquer que seja a combinação. Quando os dois não cabem em 297 mm, quem
+     resolve é a compressão vertical, e não a paginação: a folha aperta até
+     caber. Ver dominio/layout/compactar.ts para a ordem de quem cede. */
+  const folhasDeLayout: BlocoDaFolha[][] = []
+  for (let i = 0; i < blocosDeLayout.length; i += LAYOUTS_POR_FOLHA) {
+    folhasDeLayout.push(blocosDeLayout.slice(i, i + LAYOUTS_POR_FOLHA))
+  }
 
   const folhas = [
     ...dados.paginas.map((blocos, i) => ({ blocos, comCabecalho: i === 0 })),
-    ...layouts.paginas.map((blocos) => ({ blocos, comCabecalho: false })),
+    ...folhasDeLayout.map((blocos) => ({ blocos, comCabecalho: false })),
   ].filter((f) => f.blocos.length)
 
   const palco = useRef<HTMLDivElement>(null)
@@ -160,15 +169,20 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
      e em milimetro de papel, e nao em pixel de tela. */
   useEffect(() => {
     const fls = [...(palco.current?.querySelectorAll('.fl') ?? [])]
-    const corpoDe = (comTopo: boolean) => {
-      const f = fls.find((x) => !!x.querySelector('.fl-topo') === comTopo)
-      const corpo = f?.querySelector('.fl-corpo')
-      return corpo instanceof HTMLElement ? corpo.clientHeight : 0
-    }
-    const comCab = corpoDe(true)
-    const semCab = corpoDe(false)
+    const f = fls.find((x) => !!x.querySelector('.fl-topo'))
+    const corpo = f?.querySelector('.fl-corpo')
+    const comCab = corpo instanceof HTMLElement ? corpo.clientHeight : 0
     if (comCab > 200 && Math.abs(comCab - altoComCab) > 2) setAltoComCab(comCab)
-    if (semCab > 200 && Math.abs(semCab - altoSemCab) > 2) setAltoSemCab(semCab)
+  })
+
+  /* A COMPRESSÃO RODA DEPOIS DE TODO DESENHO, e não uma vez só. Trocar com
+     valor por sem valor, acrescentar um produto ou uma imagem terminar de
+     carregar muda a altura de todas as folhas, e uma folha que passou a caber
+     folgada não pode continuar com a tabela espremida do desenho anterior.
+     A própria função devolve o estado limpo antes de apertar, então rodar de
+     novo sem necessidade não custa nada além de uma medição. */
+  useEffect(() => {
+    compactarPalco(palco.current)
   })
 
   if (!c) {
@@ -236,11 +250,11 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
         </div>
       ) : null}
 
-      {/* AS DUAS AREAS DE MEDICAO. Elas desenham de verdade, com a largura de
-          verdade, fora da vista: o que nao e desenhado nao tem altura para
-          medir. Somem na impressao. */}
+      {/* A AREA DE MEDICAO DOS DADOS. Ela desenha de verdade, com a largura
+          de verdade, fora da vista: o que nao e desenhado nao tem altura para
+          medir. Some na impressao. Os LAYOUTS nao passam por aqui: eles sao
+          contados, dois por folha, e quem resolve o espaco e a compressao. */}
       <Medidor aoMedir={dados.medidor} blocos={blocosDeDados} />
-      <Medidor aoMedir={layouts.medidor} blocos={blocosDeLayout} />
 
       <div ref={palco}>
         <Palco>

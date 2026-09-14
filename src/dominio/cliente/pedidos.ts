@@ -1,22 +1,38 @@
-import type { Cliente } from './tipos'
+import { tabela } from '@shared/supabase'
 
 /* ==========================================================================
-   O historico de pedidos do cliente.
+   O histórico de pedidos do cliente.
 
-   Como o modulo de pedido ainda nao existe, isto aqui monta um historico de
-   exemplo a partir do proprio cliente, sempre igual para o mesmo cliente (o
-   sorteio parte do id, nao do relogio), para a ficha nao mudar de conteudo a
-   cada vez que abre.
+   Até 14/09/2026 este arquivo INVENTAVA o histórico: um sorteio partindo do id
+   do cliente montava os pedidos a partir do total comprado, para a ficha ter o
+   que mostrar antes de existir tabela de pedido.
 
-   Quando o pedido de verdade existir, este arquivo vira uma consulta e a ficha
-   nao muda.
+   Ele saiu, e não foi só porque a tabela passou a existir. Um histórico
+   inventado numa tela que alguém pode mostrar para um cliente é o tipo de
+   conteúdo que um dia sai da tela e vira conversa: "Entregue, R$ 3.809" é uma
+   frase sobre dinheiro que nunca aconteceu.
+
+   O que ficou no lugar é o que se sabe de verdade, e as duas coisas são
+   diferentes e ficam separadas:
+
+     o que este sistema fechou   ->  linhas da tabela pedido, uma a uma
+     o que veio do Bling         ->  três números somados, sem detalhe nenhum,
+                                     porque detalhe é o que a importação não traz
    ========================================================================== */
 
-export type EstadoDoPedido = 'aprovado' | 'producao' | 'entregue' | 'cancelado'
+export type EstadoDoPedido =
+  | 'aprovado'
+  | 'producao'
+  | 'pronto'
+  | 'enviado'
+  | 'entregue'
+  | 'cancelado'
 
 export const NOME_DO_ESTADO: Record<EstadoDoPedido, string> = {
   aprovado: 'Aprovado',
   producao: 'Em produção',
+  pronto: 'Pronto',
+  enviado: 'Enviado',
   entregue: 'Entregue',
   cancelado: 'Cancelado',
 }
@@ -28,44 +44,57 @@ export type Pedido = {
   valor: number
   estado: EstadoDoPedido
   resumo: string
+  teste: boolean
 }
 
-/* sorteio que sempre da o mesmo resultado para a mesma semente */
-function sorteio(semente: number) {
-  let x = semente
-  return () => {
-    x = (x * 1103515245 + 12345) % 2147483648
-    return x / 2147483648
-  }
+type LinhaDoPedido = {
+  numero: string
+  aprovado_em: string
+  pecas: number
+  total: number
+  estado: EstadoDoPedido
+  departamento: string
+  teste: boolean
+  cotacao: { numero: string } | null
 }
 
-const PECAS = ['Camiseta dry', 'Baby look', 'Raglan', 'Moletom canguru', 'Regata', 'Polo', 'Shorts']
-const TECNICAS = ['DTF', 'sublimação', 'silk', 'bordado']
+export async function pedidosDoCliente(clienteId: string): Promise<Pedido[]> {
+  if (!clienteId) return []
+  const linhas = await tabela<LinhaDoPedido[]>(
+    'pedido?select=numero,aprovado_em,pecas,total,estado,departamento,teste,' +
+      'cotacao(numero)&cliente_id=eq.' +
+      encodeURIComponent(clienteId) +
+      '&order=aprovado_em.desc',
+  )
+  return linhas.map((l) => ({
+    numero: l.numero,
+    data: (l.aprovado_em ?? '').slice(0, 10),
+    pecas: Number(l.pecas) || 0,
+    valor: Number(l.total) || 0,
+    estado: l.estado,
+    /* O resumo é o departamento, que é a técnica que a peça usou. Quando ele
+       está em branco, o número da cotação de origem diz mais do que uma frase
+       inventada sobre o que o pedido era. */
+    resumo: l.departamento || (l.cotacao ? 'Cotação ' + l.cotacao.numero : ''),
+    teste: !!l.teste,
+  }))
+}
 
-export function pedidosDoCliente(c: Cliente): Pedido[] {
-  if (!c.pedidos) return []
-  const n = Number(c.id.replace(/\D/g, '')) || 1
-  const r = sorteio(n * 7919)
-  const fim = c.ultimoPedido ? new Date(c.ultimoPedido) : new Date()
-  const media = c.pedidos ? c.total / c.pedidos : 0
+/** Quantos pedidos vieram de antes do sistema, para a ficha poder dizer. */
+export type AntesDoSistema = { pedidos: number; total: number; ultimo: string }
 
-  const lista: Pedido[] = []
-  let dia = new Date(fim)
-  for (let i = 0; i < c.pedidos; i++) {
-    const pecas = Math.max(8, Math.round(20 + r() * 190))
-    const valor = Math.max(300, Math.round(media * (0.6 + r() * 0.8)))
-    const estado: EstadoDoPedido =
-      i === 0 ? (r() > 0.55 ? 'producao' : 'aprovado') : r() > 0.06 ? 'entregue' : 'cancelado'
-    lista.push({
-      numero: 'PD' + String(4000 + n * 13 + i * 7).padStart(6, '0'),
-      data: dia.toISOString().slice(0, 10),
-      pecas,
-      valor,
-      estado,
-      resumo:
-        PECAS[Math.floor(r() * PECAS.length)] + ' em ' + TECNICAS[Math.floor(r() * TECNICAS.length)],
-    })
-    dia = new Date(dia.getTime() - (18 + Math.round(r() * 70)) * 24 * 60 * 60 * 1000)
+export async function historicoAntigo(clienteId: string): Promise<AntesDoSistema> {
+  if (!clienteId) return { pedidos: 0, total: 0, ultimo: '' }
+  const linhas = await tabela<
+    { pedidos_antigos: number; total_antigo: number; ultimo_pedido_antigo: string | null }[]
+  >(
+    'cliente?select=pedidos_antigos,total_antigo,ultimo_pedido_antigo&id=eq.' +
+      encodeURIComponent(clienteId),
+  )
+  const l = linhas[0]
+  return {
+    pedidos: Number(l?.pedidos_antigos) || 0,
+    total: Number(l?.total_antigo) || 0,
+    ultimo: l?.ultimo_pedido_antigo ?? '',
   }
-  return lista
 }

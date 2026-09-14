@@ -20,10 +20,12 @@ import {
   formatarDinheiro,
   formatarDocumento,
   formatarTelefone,
+  historicoAntigo,
   linkDoWhatsApp,
   pedidosDoCliente,
   salvarCliente,
   situacaoDoCliente,
+  type AntesDoSistema,
   type Cliente,
   type Pedido,
   type Segmento,
@@ -74,7 +76,35 @@ export function FichaDoCliente({
   const c = rascunho
   const novo = !!c && !c.id
 
-  const pedidos = useMemo(() => (c && c.id ? pedidosDoCliente(c) : []), [c])
+  /* O histórico vem do banco, e não de uma conta sobre o total comprado. Ele
+     entra depois da ficha abrir de propósito: o cadastro é o que a pessoa veio
+     ver, e segurar a ficha fechada esperando a lista de pedidos seria trocar
+     o que ela quer pelo que ela talvez olhe. */
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [antigo, setAntigo] = useState<AntesDoSistema>({ pedidos: 0, total: 0, ultimo: '' })
+  const [buscandoHistorico, setBuscandoHistorico] = useState(false)
+
+  const idDoCliente = c?.id ?? ''
+  useEffect(() => {
+    if (!idDoCliente) {
+      setPedidos([])
+      setAntigo({ pedidos: 0, total: 0, ultimo: '' })
+      return
+    }
+    let vivo = true
+    setBuscandoHistorico(true)
+    Promise.all([pedidosDoCliente(idDoCliente), historicoAntigo(idDoCliente)])
+      .then(([lista, anterior]) => {
+        if (!vivo) return
+        setPedidos(lista)
+        setAntigo(anterior)
+      })
+      .catch(() => vivo && setPedidos([]))
+      .finally(() => vivo && setBuscandoHistorico(false))
+    return () => {
+      vivo = false
+    }
+  }, [idDoCliente])
   /* A melhor sugestao de frete: a lista vem em ordem de confianca, entao a
      primeira e a que tem a origem mais firme. A lista inteira fica na tela de
      clientes, ao clicar na cidade. */
@@ -365,6 +395,18 @@ export function FichaDoCliente({
           </div>
 
           <h3 className="ficha-titulo">Histórico</h3>
+
+          {/* O que veio do Bling não tem detalhe, e dizer isso em uma linha é
+              mais honesto do que uma lista de pedidos que ninguém consegue
+              abrir. Ela só aparece quando existe. */}
+          {antigo.pedidos ? (
+            <p className="ficha-antes">
+              <b>{antigo.pedidos}</b> {antigo.pedidos === 1 ? 'pedido' : 'pedidos'} de antes do
+              Fourtime OS, somando <b>{formatarDinheiro(antigo.total)}</b>
+              {antigo.ultimo ? <> até {formatarData(antigo.ultimo)}</> : null}. Esses vieram do
+              Bling e não têm detalhe por pedido.
+            </p>
+          ) : null}
           <Tabela
             colunas={colunas}
             linhas={pedidos}
@@ -372,11 +414,21 @@ export function FichaDoCliente({
             aoClicarNaLinha={() => avisar('Abrir o pedido entra junto com a ficha de produção', 'info')}
             vazio={
               <Vazio
-                titulo={novo ? 'Cliente ainda não cadastrado' : 'Nenhum pedido ainda'}
+                titulo={
+                  buscandoHistorico
+                    ? 'Buscando o histórico...'
+                    : novo
+                      ? 'Cliente ainda não cadastrado'
+                      : antigo.pedidos
+                        ? 'Nenhum pedido neste sistema ainda'
+                        : 'Nenhum pedido ainda'
+                }
                 texto={
-                  novo
-                    ? 'Preencha o cadastro à esquerda e o histórico começa aqui.'
-                    : 'Quando a primeira cotação for aprovada, ela aparece nesta lista.'
+                  buscandoHistorico
+                    ? ''
+                    : novo
+                      ? 'Preencha o cadastro à esquerda e o histórico começa aqui.'
+                      : 'Quando a primeira cotação for aprovada, ela aparece nesta lista.'
                 }
               />
             }

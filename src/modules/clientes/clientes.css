@@ -531,3 +531,21 @@
   gap: 8px;
   padding: 12px;
 }
+
+/* A linha do que veio do Bling. Fica acima da tabela e nao dentro dela de
+   proposito: sao dois tipos de informacao diferentes, e misturar um resumo sem
+   detalhe com linhas que se abrem faria parecer que o resumo tambem abre. */
+.ficha-antes {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--sup-2);
+  border: 1px solid var(--linha);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ficha-antes b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}

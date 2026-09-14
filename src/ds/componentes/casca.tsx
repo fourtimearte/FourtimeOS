@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
+import { LogoFourtime } from './marca'
 
 export type ItemDeNavegacao = {
   para: string
@@ -87,8 +88,9 @@ export function Casca({
           >
             F
           </button>
-          <Link to="/" className="marca-nome">
-            Fourtime OS
+          <Link to="/" className="marca-nome" aria-label="Fourtime OS">
+            <LogoFourtime altura={15} titulo="Fourtime" />
+            <span className="os">OS</span>
           </Link>
         </div>
 
@@ -137,9 +139,11 @@ export function Casca({
       </nav>
 
       <header className="topo">
-        <Link to="/" className="marca">
-          <span className="ponto" />
-          <span>Fourtime OS</span>
+        {/* A LOGO NO LUGAR DO PONTO. O quadradinho vermelho era um substituto
+            da marca enquanto ela não existia no código; agora ela existe. */}
+        <Link to="/" className="marca" aria-label="Fourtime OS">
+          <LogoFourtime altura={14} titulo="Fourtime" />
+          <span className="os">OS</span>
         </Link>
         <button type="button" className="busca-atalho" onClick={aoAbrirBusca}>
           Buscar pedido, cliente ou referência

@@ -80,6 +80,7 @@ export { VisorDeImagem } from './componentes/visor'
 export { Kpi, Paginador, Seletor } from './componentes/seletor'
 export type { OpcaoDoSeletor } from './componentes/seletor'
 
+export { LogoFourtime, VERMELHO_DA_MARCA } from './componentes/marca'
 export { Casca, Pagina } from './componentes/casca'
 export type { ItemDeNavegacao, SecaoDeNavegacao } from './componentes/casca'
 

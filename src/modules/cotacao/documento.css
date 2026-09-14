@@ -28,12 +28,8 @@
   border-bottom: 1px solid var(--fl-borda);
   background: var(--fl-fundo-2);
 }
-.dc-marca {
-  font-size: 13pt;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #c6161b;
-}
+/* a palavra FOURTIME escrita à mão saiu daqui: a logo de verdade entrou no
+   lugar dela, e ela traz as próprias cores */
 .dc-marca-sub {
   font-size: 7pt;
   color: var(--fl-fraco);

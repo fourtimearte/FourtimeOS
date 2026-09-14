@@ -35,11 +35,13 @@
   color: var(--text);
   text-decoration: none;
 }
-.topo .marca .ponto {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--brand);
+/* O "OS" ao lado da marca: ele é do sistema, e não da empresa, então fica
+   menor e em corpo de rótulo. A logo já diz quem é; o OS diz o que é. */
+.marca .os {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
 }
 .topo .busca-atalho {
   flex: 1;
@@ -110,7 +112,7 @@
     padding: 0 var(--sp-3);
     gap: var(--sp-2);
   }
-  .topo .marca span {
+  .topo .marca .os {
     display: none;
   }
   .topo .busca-atalho .tecla {
@@ -415,9 +417,10 @@ nav.lado {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
   }
   .lado .marca-nome {
-    font-weight: 800;
-    font-size: 15px;
-    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
     color: var(--text);
     text-decoration: none;
   }

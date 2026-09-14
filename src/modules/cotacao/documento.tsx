@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Aviso, Botao, Pagina, Segmentado, Vazio } from '@ds'
+import { Aviso, Botao, LogoFourtime, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, EMPRESA_A_CONFERIR } from '@dominio/empresa'
 import {
   CaixaDeImagem,
@@ -285,7 +285,10 @@ function Cabecalho({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean 
   return (
     <div className="dc-cab">
       <div className="dc-logo">
-        <span className="dc-marca">FOURTIME</span>
+        {/* A LOGO DE VERDADE, e não mais a palavra FOURTIME escrita à mão. O
+            "TIME" herda a cor do texto da folha, que é quase preto: no papel
+            a marca sai nas duas cores certas sem variante nenhuma. */}
+        <LogoFourtime altura="5.2mm" titulo="Fourtime" />
         <span className="dc-marca-sub">{EMPRESA.descricao}</span>
       </div>
       <Celula rotulo="Cliente" valor={c.cliente.nome} />

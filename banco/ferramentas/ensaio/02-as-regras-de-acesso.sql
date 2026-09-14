@@ -245,3 +245,57 @@ select numero, vendedor_nome, vendedor_id is null as sem_vinculo
 
 \echo '--- e ele entra na separacao do que cada um fez ---'
 select vendedor_nome, pedidos, vendido from public.venda_por_mes order by vendedor_nome;
+
+\echo ''
+\echo '=== 020: o pedido no chao da fabrica ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+\echo '--- um pedido aprovado ja nasce no corte, com os numeros da fabrica ---'
+insert into public.cotacao (numero, corpo, versao_do_formato, cliente_nome, vendedor_nome,
+                            estado, total, pecas)
+ values (public.proximo_numero_de_cotacao(),
+         '{"producao":{"departamento":"DTF + Sublimação","dataDeEnvio":"2026-10-01"}}'::jsonb,
+         4, 'Fabrica Um', 'Carla', 'enviada', 5000, 120);
+select numero, etapa, estado, departamento, data_de_envio, layouts, tecnicas, pecas_subli
+  from public.aprovar_cotacao(
+    (select id from public.cotacao where cliente_nome='Fabrica Um'),
+    1, 3, array['subli','dtf'], 70, 50, 3000, 2000);
+
+\echo '--- andar para finalizado fecha o pedido e muda o estado sozinho ---'
+update public.pedido set etapa = 'costura' where numero like 'PD%'
+  and cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+select etapa, estado, fechado_em is null as ainda_aberto from public.pedido
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+\echo '    (o esperado acima e costura / producao: a fabrica encostou nele)'
+
+update public.pedido set etapa = 'finalizado'
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+select etapa, estado, fechado_em is not null as fechou from public.pedido
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+
+\echo '--- e voltar reabre: o estado nao fica preso em pronto ---'
+update public.pedido set etapa = 'embalagem'
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+select etapa, estado, fechado_em is null as reabriu from public.pedido
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+
+\echo '--- enviado NAO volta para producao so porque a etapa continua finalizada ---'
+update public.pedido set etapa = 'finalizado'
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+update public.pedido set estado = 'enviado'
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+select etapa, estado from public.pedido
+ where cotacao_id = (select id from public.cotacao where cliente_nome='Fabrica Um');
+
+\echo '--- a etapa_em se move sozinha quando o posto muda ---'
+select count(*) as mexeu_hoje from public.pedido
+ where etapa_em > now() - interval '1 minute';
+
+\echo '--- o galpao ve o pedido inteiro da casa ---'
+select numero, cliente, etapa, pecas, entrega_em from public.pedido_na_fabrica order by numero;
+
+\echo '--- aviso fora da lista e recusado ---'
+do $$ begin
+  update public.pedido set aviso = 'acabou o pano';
+  raise notice 'FALHA DO TESTE: aceitou aviso inventado';
+exception when check_violation then raise notice 'ok: recusou aviso fora da lista'; end $$;

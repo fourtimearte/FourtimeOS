@@ -5,6 +5,14 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
   if not exists (select 1 from pg_roles where rolname='service_role') then create role service_role nologin; end if;
 end $$;
+-- O Supabase abre os dois schemas para quem entrou, e isto NAO e detalhe.
+-- Sem a linha do extensions, a trava do nome do cliente (que chama unaccent)
+-- recusa todo insert de cliente, e o ensaio reprova codigo que esta certo.
+-- Conferido no projeto de verdade em 14/09/2026: has_schema_privilege
+-- ('authenticated','extensions','USAGE') devolve true la.
+grant usage on schema public to anon, authenticated, service_role;
+grant usage on schema extensions to anon, authenticated, service_role;
+
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   email text,

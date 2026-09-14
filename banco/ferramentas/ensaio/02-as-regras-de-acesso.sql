@@ -1,4 +1,3 @@
-grant usage on schema public to authenticated;
 \echo '=== AGORA COMO authenticated DE VERDADE (RLS ligada) ==='
 
 \echo '--- a Carla le o funil e a lista de cotacoes ---'
@@ -110,3 +109,29 @@ exception when others then raise notice 'ok: recusou (%)', sqlerrm; end $$;
 
 \echo '--- o que ficou para tras ---'
 select numero, teste from public.pedido order by teste desc, numero;
+
+\echo ''
+\echo '=== 014: a marca de teste ==='
+reset role; set role authenticated; set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
+insert into public.cliente (nome, teste) values ('Cliente Semeado', true);
+insert into public.lead (nome, telefone, teste) values ('Lead Semeado', '62900000001', true);
+
+\echo '--- o que esta marcado como teste ---'
+select * from public.dado_de_teste order by tabela;
+
+\echo '--- a Carla nao apaga os dados de teste ---'
+do $$ begin
+  perform public.apagar_dados_de_teste();
+  raise notice 'FALHA DO TESTE: a Carla apagou';
+exception when insufficient_privilege then raise notice 'ok: recusou (%)', sqlerrm; end $$;
+
+\echo '--- o admin apaga, e o dado de verdade fica ---'
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.apagar_dados_de_teste();
+select * from public.dado_de_teste order by tabela;
+
+\echo '--- e o que NAO era teste continua ali ---'
+select (select count(*) from public.cliente) as clientes,
+       (select count(*) from public.pedido)  as pedidos,
+       (select count(*) from public.cotacao) as cotacoes;

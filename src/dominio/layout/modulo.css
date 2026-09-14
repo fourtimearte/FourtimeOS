@@ -530,17 +530,19 @@
   min-height: 0;
   border-radius: 7px;
 }
-/* O TETO DA ARTE É UMA VARIÁVEL, e não um número escrito aqui, porque é por
-   ela que a compressão vertical encolhe a arte quando dois layouts não cabem
-   na folha. Variável, e não `style.maxHeight` direto no <img>: o valor entra
-   no módulo inteiro, de uma vez, e o desenho continua sendo decidido num
-   lugar só, aqui, em vez de meio aqui e meio no JavaScript.
+/* A ARTE ENCOLHE PELA LARGURA, E NÃO PELA ALTURA. Foi medido: um teto de
+   altura no <img> não muda nada nesta folha, porque a altura dele é calculada
+   a partir da largura da coluna e a proporção manda; a largura, sim, leva a
+   altura junto. E encolher pela largura é melhor de ver: a arte fica menor
+   inteira, em vez de ficar do mesmo tamanho dentro de uma moldura mais baixa,
+   com faixa branca em cima e embaixo.
 
-   Os 150 mm do padrão são freio de emergência, e não medida: com as
-   proporções da fábrica, numa coluna de 106 mm a arte deitada dá 91 mm e a em
-   pé dá 125 mm, então ele quase nunca entra. */
+   É uma variável porque é por ela que a compressão vertical aperta a folha
+   quando dois layouts não cabem. O padrão é a largura inteira da coluna. */
+.papel .img-area {
+  max-width: var(--largura-arte, 100%);
+}
 .papel .img-area img {
-  max-height: var(--teto-arte, 150mm);
   object-position: center top;
 }
 /* SEM ARTE a moldura para de esticar até o fim da ficha: no papel aquilo é

@@ -44,9 +44,10 @@ export const NIVEIS_DA_TABELA = [
   { p: '0.35mm', f: 0.864, lh: '1.1' } /* mínimo */,
 ]
 
-/** px por passo ao ceder espaço. Menor que isso é lento sem ser mais exato */
+/** px de ALTURA por passo ao ceder espaço. Menor que isso é lento sem ser
+    mais exato, e a devolução do fim recupera o que passou */
 const IMG_PASSO = 4
-/** piso da imagem: abaixo disso ela não serve para conferir estampa nenhuma */
+/** piso da arte: abaixo disso ela não serve para conferir estampa nenhuma */
 const IMG_PISO = 90
 /** a folga que se aceita: meio pixel é arredondamento, e não estouro */
 const FOLGA = 0.5
@@ -66,16 +67,23 @@ function excede(corpo: HTMLElement) {
   return corpo.scrollHeight - corpo.clientHeight
 }
 
-/* O TETO DA ARTE ENTRA PELO MÓDULO, numa variável, e não como max-height
-   direto no <img>. Dois motivos, e o segundo é o que decide: primeiro, o
-   desenho continua morando no CSS, que é onde se procura por ele; segundo, e
-   pior, um `style.maxHeight` escrito no <img> desta tela não vencia a regra
-   da folha, e a arte simplesmente não encolhia enquanto a tabela era
-   espremida até o mínimo à toa. A variável é lida pela própria regra, então
-   não existe disputa nenhuma. */
-function tetoDe(mod: HTMLElement): number {
-  const v = mod.style.getPropertyValue('--teto-arte')
-  return v ? parseFloat(v) : 0
+/* A ARTE ENCOLHE PELA LARGURA, E A ALTURA VAI JUNTO.
+
+   A primeira versão disto mexia na altura, e não funcionava: medido na folha
+   de duas artes em pé, um teto de altura no <img> não mudava um pixel, porque
+   a altura dele nasce da largura da coluna e da proporção da arte. A tabela
+   era espremida até o nível mínimo à toa enquanto a arte ficava intacta.
+
+   Pela largura funciona, e ainda fica melhor de ver: a arte fica menor
+   inteira, em vez de ficar do mesmo tamanho dentro de uma moldura mais baixa,
+   com faixa branca em cima e embaixo.
+
+   A variável mora no MÓDULO e a regra que a lê mora no CSS. Assim o desenho
+   continua sendo decidido num lugar só. */
+function larguraDe(mod: HTMLElement): number {
+  const v = mod.style.getPropertyValue('--largura-arte')
+  const n = v ? parseFloat(v) : 0
+  return n > 0 ? n : 100
 }
 
 function alturaDaArte(mod: HTMLElement): number {
@@ -83,17 +91,19 @@ function alturaDaArte(mod: HTMLElement): number {
   return im instanceof HTMLElement ? im.getBoundingClientRect().height : 0
 }
 
-/** Encolhe as artes um passo. Devolve o estado anterior, ou null se nenhuma
-    pôde encolher porque já estão todas no piso. */
+/** Encolhe as artes um passo, pela largura. Devolve o estado anterior, ou
+    null se nenhuma pôde encolher porque já estão todas no piso. */
 function cederImagens(mods: HTMLElement[]) {
-  const antes = mods.map((m) => m.style.getPropertyValue('--teto-arte'))
+  const antes = mods.map((m) => m.style.getPropertyValue('--largura-arte'))
   let mexeu = false
   for (const m of mods) {
-    const h = tetoDe(m) || alturaDaArte(m)
-    if (h && h - IMG_PASSO > IMG_PISO) {
-      m.style.setProperty('--teto-arte', h - IMG_PASSO + 'px')
-      mexeu = true
-    }
+    const h = alturaDaArte(m)
+    if (h - IMG_PASSO <= IMG_PISO) continue
+    /* a largura que faz a altura cair um passo: a proporção é a mesma, então
+       a regra de três resolve sem precisar saber o tamanho da arte */
+    const larg = larguraDe(m)
+    m.style.setProperty('--largura-arte', (larg * ((h - IMG_PASSO) / h)).toFixed(3) + '%')
+    mexeu = true
   }
   return mexeu ? antes : null
 }
@@ -126,9 +136,9 @@ export function compactarFolha(folha: HTMLElement) {
   )
   if (!tabelas.length && !comArte.length) return
 
-  /* 1. estado limpo: tabela no padrão, arte sem teto forçado */
+  /* 1. estado limpo: tabela no padrão, arte na largura inteira */
   if (tabelas.length) aplicarNivel(tabelas, 0)
-  for (const m of comArte) m.style.removeProperty('--teto-arte')
+  for (const m of comArte) m.style.removeProperty('--largura-arte')
   if (excede(corpo) <= FOLGA) return
 
   /* 2. falta espaço: a imagem cede, a tabela só se a imagem não resolver */
@@ -174,16 +184,18 @@ export function compactarFolha(folha: HTMLElement) {
       break
     }
   }
-  /* a arte desceu de 4 em 4 px, então quase sempre passou do necessário */
+  /* a arte desceu de 4 em 4 px de altura, então quase sempre passou do
+     necessário. Aqui ela reocupa, de meio em meio por cento, o que sobrou. */
   let v = 0
   while (v++ < 900) {
     let cresceu = false
     for (const m of comArte) {
-      const teto = tetoDe(m)
-      if (!teto) continue
-      m.style.setProperty('--teto-arte', teto + 1 + 'px')
+      const larg = larguraDe(m)
+      if (larg >= 100) continue
+      const maior = Math.min(100, larg + 0.5)
+      m.style.setProperty('--largura-arte', maior.toFixed(3) + '%')
       if (excede(corpo) > FOLGA) {
-        m.style.setProperty('--teto-arte', teto + 'px')
+        m.style.setProperty('--largura-arte', larg.toFixed(3) + '%')
         continue
       }
       cresceu = true

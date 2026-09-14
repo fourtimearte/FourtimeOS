@@ -311,7 +311,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     const salva = await gravar()
     if (!salva) return
     try {
-      const pedido = await aprovarNoBanco(salva.id, salva.enviadas.length || 1)
+      const pedido = await aprovarNoBanco(salva, salva.enviadas.length || 1)
       const nova = aprovar(salva, pedido.numero, salva.vendedor || 'admin')
       await gravar(nova)
       avisar(

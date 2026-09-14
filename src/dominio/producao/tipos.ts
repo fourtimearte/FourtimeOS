@@ -84,7 +84,18 @@ export const SITUACAO: Record<Situacao, { nome: string; cor: string }> = {
 export const CAPACIDADE_DA_SEMANA = 1500
 
 export type Pedido = {
+  /* O id do banco, que e um uuid. Ele NAO e o numero do pedido.
+
+     Ate a virada para o Supabase os dois eram a mesma coisa: o pedido se
+     chamava PD004139 e era isso que ia no endereco e no cartao. Com o banco
+     real eles se separam, e e bom que se separem: o numero e o nome que a
+     fabrica usa e que pode um dia ser corrigido, e o id e a identidade, que
+     nunca muda. Quem grava usa o id; quem le na tela ve o numero. */
   id: string
+  /** PD004139, ou PD-TESTE-0001 enquanto o sistema esta em ensaio */
+  numero: string
+  /** a cotacao de onde ele veio, para a ficha poder abrir o documento */
+  cotacaoId: string
   cliente: string
   vendedor: string
   departamento: string
@@ -121,6 +132,9 @@ export type Pedido = {
   pecasPersonalizadas: number
   valorSubli: number
   valorPersonalizado: number
+  /** o valor total do pedido, como foi aprovado */
+  total: number
+  teste: boolean
 }
 
 /* A etapa fica velha depois de tres dias sem ninguem mexer nela. Nao e

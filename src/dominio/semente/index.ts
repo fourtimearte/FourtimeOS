@@ -2,6 +2,8 @@ import { chamar, tabela } from '@shared/supabase'
 import { CLIENTES_DE_EXEMPLO } from '@dominio/cliente'
 import { ESTAGIOS, LEADS_DE_EXEMPLO, type LeadDeExemplo } from '@dominio/funil'
 import {
+  acharCotacao,
+  aprovarNoBanco,
   COTACOES_DE_EXEMPLO,
   montarCotacaoDeExemplo,
   pecasDaCotacao,
@@ -287,6 +289,72 @@ export async function semearCotacoes(): Promise<ResultadoDaSemente> {
       const recado = e instanceof Error ? e.message : 'cotação recusada'
       if (!recados.includes(recado)) recados.push(recado)
     }
+  }
+
+  return { gravados, recusados, recados }
+}
+
+/* --- os pedidos ----------------------------------------------------------
+   Aqui a semente não grava linha nenhuma na mão: ela APROVA cotações, pelo
+   mesmo caminho que o vendedor usa quando o cliente diz sim.
+
+   É de propósito, e é a diferença entre semear e falsificar. Um insert direto
+   na tabela pedido daria uma fábrica cheia de cartões, e não provaria nada:
+   não passaria pelo número do pedido, pelo congelamento do vendedor, pelo
+   fechamento do lead, nem pelo cálculo dos números da fábrica. Aprovando,
+   tudo isso roda, e se algo estiver quebrado a semente quebra junto, que é
+   exatamente o que se quer de um ensaio.
+
+   Depois de aprovar, ela espalha os pedidos pela semana e pelos postos, para o
+   painel e o kanban terem o que mostrar em mais de uma coluna. */
+const POSTOS_DO_ENSAIO = ['corte', 'subli', 'dtf', 'costura', 'embalagem', 'finalizado']
+
+function diaDaSemanaCorrente(i: number): string {
+  const hoje = new Date()
+  /* segunda desta semana, e dali i dias */
+  const segunda = new Date(hoje)
+  segunda.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7))
+  segunda.setDate(segunda.getDate() + i)
+  return segunda.toISOString().slice(0, 10)
+}
+
+export async function semearPedidos(): Promise<ResultadoDaSemente> {
+  let gravados = 0
+  let recusados = 0
+  const recados: string[] = []
+
+  /* Só as que ainda não viraram pedido, e só as que já saíram: aprovar um
+     rascunho que ninguém enviou seria semear uma coisa que não acontece. */
+  const candidatas = await tabela<{ id: string }[]>(
+    'cotacao_na_lista?select=id&estado=in.(enviada,aprovada)&pedido_numero=is.null&teste=is.true',
+  )
+
+  for (let i = 0; i < candidatas.length; i++) {
+    try {
+      const c = await acharCotacao(candidatas[i].id)
+      if (!c) throw new Error('cotação sumiu no meio')
+      const novo = await aprovarNoBanco(c, c.enviadas.length || 1)
+
+      /* espalha pela semana e pelos postos, senão a fábrica inteira nasce no
+         corte da segunda-feira e o painel fica com uma coluna só */
+      await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {
+        metodo: 'PATCH',
+        corpo: {
+          etapa: POSTOS_DO_ENSAIO[i % POSTOS_DO_ENSAIO.length],
+          planejado_em: diaDaSemanaCorrente(i % 6),
+          aviso: i % 5 === 2 ? 'falta-tecido' : '',
+        },
+      })
+      gravados++
+    } catch (e) {
+      recusados++
+      const recado = e instanceof Error ? e.message : 'pedido recusado'
+      if (!recados.includes(recado)) recados.push(recado)
+    }
+  }
+
+  if (!candidatas.length) {
+    recados.push('Nenhuma cotação de teste enviada esperando aprovação. Semeie cotações antes.')
   }
 
   return { gravados, recusados, recados }

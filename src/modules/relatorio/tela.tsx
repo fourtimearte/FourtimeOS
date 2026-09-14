@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, avisar } from '@ds'
 import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
 import { VENDEDORES } from '@dominio/banco'
-import { listarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
+import { carregarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
 import './relatorio.css'
 
 /* ==========================================================================
@@ -31,7 +31,24 @@ function comData(p: Pedido): Item {
 }
 
 export function TelaRelatorio() {
-  const todos = useMemo(() => listarTodosOsPedidos().map(comData), [])
+  /* TUDO, e nao so o mes escolhido.
+
+     O relatorio deixa escolher varios meses, comparar com o ano passado e
+     filtrar por vendedor, e cada um desses cliques viraria uma consulta se o
+     recorte fosse feito no banco. A base inteira de pedidos fechados cabe
+     tranquilamente numa leitura: sao pedidos, e nao linhas de log. */
+  const [todos, setTodos] = useState<ReturnType<typeof comData>[]>([])
+  const [carregando, setCarregando] = useState(true)
+  useEffect(() => {
+    let vivo = true
+    carregarTodosOsPedidos()
+      .then((l) => vivo && setTodos(l.map(comData)))
+      .catch(() => vivo && setTodos([]))
+      .finally(() => vivo && setCarregando(false))
+    return () => {
+      vivo = false
+    }
+  }, [])
   const hoje = new Date()
   const [ano, setAno] = useState(hoje.getFullYear())
   const [meses, setMeses] = useState<number[]>([hoje.getMonth()])
@@ -245,8 +262,14 @@ export function TelaRelatorio() {
               </table>
             ) : (
               <Vazio
-                titulo="Nenhum pedido no período"
-                texto="Escolha outro mês. Mês sem movimento continua clicável, e é nele que se gera o primeiro relatório."
+                titulo={carregando ? 'Somando os pedidos...' : 'Nenhum pedido no período'}
+                texto={
+                  carregando
+                    ? ''
+                    : todos.length
+                      ? 'Escolha outro mês. Mês sem movimento continua clicável, e é nele que se gera o primeiro relatório.'
+                      : 'Nenhum pedido fechado ainda. O relatório enche quando as cotações começarem a virar pedido.'
+                }
               />
             )}
           </div>
@@ -292,7 +315,7 @@ function Grupo({
             {x.dia}
             {varios ? ' · ' + MES_CURTO[x.mes] : ''}
           </td>
-          <td className="rl-cod">{x.id}</td>
+          <td className="rl-cod">{x.numero}</td>
           <td className="rl-cliente">{x.cliente}</td>
           <td className="esconde rl-suave">{x.vendedor}</td>
           <td className="esconde rl-suave">{x.departamento}</td>

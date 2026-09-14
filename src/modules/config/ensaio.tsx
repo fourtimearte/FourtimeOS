@@ -7,6 +7,7 @@ import {
   semearClientes,
   semearCotacoes,
   semearLeads,
+  semearPedidos,
   totalDeTeste,
   type ContaDeTeste,
 } from '@dominio/semente'
@@ -61,7 +62,7 @@ export function TelaEnsaio() {
 
   const total = totalDeTeste(contas)
 
-  async function semear(oQue: 'clientes' | 'leads' | 'cotações') {
+  async function semear(oQue: 'clientes' | 'leads' | 'cotações' | 'pedidos') {
     if (ocupado) return
     setOcupado(oQue)
     try {
@@ -70,7 +71,9 @@ export function TelaEnsaio() {
           ? await semearClientes()
           : oQue === 'leads'
             ? await semearLeads()
-            : await semearCotacoes()
+            : oQue === 'cotações'
+              ? await semearCotacoes()
+              : await semearPedidos()
       await recontar()
       if (r.gravados && !r.recusados) {
         avisar(r.gravados + ' ' + oQue + ' de teste gravados no banco', 'ok')
@@ -145,6 +148,12 @@ export function TelaEnsaio() {
           esbarra num número já usado.
         </p>
         <p className="cfg-nota">
+          <b>Pedidos</b>: aprova as cotações de teste que já foram enviadas, pelo mesmo caminho que
+          o vendedor usa quando o cliente diz sim, e espalha os pedidos pela semana e pelos postos.
+          Um insert direto daria uma fábrica cheia de cartões sem provar nada; aprovando, o número
+          do pedido, o vendedor congelado e os números da fábrica rodam de verdade.
+        </p>
+        <p className="cfg-nota">
           <b>Leads</b>: grava os oito do funil com a conversa de cada um. O tempo vira data na
           hora de semear, então os cartões nascem com o relógio certo e ele anda de verdade
           enquanto a tela fica aberta.
@@ -161,6 +170,10 @@ export function TelaEnsaio() {
           <Botao tom="contorno" onClick={() => void semear('cotações')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
             {ocupado === 'cotações' ? 'Semeando...' : 'Semear cotações'}
+          </Botao>
+          <Botao tom="contorno" onClick={() => void semear('pedidos')} disabled={!!ocupado}>
+            <Flask size={16} weight="bold" />
+            {ocupado === 'pedidos' ? 'Aprovando...' : 'Aprovar as cotações'}
           </Botao>
         </div>
       </Cartao>

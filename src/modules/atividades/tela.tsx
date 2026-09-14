@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
 import { ArrowsClockwise, DotsSixVertical, Printer } from '@phosphor-icons/react'
-import { Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
+import { Aviso as Faixa, Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
 import {
   AVISO,
   AVISOS,
@@ -17,7 +17,7 @@ import {
   ehHoje,
   etapaVelha,
   iso,
-  listarPedidos,
+  carregarPedidos,
   moverEtapa,
   mudarAviso,
   mudarEntrega,
@@ -63,8 +63,58 @@ type Arrasto = {
 }
 
 export function TelaAtividades() {
-  /* muda quando alguem mexe num pedido: e o sinal para reler a lista */
-  const [versao, setVersao] = useState(0)
+  /* A LISTA INTEIRA DA FABRICA, E A SEMANA E FILTRO DE TELA.
+
+     Pedir ao banco so os planejados desta semana pareceria mais economico, mas
+     a fabrica inteira tem dezenas de pedidos abertos, nao milhares, e navegar
+     de semana em semana viraria uma consulta por clique. Pior: os numeros do
+     topo comparam a semana com a capacidade, e quem esta olhando quer poder
+     pular para a semana que vem e voltar sem esperar. */
+  const [todos, setTodos] = useState<Pedido[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [falha, setFalha] = useState('')
+
+  const recarregar = useCallback(async () => {
+    try {
+      setTodos(await carregarPedidos())
+      setFalha('')
+    } catch (e) {
+      setFalha(e instanceof Error ? e.message : 'Não consegui carregar os pedidos.')
+    } finally {
+      setCarregando(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void recarregar()
+  }, [recarregar])
+
+  /* Troca um pedido na lista sem reler a fabrica inteira: mexer num cartao nao
+     deveria custar uma consulta de tudo. */
+  const trocar = useCallback((p: Pedido | null) => {
+    if (p) setTodos((atuais) => atuais.map((x) => (x.id === p.id ? p : x)))
+  }, [])
+
+  /* A linha volta do BANCO, e nao do que a tela achou que ia acontecer. Mudar
+     a etapa para "finalizado" tambem muda o estado do pedido, por gatilho la
+     dentro, e a tela que adivinha o resultado e a tela que mente. */
+  const gravar = useCallback(
+    async (promessa: Promise<Pedido | null>) => {
+      try {
+        trocar(await promessa)
+      } catch (e) {
+        avisar(e instanceof Error ? e.message : 'Não consegui gravar', 'warn')
+        void recarregar()
+      }
+    },
+    [trocar, recarregar],
+  )
+
+  /* O arrastar le a lista de dentro de um ouvinte de evento, que foi montado
+     uma vez. Sem esta referencia ele leria a lista de quando foi montado. */
+  const todosAgora = useRef<Pedido[]>([])
+  todosAgora.current = todos
+
   /* 0 e esta semana, -1 a passada, +1 a que vem */
   const [semana, setSemana] = useState(0)
   const [etapa, setEtapa] = useState('')
@@ -80,9 +130,8 @@ export function TelaAtividades() {
      justamente a conta que esta tela existe para responder. */
   const pedidos = useMemo(() => {
     const dias = new Set(diasDaSemana.map((d) => iso(d.data)))
-    return listarPedidos().filter((p) => dias.has(p.planejadoEm))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versao, diasDaSemana])
+    return todos.filter((p) => dias.has(p.planejadoEm))
+  }, [todos, diasDaSemana])
 
   const filtrados = useMemo(
     () => (etapa ? pedidos.filter((p) => p.etapa === etapa) : pedidos),
@@ -99,7 +148,6 @@ export function TelaAtividades() {
   const prontos = prontosNaSemana.length
   const pecasProntas = prontosNaSemana.reduce((s, p) => s + p.pecas, 0)
 
-  const mexeu = () => setVersao((v) => v + 1)
 
   /* --- arrastar o pedido para outro dia ---------------------------------
      Por evento de ponteiro, e nao pelo arrastar do HTML: o painel roda em
@@ -130,11 +178,22 @@ export function TelaAtividades() {
     const soltar = () => {
       const { arrasto: a, alvo: onde } = agora.current
       if (a?.valendo && onde) {
-        const antes = listarPedidos().find((p) => p.id === a.id)
+        const antes = todosAgora.current.find((p) => p.id === a.id)
         if (antes && antes.planejadoEm !== onde) {
+          /* O cartao pula para o dia novo na hora e a gravacao vai atras. Se o
+             banco recusar, ele volta: um cartao parado no dia errado enquanto a
+             fabrica inteira olha o mesmo quadro e pior do que um cartao que
+             volta. */
+          setTodos((atuais) =>
+            atuais.map((x) => (x.id === a.id ? { ...x, planejadoEm: onde } : x)),
+          )
+          avisar(antes.numero + ' passou para ' + diaEMes(new Date(onde + 'T00:00:00')), 'ok')
           planejarPara(a.id, onde)
-          setVersao((v) => v + 1)
-          avisar(a.id + ' passou para ' + diaEMes(new Date(onde + 'T00:00:00')), 'ok')
+            .then(trocar)
+            .catch((e) => {
+              setTodos((atuais) => atuais.map((x) => (x.id === a.id ? antes : x)))
+              avisar(e instanceof Error ? e.message : 'Não consegui mover o pedido', 'warn')
+            })
         }
       }
       setArrasto(null)
@@ -187,6 +246,12 @@ export function TelaAtividades() {
               aria-label="Semana anterior"
               title="Semana anterior"
             >
+      {falha ? (
+        <Faixa tom="brand" titulo="Não consegui carregar os pedidos">
+          {falha}
+        </Faixa>
+      ) : null}
+
               ‹
             </button>
             <b className="at-semana-txt">{tituloDaSemana(inicio)}</b>
@@ -357,25 +422,23 @@ export function TelaAtividades() {
                   aoPegar={(ev) => pegar(ev, p)}
                   aoTrocarEtapa={(e) => {
                     const de = POSTO[p.etapa].nome
-                    moverEtapa(p.id, e)
-                    mexeu()
-                    avisar(p.id + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
+                    avisar(p.numero + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
+                    void gravar(moverEtapa(p.id, e))
                   }}
-                  aoTrocarAviso={(a) => {
-                    mudarAviso(p.id, a)
-                    mexeu()
-                  }}
-                  aoTrocarEntrega={(d) => {
-                    mudarEntrega(p.id, d)
-                    mexeu()
-                  }}
-                  aoTrocarPlanejamento={(d) => {
-                    planejarPara(p.id, d)
-                    mexeu()
-                  }}
+                  aoTrocarAviso={(a) => void gravar(mudarAviso(p.id, a))}
+                  aoTrocarEntrega={(d) => void gravar(mudarEntrega(p.id, d))}
+                  aoTrocarPlanejamento={(d) => void gravar(planejarPara(p.id, d))}
                 />
               ))}
-              {!doDia.length ? <p className="at-vazio">Nada neste dia.</p> : null}
+              {!doDia.length ? (
+                <p className="at-vazio">
+                  {carregando
+                    ? 'Buscando...'
+                    : falha
+                      ? 'Não consegui carregar'
+                      : 'Nada neste dia.'}
+                </p>
+              ) : null}
             </div>
           </section>
         )
@@ -440,13 +503,13 @@ function Linha({
         type="button"
         className="at-punho"
         onPointerDown={aoPegar}
-        aria-label={'Arrastar ' + p.id + ' para outro dia'}
+        aria-label={'Arrastar ' + p.numero + ' para outro dia'}
         title="Arraste para mudar o dia"
       >
         <DotsSixVertical size={16} weight="bold" />
       </button>
 
-      <span className="at-cod">{p.id}</span>
+      <span className="at-cod">{p.numero}</span>
 
       {/* O vendedor e a divisão das peças na mesma linha miúda. As duas
           quantidades levam a cor da técnica que representam, a mesma do resumo
@@ -457,7 +520,7 @@ function Linha({
             total de peças dobram para dentro da célula do nome. Eles não
             somem: some a coluna, que é outra coisa. */}
         <span className="at-antes-do-nome">
-          {p.id} · {p.pecas} pçs
+          {p.numero} · {p.pecas} pçs
         </span>
         <b>{p.cliente}</b>
         <small>

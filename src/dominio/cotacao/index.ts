@@ -11,6 +11,7 @@ export {
   paraCft,
 } from './arquivo'
 export { montarKitDeTeste, MOTIVOS_DO_KIT } from './kit-de-teste'
+export { numerosDaFabrica, type NumerosDaFabrica } from './fabrica'
 export {
   COTACOES_DE_EXEMPLO,
   montarCotacaoDeExemplo,

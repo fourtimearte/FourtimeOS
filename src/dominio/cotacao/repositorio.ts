@@ -2,6 +2,7 @@ import { vinculo } from '@shared'
 import { chamar, tabela } from '@shared/supabase'
 import { VERSAO_DO_BLOCO } from '../layout/bloco'
 import { arrumarCotacao } from './arquivo'
+import { numerosDaFabrica } from './fabrica'
 import {
   VERSAO_DO_CFT,
   pecasDaCotacao,
@@ -248,10 +249,20 @@ export async function proximoNumero(): Promise<string> {
    Enquanto o sistema estiver em ensaio, o número volta como PD-TESTE-0001. */
 export type PedidoGerado = { numero: string; teste: boolean; vendedor_nome: string }
 
-export async function aprovarNoBanco(cotacaoId: string, versao: number): Promise<PedidoGerado> {
+export async function aprovarNoBanco(c: Cotacao, versao: number): Promise<PedidoGerado> {
+  /* Os numeros da fabrica descem junto, calculados aqui a partir do documento
+     que ja esta na mao. Ver dominio/cotacao/fabrica.ts para o porque de a conta
+     morar no TypeScript e nao no SQL. */
+  const n = numerosDaFabrica(c)
   const p = await chamar<PedidoGerado | PedidoGerado[]>('aprovar_cotacao', {
-    p_cotacao: cotacaoId,
+    p_cotacao: c.id,
     p_versao: versao,
+    p_layouts: n.layouts,
+    p_tecnicas: n.tecnicas,
+    p_pecas_subli: n.pecasSubli,
+    p_pecas_personalizadas: n.pecasPersonalizadas,
+    p_valor_subli: n.valorSubli,
+    p_valor_personalizado: n.valorPersonalizado,
   })
   return Array.isArray(p) ? p[0] : p
 }

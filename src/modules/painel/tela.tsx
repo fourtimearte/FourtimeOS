@@ -7,7 +7,7 @@ import {
   POSTO,
   atrasado,
   diasAteAEntrega,
-  listarPedidos,
+  carregarPedidos,
   naFabrica,
   noPreparo,
   prazoEmTexto,
@@ -61,10 +61,18 @@ function semanaDoAno(d: Date): number {
 
 export function TelaPainel() {
   const navegar = useNavigate()
-  const pedidos = useMemo(() => listarPedidos(), [])
+  /* O inicio nao para por causa de uma consulta que falhou.
+
+     Esta e a primeira tela que a pessoa ve ao entrar, e ela e um resumo: se o
+     funil nao carregar, o resto continua util. Por isso cada pedaco cai sozinho
+     para uma lista vazia em vez de derrubar a pagina inteira com um erro. */
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
   useEffect(() => {
     let vivo = true
+    carregarPedidos()
+      .then((p) => vivo && setPedidos(p))
+      .catch(() => vivo && setPedidos([]))
     carregarLeads()
       .then((l) => vivo && setLeads(l))
       .catch(() => vivo && setLeads([]))
@@ -173,7 +181,7 @@ export function TelaPainel() {
                   className="pn-linha"
                   onClick={() => navegar('/kanban')}
                 >
-                  <span className="pn-cod">{p.id}</span>
+                  <span className="pn-cod">{p.numero}</span>
                   <span className="pn-quem">
                     <b>{p.cliente}</b>
                     <small>

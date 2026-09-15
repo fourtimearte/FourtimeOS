@@ -280,7 +280,15 @@ function ItemDoMenu({
   return (
     <Link
       to={item.para}
-      className={['item', filho ? 'filho' : '', item.ativo ?? ligado(item.para) ? 'ligado' : '']
+      /* O item selecionado e o mesmo cartao de tinta da decisao 9, com a cor
+         mae grafite: o mesmo do cartao heroi do inicio. Ele leva as classes do
+         Design System em vez de repetir o degrade aqui, senao a aparencia
+         passaria a existir em dois lugares. */
+      className={[
+        'item',
+        filho ? 'filho' : '',
+        ...(item.ativo ?? ligado(item.para) ? ['ligado', 'luz', 'tinta', 'm-grafite'] : []),
+      ]
         .filter(Boolean)
         .join(' ')}
     >

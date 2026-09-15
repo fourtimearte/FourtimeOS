@@ -314,6 +314,9 @@
   --tinta-texto: var(--branco);
   --tinta-texto-2: color-mix(in oklab, var(--branco) 86%, transparent);
   --tinta-texto-3: color-mix(in oklab, var(--branco) 72%, transparent);
+  /* o vermelho que sobrevive em cima da tinta. O da marca morre no fundo
+     escuro, igual ao que ja acontecia na tarja preta do menu. */
+  --tinta-marca: #ff6b70;
   --tinta-ponto: color-mix(in oklab, var(--branco) 28%, transparent);
   --tinta-brilho: color-mix(in oklab, var(--branco) 15%, transparent);
   --tinta-sombra:
@@ -352,6 +355,8 @@
      do sistema perderia contraste nele. Ele sobe um degrau, e so aqui. */
   --tinta-texto-2: color-mix(in oklab, var(--text) 45%, var(--text-2));
   --tinta-texto-3: color-mix(in oklab, var(--text-2) 60%, var(--text-3));
+  /* no Grafite a tinta tambem e escura, entao o vermelho claro serve nos dois */
+  --tinta-marca: #ff6b70;
   --tinta-ponto: color-mix(in oklab, var(--text) 20%, transparent);
   --tinta-brilho: color-mix(in oklab, var(--text) 10%, transparent);
   --tinta-sombra:

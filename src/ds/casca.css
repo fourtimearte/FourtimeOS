@@ -443,10 +443,10 @@ nav.lado {
     width: 100%;
     height: 40px;
     padding: 0 12px;
-    border: 0;
-    background: transparent;
+    /* A BORDA NASCE TRANSPARENTE EM TODOS. So o selecionado a pinta, e assim
+       o texto nao pula 1px para o lado no instante em que o item acende. */
+    border: 1px solid transparent;
     border-radius: var(--radius);
-    color: color-mix(in srgb, var(--text-2) 85%, var(--text));
     font: inherit;
     font-weight: 500;
     font-size: 14px;
@@ -458,6 +458,13 @@ nav.lado {
       background var(--t-fast),
       color var(--t-fast);
   }
+  /* O FUNDO E A COR DO TEXTO MORAM AQUI, e nao na regra de cima. La eles
+     pesavam igual ao .luz.tinta do base.css e, vindo depois no arquivo,
+     apagavam o degrade e o texto claro do item selecionado. */
+  .lado .item:not(.ligado) {
+    background: transparent;
+    color: color-mix(in srgb, var(--text-2) 85%, var(--text));
+  }
   .lado .item svg {
     flex: none;
     color: color-mix(in srgb, var(--text-2) 90%, var(--surface));
@@ -465,28 +472,37 @@ nav.lado {
       color var(--t-fast) var(--ease-out),
       transform var(--t-fast) var(--ease-out);
   }
-  .lado .item:hover {
+  /* o :not(.ligado) e obrigatorio: sem ele o hover apaga o degrade da tinta,
+     porque este seletor pesa mais que o .luz.tinta do base.css */
+  .lado .item:not(.ligado):hover {
     background: var(--surface-2);
     color: var(--text);
   }
   /* passando o mouse o icone alcanca a cor do texto e da um pulinho: e o
      unico jeito de o item inteiro reagir junto em vez de so o fundo mudar */
-  .lado .item:hover svg {
+  .lado .item:not(.ligado):hover svg {
     color: inherit;
     transform: scale(1.14);
   }
+  /* SELECIONADO E O CARTAO DE TINTA DO INICIO, e nao mais uma tarja chapada.
+     O fundo, o texto e o pontilhado que segue o ponteiro vem das classes
+     .luz.tinta.m-grafite, em base.css. Aqui fica so o que e do menu: a borda
+     cinza de 1px e o peso da fonte. A borda da tinta perde para esta, de
+     proposito, porque no menu a moldura e cinza e nao da cor mae. */
   .lado .item.ligado {
-    background: var(--ink);
-    color: var(--on-ink);
+    border-color: var(--border-2);
     font-weight: 600;
+    /* A sombra alta da tinta e de cartao que flutua. Num item de 40px dentro
+       do menu ela vira borrao: aqui a borda cinza ja separa. */
+    box-shadow: none;
   }
-  /* selecionado, o icone fica vermelho. Sobre a tarja escura o vermelho da
+  /* selecionado, o icone fica vermelho. Sobre a tinta escura o vermelho da
      marca some, entao entra o vermelho que foi feito para viver em cima dela */
   .lado .item.ligado svg {
-    color: var(--brand-no-ink);
+    color: var(--tinta-marca);
   }
   .lado .item.ligado:hover svg {
-    color: var(--brand-no-ink);
+    color: var(--tinta-marca);
     transform: scale(1.14);
   }
   .lado .item .cnt {
@@ -499,8 +515,8 @@ nav.lado {
     border-radius: var(--radius-pill);
   }
   .lado .item.ligado .cnt {
-    background: color-mix(in srgb, var(--on-ink) 18%, transparent);
-    color: var(--on-ink);
+    background: color-mix(in srgb, var(--tinta-texto) 18%, transparent);
+    color: var(--tinta-texto);
   }
   .lado .item .cnt.aviso {
     background: var(--brand);
@@ -524,8 +540,12 @@ nav.lado {
     color: var(--text);
     font-weight: 600;
   }
+  /* Configuracoes aberta NAO tem fundo escuro: ela e so texto forte sobre a
+     superficie do menu. Estava usando o vermelho feito para viver em cima da
+     tarja preta, que sobre fundo claro fica lavado. Aqui vale o vermelho da
+     marca mesmo. */
   .lado .item.ramo.dentro svg {
-    color: var(--brand-no-ink);
+    color: var(--brand);
   }
   .lado .item.ramo.dentro .galho-seta svg {
     color: var(--text-3);

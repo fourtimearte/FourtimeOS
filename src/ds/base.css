@@ -1834,3 +1834,203 @@ dialog.cmdk .caixa {
   line-height: 1.35;
   white-space: nowrap;
 }
+
+/* ==========================================================================
+   A LUZ DO PONTEIRO
+   ==========================================================================
+
+   Um pseudo-elemento so, e de proposito. Pontilhado e brilho moram na mesma
+   camada, entao mover o mouse repinta UMA caixa do tamanho do cartao, e so a
+   do cartao que esta embaixo do ponteiro. Nada de filtro, nada de imagem.
+
+   z-index -1 com isolation: isolate e o truque que evita overflow: hidden.
+   A camada fica acima do fundo do cartao e abaixo do texto, e o raio dela e
+   herdado, entao ela se recorta sozinha no canto arredondado. Se aqui
+   estivesse overflow: hidden, todo dropdown aberto dentro de um cartao seria
+   cortado, porque neste sistema nada e renderizado em portal. */
+.cartao,
+.kpi,
+.luz {
+  position: relative;
+  isolation: isolate;
+}
+.cartao::after,
+.kpi::after,
+.luz::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image:
+    radial-gradient(
+      200px 200px at var(--px, 50%) var(--py, 50%),
+      var(--brilho-cor) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      var(--ponto-cor) var(--luz-ponto-raio),
+      transparent calc(var(--luz-ponto-raio) + 0.2px)
+    );
+  background-size: auto, var(--luz-ponto-passo) var(--luz-ponto-passo);
+  -webkit-mask-image: radial-gradient(
+    var(--luz-raio) var(--luz-raio) at var(--px, 50%) var(--py, 50%),
+    var(--preto) 0%,
+    color-mix(in srgb, var(--preto) 45%, transparent) 45%,
+    transparent 74%
+  );
+  mask-image: radial-gradient(
+    var(--luz-raio) var(--luz-raio) at var(--px, 50%) var(--py, 50%),
+    var(--preto) 0%,
+    color-mix(in srgb, var(--preto) 45%, transparent) 45%,
+    transparent 74%
+  );
+  opacity: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+.cartao:hover::after,
+.kpi:hover::after,
+.luz:hover::after,
+.cartao:focus-visible::after,
+.kpi:focus-visible::after,
+.luz:focus-visible::after,
+.cartao.aceso::after,
+.kpi.aceso::after,
+.luz.aceso::after {
+  opacity: var(--ponto-op);
+}
+
+/* No toque nao existe ponteiro. A camada some, e o unico lugar onde ela
+   continua e o cartao aceso de tinta, com o pontilhado parado num canto, so
+   para ele nao ficar chapado no celular. */
+@media (hover: none) {
+  .cartao::after,
+  .kpi::after,
+  .luz::after {
+    display: none;
+  }
+  .cartao.tinta.aceso::after,
+  .kpi.tinta.aceso::after,
+  .luz.tinta.aceso::after {
+    display: block;
+    background-image: radial-gradient(
+      var(--ponto-cor) var(--luz-ponto-raio),
+      transparent calc(var(--luz-ponto-raio) + 0.2px)
+    );
+    background-size: var(--luz-ponto-passo) var(--luz-ponto-passo);
+    -webkit-mask-image: radial-gradient(160px 160px at 100% 0%, var(--preto) 0%, transparent 72%);
+    mask-image: radial-gradient(160px 160px at 100% 0%, var(--preto) 0%, transparent 72%);
+    opacity: 0.6;
+  }
+}
+
+/* ==========================================================================
+   TINTA: O CARTAO DE UMA COR MAE SO
+   ==========================================================================
+
+   Regra curta, e ela vale para o sistema inteiro: TINTA MARCA ONDE VOCE ESTA,
+   NUNCA O QUE ESTA ACONTECENDO. Item aberto, cartao heroi do inicio,
+   cabecalho de modulo. Atraso, aprovado e bloqueado continuam sendo numero
+   vermelho, tarja, ponto ou borda.
+
+   O degrade tem dois pontos e os dois sao a MESMA cor mae, um com mais e
+   outro com menos dela. Por isso nao existe caminho de uma cor para outra, e
+   por isso nunca vira arco iris.
+
+   Quem decide se o cartao fica escuro ou claro e o tema, e nao esta classe:
+   os numeros vem de tokens.css. No Gelo da escuro, no Grafite da claro. Nos
+   dois casos ele e o unico cartao que destoa da pagina. */
+/* A cor mae padrao mora numa regra de UMA classe so, e nao junto do resto:
+   se ela ficasse dentro de .cartao.tinta, que pesa duas classes, nenhum
+   .m-subli da vida conseguiria trocar a cor, e todo cartao de tinta sairia
+   grafite sem ninguem entender por que. */
+.tinta {
+  --mae: var(--mae-grafite);
+}
+
+.cartao.tinta,
+.kpi.tinta,
+.luz.tinta {
+  --ponto-cor: var(--tinta-ponto);
+  --brilho-cor: var(--tinta-brilho);
+  --ponto-op: 1;
+  color: var(--tinta-texto);
+  box-shadow: var(--tinta-sombra);
+
+  /* RESERVA, para navegador sem cor relativa. Fica mais apagado, mas legivel:
+     nunca deixa o cartao sem fundo. */
+  border-color: color-mix(in oklab, var(--mae) var(--tinta-borda), var(--tinta-fim));
+  background-color: color-mix(in oklab, var(--mae) var(--tinta-a), var(--tinta-fim));
+  background-image:
+    radial-gradient(
+      130% 120% at 6% 0%,
+      color-mix(in oklab, var(--branco) var(--tinta-veu), transparent) 0%,
+      transparent 56%
+    ),
+    linear-gradient(
+      142deg,
+      color-mix(in oklab, var(--mae) var(--tinta-a), var(--tinta-fim)) 0%,
+      color-mix(in oklab, var(--mae) var(--tinta-b), var(--tinta-fim)) 100%
+    );
+
+  /* O BOM. h nunca muda, entao os dois pontos sao a MESMA cor: e isso que
+     impede o degrade de virar arco iris. So a luz e o croma se mexem. */
+  border-color: oklch(from var(--mae) var(--tinta-lb) calc(c * var(--tinta-cb)) h);
+  background-color: oklch(from var(--mae) var(--tinta-l1) calc(c * var(--tinta-c1)) h);
+  background-image:
+    radial-gradient(
+      130% 120% at 6% 0%,
+      color-mix(in oklab, var(--branco) var(--tinta-veu), transparent) 0%,
+      transparent 56%
+    ),
+    linear-gradient(
+      142deg,
+      oklch(from var(--mae) var(--tinta-l1) calc(c * var(--tinta-c1)) h) 0%,
+      oklch(from var(--mae) var(--tinta-l2) calc(c * var(--tinta-c2)) h) 100%
+    );
+}
+.cartao.tinta.clicavel:hover,
+.kpi.tinta.clicavel:hover,
+.luz.tinta:hover {
+  border-color: color-mix(in oklab, var(--mae) var(--tinta-borda), var(--tinta-fim));
+  border-color: oklch(from var(--mae) var(--tinta-lb) calc(c * var(--tinta-cb)) h);
+  box-shadow: var(--tinta-sombra);
+}
+
+/* os tres niveis de texto do V7 dentro da tinta */
+.tinta .rot,
+.tinta .sub,
+.tinta .cartao-sub,
+.tinta small {
+  color: var(--tinta-texto-2);
+}
+.tinta .fraco,
+.tinta .terciario {
+  color: var(--tinta-texto-3);
+}
+.tinta .cartao-titulo .marca {
+  background: var(--tinta-texto);
+}
+
+/* Cor mae. Sempre um token que ja existe: nenhuma cor nova entrou no sistema.
+   Aqui vale a variante "vivo" da tecnica, e nao a solida: a solida ja nasce
+   escura, e escurecer o que ja e escuro devolve preto sem matiz nenhum. */
+.m-grafite {
+  --mae: var(--mae-grafite);
+}
+.m-dtf {
+  --mae: var(--tec-dtf-vivo);
+}
+.m-subli {
+  --mae: var(--tec-subli-vivo);
+}
+.m-silk {
+  --mae: var(--tec-silk-vivo);
+}
+.m-bordado {
+  --mae: var(--tec-bordado-vivo);
+}
+.m-patch {
+  --mae: var(--tec-patch-vivo);
+}

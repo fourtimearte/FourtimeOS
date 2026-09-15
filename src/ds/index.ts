@@ -86,3 +86,4 @@ export type { ItemDeNavegacao, SecaoDeNavegacao } from './componentes/casca'
 
 export { TelaKit } from './kit/tela-kit'
 export { aplicarTema, temaAtual, temaGuardado, type Tema } from './kit/tema'
+export { ligarLuz } from './luz'

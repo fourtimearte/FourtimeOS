@@ -243,7 +243,14 @@ function Cartao({
 }) {
   return (
     <article
-      className={['fn-card', carregando ? 'carregando' : '', aberto ? 'aberto' : '']
+      className={[
+        'fn-card',
+        'luz',
+        carregando ? 'carregando' : '',
+        /* aberto e o unico cartao de tinta da tela. "aceso" mantem o
+           pontilhado ligado sem precisar de hover, porque ele e o assunto. */
+        aberto ? 'aberto tinta aceso' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
       onPointerDown={aoPegar}

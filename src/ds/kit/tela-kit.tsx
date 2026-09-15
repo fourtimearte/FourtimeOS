@@ -46,6 +46,7 @@ const SECOES: [string, string][] = [
   ['marcacao', 'Marcação'],
   ['segmentado', 'Segmentado'],
   ['cartoes', 'Cartões'],
+  ['tinta', 'Luz e tinta'],
   ['selos', 'Selos e tags'],
   ['tabela', 'Tabela'],
   ['sobreposicoes', 'Modal e gaveta'],
@@ -368,6 +369,63 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
                   Cartão clicável. Passe o ponteiro: ele sobe dois pixels.
                 </p>
               </Cartao>
+            </div>
+          </Secao>
+
+          <Secao
+            id="tinta"
+            titulo="Luz e tinta"
+            texto="Todo cartão sem cor revela um pontilhado quase invisível em volta do ponteiro. O cartão de tinta é o oposto: ele é raro, tem uma cor mãe só e troca de lado com o tema. No Gelo ele fica escuro, no Grafite fica claro, e nos dois ele é o único que destoa da página."
+          >
+            <div className="kit-bancada">
+              <span className="kit-nota">Cartão sem cor: passe o ponteiro devagar</span>
+              <div className="grade">
+                <Cartao clicavel>
+                  <TituloCartao>Colégio Santa Clara</TituloCartao>
+                  <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
+                    O pontilhado acende só onde o ponteiro está. Se você conseguir apontar o que
+                    mudou, está forte demais.
+                  </p>
+                </Cartao>
+                <Cartao clicavel>
+                  <TituloCartao>Liga Goiana de Futsal</TituloCartao>
+                  <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
+                    Nada de filtro e nada de imagem: é um degradê de pontos recortado por uma
+                    máscara, numa camada só.
+                  </p>
+                </Cartao>
+              </div>
+
+              <span className="kit-nota">Cartão de tinta, um por tela</span>
+              <div className="grade">
+                <Cartao clicavel className="tinta m-grafite aceso">
+                  <TituloCartao>Item aberto</TituloCartao>
+                  <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
+                    Grafite é a cor mãe padrão. É a que menos briga com o resto e a única que
+                    funciona nos dois temas sem ajuste.
+                  </p>
+                </Cartao>
+                <Cartao clicavel className="tinta m-subli">
+                  <TituloCartao>Cor de setor</TituloCartao>
+                  <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
+                    Cor de setor só quando o cartão pertence mesmo a um setor. O degradê é a mesma
+                    cor em dois tons, nunca um caminho de uma cor para outra.
+                  </p>
+                </Cartao>
+              </div>
+
+              <span className="kit-nota">O cartão herói do início, e o que ele não pode ser</span>
+              <div className="fila-kpi">
+                <Kpi tinta rotulo="Peças na fila" valor="12.480" sub="68% da capacidade semanal" />
+                <Kpi rotulo="Pedidos em produção" valor="47" sub="9 ainda no preparo" />
+                <Kpi rotulo="Atrasados" valor="9" aviso sub="mais antigo: 4 d" />
+                <Kpi rotulo="Entregas em 7 dias" valor="12" sub="3.140 peças a sair" />
+              </div>
+              <p className="kit-nota">
+                Tinta diz onde você está, nunca o que está acontecendo. Por isso o cartão de
+                atrasados continua cinza com número vermelho, e por isso tinta e aviso nunca andam
+                no mesmo cartão: juntos, os dois somem.
+              </p>
             </div>
           </Secao>
 

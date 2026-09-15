@@ -539,3 +539,47 @@
   line-height: 1.6;
   max-width: 34ch;
 }
+
+/* --- o cartao aberto e o unico de tinta da tela --------------------------
+   A cor mae dele NAO e uma escolha nova: e --c, a cor do estagio onde ele
+   esta, a mesma do filete da esquerda. Assim a tinta continua dizendo onde
+   voce esta, e o cartao aberto no funil e o cartao aberto no kanban serao a
+   mesma peca com a mesma regra. O restante da coluna segue cinza. */
+.fn-card.aberto {
+  --mae: var(--c, var(--mae-grafite));
+}
+.fn-card.aberto .fn-msg,
+.fn-card.aberto .fn-tempo {
+  color: var(--tinta-texto-2);
+}
+.fn-card.aberto .fn-tempo.atrasado {
+  /* Atraso continua sendo atraso, mas vermelho sobre tinta escura nao passa
+     no contraste. Aqui o aviso vira peso e brilho, e a tarja continua
+     aparecendo do lado de fora do cartao aberto. */
+  color: var(--tinta-texto);
+  font-weight: 700;
+}
+.fn-card.aberto .fn-avatar {
+  background: color-mix(in oklab, var(--tinta-texto) 18%, transparent);
+  color: var(--tinta-texto);
+}
+.fn-card.aberto .fn-avatar.anel {
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--mae) var(--tinta-a), var(--tinta-fim)),
+    0 0 0 4px var(--brand);
+}
+.fn-card.aberto .fn-tag {
+  background: color-mix(in oklab, var(--tinta-texto) 14%, transparent);
+  border-color: color-mix(in oklab, var(--tinta-texto) 24%, transparent);
+  color: var(--tinta-texto-2);
+}
+.fn-card.aberto .fn-mais {
+  color: var(--tinta-texto-2);
+}
+.fn-card.aberto .fn-mais:hover {
+  background: color-mix(in oklab, var(--tinta-texto) 16%, transparent);
+  color: var(--tinta-texto);
+}
+.fn-card.aberto {
+  box-shadow: var(--tinta-sombra);
+}

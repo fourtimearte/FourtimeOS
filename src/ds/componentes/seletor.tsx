@@ -267,6 +267,8 @@ export function Kpi({
   sub,
   ligado,
   aviso,
+  tinta,
+  mae,
   aoClicar,
 }: {
   rotulo: ReactNode
@@ -275,9 +277,21 @@ export function Kpi({
   sub?: ReactNode
   ligado?: boolean
   aviso?: boolean
+  /* O cartao de tinta do inicio. UM por tela, e nunca o de aviso: tinta diz
+     onde voce esta, aviso diz o que aconteceu, e as duas coisas juntas no
+     mesmo cartao fazem as duas sumirem. */
+  tinta?: boolean
+  mae?: 'grafite' | 'dtf' | 'subli' | 'silk' | 'bordado' | 'patch'
   aoClicar?: () => void
 }) {
-  const classes = ['kpi', aoClicar ? 'clicavel' : '', ligado ? 'ligado' : '', aviso ? 'aviso' : '']
+  const classes = [
+    'kpi',
+    aoClicar ? 'clicavel' : '',
+    ligado ? 'ligado' : '',
+    aviso ? 'aviso' : '',
+    tinta && !aviso ? 'tinta' : '',
+    tinta && !aviso ? 'm-' + (mae ?? 'grafite') : '',
+  ]
     .filter(Boolean)
     .join(' ')
   /* Valor comprido, tipo dinheiro, nao pode empurrar o cartao para fora da

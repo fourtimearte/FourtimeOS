@@ -247,3 +247,108 @@
   --tec-etiqueta-soft: #26292b;
   --tec-etiqueta-fg: #a2a8b1;
 }
+
+/* ==========================================================================
+   A LUZ DO PONTEIRO E A TINTA
+   ==========================================================================
+
+   Duas coisas moram aqui, e as duas nascem de uma decisao so: no Fourtime OS
+   a cor nao diz o que esta acontecendo, diz ONDE VOCE ESTA. Estado continua
+   sendo numero vermelho, tarja, ponto ou borda, como manda a decisao 8.
+
+   1. O PONTILHADO. Todo cartao sem cor ganha, ao passar o ponteiro, uma
+      textura de pontos de 7px revelada num circulo em volta do mouse, mais um
+      brilho fraco no mesmo lugar. E de proposito quase invisivel: se voce
+      conseguir apontar o que mudou, esta forte demais.
+
+   2. A TINTA. O cartao pintado com UMA cor mae so. O degrade e a mesma cor em
+      dois tons, nunca um caminho de uma cor para outra, e por isso ele nunca
+      vira arco iris. A familia TROCA DE LADO com o tema, de proposito: no
+      Gelo o cartao de tinta e escuro sobre a pagina clara, no Grafite ele e
+      claro sobre a pagina escura. Nos dois casos ele e o unico que destoa da
+      pagina, que e o trabalho dele.
+
+   Toda a calibragem esta em numeros nomeados abaixo. Se ficar claro ou escuro
+   demais, e um numero que muda, nunca uma cor escrita na mao no componente. */
+
+:root {
+  --branco: #ffffff;
+  --preto: #000000;
+
+  /* o raio do circulo que o ponteiro revela e o tamanho do ponto */
+  --luz-raio: 220px;
+  --luz-ponto-passo: 7px;
+  --luz-ponto-raio: 0.9px;
+}
+
+[data-theme='light'] {
+  /* --- pontilhado no cartao sem cor --- */
+  --ponto-cor: color-mix(in oklab, var(--text) 13%, transparent);
+  --ponto-op: 0.5;
+  --brilho-cor: color-mix(in oklab, var(--text) 6%, transparent);
+
+  /* --- tinta: no Gelo a familia e a ESCURA, texto branco --- */
+  --mae-grafite: #5c6674;
+  /* --- os dois tons ---------------------------------------------------
+     Luz FIXA e croma AUMENTADO. Misturar a cor mae com preto parecia obvio
+     e estava errado: no oklab a mistura derruba o croma junto com a luz, e
+     todo cartao chegava no mesmo cinza chumbo, verde e azul iguais. Fixando
+     a luz e empurrando o croma, a cor continua sendo ela mesma em tom
+     escuro, e o contraste do texto branco fica previsivel, porque quem
+     manda no contraste e a luz, e ela agora e um numero e nao um acaso. */
+  --tinta-l1: 0.405; /* luz do primeiro ponto do degrade */
+  --tinta-c1: 0.58; /* multiplicador do croma no primeiro ponto */
+  --tinta-l2: 0.25;
+  --tinta-c2: 0.45;
+  --tinta-lb: 0.46; /* luz da borda */
+  --tinta-cb: 0.6;
+  /* o caminho antigo, que fica de reserva para navegador sem cor relativa */
+  --tinta-fim: #0c0e12;
+  --tinta-a: 74%;
+  --tinta-b: 34%;
+  --tinta-borda: 56%;
+  --tinta-veu: 12%; /* o clarao do canto de cima, em branco */
+  --tinta-texto: var(--branco);
+  --tinta-texto-2: color-mix(in oklab, var(--branco) 86%, transparent);
+  --tinta-texto-3: color-mix(in oklab, var(--branco) 72%, transparent);
+  --tinta-ponto: color-mix(in oklab, var(--branco) 28%, transparent);
+  --tinta-brilho: color-mix(in oklab, var(--branco) 15%, transparent);
+  --tinta-sombra:
+    0 12px 28px rgba(26, 29, 35, 0.18),
+    0 3px 8px rgba(26, 29, 35, 0.1);
+}
+
+[data-theme='dark'] {
+  --ponto-cor: color-mix(in oklab, var(--text) 15%, transparent);
+  --ponto-op: 0.45;
+  --brilho-cor: color-mix(in oklab, var(--text) 9%, transparent);
+
+  /* --- tinta: no Grafite a familia e a CLARA, texto normal do sistema ---
+     Aqui o tom nao caminha para o preto, caminha para a superficie: o cartao
+     fica sendo a superficie tingida pela cor mae. Por isso os numeros sao
+     muito menores, e a cor mae grafite clareia, senao ela sumiria no fundo. */
+  --mae-grafite: #8e99a8;
+  /* No Grafite a familia e a clara: a luz sobe acima da pagina em vez de
+     descer, e o croma desce, senao a cor grita sobre fundo escuro. */
+  --tinta-l1: 0.36;
+  --tinta-c1: 0.3;
+  --tinta-l2: 0.285;
+  --tinta-c2: 0.2;
+  --tinta-lb: 0.46;
+  --tinta-cb: 0.45;
+  --tinta-fim: var(--surface);
+  --tinta-a: 42%;
+  --tinta-b: 17%;
+  --tinta-borda: 62%;
+  --tinta-veu: 0%;
+  --tinta-texto: var(--text);
+  /* O cartao de tinta e mais claro que a superficie, entao o texto de apoio
+     do sistema perderia contraste nele. Ele sobe um degrau, e so aqui. */
+  --tinta-texto-2: color-mix(in oklab, var(--text) 45%, var(--text-2));
+  --tinta-texto-3: color-mix(in oklab, var(--text-2) 60%, var(--text-3));
+  --tinta-ponto: color-mix(in oklab, var(--text) 20%, transparent);
+  --tinta-brilho: color-mix(in oklab, var(--text) 10%, transparent);
+  --tinta-sombra:
+    0 12px 28px rgba(0, 0, 0, 0.55),
+    0 3px 10px rgba(0, 0, 0, 0.4);
+}

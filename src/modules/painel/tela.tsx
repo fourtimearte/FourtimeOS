@@ -140,7 +140,11 @@ export function TelaPainel() {
       }
     >
       <div className="fila-kpi" style={{ marginBottom: 'var(--sp-4)' }}>
+        {/* O UNICO cartao de tinta da tela. E o numero que abre o dia, e ele
+            e um so de proposito: dois cartoes pintados competem entre si e a
+            fileira volta a nao ter primeiro lugar nenhum. */}
         <Kpi
+          tinta
           rotulo="Peças na fila"
           valor={conta.pecas.toLocaleString('pt-BR')}
           sub={Math.round((conta.pecas / CAPACIDADE_DA_SEMANA) * 100) + '% da capacidade semanal'}

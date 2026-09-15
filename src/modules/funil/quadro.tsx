@@ -277,6 +277,14 @@ function Cartao({
         </button>
       </div>
 
+      {/* A linha do estágio viaja com o cartão. Ela repete o cabeçalho da
+          coluna enquanto o cartão está parado, e é justamente durante o
+          arrasto, quando ele sai da coluna, que ela passa a ser a única coisa
+          que diz de onde ele veio. */}
+      <span className="fn-etapa">
+        <span className="nome">{NOME_DO_ESTAGIO[lead.estagio]}</span>
+      </span>
+
       <p className="fn-msg">{lead.msg}</p>
 
       <div className="fn-card-pe">

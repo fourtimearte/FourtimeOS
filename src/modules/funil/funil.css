@@ -150,10 +150,12 @@
      um filete reto deixa duas pontas de fundo aparecendo. O acento deixou de
      ser filete, então o canto voltou. */
   border-radius: var(--radius-lg);
-  /* A BORDA INTEIRA CARREGA A COR DO ESTÁGIO, fraca. Sem `--c`, que é o caso
+  /* A BORDA INTEIRA CARREGA A COR DO ESTÁGIO. São 2px porque ela virou o
+     acento principal do cartão: com 1px a cor só se lia de perto, e o cartão
+     na coluna errada parava de se denunciar de longe. Sem `--c`, que é o caso
      do fantasma do arrasto, ela cai na borda cinza: durante o arrasto o
      cartão ainda não pertence a lugar nenhum. */
-  border: 1px solid color-mix(in oklab, var(--c, var(--border)) 32%, var(--border));
+  border: 2px solid color-mix(in oklab, var(--c, var(--border)) 42%, var(--border));
   background-color: var(--surface);
   /* A LAVAGEM: a cor do estágio entrando pelo canto de cima e morrendo antes
      da metade. Ela sozinha não informa nada, e não é para informar: é o que
@@ -172,33 +174,40 @@
     box-shadow var(--t-fast) var(--ease-out),
     border-color var(--t-fast) var(--ease-out);
 }
-/* A CANTONEIRA, NA COR DO ESTÁGIO. Ela é um L de 3px que abraça o canto de
-   cima à esquerda e acompanha o mesmo raio do cartão, em vez de brigar com
-   ele. Junto com a borda tingida e a lavagem, é a cor da coluna aparecendo em
-   três lugares fracos somados, e não num bloco forte: um cartão arrastado
-   para a coluna errada continua se denunciando pela cor antes de alguém ler o
-   nome dele.
+/* A LINHA DO ESTÁGIO: um ponto na cor da coluna e o nome dela.
 
-   Por que não tem também o nome do estágio escrito no cartão: no funil cada
-   coluna JÁ é um estágio e o cabeçalho dela diz o nome. Repetir seria ruído.
-   No kanban da produção, onde o cartão anda entre setores, o nome entra.
+   O cartão não tem mais filete nem cantoneira. A cor aparece em três lugares
+   fracos somados, borda, lavagem e este ponto, e nenhum deles é bloco de cor,
+   que é o que a decisão 8 pede. O ponto é pequeno mas é o único pedaço de cor
+   saturada do cartão, então é ele que o olho acha primeiro.
 
-   O `--c` vem da coluna, por herança, e sem ele a cantoneira some em vez de
-   virar um L cinza sem significado. */
-.fn-card::before {
+   O nome do estágio repete o cabeçalho da coluna, e isso é de propósito: o
+   cartão é arrastável, e durante o arrasto ele sai da coluna. A linha viaja
+   com ele e continua dizendo de onde ele veio.
+
+   Sem `--c`, que é o fantasma do arrasto, o ponto cai no cinza de borda. */
+.fn-etapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  min-width: 0;
+}
+.fn-etapa::before {
   content: '';
-  position: absolute;
-  left: -1px;
-  top: -1px;
-  width: 46px;
-  height: 46px;
-  pointer-events: none;
-  border-top: 3px solid var(--c, transparent);
-  border-left: 3px solid var(--c, transparent);
-  border-radius: var(--radius-lg) 0 0 0;
-  transition:
-    border-color var(--t-fast) var(--ease-out),
-    opacity var(--t-fast) var(--ease-out);
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--c, var(--border-2));
+}
+.fn-etapa .nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fn-card:hover {
   transform: translateY(-1px);
@@ -207,12 +216,13 @@
 /* SELECIONADO é o cartão de tinta da decisão 9, com a cor mãe do próprio
    estágio. A borda dele vem da tinta, em base.css, e não daqui: preto era a
    cor de "selecionado" em todo o resto do sistema, e aqui ela apagava a única
-   informação que o cartão dava de longe. Sobre a tinta a cantoneira vira
-   clara, porque a cor do estágio já é o fundo inteiro do cartão. */
-.fn-card.aberto::before {
-  border-top-color: var(--tinta-texto);
-  border-left-color: var(--tinta-texto);
-  opacity: 0.9;
+   informação que o cartão dava de longe. Sobre a tinta o ponto vira claro,
+   porque a cor do estágio já é o fundo inteiro do cartão. */
+.fn-card.aberto .fn-etapa {
+  color: var(--tinta-texto-2);
+}
+.fn-card.aberto .fn-etapa::before {
+  background: var(--tinta-texto);
 }
 .fn-card.carregando {
   opacity: 0.45;

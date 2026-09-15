@@ -287,6 +287,9 @@
   --ponto-op: 0.5;
   --brilho-cor: color-mix(in oklab, var(--text) 6%, transparent);
 
+  /* quanto da cor do estagio entra na lavagem do canto do cartao */
+  --lavagem: 8%;
+
   /* --- tinta: no Gelo a familia e a ESCURA, texto branco --- */
   --mae-grafite: #5c6674;
   /* --- os dois tons ---------------------------------------------------
@@ -322,6 +325,9 @@
   --ponto-cor: color-mix(in oklab, var(--text) 15%, transparent);
   --ponto-op: 0.45;
   --brilho-cor: color-mix(in oklab, var(--text) 9%, transparent);
+
+  /* no escuro a lavagem precisa de mais cor para sair do fundo */
+  --lavagem: 15%;
 
   /* --- tinta: no Grafite a familia e a CLARA, texto normal do sistema ---
      Aqui o tom nao caminha para o preto, caminha para a superficie: o cartao

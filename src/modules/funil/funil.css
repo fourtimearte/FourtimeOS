@@ -145,13 +145,24 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-  border: 1px solid var(--border);
-  /* A ESQUERDA É RETA. O filete de accento vai de canto a canto daquele lado,
-     e canto arredondado por cima de um filete reto deixa duas pontas de fundo
-     aparecendo, uma em cima e outra embaixo. Reto dos dois lados, o filete
-     vira a borda esquerda do cartão, e não um adesivo colado nela. */
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  background: var(--surface);
+  /* OS QUATRO CANTOS ARREDONDADOS. A esquerda era reta porque o filete de
+     acento ia de canto a canto daquele lado, e canto arredondado por cima de
+     um filete reto deixa duas pontas de fundo aparecendo. O acento deixou de
+     ser filete, então o canto voltou. */
+  border-radius: var(--radius-lg);
+  /* A BORDA INTEIRA CARREGA A COR DO ESTÁGIO, fraca. Sem `--c`, que é o caso
+     do fantasma do arrasto, ela cai na borda cinza: durante o arrasto o
+     cartão ainda não pertence a lugar nenhum. */
+  border: 1px solid color-mix(in oklab, var(--c, var(--border)) 32%, var(--border));
+  background-color: var(--surface);
+  /* A LAVAGEM: a cor do estágio entrando pelo canto de cima e morrendo antes
+     da metade. Ela sozinha não informa nada, e não é para informar: é o que
+     faz a cantoneira parecer parte do cartão em vez de um adesivo. */
+  background-image: radial-gradient(
+    115% 88% at 0% 0%,
+    color-mix(in oklab, var(--c, transparent) var(--lavagem), transparent) 0%,
+    transparent 56%
+  );
   box-shadow: var(--shadow-card);
   cursor: grab;
   user-select: none;
@@ -161,39 +172,47 @@
     box-shadow var(--t-fast) var(--ease-out),
     border-color var(--t-fast) var(--ease-out);
 }
-/* O FILETE NA LATERAL ESQUERDA, NA COR DO ESTÁGIO. Ele era cinza em todas as
-   colunas, e um filete cinza igual em seis colunas não informa nada: era
-   enfeite. Agora ele carrega a cor da coluna em que o cartão está, então um
-   cartão arrastado para a coluna errada se denuncia pela cor antes de alguém
-   ler o nome dele.
+/* A CANTONEIRA, NA COR DO ESTÁGIO. Ela é um L de 3px que abraça o canto de
+   cima à esquerda e acompanha o mesmo raio do cartão, em vez de brigar com
+   ele. Junto com a borda tingida e a lavagem, é a cor da coluna aparecendo em
+   três lugares fracos somados, e não num bloco forte: um cartão arrastado
+   para a coluna errada continua se denunciando pela cor antes de alguém ler o
+   nome dele.
 
-   O `--c` vem da coluna, por herança. Um cartão fora de coluna nenhuma (o
-   fantasma do arrasto) cai no cinza de borda, que é o certo: durante o
-   arrasto ele ainda não pertence a lugar nenhum. */
+   Por que não tem também o nome do estágio escrito no cartão: no funil cada
+   coluna JÁ é um estágio e o cabeçalho dela diz o nome. Repetir seria ruído.
+   No kanban da produção, onde o cartão anda entre setores, o nome entra.
+
+   O `--c` vem da coluna, por herança, e sem ele a cantoneira some em vez de
+   virar um L cinza sem significado. */
 .fn-card::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--c, var(--border-2));
-  transition: width var(--t-fast) var(--ease-out);
+  left: -1px;
+  top: -1px;
+  width: 46px;
+  height: 46px;
+  pointer-events: none;
+  border-top: 3px solid var(--c, transparent);
+  border-left: 3px solid var(--c, transparent);
+  border-radius: var(--radius-lg) 0 0 0;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out);
 }
 .fn-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
 }
-/* A BORDA DE SELEÇÃO TAMBÉM É A COR DO ESTÁGIO. Era preta, e preto é a cor
-   de "selecionado" de qualquer lugar do sistema: aqui ela apagava a única
-   informação que o cartão dava de longe. Selecionado agora é o mesmo cartão
-   com a própria cor mais forte e o filete mais grosso. */
-.fn-card.aberto {
-  border-color: var(--c, var(--ink));
-  box-shadow: var(--shadow);
-}
+/* SELECIONADO é o cartão de tinta da decisão 9, com a cor mãe do próprio
+   estágio. A borda dele vem da tinta, em base.css, e não daqui: preto era a
+   cor de "selecionado" em todo o resto do sistema, e aqui ela apagava a única
+   informação que o cartão dava de longe. Sobre a tinta a cantoneira vira
+   clara, porque a cor do estágio já é o fundo inteiro do cartão. */
 .fn-card.aberto::before {
-  width: 7px;
+  border-top-color: var(--tinta-texto);
+  border-left-color: var(--tinta-texto);
+  opacity: 0.9;
 }
 .fn-card.carregando {
   opacity: 0.45;

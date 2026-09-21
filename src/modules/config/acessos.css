@@ -245,6 +245,14 @@
 }
 
 @media (max-width: 760px) {
+  /* FIXO, E NAO AUTOMATICO. Com largura automática a célula cresce com o que
+     tem dentro e as quatro colunas somavam 288px onde cabiam 176: a última
+     ficava fora da tela. Fixa, cada coluna vale o alvo de toque e o nome da
+     página fica com o resto, quebrando em duas linhas quando precisa. */
+  .ac-grade {
+    table-layout: fixed;
+  }
+
   .ac-cel {
     width: 44px;
   }

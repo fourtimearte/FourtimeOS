@@ -37,16 +37,10 @@ import {
   tirarConvite,
 } from '@dominio/equipe'
 import type { Convite, PainelDoSistema, PessoaDaEquipe } from '@dominio/equipe'
-import {
-  fotoDe,
-  iniciaisDe,
-  LINHA_DO_PAPEL,
-  NOME_DA_SITUACAO,
-  NOME_DO_PAPEL,
-  PAPEIS,
-  useSessao,
-} from '@dominio/sessao'
+import { fotoDe, iniciaisDe, NOME_DA_SITUACAO, useSessao } from '@dominio/sessao'
 import type { Painel, Papel } from '@dominio/sessao'
+import { carregarPapeis, linhaDoPapel, nomeDoPapel, papeisEmMemoria } from '@dominio/acessos'
+import type { PapelDoSistema } from '@dominio/acessos'
 import { AbasDaConfig } from './abas'
 import './config.css'
 
@@ -60,7 +54,13 @@ import './config.css'
    banco devolve zero linhas alteradas em tudo que ele tentar: a regra de
    acesso e que decide, e ela mora la. */
 
-const OPCOES_DE_PAPEL = PAPEIS.map((p) => ({ valor: p, rotulo: NOME_DO_PAPEL[p] }))
+/* A LISTA DE PAPEIS DEIXOU DE SER CONSTANTE na migração 028: ela mora no
+   banco e o administrador cria papel novo pela tela. Aqui ela é lida do cache
+   que a sessão enche na entrada, e a tela de cima recarrega esse cache ao
+   abrir, o que faz estes filhos redesenharem já com o papel novo dentro. */
+function opcoesDePapel() {
+  return papeisEmMemoria().map((p) => ({ valor: p.chave, rotulo: p.nome }))
+}
 
 export function TelaEquipe() {
   const { estado } = useSessao()
@@ -72,19 +72,24 @@ export function TelaEquipe() {
   const [carregando, setCarregando] = useState(true)
   const [falha, setFalha] = useState('')
   const [editando, setEditando] = useState<PessoaDaEquipe | null>(null)
+  /* Guardado em estado só para a tela redesenhar quando a lista chegar: quem
+     lê os papéis são os filhos, pelo cache. */
+  const [papeisDoSistema, setPapeisDoSistema] = useState<PapelDoSistema[]>(papeisEmMemoria())
 
   const carregar = useCallback(async () => {
     setCarregando(true)
     setFalha('')
     try {
-      const [gente, liberados, telas] = await Promise.all([
+      const [gente, liberados, telas, papeis] = await Promise.all([
         listarEquipe(),
         listarConvites(),
         listarPaineis(),
+        carregarPapeis(),
       ])
       setEquipe(gente)
       setConvites(liberados)
       setPaineis(telas)
+      setPapeisDoSistema(papeis)
     } catch (e) {
       setFalha(e instanceof Error ? e.message : 'Não consegui carregar a equipe.')
     } finally {
@@ -113,7 +118,7 @@ export function TelaEquipe() {
     <Pagina
       acima="Configurações"
       titulo="Pessoas"
-      sub="Quem entra no sistema, com qual papel e em quais painéis."
+      sub={`Quem entra no sistema, com qual papel e em quais painéis. ${papeisDoSistema.length} papéis cadastrados.`}
     >
       <AbasDaConfig atual="pessoas" />
 
@@ -207,7 +212,7 @@ function FilaDeAprovacao({
     setOcupado(p.id)
     try {
       aoMudar(await aprovar(p.id, papel, null, euSou))
-      avisar(`${p.nome} entrou como ${NOME_DO_PAPEL[papel].toLowerCase()}.`, 'ok')
+      avisar(`${p.nome} entrou como ${nomeDoPapel(papel).toLowerCase()}.`, 'ok')
     } catch (e) {
       aoErrar(e instanceof Error ? e.message : 'Não consegui aprovar.')
     } finally {
@@ -251,7 +256,7 @@ function FilaDeAprovacao({
                   campo
                   tamanho="sm"
                   valor={papel}
-                  opcoes={OPCOES_DE_PAPEL}
+                  opcoes={opcoesDePapel()}
                   aoEscolher={(v) => setPapeis((m) => ({ ...m, [p.id]: v as Papel }))}
                 />
                 <Botao
@@ -274,7 +279,7 @@ function FilaDeAprovacao({
                 </Botao>
               </div>
 
-              <p className="cfg-dica">{LINHA_DO_PAPEL[papel]}</p>
+              <p className="cfg-dica">{linhaDoPapel(papel)}</p>
             </li>
           )
         })}
@@ -348,7 +353,7 @@ function LinhaDaPessoa({
           campo
           tamanho="sm"
           valor={p.papel}
-          opcoes={OPCOES_DE_PAPEL}
+          opcoes={opcoesDePapel()}
           aoEscolher={(v) => void fazer(() => mudarPapel(p.id, v as Papel))}
         />
 
@@ -465,7 +470,7 @@ function Convites({
             campo
             bloco
             valor={papel}
-            opcoes={OPCOES_DE_PAPEL}
+            opcoes={opcoesDePapel()}
             aoEscolher={(v) => setPapel(v as Papel)}
           />
         </Campo>
@@ -485,7 +490,7 @@ function Convites({
               <Envelope size={16} />
               <div>
                 <b>{c.email}</b>
-                <span>{NOME_DO_PAPEL[c.papel]}</span>
+                <span>{nomeDoPapel(c.papel)}</span>
               </div>
               <Botao
                 tom="limpo"
@@ -580,9 +585,9 @@ function EditorDePaineis({
               checked={!proprio}
               onChange={(e) => void trocarModo(e.target.checked)}
             >
-              Usar o padrão de {NOME_DO_PAPEL[pessoa.papel].toLowerCase()}
+              Usar o padrão de {nomeDoPapel(pessoa.papel).toLowerCase()}
             </Marcacao>
-            <span>{LINHA_DO_PAPEL[pessoa.papel]}</span>
+            <span>{linhaDoPapel(pessoa.papel)}</span>
           </div>
 
           <div className={'cfg-paineis' + (proprio ? '' : ' desligado')}>

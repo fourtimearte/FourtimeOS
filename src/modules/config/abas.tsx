@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { Buildings, Database, Flask, Palette, SquaresFour, UsersThree } from '@phosphor-icons/react'
-import { podeVer, useSessao } from '@dominio/sessao'
+import { Buildings, Database, Flask, Lock, Palette, SquaresFour, UsersThree } from '@phosphor-icons/react'
+import { podeVer, souAdmin, useSessao } from '@dominio/sessao'
 import type { Painel } from '@dominio/sessao'
 
 /* ==========================================================================
@@ -16,10 +16,21 @@ import type { Painel } from '@dominio/sessao'
    junto, o poder de aprovar conta de gente.
    ========================================================================== */
 
-export type AbaDaConfig = 'pessoas' | 'banco' | 'empresa' | 'paginas' | 'ensaio' | 'kit'
+export type AbaDaConfig = 'pessoas' | 'acessos' | 'banco' | 'empresa' | 'paginas' | 'ensaio' | 'kit'
 
-const ABAS: { chave: AbaDaConfig; para: string; rotulo: string; painel: Painel }[] = [
+const ABAS: {
+  chave: AbaDaConfig
+  para: string
+  rotulo: string
+  painel: Painel
+  /* ACESSOS É A ÚNICA ABA COM DONO. As outras seguem o painel de quem abriu;
+     esta é de quem administra, porque ela é o lugar de onde sai o poder de
+     todas as outras. Um gerente que só lê Configurações não pode se dar
+     controle total aqui e sair lendo o sistema inteiro. */
+  soAdmin?: boolean
+}[] = [
   { chave: 'pessoas', para: '/config', rotulo: 'Pessoas', painel: 'config' },
+  { chave: 'acessos', para: '/config/acessos', rotulo: 'Acessos', painel: 'config', soAdmin: true },
   { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', painel: 'banco' },
   { chave: 'empresa', para: '/config/empresa', rotulo: 'Empresa', painel: 'config' },
   { chave: 'paginas', para: '/config/paginas', rotulo: 'Páginas', painel: 'config' },
@@ -29,6 +40,7 @@ const ABAS: { chave: AbaDaConfig; para: string; rotulo: string; painel: Painel }
 
 const ICONE: Record<AbaDaConfig, typeof UsersThree> = {
   pessoas: UsersThree,
+  acessos: Lock,
   banco: Database,
   empresa: Buildings,
   paginas: SquaresFour,
@@ -42,7 +54,9 @@ export function AbasDaConfig({ atual }: { atual: AbaDaConfig }) {
 
   /* Uma aba sozinha não é escolha nenhuma: ela vira um enfeite que a pessoa
      clica e continua no mesmo lugar. */
-  const minhas = ABAS.filter((a) => !!pessoa && podeVer(pessoa, a.painel))
+  const minhas = ABAS.filter(
+    (a) => !!pessoa && podeVer(pessoa, a.painel) && (!a.soAdmin || souAdmin(pessoa)),
+  )
   if (minhas.length < 2) return null
 
   return (

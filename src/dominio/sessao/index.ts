@@ -8,11 +8,10 @@ export {
   fotoDe,
   iniciaisDe,
   liberada,
-  LINHA_DO_PAPEL,
   NOME_DA_SITUACAO,
-  NOME_DO_PAPEL,
-  PAPEIS,
+  pode,
   podeVer,
   primeiroNome,
+  souAdmin,
 } from './tipos'
-export type { Estado, Painel, Papel, Pessoa, Situacao } from './tipos'
+export type { Estado, Nivel4, Painel, Papel, Pessoa, Situacao } from './tipos'

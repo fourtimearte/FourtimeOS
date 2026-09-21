@@ -1,0 +1,252 @@
+/* ==========================================================================
+   Acessos. A matriz de papel por página.
+
+   Nenhuma classe daqui é do Design System: o quadro tem o prefixo ac- inteiro,
+   e o que é do DS (cartão, botão, caixa de marcação, selo) entra pelo
+   componente, nunca por um selecionador escrito aqui.
+   ========================================================================== */
+
+.ac-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.ac-mesa {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+/* Item de grade sem min-width: 0 empurra a página inteira quando o conteúdo
+   não cabe. O quadro rola dentro de si, e a página nunca de lado. */
+.ac-papeis {
+  align-self: start;
+}
+
+.ac-quadro {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* ---------- a coluna dos papéis ---------- */
+.ac-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+
+.ac-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: var(--pad-linha);
+  min-height: 44px;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+.ac-item:hover {
+  background: var(--surface-2);
+}
+
+.ac-item.escolhido {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: var(--ink);
+}
+
+.ac-item-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+}
+
+.ac-conta {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-chave {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.ac-item.escolhido .ac-conta,
+.ac-item.escolhido .ac-chave {
+  color: var(--on-ink);
+  opacity: 0.7;
+}
+
+.ac-forma {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.ac-linha {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.ac-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  align-items: center;
+}
+
+.ac-perigo {
+  margin-top: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ac-perigo p {
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- a grade ---------- */
+.ac-grade {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ac-grade th,
+.ac-grade td {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.ac-grade thead th {
+  padding: var(--sp-3) var(--sp-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ac-grade thead th:first-child {
+  text-align: left;
+  padding-left: var(--sp-2);
+}
+
+.ac-tudo th {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  padding-top: 0;
+}
+
+.ac-grupo td {
+  background: var(--surface-2);
+  padding: var(--sp-2) var(--sp-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ac-pagina {
+  padding: var(--sp-2);
+}
+
+.ac-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  font-weight: 600;
+  min-width: 0;
+}
+
+.ac-cel {
+  width: 88px;
+  text-align: center;
+}
+
+/* A coluna do controle total fica sobre um fundo próprio: ela é a única que
+   não tem volta, e separar por fundo custa menos atenção que ler o cabeçalho
+   de novo a cada linha. */
+.ac-cel-total {
+  background: var(--surface-2);
+}
+
+/* Onde o papel tem controle total, os três de baixo são consequência e não
+   escolha, então eles recuam. */
+.ac-linha-total .ac-cel {
+  opacity: 0.55;
+}
+
+.ac-linha-total .ac-cel-total {
+  opacity: 1;
+}
+
+.ac-rodape {
+  display: flex;
+  gap: var(--gap-miudo);
+  align-items: flex-start;
+  margin-top: var(--sp-4);
+  color: var(--text-3);
+  font-size: 12.5px;
+  max-width: 88ch;
+}
+
+.ac-rodape svg {
+  flex: none;
+  margin-top: var(--re-1);
+}
+
+/* ---------- telas estreitas ---------- */
+@media (max-width: 1100px) {
+  .ac-mesa {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .ac-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* O nome da página segura a linha; as quatro colunas encolhem até o alvo de
+   toque e param ali. Rolar de lado para achar a caixa é o mesmo que não ter
+   a caixa. */
+@media (max-width: 760px) {
+  .ac-cel {
+    width: 58px;
+  }
+
+  .ac-chave {
+    display: none;
+  }
+
+  .ac-grade {
+    font-size: 13.5px;
+  }
+}

@@ -42,10 +42,10 @@ import {
 import {
   fotoDe,
   iniciaisDe,
-  NOME_DO_PAPEL,
   podeVer,
   useSessao,
 } from '@dominio/sessao'
+import { nomeDoPapel } from '@dominio/acessos'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { paginasEscondidas } from '@dominio/regulagem'
 import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
@@ -459,7 +459,7 @@ export function App() {
                 <Avatar iniciais={iniciaisDe(pessoa.nome)} foto={fotoDe(pessoa)} tamanho={34} />
                 <div>
                   <b>{pessoa.nome}</b>
-                  <span>{NOME_DO_PAPEL[pessoa.papel]}</span>
+                  <span>{nomeDoPapel(pessoa.papel)}</span>
                 </div>
               </Link>
               <span className="lado-risco" aria-hidden="true" />

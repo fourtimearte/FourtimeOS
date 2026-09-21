@@ -5,7 +5,14 @@ import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
 import type { Painel } from '@dominio/sessao'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
-import { AbasDaConfig, TelaEmpresa, TelaEnsaio, TelaEquipe, TelaPaginas } from '@modules/config'
+import {
+  AbasDaConfig,
+  TelaAcessos,
+  TelaEmpresa,
+  TelaEnsaio,
+  TelaEquipe,
+  TelaPaginas,
+} from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
@@ -80,6 +87,10 @@ export const rotas = createBrowserRouter([
       { path: 'relatorio', element: pede('relatorio', <TelaRelatorio />) },
       { path: 'banco', element: pede('banco', <TelaBanco />) },
       { path: 'config', element: pede('config', <TelaEquipe />) },
+      /* A TELA DOS ACESSOS PEDE O PAINEL config COMO AS OUTRAS, e a trava de
+         admin mora dentro dela e no banco. Um painel proprio so para ela
+         daria ao dono do painel o poder de se dar qualquer outro. */
+      { path: 'config/acessos', element: pede('config', <TelaAcessos />) },
       { path: 'config/empresa', element: pede('config', <TelaEmpresa />) },
       { path: 'config/ensaio', element: pede('config', <TelaEnsaio />) },
       { path: 'config/paginas', element: pede('config', <TelaPaginas />) },

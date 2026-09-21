@@ -12,10 +12,11 @@ import {
   tabela,
 } from '@shared/supabase'
 import { quadradoPequeno } from '@shared'
+import { esquentarPapeis } from '@dominio/acessos'
 import { ContextoDaSessao } from './contexto'
 import type { Sessao } from './contexto'
 import { BALDE_DAS_FOTOS, caminhoDaFoto } from './tipos'
-import type { Estado, Painel, Papel, Pessoa, Situacao } from './tipos'
+import type { Estado, Nivel4, Painel, Papel, Pessoa, Situacao } from './tipos'
 
 /* A sessao de verdade, com o Supabase por tras.
 
@@ -35,6 +36,7 @@ type LinhaDoPerfil = {
   papel: Papel
   situacao: Situacao
   paineis: Painel[] | null
+  permissoes: Record<string, Nivel4> | null
   foto_em: string | null
 }
 
@@ -61,12 +63,18 @@ async function lerPerfil(email: string): Promise<Pessoa> {
   const linhas = await tabela<LinhaDoPerfil[]>('meu_perfil?select=*&limit=1')
   const linha = linhas[0]
   if (!linha) throw new Error(SEM_CADASTRO)
+  /* OS NOMES DOS PAPEIS ENTRAM AQUI, junto com o perfil. Eles deixaram de ser
+     constante no codigo na 028, e tres telas mostram o nome do papel de
+     alguem: pedir a lista uma vez na entrada evita cada uma delas pedir a
+     sua. Se falhar, o nome cai para a chave e ninguem fica sem entrar. */
+  void esquentarPapeis()
   return {
     id: linha.id,
     nome: linha.nome || email,
     papel: linha.papel,
     situacao: linha.situacao,
     paineis: linha.paineis ?? [],
+    permissoes: linha.permissoes ?? {},
     email: linha.email || email,
     fotoEm: linha.foto_em,
   }

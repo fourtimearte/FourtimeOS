@@ -19,9 +19,9 @@ import {
   fotoDe,
   iniciaisDe,
   NOME_DA_SITUACAO,
-  NOME_DO_PAPEL,
   useSessao,
 } from '@dominio/sessao'
+import { nomeDoPapel } from '@dominio/acessos'
 import './perfil.css'
 
 /* A camera do tablet entrega arquivo de 4 a 8 MB. O balde recusa acima de
@@ -226,7 +226,7 @@ export function TelaPerfil() {
             <div className="pf-linha">
               <span className="pf-rotulo">Papel</span>
               <Selo tom={pessoa.papel === 'admin' ? 'brand' : 'neutro'}>
-                {NOME_DO_PAPEL[pessoa.papel]}
+                {nomeDoPapel(pessoa.papel)}
               </Selo>
             </div>
 

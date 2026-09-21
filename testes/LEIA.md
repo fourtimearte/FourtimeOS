@@ -118,3 +118,40 @@ menos, e elemento passando da borda direita. **E ela nao mede contraste,
 alinhamento, peso de fonte, espaco torto nem cor que sumiu no tema escuro.** Por
 isso ela termina mandando olhar as fotos. Rodar e nao olhar e o mesmo que nao
 rodar.
+
+## npm run ligacoes
+
+A terceira conferencia, e a que faltava. `tokens` le VALOR escrito na mao;
+`ligacoes` le o contrario, que e pior: um NOME que aponta para o vazio.
+
+```css
+background: var(--sup-2);       /* --sup-2 nao existe */
+border: 1px solid var(--linha); /* --linha nao existe */
+border-radius: var(--r-md);     /* --r-md nao existe */
+```
+
+O navegador nao reclama de nenhuma dessas. Ele joga a declaracao inteira fora,
+e o elemento fica sem fundo, sem borda e com canto reto, parecendo que ninguem
+estilizou. Foi assim que a tela de Ensaio ficou com quatro numeros soltos por
+cima do cartao, e a conferencia de tokens passou por eles sem ver nada, porque
+do ponto de vista dela `var(--sup-2)` e um token sendo usado direitinho.
+
+Esses nomes sao vocabulario do Design Kit V6, que morreu no V7: `--ink-2`,
+`--linha`, `--sup-2`, `--r-md`, `--r-sm`. Ninguem digitou errado; foi codigo
+velho copiado.
+
+Ela faz quatro perguntas:
+
+1. **Variavel que aponta para o vazio.** Usada e definida em lugar nenhum. Ela
+   procura a definicao no CSS, no `style={{ '--x': ... }}` do componente e no
+   `setProperty('--x', ...)`, senao metade do sistema viraria falso positivo.
+2. **Classe usada que CSS nenhum define.** Um `className` sem regra e um
+   elemento sem estilo, e ninguem percebe porque a pagina quase funciona.
+3. **Mesma classe brigando consigo mesma no mesmo arquivo.** Dois blocos da
+   mesma classe nao sao erro por si; erro e quando os dois escrevem a mesma
+   propriedade com valores diferentes. Dentro de `@media` redefinir e o
+   proposito, entao `@media` fica de fora.
+4. **CSS que componente nenhum usa**, so como aviso, porque classe montada em
+   template (`` `btn-${tom}` ``) escapa da conta. Confira antes de apagar.
+
+Ela entrou no `npm run conferir`.

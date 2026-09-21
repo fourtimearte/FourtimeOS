@@ -39,6 +39,7 @@ const SECOES: [string, string][] = [
   ['cor', 'Cor'],
   ['tecnicas', 'Técnicas'],
   ['medida', 'Medida'],
+  ['primitivas', 'Fileira, pilha e corte'],
   ['tipografia', 'Tipografia'],
   ['botoes', 'Botões'],
   ['chips', 'Chips'],
@@ -220,6 +221,62 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
                   <span>{v}</span>
                 </div>
               ))}
+            </div>
+          </Secao>
+
+          <Secao
+            id="primitivas"
+            titulo="Fileira, pilha e corte"
+            texto="As tres receitas sem assunto. A fileira quebra de linha em vez de espremer, porque em tablet o botão é alvo de dedo e desce. A pilha já traz o min-width zero, que é a causa número um de rolagem lateral em 390. O corte termina em reticência em vez de empurrar o vizinho. Componente novo usa a classe; não reescreve a receita com o vão que der na cabeça."
+          >
+            <h3 className="kit-nota">Fileira</h3>
+            <div className="fileira">
+              <Botao>Padrão</Botao>
+              <Botao>10px entre eles</Botao>
+              <Botao tom="primario">Ação</Botao>
+            </div>
+            <h3 className="kit-nota" style={{ marginTop: 'var(--sp-5)' }}>
+              Fileira miúda, colada e larga
+            </h3>
+            <div className="pilha">
+              <div className="fileira miuda">
+                <Selo>seis</Selo>
+                <Selo>entre</Selo>
+                <Selo>eles</Selo>
+              </div>
+              <div className="fileira colada">
+                <Selo>dois</Selo>
+                <Selo>entre</Selo>
+                <Selo>eles</Selo>
+              </div>
+              <div className="fileira larga">
+                <Selo>dezesseis</Selo>
+                <Selo>entre</Selo>
+                <Selo>eles</Selo>
+              </div>
+            </div>
+            <h3 className="kit-nota" style={{ marginTop: 'var(--sp-5)' }}>
+              Pilha
+            </h3>
+            <div className="fileira larga topo">
+              <div className="pilha colada">
+                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Colada, dois</span>
+                <b>rótulo em cima do valor</b>
+              </div>
+              <div className="pilha">
+                <b>Padrão, oito</b>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>uma coisa e outra</span>
+              </div>
+              <div className="pilha larga">
+                <b>Larga, dezesseis</b>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>uma coisa e outra</span>
+              </div>
+            </div>
+            <h3 className="kit-nota" style={{ marginTop: 'var(--sp-5)' }}>
+              Corte
+            </h3>
+            <div className="fileira" style={{ width: 260 }}>
+              <b className="corta">Academia Corpo e Movimento Unidade Setor Bueno Goiânia</b>
             </div>
           </Secao>
 

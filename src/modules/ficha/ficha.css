@@ -26,8 +26,8 @@
   display: grid;
   grid-template-columns: 186px repeat(6, minmax(0, 1fr));
   grid-auto-rows: minmax(64px, auto);
-  gap: 1px;
-  padding: 1px;
+  gap: var(--re-1);
+  padding: var(--re-1);
   background: var(--border);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -43,7 +43,7 @@
 .fc-marca {
   display: grid;
   place-items: center;
-  padding: 10px 14px;
+  padding: var(--re-5) var(--re-7);
 }
 .fc-logo {
   font-size: 20px;
@@ -55,8 +55,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 14px;
+  gap: var(--re-2);
+  padding: var(--re-5) var(--re-7);
 }
 .fc-cnpj-num {
   font-size: 12.5px;
@@ -68,14 +68,14 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px;
-  padding: 10px 14px;
+  gap: var(--re-3);
+  padding: var(--re-5) var(--re-7);
 }
 .fc-selo {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 5px 2px 8px;
+  gap: var(--re-2);
+  padding: var(--re-1) var(--re-3) var(--re-1) var(--re-4);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c) 14%, transparent);
   color: var(--c);
@@ -119,8 +119,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
-  padding: 10px 14px;
+  gap: var(--re-3);
+  padding: var(--re-5) var(--re-7);
   min-width: 0;
 }
 /* um campo comum ocupa duas meias colunas; Pedido e Envio, uma cada */
@@ -198,7 +198,7 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
-  gap: 6px;
+  gap: var(--re-3);
 }
 .fc-campo .sel > .cb .v {
   font-weight: 500;
@@ -244,7 +244,7 @@
 .fc-tot {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: var(--re-3);
   font-variant-numeric: tabular-nums;
 }
 .fc-tot b {
@@ -259,21 +259,21 @@
   width: 1px;
   height: 13px;
   background: var(--border-2);
-  margin-inline: 3px;
+  margin-inline: var(--re-2);
 }
 
 .fc-menu-marcas {
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: var(--re-2);
   min-width: 170px;
 }
 .fc-menu-marcas button {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--re-5);
   height: 40px;
-  padding: 0 10px;
+  padding: 0 var(--re-5);
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -338,7 +338,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: var(--re-5);
   width: 100%;
   min-height: 52px;
   border: 1px dashed var(--border-2);
@@ -427,7 +427,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--re-6);
   width: 100%;
   min-width: 0;
   font-size: 8.5pt;

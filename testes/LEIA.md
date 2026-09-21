@@ -176,3 +176,26 @@ os dias do painel de atividades porque os tres dividem a mesma borda.
 Escrever `margin-bottom` num bloco de pagina dentro de CSS de modulo virou erro
 de novo tipo: nao quebra nada sozinho, mas devolve o espacamento para o lugar
 de onde ele acabou de sair.
+
+### Espaco
+
+`npm run tokens` tambem acusa `padding`, `margin` e `gap` com numero cru.
+
+A medicao de 21/09 achou 176 espacos com token contra **319 escritos na mao**, e
+os da mao nao eram aleatorios: 10px 87 vezes, 6px 50, 2px 43, 14px 35, 7px 32,
+5px 32. Isso e diagnostico, nao descuido. A escala antiga (4/8/12/16/20/24/32)
+foi desenhada para o RITMO DA PAGINA e estava sendo usada tambem como RECHEIO de
+controle, onde ela nao cabe: uma pilula de 17px de altura vive com 2px em cima e
+o primeiro degrau de 4 ja e grande demais.
+
+Agora sao duas escalas com trabalhos diferentes, `--sp-*` (ritmo, base 4) e
+`--re-*` (recheio, base 2), e uma camada de apelidos por cima com nome de USO
+(`--pad-cartao`, `--pad-botao`, `--gap-miudo`). Componente procura o apelido
+primeiro e so desce para o degrau quando o apelido nao existe.
+
+A conversao mexeu em 459 declaracoes: 228 so viraram token sem mudar de valor, e
+141 valores andaram 1 ou 2px para o degrau mais proximo. Sete ficaram de fora,
+uma a uma, com a razao escrita dentro do teste em `ESPACO_COM_RAZAO`: quatro sao
+recuo negativo, que e tecnica de sobreposicao e nao espacamento, e tres sao
+numero preso ao tamanho de outro elemento. **Excecao nova nao entra sozinha: ela
+entra la, com a razao.**

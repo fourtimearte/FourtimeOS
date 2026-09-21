@@ -21,8 +21,8 @@
 .lay-faixas {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--re-4);
+  margin-top: var(--re-5);
   min-width: 0;
 }
 
@@ -30,7 +30,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   min-width: 0;
   font-size: 13.5px;
   color: var(--text-2);
@@ -41,8 +41,8 @@
 .lay-leitura .sep {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 8px;
+  gap: var(--re-3);
+  padding-left: var(--re-4);
   border-left: 1px solid var(--border);
 }
 
@@ -79,8 +79,8 @@
 }
 
 .gr-tab th.gr-th-tam {
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: var(--re-2);
+  padding-bottom: var(--re-2);
 }
 
 /* a tabela rola dentro da própria caixa, nunca empurrando a página */
@@ -98,7 +98,7 @@
 }
 .gr-tab th,
 .gr-tab td {
-  padding: 0 12px;
+  padding: 0 var(--re-6);
   height: 44px; /* alvo de toque: a fábrica lança grade no tablet */
   text-align: left;
   white-space: nowrap;
@@ -134,7 +134,7 @@
    conta fecha: 4 da celula mais 8 do campo dao os mesmos 12 do titulo, e o
    campo continua com folga por dentro para a moldura do foco. */
 .gr-tab td.num:has(.gr-campo) {
-  padding: 0 4px;
+  padding: 0 var(--re-2);
 }
 .gr-tam {
   font-weight: 700;
@@ -169,7 +169,7 @@
   max-width: 110px;
   height: 34px;
   vertical-align: middle;
-  padding: 0 8px;
+  padding: 0 var(--re-4);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -193,13 +193,13 @@
 .gr-linha {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--re-3);
 }
 .gr-par {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--re-2);
+  padding: var(--re-1) var(--re-4);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   font-size: 13px;
@@ -228,7 +228,7 @@
 .img-caixa {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--re-5);
   min-width: 0;
 }
 /* vazia, ela cresce para ocupar a coluna: o alvo de arrastar a arte e a
@@ -282,7 +282,7 @@
 .img-area.lendo:not(.tem) {
   flex: 0 0 auto;
   min-height: 0;
-  padding: 18px;
+  padding: var(--re-9);
   border-style: solid;
   cursor: default;
 }
@@ -293,8 +293,8 @@
 .img-convite {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
+  gap: var(--re-2);
+  padding: var(--re-8);
   text-align: center;
   font-size: 13.5px;
   color: var(--text-2);
@@ -306,11 +306,11 @@
 
 .img-acoes {
   display: flex;
-  gap: 8px;
+  gap: var(--re-4);
 }
 .img-bt {
   height: var(--btn-h-sm);
-  padding: 0 12px;
+  padding: 0 var(--re-6);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -334,7 +334,7 @@
   position: absolute;
   right: 8px;
   bottom: 8px;
-  padding: 4px 9px;
+  padding: var(--re-2) var(--re-5);
   border-radius: var(--radius-pill);
   background: var(--veu-escuro);
   color: var(--branco);
@@ -385,7 +385,7 @@
 }
 .lay-campo {
   display: grid;
-  gap: 5px;
+  gap: var(--re-3);
   align-content: start;
   min-width: 0;
 }
@@ -407,7 +407,7 @@
   width: 100%;
   height: 34px;
   min-height: 34px;
-  padding: 0 10px;
+  padding: 0 var(--re-5);
   justify-content: flex-start;
   font-size: 13px;
 }
@@ -415,13 +415,13 @@
 .lay-bt.lay-abre::after {
   content: '▼';
   margin-left: auto;
-  padding-left: 8px;
+  padding-left: var(--re-4);
   font-size: 9px;
   color: var(--text-3);
 }
 .lay-sem-cor {
   margin: 0;
-  padding: 9px 0;
+  padding: var(--re-5) 0;
   font-size: 12.5px;
   color: var(--text-3);
 }

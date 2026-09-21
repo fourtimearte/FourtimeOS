@@ -17,7 +17,7 @@
 .pn-grade {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: var(--re-7);
   min-width: 0;
 }
 @media (min-width: 1024px) {
@@ -28,7 +28,7 @@
 .pn-coluna {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--re-7);
   min-width: 0;
 }
 
@@ -41,13 +41,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px 12px;
+  gap: var(--re-6);
+  padding: var(--re-9) var(--re-9) var(--re-6);
 }
 .pn-cartao-topo h3 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   margin: 0;
   font-size: 15px;
   font-weight: 700;
@@ -77,16 +77,16 @@
 .pn-lista {
   display: flex;
   flex-direction: column;
-  padding: 0 20px 8px;
+  padding: 0 var(--re-9) var(--re-4);
   min-width: 0;
 }
 
 .pn-linha {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--re-6);
   min-height: var(--row-h, 48px);
-  padding: 10px 0;
+  padding: var(--re-5) 0;
   border: 0;
   border-bottom: 1px solid var(--border);
   background: transparent;
@@ -114,7 +114,7 @@
 .pn-quem {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--re-2);
   flex: 1;
   min-width: 0;
 }
@@ -131,7 +131,7 @@
 }
 .pn-tecnicas {
   display: flex;
-  gap: 4px;
+  gap: var(--re-2);
   flex: none;
 }
 .pn-etapa {
@@ -158,7 +158,7 @@
 .pn-conversa {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--re-2);
   flex: 1;
   min-width: 0;
 }
@@ -166,7 +166,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--re-5);
   min-width: 0;
 }
 .pn-conversa-topo b {

@@ -49,8 +49,8 @@
 .at-numeros > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px 20px;
+  gap: var(--re-2);
+  padding: var(--re-7) var(--re-9);
   border-right: 1px solid var(--border);
   /* a barrinha de cor à esquerda de cada número, como no editor */
   border-left: 3px solid var(--barra, transparent);
@@ -121,7 +121,7 @@
   position: relative;
   display: block;
   height: 4px;
-  margin-top: 4px;
+  margin-top: var(--re-2);
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   overflow: hidden;
@@ -165,7 +165,7 @@
   grid-template-columns:
     26px 90px minmax(0, 1fr) minmax(0, 146px) minmax(0, 104px)
     100px 108px 52px minmax(0, 158px);
-  gap: 12px;
+  gap: var(--re-6);
   align-items: center;
   min-width: 0;
 }
@@ -179,7 +179,7 @@
      Sticky que cola atras de outro sticky parece sticky quebrado. */
   top: var(--topbar-h);
   z-index: 3;
-  padding: 11px 20px;
+  padding: var(--re-6) var(--re-9);
   border: 1px solid var(--border);
   border-bottom: 0;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -220,8 +220,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
+  gap: var(--re-6);
+  padding: var(--re-6) var(--re-9);
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
   min-width: 0;
@@ -232,7 +232,7 @@
 .at-dia-nome {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   font-size: 13.5px;
   font-weight: 700;
 }
@@ -242,7 +242,7 @@
   font-variant-numeric: tabular-nums;
 }
 .at-hoje {
-  padding: 0 6px;
+  padding: 0 var(--re-3);
   height: 17px;
   display: inline-grid;
   place-items: center;
@@ -267,7 +267,7 @@
   min-width: 0;
 }
 .at-linha {
-  padding: 10px 20px;
+  padding: var(--re-5) var(--re-9);
   border-bottom: 1px solid var(--border);
   font-size: 13.5px;
 }
@@ -299,7 +299,7 @@
 .at-quem {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--re-2);
   min-width: 0;
 }
 .at-quem b {
@@ -338,9 +338,9 @@
 .at-carga {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   margin-left: auto;
-  padding: 4px 10px;
+  padding: var(--re-2) var(--re-5);
   border-radius: var(--radius-pill);
   border: 1px solid var(--carga-borda);
   background: var(--carga-fundo);
@@ -433,8 +433,8 @@
   position: fixed;
   z-index: 60;
   display: grid;
-  gap: 2px;
-  padding: 10px 14px;
+  gap: var(--re-1);
+  padding: var(--re-5) var(--re-7);
   border-radius: var(--radius);
   background: var(--surface);
   border: 1px solid var(--ink);
@@ -456,7 +456,7 @@
    que os pontinhos coloridos querem dizer lá na lista */
 .at-divisao {
   display: grid;
-  gap: 1px;
+  gap: var(--re-1);
 }
 .at-divisao .at-qtd {
   margin-left: 0;
@@ -465,8 +465,8 @@
 .at-qtd {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 8px;
+  gap: var(--re-2);
+  margin-left: var(--re-4);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -486,7 +486,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  margin-right: 4px;
+  margin-right: var(--re-2);
   border-radius: 50%;
   vertical-align: middle;
 }
@@ -500,7 +500,7 @@
    senão ele herda os 26 px do número grande e vira o título do cartão */
 .at-atrasados {
   display: inline-block;
-  margin-left: 6px;
+  margin-left: var(--re-3);
   font-size: 12px;
   font-weight: 700;
   color: var(--brand-text, var(--brand));
@@ -522,7 +522,7 @@
   align-items: center;
   max-width: 100%;
   height: 30px;
-  padding: 0 9px;
+  padding: 0 var(--re-5);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -537,7 +537,7 @@
 }
 .at-vazio {
   margin: 0;
-  padding: 12px 20px;
+  padding: var(--re-6) var(--re-9);
   font-size: 12.5px;
   color: var(--text-3);
 }
@@ -545,14 +545,14 @@
 .at-legenda {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--re-8);
   font-size: 12px;
   color: var(--text-3);
 }
 .at-legenda span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--re-3);
 }
 .at-marca {
   width: 12px;
@@ -607,9 +607,9 @@
 .at-semana {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--re-1);
   height: var(--btn-h);
-  padding: 0 4px;
+  padding: 0 var(--re-2);
   border: 1px solid var(--border-2);
   border-radius: var(--radius);
   background: var(--surface);
@@ -633,7 +633,7 @@
   color: var(--text);
 }
 .at-semana-txt {
-  padding: 0 8px;
+  padding: 0 var(--re-4);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -652,8 +652,8 @@
 .at-fila {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: var(--re-7);
+  padding: var(--re-6) var(--re-8);
   border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--border));
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--warn) 9%, var(--surface));
@@ -668,7 +668,7 @@
   place-items: center;
   min-width: 34px;
   height: 34px;
-  padding: 0 8px;
+  padding: 0 var(--re-4);
   border-radius: var(--radius);
   background: var(--warn);
   color: var(--branco);
@@ -683,7 +683,7 @@
   font-weight: 600;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
 }
 .at-fila-txt small {
   font-size: 12px;
@@ -711,7 +711,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: var(--re-2);
   min-width: 0;
 }
 .at-veio {

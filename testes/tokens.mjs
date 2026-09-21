@@ -53,6 +53,34 @@ const LIVRE_POR_SELETOR = {
   'src/dominio/layout/modulo.css': /(^|[\s,>])\.papel\b/,
 }
 
+/* ESPACO. As propriedades que carregam o ritmo da tela. Numero cru em
+   qualquer uma delas e o comeco da deriva: a medicao de 21/09 achou 319
+   escritos na mao contra 176 com token, e os da mao ja tinham virado uma
+   segunda escala paralela, com 10px aparecendo 87 vezes. */
+const ESPACO = new Set([
+  'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'padding-block', 'padding-inline',
+  'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+  'margin-block', 'margin-inline',
+  'gap', 'row-gap', 'column-gap',
+])
+
+/* As sete excecoes, uma a uma, com o motivo escrito. Quatro sao recuo
+   negativo, que e tecnica de sobreposicao e nao espacamento: avatar em cima
+   de avatar, seta de balao centralizada na propria largura. Tres sao numero
+   preso ao tamanho de OUTRO elemento: o vao para a lupa dentro do campo, o
+   recuo que alinha debaixo da chave, o que alinha debaixo do icone do pai.
+   Excecao nova nao entra sozinha: ela entra aqui, com a razao. */
+const ESPACO_COM_RAZAO = new Set([
+  'src/modules/banco/banco.css|margin-right|-6px',
+  'src/modules/funil/funil.css|margin-right|-4px',
+  'src/ds/menus.css|margin-left|-5px',
+  'src/ds/menus.css|margin-left|-8px',
+  'src/ds/menus.css|padding|0 34px',
+  'src/ds/menus.css|margin|2px 0 4px 19px',
+  'src/modules/config/config.css|padding-left|30px',
+])
+
 /* A RODA DE COR E ARCO-IRIS POR SIGNIFICADO. O icone da sublimacao e do banco
    de cores e um disco com o espectro inteiro: ali as seis paradas SAO o
    assunto, e nao decoracao que deveria virar de tema. */
@@ -166,6 +194,16 @@ for (const arq of arquivos(join(raiz, 'src'), ['.css'])) {
       }
     }
 
+    /* 2b. espaco escrito na mao */
+    const esp = limpa.match(/(^|[;{\s])([a-z-]+)\s*:\s*([^;}]+)/)
+    if (esp && ESPACO.has(esp[2])) {
+      const valor = esp[3].trim()
+      const chave = rel + '|' + esp[2] + '|' + valor
+      if (!/var\(|calc\(|clamp\(/.test(valor) && /-?[\d.]+px/.test(valor) && !ESPACO_COM_RAZAO.has(chave)) {
+        achar('espaco', arq, n, linha, 'espaco na mao: ' + esp[2] + ': ' + valor)
+      }
+    }
+
     /* 3. fonte na mao */
     /* O valor e capturado e depois olhado. Com lookahead o \s* retrocedia
        para zero e a regra casava ate em `font-family: var(--font)`, que e
@@ -220,7 +258,7 @@ for (const arq of arquivos(join(raiz, 'src'), ['.tsx', '.ts'])) {
 }
 
 /* ========================================================================== */
-const ORDEM = ['travessao', 'padrao', 'foco', 'fonte', 'cor', 'raio', 'movimento']
+const ORDEM = ['travessao', 'padrao', 'foco', 'fonte', 'cor', 'raio', 'espaco', 'movimento']
 const NOME = {
   travessao: 'Travessao ou meia-risca',
   padrao: 'Elemento padrao do navegador',
@@ -228,6 +266,7 @@ const NOME = {
   fonte: 'Fonte escrita na mao',
   cor: 'Cor escrita na mao',
   raio: 'Raio fora da escala',
+  espaco: 'Espaco escrito na mao',
   movimento: 'Transicao fora de 150 a 260ms',
 }
 

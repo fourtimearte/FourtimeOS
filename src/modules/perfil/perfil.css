@@ -79,7 +79,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-3);
-  padding-block: 10px;
+  padding-block: var(--re-5);
   border-top: 1px solid var(--border);
 }
 .pf-paineis li:first-child {

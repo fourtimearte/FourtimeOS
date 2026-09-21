@@ -61,7 +61,7 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
   display: grid;
-  gap: 3px;
+  gap: var(--re-2);
 }
 .ficha-frete b {
   font-size: 12px;
@@ -92,7 +92,7 @@
 }
 .ficha-resumo > div {
   display: grid;
-  gap: 4px;
+  gap: var(--re-2);
   align-content: start;
   min-width: 0;
 }
@@ -131,7 +131,7 @@
 .cl-filtros {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--re-3);
   align-items: stretch;
 }
 .cl-busca {
@@ -146,7 +146,7 @@
 .cl-marcas {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--re-3);
   align-items: center;
   font-size: 12px;
   color: var(--text-3);
@@ -158,9 +158,9 @@
 .cl-marca {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--re-1);
   height: 22px;
-  padding: 0 4px 0 8px;
+  padding: 0 var(--re-2) 0 var(--re-4);
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -210,7 +210,7 @@
 }
 .cl-tab th,
 .cl-tab td {
-  padding: 9px 14px;
+  padding: var(--re-5) var(--re-7);
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
@@ -247,7 +247,7 @@
 .cl-quem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   min-width: 0;
 }
 .cl-retrato {
@@ -263,13 +263,13 @@
 }
 .cl-nome {
   display: grid;
-  gap: 1px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .cl-titulo {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--re-3);
   font-weight: 600;
   max-width: 280px;
   overflow: hidden;
@@ -288,7 +288,7 @@
 .cl-marca-inc {
   flex: none;
   height: 16px;
-  padding: 0 4px;
+  padding: 0 var(--re-2);
   border-radius: var(--radius-xs);
   font-size: 9.5px;
   font-weight: 800;
@@ -318,13 +318,13 @@
 }
 .cl-contato {
   display: grid;
-  gap: 3px;
+  gap: var(--re-2);
   font-size: 12px;
 }
 .cl-contato > span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--re-3);
   font-variant-numeric: tabular-nums;
 }
 .cl-email {
@@ -337,7 +337,7 @@
 }
 .cl-wa {
   height: 16px;
-  padding: 0 4px;
+  padding: 0 var(--re-2);
   border-radius: var(--radius-xs);
   border: 1px solid var(--wa);
   color: var(--wa);
@@ -350,7 +350,7 @@
 .cl-cidade {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--re-3);
   border: 0;
   background: none;
   padding: 0;
@@ -368,9 +368,9 @@
 .cl-transp {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--re-2);
   height: 17px;
-  padding: 0 5px;
+  padding: 0 var(--re-3);
   border-radius: var(--radius-xs);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -382,7 +382,7 @@
 .cl-tipo {
   display: inline-block;
   height: 19px;
-  padding: 0 6px;
+  padding: 0 var(--re-3);
   border-radius: 5px;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -415,8 +415,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: var(--re-3);
+  padding: var(--re-5) var(--re-7);
   border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--text-3);
@@ -431,12 +431,12 @@
 .cl-numeros {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--re-2);
 }
 .cl-numeros button {
   min-width: 28px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 var(--re-4);
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -460,7 +460,7 @@
 }
 .cl-numeros > span {
   color: var(--text-3);
-  padding: 0 2px;
+  padding: 0 var(--re-1);
 }
 
 /* --- a gaveta das transportadoras ---------------------------------------- */
@@ -472,8 +472,8 @@
 .cl-transp-linha {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 0;
+  gap: var(--re-5);
+  padding: var(--re-5) 0;
   border-bottom: 1px dashed var(--border);
 }
 .cl-caminhao {
@@ -487,14 +487,14 @@
 }
 .cl-transp-nome {
   display: grid;
-  gap: 2px;
+  gap: var(--re-1);
   flex: 1 1 auto;
   min-width: 0;
 }
 .cl-transp-nome b {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--re-3);
   font-size: 13px;
   font-weight: 600;
   flex-wrap: wrap;
@@ -505,7 +505,7 @@
 }
 .cl-origem {
   height: 16px;
-  padding: 0 5px;
+  padding: 0 var(--re-3);
   border-radius: var(--radius-xs);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -526,16 +526,16 @@
    acontece quando o vazio e menor que o cheio. */
 .cl-carregando {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--re-4);
+  padding: var(--re-6);
 }
 
 /* A linha do que veio do Bling. Fica acima da tabela e nao dentro dela de
    proposito: sao dois tipos de informacao diferentes, e misturar um resumo sem
    detalhe com linhas que se abrem faria parecer que o resumo tambem abre. */
 .ficha-antes {
-  margin: 0 0 10px;
-  padding: 8px 10px;
+  margin: 0 0 var(--re-5);
+  padding: var(--re-4) var(--re-5);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   border: 1px solid var(--border);

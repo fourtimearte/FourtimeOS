@@ -19,8 +19,8 @@
   height: var(--topbar-h);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px;
+  gap: var(--re-5);
+  padding: 0 var(--re-8);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
@@ -28,7 +28,7 @@
 .topo .marca {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--re-5);
   font-weight: 800;
   font-size: 16px;
   letter-spacing: -0.01em;
@@ -47,9 +47,9 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   height: 40px;
-  padding: 0 14px;
+  padding: 0 var(--re-7);
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius);
@@ -196,10 +196,10 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-3);
-  margin: 0 0 6px;
+  margin: 0 0 var(--re-3);
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--re-4);
 }
 .pagina-topo .acima::before {
   content: '';
@@ -211,7 +211,7 @@
 .pagina-topo .sub {
   color: var(--text-2);
   font-size: 14px;
-  margin: 6px 0 0;
+  margin: var(--re-3) 0 0;
 }
 
 /* --- barra de baixo, no celular ----------------------------------------- */
@@ -238,9 +238,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--re-2);
   min-width: 0;
-  padding: 0 2px;
+  padding: 0 var(--re-1);
   border: 0;
   background: transparent;
   font: inherit;
@@ -291,8 +291,8 @@
   bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + 8px);
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
+  gap: var(--re-1);
+  padding: var(--re-4);
   max-height: 62dvh;
   overflow-y: auto;
   background: var(--surface);
@@ -313,16 +313,16 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-3);
-  padding: 6px 10px 5px;
+  padding: var(--re-3) var(--re-5) var(--re-3);
 }
 .pe-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--re-6);
   width: 100%;
   /* alvo de dedo: 48 px, e nao os 40 do computador */
   min-height: 48px;
-  padding: 0 12px;
+  padding: 0 var(--re-6);
   border: 0;
   background: transparent;
   border-radius: var(--radius);
@@ -389,8 +389,8 @@ nav.lado {
     height: 100dvh;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 16px 12px;
-    gap: 2px;
+    padding: var(--re-8) var(--re-6);
+    gap: var(--re-1);
     overflow: hidden auto;
     scrollbar-width: none;
     /* dois cliques no trilho encolhem o menu: sem isso o navegador aproveita
@@ -406,10 +406,10 @@ nav.lado {
   .lado .marca {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--re-5);
     height: 44px;
-    padding: 0 8px;
-    margin-bottom: 14px;
+    padding: 0 var(--re-4);
+    margin-bottom: var(--re-7);
     white-space: nowrap;
   }
   /* O F e o botao do trilho: ele abre e fecha o menu. Fica no canto onde a mao
@@ -439,7 +439,7 @@ nav.lado {
   .lado .marca-nome {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--re-4);
     min-width: 0;
     color: var(--text);
     text-decoration: none;
@@ -448,7 +448,7 @@ nav.lado {
     font-size: 11.5px;
     font-weight: 600;
     color: var(--text-3);
-    padding: 16px 12px 6px;
+    padding: var(--re-8) var(--re-6) var(--re-3);
     white-space: nowrap;
     letter-spacing: 0.02em;
   }
@@ -459,10 +459,10 @@ nav.lado {
   .lado .item {
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: var(--re-6);
     width: 100%;
     height: 40px;
-    padding: 0 12px;
+    padding: 0 var(--re-6);
     /* A BORDA NASCE TRANSPARENTE EM TODOS. So o selecionado a pinta, e assim
        o texto nao pula 1px para o lado no instante em que o item acende. */
     border: 1px solid transparent;
@@ -531,7 +531,7 @@ nav.lado {
     font-weight: 700;
     color: var(--text-2);
     background: var(--surface-3);
-    padding: 2px 7px;
+    padding: var(--re-1) var(--re-4);
     border-radius: var(--radius-pill);
   }
   .lado .item.ligado .cnt {
@@ -551,7 +551,7 @@ nav.lado {
     transition: transform var(--t-fast) var(--ease-out);
   }
   .lado .item.ramo .cnt + .galho-seta {
-    margin-left: 6px;
+    margin-left: var(--re-3);
   }
   .lado .item.ramo .galho-seta.virada {
     transform: rotate(180deg);
@@ -574,9 +574,9 @@ nav.lado {
   .lado .galho {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    margin: 2px 0 2px 22px;
-    padding-left: 10px;
+    gap: var(--re-1);
+    margin: var(--re-1) 0 var(--re-1) var(--re-10);
+    padding-left: var(--re-5);
     border-left: 1px solid var(--border);
   }
   .lado .item.filho {
@@ -587,7 +587,7 @@ nav.lado {
   /* --- Configuracoes, colada no pe, com a arvore abrindo para cima -------- */
   .lado-fim {
     margin-top: auto;
-    padding-top: 12px;
+    padding-top: var(--re-6);
     display: flex;
     flex-direction: column;
   }
@@ -595,29 +595,29 @@ nav.lado {
   /* --- o pe do menu: quem esta usando, e o que ele faz daqui -------------- */
   .lado-pe {
     margin-top: auto;
-    padding-top: 10px;
+    padding-top: var(--re-5);
     border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--re-5);
   }
   /* com Configuracoes logo acima, quem empurra para o pe ja e ela: duas
      margens automaticas na mesma coluna dividiriam a sobra entre as duas */
   .lado-fim + .lado-pe {
-    margin-top: 8px;
+    margin-top: var(--re-4);
   }
   .lado-eu-linha {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--re-2);
     min-width: 0;
   }
   .lado-eu {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 4px 6px;
+    gap: var(--re-5);
+    padding: var(--re-2) var(--re-3);
     min-width: 0;
     color: var(--text);
     text-decoration: none;
@@ -630,7 +630,7 @@ nav.lado {
   .lado-eu > div {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: var(--re-1);
     min-width: 0;
   }
   .lado-eu b {
@@ -675,7 +675,7 @@ nav.lado {
   }
   .casca.encolhida .lado-eu-linha {
     flex-direction: column;
-    gap: 4px;
+    gap: var(--re-2);
   }
   .casca.encolhida .lado-eu {
     flex: none;

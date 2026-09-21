@@ -32,8 +32,8 @@
   place-items: center;
   min-width: 22px;
   height: 20px;
-  padding: 0 6px;
-  margin-left: 6px;
+  padding: 0 var(--re-3);
+  margin-left: var(--re-3);
   border-radius: var(--radius-pill);
   background: var(--surface-3);
   color: var(--text-2);
@@ -76,13 +76,13 @@
 .cfg-quem > div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .cfg-quem b {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -94,7 +94,7 @@
 }
 
 .cfg-voce {
-  padding: 1px 7px;
+  padding: var(--re-1) var(--re-4);
   border-radius: var(--radius-pill);
   background: var(--ink-soft);
   color: var(--text-2);
@@ -170,7 +170,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding-block: 10px;
+  padding-block: var(--re-5);
   border-top: 1px solid var(--border);
   color: var(--text-3);
 }
@@ -180,7 +180,7 @@
 .cfg-convites li > div {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--re-1);
   min-width: 0;
   flex: 1;
 }
@@ -199,7 +199,7 @@
 .cfg-padrao {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--re-3);
   padding-bottom: var(--sp-4);
   border-bottom: 1px solid var(--border);
 }
@@ -223,7 +223,7 @@
 .cfg-paineis > div {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--re-5);
 }
 .cfg-paineis h4 {
   margin: 0;
@@ -239,8 +239,8 @@
    o lado dentro da própria caixa em vez de empurrar a página. */
 .cfg-abas {
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  gap: var(--re-2);
+  padding: var(--re-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -255,9 +255,9 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   height: 40px;
-  padding: 0 16px;
+  padding: 0 var(--re-8);
   border-radius: var(--radius);
   color: var(--text-2);
   font-size: 13.5px;
@@ -287,7 +287,7 @@
 .cfg-dados > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--re-2);
   min-width: 0;
 }
 .cfg-dados dt {
@@ -306,7 +306,7 @@
 
 /* --- a tela de ensaio ---------------------------------------------------- */
 .cfg-nota {
-  margin: 0 0 12px;
+  margin: 0 0 var(--re-6);
   color: var(--text-2);
   font-size: 13px;
   line-height: 1.55;
@@ -322,7 +322,7 @@
 }
 .cfg-contas {
   display: flex;
-  gap: 8px;
+  gap: var(--re-4);
   flex-wrap: wrap;
 }
 /* A CAIXA DE NUMERO DO ENSAIO. Ela ja se chamou .cfg-conta, que e o nome da
@@ -338,7 +338,7 @@
   min-width: 120px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 14px;
+  padding: var(--re-6) var(--re-7);
   background: var(--surface-2);
   opacity: 0.55;
 }
@@ -354,7 +354,7 @@
 }
 .cfg-caixa span {
   display: block;
-  margin-top: 2px;
+  margin-top: var(--re-1);
   font-size: 12px;
   color: var(--text-2);
 }
@@ -370,7 +370,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  padding: 14px 0;
+  padding: var(--re-7) 0;
   border-bottom: 1px solid var(--border);
 }
 .cfg-pagina:last-child {
@@ -381,7 +381,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
 }
 .cfg-pagina-txt b {
   font-size: 14.5px;

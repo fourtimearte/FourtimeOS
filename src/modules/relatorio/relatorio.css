@@ -9,13 +9,13 @@
 .rl-grade {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--re-8);
   min-width: 0;
 }
 .rl-direita {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--re-7);
   min-width: 0;
 }
 
@@ -24,8 +24,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
+  gap: var(--re-8);
+  margin-bottom: var(--re-5);
 }
 .rl-menu-topo b {
   font-size: 13.5px;
@@ -34,7 +34,7 @@
 .rl-ano {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--re-1);
 }
 .rl-ano b {
   min-width: 46px;
@@ -64,7 +64,7 @@
 .rl-meses {
   display: grid;
   grid-template-columns: repeat(4, 62px);
-  gap: 6px;
+  gap: var(--re-3);
 }
 .rl-meses button {
   height: 34px;
@@ -96,7 +96,7 @@
 }
 
 .rl-nota {
-  margin: 10px 2px 0;
+  margin: var(--re-5) var(--re-1) 0;
   max-width: 280px;
   font-size: 11.5px;
   color: var(--text-3);
@@ -109,8 +109,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: var(--re-8);
+  padding: var(--re-8) var(--re-9);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -120,7 +120,7 @@
 .rl-fixo-quem {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .rl-fixo-quem .rot {
@@ -136,13 +136,13 @@
 .rl-fixo-numeros {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 24px;
+  gap: var(--re-8) var(--re-10);
   margin-left: auto;
 }
 .rl-num {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
 }
 .rl-num span {
   font-size: 11px;
@@ -172,7 +172,7 @@
    aperto perdeu o motivo: voltou aos 12 px que se le melhor. */
 .rl-tab th,
 .rl-tab td {
-  padding: 8px 12px;
+  padding: var(--re-4) var(--re-6);
   text-align: left;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
@@ -214,7 +214,7 @@
 }
 
 .rl-grupo td {
-  padding: 7px 12px;
+  padding: var(--re-4) var(--re-6);
   background: var(--surface-2);
   font-size: 11.5px;
   font-weight: 700;

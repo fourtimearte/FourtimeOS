@@ -101,18 +101,18 @@
 
 /* --- cabeçalho fixo: abas e busca ---------------------------------------- */
 .mn-topo {
-  padding: 8px;
+  padding: var(--re-4);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
 }
 .mn-abas {
   display: flex;
-  gap: 3px;
-  padding: 3px;
+  gap: var(--re-2);
+  padding: var(--re-2);
   background: var(--surface-3);
   border-radius: var(--radius);
-  margin-bottom: 8px;
+  margin-bottom: var(--re-4);
 }
 .mn-abas button {
   flex: 1;
@@ -127,7 +127,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--re-3);
   cursor: pointer;
   transition: all var(--t-fast) var(--ease-out);
 }
@@ -205,18 +205,18 @@
 .mn-lista {
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px;
+  padding: var(--re-3);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
   min-height: 0;
 }
 .mn-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   min-height: 40px;
-  padding: 7px 10px;
+  padding: var(--re-4) var(--re-5);
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -263,7 +263,7 @@
   color: var(--text);
 }
 .mn-vazio {
-  padding: 22px 12px;
+  padding: var(--re-10) var(--re-6);
   text-align: center;
   font-size: 13px;
   color: var(--text-3);
@@ -274,15 +274,15 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-3);
-  padding: 10px 10px 5px;
+  padding: var(--re-5) var(--re-5) var(--re-3);
 }
 .mn-pe {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--re-5);
   height: 44px;
-  padding: 0 12px;
+  padding: 0 var(--re-6);
   border-top: 1px solid var(--border);
   background: var(--surface-2);
   font-size: 11.5px;
@@ -296,7 +296,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--brand-text);
-  padding: 6px 9px;
+  padding: var(--re-3) var(--re-5);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--t-fast) var(--ease-out);
@@ -309,15 +309,15 @@
 .mn-subli {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 9px 10px;
+  gap: var(--re-6);
+  padding: var(--re-5) var(--re-5);
   border-radius: var(--radius-sm);
   cursor: pointer;
   border: 1px solid var(--border);
   background: transparent;
   width: 100%;
   text-align: left;
-  margin-bottom: 2px;
+  margin-bottom: var(--re-1);
   transition: border-color var(--t-fast) var(--ease-out);
 }
 .mn-subli:hover {
@@ -349,10 +349,10 @@
 .mn-grupo {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--re-6);
   width: 100%;
   min-height: 44px;
-  padding: 7px 10px;
+  padding: var(--re-4) var(--re-5);
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -411,10 +411,10 @@
 .mn-corpo {
   display: none;
   margin: 2px 0 4px 19px;
-  padding-left: 8px;
+  padding-left: var(--re-4);
   border-left: 2px solid var(--border);
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
 }
 .mn-g.aberto > .mn-corpo {
   display: flex;
@@ -438,8 +438,8 @@
 .mn-grade {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 8px;
+  gap: var(--re-4);
+  padding: var(--re-4);
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
@@ -448,8 +448,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 6px 2px 7px;
+  gap: var(--re-3);
+  padding: var(--re-3) var(--re-1) var(--re-4);
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -499,15 +499,15 @@
 .mn-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  padding: 10px;
+  gap: var(--re-4);
+  padding: var(--re-5);
 }
 .mn-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--re-4);
   height: 36px;
-  padding: 0 13px;
+  padding: 0 var(--re-7);
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: transparent;
@@ -542,14 +542,14 @@
     0 0 0 3px color-mix(in srgb, var(--on-ink) 50%, transparent);
 }
 .mn-dica {
-  padding: 0 10px 10px;
+  padding: 0 var(--re-5) var(--re-5);
   font-size: 11.5px;
   color: var(--text-3);
 }
 .mn-secao + .mn-secao {
   border-top: 1px solid var(--border);
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: var(--re-2);
+  padding-top: var(--re-2);
 }
 
 /* --- linha de referência: tarja de gênero, código, nome ------------------ */
@@ -589,7 +589,7 @@
   color: var(--brand-text);
   letter-spacing: 0.01em;
   flex-shrink: 0;
-  padding: 0 10px 0 11px;
+  padding: 0 var(--re-5) 0 var(--re-6);
   font-variant-numeric: tabular-nums;
 }
 .mn-ref .nm {
@@ -599,7 +599,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 12px;
+  padding-right: var(--re-6);
 }
 .mn-ref.on .nm {
   font-weight: 700;
@@ -610,14 +610,14 @@
   color: var(--brand);
   display: none;
   flex-shrink: 0;
-  padding-right: 10px;
+  padding-right: var(--re-5);
 }
 .mn-ref.on .ok {
   display: block;
 }
 .mn-tarjas {
   display: flex;
-  gap: 2px;
+  gap: var(--re-1);
   flex-shrink: 0;
 }
 .mn-tarjas i {
@@ -631,9 +631,9 @@
 .mn-tec {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   min-height: 40px;
-  padding: 7px 10px;
+  padding: var(--re-4) var(--re-5);
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -676,7 +676,7 @@
   place-items: center;
   min-width: 34px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 var(--re-3);
   border-radius: var(--radius-xs);
   background: var(--surface-3);
   color: var(--text-3);
@@ -686,15 +686,15 @@
   flex-shrink: 0;
 }
 .mn-grupo .past {
-  margin-right: 2px;
+  margin-right: var(--re-1);
 }
 
 /* --- bolinhas de gênero na ponta do campo -------------------------------- */
 .ref-gen {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 9px;
+  gap: var(--re-3);
+  padding: 0 var(--re-5);
   flex-shrink: 0;
 }
 .ref-gen-bt {
@@ -741,7 +741,7 @@
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  padding: 8px 15px;
+  padding: var(--re-4) var(--re-8);
   border: 0;
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-pop);
@@ -780,7 +780,7 @@
 .mn-dica-linha b {
   color: var(--brand-no-ink);
   font-weight: 800;
-  margin-right: 8px;
+  margin-right: var(--re-4);
   font-variant-numeric: tabular-nums;
 }
 @keyframes a-dica {
@@ -803,15 +803,15 @@
 .mn-ctx {
   min-width: 196px;
   max-width: 260px;
-  padding: 6px;
+  padding: var(--re-3);
 }
 .mn-ctx .mn-cab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px 9px;
+  gap: var(--re-4);
+  padding: var(--re-4) var(--re-5) var(--re-5);
   border-bottom: 1px solid var(--border);
-  margin-bottom: 5px;
+  margin-bottom: var(--re-3);
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -849,23 +849,23 @@
 .c1 {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 5px 12px 5px 5px;
+  gap: var(--re-5);
+  padding: var(--re-3) var(--re-6) var(--re-3) var(--re-3);
   width: max-content;
   max-width: 100%;
 }
 .c1 > .tec {
-  margin: 1px 0 0 5px;
+  margin: var(--re-1) 0 0 var(--re-3);
   flex-shrink: 0;
   height: 32px;
-  padding: 0 13px;
+  padding: 0 var(--re-7);
   font-size: 11.5px;
   cursor: context-menu;
 }
 /* o mais ja tem ar em volta: sem isso a pilula com botao fica gorda de um lado
    e a pilula sem botao fica torta */
 .c1 > .tec.com-mais {
-  padding-right: 6px;
+  padding-right: var(--re-3);
 }
 .c1 > .tec .mais {
   width: 22px;
@@ -876,16 +876,16 @@
   align-self: stretch;
   width: 1px;
   background: color-mix(in srgb, var(--tc) 25%, transparent);
-  margin: 3px 0;
+  margin: var(--re-2) 0;
   flex-shrink: 0;
 }
 .c1 .bandeja {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--re-3);
   align-items: center;
   min-width: 0;
-  padding: 1px 0;
+  padding: var(--re-1) 0;
 }
 /* no celular a bandeja cai para baixo da pílula: a faixa nunca empurra a
    página para o lado, e a grade das fichas continua perfeita */
@@ -904,10 +904,10 @@
 .cor {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--re-4);
   width: 70px;
   height: 32px;
-  padding: 0 7px;
+  padding: 0 var(--re-4);
   border-radius: var(--radius-sm);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -965,9 +965,9 @@
 .lay-bt {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   height: var(--btn-h);
-  padding: 0 14px;
+  padding: 0 var(--re-7);
   min-width: 0;
   max-width: 340px;
   border: 1px solid var(--border-2);
@@ -1005,7 +1005,7 @@
    ========================================================================== */
 .rico {
   min-height: 62px;
-  padding: 10px 12px;
+  padding: var(--re-5) var(--re-6);
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--text);
@@ -1027,7 +1027,7 @@
 .rico [style*='background-color'] {
   color: var(--texto-no-marcado);
   border-radius: var(--radius-marca);
-  padding: 0 1px;
+  padding: 0 var(--re-1);
 }
 
 .selbar {
@@ -1037,8 +1037,8 @@
   z-index: 2147483000;
   display: none;
   align-items: center;
-  gap: 5px;
-  padding: 7px;
+  gap: var(--re-3);
+  padding: var(--re-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -1077,7 +1077,7 @@
 .selbar .sb-fio {
   width: 1px;
   height: 18px;
-  margin: 0 2px;
+  margin: 0 var(--re-1);
   background: var(--border);
 }
 
@@ -1112,7 +1112,7 @@
   left: 14px;
   z-index: 5;
   display: flex;
-  gap: 8px;
+  gap: var(--re-4);
 }
 .vs-bt {
   display: grid;
@@ -1135,7 +1135,7 @@
   bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 5px 12px;
+  padding: var(--re-3) var(--re-6);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);

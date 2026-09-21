@@ -32,12 +32,12 @@
 .bd-secao {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .bd-secao h3 {
-  margin: 0 0 4px;
-  padding: 0 10px;
+  margin: 0 0 var(--re-2);
+  padding: 0 var(--re-5);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -47,10 +47,10 @@
 .bd-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   width: 100%;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 var(--re-5);
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -111,7 +111,7 @@
 .bd-carregando {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--re-4);
 }
 
 /* --- a barra de cima ------------------------------------------------------ */
@@ -152,7 +152,7 @@
   overflow: hidden;
 }
 .bd-codigo-novo > span {
-  padding: 0 8px 0 10px;
+  padding: 0 var(--re-4) 0 var(--re-5);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--text-3);
@@ -170,7 +170,7 @@
 .bd-hex {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   flex: none;
 }
 .bd-hex > i {
@@ -192,7 +192,7 @@
 .bd-blocos {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--re-4);
   min-width: 0;
 }
 .bd-bloco {
@@ -208,10 +208,10 @@
 .bd-bloco-topo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   width: 100%;
   min-height: 48px;
-  padding: 0 14px;
+  padding: 0 var(--re-7);
   border: 0;
   background: transparent;
   color: var(--text);
@@ -250,7 +250,7 @@
 }
 .bd-cod-grupo {
   flex: none;
-  padding: 2px 7px;
+  padding: var(--re-1) var(--re-4);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-text, var(--brand));
@@ -279,9 +279,9 @@
 .bd-linha {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--re-5);
   min-height: 44px;
-  padding: 4px 14px;
+  padding: var(--re-2) var(--re-7);
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   min-width: 0;
@@ -328,7 +328,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  margin-block: 5px;
+  margin-block: var(--re-3);
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -384,7 +384,7 @@
 .bd-grade-cores {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-  gap: 10px;
+  gap: var(--re-5);
   min-width: 0;
 }
 .bd-cartao-cor {
@@ -419,7 +419,7 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 .bd-cor-numero {
-  padding: 7px 6px 0;
+  padding: var(--re-4) var(--re-3) 0;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--text);
@@ -430,7 +430,7 @@
   /* duas linhas reservadas, e nunca cortado: o nome comprido cresce e a
      fileira acompanha. Cortar nome em tela de cadastro e esconder o dado. */
   min-height: 2.7em;
-  padding: 2px 8px 9px;
+  padding: var(--re-1) var(--re-4) var(--re-5);
   font-size: 11px;
   line-height: 1.35;
   color: var(--text-3);
@@ -441,8 +441,8 @@
 .bd-sub {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--re-6);
+  padding: var(--re-6) var(--re-7);
   border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -458,7 +458,7 @@
 .bd-sub > div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .bd-sub b {
@@ -502,11 +502,11 @@
     flex: none;
     flex-direction: row;
     align-items: center;
-    gap: 4px;
+    gap: var(--re-2);
   }
   .bd-secao h3 {
     margin: 0;
-    padding: 0 6px 0 0;
+    padding: 0 var(--re-3) 0 0;
     writing-mode: horizontal-tb;
   }
   .bd-item {
@@ -528,7 +528,7 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
 }
 .bd-cor-grande span {
-  padding: 3px 10px;
+  padding: var(--re-2) var(--re-5);
   border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text-2);

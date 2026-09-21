@@ -13,10 +13,10 @@
 /* --- as fichas de cima, só no celular ------------------------------------ */
 .fn-abas {
   display: flex;
-  gap: 8px;
+  gap: var(--re-4);
   overflow-x: auto;
   scrollbar-width: none;
-  margin-bottom: 12px;
+  margin-bottom: var(--re-6);
 }
 .fn-abas::-webkit-scrollbar {
   display: none;
@@ -24,7 +24,7 @@
 .fn-aba {
   flex: none;
   height: var(--btn-h-sm);
-  padding: 0 12px;
+  padding: 0 var(--re-6);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -47,10 +47,10 @@
 /* --- o quadro ------------------------------------------------------------ */
 .fn-quadro {
   display: flex;
-  gap: 12px;
+  gap: var(--re-6);
   align-items: flex-start;
   overflow-x: auto;
-  padding-bottom: 10px;
+  padding-bottom: var(--re-5);
   min-width: 0;
   scroll-snap-type: x proximate;
   touch-action: pan-x;
@@ -60,7 +60,7 @@
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--re-4);
   min-width: 0;
 }
 @media (min-width: 768px) {
@@ -73,8 +73,8 @@
 .fn-col-topo {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 4px 12px;
+  gap: var(--re-4);
+  padding: var(--re-5) var(--re-2) var(--re-6);
   border-bottom: 2px solid var(--c, var(--border-2));
 }
 /* O NOME DA COLUNA É UMA PÍLULA NA COR DO ESTÁGIO. Ele estava em cinza de
@@ -90,7 +90,7 @@
   flex: 0 1 auto;
   min-width: 0;
   margin-right: auto;
-  padding: 3px 10px;
+  padding: var(--re-2) var(--re-5);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c, var(--ink)) 13%, transparent);
   color: var(--c, var(--text));
@@ -109,7 +109,7 @@
 }
 .fn-col-topo .n {
   flex: none;
-  padding: 1px 7px;
+  padding: var(--re-1) var(--re-4);
   border-radius: var(--radius-pill);
   background: var(--surface-3, var(--surface-2));
   font-size: 12px;
@@ -125,10 +125,10 @@
 .fn-col-corpo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--re-4);
   flex: 1;
   min-height: 140px;
-  padding: 4px;
+  padding: var(--re-2);
   border-radius: var(--radius-lg);
   transition: background var(--t-fast) var(--ease-out);
 }
@@ -143,8 +143,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px;
+  gap: var(--re-4);
+  padding: var(--re-7);
   /* OS QUATRO CANTOS ARREDONDADOS. A esquerda era reta porque o filete de
      acento ia de canto a canto daquele lado, e canto arredondado por cima de
      um filete reto deixa duas pontas de fundo aparecendo. O acento deixou de
@@ -189,7 +189,7 @@
 .fn-etapa {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--re-3);
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -232,7 +232,7 @@
 .fn-card-topo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--re-3);
   min-width: 0;
 }
 .fn-avatar {
@@ -268,7 +268,7 @@
   place-items: center;
   height: 18px;
   min-width: 18px;
-  padding: 0 5px;
+  padding: 0 var(--re-3);
   border-radius: var(--radius-pill);
   background: var(--brand);
   color: var(--on-brand);
@@ -277,7 +277,7 @@
   font-variant-numeric: tabular-nums;
 }
 .fn-novo.no-botao {
-  margin-left: 6px;
+  margin-left: var(--re-3);
 }
 .fn-mais {
   flex: none;
@@ -322,7 +322,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--re-4);
   flex-wrap: wrap;
 }
 .fn-valor {
@@ -333,7 +333,7 @@
 .fn-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--re-4);
   flex-wrap: wrap;
   font-size: 12.5px;
   color: var(--text-2);
@@ -346,7 +346,7 @@
   font-weight: 600;
 }
 .fn-tag {
-  padding: 1px 7px;
+  padding: var(--re-1) var(--re-4);
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -355,7 +355,7 @@
 }
 .fn-vazio {
   margin: 0;
-  padding: 20px 8px;
+  padding: var(--re-9) var(--re-4);
   text-align: center;
   font-size: 12.5px;
   color: var(--text-3);
@@ -367,8 +367,8 @@
   z-index: 80;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px;
+  gap: var(--re-2);
+  padding: var(--re-7);
   border: 1px solid var(--ink);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -436,15 +436,15 @@
 .fn-in-topo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--re-6);
+  padding: var(--re-7) var(--re-8);
   border-bottom: 1px solid var(--border);
   min-width: 0;
 }
 .fn-in-quem {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--re-1);
   min-width: 0;
 }
 .fn-in-quem b {
@@ -463,15 +463,15 @@
   min-height: 160px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: var(--re-5);
+  padding: var(--re-8);
   overflow-y: auto;
   background: var(--bg);
 }
 .fn-balao {
   align-self: flex-start;
   max-width: 84%;
-  padding: 10px 13px;
+  padding: var(--re-5) var(--re-7);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   border-bottom-left-radius: 4px;
@@ -489,7 +489,7 @@
 }
 .fn-balao time {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--re-2);
   text-align: right;
   font-size: 10.5px;
   color: var(--text-3);
@@ -497,8 +497,8 @@
 
 .fn-in-rapidas {
   display: flex;
-  gap: 8px;
-  padding: 12px 16px 0;
+  gap: var(--re-4);
+  padding: var(--re-6) var(--re-8) 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -508,7 +508,7 @@
 .fn-in-rapidas button {
   flex: none;
   height: 30px;
-  padding: 0 11px;
+  padding: 0 var(--re-6);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -525,10 +525,10 @@
 
 .fn-in-escrever {
   display: flex;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: var(--re-5);
+  padding: var(--re-7) var(--re-8);
   border-top: 1px solid var(--border);
-  margin-top: 12px;
+  margin-top: var(--re-6);
 }
 .fn-in-escrever .entrada {
   height: var(--btn-h-sm);
@@ -552,8 +552,8 @@
 
 .fn-in-acoes {
   display: flex;
-  gap: 6px;
-  padding: 0 10px 10px;
+  gap: var(--re-3);
+  padding: 0 var(--re-5) var(--re-5);
 }
 
 /* O recado dentro da lista de mensagens, quando ela esta vazia ou carregando.
@@ -561,7 +561,7 @@
    topo de um espaco vazio grande parece conteudo que nao terminou de chegar. */
 .fn-in-vazio {
   margin: auto;
-  padding: 24px 18px;
+  padding: var(--re-10) var(--re-9);
   text-align: center;
   color: var(--text-2);
   font-size: 12.5px;

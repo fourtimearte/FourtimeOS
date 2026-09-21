@@ -51,6 +51,32 @@
   --relevo-base: 0 1px 0 rgba(0, 0, 0, 0.1);
   --sombra-botao: 0 1px 3px rgba(0, 0, 0, 0.25);
 
+  /* ======================================================================
+     ESPACO, EM DUAS CAMADAS.
+
+     A medicao de 21/09 achou 176 espacos com token e 319 escritos na mao. E
+     os da mao nao eram aleatorios: 10px 87 vezes, 6px 50, 2px 43, 14px 35,
+     7px 32, 5px 32. Isso nao e descuido, e um diagnostico.
+
+     A escala antiga (4/8/12/16/20/24/32) foi desenhada para o RITMO DA
+     PAGINA, o espaco ENTRE as coisas. Ela estava sendo usada tambem como
+     RECHEIO, o espaco DENTRO de um controle, onde ela nao cabe: uma pilula
+     de 17px de altura vive com 2px em cima e 8px do lado, e o primeiro
+     degrau de 4 ja e grande demais. Sem degrau, a pessoa escreve o numero.
+
+     Entao sao duas escalas, com trabalhos diferentes, e nao uma esticada:
+
+       --sp-*  o ritmo da pagina, base 4. Entre blocos, entre secoes.
+       --re-*  o recheio de um controle, base 2. Dentro de pilula, selo,
+               chip, botao, linha de tabela, cartao.
+
+     E por cima das duas vem a camada que o componente realmente escreve:
+     apelido com nome de USO, nunca de tamanho. --pad-cartao ensina onde
+     usar; --re-10 so da permissao. Componente novo procura o apelido
+     primeiro, e so desce para o degrau quando o apelido nao existe.
+     ====================================================================== */
+
+  /* --- o ritmo da pagina, base 4 --- */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -58,6 +84,37 @@
   --sp-5: 20px;
   --sp-6: 24px;
   --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* --- o recheio de um controle, base 2 --- */
+  --re-1: 2px;
+  --re-2: 4px;
+  --re-3: 6px;
+  --re-4: 8px;
+  --re-5: 10px;
+  --re-6: 12px;
+  --re-7: 14px;
+  --re-8: 16px;
+  --re-9: 20px;
+  --re-10: 24px;
+
+  /* --- os apelidos: o que o componente escreve ---------------------------
+     Cada um destes existe porque a receita se repete. Se uma receita nova
+     aparecer em tres lugares, ela vira apelido aqui em vez de virar o
+     quarto lugar com o numero na mao. */
+  --pad-selo: 0 var(--re-5);                    /* selo, tag, pilula */
+  --pad-botao-sm: 0 var(--re-6);
+  --pad-botao: 0 var(--re-8);                   /* botao e chip, mesma fileira */
+  --pad-botao-lg: 0 var(--re-10);
+  --pad-cartao: var(--re-9);                    /* 24 no computador, ver base */
+  --pad-cartao-largo: var(--re-10);
+  --pad-linha: var(--re-6) var(--re-9);         /* linha de tabela, de lista */
+  --pad-linha-densa: var(--re-6) var(--re-7);   /* tabela apertada do banco */
+
+  --gap-colado: var(--re-1);                    /* rotulo em cima do valor */
+  --gap-miudo: var(--re-3);                     /* icone e texto, selo e selo */
+  --gap-dentro: var(--re-4);                    /* coisas dentro de um cartao */
 
   --btn-h: 40px;
   --btn-h-sm: 34px;

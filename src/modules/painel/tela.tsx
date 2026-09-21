@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Botao, Kpi, Pagina, PilulaTecnica, Selo, Vazio } from '@ds'
-import { abaixoDoMinimo, corDoNivel, nivel, quantidade } from '@dominio/estoque'
+import { Botao, Kpi, Nivel, Pagina, PilulaTecnica, Selo, Vazio } from '@ds'
+import {
+  abaixoDoMinimo,
+  carregarMateriais,
+  corDoNivel,
+  nivel,
+  numeroNaUnidade,
+  quantidade,
+  type Material,
+} from '@dominio/estoque'
 import {
   CAPACIDADE_DA_SEMANA,
   POSTO,
@@ -32,8 +40,11 @@ import './painel.css'
    Embaixo, duas colunas: "Precisa de voce" com os pedidos que gritam, e a
    direita o WhatsApp e o estoque abaixo do minimo.
 
-   Producao e estoque ainda nao tem modulo: os dados sao de exemplo, os mesmos
-   do mockup, e as telas de destino avisam em que fase nascem.
+   Tudo que aparece aqui vem do banco. O cartao do estoque foi o ultimo a
+   deixar de ser exemplo: ate a migracao 025 ele lia uma lista escrita a mao,
+   entao a primeira tela que a fabrica abria todo dia trazia um alerta
+   inventado. Agora ele le o saldo de verdade, e nenhum alerta do inicio e
+   opiniao de arquivo.
    ========================================================================== */
 
 const NOME_DA_TECNICA: Record<string, string> = {
@@ -68,6 +79,7 @@ export function TelaPainel() {
      para uma lista vazia em vez de derrubar a pagina inteira com um erro. */
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
+  const [materiais, setMateriais] = useState<Material[]>([])
   useEffect(() => {
     let vivo = true
     carregarPedidos()
@@ -76,11 +88,14 @@ export function TelaPainel() {
     carregarLeads()
       .then((l) => vivo && setLeads(l))
       .catch(() => vivo && setLeads([]))
+    carregarMateriais()
+      .then((m) => vivo && setMateriais(m))
+      .catch(() => vivo && setMateriais([]))
     return () => {
       vivo = false
     }
   }, [])
-  const baixo = useMemo(() => abaixoDoMinimo(), [])
+  const baixo = useMemo(() => abaixoDoMinimo(materiais), [materiais])
 
   const hoje = new Date()
   const cabecalho =
@@ -266,13 +281,10 @@ export function TelaPainel() {
                   <span className="pn-quem">
                     <b>{m.nome}</b>
                     <small>
-                      {m.categoria} · mín {m.minimo} {m.unidade}
+                      {m.categoria} · mín {numeroNaUnidade(m.minimo, m.unidade)}
                     </small>
                   </span>
-                  <span className="pn-barra">
-                    <i style={{ width: nivel(m) + '%', background: corDoNivel(m) }} />
-                    <u />
-                  </span>
+                  <Nivel fixa valor={nivel(m)} cor={corDoNivel(m)} />
                   <span className="pn-prazo atrasado">{quantidade(m)}</span>
                 </button>
               ))}

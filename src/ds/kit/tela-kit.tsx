@@ -26,6 +26,7 @@ import {
   Amostra,
   Cartao,
   ChipTecnica,
+  Nivel,
   PilulaTecnica,
   Selo,
   Tag,
@@ -49,6 +50,7 @@ const SECOES: [string, string][] = [
   ['cartoes', 'Cartões'],
   ['tinta', 'Luz e tinta'],
   ['selos', 'Selos e tags'],
+  ['nivel', 'Barra de nível'],
   ['tabela', 'Tabela'],
   ['sobreposicoes', 'Modal e gaveta'],
   ['recados', 'Recados'],
@@ -523,6 +525,27 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
               </span>
             </div>
           </Secao>
+
+          <Secao
+            id="nivel"
+            titulo="Barra de nível"
+            texto="Quanto tem contra quanto deveria ter. O traço do meio é o alvo, e é ele que faz a barra responder alguma coisa: sem marca, meia barra não diz meio de quê. Vermelho abaixo do alvo, âmbar até 30% acima, verde com folga. A cor chega pronta de fora, porque quem decide o que é pouco é o domínio."
+          >
+            <div className="kit-bancada">
+              <span className="kit-nota">Na coluna de uma tabela</span>
+              <Nivel valor={22} cor="var(--brand)" titulo="9 kg de um mínimo de 20" />
+              <Nivel valor={58} cor="var(--warn)" titulo="23 kg de um mínimo de 20" />
+              <Nivel valor={100} cor="var(--ok)" titulo="58 kg de um mínimo de 20" />
+              <Nivel valor={0} cor="var(--brand)" titulo="acabou" />
+            </div>
+            <div className="kit-bancada">
+              <span className="kit-nota">Travada, para lista apertada</span>
+              <Nivel fixa valor={22} cor="var(--brand)" />
+              <Nivel fixa valor={58} cor="var(--warn)" />
+              <Nivel fixa valor={100} cor="var(--ok)" />
+            </div>
+          </Secao>
+
           <Secao
             id="tabela"
             titulo="Tabela"

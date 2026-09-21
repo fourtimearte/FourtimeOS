@@ -44,6 +44,7 @@ export {
   Avatar,
   Cartao,
   ChipTecnica,
+  Nivel,
   PilulaTecnica,
   Selo,
   Tag,

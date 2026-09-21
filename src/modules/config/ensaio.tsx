@@ -6,6 +6,7 @@ import {
   contarDadosDeTeste,
   semearClientes,
   semearCotacoes,
+  semearEstoque,
   semearLeads,
   semearPedidos,
   totalDeTeste,
@@ -37,6 +38,7 @@ const ROTULO: Record<string, string> = {
   lead: 'Leads',
   cotacao: 'Cotações',
   pedido: 'Pedidos',
+  material: 'Materiais',
 }
 
 export function TelaEnsaio() {
@@ -62,7 +64,7 @@ export function TelaEnsaio() {
 
   const total = totalDeTeste(contas)
 
-  async function semear(oQue: 'clientes' | 'leads' | 'cotações' | 'pedidos') {
+  async function semear(oQue: 'clientes' | 'leads' | 'cotações' | 'pedidos' | 'estoque') {
     if (ocupado) return
     setOcupado(oQue)
     try {
@@ -73,10 +75,19 @@ export function TelaEnsaio() {
             ? await semearLeads()
             : oQue === 'cotações'
               ? await semearCotacoes()
-              : await semearPedidos()
+              : oQue === 'estoque'
+                ? await semearEstoque()
+                : await semearPedidos()
       await recontar()
       if (r.gravados && !r.recusados) {
-        avisar(r.gravados + ' ' + oQue + ' de teste gravados no banco', 'ok')
+        /* O recado sobrevive ao sucesso de propósito: semear estoque pode dar
+           certo e ainda assim deixar uma malha sem ligação no catálogo, e essa
+           é justamente a informação que some se só o número aparecer. */
+        avisar(
+          r.gravados + ' ' + oQue + ' de teste gravados no banco' +
+            (r.recados[0] ? ' · ' + r.recados[0] : ''),
+          'ok',
+        )
       } else if (r.gravados) {
         avisar(r.gravados + ' gravados, ' + r.recusados + ' recusados: ' + r.recados[0], 'warn')
       } else {
@@ -154,6 +165,12 @@ export function TelaEnsaio() {
           do pedido, o vendedor congelado e os números da fábrica rodam de verdade.
         </p>
         <p className="cfg-nota">
+          <b>Estoque</b>: cadastra 26 materiais e dá entrada no saldo de cada um, um movimento de
+          cada vez. O tecido aponta para o catálogo do editor por id, e não pelo nome, que é o que
+          vai deixar a separação achar a malha do layout. O saldo não é escrito na coluna: ele
+          nasce do razão, igual ao que vai acontecer quando a nota fiscal chegar.
+        </p>
+        <p className="cfg-nota">
           <b>Leads</b>: grava os oito do funil com a conversa de cada um. O tempo vira data na
           hora de semear, então os cartões nascem com o relógio certo e ele anda de verdade
           enquanto a tela fica aberta.
@@ -175,6 +192,10 @@ export function TelaEnsaio() {
             <Flask size={16} weight="bold" />
             {ocupado === 'pedidos' ? 'Aprovando...' : 'Aprovar as cotações'}
           </Botao>
+          <Botao tom="contorno" onClick={() => void semear('estoque')} disabled={!!ocupado}>
+            <Flask size={16} weight="bold" />
+            {ocupado === 'estoque' ? 'Semeando...' : 'Semear estoque'}
+          </Botao>
         </div>
       </Cartao>
 
@@ -182,7 +203,9 @@ export function TelaEnsaio() {
         <TituloCartao>Limpar</TituloCartao>
         <p className="cfg-nota">
           Apaga <b>só</b> o que está marcado como teste, na ordem que o banco permite: pedido,
-          cotação, lead e cliente. O que não está marcado não é tocado.
+          cotação, lead, cliente e material. O que não está marcado não é tocado. O razão do
+          material sai junto com ele, porque movimento de material que não existe mais não explica
+          nada.
         </p>
         <div className="cfg-botoes">
           <Botao tom="perigo" onClick={() => void limpar()} disabled={!!ocupado || !total}>

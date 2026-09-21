@@ -1,0 +1,161 @@
+/* ==========================================================================
+   Estoque.
+
+   A tela é tabela: a pergunta dela é "tem ou não tem", e tabela responde isso
+   melhor que cartão. O que mora aqui é só o que a tabela de materiais precisa
+   e o Design System não tem: a bolinha da cor do tecido, a coluna de apoio e o
+   vermelho de "acabou".
+
+   A folga ENTRE os blocos é da página (.pagina tem gap), então nada aqui
+   escreve margin-bottom. Foi assim que os cartões colaram uns nos outros a
+   primeira vez.
+   ========================================================================== */
+
+.es-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--sp-3);
+}
+@media (min-width: 1024px) {
+  .es-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* --- a fileira de controle ----------------------------------------------- */
+.es-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.es-barra .busca {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* --- o quadro da tabela --------------------------------------------------- */
+.es-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.es-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* A COLUNA DO NÍVEL PEDE LARGURA, SENÃO A DO NOME FICA COM TODA A SOBRA.
+   Tabela de largura automática dá o espaço que ninguém pediu para a primeira
+   coluna de texto: em 1440 o nome terminava no meio da tela e a barra começava
+   quatrocentos pixels depois, longe do número que ela explica. Com a dica de
+   largura aqui, a barra encosta no nome e o olho faz o caminho curto. */
+.es-materiais .tabela th:nth-child(2),
+.es-materiais .tabela td:nth-child(2) {
+  width: 26%;
+}
+
+/* --- a célula do material ------------------------------------------------- */
+.es-material {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+
+/* A amostra da cor do tecido. Quadrada e não redonda de propósito: é a mesma
+   amostra do editor, e duas formas para a mesma coisa fazem o olho procurar
+   duas vezes.
+
+   O LUGAR DELA EXISTE MESMO QUANDO NÃO HÁ COR. Aviamento e insumo não têm cor,
+   e sem o espaço reservado o nome deles começa 26px à esquerda do nome dos
+   tecidos: a coluna fica com a margem esquerda serrilhada e o olho perde o
+   trilho ao descer a lista. */
+.es-cor {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-2);
+  flex: none;
+}
+.es-cor.vazia {
+  border-color: transparent;
+  background: none;
+}
+
+/* NO CELULAR A TABELA PERDE COLUNA, E NAO GANHA ROLAGEM.
+
+   A tabela rola dentro da propria caixa, entao em 390 ela nao empurra a pagina.
+   So que rolar de lado para ver o numero e o mesmo que nao ter o numero: quem
+   abre o estoque no galpao quer saber se tem ou nao tem, e essa resposta nao
+   pode estar fora da tela. Entao as colunas de apoio somem e o minimo desce
+   para a linha de baixo do nome, onde ele continua ao lado do que explica. */
+.es-no-celular {
+  display: none;
+}
+
+/* O nome corta com reticencia na tabela larga e QUEBRA em duas linhas no
+   celular. Cortar no celular seria trocar rolagem por reticencia: continuaria
+   sem dizer qual material e. */
+.es-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Primeiro sai a coluna de data, que e a unica que ninguem procura: no tablet
+   de 820 as cinco colunas passavam 60px da borda, e a tabela ganhava rolagem
+   por causa de "18/09". */
+@media (max-width: 900px) {
+  .es-materiais .tabela th:nth-child(5),
+  .es-materiais .tabela td:nth-child(5),
+  .es-razao .tabela th:nth-child(6),
+  .es-razao .tabela td:nth-child(6) {
+    display: none;
+  }
+}
+
+/* No celular saem tambem a barra e o minimo, e o minimo reaparece embaixo do
+   nome. Sobra nome e quantidade, que e a pergunta inteira. */
+@media (max-width: 760px) {
+  .es-no-celular {
+    display: inline;
+  }
+  .es-nome {
+    white-space: normal;
+    overflow: visible;
+  }
+  .es-materiais .tabela th:nth-child(2),
+  .es-materiais .tabela td:nth-child(2),
+  .es-materiais .tabela th:nth-child(4),
+  .es-materiais .tabela td:nth-child(4),
+  .es-razao .tabela th:nth-child(2),
+  .es-razao .tabela td:nth-child(2),
+  .es-razao .tabela th:nth-child(5),
+  .es-razao .tabela td:nth-child(5) {
+    display: none;
+  }
+}
+
+.es-apoio {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.es-pouco {
+  color: var(--brand-text);
+}
+.es-entrou {
+  color: var(--ok);
+}
+
+.es-rodape {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12.5px;
+  max-width: 78ch;
+}

@@ -303,6 +303,11 @@
   background: var(--surface);
   color: var(--text);
   width: 100%;
+  /* CAMPO NAO HERDA FONTE SOZINHO. input e textarea usam a fonte de formulario
+     do navegador, e nao a da pagina: sem esta linha a area de texto escrevia em
+     monoespacada e o campo de uma linha na fonte do sistema. Ninguem tinha
+     reparado porque a diferenca no input e sutil; no textarea e gritante. */
+  font-family: inherit;
   font-size: 14px;
   transition:
     border-color var(--t-fast),
@@ -507,6 +512,13 @@ textarea.entrada {
 }
 
 /* --- segmentado com indicador deslizante --------------------------------- */
+/* Dentro de um campo de formulario o segmentado nao estica: .campo e coluna
+   flex e estica o filho, e ai a caixa cinza ia ate a borda com os tres botoes
+   encolhidos no canto esquerdo, parecendo um controle quebrado. */
+.campo > .seg {
+  align-self: flex-start;
+}
+
 .seg {
   display: inline-flex;
   background: var(--surface-3);
@@ -829,6 +841,56 @@ textarea.entrada {
   display: inline-block;
   flex-shrink: 0;
   background: var(--cor-amostra, repeating-linear-gradient(45deg, var(--xadrez-a) 0 2px, var(--xadrez-b) 2px 4px));
+}
+
+/* --- barra de nivel ------------------------------------------------------
+   Quanto tem de um material contra o minimo dele. O traco do meio e o minimo,
+   e e ele que faz a barra valer alguma coisa: sem marca, "meio cheia" nao
+   responde nada, porque meio de que? Com a marca, o olho compara duzentas
+   linhas sem ler numero nenhum.
+
+   A cor vem de fora, do dominio, porque quem sabe o que e pouco de um material
+   e o estoque, e nao o Design System. */
+.nivel {
+  /* BLOCO, E NAO O INLINE PADRAO DO SPAN. Altura e largura nao valem em caixa
+     inline, entao sem esta linha a barra existe no HTML, ocupa zero pixel e a
+     coluna aparece vazia. Foi assim que ela nasceu na primeira conferencia. */
+  display: block;
+  position: relative;
+  flex: 1;
+  min-width: 72px;
+  max-width: 160px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.nivel.fixa {
+  flex: none;
+  width: 64px;
+}
+.nivel i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-pill);
+  background: var(--nivel-cor, var(--ok));
+  transition: width var(--t-slow) var(--ease-out);
+}
+.nivel u {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--text-3);
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nivel i {
+    transition: none;
+  }
 }
 
 /* --- barra de rolagem: desenhada aqui, nunca a do sistema ---------------- */

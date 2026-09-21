@@ -359,3 +359,157 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
 
   return { gravados, recusados, recados }
 }
+
+/* --- o estoque -----------------------------------------------------------
+   O estoque de verdade nasceu na migração 025, e nasceu vazio: a tela mostra o
+   razão, e razão nenhum tem linha antes de alguém mexer. Semear aqui é o que
+   deixa a tela de estoque e o cartão "abaixo do mínimo" do início terem o que
+   mostrar durante o ensaio.
+
+   DUAS COISAS QUE ESTA FUNÇÃO FAZ DE PROPÓSITO, E PARECEM TRABALHO À TOA:
+
+   O tecido aponta para o CATÁLOGO por id, e não pelo nome. Ela procura a malha
+   e a cor na tabela do editor e grava os dois ids. É o que vai permitir, no
+   passo da separação, achar "o tecido deste layout" sem comparar texto com
+   texto. Um material cuja malha não está no catálogo entra sem ligação, e a
+   tela mostra isso.
+
+   E o saldo entra por MOVIMENTO, um de cada vez, e não escrevendo na coluna.
+   Escrever direto seria uma chamada só e um segundo mais rápido, e criaria
+   exatamente o que a migração 025 existe para impedir: um saldo sem linha que
+   o explique. O ensaio usa o caminho de verdade, ou não prova nada. */
+
+type MaterialDeExemplo = {
+  categoria: 'tecido' | 'aviamento' | 'insumo'
+  nome: string
+  unidade: string
+  minimo: number
+  saldo: number
+  /* nome no catálogo do editor, quando existe */
+  malha?: string
+  cor?: string
+}
+
+const ESTOQUE_DE_EXEMPLO: MaterialDeExemplo[] = [
+  { categoria: 'tecido', nome: 'DRYFIT POLIESTER 100% · Branco', unidade: 'kg', minimo: 20, saldo: 42, malha: 'DRYFIT POLIESTER 100%', cor: 'Branco' },
+  { categoria: 'tecido', nome: 'DRYFIT POLIESTER 100% · Preto', unidade: 'kg', minimo: 20, saldo: 9, malha: 'DRYFIT POLIESTER 100%', cor: 'Preto' },
+  { categoria: 'tecido', nome: 'DRYFIT POLIESTER 100% · Azul Marinho', unidade: 'kg', minimo: 10, saldo: 28, malha: 'DRYFIT POLIESTER 100%', cor: 'Azul Marinho' },
+  { categoria: 'tecido', nome: 'DRYFIT POLIESTER 100% · Vermelho Fourtime', unidade: 'kg', minimo: 10, saldo: 12, malha: 'DRYFIT POLIESTER 100%', cor: 'Vermelho Fourtime' },
+  { categoria: 'tecido', nome: 'PIQUET 100% · Branco', unidade: 'kg', minimo: 15, saldo: 6, malha: 'PIQUET 100%', cor: 'Branco' },
+  { categoria: 'tecido', nome: 'PIQUET 100% · Azul Marinho', unidade: 'kg', minimo: 15, saldo: 31, malha: 'PIQUET 100%', cor: 'Azul Marinho' },
+  { categoria: 'tecido', nome: 'ALGODAO MESCLA SEM ELASTANO · Cinza Mescla', unidade: 'kg', minimo: 20, saldo: 58, malha: 'ALGODAO MESCLA SEM ELASTANO', cor: 'Cinza Mescla' },
+  { categoria: 'tecido', nome: 'ALGODAO 100% · Preto', unidade: 'kg', minimo: 15, saldo: 22, malha: 'ALGODAO 100%', cor: 'Preto' },
+  { categoria: 'tecido', nome: 'HELANCA COLEGIAL · Azul Marinho', unidade: 'kg', minimo: 3, saldo: 4, malha: 'HELANCA COLEGIAL', cor: 'Azul Marinho' },
+  { categoria: 'tecido', nome: 'MOLETOM · Preto', unidade: 'kg', minimo: 10, saldo: 16, malha: 'MOLETOM', cor: 'Preto' },
+
+  { categoria: 'aviamento', nome: 'Linha poliéster 120 branca', unidade: 'cone', minimo: 8, saldo: 18 },
+  { categoria: 'aviamento', nome: 'Linha poliéster 120 preta', unidade: 'cone', minimo: 8, saldo: 11 },
+  { categoria: 'aviamento', nome: 'Elástico 30 mm', unidade: 'm', minimo: 100, saldo: 210 },
+  { categoria: 'aviamento', nome: 'Cadarço 6 mm branco', unidade: 'm', minimo: 60, saldo: 140 },
+  { categoria: 'aviamento', nome: 'Etiqueta Fourtime tecida', unidade: 'un', minimo: 500, saldo: 1450 },
+  { categoria: 'aviamento', nome: 'Gola retilínea piquet marinho', unidade: 'un', minimo: 60, saldo: 40 },
+  { categoria: 'aviamento', nome: 'Botão 4 furos 18 mm', unidade: 'un', minimo: 800, saldo: 2200 },
+
+  { categoria: 'insumo', nome: 'Filme DTF 60 cm', unidade: 'm', minimo: 100, saldo: 140 },
+  { categoria: 'insumo', nome: 'Pó DTF hot melt', unidade: 'kg', minimo: 2, saldo: 4.5 },
+  { categoria: 'insumo', nome: 'Tinta DTF branca', unidade: 'L', minimo: 1, saldo: 1.2 },
+  { categoria: 'insumo', nome: 'Papel sublimático 100 g', unidade: 'm', minimo: 200, saldo: 380 },
+  { categoria: 'insumo', nome: 'Tinta sublimática magenta', unidade: 'L', minimo: 1, saldo: 0.6 },
+  { categoria: 'insumo', nome: 'Tinta sublimática ciano', unidade: 'L', minimo: 1, saldo: 2.4 },
+  { categoria: 'insumo', nome: 'Tela de silk 120 fios', unidade: 'un', minimo: 8, saldo: 18 },
+  { categoria: 'insumo', nome: 'Tinta silk plastisol branca', unidade: 'kg', minimo: 2, saldo: 3.2 },
+  { categoria: 'insumo', nome: 'Saco de embalagem 30x40', unidade: 'un', minimo: 400, saldo: 900 },
+]
+
+/* O PostgREST filtra por lista com in.(a,b,c), separado por vírgula. Nome de
+   malha tem espaço, ponto e porcentagem ("DRYFIT POLIESTER 100%"), e nome de
+   cor tem acento. Cada item vai entre aspas, que é como o PostgREST aceita
+   valor com pontuação, e a lista inteira passa por encodeURIComponent, senão o
+   % do nome vira escape de URL e o servidor recebe outra coisa. */
+function listaPara(nomes: string[]): string {
+  return '(' + nomes.map((n) => '"' + n.replace(/"/g, '\\"') + '"').join(',') + ')'
+}
+
+async function idsDoCatalogo(): Promise<{ malha: Map<string, string>; cor: Map<string, string> }> {
+  const malhas = [...new Set(ESTOQUE_DE_EXEMPLO.map((m) => m.malha).filter(Boolean))] as string[]
+  const cores = [...new Set(ESTOQUE_DE_EXEMPLO.map((m) => m.cor).filter(Boolean))] as string[]
+
+  const [t, c] = await Promise.all([
+    tabela<{ id: string; nome: string }[]>(
+      `tecido?select=id,nome&nome=in.${encodeURIComponent(listaPara(malhas))}`,
+    ),
+    tabela<{ id: string; nome: string }[]>(
+      `cor_de_tecido?select=id,nome&nome=in.${encodeURIComponent(listaPara(cores))}`,
+    ),
+  ])
+
+  return {
+    malha: new Map(t.map((x) => [x.nome, x.id])),
+    cor: new Map(c.map((x) => [x.nome, x.id])),
+  }
+}
+
+export async function semearEstoque(): Promise<ResultadoDaSemente> {
+  const recados: string[] = []
+  const catalogo = await idsDoCatalogo()
+
+  const semCatalogo = ESTOQUE_DE_EXEMPLO.filter(
+    (m) => m.malha && !catalogo.malha.get(m.malha),
+  ).map((m) => m.malha)
+  if (semCatalogo.length) {
+    recados.push('Sem ligação no catálogo: ' + [...new Set(semCatalogo)].join(', '))
+  }
+
+  const corpo = ESTOQUE_DE_EXEMPLO.map((m) => ({
+    categoria: m.categoria,
+    nome: m.nome,
+    unidade: m.unidade,
+    minimo: m.minimo,
+    tecido_id: m.malha ? (catalogo.malha.get(m.malha) ?? null) : null,
+    cor_id: m.cor ? (catalogo.cor.get(m.cor) ?? null) : null,
+    teste: true,
+  }))
+
+  let gravados: { id: string; nome: string }[] = []
+  try {
+    gravados = await tabela<{ id: string; nome: string }[]>('material?select=id,nome', {
+      metodo: 'POST',
+      devolver: true,
+      corpo,
+    })
+  } catch (e) {
+    const recado = e instanceof Error ? e.message : 'cadastro recusado'
+    recados.push(recado)
+    return { gravados: 0, recusados: corpo.length, recados }
+  }
+
+  /* O saldo inicial entra como ENTRADA, uma linha por material. Uma de cada
+     vez porque mexer_no_estoque é uma chamada por movimento de propósito: é
+     ela que carimba quem e quando, e um atalho em lote aqui seria o primeiro
+     saldo do sistema sem dono. */
+  const porNome = new Map(ESTOQUE_DE_EXEMPLO.map((m) => [m.nome, m]))
+  let movimentos = 0
+  let recusados = 0
+
+  for (const g of gravados) {
+    const m = porNome.get(g.nome)
+    if (!m || m.saldo <= 0) continue
+    try {
+      await chamar('mexer_no_estoque', {
+        p_material: g.id,
+        p_quantidade: m.saldo,
+        p_motivo: 'entrada',
+        p_observacao: 'saldo inicial do ensaio',
+        p_pedido: null,
+      })
+      movimentos++
+    } catch (e) {
+      recusados++
+      const recado = e instanceof Error ? e.message : 'movimento recusado'
+      if (!recados.includes(recado)) recados.push(recado)
+    }
+  }
+
+  recados.push(movimentos + ' entrada(s) de saldo inicial gravadas no razão')
+  return { gravados: gravados.length, recusados, recados }
+}

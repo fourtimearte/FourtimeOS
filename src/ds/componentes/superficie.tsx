@@ -151,6 +151,39 @@ export function Amostra({ cor }: { cor?: string }) {
   return <span className="amostra" style={{ '--cor-amostra': cor } as CSSProperties} />
 }
 
+/* --- barra de nivel -------------------------------------------------------
+   Quanto tem contra quanto deveria ter. O traco do meio e o alvo: encher ate
+   ele e estar no limite, passar dele e ter folga. A cor chega pronta de fora
+   porque quem decide o que e pouco e o dominio.
+
+   Recebe a porcentagem ja calculada, e nao os dois numeros, pelo mesmo motivo:
+   a regra de "quanto da barra encher" pertence a quem tem os numeros. */
+export function Nivel({
+  valor,
+  cor,
+  fixa,
+  titulo,
+}: {
+  /** 0 a 100 */
+  valor: number
+  cor?: string
+  /** largura travada, para lista apertada em vez de coluna de tabela */
+  fixa?: boolean
+  titulo?: string
+}) {
+  const cheio = Math.max(0, Math.min(100, valor))
+  return (
+    <span
+      className={fixa ? 'nivel fixa' : 'nivel'}
+      style={{ '--nivel-cor': cor } as CSSProperties}
+      title={titulo}
+    >
+      <i style={{ width: cheio + '%' }} />
+      <u />
+    </span>
+  )
+}
+
 /* --- avatar --------------------------------------------------------------
    A bolinha redonda da pessoa: foto quando existe, iniciais quando nao.
 

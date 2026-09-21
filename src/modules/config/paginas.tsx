@@ -84,9 +84,10 @@ export function TelaPaginas() {
       acima="Configurações"
       titulo="Páginas"
       sub="O que aparece no menu do sistema. Desligar guarda a página, e não apaga nada."
-      abas={<AbasDaConfig atual="paginas" />}
     >
-      {falha ? <Aviso tom="atencao">{falha}</Aviso> : null}
+      <AbasDaConfig atual="paginas" />
+
+      {falha ? <Aviso tom="warn">{falha}</Aviso> : null}
 
       <Cartao className="cfg-cartao">
         <TituloCartao>Menu</TituloCartao>

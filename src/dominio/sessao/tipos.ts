@@ -49,6 +49,7 @@ export type Painel =
   | 'funil'
   | 'clientes'
   | 'cotacao'
+  | 'pcp'
   | 'ficha'
   | 'kanban'
   | 'produtos'

@@ -154,7 +154,20 @@ export function App() {
      Isto e arrumacao, nao tranca. Quem protege o dado e a regra de acesso das
      tabelas la no banco. Esconder o item evita que a pessoa esbarre no que nao
      e dela, e nada alem disso. */
-  type Item = Omit<ItemDeNavegacao, 'filhos'> & { chave: Painel; filhos?: Item[] }
+  /* IDENTIDADE E PERMISSAO SAO COISAS DIFERENTES, e por isso sao dois campos.
+     `chave` e quem o item E: e por ela que Configuracoes guarda uma pagina.
+     `painel` e o acesso que ele EXIGE, e quando nao vem escrito e o proprio
+     `chave`.
+
+     O PCP foi o caso que separou os dois: ele e uma pagina propria, mas o
+     painel 'pcp' ainda nao existe na tabela do banco. Sem esta separacao, ou
+     o PCP ficaria invisivel para todo mundo, ou guardar a ficha guardaria o
+     PCP junto. */
+  type Item = Omit<ItemDeNavegacao, 'filhos'> & {
+    chave: Painel
+    painel?: Painel
+    filhos?: Item[]
+  }
 
   const todas: { titulo: string; itens: Item[] }[] = [
     /* O Início não pertence a nenhuma família: ele é a porta de entrada, e a
@@ -192,6 +205,10 @@ export function App() {
            história na ordem errada. */
         {
           chave: 'pcp',
+          /* O painel 'pcp' ainda nao existe na tabela do banco. Ate ele
+             existir, o PCP pede o mesmo acesso da ficha: quem cuida de
+             producao ja tem. Entra na migracao do passo 3. */
+          painel: 'ficha',
           para: '/pcp',
           rotulo: 'PCP',
           icone: <ListChecks {...icone} />,
@@ -314,7 +331,7 @@ export function App() {
   const secoes: SecaoDeNavegacao[] = todas
     .map((s) => ({
       titulo: s.titulo,
-      itens: s.itens.filter((i) => posso(i.chave) && !escondidas.has(i.chave)),
+      itens: s.itens.filter((i) => posso(i.painel ?? i.chave) && !escondidas.has(i.chave)),
     }))
     .filter((s) => s.itens.length > 0)
 

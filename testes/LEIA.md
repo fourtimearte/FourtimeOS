@@ -57,3 +57,27 @@ carregada, **todas** as seções vão acusar mudança na primeira rodada. Isso n
 defeito: é o teste dizendo que o ambiente é outro. Nesse caso, `npm run
 visual:aprovar` uma vez naquela máquina, e daí para a frente ele compara contra
 aquele ambiente.
+
+## npm run tipos
+
+A mesma conferencia de tipo que o build do Cloudflare faz, com as mesmas travas:
+`strict`, `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`.
+
+**Ela existe por causa de um erro real.** Em 21/09 a conferencia de tipo daqui
+era um `tsc` solto com um filtro que jogava fora `TS2307` ("nao achei o
+modulo"), para calar o ruido de `node_modules` nao existir neste ambiente. So
+que o apelido `@ds` tambem caia nesse filtro. Resultado: um nome repetido entre
+um import do Design System e um tipo local passou batido, e duas publicacoes
+seguidas quebraram no Cloudflare sem ninguem ver. O sistema no ar ficou seis
+dias atras do repositorio.
+
+A licao: **filtrar erro por codigo e apostar que aquele codigo so aparece no
+ruido**, e essa aposta se perde. Agora os pacotes que faltam sao resolvidos em
+`testes/tipos-falsos.d.ts`, o ruido some na origem, e nada e filtrado por
+codigo, com uma excecao escrita: `TS7006` dentro de `.tsx`, que e o parametro
+de um `onClick` sem os tipos do React. Em `.ts` ele continua derrubando, porque
+dominio nao tem JSX dentro.
+
+## npm run conferir
+
+Roda tudo de uma vez: tipos, classes, contas e semana. **Antes de empurrar.**

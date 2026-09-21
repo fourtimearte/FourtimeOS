@@ -64,16 +64,30 @@ export function esquecerRegulagem() {
 
 let paginas: Set<string> | null = null
 
+/* O QUE JA NASCE GUARDADO, enquanto ninguem mexeu no interruptor.
+
+   A ficha de producao esta aqui por decisao de 21/09: o caminho novo
+   (separacao, PCP, kanban) pode torna-la desnecessaria, e ate isso ficar
+   claro ela sai do menu sem sair do sistema.
+
+   Isto vale SO enquanto a linha da regulagem nao existe. No instante em que
+   alguem mexe em qualquer interruptor, a lista gravada passa a ser a verdade
+   inteira, inclusive quando ela fica vazia: senao ligar a ficha de volta
+   duraria ate o proximo carregamento, porque o padrao a esconderia de novo. */
+const JA_NASCE_GUARDADA = ['ficha']
+
 export async function paginasEscondidas(): Promise<Set<string>> {
   if (paginas) return paginas
   try {
     const linhas = await tabela<{ valor: string }[]>('regulagem?select=valor&chave=eq.paginas')
-    paginas = new Set(
-      (linhas[0]?.valor ?? '')
-        .split(',')
-        .map((x) => x.trim())
-        .filter(Boolean),
-    )
+    paginas = linhas.length
+      ? new Set(
+          linhas[0].valor
+            .split(',')
+            .map((x) => x.trim())
+            .filter(Boolean),
+        )
+      : new Set(JA_NASCE_GUARDADA)
   } catch {
     /* Sem resposta do banco, nada some. O padrao prudente aqui e o contrario
        do ensaio: menu a mais e incomodo, menu a menos e gente sem conseguir

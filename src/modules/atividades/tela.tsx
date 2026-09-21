@@ -349,7 +349,12 @@ export function TelaAtividades() {
             opcoes={ETAPAS.map((e) => ({
               valor: e,
               rotulo: POSTO[e].nome,
-              contagem: pedidos.filter((p) => p.etapa === e).length,
+              /* A contagem do filtro conta o que ESTA SEMANA mostra, e nao a
+                 fabrica inteira: um numero ao lado de "Costura" que nao bate
+                 com o que aparece ao escolher Costura e pior que numero
+                 nenhum. Por isso ela sai de semanaMontada, que ja passou pela
+                 regra da virada. */
+              contagem: semanaMontada.pedidos.filter((p) => p.etapa === e).length,
             }))}
             vazio="Todas as etapas"
             aoEscolher={setEtapa}

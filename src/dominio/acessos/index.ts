@@ -228,3 +228,82 @@ export function chaveLimpa(texto: string): string {
 export function chaveValida(chave: string): boolean {
   return /^[a-z][a-z0-9_]{1,23}$/.test(chave)
 }
+
+/* ==========================================================================
+   As ações: o que dá para FAZER, e não em que página.
+
+   A matriz de páginas responde "esta pessoa abre o PCP?". Ela não responde
+   "esta pessoa aprova o pedido para a fábrica?", que é um botão específico.
+
+   O CATÁLOGO SÓ TEM AÇÃO QUE A MATRIZ REALMENTE MANDA. Uma caixa de marcação
+   que não faz nada é pior que caixa nenhuma: a pessoa marca, acredita, e
+   descobre semanas depois. Ação entra no catálogo no mesmo dia em que a
+   função dela passa a perguntar.
+
+   O QUE NÃO ENTRA, E NÃO VAI ENTRAR: mexer nos acessos, aprovar conta, trocar
+   o papel de alguém, apagar dados de teste. São as ações que DÃO poder, e
+   continuam presas ao administrador no código. Se virassem linha da matriz, a
+   matriz seria o caminho para escapar da matriz.
+   ========================================================================== */
+
+export type Acao = {
+  chave: string
+  nome: string
+  grupo: string
+  /** a página onde ela mora, ou vazio quando ela não mora em nenhuma */
+  painel: string
+  linha: string
+  ordem: number
+}
+
+type LinhaDaAcao = {
+  chave: string
+  nome: string
+  grupo: string
+  painel: string | null
+  linha: string
+  ordem: number
+}
+
+export async function carregarAcoes(): Promise<Acao[]> {
+  const linhas = await tabela<LinhaDaAcao[]>(
+    'acao?select=chave,nome,grupo,painel,linha,ordem&order=ordem.asc',
+  )
+  return linhas.map((l) => ({
+    chave: l.chave,
+    nome: l.nome,
+    grupo: l.grupo,
+    painel: l.painel ?? '',
+    linha: l.linha ?? '',
+    ordem: l.ordem,
+  }))
+}
+
+/** Quem pode o quê, como conjunto de "papel/acao". A linha existir é a permissão. */
+export async function carregarAcoesDosPapeis(): Promise<Set<string>> {
+  const linhas = await tabela<{ papel: string; acao: string }[]>(
+    'permissao_da_acao?select=papel,acao',
+  )
+  return new Set(linhas.map((l) => l.papel + '/' + l.acao))
+}
+
+export function podeAAcao(quem: Set<string>, papel: string, acao: string): boolean {
+  return quem.has(papel + '/' + acao)
+}
+
+export async function marcarAcao(papel: string, acao: string, ligado: boolean): Promise<void> {
+  if (ligado) {
+    /* mesclar, e não POST cru: marcar duas vezes a mesma linha devolveria
+       23505 em vez de não fazer nada, e o clique repetido vira erro na cara. */
+    await tabela('permissao_da_acao?on_conflict=papel,acao', {
+      metodo: 'POST',
+      corpo: { papel, acao },
+      mesclar: true,
+    })
+    return
+  }
+  await tabela(
+    `permissao_da_acao?papel=eq.${encodeURIComponent(papel)}&acao=eq.${encodeURIComponent(acao)}`,
+    { metodo: 'DELETE' },
+  )
+}

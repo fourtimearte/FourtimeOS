@@ -22,8 +22,12 @@ import {
   NIVEIS,
   NOME_DO_NIVEL,
   apagarPapel,
+  carregarAcoes,
+  carregarAcoesDosPapeis,
   carregarMatriz,
   carregarPapeis,
+  marcarAcao,
+  podeAAcao,
   chaveLimpa,
   chaveValida,
   criarPapel,
@@ -32,7 +36,7 @@ import {
   salvarPapel,
   salvarPermissao,
 } from '@dominio/acessos'
-import type { Matriz, Nivel, PapelDoSistema, Permissao } from '@dominio/acessos'
+import type { Acao, Matriz, Nivel, PapelDoSistema, Permissao } from '@dominio/acessos'
 
 /* NO CELULAR O CABECALHO VIRA LETRA, e a legenda acima da tabela ensina qual
    e qual. Quatro rotulos por extenso empurram duas das quatro colunas para
@@ -68,6 +72,10 @@ import './acessos.css'
 
 type Forma = { chave: string; nome: string; linha: string } | null
 
+function nomeDaPagina(lista: PainelDoSistema[], chave: string): string {
+  return lista.find((p) => p.chave === chave)?.nome || chave
+}
+
 export function TelaAcessos() {
   const { estado } = useSessao()
   const eu = estado.fase === 'dentro' ? estado.pessoa : null
@@ -76,6 +84,8 @@ export function TelaAcessos() {
   const [papeis, setPapeis] = useState<PapelDoSistema[]>([])
   const [paginas, setPaginas] = useState<PainelDoSistema[]>([])
   const [matriz, setMatriz] = useState<Matriz>({})
+  const [acoes, setAcoes] = useState<Acao[]>([])
+  const [quemFaz, setQuemFaz] = useState<Set<string>>(new Set())
   const [escolhido, setEscolhido] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [falha, setFalha] = useState('')
@@ -89,10 +99,18 @@ export function TelaAcessos() {
     setCarregando(true)
     setFalha('')
     try {
-      const [ps, pgs, m] = await Promise.all([carregarPapeis(), listarPaineis(), carregarMatriz()])
+      const [ps, pgs, m, ac, qf] = await Promise.all([
+        carregarPapeis(),
+        listarPaineis(),
+        carregarMatriz(),
+        carregarAcoes(),
+        carregarAcoesDosPapeis(),
+      ])
       setPapeis(ps)
       setPaginas(pgs)
       setMatriz(m)
+      setAcoes(ac)
+      setQuemFaz(qf)
       setEscolhido((atual) => (ps.some((p) => p.chave === atual) ? atual : (ps[0]?.chave ?? '')))
     } catch (e) {
       setFalha(e instanceof Error ? e.message : 'Não consegui ler os acessos.')
@@ -108,6 +126,16 @@ export function TelaAcessos() {
 
   const grupos = useMemo(() => porGrupo(paginas), [paginas])
 
+  const gruposDeAcao = useMemo(() => {
+    const fora: { grupo: string; itens: Acao[] }[] = []
+    for (const a of [...acoes].sort((x, y) => x.ordem - y.ordem)) {
+      const ultimo = fora[fora.length - 1]
+      if (ultimo && ultimo.grupo === a.grupo) ultimo.itens.push(a)
+      else fora.push({ grupo: a.grupo, itens: [a] })
+    }
+    return fora
+  }, [acoes])
+
   const conta = useMemo(() => {
     const doPapel = matriz[escolhido] ?? {}
     const linhas = Object.values(doPapel)
@@ -116,8 +144,9 @@ export function TelaAcessos() {
       editam: linhas.filter((l) => l.editar).length,
       apagam: linhas.filter((l) => l.deletar).length,
       totais: linhas.filter((l) => l.total).length,
+      acoes: acoes.filter((a) => podeAAcao(quemFaz, escolhido, a.chave)).length,
     }
-  }, [matriz, escolhido])
+  }, [matriz, escolhido, acoes, quemFaz])
 
   /* Grava primeiro na tela e depois no banco, e se o banco recusar, desfaz.
      A caixa de marcação que espera a viagem para mudar de cor faz a pessoa
@@ -160,6 +189,33 @@ export function TelaAcessos() {
     } catch (e) {
       setMatriz((m) => ({ ...m, [escolhido]: novo }))
       avisar(e instanceof Error ? e.message : 'Parei no meio. Confira a lista.', 'brand')
+    } finally {
+      setOcupado('')
+    }
+  }
+
+  /* Mesmo jeito da matriz de páginas: muda na tela, grava, e volta atrás se o
+     banco recusar. */
+  async function mexerNaAcao(acao: Acao, ligado: boolean) {
+    if (!escolhido || ocupado) return
+    const marca = escolhido + '/' + acao.chave
+    setQuemFaz((s) => {
+      const novo = new Set(s)
+      if (ligado) novo.add(marca)
+      else novo.delete(marca)
+      return novo
+    })
+    setOcupado(marca)
+    try {
+      await marcarAcao(escolhido, acao.chave, ligado)
+    } catch (e) {
+      setQuemFaz((s) => {
+        const novo = new Set(s)
+        if (ligado) novo.delete(marca)
+        else novo.add(marca)
+        return novo
+      })
+      avisar(e instanceof Error ? e.message : 'Não consegui gravar.', 'brand')
     } finally {
       setOcupado('')
     }
@@ -253,6 +309,7 @@ export function TelaAcessos() {
             <Kpi rotulo="Onde ele edita" valor={conta.editam} sub="mexe no que tem dentro" />
             <Kpi rotulo="Onde ele apaga" valor={conta.apagam} sub="a mais perigosa" aviso={conta.apagam > 0} />
             <Kpi rotulo="Controle total" valor={conta.totais} sub="sem freio nenhum" aviso={conta.totais > 0} />
+            <Kpi rotulo="Ações que ele faz" valor={conta.acoes} sub={`de ${acoes.length}`} />
           </div>
 
           <div className="ac-mesa">
@@ -418,6 +475,46 @@ export function TelaAcessos() {
               )}
             </Cartao>
           </div>
+
+          {papelAtual ? (
+            <Cartao className="ac-acoes">
+              <TituloCartao>O que o {papelAtual.nome.toLowerCase()} pode fazer</TituloCartao>
+              <p className="ac-legenda-acao">
+                Isto não é página, é botão. Só entra aqui a ação que o banco já pergunta à
+                matriz antes de deixar acontecer.
+              </p>
+              {gruposDeAcao.map((g) => (
+                <section key={g.grupo} className="ac-bloco">
+                  <h4 className="ac-grupo-acao">{g.grupo}</h4>
+                  {g.itens.map((a) => {
+                    /* Ação que mora numa página exige ENXERGAR a página. Marcar
+                       aqui com a página fechada gravaria uma promessa que o
+                       banco não cumpre, então a caixa trava e diz por quê. */
+                    const semPagina = !!a.painel && !permissaoDe(matriz, escolhido, a.painel).ver
+                    const ligado = podeAAcao(quemFaz, escolhido, a.chave)
+                    return (
+                      <label key={a.chave} className={semPagina ? 'ac-acao travada' : 'ac-acao'}>
+                        <Marcacao
+                          checked={ligado && !semPagina}
+                          disabled={semPagina || !!ocupado}
+                          aria-label={a.nome}
+                          onChange={(e) => void mexerNaAcao(a, e.currentTarget.checked)}
+                        />
+                        <span className="pilha colada">
+                          <b>{a.nome}</b>
+                          <small className="ac-apoio">
+                            {semPagina
+                              ? `Precisa enxergar a página ${nomeDaPagina(paginas, a.painel)}.`
+                              : a.linha || a.chave}
+                          </small>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </section>
+              ))}
+            </Cartao>
+          ) : null}
 
           <p className="ac-rodape">
             <Prohibit size={15} />

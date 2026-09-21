@@ -8,7 +8,10 @@
 
 .ac-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* auto-fit, e não um número fixo de colunas: os KPIs viraram cinco quando as
+     ações entraram, e um número escrito à mão quebraria calado no dia em que
+     virarem seis. */
+  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
   gap: var(--sp-3);
   margin-bottom: var(--sp-5);
 }
@@ -228,12 +231,6 @@
   }
 }
 
-@media (max-width: 900px) {
-  .ac-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* O nome da página segura a linha e quebra em duas se precisar; as quatro
    colunas encolhem até o alvo de toque e param ali. */
 .ac-curto {
@@ -289,4 +286,67 @@
   .ac-grupo td {
     padding-left: 0;
   }
+}
+
+/* ---------- as ações ---------- */
+.ac-acoes {
+  margin-top: var(--sp-5);
+}
+
+.ac-legenda-acao {
+  color: var(--text-3);
+  font-size: 12.5px;
+  margin-bottom: var(--sp-4);
+  max-width: 80ch;
+}
+
+.ac-bloco {
+  margin-bottom: var(--sp-4);
+}
+
+.ac-bloco:last-child {
+  margin-bottom: 0;
+}
+
+.ac-grupo-acao {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: var(--re-3) 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--re-3);
+}
+
+/* A linha inteira é o alvo de toque, e não só o quadradinho de 22px: no
+   galpão a mão é grossa e o quadradinho sozinho é um alvo cruel. */
+.ac-acao {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-dentro);
+  min-height: 44px;
+  padding: var(--re-3) var(--re-3) var(--re-3) 0;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.ac-acao:hover {
+  background: var(--surface-2);
+}
+
+/* Ação que mora numa página fechada não trava em silêncio: ela apaga e a
+   linha de apoio passa a dizer qual página falta. */
+.ac-acao.travada {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ac-acao.travada:hover {
+  background: transparent;
+}
+
+.ac-apoio {
+  color: var(--text-3);
+  font-size: 12.5px;
 }

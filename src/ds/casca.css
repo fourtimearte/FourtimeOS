@@ -152,9 +152,28 @@
 
    Agora toda tela tem a mesma margem lateral em qualquer monitor: o gutter, e
    mais nada. E a margem que o painel de atividades ja tinha a 1440. */
+/* O ESPACO ENTRE OS BLOCOS DA PAGINA MORA AQUI, e nao em cada modulo.
+
+   Ate 21/09 a .pagina era so um bloco solto: o respiro entre um cartao e o
+   proximo saia de um margin-bottom escrito na mao dentro do CSS de cada
+   modulo. Onde alguem lembrou, ficou certo; onde ninguem lembrou, os cartoes
+   nasceram colados, e isso aparecia em varias telas ao mesmo tempo, porque o
+   defeito nao estava em nenhuma delas: estava na falta de regra.
+
+   Agora a pagina empilha em coluna com um vao unico. Bloco que PRECISA ficar
+   colado no de baixo, como o cabecalho de colunas e os dias do painel de
+   atividades, que dividem a mesma borda, entra dentro de um filho so. */
 .pagina {
   max-width: none;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+/* item de coluna flex nao encolhe sozinho: sem isto, uma tabela larga por
+   dentro empurra a pagina inteira e nasce rolagem horizontal */
+.pagina > * {
+  min-width: 0;
 }
 .pagina-topo {
   display: flex;
@@ -162,7 +181,8 @@
   justify-content: space-between;
   gap: var(--sp-4);
   row-gap: var(--sp-3);
-  margin-bottom: var(--sp-6);
+  /* 8 aqui mais os 16 do vao da pagina dao os mesmos 24 de antes */
+  margin-bottom: var(--sp-2);
   flex-wrap: wrap;
 }
 .pagina-topo h1 {

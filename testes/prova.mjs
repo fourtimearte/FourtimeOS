@@ -115,6 +115,36 @@ for (const tema of ['light', 'dark']) {
           achados.push(onde + ' passa da borda direita em ' + Math.round(r.right - document.documentElement.clientWidth) + 'px')
         }
       }
+
+      /* 4. IRMAO COLADO. O defeito que mais voltou: dois cartoes encostados um
+            no outro porque o respiro entre blocos da pagina estava escrito na
+            mao dentro do CSS de cada modulo, e num deles ninguem lembrou. O
+            espaco entre blocos e da .pagina; aqui so se confere se ele existe.
+            Bloco que PRECISA ficar colado no de baixo entra dentro de um filho
+            so, como .at-tabela, e ai nao tem irmao para colar. */
+      for (const pai of document.querySelectorAll('.pagina')) {
+        const filhos = [...pai.children].filter((f) => {
+          const c = getComputedStyle(f)
+          if (c.display === 'none' || c.position === 'fixed' || c.position === 'absolute') return false
+          return f.getBoundingClientRect().height > 8
+        })
+        for (let i = 1; i < filhos.length; i++) {
+          const antes = filhos[i - 1].getBoundingClientRect()
+          const agora = filhos[i].getBoundingClientRect()
+          const vao = Math.round(agora.top - antes.bottom)
+          if (vao < 12) {
+            const nomeDe = (el) =>
+              el.className && typeof el.className === 'string'
+                ? '.' + el.className.split(' ').filter(Boolean).slice(0, 2).join('.')
+                : el.tagName.toLowerCase()
+            achados.push(
+              'irmao colado na pagina: ' + nomeDe(filhos[i - 1]) + ' e ' + nomeDe(filhos[i]) +
+                ' com ' + vao + 'px entre eles',
+            )
+          }
+        }
+      }
+
       return [...new Set(achados)]
     }, largura)
 

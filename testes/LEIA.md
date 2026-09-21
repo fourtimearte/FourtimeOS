@@ -155,3 +155,24 @@ Ela faz quatro perguntas:
    template (`` `btn-${tom}` ``) escapa da conta. Confira antes de apagar.
 
 Ela entrou no `npm run conferir`.
+
+### O irmao colado
+
+`npm run prova` mede, alem do resto, o **vao entre os filhos diretos de
+`.pagina`**. Menos de 12px e acusado.
+
+Ele existe por causa do defeito que mais voltou: dois cartoes encostados um no
+outro. A causa nunca esteve na tela onde aparecia. O respiro entre um bloco e o
+proximo estava escrito na mao dentro do CSS de cada modulo, um `margin-bottom`
+de cada vez; onde alguem lembrou ficou certo, onde ninguem lembrou os cartoes
+nasceram colados. Por isso o mesmo defeito aparecia em varias telas ao mesmo
+tempo: ele nao estava em nenhuma delas, estava na falta de regra.
+
+Agora `.pagina` empilha em coluna com um vao unico, e o espaco entre blocos e
+responsabilidade dela. **Bloco que PRECISA ficar colado no de baixo entra
+dentro de um filho so**, como `.at-tabela`, que guarda o cabecalho de colunas e
+os dias do painel de atividades porque os tres dividem a mesma borda.
+
+Escrever `margin-bottom` num bloco de pagina dentro de CSS de modulo virou erro
+de novo tipo: nao quebra nada sozinho, mas devolve o espacamento para o lugar
+de onde ele acabou de sair.

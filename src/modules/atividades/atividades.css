@@ -140,6 +140,15 @@
   height: 5px;
 }
 
+/* A TABELA INTEIRA COMO UMA PECA SO. O cabecalho de colunas e os blocos de
+   dia dividem a mesma borda, entao entre eles nao pode entrar o vao que a
+   pagina poe entre os blocos dela. Um filho so resolve. */
+.at-tabela {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 /* a grade que manda em tudo: cabeçalho e linhas usam a mesma */
 .at-colunas,
 .at-linha {
@@ -170,9 +179,6 @@
      Sticky que cola atras de outro sticky parece sticky quebrado. */
   top: var(--topbar-h);
   z-index: 3;
-  /* respiro entre os cartoes de cima e a tabela: colados, o cabecalho parecia
-     a ultima linha do cartao de Pedidos */
-  margin-top: var(--sp-4);
   padding: 11px 20px;
   border: 1px solid var(--border);
   border-bottom: 0;
@@ -540,7 +546,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  margin-top: var(--sp-4);
   font-size: 12px;
   color: var(--text-3);
 }
@@ -648,7 +653,6 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: 0 0 var(--sp-4);
   padding: 12px 16px;
   border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--border));
   border-radius: var(--radius-lg);

@@ -240,7 +240,6 @@
 .cfg-abas {
   display: flex;
   gap: 4px;
-  margin-bottom: var(--sp-4);
   padding: 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);

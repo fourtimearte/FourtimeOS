@@ -14,7 +14,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--gap-btn);
-  margin-bottom: var(--sp-5);
 }
 .ct-filtros .busca {
   flex: 1 1 280px;

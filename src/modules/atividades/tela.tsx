@@ -469,89 +469,95 @@ export function TelaAtividades() {
           semana cheia, o que se perde de vista e o nome das colunas. Ele tem
           contraste proprio, mais escuro que a linha de dia, para os dois nao
           virarem a mesma faixa cinza quando encostam. */}
-      <div className="at-colunas">
-        <span />
-        <span className="at-cod">Pedido</span>
-        <span>Nome</span>
-        <span className="esconde">Aviso</span>
-        <span className="some-antes">Departamento</span>
-        <span className="esconde meio">Entrega</span>
-        <span className="esconde meio">Planejamento</span>
-        <span className="num">Total</span>
-        <span>Atualização</span>
+      {/* O cabecalho de colunas e os dias dividem a mesma borda: eles sao UMA
+          peca, e por isso entram na pagina dentro de um filho so. O vao da
+          pagina separa a peca inteira do que vem antes e do que vem depois, e
+          nada separa o cabecalho do primeiro dia, que e o certo. */}
+      <div className="at-tabela">
+        <div className="at-colunas">
+          <span />
+          <span className="at-cod">Pedido</span>
+          <span>Nome</span>
+          <span className="esconde">Aviso</span>
+          <span className="some-antes">Departamento</span>
+          <span className="esconde meio">Entrega</span>
+          <span className="esconde meio">Planejamento</span>
+          <span className="num">Total</span>
+          <span>Atualização</span>
+        </div>
+
+        {diasDaSemana.map(({ nome, data }, i) => {
+          const chave = iso(data)
+          const coluna = visiveis.dias[i]
+          const doDia = coluna.pedidos
+          const pecasDoDia = coluna.pecas
+          const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
+          const folga = CAPACIDADE_DO_DIA - pecasDoDia
+          return (
+            <section
+              key={nome}
+              className={alvo === chave && arrasto?.valendo ? 'at-dia alvo' : 'at-dia'}
+              data-dia={chave}
+            >
+              <header className={ehHoje(data) ? 'at-dia-topo hoje' : 'at-dia-topo'}>
+                <span className="at-dia-nome">
+                  {nome} <span className="at-data">{diaEMes(data)}</span>
+                  {ehHoje(data) ? <span className="at-hoje">hoje</span> : null}
+                </span>
+
+                {/* A carga do dia numa caixa só: quantas peças, a régua e quanto
+                    ainda cabe. Verde enquanto sobra espaço, laranja quando está
+                    quase cheio, vermelho quando passou. */}
+                <span className={'at-carga ' + faixaDaCarga(pct)}>
+                  <b>{pecasDoDia.toLocaleString('pt-BR')}</b>
+                  <span className="at-de">/ {CAPACIDADE_DO_DIA}</span>
+                  <span className="at-regua dia">
+                    <i style={{ width: Math.min(100, pct) + '%' }} />
+                  </span>
+                  <span className="at-folga">
+                    {folga >= 0
+                      ? 'cabem +' + folga.toLocaleString('pt-BR')
+                      : 'passou ' + Math.abs(folga).toLocaleString('pt-BR')}
+                  </span>
+                </span>
+              </header>
+
+              <div className="at-corpo">
+                {doDia.map((p) => (
+                  <Linha
+                    key={p.id}
+                    pedido={p}
+                    colocacao={visiveis.onde.get(p.id)}
+                    carregando={arrasto?.id === p.id && arrasto.valendo}
+                    aoFinalizarEm={(d) => {
+                      avisar(p.numero + ' finalizado em ' + diaEMes(new Date(d + 'T12:00:00')), 'ok')
+                      void gravar(finalizarEm(p.id, d))
+                    }}
+                    aoPegar={(ev) => pegar(ev, p)}
+                    aoTrocarEtapa={(e) => {
+                      const de = POSTO[p.etapa].nome
+                      avisar(p.numero + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
+                      void gravar(moverEtapa(p.id, e))
+                    }}
+                    aoTrocarAviso={(a) => void gravar(mudarAviso(p.id, a))}
+                    aoTrocarEntrega={(d) => void gravar(mudarEntrega(p.id, d))}
+                    aoTrocarPlanejamento={(d) => void gravar(planejarPara(p.id, d))}
+                  />
+                ))}
+                {!doDia.length ? (
+                  <p className="at-vazio">
+                    {carregando
+                      ? 'Buscando...'
+                      : falha
+                        ? 'Não consegui carregar'
+                        : 'Nada neste dia.'}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          )
+        })}
       </div>
-
-      {diasDaSemana.map(({ nome, data }, i) => {
-        const chave = iso(data)
-        const coluna = visiveis.dias[i]
-        const doDia = coluna.pedidos
-        const pecasDoDia = coluna.pecas
-        const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
-        const folga = CAPACIDADE_DO_DIA - pecasDoDia
-        return (
-          <section
-            key={nome}
-            className={alvo === chave && arrasto?.valendo ? 'at-dia alvo' : 'at-dia'}
-            data-dia={chave}
-          >
-            <header className={ehHoje(data) ? 'at-dia-topo hoje' : 'at-dia-topo'}>
-              <span className="at-dia-nome">
-                {nome} <span className="at-data">{diaEMes(data)}</span>
-                {ehHoje(data) ? <span className="at-hoje">hoje</span> : null}
-              </span>
-
-              {/* A carga do dia numa caixa só: quantas peças, a régua e quanto
-                  ainda cabe. Verde enquanto sobra espaço, laranja quando está
-                  quase cheio, vermelho quando passou. */}
-              <span className={'at-carga ' + faixaDaCarga(pct)}>
-                <b>{pecasDoDia.toLocaleString('pt-BR')}</b>
-                <span className="at-de">/ {CAPACIDADE_DO_DIA}</span>
-                <span className="at-regua dia">
-                  <i style={{ width: Math.min(100, pct) + '%' }} />
-                </span>
-                <span className="at-folga">
-                  {folga >= 0
-                    ? 'cabem +' + folga.toLocaleString('pt-BR')
-                    : 'passou ' + Math.abs(folga).toLocaleString('pt-BR')}
-                </span>
-              </span>
-            </header>
-
-            <div className="at-corpo">
-              {doDia.map((p) => (
-                <Linha
-                  key={p.id}
-                  pedido={p}
-                  colocacao={visiveis.onde.get(p.id)}
-                  carregando={arrasto?.id === p.id && arrasto.valendo}
-                  aoFinalizarEm={(d) => {
-                    avisar(p.numero + ' finalizado em ' + diaEMes(new Date(d + 'T12:00:00')), 'ok')
-                    void gravar(finalizarEm(p.id, d))
-                  }}
-                  aoPegar={(ev) => pegar(ev, p)}
-                  aoTrocarEtapa={(e) => {
-                    const de = POSTO[p.etapa].nome
-                    avisar(p.numero + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
-                    void gravar(moverEtapa(p.id, e))
-                  }}
-                  aoTrocarAviso={(a) => void gravar(mudarAviso(p.id, a))}
-                  aoTrocarEntrega={(d) => void gravar(mudarEntrega(p.id, d))}
-                  aoTrocarPlanejamento={(d) => void gravar(planejarPara(p.id, d))}
-                />
-              ))}
-              {!doDia.length ? (
-                <p className="at-vazio">
-                  {carregando
-                    ? 'Buscando...'
-                    : falha
-                      ? 'Não consegui carregar'
-                      : 'Nada neste dia.'}
-                </p>
-              ) : null}
-            </div>
-          </section>
-        )
-      })}
 
       {/* o pedido que está na mão, seguindo o dedo */}
       {carregado && arrasto?.valendo ? (

@@ -13,6 +13,7 @@ import {
   Gear,
   House,
   Kanban,
+  ListChecks,
   Moon,
   Package,
   Palette,
@@ -46,6 +47,7 @@ import {
   useSessao,
 } from '@dominio/sessao'
 import type { Painel, Pessoa } from '@dominio/sessao'
+import { paginasEscondidas } from '@dominio/regulagem'
 import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
 import { contarEsperando } from '@dominio/equipe'
 
@@ -184,6 +186,16 @@ export function App() {
     {
       titulo: 'Produção',
       itens: [
+        /* O PCP ABRE A PRODUÇÃO, e não a ficha. Ele é o portão: o pedido
+           aparece no chão de fábrica porque o PCP liberou, e não porque
+           alguém aprovou a venda. Um menu que começa pela ficha conta a
+           história na ordem errada. */
+        {
+          chave: 'pcp',
+          para: '/pcp',
+          rotulo: 'PCP',
+          icone: <ListChecks {...icone} />,
+        },
         {
           chave: 'ficha',
           para: '/ficha',
@@ -276,10 +288,34 @@ export function App() {
 
   const posso = (chave: Painel) => !!pessoa && podeVer(pessoa, chave)
 
+  /* AS PAGINAS GUARDADAS.
+
+     Duas peneiras diferentes, e elas nao se misturam: `posso` responde "esta
+     pessoa tem acesso a isto", e `escondidas` responde "a empresa decidiu que
+     esta pagina nao esta em uso". A primeira e por pessoa e a segunda e por
+     empresa, e juntar as duas num campo so seria o comeco de alguem perder o
+     acesso porque outra pessoa guardou uma pagina.
+
+     Enquanto a lista nao chega do banco, nada some: menu a mais incomoda,
+     menu a menos e gente sem conseguir trabalhar. */
+  const [escondidas, setEscondidas] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    let vivo = true
+    void paginasEscondidas().then((p) => {
+      if (vivo) setEscondidas(new Set(p))
+    })
+    return () => {
+      vivo = false
+    }
+  }, [])
+
   /* Secao sem nenhum item vira titulo solto pairando sobre nada, entao ela
      some junto. */
   const secoes: SecaoDeNavegacao[] = todas
-    .map((s) => ({ titulo: s.titulo, itens: s.itens.filter((i) => posso(i.chave)) }))
+    .map((s) => ({
+      titulo: s.titulo,
+      itens: s.itens.filter((i) => posso(i.chave) && !escondidas.has(i.chave)),
+    }))
     .filter((s) => s.itens.length > 0)
 
   /* Uma arvore sem nenhum galho que a pessoa alcance nao vira item vazio no

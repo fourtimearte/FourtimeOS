@@ -5,7 +5,7 @@ import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
 import type { Painel } from '@dominio/sessao'
 import { TelaKit } from '@ds'
 import { TelaClientes } from '@modules/clientes'
-import { AbasDaConfig, TelaEmpresa, TelaEnsaio, TelaEquipe } from '@modules/config'
+import { AbasDaConfig, TelaEmpresa, TelaEnsaio, TelaEquipe, TelaPaginas } from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
@@ -14,6 +14,7 @@ import { TelaEmBreve } from '@modules/em-breve'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFunil } from '@modules/funil'
+import { TelaPcp } from '@modules/pcp'
 import { TelaPerfil } from '@modules/perfil'
 import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
@@ -61,6 +62,11 @@ export const rotas = createBrowserRouter([
         path: 'cotacao/:id/producao',
         element: pede('cotacao', <DocumentoDaCotacao para="producao" />),
       },
+      { path: 'pcp', element: pede('ficha', <TelaPcp />) },
+      /* A ROTA DA FICHA CONTINUA DE PE mesmo com a pagina escondida no menu.
+         Esconder e guardar, e nao apagar: quem tem o endereco ainda abre, e e
+         assim que da para conferir a pagina guardada sem religar ela para a
+         fabrica inteira. */
       { path: 'ficha', element: pede('ficha', <TelaFicha />) },
       { path: 'kanban', element: pede('kanban', <TelaKanban />) },
       { path: 'estoque', element: pede('estoque', <TelaEstoque />) },
@@ -71,6 +77,7 @@ export const rotas = createBrowserRouter([
       { path: 'config', element: pede('config', <TelaEquipe />) },
       { path: 'config/empresa', element: pede('config', <TelaEmpresa />) },
       { path: 'config/ensaio', element: pede('config', <TelaEnsaio />) },
+      { path: 'config/paginas', element: pede('config', <TelaPaginas />) },
 
       /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar
          inteiro: nenhum item leva a lugar nenhum. */

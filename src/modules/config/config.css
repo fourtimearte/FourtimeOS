@@ -354,3 +354,47 @@
   font-size: 12px;
   color: var(--ink-2);
 }
+
+/* --- as páginas do sistema ------------------------------------------------ */
+.cfg-paginas {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: var(--sp-3);
+}
+.cfg-pagina {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cfg-pagina:last-child {
+  border-bottom: 0;
+}
+.cfg-pagina-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cfg-pagina-txt b {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.cfg-pagina-txt small {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.cfg-pagina-txt .cfg-porque {
+  color: var(--text-2);
+  max-width: 62ch;
+}
+
+.cfg-texto {
+  margin: var(--sp-3) 0 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+  max-width: 72ch;
+}

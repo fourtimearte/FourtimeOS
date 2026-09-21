@@ -15,6 +15,11 @@ export type Pedido = {
   corpo?: unknown
   /** pedir a linha de volta depois de gravar */
   devolver?: boolean
+  /* GRAVAR POR CIMA SE JA EXISTIR. O PostgREST chama isto de upsert, e ele
+     acontece por cabecalho num POST: sem ele, gravar duas vezes na mesma
+     chave primaria devolve 23505 em vez de atualizar. O endereco precisa
+     dizer qual e a chave, com ?on_conflict=coluna. */
+  mesclar?: boolean
 }
 
 export const SESSAO_VENCIDA = 'Sua sessão terminou. Entre de novo.'
@@ -26,7 +31,10 @@ function cabecalho(acesso: string, pedido: Pedido): Record<string, string> {
     Accept: 'application/json',
   }
   if (pedido.corpo !== undefined) h['Content-Type'] = 'application/json'
-  if (pedido.devolver) h['Prefer'] = 'return=representation'
+  const prefere: string[] = []
+  if (pedido.devolver) prefere.push('return=representation')
+  if (pedido.mesclar) prefere.push('resolution=merge-duplicates')
+  if (prefere.length) h['Prefer'] = prefere.join(',')
   return h
 }
 

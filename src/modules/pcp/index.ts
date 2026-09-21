@@ -1,0 +1,1 @@
+export { TelaPcp } from './tela'

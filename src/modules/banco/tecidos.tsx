@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
 import { Botao, Busca, Entrada, Seletor, Vazio, avisar } from '@ds'
 import {
   apagarTecido,
   combina,
   criarTecido,
+  medirTecido,
   renomearTecido,
   tecidosPorGrupo,
 } from '@dominio/banco'
@@ -126,6 +127,7 @@ export function Tecidos({
                 <Linha
                   key={t.id}
                   nome={t.nome}
+                  direita={<Medidas tecido={t} podeMexer={podeMexer} aoTrocar={aoTrocar} />}
                   podeMexer={podeMexer}
                   aoRenomear={() =>
                     pedirNome({
@@ -161,5 +163,101 @@ export function Tecidos({
         </div>
       )}
     </>
+  )
+}
+
+
+/* --- a largura e a gramatura do rolo ---------------------------------------
+   As duas medidas que ligam metro a quilo, e sem as quais o consumo cadastrado
+   em metros nunca vira baixa no estoque, que está em quilos.
+
+   CAMPO VAZIO GRAVA NULO, E NÃO ZERO. Zero diria que o tecido não pesa nada, e
+   a conversa de metro para quilo devolveria zero quilo com cara de resposta.
+   Nulo diz "ninguém cadastrou", que é a verdade, e a reserva do pedido mostra
+   a falta em vez de inventar um número.
+
+   Grava ao sair do campo, e não a cada tecla: são quarenta e poucos tecidos e
+   um PATCH por dígito seria quarenta pedidos para escrever "145". */
+function Medidas({
+  tecido,
+  podeMexer,
+  aoTrocar,
+}: {
+  tecido: Tecido
+  podeMexer: boolean
+  aoTrocar: (t: Tecido) => void
+}) {
+  const [gramatura, setGramatura] = useState('')
+  const [largura, setLargura] = useState('')
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    setGramatura(tecido.gramatura === null ? '' : String(tecido.gramatura).replace('.', ','))
+    setLargura(tecido.largura === null ? '' : String(tecido.largura).replace('.', ','))
+  }, [tecido.gramatura, tecido.largura])
+
+  function lido(texto: string): number | null {
+    const t = texto.trim()
+    if (!t) return null
+    const n = Number(t.replace(',', '.'))
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+
+  async function gravar() {
+    const g = lido(gramatura)
+    const l = lido(largura)
+    if (g === tecido.gramatura && l === tecido.largura) return
+    setSalvando(true)
+    try {
+      aoTrocar(await medirTecido(tecido.id, { gramatura: g, largura: l }))
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui gravar a medida.', 'brand')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  if (!podeMexer) {
+    return (
+      <span className="bd-medidas">
+        <span className="bd-medida-lida">
+          {tecido.gramatura === null ? 'sem gramatura' : tecido.gramatura + ' g/m²'}
+        </span>
+        <span className="bd-medida-lida">
+          {tecido.largura === null ? 'sem largura' : String(tecido.largura).replace('.', ',') + ' m'}
+        </span>
+      </span>
+    )
+  }
+
+  return (
+    <span className="bd-medidas">
+      <label className="bd-medida">
+        <Entrada
+          tamanho="sm"
+          inputMode="decimal"
+          value={gramatura}
+          placeholder="145"
+          disabled={salvando}
+          aria-label={'Gramatura de ' + tecido.nome + ' em gramas por metro quadrado'}
+          onChange={(e) => setGramatura(e.currentTarget.value)}
+          onBlur={() => void gravar()}
+        />
+        <small>g/m²</small>
+      </label>
+      <label className="bd-medida">
+        <Entrada
+          tamanho="sm"
+          inputMode="decimal"
+          value={largura}
+          placeholder="1,60"
+          disabled={salvando}
+          aria-label={'Largura do rolo de ' + tecido.nome + ' em metros'}
+          onChange={(e) => setLargura(e.currentTarget.value)}
+          onBlur={() => void gravar()}
+        />
+        <small>m</small>
+      </label>
+    </span>
   )
 }

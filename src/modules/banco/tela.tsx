@@ -5,6 +5,7 @@ import {
   Drop,
   Package,
   Printer,
+  Ruler,
   Stack,
   Tag,
   Truck,
@@ -23,6 +24,7 @@ import {
 import type {
   Banco,
   Categoria,
+  Consumo,
   CorDeImpressao,
   CorDeTecido,
   ItemDeLista,
@@ -32,6 +34,7 @@ import type {
 } from '@dominio/banco'
 import { AbasDaConfig } from '@modules/config'
 import { useSessao } from '@dominio/sessao'
+import { ConsumoDeTecido } from './consumo'
 import { CoresDeImpressao, CoresDeTecido } from './cores'
 import { GavetaDeNome, ModalDeApagar } from './pecas'
 import type { AlvoDeApagar, AlvoDoNome } from './pecas'
@@ -60,6 +63,7 @@ import './banco.css'
 const ICONE: Record<Categoria, typeof Tag> = {
   referencias: Tag,
   tecidos: Stack,
+  consumo: Ruler,
   pagamento: CreditCard,
   entrega: Truck,
   embalagem: Package,
@@ -129,6 +133,15 @@ export function TelaBanco() {
     setBanco((b) => ({
       ...b,
       coresDeImpressao: b.coresDeImpressao.map((x) => (x.codigo === c.codigo ? c : x)),
+    }))
+
+  /* O consumo chega por referência inteira, e não linha a linha: a gaveta da
+     grade já sabe quais tamanhos daquela referência sobraram, e devolver a
+     lista pronta evita a tela ter que adivinhar o que entrou e o que saiu. */
+  const trocarConsumo = (referenciaId: string, linhas: Consumo[]) =>
+    setBanco((b) => ({
+      ...b,
+      consumo: [...b.consumo.filter((c) => c.referenciaId !== referenciaId), ...linhas],
     }))
 
   const porItemDeLista = (i: ItemDeLista) => setBanco((b) => ({ ...b, listas: [...b.listas, i] }))
@@ -207,6 +220,14 @@ export function TelaBanco() {
             />
           ) : categoria === 'tecidos' ? (
             <Tecidos {...comum} aoTrocar={trocarTecido} aoPor={porTecido} aoTirar={tirarTecido} />
+          ) : categoria === 'consumo' ? (
+            <ConsumoDeTecido
+              banco={banco}
+              podeMexer={podeMexer}
+              procurado={procurado}
+              aoProcurar={setProcurado}
+              aoTrocarConsumo={trocarConsumo}
+            />
           ) : categoria === 'cor-tecido' ? (
             <CoresDeTecido
               {...comum}

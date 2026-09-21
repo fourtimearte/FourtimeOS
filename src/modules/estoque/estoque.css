@@ -107,9 +107,20 @@
   white-space: nowrap;
 }
 
-/* Primeiro sai a coluna de data, que e a unica que ninguem procura: no tablet
-   de 820 as cinco colunas passavam 60px da borda, e a tabela ganhava rolagem
-   por causa de "18/09". */
+/* A TABELA PERDE COLUNA POR ORDEM DE QUEM PROCURA MENOS.
+
+   Materiais: 1 nome, 2 nivel, 3 na prateleira, 4 livre, 5 minimo, 6 mexeu em.
+   Primeiro sai a data, que e a unica que ninguem procura; depois o minimo;
+   depois a barra e a prateleira. O que NUNCA sai e o nome e o LIVRE, que
+   juntos sao a pergunta inteira: tem ou nao tem. Rolar de lado para ver esse
+   numero seria o mesmo que nao te-lo. */
+@media (max-width: 1200px) {
+  .es-materiais .tabela th:nth-child(6),
+  .es-materiais .tabela td:nth-child(6) {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .es-materiais .tabela th:nth-child(5),
   .es-materiais .tabela td:nth-child(5),
@@ -119,8 +130,8 @@
   }
 }
 
-/* No celular saem tambem a barra e o minimo, e o minimo reaparece embaixo do
-   nome. Sobra nome e quantidade, que e a pergunta inteira. */
+/* No celular o minimo reaparece embaixo do nome, onde ele continua ao lado do
+   que explica. */
 @media (max-width: 760px) {
   .es-no-celular {
     display: inline;
@@ -131,8 +142,8 @@
   }
   .es-materiais .tabela th:nth-child(2),
   .es-materiais .tabela td:nth-child(2),
-  .es-materiais .tabela th:nth-child(4),
-  .es-materiais .tabela td:nth-child(4),
+  .es-materiais .tabela th:nth-child(3),
+  .es-materiais .tabela td:nth-child(3),
   .es-razao .tabela th:nth-child(2),
   .es-razao .tabela td:nth-child(2),
   .es-razao .tabela th:nth-child(5),
@@ -144,6 +155,20 @@
 .es-apoio {
   color: var(--text-3);
   font-size: 12.5px;
+}
+
+/* A pilha de uma celula de numero alinha a direita como o resto da coluna. */
+.es-fim {
+  align-items: flex-end;
+}
+
+/* O que a reserva tirou, debaixo do que tem na prateleira. Ambar e nao
+   vermelho: reserva nao e problema, e trabalho vendido. O vermelho fica para o
+   livre que furou o minimo, que e a unica coisa aqui que pede acao. */
+.es-reserva {
+  color: var(--warn);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .es-pouco {

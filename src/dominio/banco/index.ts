@@ -19,6 +19,7 @@ export * from './repositorio'
 import type {
   Banco,
   Categoria,
+  Consumo,
   CorDeImpressao,
   CorDeTecido,
   Grupo,
@@ -34,7 +35,7 @@ import { grupoDoCodigo } from './tipos'
 export type SecaoDoBanco = { titulo: string; itens: Categoria[] }
 
 export const SECOES: SecaoDoBanco[] = [
-  { titulo: 'Layout', itens: ['referencias', 'tecidos'] },
+  { titulo: 'Layout', itens: ['referencias', 'tecidos', 'consumo'] },
   {
     titulo: 'Cabeçalho',
     itens: ['pagamento', 'entrega', 'embalagem', 'vendedor', 'departamento'],
@@ -45,6 +46,7 @@ export const SECOES: SecaoDoBanco[] = [
 export const NOME_DA_CATEGORIA: Record<Categoria, string> = {
   referencias: 'Referências',
   tecidos: 'Tecidos',
+  consumo: 'Consumo de tecido',
   pagamento: 'Formas de pagamento',
   entrega: 'Formas de entrega',
   embalagem: 'Embalagem',
@@ -60,6 +62,8 @@ export const LINHA_DA_CATEGORIA: Record<Categoria, string> = {
   referencias:
     'O código FT-GGG-NNNX é a identidade da peça na fábrica: grupo, sequencial e gênero. Ele não muda.',
   tecidos: 'Agrupados pela família comercial, que é como o vendedor pergunta, e não pela construção.',
+  consumo:
+    'Quanto uma peça come, por referência e por tamanho. É daqui que sai a reserva do pedido aprovado, e o que não estiver cadastrado aparece como falta em vez de virar zero.',
   pagamento: 'O que aparece no menu de pagamento do orçamento.',
   entrega: 'O que aparece no menu de entrega do orçamento.',
   embalagem: 'Como o pedido sai da fábrica.',
@@ -89,6 +93,9 @@ export function contar(banco: Banco): Record<Categoria, number> {
   return {
     referencias: banco.referencias.length,
     tecidos: banco.tecidos.length,
+    /* referências com pelo menos um tamanho cadastrado, e não linhas: o que o
+       menu precisa dizer é para quantas peças o sistema sabe responder. */
+    consumo: new Set(banco.consumo.map((c) => c.referenciaId)).size,
     pagamento: daLista('pagamento'),
     entrega: daLista('entrega'),
     embalagem: daLista('embalagem'),

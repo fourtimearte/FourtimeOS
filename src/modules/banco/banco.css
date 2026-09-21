@@ -300,6 +300,82 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* --- o consumo de tecido -------------------------------------------------- */
+
+/* O nome da referencia vira botao: a linha inteira clicavel nao daria, porque
+   ela ja tem o selo do lado e um alvo dentro do outro confunde o dedo. */
+.bd-abrir {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.bd-abrir:hover {
+  color: var(--brand-text);
+}
+.bd-abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.bd-consumo {
+  width: 100%;
+}
+/* Campo estreito porque o numero e curto, e a direita porque a coluna inteira
+   e numero: alinhar pela esquerda faria virgula com virgula deixar de bater. */
+.bd-consumo-campo {
+  width: 96px;
+  text-align: right;
+}
+/* Tamanho sem medida fica apagado: a grade inteira aparece sempre, e e o
+   contraste que diz de relance o que ainda falta preencher. */
+.bd-consumo .bd-vazia b {
+  color: var(--text-3);
+}
+
+/* --- a largura e a gramatura do rolo, na linha do tecido ----------------- */
+.bd-medidas {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  flex: none;
+}
+.bd-medida {
+  display: flex;
+  align-items: center;
+  gap: var(--re-2);
+}
+/* Campo estreito de proposito: gramatura tem tres digitos e largura tem
+   quatro. Um campo largo aqui pareceria pedir um texto. */
+.bd-medida .entrada {
+  width: 72px;
+  text-align: right;
+}
+.bd-medida small,
+.bd-medida-lida {
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* No celular a linha ja e apertada com nome, renomear e apagar: as medidas
+   descem para a tela larga, onde cadastrar em lote faz sentido. */
+@media (max-width: 760px) {
+  .bd-medidas {
+    display: none;
+  }
+}
+
 .bd-cod {
   flex: none;
   font-size: 12px;

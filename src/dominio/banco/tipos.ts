@@ -16,6 +16,7 @@ export type Categoria =
   | 'embalagem'
   | 'vendedor'
   | 'departamento'
+  | 'consumo'
   | 'cor-tecido'
   | 'dtf'
   | 'sublimacao'
@@ -42,6 +43,23 @@ export type Tecido = {
   grupo: string | null
   ordem: number
   ativo: boolean
+  /* As duas medidas que ligam metro a quilo (026). Nulas enquanto ninguém
+     cadastrou, e nulas é diferente de zero: com zero a conta daria zero quilo
+     e pareceria resposta. */
+  gramatura: number | null
+  largura: number | null
+}
+
+/* O consumo de UMA peça de uma referência, num tamanho. Guarda metros e quilos
+   porque ainda não está decidido qual dos dois a fábrica vai preencher, e um
+   deles basta quando o tecido tem largura e gramatura. */
+export type Consumo = {
+  id: string
+  referenciaId: string
+  tamanho: string
+  metros: number | null
+  quilos: number | null
+  observacao: string
 }
 
 export type CorDeTecido = {
@@ -82,6 +100,7 @@ export type Banco = {
   coresDeImpressao: CorDeImpressao[]
   listas: ItemDeLista[]
   problemas: Problema[]
+  consumo: Consumo[]
 }
 
 export const BANCO_VAZIO: Banco = {
@@ -94,6 +113,7 @@ export const BANCO_VAZIO: Banco = {
   coresDeImpressao: [],
   listas: [],
   problemas: [],
+  consumo: [],
 }
 
 /* --- o código da referência ------------------------------------------------

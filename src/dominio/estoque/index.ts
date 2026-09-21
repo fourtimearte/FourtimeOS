@@ -31,7 +31,15 @@ export type Material = {
   nome: string
   unidade: string
   minimo: number
+  /** o que está na prateleira: a soma do razão */
   saldo: number
+  /** o que os pedidos aprovados já comprometeram (026) */
+  reservado: number
+  /** saldo menos reservado: é por este número que o mínimo é julgado */
+  livre: number
+  pedidosReservando: number
+  /** algum pedido reserva este material sem consumo cadastrado */
+  reservaSemConsumo: boolean
   tecidoId: string
   corId: string
   tecido: string
@@ -78,6 +86,10 @@ type LinhaDoMaterial = {
   unidade: string
   minimo: number | string
   saldo: number | string
+  reservado: number | string
+  livre: number | string
+  pedidos_reservando: number | string
+  reserva_sem_consumo: boolean
   tecido_id: string | null
   cor_id: string | null
   tecido: string | null
@@ -88,7 +100,8 @@ type LinhaDoMaterial = {
 }
 
 const COLUNAS_DO_MATERIAL =
-  'id,categoria,nome,unidade,minimo,saldo,tecido_id,cor_id,tecido,cor,cor_hex,' +
+  'id,categoria,nome,unidade,minimo,saldo,reservado,livre,pedidos_reservando,' +
+  'reserva_sem_consumo,tecido_id,cor_id,tecido,cor,cor_hex,' +
   'abaixo_do_minimo,ultimo_movimento'
 
 /* O Postgres devolve numeric como TEXTO no JSON, e não como número: numeric
@@ -107,6 +120,10 @@ function deLinha(l: LinhaDoMaterial): Material {
     unidade: l.unidade,
     minimo: numero(l.minimo),
     saldo: numero(l.saldo),
+    reservado: numero(l.reservado),
+    livre: numero(l.livre),
+    pedidosReservando: numero(l.pedidos_reservando),
+    reservaSemConsumo: !!l.reserva_sem_consumo,
     tecidoId: l.tecido_id ?? '',
     corId: l.cor_id ?? '',
     tecido: l.tecido ?? '',
@@ -232,19 +249,23 @@ export async function conferirORazao(): Promise<
 
 /* ---------- as regras de leitura ----------------------------------------- */
 
+/* O MÍNIMO É JULGADO PELO LIVRE, E NÃO PELO SALDO. Decisão do Henrique em
+   21/09: a reserva tira. Não adianta ter 42 kg na prateleira se 30 já saíram em
+   pedido aprovado; a pergunta de compra é sobre o que sobra, e é ela que o
+   cartão do início precisa responder. */
 export function abaixoDoMinimo(lista: Material[]): Material[] {
-  return lista.filter((m) => m.saldo < m.minimo)
+  return lista.filter((m) => m.livre < m.minimo)
 }
 
 /** Quanto da barra encher: o mínimo fica na metade, para o olho comparar. */
 export function nivel(m: Material): number {
-  if (m.minimo <= 0) return m.saldo > 0 ? 100 : 0
-  return Math.max(0, Math.min(100, (m.saldo / (m.minimo * 2)) * 100))
+  if (m.minimo <= 0) return m.livre > 0 ? 100 : 0
+  return Math.max(0, Math.min(100, (m.livre / (m.minimo * 2)) * 100))
 }
 
 export function corDoNivel(m: Material): string {
-  if (m.saldo < m.minimo) return 'var(--brand)'
-  if (m.saldo < m.minimo * 1.3) return 'var(--warn)'
+  if (m.livre < m.minimo) return 'var(--brand)'
+  if (m.livre < m.minimo * 1.3) return 'var(--warn)'
   return 'var(--ok)'
 }
 
@@ -256,7 +277,7 @@ export function casasDaUnidade(unidade: string): number {
 }
 
 export function quantidade(m: Material): string {
-  return numeroNaUnidade(m.saldo, m.unidade)
+  return numeroNaUnidade(m.livre, m.unidade)
 }
 
 export function numeroNaUnidade(valor: number, unidade: string): string {
@@ -266,4 +287,82 @@ export function numeroNaUnidade(valor: number, unidade: string): string {
     ' ' +
     unidade
   )
+}
+
+/* ---------- a reserva ---------------------------------------------------- */
+
+/* O que um pedido aprovado comprometeu. Não é movimento: a malha continua na
+   prateleira, e sair dela é a separação (passo 8). */
+export type ReservaDoPedido = {
+  id: string
+  pedidoId: string
+  pedido: string
+  materialId: string
+  material: string
+  categoria: Categoria
+  quantidade: number
+  unidade: string
+  pecas: number
+  semConsumo: boolean
+  baixada: boolean
+  saldo: number
+  oEstoqueCobre: boolean
+}
+
+type LinhaDaReserva = {
+  id: string
+  pedido_id: string
+  pedido: string
+  material_id: string
+  material: string
+  categoria: Categoria
+  quantidade: number | string
+  unidade: string
+  pecas: number
+  sem_consumo: boolean
+  baixada: boolean
+  saldo: number | string
+  o_estoque_cobre: boolean
+}
+
+const COLUNAS_DA_RESERVA =
+  'id,pedido_id,pedido,material_id,material,categoria,quantidade,unidade,pecas,' +
+  'sem_consumo,baixada,saldo,o_estoque_cobre'
+
+export async function carregarReservasDoPedido(pedidoId: string): Promise<ReservaDoPedido[]> {
+  const linhas = await tabela<LinhaDaReserva[]>(
+    `reserva_do_pedido?select=${COLUNAS_DA_RESERVA}&pedido_id=eq.${pedidoId}` +
+      '&order=categoria.asc,material.asc',
+  )
+  return linhas.map((l) => ({
+    id: l.id,
+    pedidoId: l.pedido_id,
+    pedido: l.pedido ?? '',
+    materialId: l.material_id,
+    material: l.material,
+    categoria: l.categoria,
+    quantidade: numero(l.quantidade),
+    unidade: l.unidade,
+    pecas: Number(l.pecas) || 0,
+    semConsumo: !!l.sem_consumo,
+    baixada: !!l.baixada,
+    saldo: numero(l.saldo),
+    oEstoqueCobre: !!l.o_estoque_cobre,
+  }))
+}
+
+/* Refaz a reserva de um pedido a partir do documento e do consumo cadastrado.
+   É o que se chama depois de cadastrar um consumo que faltava: sem isso, a
+   reserva continuaria com a falta registrada no dia da aprovação. */
+export async function refazerAReserva(pedidoId: string): Promise<number> {
+  return chamar<number>('reservar_o_pedido', { p_pedido: pedidoId })
+}
+
+/* A reserva nasce com o consumo que existia no dia da aprovação. Cadastrar
+   depois o consumo que faltava não conserta sozinho o pedido que já passou, e
+   um número que só fica certo para quem chegou na ordem certa não é um número
+   em que alguém confia. Isto refaz todos os pedidos que ainda estão na fábrica,
+   e devolve quantos. */
+export async function refazerAsReservasAbertas(): Promise<number> {
+  return chamar<number>('refazer_as_reservas_abertas', {})
 }

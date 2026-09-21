@@ -34,6 +34,7 @@ import {
   mexerNoEstoque,
   nivel,
   numeroNaUnidade,
+  refazerAsReservasAbertas,
   type Material,
   type Motivo,
   type Movimento,
@@ -60,12 +61,13 @@ import './estoque.css'
    ========================================================================== */
 
 type Aba = 'materiais' | 'razao'
-type Faixa = '' | 'baixo' | 'atencao' | 'folga'
+type Faixa = '' | 'baixo' | 'atencao' | 'folga' | 'sem-consumo'
 
 const NOME_DA_FAIXA: Record<Exclude<Faixa, ''>, string> = {
   baixo: 'Abaixo do mínimo',
   atencao: 'Até 30% acima',
   folga: 'Com folga',
+  'sem-consumo': 'Reserva sem consumo',
 }
 
 /* O motivo pinta o selo: entrada e devolução somam, saída e separação tiram, e
@@ -78,9 +80,11 @@ const TOM_DO_MOTIVO: Record<Motivo, TomSelo> = {
   ajuste: 'warn',
 }
 
-function faixaDoMaterial(m: Material): Exclude<Faixa, ''> {
-  if (m.saldo < m.minimo) return 'baixo'
-  if (m.saldo < m.minimo * 1.3) return 'atencao'
+/* A faixa lê o LIVRE, e não o saldo: é o que sobra depois da reserva que decide
+   se falta material, e é por isso que a reserva existe. */
+function faixaDoMaterial(m: Material): 'baixo' | 'atencao' | 'folga' {
+  if (m.livre < m.minimo) return 'baixo'
+  if (m.livre < m.minimo * 1.3) return 'atencao'
   return 'folga'
 }
 
@@ -161,7 +165,8 @@ export function TelaEstoque() {
     const termo = semAcento(busca.trim())
     return materiais.filter((m) => {
       if (categoria && m.categoria !== categoria) return false
-      if (faixa && faixaDoMaterial(m) !== faixa) return false
+      if (faixa === 'sem-consumo' ? !m.reservaSemConsumo : faixa && faixaDoMaterial(m) !== faixa)
+        return false
       if (termo && !semAcento(m.nome).includes(termo)) return false
       return true
     })
@@ -177,15 +182,47 @@ export function TelaEstoque() {
     [materiais],
   )
 
+  const semConsumo = useMemo(() => materiais.filter((m) => m.reservaSemConsumo), [materiais])
+
   const opcoesDeFaixa = useMemo(
-    () =>
-      (['baixo', 'atencao', 'folga'] as const).map((f) => ({
+    () => [
+      ...(['baixo', 'atencao', 'folga'] as const).map((f) => ({
         valor: f,
         rotulo: NOME_DA_FAIXA[f],
         contagem: materiais.filter((m) => faixaDoMaterial(m) === f).length,
       })),
-    [materiais],
+      {
+        valor: 'sem-consumo',
+        rotulo: NOME_DA_FAIXA['sem-consumo'],
+        contagem: semConsumo.length,
+      },
+    ],
+    [materiais, semConsumo],
   )
+
+  const [refazendo, setRefazendo] = useState(false)
+
+  /* Depois de cadastrar um consumo que faltava, o pedido antigo continua com a
+     falta registrada. Este botão refaz a reserva de tudo que ainda está na
+     fábrica, a partir do documento e do consumo de agora. */
+  async function refazer() {
+    if (refazendo) return
+    setRefazendo(true)
+    try {
+      const quantos = await refazerAsReservasAbertas()
+      await recarregar()
+      avisar(
+        quantos === 1
+          ? 'Refiz a reserva de 1 pedido.'
+          : `Refiz a reserva de ${quantos} pedidos.`,
+        'ok',
+      )
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui refazer as reservas.', 'brand')
+    } finally {
+      setRefazendo(false)
+    }
+  }
 
   async function conferir() {
     try {
@@ -241,11 +278,28 @@ export function TelaEstoque() {
     },
     {
       chave: 'saldo',
-      titulo: 'Tem',
+      titulo: 'Na prateleira',
       numero: true,
       ordenarPor: (m) => m.saldo,
       celula: (m) => (
-        <b className={m.saldo < m.minimo ? 'es-pouco' : ''}>{numeroNaUnidade(m.saldo, m.unidade)}</b>
+        <span className="pilha colada es-fim">
+          <span className="es-apoio">{numeroNaUnidade(m.saldo, m.unidade)}</span>
+          {m.reservado > 0 || m.reservaSemConsumo ? (
+            <small className="es-reserva">
+              {m.reservado > 0 ? '-' + numeroNaUnidade(m.reservado, m.unidade) : 'reservado'}
+              {m.reservaSemConsumo ? ' + ?' : ''}
+            </small>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      chave: 'livre',
+      titulo: 'Livre',
+      numero: true,
+      ordenarPor: (m) => m.livre,
+      celula: (m) => (
+        <b className={m.livre < m.minimo ? 'es-pouco' : ''}>{numeroNaUnidade(m.livre, m.unidade)}</b>
       ),
     },
     {
@@ -334,11 +388,14 @@ export function TelaEstoque() {
           ) : (
             <>nenhum abaixo do mínimo</>
           )}{' '}
-          · o saldo vem do razão, e não de um campo
+          · o mínimo é julgado pelo livre, que é o que sobra depois da reserva
         </>
       }
       acoes={
         <>
+          <Botao tom="contorno" onClick={refazer} carregando={refazendo}>
+            Refazer as reservas
+          </Botao>
           <Botao tom="contorno" onClick={conferir}>
             Conferir o razão
           </Botao>
@@ -370,11 +427,25 @@ export function TelaEstoque() {
             setFaixa(faixa === 'baixo' ? '' : 'baixo')
           }}
         />
-        <Kpi rotulo="Movimentos na semana" valor={daSemana.length} sub="últimos sete dias" />
         <Kpi
-          rotulo="Linhas no razão"
-          valor={movimentos.length}
-          sub="histórico carregado"
+          rotulo="Sem consumo cadastrado"
+          valor={semConsumo.length}
+          sub={
+            semConsumo.length
+              ? 'pedido reserva, e não sei quanto'
+              : 'toda reserva tem tamanho'
+          }
+          aviso={semConsumo.length > 0}
+          ligado={faixa === 'sem-consumo'}
+          aoClicar={() => {
+            setAba('materiais')
+            setFaixa(faixa === 'sem-consumo' ? '' : 'sem-consumo')
+          }}
+        />
+        <Kpi
+          rotulo="Movimentos na semana"
+          valor={daSemana.length}
+          sub={movimentos.length + ' no histórico carregado'}
           ligado={aba === 'razao'}
           aoClicar={() => setAba('razao')}
         />
@@ -460,9 +531,12 @@ export function TelaEstoque() {
       </section>
 
       <p className="es-rodape">
-        Vermelho abaixo do mínimo, âmbar até 30% acima, verde com folga. O saldo é a soma do razão:
-        para corrigir uma contagem errada lance um ajuste, que fica no histórico com nome e hora. A
-        reserva do pedido aprovado e a separação de material entram nos passos 7 e 8.
+        Vermelho abaixo do mínimo, âmbar até 30% acima, verde com folga, sempre pelo livre. Na
+        prateleira é o que a contagem física vai achar; livre é o que sobra depois do que os
+        pedidos aprovados comprometeram. O <b>?</b> ao lado da reserva quer dizer que o pedido usa
+        o material e o consumo daquela referência não está cadastrado: ele entra em{' '}
+        <b>Configurações, Banco de dados, Consumo de tecido</b>. O saldo é a soma do razão, então
+        contagem errada se conserta com um ajuste, que fica no histórico com nome e hora.
       </p>
 
       <FolhaDeMovimento

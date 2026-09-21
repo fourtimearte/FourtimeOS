@@ -11,6 +11,7 @@
 import { tabela } from '@shared/supabase'
 import type {
   Banco,
+  Consumo,
   CorDeImpressao,
   CorDeTecido,
   Grupo,
@@ -36,6 +37,7 @@ export async function carregarBanco(): Promise<Banco> {
     coresDeImpressao,
     listas,
     problemas,
+    consumo,
   ] = await Promise.all([
     tabela<Grupo[]>(`grupo_de_referencia?${GRUPO}`),
     tabela<Grupo[]>(`grupo_de_tecido?${GRUPO}`),
@@ -43,7 +45,9 @@ export async function carregarBanco(): Promise<Banco> {
     tabela<Referencia[]>(
       'referencia?select=id,cod,nome,grupo,genero,ordem,ativo&order=cod.asc,nome.asc',
     ),
-    tabela<Tecido[]>('tecido?select=id,nome,grupo,ordem,ativo&order=ordem.asc,nome.asc'),
+    tabela<Tecido[]>(
+      'tecido?select=id,nome,grupo,ordem,ativo,gramatura,largura&order=ordem.asc,nome.asc',
+    ),
     tabela<CorDeTecido[]>(
       'cor_de_tecido?select=id,nome,hex,grupo,ordem,ativo&order=ordem.asc,nome.asc',
     ),
@@ -52,6 +56,7 @@ export async function carregarBanco(): Promise<Banco> {
     ),
     tabela<ItemDeLista[]>('lista_do_cabecalho?select=tipo,valor,ordem,ativo&order=ordem.asc'),
     tabela<Problema[]>('referencia_com_problema?select=id,cod,nome,problema'),
+    carregarConsumo(),
   ])
 
   return {
@@ -123,6 +128,88 @@ export async function renomearTecido(id: string, nome: string): Promise<Tecido> 
 
 export async function apagarTecido(id: string): Promise<void> {
   await tabela<void>(`tecido?id=eq.${id}`, { metodo: 'DELETE' })
+}
+
+/* Largura e gramatura do rolo. Campo vazio grava NULO, e não zero: zero diria
+   que o tecido não pesa nada, e a conversa de metro para quilo daria zero quilo
+   com cara de resposta. */
+export async function medirTecido(
+  id: string,
+  m: { gramatura: number | null; largura: number | null },
+): Promise<Tecido> {
+  const linhas = await tabela<Tecido[]>(`tecido?id=eq.${id}`, {
+    metodo: 'PATCH',
+    devolver: true,
+    corpo: { gramatura: m.gramatura, largura: m.largura },
+  })
+  return um(linhas)
+}
+
+/* --- consumo da referência ------------------------------------------------ */
+
+type LinhaDoConsumo = {
+  id: string
+  referencia_id: string
+  tamanho: string
+  metros: number | string | null
+  quilos: number | string | null
+  observacao: string
+}
+
+/* numeric chega como texto no JSON do PostgREST, igual ao saldo do estoque. */
+function medida(v: number | string | null): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+function deLinhaDoConsumo(l: LinhaDoConsumo): Consumo {
+  return {
+    id: l.id,
+    referenciaId: l.referencia_id,
+    tamanho: l.tamanho,
+    metros: medida(l.metros),
+    quilos: medida(l.quilos),
+    observacao: l.observacao ?? '',
+  }
+}
+
+export async function carregarConsumo(): Promise<Consumo[]> {
+  const linhas = await tabela<LinhaDoConsumo[]>(
+    'consumo_da_referencia?select=id,referencia_id,tamanho,metros,quilos,observacao' +
+      '&order=tamanho.asc',
+  )
+  return linhas.map(deLinhaDoConsumo)
+}
+
+export async function gravarConsumo(c: {
+  referenciaId: string
+  tamanho: string
+  metros: number | null
+  quilos: number | null
+  observacao?: string
+}): Promise<Consumo> {
+  const linhas = await tabela<LinhaDoConsumo[]>(
+    'consumo_da_referencia?on_conflict=referencia_id,tamanho',
+    {
+      metodo: 'POST',
+      devolver: true,
+      mesclar: true,
+      corpo: {
+        referencia_id: c.referenciaId,
+        tamanho: c.tamanho,
+        metros: c.metros,
+        quilos: c.quilos,
+        observacao: c.observacao ?? '',
+        atualizado_em: new Date().toISOString(),
+      },
+    },
+  )
+  return deLinhaDoConsumo(um(linhas))
+}
+
+export async function apagarConsumo(id: string): Promise<void> {
+  await tabela<void>(`consumo_da_referencia?id=eq.${id}`, { metodo: 'DELETE' })
 }
 
 /* --- cor de tecido -------------------------------------------------------- */

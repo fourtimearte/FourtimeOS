@@ -234,19 +234,51 @@
   }
 }
 
-/* O nome da página segura a linha; as quatro colunas encolhem até o alvo de
-   toque e param ali. Rolar de lado para achar a caixa é o mesmo que não ter
-   a caixa. */
+/* O nome da página segura a linha e quebra em duas se precisar; as quatro
+   colunas encolhem até o alvo de toque e param ali. */
+.ac-curto {
+  display: none;
+}
+
+.ac-legenda {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .ac-cel {
-    width: 58px;
+    width: 44px;
   }
 
   .ac-chave {
     display: none;
   }
 
+  .ac-largo {
+    display: none;
+  }
+
+  .ac-curto {
+    display: inline;
+  }
+
+  .ac-legenda {
+    display: block;
+    margin-bottom: var(--sp-2);
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
   .ac-grade {
     font-size: 13.5px;
+  }
+
+  .ac-pagina {
+    padding-left: 0;
+    padding-right: var(--re-3);
+  }
+
+  .ac-grade thead th:first-child,
+  .ac-grupo td {
+    padding-left: 0;
   }
 }

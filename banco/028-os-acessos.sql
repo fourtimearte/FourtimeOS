@@ -55,6 +55,10 @@ on conflict (chave) do nothing;
 -- funcao antiga recebe o enum: sem derrubar a view primeiro, o banco recusa
 -- derrubar a funcao, e sem derrubar a funcao a coluna nao muda de tipo.
 drop view if exists public.meu_perfil;
+-- A view equipe tambem le pessoa.papel, e o Postgres recusa mudar o tipo de uma
+-- coluna que uma view enxerga. Ela cai aqui e volta igual logo abaixo: a lista
+-- da equipe nao muda de forma nenhuma por causa desta migracao.
+drop view if exists public.equipe;
 drop function if exists public.paineis_do_papel(public.papel);
 
 alter table public.pessoa  alter column papel drop default;
@@ -74,6 +78,12 @@ alter table public.pessoa  add  constraint pessoa_papel_existe
 alter table public.convite drop constraint if exists convite_papel_existe;
 alter table public.convite add  constraint convite_papel_existe
   foreign key (papel) references public.papel_do_sistema (chave) on update cascade;
+
+-- a equipe volta exatamente como estava na 011
+create view public.equipe as
+select id, nome, papel, situacao from public.pessoa;
+
+grant select on public.equipe to authenticated;
 
 -- O tipo public.papel fica orfao de proposito. Derrubar ele aqui faria a
 -- migracao inteira voltar atras se algum objeto esquecido ainda apontasse

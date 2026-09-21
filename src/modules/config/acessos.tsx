@@ -33,6 +33,17 @@ import {
   salvarPermissao,
 } from '@dominio/acessos'
 import type { Matriz, Nivel, PapelDoSistema, Permissao } from '@dominio/acessos'
+
+/* NO CELULAR O CABECALHO VIRA LETRA, e a legenda acima da tabela ensina qual
+   e qual. Quatro rotulos por extenso empurram duas das quatro colunas para
+   fora da tela, e rolar de lado para achar a caixa e o mesmo que nao ter a
+   caixa: a pessoa marca o que ve e vai embora achando que terminou. */
+const LETRA_DO_NIVEL: Record<Nivel, string> = {
+  ver: 'V',
+  editar: 'E',
+  deletar: 'D',
+  total: 'T',
+}
 import { AbasDaConfig } from './abas'
 import './acessos.css'
 
@@ -360,18 +371,26 @@ export function TelaAcessos() {
               {!papelAtual ? (
                 <Vazio titulo="Nenhum papel" texto="Crie um papel para começar a marcar." />
               ) : (
+                <>
+                <p className="ac-legenda">
+                  V ver · E editar · D deletar · T controle total
+                </p>
                 <table className="ac-grade">
                   <thead>
                     <tr>
                       <th>Página</th>
                       {NIVEIS.map((n) => (
                         <th key={n} className="ac-cel">
-                          {NOME_DO_NIVEL[n]}
+                          <span className="ac-largo">{NOME_DO_NIVEL[n]}</span>
+                          <span className="ac-curto">{LETRA_DO_NIVEL[n]}</span>
                         </th>
                       ))}
                     </tr>
                     <tr className="ac-tudo">
-                      <th>marcar a coluna inteira</th>
+                      <th>
+                        <span className="ac-largo">marcar a coluna inteira</span>
+                        <span className="ac-curto">a coluna</span>
+                      </th>
                       {NIVEIS.map((n) => (
                         <th key={n} className="ac-cel">
                           <Botao tom="limpo" tamanho="sm" disabled={!!ocupado} onClick={() => void colunaInteira(n)}>
@@ -395,6 +414,7 @@ export function TelaAcessos() {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </Cartao>
           </div>

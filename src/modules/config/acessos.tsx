@@ -519,9 +519,10 @@ export function TelaAcessos() {
           <p className="ac-rodape">
             <Prohibit size={15} />
             Não existe deletar sem ver: marcar um nível acende os de baixo, e o banco recusa o
-            contrário. Por enquanto a matriz manda no menu, nas rotas e nos botões; as regras de
-            acesso do próprio banco continuam com a lista de papéis escrita à mão, e vão ser
-            trocadas uma por uma.
+            contrário. As {acoes.length} ações acima o banco já pergunta aqui antes de deixar
+            acontecer. O que ainda não passa por esta tela são as regras de leitura e escrita das
+            tabelas, que continuam com a lista de papéis escrita à mão e vão ser trocadas uma a
+            uma, com prova.
           </p>
         </>
       )}

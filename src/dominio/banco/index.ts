@@ -19,7 +19,6 @@ export * from './repositorio'
 import type {
   Banco,
   Categoria,
-  Consumo,
   CorDeImpressao,
   CorDeTecido,
   Grupo,

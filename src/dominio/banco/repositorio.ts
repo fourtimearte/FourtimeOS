@@ -69,6 +69,7 @@ export async function carregarBanco(): Promise<Banco> {
     coresDeImpressao,
     listas,
     problemas,
+    consumo,
   }
 }
 

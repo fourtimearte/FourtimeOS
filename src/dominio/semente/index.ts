@@ -335,6 +335,18 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
       if (!c) throw new Error('cotação sumiu no meio')
       const novo = await aprovarNoBanco(c, c.enviadas.length || 1)
 
+      /* UM DE CADA TRÊS FICA EM `aprovado`, esperando separação.
+
+         Apontar uma etapa é a fábrica encostar no pedido, e o gatilho da 020
+         move o pedido para produção no instante em que isso acontece. Se todos
+         recebessem etapa, a fila da Separação nasceria vazia e a tela nova não
+         teria o que mostrar no ensaio. A fábrica de verdade também tem os dois:
+         gente cortando e gente esperando material. */
+      if (i % 3 === 0) {
+        gravados++
+        continue
+      }
+
       /* espalha pela semana e pelos postos, senão a fábrica inteira nasce no
          corte da segunda-feira e o painel fica com uma coluna só */
       await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {

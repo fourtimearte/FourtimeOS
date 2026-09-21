@@ -209,10 +209,17 @@ export function App() {
     {
       titulo: 'Produção',
       itens: [
-        /* O PCP ABRE A PRODUÇÃO, e não a ficha. Ele é o portão: o pedido
-           aparece no chão de fábrica porque o PCP liberou, e não porque
-           alguém aprovou a venda. Um menu que começa pela ficha conta a
-           história na ordem errada. */
+        /* A ORDEM DO MENU É A ORDEM DO CAMINHO: separação, PCP, ficha,
+           kanban. A separação é quem descobre a verdade sobre o estoque, e o
+           PCP é o portão: o pedido aparece no chão de fábrica porque o PCP
+           liberou, e não porque alguém aprovou a venda. Um menu que começa
+           pela ficha conta a história na ordem errada. */
+        {
+          chave: 'separacao',
+          para: '/separacao',
+          rotulo: 'Separação',
+          icone: <Package {...icone} />,
+        },
         {
           chave: 'pcp',
           para: '/pcp',

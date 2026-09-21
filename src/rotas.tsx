@@ -15,6 +15,7 @@ import { TelaEstoque } from '@modules/estoque'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFunil } from '@modules/funil'
 import { TelaPcp } from '@modules/pcp'
+import { TelaSeparacao } from '@modules/separacao'
 import { TelaPerfil } from '@modules/perfil'
 import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
@@ -62,6 +63,10 @@ export const rotas = createBrowserRouter([
         path: 'cotacao/:id/producao',
         element: pede('cotacao', <DocumentoDaCotacao para="producao" />),
       },
+      /* A SEPARACAO VEM ANTES DO PCP, no menu e no caminho. Ela e quem
+         descobre a verdade sobre o estoque; o PCP e quem decide o que fazer
+         com o que faltou. */
+      { path: 'separacao', element: pede('separacao', <TelaSeparacao />) },
       { path: 'pcp', element: pede('pcp', <TelaPcp />) },
       /* A ROTA DA FICHA CONTINUA DE PE mesmo com a pagina escondida no menu.
          Esconder e guardar, e nao apagar: quem tem o endereco ainda abre, e e

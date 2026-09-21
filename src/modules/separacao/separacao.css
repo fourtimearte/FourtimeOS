@@ -1,0 +1,197 @@
+/* ==========================================================================
+   Separação.
+
+   Fila à esquerda, pedido aberto à direita. Abaixo de 1100px as duas viram
+   uma coluna, com a fila em cima: no tablet do galpão quem separa escolhe o
+   pedido uma vez e trabalha na lista, então a lista é quem merece a tela.
+
+   A folga ENTRE os blocos é da página, então nada aqui escreve margin-bottom.
+   ========================================================================== */
+
+.sp-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--sp-3);
+}
+@media (min-width: 1024px) {
+  .sp-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.sp-mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .sp-mesa {
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  }
+}
+
+/* --- a fila ---------------------------------------------------------------
+   A fila rola dentro dela mesma no computador, e não com a página: quem separa
+   volta para o mesmo pedido o tempo todo, e uma fila que desaparece para cima
+   obriga a subir a página inteira para trocar de pedido. */
+.sp-fila {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .sp-fila {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+.sp-item {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  padding: var(--pad-linha);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-height: 44px;
+  min-width: 0;
+  transition: background var(--t-fast);
+}
+.sp-item:last-child {
+  border-bottom: 0;
+}
+.sp-item:hover {
+  background: var(--surface-2);
+}
+.sp-item.escolhido {
+  background: var(--surface-2);
+  border-left-color: var(--ink);
+}
+.sp-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.sp-item-topo,
+.sp-item-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+  min-width: 0;
+}
+
+.sp-numero {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.sp-cliente {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* --- o pedido aberto ----------------------------------------------------- */
+.sp-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.sp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  padding: var(--pad-linha);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.sp-pe {
+  padding: var(--pad-linha);
+  border-top: 1px solid var(--border);
+}
+
+.sp-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* --- as peças miúdas ----------------------------------------------------- */
+.sp-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sp-apoio {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.sp-pouco {
+  color: var(--brand-text);
+  font-size: 12.5px;
+}
+
+/* O que já saiu fica verde, e não preto: a linha separada é a única coisa
+   nesta tela que não pede mais nada de ninguém. */
+.sp-saiu {
+  color: var(--ok);
+}
+.sp-pronto {
+  color: var(--ok);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.sp-campo {
+  width: 92px;
+  text-align: right;
+}
+
+.sp-no-celular {
+  display: none;
+}
+
+/* A TABELA PERDE COLUNA POR ORDEM DE QUEM PROCURA MENOS.
+
+   1 material, 2 precisa, 3 na prateleira, 4 saiu, 5 acao. Primeiro sai a
+   prateleira, que e conferencia e nao trabalho; depois a conta, que desce para
+   a linha de baixo do nome. O que nunca sai e o nome, o campo e o botao, que
+   sao a tarefa inteira de quem esta com o carrinho na mao. */
+@media (max-width: 900px) {
+  .sp-quadro .tabela th:nth-child(3),
+  .sp-quadro .tabela td:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .sp-no-celular {
+    display: inline;
+  }
+  .sp-nome {
+    white-space: normal;
+    overflow: visible;
+  }
+  .sp-quadro .tabela th:nth-child(2),
+  .sp-quadro .tabela td:nth-child(2) {
+    display: none;
+  }
+  .sp-campo {
+    width: 68px;
+  }
+}

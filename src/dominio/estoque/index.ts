@@ -305,6 +305,8 @@ export type ReservaDoPedido = {
   pecas: number
   semConsumo: boolean
   baixada: boolean
+  /** o que saiu da prateleira de verdade; 0 enquanto não separou */
+  separado: number
   saldo: number
   oEstoqueCobre: boolean
 }
@@ -321,13 +323,14 @@ type LinhaDaReserva = {
   pecas: number
   sem_consumo: boolean
   baixada: boolean
+  separado: number | string | null
   saldo: number | string
   o_estoque_cobre: boolean
 }
 
 const COLUNAS_DA_RESERVA =
   'id,pedido_id,pedido,material_id,material,categoria,quantidade,unidade,pecas,' +
-  'sem_consumo,baixada,saldo,o_estoque_cobre'
+  'sem_consumo,baixada,separado,saldo,o_estoque_cobre'
 
 export async function carregarReservasDoPedido(pedidoId: string): Promise<ReservaDoPedido[]> {
   const linhas = await tabela<LinhaDaReserva[]>(
@@ -346,6 +349,7 @@ export async function carregarReservasDoPedido(pedidoId: string): Promise<Reserv
     pecas: Number(l.pecas) || 0,
     semConsumo: !!l.sem_consumo,
     baixada: !!l.baixada,
+    separado: numero(l.separado),
     saldo: numero(l.saldo),
     oEstoqueCobre: !!l.o_estoque_cobre,
   }))
@@ -366,3 +370,6 @@ export async function refazerAReserva(pedidoId: string): Promise<number> {
 export async function refazerAsReservasAbertas(): Promise<number> {
   return chamar<number>('refazer_as_reservas_abertas', {})
 }
+
+export { concluirASeparacao, comecarASeparacao, carregarFilaDaSeparacao, desfazerASeparacao, separarMaterial } from './separacao'
+export type { PedidoNaSeparacao } from './separacao'

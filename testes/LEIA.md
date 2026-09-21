@@ -81,3 +81,40 @@ dominio nao tem JSX dentro.
 ## npm run conferir
 
 Roda tudo de uma vez: tipos, classes, contas e semana. **Antes de empurrar.**
+
+## npm run tokens
+
+A conferencia de leitura. Varre todo o CSS do `src/` e acusa: travessao em
+qualquer texto, elemento padrao do navegador, `outline:none` sem substituto,
+`font-family` sem token, cor literal, raio fora da escala e `transition` fora da
+faixa de 150 a 260ms.
+
+Ela le a escala de raio do proprio `tokens.css`, entao mudar a escala nao exige
+mexer no teste. Tres arquivos sao livres de cor literal por natureza e estao
+escritos dentro dela: `ds/tokens.css`, que e a origem, e `dominio/layout/folha.css`
+com `modules/cotacao/documento.css`, que sao papel A4, branco nos dois temas de
+proposito.
+
+Ela sabe distinguir o separador de dado do editor (`FT-010-000M — CAMISETA`) de
+um travessao escrito em texto, e sabe que a unica caixa de marcacao crua
+permitida e a que o proprio Design System esconde dentro de
+`ds/componentes/formulario.tsx`.
+
+## npm run prova
+
+A bancada. A conferencia de tokens le texto e nao ve tela torta; esta ve.
+
+```
+npm run prova pedaco.html                      so o Design System
+npm run prova pedaco.html modules/funil/funil  com a folha do modulo
+```
+
+Monta uma pagina com as folhas REAIS, na ordem de `estilo.css`, poe o pedaco de
+HTML dentro e fotografa em 390, 820 e 1440, nos dois temas, em `testes/prova/`.
+O `pedaco.html` e so o corpo: sem `<html>`, sem `<head>`, sem `<style>`.
+
+Ela mede sozinha rolagem horizontal, alvo de toque abaixo de 44px em 820 ou
+menos, e elemento passando da borda direita. **E ela nao mede contraste,
+alinhamento, peso de fonte, espaco torto nem cor que sumiu no tema escuro.** Por
+isso ela termina mandando olhar as fotos. Rodar e nao olhar e o mesmo que nao
+rodar.

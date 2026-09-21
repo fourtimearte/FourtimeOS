@@ -19,7 +19,9 @@
     "sessao": "sh testes/sessao.sh",
     "semana": "sh testes/semana.sh",
     "tipos": "sh testes/tipos.sh",
-    "conferir": "npm run tipos && npm run classes && npm run contas && npm run semana"
+    "conferir": "npm run tipos && npm run classes && npm run tokens && npm run contas && npm run semana",
+    "tokens": "node testes/tokens.mjs",
+    "prova": "node testes/prova.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

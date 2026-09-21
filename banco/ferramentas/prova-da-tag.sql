@@ -64,10 +64,15 @@ begin
   r := r || case when et = 'dtf' then 'ok    ' else 'FALHA ' end
          || 'a etapa do pedido segue a fatia mais atrasada [' || et || ']' || E'\n';
 
-  /* 4. quando a mais atrasada nao tem familia, a tag e o proprio posto */
+  /* 4. quando a mais atrasada nao tem familia, a tag e o proprio posto.
+        subli esta em costura (faltam 2: embalagem e finalizado) e dtf em
+        cd-costura (faltam 3: costura, embalagem e finalizado), entao a mais
+        atrasada e a do dtf. Esta conta ja me pegou uma vez: eu tinha escrito
+        'costura' aqui, olhando o nome do posto em vez de contar o que falta,
+        e o teste me corrigiu. */
   update public.fatia set etapa = 'cd-costura' where pedido_id = alvo and tecnica = 'dtf';
   tag := public.tag_do_pedido(alvo);
-  r := r || case when tag = 'costura' then 'ok    ' else 'FALHA ' end
+  r := r || case when tag = 'cd-costura' then 'ok    ' else 'FALHA ' end
          || 'posto sem familia aparece com o proprio nome [' || coalesce(tag,'null') || ']' || E'\n';
 
   /* 5. fatia fechada sai da conta da tag */
@@ -79,14 +84,23 @@ begin
   r := r || case when fim is null then 'ok    ' else 'FALHA ' end
          || 'o pedido NAO fecha com uma fatia ainda correndo' || E'\n';
 
-  /* 6. a ultima fatia fecha o pedido, e fecha na DATA DELA */
+  /* 6. a ultima fatia fecha o pedido, e fecha na DATA DELA.
+        As duas fatias sao apontadas com data no passado, uma ha cinco dias e
+        outra ha tres. O pedido tem que fechar na de TRES, que e a ultima a
+        terminar, e nao em now(), que e a hora em que alguem lembrou de
+        apontar. A regra da virada de semana depende disso: o trabalho que
+        terminou na sexta pertence a sexta, mesmo apontado na segunda. */
   update public.fatia set etapa = 'finalizado' where pedido_id = alvo and tecnica = 'subli';
+  update public.fatia set fechado_em = marco - interval '2 days'
+   where pedido_id = alvo and tecnica = 'dtf';
   update public.fatia set fechado_em = marco where pedido_id = alvo and tecnica = 'subli';
   select etapa::text, fechado_em into et, fim from public.pedido where id = alvo;
   r := r || case when et = 'finalizado' then 'ok    ' else 'FALHA ' end
          || 'com todas fechadas o pedido finaliza [' || et || ']' || E'\n';
   r := r || case when fim = marco then 'ok    ' else 'FALHA ' end
-         || 'e fecha na data da ULTIMA fatia, e nao em now() [' || coalesce(fim::text,'null') || ']' || E'\n';
+         || 'e fecha na data da ULTIMA a terminar [' || coalesce(fim::text,'null') || ']' || E'\n';
+  r := r || case when fim < now() - interval '1 day' then 'ok    ' else 'FALHA ' end
+         || 'e nao em now(), que e a hora em que alguem apontou' || E'\n';
   tag := public.tag_do_pedido(alvo);
   r := r || case when tag is null then 'ok    ' else 'FALHA ' end
          || 'pedido sem fatia aberta nao tem tag [' || coalesce(tag,'null') || ']' || E'\n';

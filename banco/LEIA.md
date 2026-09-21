@@ -57,3 +57,30 @@ ali que mora email e foto.
 
 Ela expoe quatro colunas: id, nome, papel, ativo. Se um dia alguem for
 acrescentar coluna nela, pense duas vezes.
+
+## banco/ferramentas/prova-da-tag.sql
+
+A conferencia da regra da tag do pedido, da 024. Roda no SQL Editor quantas
+vezes quiser: ela termina levantando um erro de proposito, e por isso tudo que
+fez e desfeito. O relatorio sai dentro da mensagem de erro, uma linha por caso.
+
+**O teste mora em SQL porque a regra mora em SQL.** Ela e um gatilho, e precisa
+valer para o arrastar do kanban, para um PATCH direto e para o ensaio.
+Reescrever a mesma regra em TypeScript so para poder testa-la seria a mesma
+regra em duas linguagens, que e exatamente o que o resto deste banco evita.
+
+Ele ja se pagou na primeira rodada, acusando duas falhas que eram MINHAS, e nao
+do banco:
+
+- eu esperava que a tag de "subli em costura e dtf em cd-costura" fosse
+  `costura`, olhando o nome do posto. E `cd-costura`: faltam tres postos para o
+  dtf e dois para a subli, entao o dtf e quem esta mais atrasado. "Mais
+  atrasado" se conta, nao se adivinha pelo nome.
+- eu apontei a data passada numa fatia so e esperei que o pedido fechasse nela.
+  O pedido fecha na data da ULTIMA a terminar, que e um `max`, e a outra fatia
+  ainda estava com `now()`. O teste agora aponta as duas no passado, que e o
+  caso que ele existe para provar.
+
+Fingir uma sessao e legitimo e esta no arquivo: `set_config('request.jwt.claims',
+...)` faz `auth.uid()` devolver a pessoa escolhida, e sem isso as travas de
+papel nao valem no SQL Editor e o teste passaria por engano.

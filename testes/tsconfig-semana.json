@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "outDir": "./compilado-semana",
+    "rootDir": "..",
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "..",
+    "paths": { "@ds": ["testes/stub-ds.ts"] }
+  },
+  "files": ["../src/dominio/producao/semana.ts"]
+}

@@ -16,7 +16,8 @@
     "visual:aprovar": "python3 testes/comparar.py --aprovar",
     "classes": "node testes/classes.mjs",
     "arquivo": "sh testes/arquivo-ficha.sh",
-    "sessao": "sh testes/sessao.sh"
+    "sessao": "sh testes/sessao.sh",
+    "semana": "sh testes/semana.sh"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

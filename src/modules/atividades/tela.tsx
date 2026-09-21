@@ -11,13 +11,17 @@ import {
   DIAS_UTEIS,
   ETAPAS,
   POSTO,
+  aoVirarODia,
   atrasado,
   diaDaSemanaDe,
   diaEMes,
   ehHoje,
   etapaVelha,
+  finalizarEm,
+  hojeISO,
   iso,
   carregarPedidos,
+  montarSemana,
   moverEtapa,
   mudarAviso,
   mudarEntrega,
@@ -26,6 +30,7 @@ import {
   semanaDoAno,
   tituloDaSemana,
   type Aviso,
+  type Colocacao,
   type Etapa,
   type Pedido,
 } from '@dominio/producao'
@@ -89,6 +94,46 @@ export function TelaAtividades() {
     void recarregar()
   }, [recarregar])
 
+  /* ---------- O PAINEL SE ATUALIZA SOZINHO ------------------------------
+
+     Tres relogios, e cada um conserta uma forma diferente de esta tela
+     mentir sem avisar.
+
+     1. HOJE. A colocacao de cada pedido depende do dia. Lido uma vez na
+        montagem, o painel atravessa a meia-noite de domingo mostrando na
+        semana corrente o que ja e da semana passada, e e exatamente ai que o
+        painel antigo quebrava. `aoVirarODia` se reagenda sozinho.
+
+     2. A FABRICA. A etapa que a tag mostra e a MESMA coluna que o kanban
+        grava: quando um cartao passa de Corte para Impressao DTF, o dado ja
+        mudou para todo mundo. O que falta e esta tela reler. Trinta segundos
+        e mais do que suficiente para um quadro que uma pessoa aponta a cada
+        poucos minutos, e nao pesa: sao dezenas de linhas, nao milhares.
+
+     3. A VOLTA PARA A ABA. O tablet do galpao passa a noite com a tela
+        apagada, e temporizador em aba escondida e estrangulado pelo
+        navegador. Ao voltar para a frente, rele na hora, sem esperar o
+        proximo intervalo. */
+  const [hoje, setHoje] = useState(hojeISO)
+
+  useEffect(() => aoVirarODia(setHoje), [])
+
+  useEffect(() => {
+    const t = setInterval(() => void recarregar(), 30000)
+    const aoVoltar = () => {
+      if (document.visibilityState !== 'visible') return
+      setHoje(hojeISO())
+      void recarregar()
+    }
+    document.addEventListener('visibilitychange', aoVoltar)
+    window.addEventListener('focus', aoVoltar)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', aoVoltar)
+      window.removeEventListener('focus', aoVoltar)
+    }
+  }, [recarregar])
+
   /* Troca um pedido na lista sem reler a fabrica inteira: mexer num cartao nao
      deveria custar uma consulta de tudo. */
   const trocar = useCallback((p: Pedido | null) => {
@@ -125,18 +170,46 @@ export function TelaAtividades() {
     [inicio],
   )
 
-  /* So os que estao planejados nesta semana. O painel mostra tambem o que ja
-     finalizou: esconder os prontos faria a saturacao do dia mentir, que e
-     justamente a conta que esta tela existe para responder. */
-  const pedidos = useMemo(() => {
-    const dias = new Set(diasDaSemana.map((d) => iso(d.data)))
-    return todos.filter((p) => dias.has(p.planejadoEm))
-  }, [todos, diasDaSemana])
+  /* ---------- A SEMANA, MONTADA PELA REGRA -------------------------------
 
-  const filtrados = useMemo(
-    () => (etapa ? pedidos.filter((p) => p.etapa === etapa) : pedidos),
-    [pedidos, etapa],
+     Aqui estava o bug da virada, e vale deixar escrito o que ele era:
+
+         const doDia = filtrados.filter((p) => p.planejadoEm === chave)
+
+     Filtrar por `planejadoEm` antes de colocar joga fora exatamente o pedido
+     que a virada existe para resgatar. O atrasado tem `planejadoEm` na semana
+     passada, entao o filtro o descarta ANTES de a regra ter chance de o
+     trazer para esta semana: ele nao aparece em lugar nenhum e ninguem
+     percebe, porque tela que perde linha nao da erro, so fica errada.
+
+     `montarSemana` inverte a ordem: coloca todos os pedidos primeiro, com a
+     regra, e so depois fica com os que cairam nesta semana. E ela nao grava
+     nada: a colocacao e derivada de `fechado_em`, `planejado_em` e de que dia
+     e hoje. Por isso a semana passada continua mostrando o que foi feito
+     nela, e nao muda sozinha depois de fechada. */
+  const daEtapa = useMemo(
+    () => (etapa ? todos.filter((p) => p.etapa === etapa) : todos),
+    [todos, etapa],
   )
+
+  const semanaMontada = useMemo(
+    () => montarSemana(daEtapa, iso(inicio), hoje),
+    [daEtapa, inicio, hoje],
+  )
+
+  /* A pendencia: o que caiu aqui porque a semana dele acabou sem finalizar,
+     mais o que entrou no sistema e ninguem planejou. E a fila de triagem da
+     segunda-feira, e o filtro do topo isola ela com um clique. */
+  const pendencia = semanaMontada.pendencia
+  const [soPendencia, setSoPendencia] = useState(false)
+
+  const visiveis = useMemo(() => {
+    if (!soPendencia) return semanaMontada
+    const ids = new Set(pendencia.map((p) => p.id))
+    return montarSemana(daEtapa.filter((p) => ids.has(p.id)), iso(inicio), hoje)
+  }, [soPendencia, semanaMontada, pendencia, daEtapa, inicio, hoje])
+
+  const filtrados = visiveis.pedidos
 
   const pecas = filtrados.reduce((s, p) => s + p.pecas, 0)
   const pecasSubli = filtrados.reduce((s, p) => s + p.pecasSubli, 0)
@@ -362,6 +435,31 @@ export function TelaAtividades() {
         </div>
       </div>
 
+      {/* A FILA DA SEGUNDA-FEIRA. Sem esta faixa, o que a virada traz de volta
+          se mistura com o que foi planejado e a segunda vira uma pilha sem
+          explicação: o operador vê o dia vermelho e não sabe se a semana
+          nasceu cheia ou se herdou. Ela só aparece quando existe o que
+          triar, e o botão isola essas linhas para arrastar uma a uma. */}
+      {pendencia.length ? (
+        <div className={soPendencia ? 'at-fila ligada' : 'at-fila'}>
+          <span className="at-fila-num">{pendencia.length}</span>
+          <span className="at-fila-txt">
+            {pendencia.length === 1 ? 'pedido esperando' : 'pedidos esperando'} um dia nesta semana
+            <small>
+              {pendencia.reduce((t, x) => t + x.pecas, 0).toLocaleString('pt-BR')} peças que vieram
+              de uma semana que terminou sem finalizar, ou que entraram sem planejamento
+            </small>
+          </span>
+          <Botao
+            tom={soPendencia ? 'forte' : 'contorno'}
+            tamanho="sm"
+            onClick={() => setSoPendencia((v) => !v)}
+          >
+            {soPendencia ? 'Ver a semana toda' : 'Ver só estes'}
+          </Botao>
+        </div>
+      ) : null}
+
       {/* O cabecalho gruda no topo sozinho, e a linha de dia nao: rolando uma
           semana cheia, o que se perde de vista e o nome das colunas. Ele tem
           contraste proprio, mais escuro que a linha de dia, para os dois nao
@@ -378,10 +476,11 @@ export function TelaAtividades() {
         <span>Atualização</span>
       </div>
 
-      {diasDaSemana.map(({ nome, data }) => {
+      {diasDaSemana.map(({ nome, data }, i) => {
         const chave = iso(data)
-        const doDia = filtrados.filter((p) => p.planejadoEm === chave)
-        const pecasDoDia = doDia.reduce((s, p) => s + p.pecas, 0)
+        const coluna = visiveis.dias[i]
+        const doDia = coluna.pedidos
+        const pecasDoDia = coluna.pecas
         const pct = Math.round((pecasDoDia / CAPACIDADE_DO_DIA) * 100)
         const folga = CAPACIDADE_DO_DIA - pecasDoDia
         return (
@@ -418,7 +517,12 @@ export function TelaAtividades() {
                 <Linha
                   key={p.id}
                   pedido={p}
+                  colocacao={visiveis.onde.get(p.id)}
                   carregando={arrasto?.id === p.id && arrasto.valendo}
+                  aoFinalizarEm={(d) => {
+                    avisar(p.numero + ' finalizado em ' + diaEMes(new Date(d + 'T12:00:00')), 'ok')
+                    void gravar(finalizarEm(p.id, d))
+                  }}
                   aoPegar={(ev) => pegar(ev, p)}
                   aoTrocarEtapa={(e) => {
                     const de = POSTO[p.etapa].nome
@@ -475,27 +579,40 @@ export function TelaAtividades() {
 /* --- uma linha de pedido -------------------------------------------------- */
 function Linha({
   pedido,
+  colocacao,
   carregando,
   aoPegar,
   aoTrocarEtapa,
   aoTrocarAviso,
   aoTrocarEntrega,
   aoTrocarPlanejamento,
+  aoFinalizarEm,
 }: {
   pedido: Pedido
+  colocacao?: Colocacao
   carregando: boolean
   aoPegar: (e: PointerEventoReact<HTMLElement>) => void
   aoTrocarEtapa: (e: Etapa) => void
   aoTrocarAviso: (a: Aviso) => void
   aoTrocarEntrega: (d: string) => void
   aoTrocarPlanejamento: (d: string) => void
+  aoFinalizarEm: (d: string) => void
 }) {
   const p = pedido
   const late = atrasado(p)
   const velha = etapaVelha(p)
+  /* De onde ele veio parar neste dia. So importa quando nao foi uma pessoa
+     que o pos aqui: linha que apareceu sozinha precisa dizer isso, senao o
+     operador acha que alguem planejou para hoje. */
+  const origem = colocacao?.origem
   return (
     <div
-      className={['at-linha', late ? 'atrasada' : '', carregando ? 'carregando' : '']
+      className={[
+        'at-linha',
+        late ? 'atrasada' : '',
+        carregando ? 'carregando' : '',
+        origem === 'arrastado' || origem === 'novo' ? 'pendente' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >
@@ -565,7 +682,13 @@ function Linha({
         />
       </span>
 
-      <span className="esconde">
+      {/* A MARCA DE QUEM CHEGOU SOZINHO. Um pedido que caiu na segunda-feira
+          porque a semana dele acabou não pode parecer igual a um que alguém
+          planejou para segunda: são a mesma linha com histórias opostas, e é
+          o operador que precisa separar as duas para decidir. A pílula
+          continua mostrando o dia REAL do banco, que é a semana passada, e
+          não o dia em que a linha está aparecendo. */}
+      <span className="esconde at-planejado">
         <DataEmPilula
           rotulo="Planejamento"
           valor={p.planejadoEm}
@@ -577,6 +700,16 @@ function Linha({
               : 'Dia sugerido pelo sistema. Escolher uma data marca como manual.'
           }
         />
+        {origem === 'arrastado' ? (
+          <small className="at-veio" title="A semana dele terminou sem finalizar. Arraste para o dia certo, ou finalize na data em que ele ficou pronto.">
+            veio da semana passada
+          </small>
+        ) : null}
+        {origem === 'novo' ? (
+          <small className="at-veio novo" title="Entrou no sistema e ninguém planejou ainda.">
+            sem planejamento
+          </small>
+        ) : null}
       </span>
 
       <span className="num at-forte">{p.pecas}</span>
@@ -595,6 +728,21 @@ function Linha({
           vazio="sem etapa"
           aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
         />
+        {/* EM QUE DIA ELE FICOU PRONTO, e não em que dia alguém lembrou de
+            apontar. É este campo que devolve o pedido para a semana em que o
+            trabalho aconteceu: a colocação lê a finalização antes de tudo,
+            então escolher a sexta passada aqui tira a linha desta semana e a
+            põe de volta lá, sozinha. Só aparece quando a etapa é finalizado,
+            porque em qualquer outra o banco zera esta data. */}
+        {p.etapa === 'finalizado' ? (
+          <DataEmPilula
+            rotulo="Pronto em"
+            valor={p.fechadoEm}
+            marcada
+            aoMudar={aoFinalizarEm}
+            titulo="O dia em que ele ficou pronto de verdade. Mudar aqui devolve o pedido para a semana daquele dia."
+          />
+        ) : null}
       </span>
     </div>
   )

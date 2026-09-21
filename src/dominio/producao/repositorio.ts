@@ -64,7 +64,7 @@ function deLinha(l: LinhaDaFabrica): Pedido {
     tecnicas: (l.tecnicas ?? []) as Pedido['tecnicas'],
     planejadoEm: l.planejado_em ?? '',
     planejamentoManual: !!l.planejamento_manual,
-    fechadoEm: (l.fechado_em ?? '').slice(0, 10),
+    fechadoEm: diaLocal(l.fechado_em),
     aviso: (l.aviso ?? '') as Aviso,
     atualizadoEm: l.etapa_em,
     pecasSubli: Number(l.pecas_subli) || 0,
@@ -74,6 +74,27 @@ function deLinha(l: LinhaDaFabrica): Pedido {
     total: Number(l.total) || 0,
     teste: !!l.teste,
   }
+}
+
+/* ---------- o dia em que aquilo aconteceu, no fuso da fábrica -----------
+
+   `fechado_em` é timestamptz e chega em UTC. Cortar os dez primeiros
+   caracteres do texto parecia inofensivo e é um erro de um dia esperando
+   acontecer: Goiânia é UTC-3, então tudo que a fábrica aponta a partir das
+   21h já está no dia seguinte em UTC. O turno da noite de sexta cairia no
+   sábado, e uma sexta apontada às 21h30 apareceria na semana certa por
+   sorte, mas um sábado às 21h30 pularia para o domingo e, dali, para a
+   semana seguinte inteira.
+
+   Convertendo para Date e lendo o calendário local, o dia é o dia que a
+   pessoa viveu, que é o único que interessa a esta conta. */
+function diaLocal(ts: string | null): string {
+  if (!ts) return ''
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return ''
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return d.getFullYear() + '-' + m + '-' + dia
 }
 
 /* Os que estão na fábrica agora: tudo que ainda não saiu.
@@ -134,4 +155,28 @@ export function mudarEntrega(id: string, dia: string) {
 
 export function mudarAviso(id: string, aviso: Aviso) {
   return mexer(id, { aviso })
+}
+
+/* ---------- finalizar numa data escolhida a mao --------------------------
+
+   O caso real: o pedido ficou pronto na sexta, ninguem apontou, a semana
+   virou e ele reapareceu na segunda. O operador sabe que ele nao e desta
+   semana. Marcar a etapa como finalizada hoje o ancoraria em HOJE, e a
+   semana passada continuaria com um buraco.
+
+   Por isso os dois campos vao juntos numa gravacao so. O gatilho do banco
+   (acertar_etapa_do_pedido) so carimba `fechado_em := now()` quando ele
+   chega nulo; mandando a data junto, ela e respeitada.
+
+   Uma vez feito isso, o pedido sai desta semana e volta para a semana em que
+   ficou pronto, sozinho, porque a colocacao le `fechado_em` primeiro. */
+export function finalizarEm(id: string, dia: string) {
+  return mexer(id, { etapa: 'finalizado', fechado_em: dia || null })
+}
+
+/* Tirar de finalizado. Nao precisa mexer em `fechado_em`: o mesmo gatilho o
+   zera sozinho quando a etapa deixa de ser finalizado, e duplicar essa regra
+   aqui seria o tipo de coisa que um dia discorda do banco. */
+export function reabrir(id: string, etapa: Etapa) {
+  return mexer(id, { etapa })
 }

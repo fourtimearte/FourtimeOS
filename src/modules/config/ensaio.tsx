@@ -126,7 +126,7 @@ export function TelaEnsaio() {
         ) : (
           <div className="cfg-contas">
             {contas.map((c) => (
-              <div key={c.tabela} className={c.linhas ? 'cfg-conta tem' : 'cfg-conta'}>
+              <div key={c.tabela} className={c.linhas ? 'cfg-caixa tem' : 'cfg-caixa'}>
                 <b>{c.linhas.toLocaleString('pt-BR')}</b>
                 <span>{ROTULO[c.tabela] ?? c.tabela}</span>
               </div>

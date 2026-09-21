@@ -356,17 +356,22 @@
   font-size: 10px;
   font-weight: 700;
 }
+/* AS TINTAS DE GENERO DO DESIGN SYSTEM, e nao tres cores escritas na mao.
+   Azul, rosa e verde estavam fixos, iguais nos dois temas, sobre um fundo do
+   mesmo tom a 16%: no Gelo dava certo, no Grafite a letra colorida caia sobre
+   superficie quase preta e o contraste sumia. Os tokens --gen-* ja tem par de
+   fundo e letra para cada tema. */
 .bd-genero.g-M {
-  background: color-mix(in srgb, #2f6fed 16%, transparent);
-  color: #2f6fed;
+  background: var(--gen-masc-bg);
+  color: var(--gen-masc-fg);
 }
 .bd-genero.g-F {
-  background: color-mix(in srgb, #e0459a 16%, transparent);
-  color: #e0459a;
+  background: var(--gen-fem-bg);
+  color: var(--gen-fem-fg);
 }
 .bd-genero.g-C {
-  background: color-mix(in srgb, #12a05c 16%, transparent);
-  color: #12a05c;
+  background: var(--gen-inf-bg);
+  color: var(--gen-inf-fg);
 }
 .bd-genero.g-U {
   background: var(--surface-3);

@@ -86,14 +86,14 @@
   background: var(--brand);
   color: var(--on-brand);
   box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    var(--relevo-base),
+    var(--relevo-topo);
 }
 .btn-primario:hover {
   background: var(--brand-hover);
   box-shadow:
     0 6px 16px -6px color-mix(in srgb, var(--brand) 70%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    var(--relevo-topo);
 }
 .btn-forte {
   background: var(--ink);
@@ -456,7 +456,7 @@ textarea.entrada {
   content: '';
   width: 10px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-marca);
   background: var(--on-ink);
 }
 .ck.rd .bx {
@@ -487,8 +487,8 @@ textarea.entrada {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  background: var(--branco);
+  box-shadow: var(--sombra-botao);
   transition:
     transform var(--t-base) var(--ease-mola),
     width var(--t-fast);
@@ -592,7 +592,7 @@ textarea.entrada {
 .cartao-titulo .marca {
   width: 6px;
   height: 6px;
-  border-radius: 2px;
+  border-radius: var(--radius-marca);
   background: var(--brand);
   flex: none;
 }
@@ -613,7 +613,7 @@ textarea.entrada {
 }
 .selo.solido {
   background: var(--c, var(--ink));
-  color: #fff;
+  color: var(--branco);
 }
 .selo.forte {
   background: var(--ink);
@@ -677,7 +677,7 @@ textarea.entrada {
   padding: 0 11px;
   border-radius: var(--radius-pill);
   background: var(--tc, var(--ink));
-  color: #fff;
+  color: var(--branco);
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -709,8 +709,8 @@ textarea.entrada {
   border-radius: 50%;
   border: 0;
   padding: 0;
-  background: rgba(255, 255, 255, 0.26);
-  color: #fff;
+  background: color-mix(in srgb, var(--branco) 26%, transparent);
+  color: var(--branco);
   display: inline-grid;
   place-items: center;
   font-size: 12px;
@@ -719,7 +719,7 @@ textarea.entrada {
   transition: background var(--t-fast);
 }
 .tec .mais:hover {
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--branco) 45%, transparent);
 }
 
 .tec-soft {
@@ -750,7 +750,7 @@ textarea.entrada {
   border: 1px solid var(--border-2);
   display: inline-block;
   flex-shrink: 0;
-  background: var(--cor-amostra, repeating-linear-gradient(45deg, #8884 0 2px, #5554 2px 4px));
+  background: var(--cor-amostra, repeating-linear-gradient(45deg, var(--xadrez-a) 0 2px, var(--xadrez-b) 2px 4px));
 }
 
 /* --- barra de rolagem: desenhada aqui, nunca a do sistema ---------------- */
@@ -1008,7 +1008,7 @@ dialog.sobrepoe {
   overflow: visible;
 }
 dialog.sobrepoe::backdrop {
-  background: rgba(10, 12, 16, 0.44);
+  background: var(--veu-escuro);
   backdrop-filter: blur(3px);
   animation: a-surgir var(--t-base) var(--ease-out) both;
 }
@@ -1264,7 +1264,7 @@ dialog.cmdk .caixa {
   flex-wrap: wrap;
 }
 .tecla {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 7px;
@@ -1452,10 +1452,10 @@ dialog.cmdk .caixa {
 [data-theme='dark'] .sel.tom.marcado > .cb {
   background: color-mix(in srgb, var(--tom) 16%, var(--surface));
   border-color: color-mix(in srgb, var(--tom) 45%, var(--border));
-  color: color-mix(in srgb, var(--tom) 45%, #fff);
+  color: color-mix(in srgb, var(--tom) 45%, var(--branco));
 }
 [data-theme='dark'] .sel.tom > .cb .seta {
-  color: color-mix(in srgb, var(--tom) 40%, #fff);
+  color: color-mix(in srgb, var(--tom) 40%, var(--branco));
 }
 
 /* --- paginador ----------------------------------------------------------- */

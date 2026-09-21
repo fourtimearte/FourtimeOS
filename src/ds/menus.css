@@ -84,9 +84,9 @@
   background:
     linear-gradient(var(--surface) 30%, transparent) top / 100% 22px no-repeat local,
     linear-gradient(transparent, var(--surface) 70%) bottom / 100% 22px no-repeat local,
-    radial-gradient(farthest-side at 50% 0, rgba(26, 29, 35, 0.1), transparent) top / 100% 10px
+    radial-gradient(farthest-side at 50% 0, var(--fade-rolagem), transparent) top / 100% 10px
       no-repeat scroll,
-    radial-gradient(farthest-side at 50% 100%, rgba(26, 29, 35, 0.1), transparent) bottom / 100%
+    radial-gradient(farthest-side at 50% 100%, var(--fade-rolagem), transparent) bottom / 100%
       10px no-repeat scroll;
 }
 .mn .mn-lista.rolavel::-webkit-scrollbar {
@@ -535,9 +535,11 @@
   color: var(--on-ink);
 }
 .mn-chip.sel .pt {
+  /* o anel de fora contrasta com a tarja, entao ele nasce de --on-ink e nao
+     de branco fixo: no Grafite a tarja CLAREIA e um anel branco sumiria */
   box-shadow:
     0 0 0 2px var(--ink),
-    0 0 0 3px rgba(255, 255, 255, 0.5);
+    0 0 0 3px color-mix(in srgb, var(--on-ink) 50%, transparent);
 }
 .mn-dica {
   padding: 0 10px 10px;
@@ -621,7 +623,7 @@
 .mn-tarjas i {
   width: 5px;
   height: 20px;
-  border-radius: 3px;
+  border-radius: var(--radius-pill);
   background: var(--c);
 }
 
@@ -770,8 +772,13 @@
   bottom: 100%;
   border-bottom: 8px solid var(--ink);
 }
+/* O vermelho que vive sobre a tarja, e nao o vermelho de tela. Aqui estava
+   #ff8a8e escrito na mao, que e o valor do tema escuro: so que neste balao o
+   fundo e var(--ink), e --ink CLAREIA no tema escuro. Resultado, a tecla
+   ficava salmao clara sobre balao quase branco, ilegivel justo no pedaco que
+   o balao existe para ensinar. --brand-no-ink ja vira de tema sozinho. */
 .mn-dica-linha b {
-  color: #ff8a8e;
+  color: var(--brand-no-ink);
   font-weight: 800;
   margin-right: 8px;
   font-variant-numeric: tabular-nums;
@@ -1018,8 +1025,8 @@
    letra, então no tema escuro o amarelo ficava com letra clara por cima:
    ilegível justamente no trecho que alguém marcou por ser importante. */
 .rico [style*='background-color'] {
-  color: #111214;
-  border-radius: 2px;
+  color: var(--texto-no-marcado);
+  border-radius: var(--radius-marca);
   padding: 0 1px;
 }
 
@@ -1047,8 +1054,8 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 1px solid rgba(17, 18, 20, 0.14);
-  border-radius: 6px;
+  border: 1px solid var(--sombra-borda);
+  border-radius: var(--radius-sm);
   display: inline-grid;
   place-items: center;
   font: inherit;
@@ -1061,7 +1068,7 @@
   transform: scale(1.1);
 }
 .selbar .sb-marca {
-  color: #111214;
+  color: var(--texto-no-marcado);
 }
 .selbar .sb-limpar {
   background: var(--surface-2);
@@ -1082,7 +1089,7 @@
   inset: 0;
   z-index: 950;
   overflow: hidden;
-  background: rgba(12, 14, 16, 0.93);
+  background: var(--veu-cheio);
   cursor: grab;
   touch-action: none;
 }
@@ -1113,12 +1120,12 @@
   width: 38px;
   height: 38px;
   padding: 0;
-  border: 1px solid rgba(17, 18, 20, 0.15);
-  border-radius: 11px;
+  border: 1px solid var(--sombra-borda);
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--sombra-no-veu);
 }
 .vs-bt:hover {
   color: var(--brand-text, var(--brand));
@@ -1129,7 +1136,7 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 5px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font-size: 12px;

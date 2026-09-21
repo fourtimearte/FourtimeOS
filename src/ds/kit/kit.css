@@ -140,56 +140,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- técnicas ------------------------------------------------------------ */
-.kit-tecs {
-  display: grid;
-  gap: var(--sp-3);
-}
-.kit-tec {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  flex-wrap: wrap;
-  padding: var(--sp-3);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  box-shadow: inset 3px 0 0 var(--tec);
-}
-.kit-pill {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 13px;
-  border-radius: var(--radius-pill);
-  background: var(--tec);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-.kit-ponto {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--tec-vivo);
-}
-.kit-chip {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  background: var(--tec-soft);
-  color: var(--tec-fg);
-  font-size: 12.5px;
-  font-weight: 700;
-}
-.kit-tec small {
-  margin-left: auto;
-  font-size: 11.5px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
+/* As tecnicas ja tiveram um bloco aqui (.kit-tecs, .kit-tec, .kit-pill,
+   .kit-ponto, .kit-chip). Ele foi apagado em 21/09 porque componente nenhum
+   usava essas classes, e as cinco regras apontavam para --tec, --tec-vivo,
+   --tec-soft e --tec-fg, que nao existem em token nenhum. CSS morto que ainda
+   por cima mentia. Quando a secao de tecnicas voltar para a rota /kit, ela
+   nasce das cores de tecnica de verdade: --tec-dtf, --tec-subli, --tec-silk e
+   as variantes -vivo, -soft e -fg de cada uma. */
 
 /* --- medidas ------------------------------------------------------------- */
 .kit-medidas {

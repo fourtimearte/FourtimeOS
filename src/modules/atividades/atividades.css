@@ -23,16 +23,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* OS QUATRO CANTOS, e nao dois. Este cartao nasceu colado no cabecalho da
+   tabela, por isso so arredondava em cima. Depois entrou um respiro de 16px
+   entre os dois, pela razao escrita la embaixo em .at-colunas, e ninguem
+   voltou para arredondar a parte de baixo: sobrou um cartao solto terminando
+   reto, nos dois temas e em toda largura. */
 .at-topo {
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   overflow: hidden;
   min-width: 0;
 }
+
+/* A GRADE DOS QUATRO NUMEROS, com o numero de colunas escrito e nao adivinhado.
+   Ela ja foi repeat(auto-fit, ...), que enrolava sozinha em duas fileiras, e ai
+   :last-child deixava de ser o fim da FILEIRA: so a quarta caixa perdia a
+   borda direita, entao a segunda desenhava uma linha em cima da borda do
+   cartao e as duas fileiras ficavam sem nada separando uma da outra. Com o
+   numero de colunas declarado, :nth-child sabe onde a fileira termina. */
 .at-numeros {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .at-numeros > div {
   display: flex;
@@ -46,6 +58,33 @@
 }
 .at-numeros > div:last-child {
   border-right: 0;
+}
+
+/* duas colunas: a borda cai na segunda de cada fileira, e a fileira de baixo
+   ganha o risco que a separa da de cima */
+@media (max-width: 1000px) {
+  .at-numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .at-numeros > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .at-numeros > div:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* uma coluna: nenhuma borda em pe, e um risco entre cada dois */
+@media (max-width: 520px) {
+  .at-numeros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .at-numeros > div {
+    border-right: 0;
+  }
+  .at-numeros > div + div {
+    border-top: 1px solid var(--border);
+  }
 }
 .at-numeros .l {
   font-size: 13px;
@@ -203,7 +242,7 @@
   place-items: center;
   border-radius: var(--radius-pill);
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.04em;

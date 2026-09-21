@@ -64,12 +64,27 @@ for (const f of TSX) {
 }
 
 /* --- quem DEFINE uma classe ---------------------------------------------- */
-const classesCss = new Set()
-for (const f of CSS) {
-  const limpo = semComentario(readFileSync(f, 'utf8'))
-  for (const m of limpo.matchAll(/(^|\})([^{}@]+)\{/g))
-    for (const c of m[2].matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)) classesCss.add(c[1])
+/* O texto entre a chave anterior e a proxima e o selecionador. Contar a chave
+   de ABERTURA tambem, e nao so a de fechamento, senao toda regra dentro de
+   @media fica de fora e vira orfa mentirosa: foi o que aconteceu com .cl-some,
+   que existe, mora dentro de um @media, e a conferencia jurava que nao. */
+function selecionadores(css) {
+  const fora = []
+  let inicio = 0
+  for (let i = 0; i < css.length; i++) {
+    if (css[i] === '{' || css[i] === '}') {
+      const sel = css.slice(inicio, i).trim()
+      if (css[i] === '{' && sel && !sel.startsWith('@')) fora.push(sel)
+      inicio = i + 1
+    }
+  }
+  return fora
 }
+
+const classesCss = new Set()
+for (const f of CSS)
+  for (const sel of selecionadores(semComentario(readFileSync(f, 'utf8'))))
+    for (const c of sel.matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)) classesCss.add(c[1])
 
 /* --- quem USA uma classe, do lado do componente --------------------------- */
 const classesUsadas = new Set()
@@ -209,8 +224,8 @@ for (const f of CSS) {
   if (f.includes('/ds/tokens.css')) continue
   const limpo = semComentario(readFileSync(f, 'utf8'))
   const minhas = new Set()
-  for (const m of limpo.matchAll(/(^|\})([^{}@]+)\{/g))
-    for (const c of m[2].matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)) minhas.add(c[1])
+  for (const sel of selecionadores(limpo))
+    for (const c of sel.matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)) minhas.add(c[1])
   const sobrando = [...minhas].filter((c) => !classesUsadas.has(c)).sort()
   if (sobrando.length)
     achados.morta.push({ onde: curto(f), que: sobrando.length + ' classes', linha: sobrando.join(' ') })

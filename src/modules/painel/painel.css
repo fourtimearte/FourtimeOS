@@ -57,7 +57,7 @@
   content: '';
   width: 6px;
   height: 6px;
-  border-radius: 2px;
+  border-radius: var(--radius-marca);
   background: var(--brand);
 }
 .pn-cartao-topo button {

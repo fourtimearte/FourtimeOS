@@ -564,7 +564,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
         {/* --- a coluna fixa da direita --- */}
         <aside className="ct-lado">
-          <section className="cartao ct-cartao ct-resumo">
+          <section className="cartao ct-cartao">
             <header className="ct-cab">
               <h3>Resumo da cotação</h3>
             </header>

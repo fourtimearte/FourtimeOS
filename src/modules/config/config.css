@@ -308,7 +308,7 @@
 /* --- a tela de ensaio ---------------------------------------------------- */
 .cfg-nota {
   margin: 0 0 12px;
-  color: var(--ink-2);
+  color: var(--text-2);
   font-size: 13px;
   line-height: 1.55;
   max-width: 62ch;
@@ -318,7 +318,7 @@
 }
 .cfg-botoes {
   display: flex;
-  gap: 8px;
+  gap: var(--gap-btn);
   flex-wrap: wrap;
 }
 .cfg-contas {
@@ -326,33 +326,38 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-/* Zero fica apagado e qualquer numero acima de zero acende. A contagem existe
+/* A CAIXA DE NUMERO DO ENSAIO. Ela ja se chamou .cfg-conta, que e o nome da
+   pastilha de contagem la em cima deste mesmo arquivo: as duas regras se
+   somavam e a altura de 20px da pastilha esmagava esta caixa, com o numero
+   saindo por cima do cartao. Nome proprio, briga resolvida.
+
+   Zero fica apagado e qualquer numero acima de zero acende. A contagem existe
    para responder "tem lixo de teste ai dentro?", e quatro zeros iguais a
    quatro numeros e a resposta que ninguem le. */
-.cfg-conta {
+.cfg-caixa {
   flex: 1 1 120px;
   min-width: 120px;
-  border: 1px solid var(--linha);
-  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 12px 14px;
-  background: var(--sup-2);
+  background: var(--surface-2);
   opacity: 0.55;
 }
-.cfg-conta.tem {
+.cfg-caixa.tem {
   opacity: 1;
-  border-color: var(--linha-2);
+  border-color: var(--border-2);
 }
-.cfg-conta b {
+.cfg-caixa b {
   display: block;
   font-size: 22px;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
-.cfg-conta span {
+.cfg-caixa span {
   display: block;
   margin-top: 2px;
   font-size: 12px;
-  color: var(--ink-2);
+  color: var(--text-2);
 }
 
 /* --- as páginas do sistema ------------------------------------------------ */

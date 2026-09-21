@@ -89,7 +89,7 @@ export function TelaPaginas() {
 
       {falha ? <Aviso tom="warn">{falha}</Aviso> : null}
 
-      <Cartao className="cfg-cartao">
+      <Cartao>
         <TituloCartao>Menu</TituloCartao>
         <p className="cfg-texto">
           Desligar tira a página do menu de todo mundo. O endereço continua funcionando para quem o
@@ -123,7 +123,7 @@ export function TelaPaginas() {
         </div>
       </Cartao>
 
-      <Cartao className="cfg-cartao">
+      <Cartao>
         <TituloCartao>Abrir uma página guardada</TituloCartao>
         <p className="cfg-texto">
           A rota continua de pé. Para ver a Ficha de produção mesmo com ela fora do menu, abra{' '}

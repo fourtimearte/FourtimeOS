@@ -8,6 +8,9 @@
 :root {
   --font: 'Urbanist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-doc: 'Roboto', sans-serif;
+  /* a fonte de numero de codigo e de trecho de dado bruto. Nasceu escrita na
+     mao dentro de base.css, que e valor de aparencia fora da origem. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --radius-xs: 5px;
   --radius-sm: 7px;
@@ -15,6 +18,38 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
   --radius-pill: 999px;
+  /* O QUADRADINHO. O marcador de 6px que abre titulo de cartao, a tarja fina e
+     o fundo do texto marcado pedem um canto menor que o primeiro degrau da
+     escala: 5px num quadrado de 6px vira circulo. Ele e um degrau de verdade,
+     com nome, e nao um 2px solto repetido em seis arquivos. */
+  --radius-marca: 2px;
+
+  /* TRES VALORES QUE NAO VIRAM DE TEMA, DE PROPOSITO, e por isso moram aqui
+     no :root e nao nos dois blocos de tema.
+     --texto-no-marcado: o marca-texto pinta o fundo com amarelo claro em
+       qualquer tema, entao a letra por cima tem que ficar escura sempre.
+     --sombra-borda: o fio de 1px das ferramentas que flutuam sobre o veu
+       escuro do visualizador, que e escuro nos dois temas.
+     --veu-escuro e --veu-texto: a pilula sobre a foto, mesma coisa. */
+  --texto-no-marcado: #111214;
+  --sombra-borda: rgba(17, 18, 20, 0.15);
+  --veu-escuro: rgba(12, 14, 16, 0.72);
+  --veu-cheio: rgba(12, 14, 16, 0.93);
+  /* a sombra de quem flutua POR CIMA do veu: o veu e escuro nos dois temas,
+     entao esta sombra nao vira de tema junto com --shadow */
+  --sombra-no-veu: 0 4px 14px rgba(0, 0, 0, 0.28);
+  /* o esmaecido de cima e de baixo que avisa que a lista rola por dentro */
+  --fade-rolagem: rgba(26, 29, 35, 0.1);
+  /* o xadrez que aparece atras de uma amostra sem cor escolhida */
+  --xadrez-a: #88888844;
+  --xadrez-b: #55555544;
+
+  /* O BRILHO E A PROFUNDIDADE DE BOTAO. O fio claro em cima e a sombra fina
+     embaixo davam relevo ao botao cheio; estavam escritos na mao em quatro
+     lugares, com valores que ja tinham comecado a divergir entre si. */
+  --relevo-topo: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --relevo-base: 0 1px 0 rgba(0, 0, 0, 0.1);
+  --sombra-botao: 0 1px 3px rgba(0, 0, 0, 0.25);
 
   --sp-1: 4px;
   --sp-2: 8px;

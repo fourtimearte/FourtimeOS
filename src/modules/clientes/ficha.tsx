@@ -232,7 +232,7 @@ export function FichaDoCliente({
       }
     >
       <div className="ficha">
-        <section className="ficha-cadastro">
+        <section>
           <h3 className="ficha-titulo">Cadastro</h3>
 
           {editando ? (
@@ -372,7 +372,7 @@ export function FichaDoCliente({
           </div>
         </section>
 
-        <section className="ficha-historico">
+        <section>
           <div className="ficha-resumo">
             <div>
               <span className="rot">Pedidos</span>

@@ -6,6 +6,7 @@ export {
   carregarPedidos,
   carregarTodosOsPedidos,
   finalizarEm,
+  liberarParaProducao,
   moverEtapa,
   moverPedido,
   mudarAviso,

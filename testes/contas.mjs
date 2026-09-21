@@ -29,6 +29,7 @@ import {
   ArquivoRecusado,
 } from './compilado/cotacao/arquivo.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
+import { fatiasDaCotacao, numerosDaFabrica } from './compilado/cotacao/fabrica.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
 
 let falhas = 0
@@ -183,6 +184,64 @@ ok('a entrega guardada fica', deHoje.informe.entrega === 'RETIRADA')
 const faltando = arrumarCotacao({ ...guardadaV3, informe: { prazo: '5 dias' } }, 3, 5)
 ok('o campo que falta no informe vem do molde', typeof faltando.informe.tabelaDePreco === 'string')
 ok('o campo gravado no informe nao se perde', faltando.informe.prazo === '5 dias')
+
+/* --- as fatias que viram cartao no kanban -------------------------------- */
+console.log('fatias')
+
+/* um produto de mentira, curto: o bloco em branco com grade e design */
+function produto(n, grade, tecnicas, informacoes = false) {
+  const b = blocoEmBranco(n)
+  b.grade = grade
+  b.informacoes = informacoes
+  b.design = tecnicas.map((t) => ({ tag: t, tecnica: t, cores: [] }))
+  return { bloco: b, precoPorTamanho: {}, precoBase: 10 }
+}
+const comProdutos = (...ps) => ({ ...cotacaoEmBranco(), produtos: ps })
+
+const soSubli = fatiasDaCotacao(comProdutos(produto(1, { M: 10 }, ['subli'])))
+ok('um pedido de uma tecnica vira uma fatia', soSubli.length === 1)
+ok('a fatia leva o layout', soSubli[0].layouts.join() === '1')
+ok('a fatia leva as pecas', soSubli[0].pecas === 10)
+
+const duas = fatiasDaCotacao(
+  comProdutos(produto(1, { M: 8 }, ['dtf']), produto(2, { M: 5 }, ['subli'])),
+)
+ok('duas tecnicas em layouts diferentes viram duas fatias', duas.length === 2)
+ok('a ordem e a da fabrica, e nao a da cotacao',
+  duas.map((f) => f.tecnica).join() === 'subli,dtf')
+
+/* O CASO QUE DECIDE O DESENHO: um layout so, com duas tecnicas. Ele passa
+   pelas duas maquinas, entao entra nas duas fatias, e as pecas contam nas
+   duas. Somar as fatias e achar o dobro das pecas do pedido nao e erro. */
+const junto = fatiasDaCotacao(comProdutos(produto(1, { M: 12 }, ['subli', 'bordado'])))
+ok('um layout com duas tecnicas vira duas fatias', junto.length === 2)
+ok('o mesmo layout aparece nas duas', junto.every((f) => f.layouts.join() === '1'))
+ok('as pecas contam nas duas, porque sao dois trabalhos',
+  junto[0].pecas === 12 && junto[1].pecas === 12)
+
+const acabamento = fatiasDaCotacao(
+  comProdutos(produto(1, { M: 4 }, ['subli', 'gola', 'ribana', 'etiqueta'])),
+)
+ok('gola, ribana e etiqueta nao viram fila', acabamento.length === 1)
+ok('e a tecnica que sobra e a que ocupa posto', acabamento[0].tecnica === 'subli')
+
+const duasCores = fatiasDaCotacao(comProdutos(produto(1, { M: 6 }, ['dtf', 'dtf'])))
+ok('a mesma tecnica duas vezes no layout e um trabalho so', duasCores.length === 1)
+ok('e o layout nao entra duas vezes na mesma fatia', duasCores[0].layouts.join() === '1')
+
+const comAnexo = fatiasDaCotacao(
+  comProdutos(produto(1, { M: 7 }, ['silk']), produto(2, { M: 99 }, ['silk'], true)),
+)
+ok('o modulo de informacoes nao entra em fila nenhuma', comAnexo[0].layouts.join() === '1')
+ok('nem nas pecas', comAnexo[0].pecas === 7)
+
+ok('cotacao sem tecnica de producao nao tem o que liberar',
+  fatiasDaCotacao(comProdutos(produto(1, { M: 3 }, ['etiqueta']))).length === 0)
+
+/* a divisao do dinheiro continua sendo por PRODUTO, e nao por fatia */
+const dinheiro = numerosDaFabrica(comProdutos(produto(1, { M: 12 }, ['subli', 'bordado'])))
+ok('um layout com sublimacao e um layout de sublimacao, mesmo com bordado junto',
+  dinheiro.pecasSubli === 12 && dinheiro.pecasPersonalizadas === 0)
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

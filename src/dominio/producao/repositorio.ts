@@ -163,6 +163,19 @@ export async function moverPedido(id: string, para: PassoDoPedido): Promise<void
   await chamar('mover_pedido', { p_pedido: id, p_para: para })
 }
 
+/* --- o portao do PCP ------------------------------------------------------
+   As fatias vao PRONTAS daqui, como os numeros da fabrica na aprovacao, e pelo
+   mesmo motivo: quem sabe ler um bloco de layout, o que e uma tag de design e
+   como uma grade vira peca e o dominio, onde isso ja esta escrito e conferido.
+   `fatiasDaCotacao` monta a lista; o banco acha o primeiro posto de cada rota,
+   escreve tudo de uma vez e passa o pedido para producao. */
+export async function liberarParaProducao(
+  id: string,
+  fatias: { tecnica: string; layouts: number[]; pecas: number }[],
+): Promise<void> {
+  await chamar('liberar_para_producao', { p_pedido: id, p_fatias: fatias })
+}
+
 export function moverEtapa(id: string, etapa: Etapa) {
   return mexer(id, { etapa })
 }

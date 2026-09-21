@@ -39,12 +39,15 @@ type LinhaDaFabrica = {
   fechado_em: string | null
   teste: boolean
   cotacao_id: string | null
+  tag: string | null
+  fatias_abertas: string | null
 }
 
 const COLUNAS =
   'id,numero,cliente,vendedor,departamento,etapa,etapa_em,entrega_em,planejado_em,' +
   'planejamento_manual,aviso,pecas,layouts,tecnicas,total,pecas_subli,' +
-  'pecas_personalizadas,valor_subli,valor_personalizado,fechado_em,teste,cotacao_id'
+  'pecas_personalizadas,valor_subli,valor_personalizado,fechado_em,teste,cotacao_id,' +
+  'tag,fatias_abertas'
 
 function deLinha(l: LinhaDaFabrica): Pedido {
   return {
@@ -66,6 +69,15 @@ function deLinha(l: LinhaDaFabrica): Pedido {
     planejamentoManual: !!l.planejamento_manual,
     fechadoEm: diaLocal(l.fechado_em),
     aviso: (l.aviso ?? '') as Aviso,
+    /* A TAG E DERIVADA, e vem pronta do banco. Ela e o trabalho mais atrasado
+       do pedido, agrupado em familia quando ha mais de um correndo: um pedido
+       com subli na costura e DTF na impressao mostra Impressao, porque e isso
+       que esta segurando a entrega. Vazia enquanto o PCP nao liberou, porque
+       ai nao ha fatia nenhuma e nao ha o que dizer. */
+    tag: l.tag ?? '',
+    /* o que a tag esconde, para o passar o mouse e para o modal da timeline:
+       "subli:costura, dtf:dtf" */
+    fatiasAbertas: l.fatias_abertas ?? '',
     atualizadoEm: l.etapa_em,
     pecasSubli: Number(l.pecas_subli) || 0,
     pecasPersonalizadas: Number(l.pecas_personalizadas) || 0,

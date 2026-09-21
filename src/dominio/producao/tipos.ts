@@ -108,6 +108,13 @@ export type Pedido = {
   pecas: number
   layouts: number
   tecnicas: Tecnica[]
+  /* A TAG: em que parte da fabrica o pedido esta, na lingua do painel e nao na
+     dos 13 postos. Ela e o trabalho MAIS ATRASADO, agrupado em familia quando
+     ha mais de um correndo. Vem derivada do banco, e e vazia enquanto o PCP
+     nao liberou: sem fatia nao ha o que dizer. */
+  tag: string
+  /** o que a tag esconde: "subli:costura, dtf:dtf" */
+  fatiasAbertas: string
   /* Em que DIA ele esta planejado, em ISO.
      Era so o indice do dia da semana, 0 a 5, e isso amarrava o painel a uma
      semana so: navegar para a semana que vem mostraria os mesmos pedidos de

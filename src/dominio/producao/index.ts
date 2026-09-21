@@ -7,8 +7,10 @@ export {
   carregarTodosOsPedidos,
   finalizarEm,
   moverEtapa,
+  moverPedido,
   mudarAviso,
   mudarEntrega,
   planejarPara,
   reabrir,
 } from './repositorio'
+export type { PassoDoPedido } from './repositorio'

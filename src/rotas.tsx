@@ -62,7 +62,7 @@ export const rotas = createBrowserRouter([
         path: 'cotacao/:id/producao',
         element: pede('cotacao', <DocumentoDaCotacao para="producao" />),
       },
-      { path: 'pcp', element: pede('ficha', <TelaPcp />) },
+      { path: 'pcp', element: pede('pcp', <TelaPcp />) },
       /* A ROTA DA FICHA CONTINUA DE PE mesmo com a pagina escondida no menu.
          Esconder e guardar, e nao apagar: quem tem o endereco ainda abre, e e
          assim que da para conferir a pagina guardada sem religar ela para a

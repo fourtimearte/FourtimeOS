@@ -159,10 +159,13 @@ export function App() {
      `painel` e o acesso que ele EXIGE, e quando nao vem escrito e o proprio
      `chave`.
 
-     O PCP foi o caso que separou os dois: ele e uma pagina propria, mas o
-     painel 'pcp' ainda nao existe na tabela do banco. Sem esta separacao, ou
-     o PCP ficaria invisivel para todo mundo, ou guardar a ficha guardaria o
-     PCP junto. */
+     O PCP foi o caso que separou os dois, e a separacao ficou depois que ele
+     deixou de precisar dela. Enquanto o painel 'pcp' nao existia no banco, o
+     PCP tomava emprestado o acesso da ficha, e ai guardar a ficha guardava o
+     PCP junto: uma pagina sumia por causa de outra. A migracao 022 deu painel
+     proprio a ele, entao hoje nenhum item usa `painel`. O campo continua
+     porque a proxima pagina que nascer antes do painel dela vai precisar, e
+     porque a alternativa e descobrir isso de novo do jeito dificil. */
   type Item = Omit<ItemDeNavegacao, 'filhos'> & {
     chave: Painel
     painel?: Painel
@@ -205,10 +208,6 @@ export function App() {
            história na ordem errada. */
         {
           chave: 'pcp',
-          /* O painel 'pcp' ainda nao existe na tabela do banco. Ate ele
-             existir, o PCP pede o mesmo acesso da ficha: quem cuida de
-             producao ja tem. Entra na migracao do passo 3. */
-          painel: 'ficha',
           para: '/pcp',
           rotulo: 'PCP',
           icone: <ListChecks {...icone} />,

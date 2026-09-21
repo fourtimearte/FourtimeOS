@@ -1,4 +1,4 @@
-import { tabela } from '@shared/supabase'
+import { chamar, tabela } from '@shared/supabase'
 import type { Aviso, Etapa, Pedido } from './tipos'
 
 /* ==========================================================================
@@ -136,6 +136,31 @@ export async function acharPedido(id: string): Promise<Pedido | null> {
 async function mexer(id: string, corpo: Record<string, unknown>): Promise<Pedido | null> {
   await tabela(`pedido?id=eq.${encodeURIComponent(id)}`, { metodo: 'PATCH', corpo })
   return acharPedido(id)
+}
+
+/* --- mover o pedido pelo caminho -----------------------------------------
+   funil -> cotacao -> PEDIDO -> separacao -> PCP -> kanban
+
+   Quem valida a passagem e o papel e o GATILHO no banco, e nao esta funcao:
+   assim a mesma regra vale para o botao, para o arrastar do kanban, para o
+   ensaio e para um PATCH direto no PostgREST. O que mora aqui e so o verbo,
+   para a tela poder dizer "mandar para o PCP" em vez de escrever uma coluna.
+
+   A migracao e a 022. A tabela de quem pode cada passagem esta la, e a mesma
+   `quem_pode_a_passagem` pode ser chamada pela tela antes de desenhar o
+   botao, quando as telas dos passos 8 e 9 existirem. */
+export type PassoDoPedido =
+  | 'aprovado'
+  | 'separacao'
+  | 'pcp'
+  | 'producao'
+  | 'pronto'
+  | 'enviado'
+  | 'entregue'
+  | 'cancelado'
+
+export async function moverPedido(id: string, para: PassoDoPedido): Promise<void> {
+  await chamar('mover_pedido', { p_pedido: id, p_para: para })
 }
 
 export function moverEtapa(id: string, etapa: Etapa) {

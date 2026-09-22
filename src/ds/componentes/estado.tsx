@@ -61,7 +61,7 @@ export function Aviso({
     <div className="aviso" style={{ '--c': cor } as CSSProperties}>
       <span className="pt" />
       <div className="corpo">
-        {titulo ? <b>{titulo}</b> : null}
+        {titulo ? <b className="t">{titulo}</b> : null}
         {children}
       </div>
       {acao}

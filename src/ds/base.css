@@ -1187,10 +1187,18 @@ table.tabela tr.marcada {
   flex: 1 1 220px;
   min-width: 0;
 }
-.aviso b {
+/* SÓ O TÍTULO É BLOCO. A regra valia para todo <b> dentro do aviso, então
+   qualquer palavra em negrito no meio do texto virava uma linha sozinha: um
+   aviso de três negritos saía picado em sete pedaços. Quem descobriu isso foi
+   a tela de tags, mas o defeito estava em toda tela que grifa uma palavra
+   dentro de um aviso. */
+.aviso .corpo > b.t {
   display: block;
   font-weight: 700;
   margin-bottom: var(--re-1);
+}
+.aviso b {
+  font-weight: 700;
 }
 
 /* --- sobreposições: modal e folha lateral -------------------------------- */

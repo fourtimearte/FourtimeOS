@@ -9,6 +9,7 @@ import {
   Kpi,
   Marcacao,
   Pagina,
+  PilulaTecnica,
   Selo,
   TituloCartao,
   Vazio,
@@ -16,6 +17,7 @@ import {
 } from '@ds'
 import { acharCotacao, fatiasDaCotacao } from '@dominio/cotacao'
 import {
+  NOME_DA_TECNICA,
   carregarOPcp,
   desmarcarDoPcp,
   devolverDoPcp,
@@ -429,8 +431,17 @@ function Fila({
                 {dinheiro(p.total)} · {pz.texto}
               </p>
 
+              {/* A PÍLULA, E NÃO A CHAVE CRUA. A cor da técnica é a mesma no
+                  editor, no cartão e no kanban, e escrever 'subli' na tela
+                  jogaria fora a peça que o Design System já tem para isso. */}
               {p.tecnicas.length ? (
-                <p className="pcp-tecnicas">{p.tecnicas.join(' · ')}</p>
+                <p className="pcp-tecnicas">
+                  {p.tecnicas.map((t) => (
+                    <PilulaTecnica key={t} tecnica={t} tamanho="sm">
+                      {NOME_DA_TECNICA[t] ?? t}
+                    </PilulaTecnica>
+                  ))}
+                </p>
               ) : (
                 <p className="pcp-tecnicas alerta">
                   Nenhuma técnica no documento: sem isso não nasce fatia no kanban.

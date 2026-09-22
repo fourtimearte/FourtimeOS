@@ -1,3 +1,4 @@
+import type { Tecnica } from '@ds'
 import { chamar, tabela } from '@shared/supabase'
 
 /* ==========================================================================
@@ -26,7 +27,7 @@ export type PedidoNoPcp = {
   entregaEm: string
   departamento: string
   layouts: number
-  tecnicas: string[]
+  tecnicas: Tecnica[]
   teste: boolean
   /** marcado pelo PCP, esperando o diretor */
   marcado: boolean
@@ -51,7 +52,7 @@ type LinhaDoPcp = {
   entrega_em: string | null
   departamento: string
   layouts: number
-  tecnicas: string[] | null
+  tecnicas: Tecnica[] | null
   teste: boolean
   marcado: boolean
   marcado_em: string | null

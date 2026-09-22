@@ -35,6 +35,22 @@ export type Etapa =
   | 'embalagem'
   | 'finalizado'
 
+/* O NOME DA TECNICA PARA LER NA TELA.
+
+   Não é o mesmo que a tag de design do editor, que mora na cotação e é o
+   texto que o arte-finalista escreve no layout. Aqui é como a fábrica chama a
+   técnica quando fala dela, e é o que aparece na pílula colorida. */
+export const NOME_DA_TECNICA: Record<Tecnica, string> = {
+  dtf: 'DTF',
+  subli: 'Sublimação',
+  silk: 'Silk',
+  patch: 'Patch',
+  bordado: 'Bordado',
+  gola: 'Gola',
+  ribana: 'Ribana',
+  etiqueta: 'Etiqueta',
+}
+
 /** nome e cor de cada posto, copiados do editor v3.375 */
 export const POSTO: Record<Etapa, { nome: string; cor: string }> = {
   corte: { nome: 'Corte', cor: 'var(--posto-corte)' },

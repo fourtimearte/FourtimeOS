@@ -24,3 +24,5 @@ export {
   marcarParaAprovacao,
 } from './pcp'
 export type { PedidoNoPcp } from './pcp'
+
+export { NOME_DA_TECNICA } from './tipos'

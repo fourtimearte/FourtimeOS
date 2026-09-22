@@ -196,6 +196,16 @@ export function montarCotacaoDeExemplo(s: SementeDeCotacao, i: number): Cotacao 
   const r = sorteio(semente)
   const criada = new Date(Date.now() - s.dias * DIA)
   const validade = new Date(criada.getTime() + 15 * DIA)
+  /* A DATA DE ENTREGA NASCE AQUI, e não num PATCH depois de o pedido existir.
+     Ela mora no bloco de produção da cotação, e é de lá que aprovar_cotacao a
+     copia para o pedido: escrever ela na cotação é o caminho de verdade, e
+     escrever direto no pedido seria um atalho que ninguém usa na vida real.
+
+     O prazo do informe é 12 dias úteis, que dá uns 17 corridos. Espalhar entre
+     14 e 34 a partir do dia em que a cotação foi feita deixa uma parte das
+     entregas no passado, que é o que faz o contador de atrasado do PCP e a
+     borda dos três dias do painel terem o que mostrar. */
+  const entrega = new Date(criada.getTime() + (14 + (semente % 21)) * DIA)
 
   const produtos: ProdutoCotado[] = []
   for (let n = 1; n <= s.produtos; n++) {
@@ -242,7 +252,7 @@ export function montarCotacaoDeExemplo(s: SementeDeCotacao, i: number): Cotacao 
        numero de pedido depois do sim do cliente, que e quando ele nasce */
     producao: {
       pedido: s.estado === 'aprovada' ? 'PD004052' : '',
-      dataDeEnvio: '',
+      dataDeEnvio: entrega.toISOString().slice(0, 10),
       departamento: DEPARTAMENTOS[3],
       embalagem: EMBALAGENS[0],
       marcas: [],

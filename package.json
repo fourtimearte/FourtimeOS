@@ -22,7 +22,8 @@
     "conferir": "npm run tipos && npm run classes && npm run tokens && npm run ligacoes && npm run contas && npm run semana",
     "tokens": "node testes/tokens.mjs",
     "ligacoes": "node testes/ligacoes.mjs",
-    "prova": "node testes/prova.mjs"
+    "prova": "node testes/prova.mjs",
+    "arrasto": "node testes/arrasto.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

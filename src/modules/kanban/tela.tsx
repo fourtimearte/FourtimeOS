@@ -149,7 +149,7 @@ export function TelaKanban() {
       titulo="MARK45"
       sub={
         <>
-          <b>{conta.cartoes}</b> cartão{conta.cartoes === 1 ? '' : 'ões'} no chão de fábrica ·{' '}
+          <b>{conta.cartoes}</b> {conta.cartoes === 1 ? 'cartão' : 'cartões'} no chão de fábrica ·{' '}
           {conta.pecas.toLocaleString('pt-BR')} peças · um cartão é um pedido numa técnica
         </>
       }

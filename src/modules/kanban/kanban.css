@@ -69,11 +69,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A coluna tem chão mesmo vazia. Um quadro em que as colunas sobem e descem
+   com o que tem dentro deixa de parecer um quadro, e o alvo de largar some
+   junto: não dá para soltar um cartão numa coluna de 40px de altura. */
 .kb-pilha {
   display: flex;
   flex-direction: column;
   gap: var(--re-4);
-  min-height: 60px;
+  min-height: 220px;
 }
 
 .kb-vazio {

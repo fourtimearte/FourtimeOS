@@ -70,7 +70,14 @@ export function CartaoDaFatia({
           </PilulaTecnica>
           {fatia.teste ? <Selo tom="info">teste</Selo> : null}
         </span>
-        <span className="kb-nome">{fatia.nome}</span>
+        {/* AS PEÇAS SOBEM PARA A LINHA DO NOME. No rodapé elas dividiam o
+            espaço com o tempo parado e com o botão, e "160 pçs, chegou hoje"
+            acabava cortado no meio: sumia justamente o "chegou hoje", que é a
+            metade que responde se o cartão está empacado. */}
+        <span className="kb-nome">
+          <span className="n">{fatia.nome}</span>
+          <span className="q">{fatia.pecas} pçs</span>
+        </span>
       </button>
 
       {fatia.marcas.length ? (
@@ -106,7 +113,6 @@ export function CartaoDaFatia({
 
         <footer className="kb-pe">
           <span className={empacado ? 'kb-parado forte' : 'kb-parado'}>
-            {fatia.pecas} pçs ·{' '}
             {dias === 0 ? 'chegou hoje' : `parado ${dias} dia${dias === 1 ? '' : 's'}`}
           </span>
 

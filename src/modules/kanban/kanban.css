@@ -149,10 +149,24 @@
 }
 
 .kb-nome {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-miudo);
+  min-width: 0;
   color: var(--text-2);
   font-size: 13px;
+}
+.kb-nome > .n {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kb-nome > .q {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-3);
   white-space: nowrap;
 }
 

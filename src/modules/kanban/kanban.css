@@ -1,0 +1,202 @@
+/* ==========================================================================
+   MARK45. O quadro do chão de fábrica.
+   Nenhuma classe daqui é do Design System.
+   ========================================================================== */
+
+.kb-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+/* O QUADRO ROLA DENTRO DELE, e a página nunca de lado. Treze postos não cabem
+   em tela nenhuma, e empurrar a página inteira faria o menu sair junto. */
+.kb-quadro {
+  display: flex;
+  gap: var(--sp-3);
+  overflow-x: auto;
+  padding-bottom: var(--sp-3);
+  /* sem isto, arrastar o cartão no tablet rola o quadro junto */
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.kb-coluna {
+  flex: 0 0 258px;
+  min-width: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--re-5);
+  transition: opacity var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+}
+
+/* Enquanto um cartão está no ar, a coluna que a rota dele não conhece apaga.
+   Recusar só no fim seria ensinar errado e depois corrigir. */
+.kb-coluna.fora {
+  opacity: 0.35;
+}
+
+.kb-coluna.alvo {
+  border-color: var(--ink);
+  background: var(--surface-3);
+}
+
+.kb-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+  padding-bottom: var(--re-4);
+  margin-bottom: var(--re-4);
+  border-bottom: 2px solid var(--posto-cor);
+  font-size: 13.5px;
+}
+
+.kb-conta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.kb-pilha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-height: 60px;
+}
+
+.kb-vazio {
+  color: var(--text-3);
+  font-size: 12px;
+  text-align: center;
+  padding: var(--sp-4) 0;
+}
+
+/* ---------- o cartão ---------- */
+.kb-cartao {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--re-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  cursor: grab;
+  /* o cartão é o alvo do arrasto: deixar o dedo selecionar texto no meio do
+     caminho faz o navegador abrir a lupa em vez de mover */
+  user-select: none;
+  touch-action: none;
+}
+
+.kb-cartao.saindo {
+  opacity: 0.35;
+}
+
+/* Vermelho é atraso, e aqui atraso é o cartão que não anda. A borda de três
+   pixels basta: fundo vermelho numa coluna cheia vira um quadro vermelho. */
+.kb-cartao.empacado {
+  border-left: 3px solid var(--brand);
+}
+
+.kb-cartao-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 14px;
+}
+
+.kb-cliente {
+  color: var(--text-2);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+
+.kb-numeros {
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kb-aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 11.5px;
+  color: var(--brand-text);
+  background: var(--brand-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--re-2) var(--re-3);
+}
+
+.kb-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+  margin-top: var(--re-2);
+}
+
+.kb-parado {
+  color: var(--text-3);
+  font-size: 11.5px;
+}
+
+.kb-parado.forte {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+/* ---------- o cartão que segue o dedo ---------- */
+.kb-fantasma {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--on-ink);
+  border-radius: var(--radius);
+  padding: var(--re-4) var(--re-6);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+  font-size: 13px;
+}
+
+.kb-fantasma span {
+  opacity: 0.7;
+  font-size: 11.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-fantasma {
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* No toque a coluna encolhe, mas não abaixo do que cabe um cartão legível. */
+@media (max-width: 760px) {
+  .kb-coluna {
+    flex-basis: 230px;
+  }
+}

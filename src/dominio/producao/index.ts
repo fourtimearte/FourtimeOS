@@ -25,4 +25,17 @@ export {
 } from './pcp'
 export type { PedidoNoPcp } from './pcp'
 
-export { NOME_DA_TECNICA } from './tipos'
+
+export {
+  COLUNAS,
+  carregarAsRotas,
+  carregarOQuadro,
+  corDoPosto,
+  estaNaRota,
+  moverAFatia,
+  nomeDoPosto,
+  paradoHa,
+  rotaDe,
+  vizinhoNaRota,
+} from './kanban'
+export type { FatiaNoQuadro, Rota } from './kanban'

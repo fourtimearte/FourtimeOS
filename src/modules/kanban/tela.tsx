@@ -63,6 +63,13 @@ export function TelaKanban() {
   const [alvo, setAlvo] = useState<Etapa | null>(null)
   const quadro = useRef<HTMLDivElement>(null)
 
+  /* O laço do arrasto lê destes, e não do estado: ele roda a cada quadro de
+     vídeo, e reassinar o laço a cada setState faria ele nascer e morrer
+     sessenta vezes por segundo. */
+  const ponto = useRef({ x: 0, y: 0 })
+  const oQueArrasta = useRef<FatiaNoQuadro | null>(null)
+  const quadroDeVideo = useRef(0)
+
   const carregar = useCallback(async () => {
     try {
       const [f, r] = await Promise.all([carregarOQuadro(), carregarAsRotas()])
@@ -117,29 +124,71 @@ export function TelaKanban() {
   function comecar(e: EventoDePonteiro, f: FatiaNoQuadro) {
     if (!podeMover || f.etapa === 'finalizado') return
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    ponto.current = { x: e.clientX, y: e.clientY }
     setArrasto({ fatia: f, x: e.clientX, y: e.clientY, valendo: false })
   }
 
   function andar(e: EventoDePonteiro) {
     if (!arrasto) return
+    ponto.current = { x: e.clientX, y: e.clientY }
     const andou =
       arrasto.valendo || Math.hypot(e.clientX - arrasto.x, e.clientY - arrasto.y) > 6
     if (!andou) return
+    if (!arrasto.valendo) oQueArrasta.current = arrasto.fatia
     setArrasto({ ...arrasto, x: e.clientX, y: e.clientY, valendo: true })
-
-    /* qual coluna está embaixo do dedo. elementFromPoint em vez de onDragOver
-       porque o cartão flutuante segue o ponteiro e taparia o alvo. */
-    const sob = document.elementFromPoint(e.clientX, e.clientY)
-    const col = sob?.closest('[data-posto]') as HTMLElement | null
-    const posto = (col?.dataset.posto as Etapa | undefined) ?? null
-    setAlvo(posto && estaNaRota(rotas, arrasto.fatia.tecnica, posto) ? posto : null)
   }
 
   function largar() {
     if (arrasto?.valendo && alvo) void mover(arrasto.fatia, alvo)
+    oQueArrasta.current = null
     setArrasto(null)
     setAlvo(null)
   }
+
+  /* ---------- O QUADRO ROLA ENQUANTO VOCÊ ARRASTA ----------
+
+     São treze postos, e o próximo posto da rota quase nunca está na tela: a
+     sublimação sai da impressão e vai para a calandra, que é seis colunas
+     adiante. Sem isto, arrastar só funciona para a coluna do lado, e a fábrica
+     ia concluir que arrastar não funciona.
+
+     O alvo também é decidido aqui, e não no pointermove: com o quadro rolando
+     sozinho, a coluna embaixo do dedo muda sem o dedo se mexer. */
+  useEffect(() => {
+    if (!arrasto?.valendo) return
+    let vivo = true
+
+    const passo = () => {
+      if (!vivo) return
+      const el = quadro.current
+      const f = oQueArrasta.current
+      if (el && f) {
+        const caixa = el.getBoundingClientRect()
+        const beira = 72
+        const { x, y } = ponto.current
+        if (x < caixa.left + beira) {
+          el.scrollLeft -= Math.min(24, (caixa.left + beira - x) / 2)
+        } else if (x > caixa.right - beira) {
+          el.scrollLeft += Math.min(24, (x - (caixa.right - beira)) / 2)
+        }
+
+        /* elementFromPoint em vez de onDragOver, porque o cartão flutuante
+           segue o ponteiro e taparia o alvo. */
+        const sob = document.elementFromPoint(x, y)
+        const col = sob?.closest('[data-posto]') as HTMLElement | null
+        const posto = (col?.dataset.posto as Etapa | undefined) ?? null
+        const bom = posto && estaNaRota(rotas, f.tecnica, posto) ? posto : null
+        setAlvo((atual) => (atual === bom ? atual : bom))
+      }
+      quadroDeVideo.current = requestAnimationFrame(passo)
+    }
+
+    quadroDeVideo.current = requestAnimationFrame(passo)
+    return () => {
+      vivo = false
+      cancelAnimationFrame(quadroDeVideo.current)
+    }
+  }, [arrasto?.valendo, rotas])
 
   if (!eu) return null
 

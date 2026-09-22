@@ -366,6 +366,12 @@
 .cs-item.cs-nota b {
   color: var(--text);
 }
+.cs-resolver {
+  margin-top: var(--gap-dentro);
+  display: flex;
+  justify-content: flex-end;
+}
+
 .cs-destino {
   margin-top: var(--sp-4);
   display: flex;

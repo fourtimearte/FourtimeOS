@@ -111,11 +111,24 @@
   border-left: 3px solid var(--brand);
 }
 
+/* O NÚMERO NUNCA QUEBRA. Com o número encolhível, "PD-TESTE-0029" virava
+   "PD-TESTE-" e "0029" em duas linhas assim que a pílula da técnica era um
+   pouco mais longa, e número de pedido partido ao meio é o pior lugar para
+   economizar espaço: é por ele que a pessoa acha o cartão varrendo a coluna.
+
+   A fileira quebra, mas nunca uma peça dela: cada filho é inteiro ou vai para
+   a linha de baixo. */
 .kb-cartao-topo {
   display: flex;
   align-items: center;
-  gap: var(--gap-miudo);
+  flex-wrap: wrap;
+  gap: var(--re-3);
   font-size: 14px;
+  min-width: 0;
+}
+.kb-cartao-topo > b {
+  white-space: nowrap;
+  font-size: 15px;
 }
 
 /* O CARTÃO INTEIRO ABRE, e por isso a parte de cima é um <button>. Ele tem
@@ -201,14 +214,22 @@
 .kb-pe {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-miudo);
-  margin-top: var(--re-2);
+  gap: var(--re-4);
+  margin-top: var(--re-1);
 }
 
+/* O TEXTO ENCOLHE E CORTA, e o botão nunca. O contrário fazia "299 pçs,
+   chegou hoje" virar duas linhas e empurrar o Terminei para fora do alinho,
+   e num quadro de treze colunas a altura desigual dos cartões é o que
+   transforma a varredura com o olho em leitura. */
 .kb-parado {
+  flex: 1;
+  min-width: 0;
   color: var(--text-3);
   font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kb-parado.forte {

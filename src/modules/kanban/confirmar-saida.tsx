@@ -5,8 +5,10 @@ import {
   conferirASaida,
   nomeDoPosto,
   pontosDeAtencao,
+  tirarATag,
   type Conferencia,
   type FatiaNoQuadro,
+  type Tag,
 } from '@dominio/producao'
 import './cartao-aberto.css'
 
@@ -30,16 +32,21 @@ import './cartao-aberto.css'
 
 export function ConfirmarSaida({
   fatia,
+  tags,
+  podeMover,
   aoFechar,
   aoConfirmar,
 }: {
   fatia: FatiaNoQuadro
+  tags: Tag[]
+  podeMover: boolean
   aoFechar: () => void
   aoConfirmar: () => void
 }) {
   const [conf, setConf] = useState<Conferencia | null>(null)
   const [erro, setErro] = useState('')
   const [indo, setIndo] = useState(false)
+  const [tirando, setTirando] = useState(false)
 
   useEffect(() => {
     let vivo = true
@@ -65,6 +72,22 @@ export function ConfirmarSaida({
   }
 
   const atencao = conf ? pontosDeAtencao(conf) : 0
+
+  /* TIRAR A TAG E TERMINAR NUM TOQUE SÓ. Sem este botão a pessoa fecha a
+     confirmação, tira a tag no cartão, aperta Terminei de novo e espera a
+     conferência outra vez. Na terceira vez que isso acontece ela para de ler o
+     aviso e passa a procurar o botão que faz a tela sair da frente. */
+  async function tirarETerminar() {
+    if (tirando) return
+    setTirando(true)
+    try {
+      for (const chave of fatia.tags) await tirarATag(fatia.id, chave)
+      aoConfirmar()
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui tirar a tag.', 'brand')
+      setTirando(false)
+    }
+  }
 
   return (
     <Modal
@@ -114,6 +137,21 @@ export function ConfirmarSaida({
         </div>
       )}
 
+      {/* O botão mora DENTRO do aviso amarelo, e não no rodapé. No rodapé ele
+          viraria a terceira escolha de uma fileira de três, e ninguém ligaria
+          ele ao aviso que ele resolve. */}
+      {conf && podeMover && fatia.tags.length ? (
+        <div className="cs-resolver">
+          <Botao tom="contorno" disabled={tirando} onClick={() => void tirarETerminar()}>
+            {tirando
+              ? 'Tirando...'
+              : fatia.tags.length === 1
+                ? 'Tirar a tag ' + nomeDaTag(tags, fatia.tags[0]) + ' e terminar'
+                : 'Tirar as ' + fatia.tags.length + ' tags e terminar'}
+          </Botao>
+        </div>
+      ) : null}
+
       {conf ? (
         <div className="cs-destino">
           <div>
@@ -129,4 +167,8 @@ export function ConfirmarSaida({
       ) : null}
     </Modal>
   )
+}
+
+function nomeDaTag(tags: Tag[], chave: string): string {
+  return tags.find((t) => t.chave === chave)?.nome ?? chave
 }

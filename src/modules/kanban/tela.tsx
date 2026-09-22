@@ -315,6 +315,8 @@ export function TelaKanban() {
       {aFatiaConfirmando ? (
         <ConfirmarSaida
           fatia={aFatiaConfirmando}
+          tags={tags}
+          podeMover={podeMover}
           aoFechar={() => setConfirmando('')}
           aoConfirmar={() => {
             const p = vizinhoNaRota(rotas, aFatiaConfirmando.tecnica, aFatiaConfirmando.etapa, 1)

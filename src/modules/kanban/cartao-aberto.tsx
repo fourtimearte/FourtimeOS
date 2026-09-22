@@ -409,7 +409,7 @@ function Evento({ evento }: { evento: EventoDoCartao }) {
         <span className="ca-quem">{iniciais(evento.quemNome)}</span>
         <div>
           <p className="ca-cabeca">
-            <b>{evento.quemNome || 'alguém'}</b> há {desde(evento.em)}
+            <b>{evento.quemNome || 'alguém'}</b> {quando(evento.em)}
           </p>
           <p className="ca-balao">{evento.texto}</p>
         </div>
@@ -420,7 +420,7 @@ function Evento({ evento }: { evento: EventoDoCartao }) {
     <div className="ca-fato">
       <span className="ca-ponto" />
       <p>
-        {frase(evento)} <i>há {desde(evento.em)}</i>
+        {frase(evento)} <i>{quando(evento.em)}</i>
       </p>
     </div>
   )
@@ -439,6 +439,15 @@ function iniciais(nome: string): string {
   const p = nome.trim().split(/\s+/).filter(Boolean)
   if (!p.length) return '?'
   return (p[0][0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
+}
+
+/* "HÁ AGORA" NÃO É PORTUGUÊS. O desde() devolve só a medida, e quem monta a
+   frase é esta função: ou "agora", ou "há tanto tempo". Sem ela a linha do
+   tempo dizia "Henrique pôs montagem há agora" no instante em que a pessoa
+   punha a tag, que é exatamente o momento em que ela está olhando. */
+function quando(iso: string): string {
+  const q = desde(iso)
+  return q === 'agora' ? 'agora' : 'há ' + q
 }
 
 /* O tempo em palavra, e não em data. "há 26 min" responde a pergunta que a

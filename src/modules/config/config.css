@@ -402,3 +402,9 @@
   color: var(--text-2);
   max-width: 72ch;
 }
+
+/* O que a última rodada do ensaio recusou. Vermelho porque recusa é o que
+   precisa ser lido, e o resto da nota é cinza. */
+.cfg-ruim {
+  color: var(--brand-text);
+}

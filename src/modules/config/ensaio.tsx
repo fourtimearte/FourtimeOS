@@ -46,6 +46,8 @@ export function TelaEnsaio() {
   const [contas, setContas] = useState<ContaDeTeste[]>([])
   const [carregando, setCarregando] = useState(true)
   const [ocupado, setOcupado] = useState('')
+  /* o que a última rodada fez, escrito na tela e não só no aviso que some */
+  const [ultima, setUltima] = useState<{ texto: string; ruim: boolean } | null>(null)
   const [falha, setFalha] = useState('')
 
   const recontar = useCallback(async () => {
@@ -96,6 +98,12 @@ export function TelaEnsaio() {
                     })()
                   : await semearPedidos()
       await recontar()
+      setUltima({
+        texto:
+          oQue + ': ' + r.gravados + ' gravados, ' + r.recusados + ' recusados' +
+          (r.recados.length ? ' · ' + r.recados.join(' · ') : ''),
+        ruim: r.recusados > 0 || r.gravados === 0,
+      })
       if (r.gravados && !r.recusados) {
         /* O recado sobrevive ao sucesso de propósito: semear estoque pode dar
            certo e ainda assim deixar uma malha sem ligação no catálogo, e essa
@@ -111,7 +119,9 @@ export function TelaEnsaio() {
         avisar('Nada entrou. ' + (r.recados[0] ?? ''), 'warn')
       }
     } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui semear', 'warn')
+      const recado = e instanceof Error ? e.message : 'Não consegui semear'
+      setUltima({ texto: oQue + ': parou no meio · ' + recado, ruim: true })
+      avisar(recado, 'warn')
     } finally {
       setOcupado('')
     }
@@ -192,37 +202,48 @@ export function TelaEnsaio() {
           hora de semear, então os cartões nascem com o relógio certo e ele anda de verdade
           enquanto a tela fica aberta.
         </p>
+        {/* A ORDEM ESTÁ ESCRITA NOS BOTÕES, e não num parágrafo que ninguém
+            relê. Ela não é capricho: a reserva nasce no instante em que a
+            cotação é aprovada, com o consumo e o estoque que existiam naquele
+            momento. Aprovar antes de semear os dois dá cinquenta pedidos com
+            reserva sem tamanho, e foi exatamente o que aconteceu na primeira
+            rodada do ensaio grande. */}
         <div className="cfg-botoes">
           <Botao tom="primario" onClick={() => void semear('clientes')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'clientes' ? 'Semeando...' : 'Semear clientes'}
+            {ocupado === 'clientes' ? 'Semeando...' : '1. Clientes'}
           </Botao>
           <Botao tom="forte" onClick={() => void semear('leads')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'leads' ? 'Semeando...' : 'Semear leads'}
+            {ocupado === 'leads' ? 'Semeando...' : '2. Leads'}
           </Botao>
           <Botao tom="contorno" onClick={() => void semear('cotações')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'cotações' ? 'Semeando...' : 'Semear cotações'}
+            {ocupado === 'cotações' ? 'Semeando...' : '3. Cotações'}
           </Botao>
-          <Botao tom="contorno" onClick={() => void semear('pedidos')} disabled={!!ocupado}>
+          <Botao tom="contorno" onClick={() => void semear('consumo')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'pedidos' ? 'Aprovando...' : 'Aprovar as cotações'}
+            {ocupado === 'consumo' ? 'Semeando...' : '4. Consumo'}
           </Botao>
           <Botao tom="contorno" onClick={() => void semear('estoque')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'estoque' ? 'Semeando...' : 'Semear estoque'}
+            {ocupado === 'estoque' ? 'Semeando...' : '5. Estoque'}
           </Botao>
-          {/* O CONSUMO VEM ANTES DE APROVAR AS COTAÇÕES, e a ordem importa: a
-              reserva nasce no instante da aprovação, com o consumo que existia
-              naquele momento. Semeado depois, os pedidos que já passaram ficam
-              com reserva sem tamanho, e é preciso Refazer as reservas no
-              estoque para acertar. */}
-          <Botao tom="contorno" onClick={() => void semear('consumo')} disabled={!!ocupado}>
+          <Botao tom="contorno" onClick={() => void semear('pedidos')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
-            {ocupado === 'consumo' ? 'Semeando...' : 'Semear consumo'}
+            {ocupado === 'pedidos' ? 'Aprovando...' : '6. Aprovar as cotações'}
           </Botao>
         </div>
+
+        {/* O RESULTADO FICA NA TELA, e não só num aviso que some em três
+            segundos. O ensaio roda por minutos e o que ele recusou é a parte
+            que importa: o aviso sumindo foi o que me deixou cego na primeira
+            rodada do ensaio grande. */}
+        {ultima ? (
+          <p className={ultima.ruim ? 'cfg-nota cfg-ruim' : 'cfg-nota'}>
+            <b>Última rodada:</b> {ultima.texto}
+          </p>
+        ) : null}
       </Cartao>
 
       <Cartao>

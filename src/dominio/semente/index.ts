@@ -599,6 +599,45 @@ async function idsDoCatalogo(): Promise<{ malha: Map<string, string>; cor: Map<s
   }
 }
 
+/* O QUE OS PEDIDOS PEDEM, e que a lista fixa não tem.
+
+   A primeira rodada do ensaio grande deu ZERO reserva, e o motivo era honesto:
+   a lista fixa cobre seis malhas, e as cotações sorteiam o catálogo inteiro. O
+   estoque não tinha o tecido que os pedidos pediam, e sem material não nasce
+   reserva.
+
+   Uma fábrica de verdade estoca o que vende. Então, depois da lista fixa, o
+   ensaio lê os layouts das cotações de teste e cadastra um material para cada
+   par malha e cor que ficou descoberto. É a mesma pergunta que a reserva faz,
+   feita antes, e é o que acende a corrente inteira: reserva com tamanho,
+   separação com número, e falta de material só onde ela existe de verdade. */
+type ParDeTecido = { malha: string; cor: string }
+
+async function oQueOsPedidosPedem(): Promise<ParDeTecido[]> {
+  const pares = new Map<string, ParDeTecido>()
+  try {
+    const linhas = await tabela<{ corpo: { produtos?: unknown[] } }[]>(
+      'cotacao?select=corpo&teste=is.true',
+    )
+    for (const l of linhas) {
+      for (const p of (l.corpo?.produtos ?? []) as Record<string, unknown>[]) {
+        const bloco = p?.bloco as Record<string, unknown> | undefined
+        if (!bloco || bloco.informacoes) continue
+        const tecidos = (bloco.tecidos ?? []) as { nome?: string; cor?: string }[]
+        for (const t of tecidos) {
+          const malha = (t?.nome ?? '').trim()
+          const cor = (t?.cor ?? '').trim()
+          if (!malha || !cor) continue
+          pares.set(malha + ' · ' + cor, { malha, cor })
+        }
+      }
+    }
+  } catch {
+    /* sem as cotações, fica só a lista fixa */
+  }
+  return [...pares.values()]
+}
+
 export async function semearEstoque(): Promise<ResultadoDaSemente> {
   const recados: string[] = []
   const catalogo = await idsDoCatalogo()
@@ -619,6 +658,33 @@ export async function semearEstoque(): Promise<ResultadoDaSemente> {
     cor_id: m.cor ? (catalogo.cor.get(m.cor) ?? null) : null,
     teste: true,
   }))
+
+  /* o que as cotações pedem e a lista fixa não cobre */
+  const jaTem = new Set(ESTOQUE_DE_EXEMPLO.map((m) => (m.malha ?? '') + ' · ' + (m.cor ?? '')))
+  const pedidos = await oQueOsPedidosPedem()
+  let deFora = 0
+  for (const par of pedidos) {
+    if (jaTem.has(par.malha + ' · ' + par.cor)) continue
+    const tecidoId = catalogo.malha.get(par.malha)
+    const corId = catalogo.cor.get(par.cor)
+    /* sem ligação no catálogo o material seria texto solto, e a reserva não
+       acharia ele de qualquer jeito: melhor não cadastrar e a tela mostrar a
+       falta */
+    if (!tecidoId || !corId) continue
+    corpo.push({
+      categoria: 'tecido',
+      nome: par.malha + ' · ' + par.cor,
+      unidade: 'kg',
+      /* mínimo alto de propósito em um de cada quatro: sem nada abaixo do
+         mínimo, o cartão de compra do início nasce vazio */
+      minimo: deFora % 4 === 0 ? 60 : 25,
+      tecido_id: tecidoId,
+      cor_id: corId,
+      teste: true,
+    })
+    deFora++
+  }
+  if (deFora) recados.push(deFora + ' malha(s) que as cotações pedem entraram junto')
 
   let gravados: { id: string; nome: string }[] = []
   try {
@@ -641,13 +707,19 @@ export async function semearEstoque(): Promise<ResultadoDaSemente> {
   let movimentos = 0
   let recusados = 0
 
-  for (const g of gravados) {
+  for (let i = 0; i < gravados.length; i++) {
+    const g = gravados[i]
     const m = porNome.get(g.nome)
-    if (!m || m.saldo <= 0) continue
+    /* As malhas que vieram das cotações não estão na lista fixa, então elas não
+       têm saldo escrito: ele é sorteado por posição, e um de cada cinco nasce
+       curto de propósito. Estoque em que nada falta não exercita a falta, e a
+       falta é metade do que a separação e o PCP existem para mostrar. */
+    const saldo = m ? m.saldo : i % 5 === 0 ? 12 : 40 + ((i * 17) % 160)
+    if (saldo <= 0) continue
     try {
       await chamar('mexer_no_estoque', {
         p_material: g.id,
-        p_quantidade: m.saldo,
+        p_quantidade: saldo,
         p_motivo: 'entrada',
         p_observacao: 'saldo inicial do ensaio',
         p_pedido: null,

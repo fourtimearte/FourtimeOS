@@ -14,7 +14,7 @@ import {
   totalDaCotacao,
   VERSAO_DO_CFT,
 } from '@dominio/cotacao'
-import { liberarParaProducao } from '@dominio/producao'
+import { carregarAsRotas, liberarParaProducao, rotaDe } from '@dominio/producao'
 
 /* ==========================================================================
    A semente.
@@ -393,6 +393,9 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
     'cotacao_na_lista?select=id&estado=in.(enviada,aprovada)&pedido_numero=is.null&teste=is.true',
   )
 
+  /* uma consulta só, antes do laço: a rota não muda no meio do ensaio */
+  const rotas = await rotasDoEnsaio()
+
   for (let i = 0; i < candidatas.length; i++) {
     try {
       const c = await acharCotacao(candidatas[i].id)
@@ -452,8 +455,8 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
         `fatia?select=id,tecnica&pedido_id=eq.${pedido.id}`,
       )
       for (let k = 0; k < fatias.length; k++) {
-        const rota = ROTA_DO_ENSAIO[fatias[k].tecnica] ?? ['corte']
-        const onde = rota[(i + k) % Math.max(1, rota.length - 1)]
+        const rota = rotas[fatias[k].tecnica] ?? []
+        const onde = rota.length ? rota[(i + k) % Math.max(1, rota.length - 1)] : ''
         if (onde) {
           await tabela(`fatia?id=eq.${fatias[k].id}`, { metodo: 'PATCH', corpo: { etapa: onde } })
         }
@@ -491,16 +494,26 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
   return { gravados, recusados, recados }
 }
 
-/* As rotas, copiadas da migração 023. Elas moram no banco, e o ensaio não as
-   lê de lá de propósito: se a rota mudar e o ensaio continuar espalhando pelos
-   postos velhos, o gatilho recusa e o ensaio grita, que é melhor que um quadro
-   bonito escondendo uma rota que ninguém atualizou. */
-const ROTA_DO_ENSAIO: Record<string, string[]> = {
-  subli: ['subli', 'calandra', 'corte', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
-  dtf: ['corte', 'dtf', 'prensa', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
-  silk: ['corte', 'silk', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
-  bordado: ['bordado', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
-  patch: ['prensa', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+/* A ROTA VEM DO BANCO, e não de uma cópia aqui dentro.
+
+   Até hoje ela era uma cópia da migração 023, escrita de propósito: a ideia
+   era que, se a rota mudasse, o gatilho recusasse e o ensaio gritasse. Ele
+   gritou, e o grito custou três pedidos: a rota de subli no banco passa por
+   futurize onde o arquivo 023 escreveu corte, e o ensaio ficou espalhando
+   fatia num posto por onde a sublimação não passa mais.
+
+   Ou seja: a cópia não avisou que a rota mudou, ela só quebrou o ensaio. Quem
+   avisa é a tela de rota, no dia em que existir. O quadro já lê a rota do
+   banco; o ensaio passa a ler da mesma fonte, que é o único jeito de ele
+   continuar espalhando fatia pelos postos certos quando a fábrica mudar de
+   ideia. */
+async function rotasDoEnsaio(): Promise<Record<string, string[]>> {
+  const rotas = await carregarAsRotas()
+  const mapa: Record<string, string[]> = {}
+  for (const r of rotas) {
+    if (!mapa[r.tecnica]) mapa[r.tecnica] = rotaDe(rotas, r.tecnica)
+  }
+  return mapa
 }
 
 async function umPedido(numero: string): Promise<{ id: string } | null> {

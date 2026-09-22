@@ -280,3 +280,69 @@ export function montarCotacaoDeExemplo(s: SementeDeCotacao, i: number): Cotacao 
   }
 }
 
+
+
+/* ==========================================================================
+   O ENSAIO GRANDE.
+
+   As seis cotações acima são escritas à mão de propósito: cada uma existe para
+   pôr um estado específico na tela (rascunho, enviada, aprovada, recusada,
+   vencida). Elas não servem para encher a fábrica, e encher é outra pergunta:
+   com quatro pedidos não dá para ver se o kanban aguenta treze colunas cheias,
+   se a fila da separação ordena direito, nem se o painel da semana fica
+   legível com cinquenta linhas.
+
+   Então o resto nasce de gerador, em cima dos clientes de verdade que já estão
+   no banco. Não é uma lista maior escrita à mão: é a mesma função que monta as
+   seis, chamada com outro índice, e por isso o documento sai com a mesma forma
+   e passa pelas mesmas contas.
+
+   A MAIORIA NASCE PRONTA PARA VIRAR PEDIDO. O ensaio aprova o que está em
+   enviada ou aprovada, e é dali que saem os cinquenta pedidos; o resto fica
+   como está para a tela de cotação ter os outros estados também.
+   ========================================================================== */
+
+export type ClienteDoEnsaio = { nome: string; cidade: string; uf: string; contato: string }
+
+const VENDEDORES_DO_ENSAIO = ['Dani', 'Lucas', 'Marcos', 'Paula']
+
+/* cinco de cada sete viram pedido. O resto pinta a tela de cotação. */
+const ESTADOS_DO_ENSAIO: EstadoDaCotacao[] = [
+  'aprovada',
+  'enviada',
+  'aprovada',
+  'enviada',
+  'aprovada',
+  'rascunho',
+  'recusada',
+  'aprovada',
+  'enviada',
+  'aprovada',
+  'enviada',
+  'aprovada',
+  'vencida',
+  'enviada',
+]
+
+export function cotacoesDoEnsaioGrande(
+  clientes: ClienteDoEnsaio[],
+  quantas: number,
+): SementeDeCotacao[] {
+  const fora: SementeDeCotacao[] = []
+  if (!clientes.length) return fora
+
+  for (let i = 0; i < quantas; i++) {
+    const c = clientes[i % clientes.length]
+    fora.push({
+      numero: '',
+      estado: ESTADOS_DO_ENSAIO[i % ESTADOS_DO_ENSAIO.length],
+      cliente: { id: '', nome: c.nome, cidade: c.cidade, uf: c.uf, contato: c.contato },
+      vendedor: VENDEDORES_DO_ENSAIO[i % VENDEDORES_DO_ENSAIO.length],
+      /* espalhadas por uns três meses para trás: a lista de cotação e o
+         relatório mensal precisam de mais de um mês para dizer alguma coisa */
+      dias: 2 + ((i * 7) % 88),
+      produtos: 1 + (i % 4),
+    })
+  }
+  return fora
+}

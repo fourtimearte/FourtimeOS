@@ -5,6 +5,7 @@ import {
   apagarDadosDeTeste,
   contarDadosDeTeste,
   semearClientes,
+  semearConsumo,
   semearCotacoes,
   semearEstoque,
   semearLeads,
@@ -64,10 +65,15 @@ export function TelaEnsaio() {
 
   const total = totalDeTeste(contas)
 
-  async function semear(oQue: 'clientes' | 'leads' | 'cotações' | 'pedidos' | 'estoque') {
+  async function semear(
+    oQue: 'clientes' | 'leads' | 'cotações' | 'pedidos' | 'estoque' | 'consumo',
+  ) {
     if (ocupado) return
     setOcupado(oQue)
     try {
+      /* O consumo devolve outra forma: ele não é uma lista de exemplos, é o
+         cadastro que faz a reserva ter tamanho. Aqui ele vira o mesmo formato
+         para a tela não precisar saber da diferença. */
       const r =
         oQue === 'clientes'
           ? await semearClientes()
@@ -77,7 +83,18 @@ export function TelaEnsaio() {
               ? await semearCotacoes()
               : oQue === 'estoque'
                 ? await semearEstoque()
-                : await semearPedidos()
+                : oQue === 'consumo'
+                  ? await (async () => {
+                      const c = await semearConsumo()
+                      return {
+                        gravados: c.gravados,
+                        recusados: 0,
+                        recados: [
+                          `${c.referencias} referências, em quilos, marcadas como teste`,
+                        ],
+                      }
+                    })()
+                  : await semearPedidos()
       await recontar()
       if (r.gravados && !r.recusados) {
         /* O recado sobrevive ao sucesso de propósito: semear estoque pode dar
@@ -195,6 +212,15 @@ export function TelaEnsaio() {
           <Botao tom="contorno" onClick={() => void semear('estoque')} disabled={!!ocupado}>
             <Flask size={16} weight="bold" />
             {ocupado === 'estoque' ? 'Semeando...' : 'Semear estoque'}
+          </Botao>
+          {/* O CONSUMO VEM ANTES DE APROVAR AS COTAÇÕES, e a ordem importa: a
+              reserva nasce no instante da aprovação, com o consumo que existia
+              naquele momento. Semeado depois, os pedidos que já passaram ficam
+              com reserva sem tamanho, e é preciso Refazer as reservas no
+              estoque para acertar. */}
+          <Botao tom="contorno" onClick={() => void semear('consumo')} disabled={!!ocupado}>
+            <Flask size={16} weight="bold" />
+            {ocupado === 'consumo' ? 'Semeando...' : 'Semear consumo'}
           </Botao>
         </div>
       </Cartao>

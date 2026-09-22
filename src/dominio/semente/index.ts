@@ -1,15 +1,20 @@
 import { chamar, tabela } from '@shared/supabase'
+export { semearConsumo } from './consumo'
+export type { ResultadoDoConsumo } from './consumo'
 import { CLIENTES_DE_EXEMPLO } from '@dominio/cliente'
 import { ESTAGIOS, LEADS_DE_EXEMPLO, type LeadDeExemplo } from '@dominio/funil'
 import {
   acharCotacao,
   aprovarNoBanco,
   COTACOES_DE_EXEMPLO,
+  cotacoesDoEnsaioGrande,
+  fatiasDaCotacao,
   montarCotacaoDeExemplo,
   pecasDaCotacao,
   totalDaCotacao,
   VERSAO_DO_CFT,
 } from '@dominio/cotacao'
+import { liberarParaProducao } from '@dominio/producao'
 
 /* ==========================================================================
    A semente.
@@ -249,16 +254,34 @@ export async function semearCotacoes(): Promise<ResultadoDaSemente> {
      fica sem vínculo mesmo: cotação sem cliente cadastrado é uma situação real,
      e semear uma dessas exercita a tela que a mostra. */
   const porNome = new Map<string, string>()
+  const doEnsaio: { nome: string; cidade: string; uf: string; contato: string }[] = []
   try {
-    const lista = await tabela<{ id: string; nome: string }[]>('cliente?select=id,nome')
-    for (const cl of lista) porNome.set(cl.nome.trim().toLowerCase(), cl.id)
+    const lista = await tabela<{ id: string; nome: string; cidade: string; uf: string; contato: string }[]>(
+      'cliente?select=id,nome,cidade,uf,contato&order=nome.asc',
+    )
+    for (const cl of lista) {
+      porNome.set(cl.nome.trim().toLowerCase(), cl.id)
+      doEnsaio.push({
+        nome: cl.nome,
+        cidade: cl.cidade || '',
+        uf: cl.uf || '',
+        contato: cl.contato || '',
+      })
+    }
   } catch {
     /* sem a lista, as cotações entram sem vínculo */
   }
 
-  for (let i = 0; i < COTACOES_DE_EXEMPLO.length; i++) {
+  /* AS SEIS ESCRITAS À MÃO, E MAIS SETENTA DO GERADOR. As seis existem para
+     pôr cada estado na tela; as setenta existem para encher a fábrica, e é
+     delas que saem os cinquenta e poucos pedidos do ensaio. Sem volume não dá
+     para ver se o kanban aguenta treze colunas cheias nem se o painel da
+     semana continua legível com cinquenta linhas. */
+  const sementes = [...COTACOES_DE_EXEMPLO, ...cotacoesDoEnsaioGrande(doEnsaio, 70)]
+
+  for (let i = 0; i < sementes.length; i++) {
     try {
-      const c = montarCotacaoDeExemplo(COTACOES_DE_EXEMPLO[i], i)
+      const c = montarCotacaoDeExemplo(sementes[i], i)
       const clienteId = porNome.get(c.cliente.nome.trim().toLowerCase()) ?? ''
       c.cliente = { ...c.cliente, id: clienteId }
       const numero = await chamar<string>('proximo_numero_de_cotacao')
@@ -307,7 +330,6 @@ export async function semearCotacoes(): Promise<ResultadoDaSemente> {
 
    Depois de aprovar, ela espalha os pedidos pela semana e pelos postos, para o
    painel e o kanban terem o que mostrar em mais de uma coluna. */
-const POSTOS_DO_ENSAIO = ['corte', 'subli', 'dtf', 'costura', 'embalagem', 'finalizado']
 
 function diaDaSemanaCorrente(i: number): string {
   const hoje = new Date()
@@ -316,6 +338,48 @@ function diaDaSemanaCorrente(i: number): string {
   segunda.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7))
   segunda.setDate(segunda.getDate() + i)
   return segunda.toISOString().slice(0, 10)
+}
+
+/* O QUE CADA PEDIDO VIRA, e por quê.
+
+   Um ensaio com quarenta pedidos todos em produção não prova nada: prova que a
+   produção aguenta quarenta cartões, e deixa a separação, o PCP e a expedição
+   vazias. A fábrica de verdade tem gente em todos os lugares ao mesmo tempo, e
+   é essa foto que o ensaio precisa dar.
+
+   A soma é cinquenta e dois, e ela cobre as sete telas do caminho. */
+const DESTINOS: { estado: string; quantos: number; nota: string }[] = [
+  { estado: 'aprovado',  quantos: 8,  nota: 'vendido, esperando a separação' },
+  { estado: 'separacao', quantos: 6,  nota: 'material saindo da prateleira' },
+  { estado: 'pcp',       quantos: 8,  nota: 'no portão, conferindo e esperando o diretor' },
+  { estado: 'producao',  quantos: 16, nota: 'cartões espalhados pelo MARK45' },
+  { estado: 'pronto',    quantos: 5,  nota: 'acabou, esperando a expedição' },
+  { estado: 'enviado',   quantos: 4,  nota: 'saiu da fábrica' },
+  { estado: 'entregue',  quantos: 3,  nota: 'chegou no cliente' },
+  { estado: 'cancelado', quantos: 2,  nota: 'morreu no meio, e a tela precisa mostrar isso' },
+]
+
+function destinoDe(i: number): string {
+  let conta = 0
+  for (const d of DESTINOS) {
+    conta += d.quantos
+    if (i < conta) return d.estado
+  }
+  /* sobrou: fica em produção, que é onde a fábrica de verdade concentra */
+  return 'producao'
+}
+
+async function empurrar(numero: string, corpo: Record<string, unknown>) {
+  await tabela(`pedido?numero=eq.${encodeURIComponent(numero)}`, { metodo: 'PATCH', corpo })
+}
+
+/* Andar um degrau de cada vez, porque a trava da 022 não deixa pular. */
+async function andarAte(numero: string, ate: string) {
+  const caminho = ['separacao', 'pcp', 'producao', 'pronto', 'enviado', 'entregue']
+  for (const passo of caminho) {
+    await empurrar(numero, { estado: passo })
+    if (passo === ate) return
+  }
 }
 
 export async function semearPedidos(): Promise<ResultadoDaSemente> {
@@ -334,44 +398,84 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
       const c = await acharCotacao(candidatas[i].id)
       if (!c) throw new Error('cotação sumiu no meio')
       const novo = await aprovarNoBanco(c, c.enviadas.length || 1)
+      const numero = novo.numero
+      const destino = destinoDe(i)
 
-      /* UM DE CADA TRÊS FICA EM `aprovado`, esperando separação.
-
-         Apontar uma etapa é a fábrica encostar no pedido, e o gatilho da 020
-         move o pedido para produção no instante em que isso acontece. Se todos
-         recebessem etapa, a fila da Separação nasceria vazia e a tela nova não
-         teria o que mostrar no ensaio. A fábrica de verdade também tem os dois:
-         gente cortando e gente esperando material. */
-      if (i % 3 === 0) {
+      if (destino === 'aprovado') {
         gravados++
         continue
       }
 
-      /* E UM DE CADA TRÊS PARA NO PCP, esperando a primeira aprovação. Sem
-         isso a tela do PCP nasceria vazia no ensaio, e uma tela vazia não
-         mostra se ela funciona. Ele anda um degrau de cada vez porque a trava
-         da 022 não deixa pular. */
-      if (i % 3 === 1) {
-        for (const estado of ['separacao', 'pcp']) {
-          await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {
-            metodo: 'PATCH',
-            corpo: { estado },
+      if (destino === 'cancelado') {
+        await empurrar(numero, { estado: 'cancelado' })
+        gravados++
+        continue
+      }
+
+      if (destino === 'separacao') {
+        await empurrar(numero, { estado: 'separacao' })
+        gravados++
+        continue
+      }
+
+      /* O PCP tem três situações diferentes na mesma fila, e as três precisam
+         aparecer: quem ainda não foi conferido, quem já está na mesa do
+         diretor, e quem voltou com motivo. */
+      if (destino === 'pcp') {
+        await andarAte(numero, 'pcp')
+        const pedido = await umPedido(numero)
+        if (pedido && i % 4 === 1) {
+          await chamar('marcar_para_aprovacao', { p_pedido: pedido.id })
+        } else if (pedido && i % 4 === 2) {
+          await chamar('marcar_para_aprovacao', { p_pedido: pedido.id })
+          await chamar('devolver_do_pcp', {
+            p_pedido: pedido.id,
+            p_motivo: 'Falta confirmar a cor da gola com o cliente antes de cortar.',
           })
         }
         gravados++
         continue
       }
 
-      /* espalha pela semana e pelos postos, senão a fábrica inteira nasce no
-         corte da segunda-feira e o painel fica com uma coluna só */
-      await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {
-        metodo: 'PATCH',
-        corpo: {
-          etapa: POSTOS_DO_ENSAIO[i % POSTOS_DO_ENSAIO.length],
-          planejado_em: diaDaSemanaCorrente(i % 6),
-          aviso: i % 5 === 2 ? 'falta-tecido' : '',
-        },
+      /* Daqui para baixo o pedido precisa DESCER PELO PORTÃO, e não por um
+         atalho: marcar, liberar, e as fatias nascerem da cotação. É o caminho
+         que a fábrica usa, e é o único que prova que ele funciona. */
+      await andarAte(numero, 'pcp')
+      const pedido = await umPedido(numero)
+      if (!pedido) throw new Error('não achei o pedido recém-criado')
+      await chamar('marcar_para_aprovacao', { p_pedido: pedido.id })
+      await liberarParaProducao(pedido.id, fatiasDaCotacao(c))
+
+      /* espalha as fatias pelos postos, senão o quadro inteiro nasce na
+         primeira coluna e treze colunas não provam nada */
+      const fatias = await tabela<{ id: string; tecnica: string }[]>(
+        `fatia?select=id,tecnica&pedido_id=eq.${pedido.id}`,
+      )
+      for (let k = 0; k < fatias.length; k++) {
+        const rota = ROTA_DO_ENSAIO[fatias[k].tecnica] ?? ['corte']
+        const onde = rota[(i + k) % Math.max(1, rota.length - 1)]
+        if (onde) {
+          await tabela(`fatia?id=eq.${fatias[k].id}`, { metodo: 'PATCH', corpo: { etapa: onde } })
+        }
+      }
+
+      await empurrar(numero, {
+        planejado_em: diaDaSemanaCorrente(i % 6),
+        aviso: i % 7 === 3 ? 'falta-tecido' : '',
       })
+
+      if (destino === 'producao') {
+        gravados++
+        continue
+      }
+
+      /* pronto, enviado e entregue: a etapa finalizada é o que fecha o pedido,
+         e daí para a frente é a expedição que anda com ele */
+      await empurrar(numero, { etapa: 'finalizado' })
+      if (destino !== 'pronto') {
+        await empurrar(numero, { estado: 'enviado' })
+        if (destino === 'entregue') await empurrar(numero, { estado: 'entregue' })
+      }
       gravados++
     } catch (e) {
       recusados++
@@ -385,6 +489,25 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
   }
 
   return { gravados, recusados, recados }
+}
+
+/* As rotas, copiadas da migração 023. Elas moram no banco, e o ensaio não as
+   lê de lá de propósito: se a rota mudar e o ensaio continuar espalhando pelos
+   postos velhos, o gatilho recusa e o ensaio grita, que é melhor que um quadro
+   bonito escondendo uma rota que ninguém atualizou. */
+const ROTA_DO_ENSAIO: Record<string, string[]> = {
+  subli: ['subli', 'calandra', 'corte', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+  dtf: ['corte', 'dtf', 'prensa', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+  silk: ['corte', 'silk', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+  bordado: ['bordado', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+  patch: ['prensa', 'cd-costura', 'costura', 'embalagem', 'finalizado'],
+}
+
+async function umPedido(numero: string): Promise<{ id: string } | null> {
+  const linhas = await tabela<{ id: string }[]>(
+    `pedido?select=id&numero=eq.${encodeURIComponent(numero)}&limit=1`,
+  )
+  return linhas[0] ?? null
 }
 
 /* --- o estoque -----------------------------------------------------------

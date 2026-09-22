@@ -19,7 +19,9 @@ export {
 } from './fabrica'
 export {
   COTACOES_DE_EXEMPLO,
+  cotacoesDoEnsaioGrande,
   montarCotacaoDeExemplo,
+  type ClienteDoEnsaio,
   type SementeDeCotacao,
 } from './exemplo'
 export {

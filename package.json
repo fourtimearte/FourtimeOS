@@ -23,7 +23,8 @@
     "tokens": "node testes/tokens.mjs",
     "ligacoes": "node testes/ligacoes.mjs",
     "prova": "node testes/prova.mjs",
-    "arrasto": "node testes/arrasto.mjs"
+    "arrasto": "node testes/arrasto.mjs",
+    "cartao": "node testes/cartao.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

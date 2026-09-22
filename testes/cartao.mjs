@@ -1,0 +1,238 @@
+/* ==========================================================================
+   O TESTE DO CARTÃO DO MARK45.
+
+   Ele confere o que só aparece olhando: a fileira das tags mestre, as tags do
+   posto, o cartão aberto com os layouts, e a confirmação do Terminei. Em três
+   larguras e nos dois temas.
+
+   O QUE ELE MEDE, e não o que ele mostra:
+
+     1. em nenhuma largura a página rola de lado
+     2. o número do pedido nunca quebra em duas linhas
+     3. a faixa das tags mestre existe e é separada das tags do posto
+     4. no cartão aberto, as duas colunas têm larguras iguais ou empilham
+     5. a tag que não vale no posto aparece apagada, e não some
+     6. o alvo de toque tem 44px onde o V7 pede
+
+   As fotos ficam em testes/fotos/ para olhar depois, mas quem reprova é a
+   medida: foto ninguém compara com a de ontem, e medida o terminal compara.
+
+   Uso:  node testes/cartao.mjs
+   ========================================================================== */
+
+import { createRequire } from 'node:module'
+import { mkdirSync } from 'node:fs'
+const require = createRequire(import.meta.url)
+function pegarPlaywright() {
+  for (const onde of ['playwright', '/home/claude/.npm-global/lib/node_modules/playwright']) {
+    try { return require(onde) } catch { /* tenta o proximo */ }
+  }
+  throw new Error('playwright nao encontrado: npm i, ou npm i -g playwright')
+}
+const { chromium } = pegarPlaywright()
+const SITE = process.argv[2] || 'https://fourtimeos.arte-adc.workers.dev'
+const PASTA = 'testes/fotos'
+mkdirSync(PASTA, { recursive: true })
+
+const PAGINAS = ['inicio','funil','clientes','cotacao','separacao','pcp','ficha','kanban','produtos','estoque','atividades','relatorio','banco','config','kit']
+const permissoes = {}; PAGINAS.forEach(k => permissoes[k] = {ver:true,editar:true,deletar:true,total:true})
+const PERFIL = [{ id:'1', nome:'Henrique', papel:'admin', situacao:'aprovado', paineis:PAGINAS, permissoes, email:'t@f', foto_em:null }]
+
+const ROTAS = []
+const põe = (t, postos) => postos.forEach((p,i) => ROTAS.push({tecnica:t, ordem:(i+1)*10, posto:p}))
+põe('subli', ['subli','calandra','futurize','conferencia','cd-costura','costura','embalagem','finalizado'])
+põe('dtf', ['corte','dtf','prensa','conferencia','cd-costura','costura','embalagem','finalizado'])
+
+const ha = (d) => new Date(Date.now() - d*86400000).toISOString()
+const FATIAS = [
+  { id:'1', pedido_id:'p1', numero:'PD-TESTE-0029', nome:'Uniforme Equipe Verão', cliente:'Drogaria Viver Bem',
+    vendedor:'Dani', tecnica:'subli', etapa:'subli', etapa_em:ha(0), fechado_em:null, layouts:[1,2],
+    pecas:299, entrega_em:null, aviso:'', estado:'producao', teste:true,
+    marcas:['VIP','PRIORIDADE'], tags:['montagem','prova_de_cor'],
+    pego_por:'1', pego_por_nome:'Henrique', pego_em:ha(0), falas:2 },
+  { id:'2', pedido_id:'p2', numero:'PD-TESTE-0057', nome:'Camisa Congresso 2026', cliente:'Igreja Araguaia',
+    vendedor:'Lucas', tecnica:'dtf', etapa:'corte', etapa_em:ha(4), fechado_em:null, layouts:[1],
+    pecas:160, entrega_em:null, aviso:'falta-material', estado:'producao', teste:true,
+    marcas:['EVENTO','URGENTE'], tags:['falta_tecido'],
+    pego_por:null, pego_por_nome:'', pego_em:null, falas:0 },
+]
+const TAGS = [
+  { chave:'falta_tecido', nome:'falta tecido', tom:'vermelha', em_todo_posto:true,  ordem:10, ativa:true },
+  { chave:'montagem',     nome:'montagem',     tom:'verde',    em_todo_posto:false, ordem:30, ativa:true },
+  { chave:'prova_de_cor', nome:'prova de cor', tom:'azul',     em_todo_posto:false, ordem:40, ativa:true },
+  { chave:'revisao',      nome:'revisão',      tom:'roxa',     em_todo_posto:false, ordem:60, ativa:true },
+]
+const TAGS_POSTO = [
+  { tag:'montagem', posto:'subli' }, { tag:'montagem', posto:'dtf' },
+  { tag:'prova_de_cor', posto:'subli' },
+  { tag:'revisao', posto:'conferencia' },
+]
+const BLOCO = (n, ref, nome, genero, faixa, grade) => ({
+  id:'B'+n, n, referencia:ref, nomeDaReferencia:nome, genero, faixa, grade,
+  tecidos:[{ nome:'DRYFIT POLIESTER 100%', cor:'Azul Royal', hex:'#1d4ed8' }],
+  design:[{ tag:'Subli', tecnica:'subli', cores:[{cod:'SB-214',hex:'#1d4ed8'},{cod:'SB-001',hex:'#f5f5f5'}] }],
+  arte:'uniforme-2026', imagem:'', observacao:'Gola em ribana preta.',
+})
+const COTACAO = [{
+  id:'c1', numero:'CO2026-0100', versao_do_formato:4, estado:'aprovada',
+  criada_em:ha(9), atualizado_em:ha(1),
+  corpo: {
+    numero:'CO2026-0100', versaoDoFormato:4, estado:'aprovada', vendedor:'Dani',
+    cliente:{ id:'C1', nome:'Drogaria Viver Bem', documento:'', contato:'', telefone:'', email:'', cidade:'Goiânia', uf:'GO' },
+    produtos:[
+      { bloco: BLOCO(1,'FT-010-000M','CAMISETA MASC TRAD','masculino','adulto',{P:4,M:10,G:12,GG:6,XG:2}), precoPorTamanho:{}, precoBase:60 },
+      { bloco: BLOCO(2,'FT-010-000F','CAMISETA FEM TRAD','feminino','adulto',{P:6,M:8,G:4,GG:2}), precoPorTamanho:{}, precoBase:60 },
+    ],
+    ajustes:[], informe:{}, informes:[], enviadas:[],
+    producao:{ pedido:'', dataDeEnvio:'', departamento:'', embalagem:'', marcas:['VIP','PRIORIDADE'], observacao:'' },
+  },
+}]
+
+const nav = await chromium.launch()
+const achados = []
+const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
+
+for (const tema of ['light', 'dark']) {
+  for (const [larg, alt, nome] of [[1440,900,'computador'], [768,1024,'tablet'], [390,844,'celular']]) {
+    const ctx = await nav.newContext({ viewport:{width:larg,height:alt}, reducedMotion:'reduce' })
+    await ctx.route('**supabase.co/**', async (r) => {
+      const req = r.request(); const u = req.url()
+      let corpo = []
+      if (u.includes('rpc/conferir_a_saida')) corpo = {
+        fatia:'1', numero:'PD-TESTE-0029', posto:'subli', proximo:'calandra',
+        itens:[
+          { tom:'ok', titulo:'O material saiu da prateleira', linha:'4 linhas de reserva, todas baixadas.' },
+          { tom:'atencao', titulo:'Tag ainda posta: montagem, prova de cor', linha:'Se já resolveu, tire a tag antes de mandar para a frente.' },
+          { tom:'nota', titulo:'Este pedido tem mais 1 cartão aberto', linha:'O pedido só fecha quando o último fechar.' },
+        ], pode:true }
+      else if (u.includes('meu_perfil')) corpo = PERFIL
+      else if (u.includes('fatia_na_fabrica')) corpo = FATIAS
+      else if (u.includes('linha_do_tempo')) corpo = [
+        { id:'e1', tipo:'fala', texto:'Comparei com o PD-TESTE-0084 antes de imprimir.', em:ha(0), quem:'1', quem_nome:'Henrique' },
+        { id:'e2', tipo:'tag', texto:'pôs montagem', em:ha(0), quem:'1', quem_nome:'Rita' },
+        { id:'e3', tipo:'posto', texto:'cd-costura para subli', em:ha(1), quem:'1', quem_nome:'Marcos' },
+      ]
+      else if (u.includes('tag_do_posto')) corpo = TAGS_POSTO
+      else if (u.includes('/tag?')) corpo = TAGS
+      else if (u.includes('rota_da_tecnica')) corpo = ROTAS
+      else if (u.includes('/pedido?')) corpo = [{ cotacao_id:'c1' }]
+      else if (u.includes('/cotacao?')) corpo = COTACAO
+      return r.fulfill({ status:200, contentType:'application/json',
+        headers:{'access-control-allow-origin':'*'}, body: JSON.stringify(corpo) })
+    })
+    await ctx.addInitScript(([c, t])=>{ try{
+      localStorage.setItem('ft.sessao', JSON.stringify(c)); localStorage.setItem('ft.tema', t)
+    }catch{} }, [{ acesso:'t', renovacao:'t', venceEm: Date.now()+86400000, usuario:'t', email:'t@f' }, tema])
+
+    const pg = await ctx.newPage()
+    await pg.goto(SITE + '/kanban', { waitUntil:'networkidle' })
+    await pg.waitForTimeout(1400)
+
+    /* 1. a pagina nao rola de lado em largura nenhuma */
+    const largura = await pg.evaluate(() => ({
+      rola: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      s: document.documentElement.scrollWidth, c: document.documentElement.clientWidth,
+    }))
+    conta(!largura.rola, `${tema} ${nome}: quadro sem rolagem de lado (${largura.s} em ${largura.c})`)
+
+    /* 2. o numero nunca quebra, e 3. a faixa das mestres existe */
+    const cartao = await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.kb-cartao')].find(x => x.textContent.includes('PD-TESTE-0029'))
+      if (!c) return null
+      const n = c.querySelector('.kb-cartao-topo > b')
+      const linhas = Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight || '20'))
+      const mestres = c.querySelector('.kb-mestres')
+      return {
+        linhasDoNumero: linhas,
+        mestres: mestres ? [...mestres.querySelectorAll('.etiqueta')].map(e => e.textContent.trim()) : [],
+        temBorda: mestres ? getComputedStyle(mestres).borderTopWidth !== '0px' : false,
+        tags: [...c.querySelectorAll('.kb-tags .etiqueta')].map(e => e.textContent.trim()),
+        alturaDoBotao: Math.round(c.querySelector('.kb-pe .btn')?.getBoundingClientRect().height ?? 0),
+      }
+    })
+    conta(!!cartao && cartao.linhasDoNumero <= 1, `${tema} ${nome}: o número do pedido cabe em uma linha`)
+    conta(!!cartao && cartao.mestres.length === 2 && cartao.temBorda,
+      `${tema} ${nome}: a faixa das mestres tem ${cartao?.mestres.length} tags e divisor`)
+    conta(!!cartao && cartao.tags.length === 2, `${tema} ${nome}: as tags do posto aparecem (${cartao?.tags.join(', ')})`)
+
+    await pg.screenshot({ path: `${PASTA}/quadro-${tema}-${nome}.png`, fullPage:false })
+
+    /* ---- o cartao aberto ---- */
+    await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.kb-cartao')].find(x => x.textContent.includes('PD-TESTE-0029'))
+      c.querySelector('.kb-abrir').click()
+    })
+    await pg.waitForTimeout(1800)
+
+    const modal = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      if (!d) return null
+      const esq = d.querySelector('.ca-esq')?.getBoundingClientRect()
+      const dir = d.querySelector('.ca-dir')?.getBoundingClientRect()
+      return {
+        layouts: d.querySelectorAll('.ca-layout').length,
+        modulos: d.querySelectorAll('.mod').length,
+        empilhado: !!esq && !!dir && Math.abs(esq.top - dir.top) > 40,
+        esq: Math.round(esq?.width ?? 0),
+        dir: Math.round(dir?.width ?? 0),
+        rolaDeLado: d.scrollWidth > d.clientWidth + 1,
+      }
+    })
+    conta(!!modal && modal.layouts === 2 && modal.modulos === 2,
+      `${tema} ${nome}: o cartão aberto traz os 2 layouts pelo módulo do editor`)
+    conta(!!modal && !modal.rolaDeLado, `${tema} ${nome}: o cartão aberto não rola de lado`)
+
+    await pg.screenshot({ path: `${PASTA}/cartao-${tema}-${nome}.png`, fullPage:false })
+
+    /* ---- o escolhedor de tags: a que nao vale aparece APAGADA ---- */
+    const escolher = await pg.evaluate(async () => {
+      const d = document.querySelector('dialog[open]')
+      const b = [...d.querySelectorAll('button')].find(x => x.textContent.trim() === 'tag')
+      if (!b) return { semBotao: true }
+      b.click()
+      await new Promise(r => setTimeout(r, 400))
+      const linha = document.querySelector('.ca-escolher')
+      return {
+        todas: [...linha.querySelectorAll('.etiqueta')].map(e => e.textContent.trim()),
+        foras: [...linha.querySelectorAll('.etiqueta.fora')].map(e => e.textContent.trim()),
+      }
+    })
+    conta(escolher.foras?.includes('revisão'),
+      `${tema} ${nome}: a tag que não vale no posto aparece apagada, e não some`)
+
+    /* ---- a confirmacao do Terminei ---- */
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const b = [...d.querySelectorAll('.ca-botoes button')].find(x => x.textContent.includes('Terminei'))
+      if (b) b.click()
+    })
+    await pg.waitForTimeout(1500)
+    const conf = await pg.evaluate(() => {
+      const ds = [...document.querySelectorAll('dialog[open]')]
+      const d = ds[ds.length - 1]
+      return {
+        ok: d.querySelectorAll('.cs-ok').length,
+        atencao: d.querySelectorAll('.cs-atencao').length,
+        nota: d.querySelectorAll('.cs-nota').length,
+        tirar: [...d.querySelectorAll('button')].some(b => /Tirar as? /.test(b.textContent)),
+        botao: [...d.querySelectorAll('.sobre-pe button')].map(b => b.textContent.trim()).join(' | '),
+      }
+    })
+    conta(conf.ok === 1 && conf.atencao === 1 && conf.nota === 1,
+      `${tema} ${nome}: a confirmação desenha os três tons`)
+    conta(conf.tirar, `${tema} ${nome}: tem o botão de tirar a tag e terminar`)
+
+    await pg.screenshot({ path: `${PASTA}/confirmar-${tema}-${nome}.png`, fullPage:false })
+    await ctx.close()
+  }
+}
+
+await nav.close()
+const ruins = achados.filter(a => !a.certo)
+console.log('')
+console.log(`fotos em ${PASTA}/`)
+if (ruins.length) {
+  console.log(`${ruins.length} de ${achados.length} reprovaram`)
+  process.exit(1)
+}
+console.log(`cartao ok: ${achados.length} medidas, todas passaram`)

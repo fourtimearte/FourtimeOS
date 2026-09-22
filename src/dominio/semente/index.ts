@@ -571,26 +571,21 @@ const ESTOQUE_DE_EXEMPLO: MaterialDeExemplo[] = [
   { categoria: 'insumo', nome: 'Saco de embalagem 30x40', unidade: 'un', minimo: 400, saldo: 900 },
 ]
 
-/* O PostgREST filtra por lista com in.(a,b,c), separado por vírgula. Nome de
-   malha tem espaço, ponto e porcentagem ("DRYFIT POLIESTER 100%"), e nome de
-   cor tem acento. Cada item vai entre aspas, que é como o PostgREST aceita
-   valor com pontuação, e a lista inteira passa por encodeURIComponent, senão o
-   % do nome vira escape de URL e o servidor recebe outra coisa. */
-function listaPara(nomes: string[]): string {
-  return '(' + nomes.map((n) => '"' + n.replace(/"/g, '\\"') + '"').join(',') + ')'
-}
+/* O CATALOGO INTEIRO, e nao só os nomes da lista fixa.
 
+   Esta função filtrava por in.(...) com os nomes de ESTOQUE_DE_EXEMPLO, e isso
+   tinha uma consequência que só apareceu no ensaio grande: o material que as
+   cotações pediam nunca achava o id, porque o id dele nem tinha sido buscado.
+   As 165 malhas e cores que os layouts pediam viravam uma, e o estoque nascia
+   com a lista fixa e mais nada.
+
+   O catálogo tem 42 tecidos e 122 cores. Ler os dois inteiros é uma consulta
+   de nada, e acaba com a classe de erro em que a resposta depende de quem
+   perguntou. */
 async function idsDoCatalogo(): Promise<{ malha: Map<string, string>; cor: Map<string, string> }> {
-  const malhas = [...new Set(ESTOQUE_DE_EXEMPLO.map((m) => m.malha).filter(Boolean))] as string[]
-  const cores = [...new Set(ESTOQUE_DE_EXEMPLO.map((m) => m.cor).filter(Boolean))] as string[]
-
   const [t, c] = await Promise.all([
-    tabela<{ id: string; nome: string }[]>(
-      `tecido?select=id,nome&nome=in.${encodeURIComponent(listaPara(malhas))}`,
-    ),
-    tabela<{ id: string; nome: string }[]>(
-      `cor_de_tecido?select=id,nome&nome=in.${encodeURIComponent(listaPara(cores))}`,
-    ),
+    tabela<{ id: string; nome: string }[]>('tecido?select=id,nome&limit=2000'),
+    tabela<{ id: string; nome: string }[]>('cor_de_tecido?select=id,nome&limit=2000'),
   ])
 
   return {

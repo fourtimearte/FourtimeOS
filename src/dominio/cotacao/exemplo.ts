@@ -41,13 +41,18 @@ function sorteio(semente: number) {
 
 const CORES_DE_TECIDO = GRUPOS_DE_COR.flatMap((g) => g.cores)
 
+/* OS NOMES SAO OS DO CATALOGO, e nao parecidos com eles. Dois destes seis
+   estavam escritos de cabeca (MOLETOM FLANELADO, SUPLEX 84% POLIESTER 16%
+   ELASTANO) e nao existem na tabela tecido: o layout ficava pedindo uma malha
+   que a fabrica nao tem, e o material nem chegava a ser cadastrado. Nome de
+   tecido no ensaio e copia do catalogo, letra por letra. */
 const TECIDOS_COMUNS = [
   'DRYFIT POLIESTER 100%',
   'ALGODAO 100%',
   'PIQUET COM ELASTANO',
-  'MOLETOM FLANELADO',
+  'MOLETOM',
   'POLIAMIDA FRESH',
-  'SUPLEX 84% POLIESTER 16% ELASTANO',
+  'SUPLEX POLIAMIDA',
 ]
 
 const TAG_DA_TECNICA: Record<Tecnica, string> = {

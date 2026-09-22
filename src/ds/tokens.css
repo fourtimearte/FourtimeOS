@@ -267,6 +267,35 @@
   --situacao-andamento: #9aa3af;
 }
 
+/* --- os tons da etiqueta do kanban --------------------------------------
+   A tag do cartao guarda no banco o NOME do tom, e nao a cor. Cor literal
+   dentro do dado atravessaria o sistema sem passar pelo tema, e no Grafite
+   sairia ilegivel: e o mesmo erro que as etapas cometeram quando moravam
+   dentro do tema claro.
+
+   Aqui os tons mudam de tema, ao contrario das cores de posto, e a razao e a
+   diferenca entre os dois: a cor do posto e IDENTIDADE, decorada por quem
+   opera, e a mesma nos dois temas. O tom da etiqueta e so peso visual, entao
+   ele pode e deve clarear no escuro para o texto continuar legivel. */
+[data-theme='light'] {
+  --tom-cinza: #5c6470;
+  --tom-vermelha: #c6161b;
+  --tom-laranja: #c2410c;
+  --tom-amarela: #8a5200;
+  --tom-verde: #0f5138;
+  --tom-azul: #24507f;
+  --tom-roxa: #5b21b6;
+}
+[data-theme='dark'] {
+  --tom-cinza: #a2a8b1;
+  --tom-vermelha: #ff6b70;
+  --tom-laranja: #fb923c;
+  --tom-amarela: #fbbf24;
+  --tom-verde: #6ee7b7;
+  --tom-azul: #93c5fd;
+  --tom-roxa: #c4b5fd;
+}
+
 /* --- tecnicas: solido, vivo, soft, fg ------------------------------------ */
 /* O solido e identidade e nao muda entre os temas. Quem muda e o par soft/fg,
    que se apoia na superficie, mais o Patch, que clareia no escuro. */

@@ -1,0 +1,141 @@
+/* ==========================================================================
+   As tags do quadro, em Configurações.
+   ========================================================================== */
+
+.tg-colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+.tg-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A LINHA É DE 50px NO TOQUE, que é o que o V7 pede: esta tela é de
+   configuração e roda no computador, mas quem administra a fábrica administra
+   dela, e às vezes do tablet. */
+.tg-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-height: var(--row-h);
+  padding: var(--re-5) 0;
+  border-top: 1px solid var(--border);
+}
+.tg-linha:first-child {
+  border-top: 0;
+}
+
+.tg-postos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.tg-posto {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--re-4);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tg-todos {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--re-4);
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tg-nenhum {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.tg-rot {
+  display: block;
+  margin-top: var(--sp-4);
+  margin-bottom: var(--re-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.tg-chave {
+  margin: var(--re-3) 0 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.tg-chave b {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* O TOM SE ESCOLHE VENDO A TAG PRONTA, e não olhando um quadradinho de cor.
+   Um quadradinho responde qual é a cor; a tag inteira responde a pergunta que
+   a pessoa está realmente fazendo, que é se dá para ler. */
+.tg-tons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-miudo);
+}
+.tg-tom {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: var(--re-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  line-height: 0;
+}
+.tg-tom:hover {
+  border-color: var(--border-2);
+}
+.tg-tom.escolhido {
+  border-color: var(--ring);
+}
+
+.tg-grade {
+  margin-top: var(--gap-dentro);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap-dentro);
+}
+
+.tg-pe {
+  margin-top: var(--sp-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+}
+
+@media (max-width: 1100px) {
+  .tg-colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .tg-linha {
+    flex-wrap: wrap;
+  }
+  .tg-postos {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

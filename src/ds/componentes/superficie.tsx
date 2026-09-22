@@ -72,6 +72,90 @@ export function Tag({
   )
 }
 
+/* --- etiqueta: a tag do cartão do kanban ---------------------------------
+   O TOM É UMA CHAVE, e não uma cor. O banco guarda o nome do tom porque cor
+   literal dentro do dado atravessa o sistema sem passar pelo tema, e no
+   Grafite sai ilegível. Quem pinta é o CSS, pelo mesmo mecanismo do selo. */
+export type TomDeEtiqueta =
+  | 'cinza'
+  | 'vermelha'
+  | 'laranja'
+  | 'amarela'
+  | 'verde'
+  | 'azul'
+  | 'roxa'
+
+export function Etiqueta({
+  tom = 'cinza',
+  /** a tag mestre vem do cabeçalho da cotação e vale para o pedido inteiro */
+  mestre,
+  /** a tag que existe mas não vale neste posto: aparece apagada, não some */
+  fora,
+  pequena,
+  aoTirar,
+  aoClicar,
+  desligada,
+  title,
+  children,
+}: {
+  tom?: TomDeEtiqueta
+  mestre?: boolean
+  fora?: boolean
+  pequena?: boolean
+  aoTirar?: () => void
+  aoClicar?: () => void
+  desligada?: boolean
+  title?: string
+  children: ReactNode
+}) {
+  const classes = [
+    'etiqueta',
+    mestre ? 'mestre' : '',
+    fora ? 'fora' : '',
+    pequena ? 'sm' : '',
+    `t-${tom}`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  /* Quem escolhe uma tag CLICA, e por isso ela nasce <button> e não um div com
+     onClick: um div com clique é invisível para o Tab e para quem usa leitor
+     de tela, e esta tela roda em tablet onde o teclado é o único jeito de
+     chegar em muita coisa. */
+  if (aoClicar) {
+    return (
+      <button type="button" className={classes} onClick={aoClicar} disabled={desligada} title={title}>
+        <span className="n">{children}</span>
+      </button>
+    )
+  }
+
+  return (
+    <span className={classes} title={title}>
+      <span className="n">{children}</span>
+      {aoTirar ? (
+        <button type="button" className="x" onClick={aoTirar} aria-label="Tirar esta tag">
+          <Fechar />
+        </button>
+      ) : null}
+    </span>
+  )
+}
+
+function Fechar() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path
+        d="M4 4l8 8M12 4l-8 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 /* --- técnica ------------------------------------------------------------- */
 export type Tecnica =
   | 'dtf'

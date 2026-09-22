@@ -90,11 +90,10 @@
 .kb-cartao {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--re-6);
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--re-3);
+  overflow: hidden;
   cursor: grab;
   /* o cartão é o alvo do arrasto: deixar o dedo selecionar texto no meio do
      caminho faz o navegador abrir a lupa em vez de mover */
@@ -119,25 +118,73 @@
   font-size: 14px;
 }
 
-.kb-cliente {
+/* O CARTÃO INTEIRO ABRE, e por isso a parte de cima é um <button>. Ele tem
+   que parecer o cartão e não um botão: sem borda, sem fundo, alinhado à
+   esquerda. O que dá o aspecto de clicável é o cartão todo mudar no hover. */
+.kb-abrir {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--re-6) var(--re-6) 0 var(--re-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+}
+
+.kb-nome {
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.kb-marcas {
+/* A FAIXA DAS TAGS MESTRE: fundo branco, e uma linha clara em cima e embaixo,
+   só como divisor. Decisão do Henrique em 22/09.
+
+   Ela existe porque a tag mestre vem do cabeçalho da cotação e vale para o
+   pedido inteiro, em todo posto e para sempre, enquanto a tag de baixo é do
+   posto e muda o dia todo. Com fundo cinza a faixa parecia outro cartão
+   dentro do cartão; como divisor ela só diz que aquilo ali é de outra
+   natureza, e sai do caminho. */
+.kb-mestres {
+  margin-top: var(--re-4);
+  padding: var(--re-3) var(--re-6);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--gap-miudo);
+  gap: var(--re-3);
 }
 
-.kb-numeros {
-  color: var(--text-3);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
+.kb-corpo {
+  padding: var(--re-5) var(--re-6) var(--re-6) var(--re-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+}
+
+.kb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-3);
+}
+
+/* O SINAL, e não o arquivo. O cartão diz que existe conversa e que existe
+   anexo; o que eles são fica dentro. */
+.kb-sinal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
 }
 
 .kb-aviso {

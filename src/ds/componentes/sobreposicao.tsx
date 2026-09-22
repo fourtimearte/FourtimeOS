@@ -38,22 +38,46 @@ function cliqueNoEscuro(e: MouseEvent<HTMLDialogElement>, aoFechar: () => void) 
   if (e.target === e.currentTarget) aoFechar()
 }
 
-export function Modal({ aberto, aoFechar, titulo, children, pe, largo }: Props) {
+export function Modal({
+  aberto,
+  aoFechar,
+  titulo,
+  children,
+  pe,
+  largo,
+  gigante,
+  solto,
+  topo,
+}: Props & {
+  /** o tamanho do cartão do kanban: duas colunas de conteúdo lado a lado */
+  gigante?: boolean
+  /** sem recheio e sem rolagem no corpo, para a tela que rola por dentro */
+  solto?: boolean
+  /** um cabeçalho próprio no lugar do título simples */
+  topo?: ReactNode
+}) {
   const ref = usarDialogo(aberto, aoFechar)
   return (
     <dialog
       ref={ref}
-      className={['sobrepoe', 'modal', largo ? 'largo' : ''].filter(Boolean).join(' ')}
+      className={['sobrepoe', 'modal', gigante ? 'gigante' : largo ? 'largo' : '']
+        .filter(Boolean)
+        .join(' ')}
       onClick={(e) => cliqueNoEscuro(e, aoFechar)}
     >
       <div className="caixa">
-        {titulo ? (
+        {topo ? (
+          <header className="sobre-topo">
+            {topo}
+            <BotaoFechar aoFechar={aoFechar} />
+          </header>
+        ) : titulo ? (
           <header className="sobre-topo">
             <h2 className="t">{titulo}</h2>
             <BotaoFechar aoFechar={aoFechar} />
           </header>
         ) : null}
-        <div className="sobre-corpo">{children}</div>
+        <div className={solto ? 'sobre-corpo solto' : 'sobre-corpo'}>{children}</div>
         {pe ? <footer className="sobre-pe">{pe}</footer> : null}
       </div>
     </dialog>

@@ -39,11 +39,18 @@ const ha = (d) => new Date(Date.now() - d*86400000).toISOString()
 let FATIAS = [
   { id:'1', pedido_id:'p1', numero:'PD-0401', cliente:'Santa Clara', vendedor:'Ana', tecnica:'subli',
     etapa:'subli', etapa_em:ha(0), fechado_em:null, layouts:[1], pecas:180, entrega_em:null,
-    aviso:'', estado:'producao', teste:false },
+    aviso:'', estado:'producao', teste:false, nome:'Uniforme Santa Clara',
+    marcas:['URGENTE'], tags:['montagem'], pego_por:null, pego_por_nome:'', pego_em:null, falas:0 },
   { id:'2', pedido_id:'p2', numero:'PD-0402', cliente:'Fortize', vendedor:'Ana', tecnica:'dtf',
     etapa:'corte', etapa_em:ha(1), fechado_em:null, layouts:[1], pecas:96, entrega_em:null,
-    aviso:'', estado:'producao', teste:false },
+    aviso:'', estado:'producao', teste:false, nome:'Camiseta Fortize',
+    marcas:[], tags:[], pego_por:null, pego_por_nome:'', pego_em:null, falas:0 },
 ]
+const TAGS = [
+  { chave:'montagem', nome:'montagem', tom:'verde', em_todo_posto:false, ordem:10, ativa:true },
+  { chave:'falta_tecido', nome:'falta tecido', tom:'vermelha', em_todo_posto:true, ordem:20, ativa:true },
+]
+const TAGS_POSTO = [{ tag:'montagem', posto:'dtf' }, { tag:'montagem', posto:'subli' }]
 const nav = await chromium.launch()
 const ctx = await nav.newContext({ viewport:{width:1440,height:1000}, reducedMotion:'reduce' })
 let patches = []
@@ -57,9 +64,29 @@ await ctx.route('**supabase.co/**', async (r) => {
     if (f) { f.etapa = corpo.etapa; f.etapa_em = new Date().toISOString() }
     return r.fulfill({ status:204, headers:{'access-control-allow-origin':'*'}, body:'' })
   }
+  /* A CONFERENCIA DO TERMINEI VEM DO BANCO, entao o banco de mentira responde
+     ela: e o mesmo formato que conferir_a_saida devolve, com um item de cada
+     tom, para o teste ver os tres desenhados. */
   let corpo = []
-  if (u.includes('meu_perfil')) corpo = PERFIL
+  if (u.includes('rpc/conferir_a_saida')) {
+    const id = JSON.parse(req.postData() || '{}').p_fatia
+    const f = FATIAS.find(x => x.id === id)
+    const rota = ROTAS.filter(r => r.tecnica === f.tecnica).sort((a,b)=>a.ordem-b.ordem).map(r=>r.posto)
+    corpo = {
+      fatia:id, numero:f.numero, posto:f.etapa,
+      proximo: rota[rota.indexOf(f.etapa)+1] ?? null,
+      itens:[
+        { tom:'ok', titulo:'O material saiu da prateleira', linha:'tudo baixado' },
+        { tom:'atencao', titulo:'Tag ainda posta: montagem', linha:'tire antes de mandar' },
+        { tom:'nota', titulo:'Este pedido tem mais 1 cartao aberto', linha:'so fecha com o ultimo' },
+      ],
+      pode:true,
+    }
+  }
+  else if (u.includes('meu_perfil')) corpo = PERFIL
   else if (u.includes('fatia_na_fabrica')) corpo = FATIAS
+  else if (u.includes('tag_do_posto')) corpo = TAGS_POSTO
+  else if (u.includes('/tag?')) corpo = TAGS
   else if (u.includes('rota_da_tecnica')) corpo = ROTAS
   return r.fulfill({ status:200, contentType:'application/json',
     headers:{'access-control-allow-origin':'*'}, body: JSON.stringify(corpo) })
@@ -77,10 +104,33 @@ const onde = async (numero) => pg.evaluate((n) => {
 
 console.log('antes:', 'PD-0401 em', await onde('PD-0401'))
 
-// ---- 1. a seta empurra para o proximo posto da rota ----
+// ---- 1. o Terminei empurra para o proximo posto da rota, com confirmacao ----
+// O TERMINEI NUNCA E UM TOQUE SO: ele abre a conferencia, e so o segundo
+// toque move o cartao. O teste confere as duas coisas, porque um Terminei que
+// move direto seria o desenho de 22/09 desfeito sem ninguem notar.
 await pg.evaluate(() => {
   const c = [...document.querySelectorAll('.kb-cartao')].find(x => x.textContent.includes('PD-0402'))
-  c.querySelector('button').click()
+  ;[...c.querySelectorAll('button')].find(b => b.textContent.includes('Terminei')).click()
+})
+await pg.waitForTimeout(700)
+const semConfirmar = await onde('PD-0402')
+const conferencia = await pg.evaluate(() => {
+  const d = document.querySelector('dialog[open]')
+  if (!d) return { aberto:false }
+  return {
+    aberto: true,
+    ok: d.querySelectorAll('.cs-ok').length,
+    atencao: d.querySelectorAll('.cs-atencao').length,
+    nota: d.querySelectorAll('.cs-nota').length,
+    botao: [...d.querySelectorAll('button')].map(b => b.textContent.trim()).join(' | '),
+  }
+})
+console.log('terminei: abriu a conferencia =', conferencia.aberto,
+  '| ok', conferencia.ok, 'atencao', conferencia.atencao, 'nota', conferencia.nota)
+console.log('terminei: o cartao NAO andou antes de confirmar =', semConfirmar === 'corte')
+await pg.evaluate(() => {
+  const d = document.querySelector('dialog[open]')
+  ;[...d.querySelectorAll('button')].find(b => /Terminar assim mesmo|Sim, terminei/.test(b.textContent)).click()
 })
 await pg.waitForTimeout(900)
 console.log('seta:   PD-0402 foi para', await onde('PD-0402'), '| esperado dtf')

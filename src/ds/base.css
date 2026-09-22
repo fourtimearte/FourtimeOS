@@ -756,6 +756,107 @@ textarea.entrada {
   border-color: transparent;
 }
 
+/* --- etiqueta: a tag do cartao do kanban ---------------------------------
+   Ela usa o MESMO mecanismo do selo, --c mais color-mix, e nao uma lista de
+   sete pares de cor escritos a mao. Um par por tom seria sete lugares para
+   errar contraste, e no dia de acrescentar um tom seriam mais dois.
+
+   O tom vem do banco como NOME, nunca como cor: quem pinta e este arquivo. */
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  height: 26px;
+  padding: 0 var(--re-5);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 100%;
+  color: var(--c, var(--tom-cinza));
+  background: color-mix(in srgb, var(--c, var(--tom-cinza)) 14%, transparent);
+  border: 1px solid transparent;
+}
+.etiqueta > .n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* MESTRE E OUTRA COISA, e por isso ela e pilula e nao retangulo. A tag do
+   posto muda o dia todo; a mestre vale para o pedido inteiro e para sempre.
+   Duas coisas com a mesma forma e vidas diferentes viram uma coisa so na
+   cabeca de quem olha o quadro de longe. */
+.etiqueta.mestre {
+  height: 22px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+/* a que existe mas nao vale neste posto: ela ensina que a tag existe, e
+   sumir faria a pessoa achar que ela foi apagada */
+.etiqueta.fora {
+  color: var(--text-3);
+  background: transparent;
+  border: 1px dashed var(--border-2);
+  font-weight: 500;
+}
+.etiqueta.sm {
+  height: 21px;
+  font-size: 11.5px;
+  padding: 0 var(--re-4);
+}
+/* o x de tirar, dentro da propria etiqueta */
+.etiqueta > .x {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-right: calc(var(--re-1) * -1);
+  border: 0;
+  padding: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.etiqueta > .x:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--c, var(--tom-cinza)) 22%, transparent);
+}
+/* o botao inteiro que e uma etiqueta, na hora de escolher qual por */
+button.etiqueta {
+  cursor: pointer;
+  font-family: inherit;
+}
+button.etiqueta:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.t-cinza {
+  --c: var(--tom-cinza);
+}
+.t-vermelha {
+  --c: var(--tom-vermelha);
+}
+.t-laranja {
+  --c: var(--tom-laranja);
+}
+.t-amarela {
+  --c: var(--tom-amarela);
+}
+.t-verde {
+  --c: var(--tom-verde);
+}
+.t-azul {
+  --c: var(--tom-azul);
+}
+.t-roxa {
+  --c: var(--tom-roxa);
+}
+
 /* --- pilula de tecnica: a peca que carrega a cor do editor --------------- */
 /* No kit fourtime-ds-v7.html a linha de abertura desta regra tinha se perdido,
    e por isso a pilula aparecia sem estilo la. Aqui ela esta inteira. */
@@ -1174,6 +1275,25 @@ dialog.modal .caixa {
 
 dialog.modal.largo {
   max-width: 980px;
+}
+/* O GIGANTE EXISTE PARA O CARTAO DO KANBAN, que e duas colunas de conteudo
+   lado a lado: os layouts do jeito da cotacao de um lado e a acao do outro.
+   Em 980 as duas viram duas tiras, e a arte do layout, que e o que a pessoa
+   abriu o cartao para ver, some. */
+dialog.modal.gigante {
+  max-width: 1400px;
+}
+dialog.modal.gigante .caixa {
+  height: calc(100dvh - 32px);
+}
+/* O CORPO SOLTO tira o recheio e a rolagem do modal. Ele existe para a tela
+   que rola por dentro, em colunas separadas: com a rolagem no corpo inteiro,
+   a coluna da acao subiria junto com a lista de layouts e o botao Terminei
+   sairia da tela justo quando a pessoa termina de ler. */
+.sobre-corpo.solto {
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* folha lateral, colada na direita */

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
-import { ArrowRight, Warning } from '@phosphor-icons/react'
-import { Botao, Esqueleto, Kpi, Pagina, PilulaTecnica, Selo, Vazio, avisar } from '@ds'
+import { Esqueleto, Kpi, Pagina, Vazio, avisar } from '@ds'
 import {
   COLUNAS,
-  NOME_DA_TECNICA,
   carregarAsRotas,
+  carregarAsTags,
   carregarOQuadro,
   corDoPosto,
   estaNaRota,
@@ -16,8 +15,12 @@ import {
   type Etapa,
   type FatiaNoQuadro,
   type Rota,
+  type Tag,
 } from '@dominio/producao'
 import { pode, useSessao } from '@dominio/sessao'
+import { CartaoDaFatia } from './cartao'
+import { CartaoAberto } from './cartao-aberto'
+import { ConfirmarSaida } from './confirmar-saida'
 import './kanban.css'
 
 /* ==========================================================================
@@ -57,6 +60,12 @@ export function TelaKanban() {
 
   const [fatias, setFatias] = useState<FatiaNoQuadro[]>([])
   const [rotas, setRotas] = useState<Rota[]>([])
+  const [tags, setTags] = useState<Tag[]>([])
+  /* O CARTÃO ABERTO E A CONFIRMAÇÃO GUARDAM O ID, e não a fatia inteira: a
+     fatia muda embaixo deles quando alguém põe uma tag ou pega o cartão, e uma
+     cópia guardada aqui ficaria velha na primeira mexida. */
+  const [aberto, setAberto] = useState('')
+  const [confirmando, setConfirmando] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [arrasto, setArrasto] = useState<Arrasto | null>(null)
@@ -72,9 +81,14 @@ export function TelaKanban() {
 
   const carregar = useCallback(async () => {
     try {
-      const [f, r] = await Promise.all([carregarOQuadro(), carregarAsRotas()])
+      const [f, r, t] = await Promise.all([
+        carregarOQuadro(),
+        carregarAsRotas(),
+        carregarAsTags(),
+      ])
       setFatias(f)
       setRotas(r)
+      setTags(t)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui ler o quadro.')
     } finally {
@@ -92,6 +106,10 @@ export function TelaKanban() {
     for (const f of fatias) m.get(f.etapa)?.push(f)
     return m
   }, [fatias])
+
+  const porChave = useMemo(() => new Map(tags.map((t) => [t.chave, t])), [tags])
+  const aFatiaAberta = fatias.find((f) => f.id === aberto) ?? null
+  const aFatiaConfirmando = fatias.find((f) => f.id === confirmando) ?? null
 
   const conta = useMemo(
     () => ({
@@ -257,17 +275,16 @@ export function TelaKanban() {
 
                 <div className="kb-pilha">
                   {lista.map((f) => (
-                    <Cartao
+                    <CartaoDaFatia
                       key={f.id}
                       fatia={f}
                       rotas={rotas}
+                      tags={porChave}
                       podeMover={podeMover}
                       arrastando={arrasto?.fatia.id === f.id && arrasto.valendo}
                       aoPegar={(e) => comecar(e, f)}
-                      aoAvancar={() => {
-                        const p = vizinhoNaRota(rotas, f.tecnica, f.etapa, 1)
-                        if (p) void mover(f, p)
-                      }}
+                      aoAbrir={() => setAberto(f.id)}
+                      aoTerminar={() => setConfirmando(f.id)}
                     />
                   ))}
                   {!lista.length ? <p className="kb-vazio">vazio</p> : null}
@@ -277,6 +294,36 @@ export function TelaKanban() {
           })}
         </div>
       )}
+
+      {/* O CARTÃO ABERTO. Ele não é uma tela nova: é o mesmo cartão, aberto,
+          e por isso ele vive aqui dentro e não numa rota própria. Rota própria
+          faria o Voltar do navegador sair do quadro e perder a rolagem de
+          treze colunas que a pessoa acabou de fazer. */}
+      {aFatiaAberta ? (
+        <CartaoAberto
+          fatia={aFatiaAberta}
+          rotas={rotas}
+          tags={tags}
+          podeMover={podeMover}
+          euId={eu.id}
+          aoFechar={() => setAberto('')}
+          aoMexer={() => void carregar()}
+          aoTerminar={() => setConfirmando(aFatiaAberta.id)}
+        />
+      ) : null}
+
+      {aFatiaConfirmando ? (
+        <ConfirmarSaida
+          fatia={aFatiaConfirmando}
+          aoFechar={() => setConfirmando('')}
+          aoConfirmar={() => {
+            const p = vizinhoNaRota(rotas, aFatiaConfirmando.tecnica, aFatiaConfirmando.etapa, 1)
+            setConfirmando('')
+            setAberto('')
+            if (p) void mover(aFatiaConfirmando, p)
+          }}
+        />
+      ) : null}
 
       {/* O cartão que segue o dedo. Ele é só a sombra do que está sendo
           movido: o original fica no lugar, apagado, para a pessoa saber de
@@ -292,77 +339,5 @@ export function TelaKanban() {
         </div>
       ) : null}
     </Pagina>
-  )
-}
-
-function Cartao({
-  fatia,
-  rotas,
-  podeMover,
-  arrastando,
-  aoPegar,
-  aoAvancar,
-}: {
-  fatia: FatiaNoQuadro
-  rotas: Rota[]
-  podeMover: boolean
-  arrastando: boolean
-  aoPegar: (e: EventoDePonteiro) => void
-  aoAvancar: () => void
-}) {
-  const dias = paradoHa(fatia.etapaEm)
-  const proximo = vizinhoNaRota(rotas, fatia.tecnica, fatia.etapa, 1)
-  const classes = [
-    'kb-cartao',
-    arrastando ? 'saindo' : '',
-    dias >= 3 && fatia.etapa !== 'finalizado' ? 'empacado' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
-  return (
-    <article className={classes} onPointerDown={aoPegar}>
-      <header className="kb-cartao-topo">
-        <b>{fatia.numero}</b>
-        {fatia.teste ? <Selo tom="info">teste</Selo> : null}
-      </header>
-      <p className="kb-cliente">{fatia.cliente || 'sem cliente'}</p>
-
-      <p className="kb-marcas">
-        <PilulaTecnica tecnica={fatia.tecnica} tamanho="sm">
-          {NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica}
-        </PilulaTecnica>
-        <span className="kb-numeros">
-          {fatia.pecas} pçs · {fatia.layouts.length} layout{fatia.layouts.length === 1 ? '' : 's'}
-        </span>
-      </p>
-
-      {fatia.aviso ? (
-        <p className="kb-aviso">
-          <Warning size={14} />
-          {fatia.aviso === 'falta-material' ? 'desceu com falta de material' : fatia.aviso}
-        </p>
-      ) : null}
-
-      <footer className="kb-pe">
-        <span className={dias >= 3 ? 'kb-parado forte' : 'kb-parado'}>
-          {dias === 0 ? 'chegou hoje' : `${dias} dia${dias === 1 ? '' : 's'} aqui`}
-        </span>
-        {podeMover && proximo ? (
-          <Botao
-            tamanho="sm"
-            icone
-            title={'Empurrar para ' + nomeDoPosto(proximo)}
-            aria-label={'Empurrar para ' + nomeDoPosto(proximo)}
-            /* o clique não pode virar arrasto: sem isto, tocar a seta
-               começa a arrastar o cartão junto */
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={aoAvancar}
-          >
-            <ArrowRight size={16} />
-          </Botao>
-        ) : null}
-      </footer>
-    </article>
   )
 }

@@ -1,5 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { Buildings, Database, Flask, Lock, Palette, SquaresFour, UsersThree } from '@phosphor-icons/react'
+import {
+  Buildings,
+  Database,
+  Flask,
+  Lock,
+  Palette,
+  SquaresFour,
+  Tag as IconeTag,
+  UsersThree,
+} from '@phosphor-icons/react'
 import { podeVer, souAdmin, useSessao } from '@dominio/sessao'
 import type { Painel } from '@dominio/sessao'
 
@@ -16,7 +25,15 @@ import type { Painel } from '@dominio/sessao'
    junto, o poder de aprovar conta de gente.
    ========================================================================== */
 
-export type AbaDaConfig = 'pessoas' | 'acessos' | 'banco' | 'empresa' | 'paginas' | 'ensaio' | 'kit'
+export type AbaDaConfig =
+  | 'pessoas'
+  | 'acessos'
+  | 'tags'
+  | 'banco'
+  | 'empresa'
+  | 'paginas'
+  | 'ensaio'
+  | 'kit'
 
 const ABAS: {
   chave: AbaDaConfig
@@ -31,6 +48,7 @@ const ABAS: {
 }[] = [
   { chave: 'pessoas', para: '/config', rotulo: 'Pessoas', painel: 'config' },
   { chave: 'acessos', para: '/config/acessos', rotulo: 'Acessos', painel: 'config', soAdmin: true },
+  { chave: 'tags', para: '/config/tags', rotulo: 'Tags do quadro', painel: 'config' },
   { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', painel: 'banco' },
   { chave: 'empresa', para: '/config/empresa', rotulo: 'Empresa', painel: 'config' },
   { chave: 'paginas', para: '/config/paginas', rotulo: 'Páginas', painel: 'config' },
@@ -41,6 +59,7 @@ const ABAS: {
 const ICONE: Record<AbaDaConfig, typeof UsersThree> = {
   pessoas: UsersThree,
   acessos: Lock,
+  tags: IconeTag,
   banco: Database,
   empresa: Buildings,
   paginas: SquaresFour,

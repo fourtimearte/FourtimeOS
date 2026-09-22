@@ -28,6 +28,7 @@ import {
   ChipTecnica,
   Nivel,
   PilulaTecnica,
+  Etiqueta,
   Selo,
   Tag,
   TituloCartao,
@@ -50,6 +51,7 @@ const SECOES: [string, string][] = [
   ['cartoes', 'Cartões'],
   ['tinta', 'Luz e tinta'],
   ['selos', 'Selos e tags'],
+  ['etiquetas', 'Etiquetas do cartão'],
   ['nivel', 'Barra de nível'],
   ['tabela', 'Tabela'],
   ['sobreposicoes', 'Modal e gaveta'],
@@ -523,6 +525,57 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
               <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
                 a última é a cor ainda não escolhida
               </span>
+            </div>
+          </Secao>
+
+          <Secao
+            id="etiquetas"
+            titulo="Etiquetas do cartão"
+            texto="A tag do cartão do MARK45. O tom vem do banco como NOME, nunca como cor: guardar hexadecimal no dado seria atravessar o tema e sair ilegível no Grafite. A mestre é pílula porque ela vale para o pedido inteiro e para sempre; a do posto é retângulo porque ela muda o dia todo."
+          >
+            <div className="kit-bancada">
+              <span className="kit-nota">Os sete tons</span>
+              <Etiqueta tom="cinza">cinza</Etiqueta>
+              <Etiqueta tom="vermelha">falta tecido</Etiqueta>
+              <Etiqueta tom="laranja">reposição</Etiqueta>
+              <Etiqueta tom="amarela">máquina parada</Etiqueta>
+              <Etiqueta tom="verde">montagem</Etiqueta>
+              <Etiqueta tom="azul">prova de cor</Etiqueta>
+              <Etiqueta tom="roxa">revisão</Etiqueta>
+            </div>
+            <div className="kit-bancada">
+              <span className="kit-nota">Mestre, vinda da cotação</span>
+              <Etiqueta mestre tom="roxa">
+                evento
+              </Etiqueta>
+              <Etiqueta mestre tom="vermelha">
+                urgente
+              </Etiqueta>
+              <Etiqueta mestre tom="amarela">
+                vip
+              </Etiqueta>
+              <Etiqueta mestre tom="laranja">
+                prioridade
+              </Etiqueta>
+            </div>
+            <div className="kit-bancada">
+              <span className="kit-nota">Posta, fora do posto e pequena</span>
+              <Etiqueta tom="verde" aoTirar={() => {}}>
+                montagem
+              </Etiqueta>
+              <Etiqueta fora>esperando arte</Etiqueta>
+              <Etiqueta tom="azul" pequena>
+                prova de cor
+              </Etiqueta>
+            </div>
+            <div className="kit-bancada">
+              <span className="kit-nota">Para escolher, que é botão de verdade</span>
+              <Etiqueta tom="roxa" aoClicar={() => {}}>
+                revisão
+              </Etiqueta>
+              <Etiqueta fora aoClicar={() => {}} desligada title="não vale neste posto">
+                montagem
+              </Etiqueta>
             </div>
           </Secao>
 

@@ -22,6 +22,9 @@ export type FatiaNoQuadro = {
   id: string
   pedidoId: string
   numero: string
+  /* o nome que a fabrica da ao pedido. Vazio no banco, a view ja cai para o
+     nome do cliente, entao aqui ele nunca vem em branco por engano */
+  nome: string
   cliente: string
   vendedor: string
   tecnica: Tecnica
@@ -34,12 +37,29 @@ export type FatiaNoQuadro = {
   aviso: string
   estado: string
   teste: boolean
+  /* as tags mestre, lidas da cotacao na hora: elas valem para o pedido
+     inteiro e em todo posto */
+  marcas: string[]
+  /* as tags do posto postas neste cartao */
+  tags: string[]
+  pegoPor: string
+  pegoPorNome: string
+  pegoEm: string
+  falas: number
+  /* QUANTOS ANEXOS, e ele é zero até o Drive entrar.
+
+     O ícone de clipe no cartão já existe e já sabe se esconder quando não há
+     anexo nenhum, que é o estado de hoje. Deixar o número de fora agora seria
+     ter que mexer no cartão de novo no dia do Drive; deixar o ícone aceso sem
+     anexo seria um clipe que não abre nada, que é pior. */
+  anexos: number
 }
 
 type LinhaDaFatia = {
   id: string
   pedido_id: string
   numero: string
+  nome: string
   cliente: string
   vendedor: string
   tecnica: Tecnica
@@ -52,6 +72,12 @@ type LinhaDaFatia = {
   aviso: string
   estado: string
   teste: boolean
+  marcas: string[] | null
+  tags: string[] | null
+  pego_por: string | null
+  pego_por_nome: string | null
+  pego_em: string | null
+  falas: number | null
 }
 
 export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
@@ -62,6 +88,7 @@ export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
     id: l.id,
     pedidoId: l.pedido_id,
     numero: l.numero,
+    nome: l.nome || l.cliente || '',
     cliente: l.cliente || '',
     vendedor: l.vendedor || '',
     tecnica: l.tecnica,
@@ -74,6 +101,13 @@ export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
     aviso: l.aviso || '',
     estado: l.estado,
     teste: !!l.teste,
+    marcas: l.marcas ?? [],
+    tags: l.tags ?? [],
+    pegoPor: l.pego_por ?? '',
+    pegoPorNome: l.pego_por_nome || '',
+    pegoEm: l.pego_em ?? '',
+    falas: Number(l.falas) || 0,
+    anexos: 0,
   }))
 }
 

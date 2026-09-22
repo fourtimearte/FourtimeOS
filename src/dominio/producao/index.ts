@@ -39,3 +39,33 @@ export {
   vizinhoNaRota,
 } from './kanban'
 export type { FatiaNoQuadro, Rota } from './kanban'
+
+export {
+  TONS_DE_TAG,
+  TOM_DA_MARCA,
+  apagarTag,
+  carregarALinhaDoTempo,
+  carregarAsTags,
+  chaveDaTag,
+  comentarNoCartao,
+  conferirASaida,
+  cotacaoDoPedido,
+  pegarOCartao,
+  pontosDeAtencao,
+  porATag,
+  salvarPostosDaTag,
+  salvarTag,
+  soltarOCartao,
+  tagValeNoPosto,
+  tirarATag,
+  tomDaMarca,
+} from './cartao'
+export type {
+  Conferencia,
+  EventoDoCartao,
+  ItemDaConferencia,
+  Tag,
+  TipoDeEvento,
+  TomDaConferencia,
+  TomDeTag,
+} from './cartao'

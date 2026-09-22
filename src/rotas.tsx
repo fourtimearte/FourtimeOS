@@ -8,6 +8,7 @@ import { TelaClientes } from '@modules/clientes'
 import {
   AbasDaConfig,
   TelaAcessos,
+  TelaTags,
   TelaEmpresa,
   TelaEnsaio,
   TelaEquipe,
@@ -94,6 +95,7 @@ export const rotas = createBrowserRouter([
       { path: 'config/empresa', element: pede('config', <TelaEmpresa />) },
       { path: 'config/ensaio', element: pede('config', <TelaEnsaio />) },
       { path: 'config/paginas', element: pede('config', <TelaPaginas />) },
+      { path: 'config/tags', element: pede('config', <TelaTags />) },
 
       /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar
          inteiro: nenhum item leva a lugar nenhum. */

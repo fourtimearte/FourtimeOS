@@ -44,13 +44,14 @@ export {
   Avatar,
   Cartao,
   ChipTecnica,
+  Etiqueta,
   Nivel,
   PilulaTecnica,
   Selo,
   Tag,
   TituloCartao,
 } from './componentes/superficie'
-export type { Tecnica, TomSelo } from './componentes/superficie'
+export type { Tecnica, TomDeEtiqueta, TomSelo } from './componentes/superficie'
 
 export { abrirDica, fecharDica, Flutuante, semAcento } from './componentes/flutuante'
 export type { OpcoesFlutuante } from './componentes/flutuante'

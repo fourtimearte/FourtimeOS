@@ -1,0 +1,175 @@
+/* ==========================================================================
+   PCP. Duas filas lado a lado: a de quem confere e a de quem aprova.
+   Nenhuma classe daqui é do Design System.
+   ========================================================================== */
+
+.pcp-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+/* As duas filas têm o mesmo peso de propósito: nenhuma das duas aprovações é
+   a principal, e dar mais espaço a uma diria o contrário. */
+.pcp-mesa {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+.pcp-coluna {
+  min-width: 0;
+}
+
+.pcp-conta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcp-linha-topo {
+  margin-bottom: var(--sp-4);
+}
+
+.pcp-apoio {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.pcp-vazio {
+  color: var(--text-3);
+  font-size: 13px;
+  padding: var(--sp-6) 0;
+  text-align: center;
+}
+
+/* ---------- o cartão do pedido ---------- */
+.pcp-cartao {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--pad-cartao);
+  margin-bottom: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-miudo);
+}
+
+.pcp-cartao:last-child {
+  margin-bottom: 0;
+}
+
+.pcp-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap-dentro);
+}
+
+.pcp-numero {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 15px;
+}
+
+.pcp-prazo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Vermelho é atraso, e só. Um prazo que aperta não é uma falha: é o que a
+   pessoa precisa ver primeiro. */
+.pcp-prazo.aperta {
+  color: var(--brand-text);
+}
+
+.pcp-numeros {
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pcp-tecnicas {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.pcp-tecnicas.alerta {
+  color: var(--warn);
+}
+
+.pcp-aviso,
+.pcp-devolvido {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-miudo);
+  font-size: 12.5px;
+  border-radius: var(--radius-sm);
+  padding: var(--re-3) var(--re-4);
+}
+
+.pcp-aviso {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
+.pcp-devolvido {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-left: 3px solid var(--warn);
+}
+
+.pcp-aviso svg,
+.pcp-devolvido svg {
+  flex: none;
+  margin-top: var(--re-1);
+}
+
+.pcp-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  align-items: center;
+  margin-top: var(--re-3);
+}
+
+/* ---------- a confirmação ---------- */
+.pcp-confirma {
+  margin-top: var(--sp-5);
+  border-color: var(--brand);
+}
+
+.pcp-lista-confirma {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-3) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-miudo);
+  font-size: 13.5px;
+}
+
+.pcp-falta {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .pcp-mesa {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

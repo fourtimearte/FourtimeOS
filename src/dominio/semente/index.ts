@@ -347,6 +347,21 @@ export async function semearPedidos(): Promise<ResultadoDaSemente> {
         continue
       }
 
+      /* E UM DE CADA TRÊS PARA NO PCP, esperando a primeira aprovação. Sem
+         isso a tela do PCP nasceria vazia no ensaio, e uma tela vazia não
+         mostra se ela funciona. Ele anda um degrau de cada vez porque a trava
+         da 022 não deixa pular. */
+      if (i % 3 === 1) {
+        for (const estado of ['separacao', 'pcp']) {
+          await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {
+            metodo: 'PATCH',
+            corpo: { estado },
+          })
+        }
+        gravados++
+        continue
+      }
+
       /* espalha pela semana e pelos postos, senão a fábrica inteira nasce no
          corte da segunda-feira e o painel fica com uma coluna só */
       await tabela(`pedido?numero=eq.${encodeURIComponent(novo.numero)}`, {

@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Plus } from '@phosphor-icons/react'
 import { Botao, Pagina, Vazio, avisar } from '@ds'
 import { VENDEDORES } from '@dominio/banco'
 import { cotacaoEmBranco, proximoNumero, salvarCotacao } from '@dominio/cotacao'
+import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import {
   ESTAGIO_FECHADO,
   carregarConversa,
   carregarLeads,
   emMil,
+  leadEmBranco,
   leadViraCliente,
   marcarLido,
   moverLead,
@@ -19,6 +22,7 @@ import {
   type Lead,
   type Mensagem,
 } from '@dominio/funil'
+import { EditarLead } from './editar'
 import { Inbox } from './inbox'
 import { Quadro } from './quadro'
 import './funil.css'
@@ -44,6 +48,23 @@ const UM_MINUTO = 60_000
 
 export function TelaFunil() {
   const navegar = useNavigate()
+
+  /* QUEM PODE MEXER. O funil era a unica tela do sistema sem nenhuma checagem:
+     quem nao podia arrastava o cartao, via ele pular e via ele voltar quando o
+     banco recusava. O RLS sempre segurou, entao nunca foi buraco de seguranca;
+     era a tela deixando a pessoa errar para desfazer na frente dela.
+
+     APAGAR E DO ADMIN, e nao de quem edita. A politica da 011 diz isso e o
+     motivo esta escrito la: o lead leva a conversa inteira junto, com os
+     audios, e quem apaga por engano nao tem como trazer de volta. */
+  const { estado } = useSessao()
+  const eu = estado.fase === 'dentro' ? estado.pessoa : null
+  const podeMexer = !!eu && pode(eu, 'funil', 'editar')
+  const podeApagar = souAdmin(eu)
+
+  /* null = fechado. O lead em branco tem id vazio, entao criar e editar sao o
+     mesmo formulario. */
+  const [editando, setEditando] = useState<Lead | null>(null)
 
   const [leads, setLeads] = useState<Lead[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -226,17 +247,28 @@ export function TelaFunil() {
             ' sem resposta há mais de 1 h'
       }
       acoes={
-        <Botao
-          tom="wa"
-          onClick={() => {
-            const primeiro = leads.find((l) => l.novo) ?? leads[0]
-            if (primeiro) abrir(primeiro)
-          }}
-          disabled={!leads.length}
-        >
-          Inbox
-          {resumo.naoLidas ? <span className="fn-novo no-botao">{resumo.naoLidas}</span> : null}
-        </Botao>
+        <>
+          <Botao
+            tom="wa"
+            onClick={() => {
+              const primeiro = leads.find((l) => l.novo) ?? leads[0]
+              if (primeiro) abrir(primeiro)
+            }}
+            disabled={!leads.length}
+          >
+            Inbox
+            {resumo.naoLidas ? <span className="fn-novo no-botao">{resumo.naoLidas}</span> : null}
+          </Botao>
+          {/* A AÇÃO PRINCIPAL É VERMELHA E VEM POR ÚLTIMO, como manda o V7.
+              Enquanto o WhatsApp oficial não entra, é por aqui que a conversa
+              que chegou no celular de alguém entra no sistema. */}
+          {podeMexer ? (
+            <Botao tom="primario" onClick={() => setEditando(leadEmBranco())}>
+              <Plus size={17} weight="bold" />
+              Novo lead
+            </Botao>
+          ) : null}
+        </>
       }
     >
       {falha ? (
@@ -256,13 +288,42 @@ export function TelaFunil() {
           }
         />
       ) : (
-        <Quadro leads={leads} aberto={abertoId} aoMover={mover} aoAbrir={abrir} relogio={agora} />
+        <Quadro
+          leads={leads}
+          aberto={abertoId}
+          podeMexer={podeMexer}
+          aoMover={mover}
+          aoAbrir={abrir}
+          aoEditar={(l) => setEditando(l)}
+          relogio={agora}
+        />
       )}
+
+      <EditarLead
+        lead={editando}
+        podeApagar={podeApagar}
+        aoFechar={() => setEditando(null)}
+        aoSalvar={(l) => {
+          setEditando(null)
+          void recarregar()
+          /* O lead novo abre a conversa na hora. Criar um lead e ter que
+             procurar ele na coluna para poder responder seria duas ações para
+             uma intenção só. */
+          setAbertoId(l.id)
+        }}
+        aoApagar={(id) => {
+          setEditando(null)
+          if (abertoId === id) setAbertoId('')
+          void recarregar()
+        }}
+      />
 
       <Inbox
         lead={aberto}
         conversa={conversa}
         carregandoConversa={carregandoConversa}
+        podeMexer={podeMexer}
+        aoEditar={(l) => setEditando(l)}
         aoFechar={() => setAbertoId('')}
         aoAbrirCliente={(id) => navegar('/clientes?abrir=' + encodeURIComponent(id))}
         aoVirarCliente={(l) => void virarCliente(l)}

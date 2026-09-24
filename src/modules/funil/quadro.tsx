@@ -43,14 +43,18 @@ type Arrasto = {
 export function Quadro({
   leads,
   aberto,
+  podeMexer,
   aoMover,
   aoAbrir,
+  aoEditar,
   relogio,
 }: {
   leads: Lead[]
   aberto: string
+  podeMexer: boolean
   aoMover: (id: string, estagio: Estagio) => void
   aoAbrir: (l: Lead) => void
+  aoEditar: (l: Lead) => void
   /* O instante que a tela esta usando para ler o tempo. Vem de cima para o
      quadro inteiro contar pelo mesmo relogio: dois cartoes que chegaram juntos
      nao podem dizer 47 e 48 min so porque foram desenhados em milissegundos
@@ -107,7 +111,7 @@ export function Quadro({
   }, [arrasto, aoMover])
 
   function pegar(e: PointerEventoReact<HTMLElement>, l: Lead) {
-    if (e.button !== 0) return
+    if (e.button !== 0 || !podeMexer) return
     const caixa = e.currentTarget.getBoundingClientRect()
     setArrasto({
       id: l.id,
@@ -125,14 +129,21 @@ export function Quadro({
   function abrirMenu(e: MouseEventoReact<HTMLElement>, l: Lead) {
     e.preventDefault()
     ancora.current = e.currentTarget
+    /* MOVER SÓ APARECE PARA QUEM PODE. Um menu que oferece mover para quem o
+       banco vai recusar é a tela convidando a pessoa a errar para desfazer na
+       frente dela. Abrir a conversa continua para todo mundo: ler não é
+       mexer. */
     setCtx({
       lead: l,
       itens: [
         { rotulo: 'Abrir a conversa', aoEscolher: () => aoAbrir(l) },
-        ...ESTAGIOS.filter((x) => x !== l.estagio).map((x) => ({
-          rotulo: 'Mover para ' + NOME_DO_ESTAGIO[x],
-          aoEscolher: () => aoMover(l.id, x),
-        })),
+        ...(podeMexer ? [{ rotulo: 'Editar o lead', aoEscolher: () => aoEditar(l) }] : []),
+        ...(podeMexer
+          ? ESTAGIOS.filter((x) => x !== l.estagio).map((x) => ({
+              rotulo: 'Mover para ' + NOME_DO_ESTAGIO[x],
+              aoEscolher: () => aoMover(l.id, x),
+            }))
+          : []),
       ],
     })
   }
@@ -289,6 +300,24 @@ function Cartao({
 
       <div className="fn-card-pe">
         <span className="fn-valor">{formatarDinheiro(lead.valor)}</span>
+        {/* DE QUEM É O LEAD, no cartão.
+
+            Todo o desenho de 14/09 diz que a venda segue o dono gravado, e não
+            o telefone em que a mensagem caiu. O dado vinha do banco desde
+            então e só era usado para preencher a cotação: o quadro que a
+            equipe inteira olha não dizia de quem era nada.
+
+            É a inicial e não o nome: o nome disputaria a linha com o valor e o
+            tempo, que são o que a pessoa lê varrendo a coluna. O nome inteiro
+            está no title e dentro do cartão. "Sem dono" é um caso de verdade e
+            aparece tracejado, porque lead sem dono é uma pendência, e não um
+            estado normal. */}
+        <span
+          className={lead.vendedorNome ? 'fn-dono' : 'fn-dono orfao'}
+          title={lead.vendedorNome ? 'Lead de ' + lead.vendedorNome : 'Este lead não tem dono'}
+        >
+          {lead.vendedorNome ? iniciais(lead.vendedorNome) : '?'}
+        </span>
         <span className="fn-meta">
           <Relogio />
           <span className={semResposta(lead, relogio) ? 'fn-tempo atrasado' : 'fn-tempo'}>

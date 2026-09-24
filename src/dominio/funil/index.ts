@@ -5,6 +5,7 @@ export {
   acharLead,
   apagarLead,
   carregarConversa,
+  carregarDonosPossiveis,
   carregarLeads,
   leadViraCliente,
   marcarLido,
@@ -13,3 +14,4 @@ export {
   registrarMensagem,
   salvarLead,
 } from './repositorio'
+export type { DonoPossivel } from './repositorio'

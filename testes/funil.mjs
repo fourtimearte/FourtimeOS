@@ -56,11 +56,16 @@ const LEADS = [
   { id:'L3', nome:'Vôlei Clube Araras', contato:'Bia', telefone:'62999990003', cliente_id:'C9',
     estagio:'cotacao', valor:1860, vendedor_id:null, ultima_msg:'Recebi a cotação, vou mostrar',
     ultima_msg_em:atras(2880), nao_lidas:0, janela_ate:atras(1440), teste:true,
-    equipe:{nome:'Dani'}, cotacao:[{id:'c1'}], pedido:[] },
+    equipe:{nome:'Dani Ribeiro'}, cotacao:[{id:'c1'}], pedido:[] },
   { id:'L4', nome:'Studio Pilates Flor', contato:'Flor', telefone:'62999990004', cliente_id:null,
     estagio:'negociando', valor:2400, vendedor_id:null, ultima_msg:'Vi o trabalho de vocês',
     ultima_msg_em:atras(120), nao_lidas:1, janela_ate:null, teste:true,
     equipe:null, cotacao:[], pedido:[] },
+]
+
+const DONOS = [
+  { id:'P1', nome:'Dani Ribeiro' },
+  { id:'P2', nome:'Lucas Garcia' },
 ]
 
 const CLIENTES = [
@@ -84,10 +89,16 @@ for (const tema of ['light', 'dark']) {
       viewport:{width:larg,height:alt}, reducedMotion:'reduce', hasTouch: nome !== 'computador',
     })
     let chamouVirar = false
+    let gravou = null
     await ctx.route('**supabase.co/**', async (r) => {
-      const u = r.request().url()
+      const req = r.request(); const u = req.url(); const m = req.method()
       let corpo = []
       if (u.includes('meu_perfil')) corpo = PERFIL
+      else if (u.includes('/equipe?')) corpo = DONOS
+      else if (u.includes('/lead') && (m === 'POST' || m === 'PATCH')) {
+        try { gravou = JSON.parse(req.postData() || 'null') } catch { gravou = 'corpo ilegivel' }
+        corpo = [{ id:'L9' }]
+      }
       else if (u.includes('rpc/lead_vira_cliente')) { chamouVirar = true; corpo = { id:'C7' } }
       else if (u.includes('/lead?')) corpo = LEADS
       else if (u.includes('/mensagem?')) corpo = [
@@ -153,7 +164,112 @@ for (const tema of ['light', 'dark']) {
     const j4 = await janela('Studio Pilates Flor')
     conta(!j4.tem, `${tema} ${nome}: lead sem fala de cliente não desenha faixa de janela`)
 
+    /* --- o dono no cartao --- */
+    const donos = await pg.evaluate(() => {
+      const ler = (t) => {
+        const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes(t))
+        const d = c?.querySelector('.fn-dono')
+        return d ? { texto: d.textContent.trim(), orfao: d.classList.contains('orfao'), titulo: d.title } : null
+      }
+      return { comDono: ler('Vôlei Clube Araras'), semDono: ler('Futsal Vila Nova') }
+    })
+    conta(donos.comDono?.texto === 'DR' && !donos.comDono.orfao,
+      `${tema} ${nome}: o cartão mostra de quem é o lead (${donos.comDono?.texto})`)
+    conta(!!donos.semDono?.orfao && donos.semDono.texto === '?',
+      `${tema} ${nome}: lead sem dono sai tracejado, e não sem nada`)
+
+    /* --- criar um lead --- */
+    await pg.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find(x => /Novo lead/.test(x.innerText))
+      b.click()
+    })
+    await pg.waitForTimeout(1500)
+    const form = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      if (!d) return null
+      return {
+        campos: [...d.querySelectorAll('.campo > span:first-child')].map(e => e.textContent.trim()),
+        entradas: d.querySelectorAll('.fn-form input').length,
+        salvarTravado: [...d.querySelectorAll('button')].find(b => /Criar lead/.test(b.innerText))?.disabled,
+        apagar: [...d.querySelectorAll('button')].some(b => /Apagar/.test(b.innerText)),
+      }
+    })
+    conta(!!form && form.campos.length === 6,
+      `${tema} ${nome}: o formulário do lead tem os 6 campos (${form?.campos.join(', ')})`)
+    /* SEM NOME NAO GRAVA. A unica trava da tabela e lead_nome_nao_vazio, e a
+       tela tranca o botao em vez de deixar o banco recusar depois. */
+    conta(form?.salvarTravado === true,
+      `${tema} ${nome}: Criar lead fica travado enquanto o nome está vazio`)
+    conta(form?.apagar === false, `${tema} ${nome}: lead novo não oferece Apagar`)
+
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const i = d.querySelector('.fn-form input')
+      const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      set.call(i, 'Time do Bairro')
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await pg.waitForTimeout(700)
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      ;[...d.querySelectorAll('button')].find(b => /Criar lead/.test(b.innerText)).click()
+    })
+    await pg.waitForTimeout(2000)
+    conta(!!gravou && JSON.stringify(gravou).includes('Time do Bairro'),
+      `${tema} ${nome}: o lead novo foi para o banco com o nome digitado`)
+
+    /* --- editar pelo lápis do inbox --- */
+    await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Vôlei Clube Araras'))
+      c.click()
+    })
+    await pg.waitForTimeout(1200)
+    await pg.evaluate(() => {
+      const b = [...document.querySelectorAll('.fn-in-topo button')].find(x => /Editar/.test(x.getAttribute('aria-label') || ''))
+      b.click()
+    })
+    await pg.waitForTimeout(1500)
+    const edicao = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      if (!d) return null
+      return {
+        titulo: d.querySelector('.modal-topo b, h2, header')?.textContent ?? d.innerText.slice(0, 40),
+        nome: d.querySelector('.fn-form input')?.value ?? '',
+        apagar: [...d.querySelectorAll('button')].some(b => /Apagar/.test(b.innerText)),
+      }
+    })
+    conta(edicao?.nome === 'Vôlei Clube Araras',
+      `${tema} ${nome}: o lápis abre o lead com os dados dele (${edicao?.nome})`)
+    conta(edicao?.apagar === true, `${tema} ${nome}: lead que existe oferece Apagar para o admin`)
+
+    /* A CONFIRMACAO DE APAGAR ENTRA DENTRO DO MODAL, e nao num segundo modal:
+       modal sobre modal esconde o que se esta prestes a apagar. */
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      ;[...d.querySelectorAll('button')].find(b => /Apagar/.test(b.innerText)).click()
+    })
+    await pg.waitForTimeout(900)
+    const conf = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      return {
+        aviso: !!d.querySelector('.fn-apagar'),
+        formAindaVisivel: !!d.querySelector('.fn-form'),
+        modais: document.querySelectorAll('dialog[open]').length,
+      }
+    })
+    conta(conf.aviso && conf.formAindaVisivel && conf.modais === 1,
+      `${tema} ${nome}: a confirmação de apagar entra dentro do mesmo modal`)
+
+    await pg.screenshot({ path: `${PASTA}/funil-editar-${tema}-${nome}.png`, fullPage:false })
+    await pg.keyboard.press('Escape')
+    await pg.waitForTimeout(800)
+
     /* --- criar cliente, e cair na lista com a ficha aberta --- */
+    await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Studio Pilates Flor'))
+      c.click()
+    })
+    await pg.waitForTimeout(1300)
     await pg.evaluate(() => {
       const b = [...document.querySelectorAll('.fn-in-acoes button')].find(x => /Criar cliente/.test(x.innerText))
       b.click()

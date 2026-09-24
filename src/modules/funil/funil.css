@@ -647,3 +647,66 @@
 .fn-janela.fechada b {
   color: var(--brand-text);
 }
+
+/* --- de quem e o lead, no pe do cartao -----------------------------------
+   Bolinha com a inicial, do tamanho do relogio ao lado: ela e um sinal, e nao
+   um avatar. Sem dono sai tracejada, porque lead sem dono e pendencia. */
+.fn-dono {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-soft);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: none;
+}
+.fn-dono.orfao {
+  background: transparent;
+  border: 1px dashed var(--border-2);
+  color: var(--text-3);
+}
+
+/* --- o formulario do lead ------------------------------------------------ */
+.fn-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.fn-form > *:first-child {
+  grid-column: 1 / -1;
+}
+@media (max-width: 620px) {
+  .fn-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- a confirmacao de apagar --------------------------------------------
+   Ela entra DENTRO do modal, em cima do formulario, e nao num segundo modal:
+   modal sobre modal esconde o que se esta prestes a apagar. */
+.fn-apagar {
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-lg);
+  padding: var(--pad-cartao);
+  margin-bottom: var(--sp-4);
+}
+.fn-apagar > b {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: var(--re-4);
+}
+.fn-apagar > p {
+  margin: 0 0 var(--sp-3);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.fn-apagar-botoes {
+  display: flex;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+}

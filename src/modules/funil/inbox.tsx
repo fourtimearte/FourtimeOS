@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PencilSimple } from '@phosphor-icons/react'
 import { Botao, avisar } from '@ds'
 import { formatarTelefone } from '@shared'
 import {
@@ -29,6 +30,8 @@ import {
 
 export function Inbox({
   lead,
+  podeMexer,
+  aoEditar,
   aoFechar,
   aoAbrirCliente,
   aoVirarCliente,
@@ -44,6 +47,8 @@ export function Inbox({
      gaveta abre, e quem decide quando ela abre é a tela. */
   conversa: Mensagem[]
   carregandoConversa: boolean
+  podeMexer: boolean
+  aoEditar: (l: Lead) => void
   aoFechar: () => void
   aoAbrirCliente: (id: string) => void
   aoVirarCliente: (l: Lead) => void
@@ -84,6 +89,20 @@ export function Inbox({
             {l.contato ? ' · ' + l.contato : ''}
           </small>
         </span>
+        {/* O LÁPIS FICA AO LADO DO NOME porque é o nome que ele muda. No
+            rodapé, junto de Criar cliente e Criar cotação, ele viraria a
+            terceira ação de uma fileira e ninguém ligaria ele ao cabeçalho. */}
+        {podeMexer ? (
+          <button
+            type="button"
+            className="fn-in-fechar"
+            onClick={() => aoEditar(l)}
+            aria-label={'Editar ' + nomeDoLead(l)}
+            title="Editar o lead"
+          >
+            <PencilSimple size={16} weight="bold" />
+          </button>
+        ) : null}
         <button type="button" className="fn-in-fechar" onClick={aoFechar} aria-label="Fechar a conversa" title="Fechar">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />

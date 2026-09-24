@@ -159,6 +159,28 @@ export async function apagarLead(id: string): Promise<void> {
   await tabela(`lead?id=eq.${encodeURIComponent(id)}`, { metodo: 'DELETE' })
 }
 
+/* QUEM PODE SER DONO DE UM LEAD.
+
+   Sai da view `equipe`, e nao da lista escrita a mao em dominio/banco. Aquela
+   lista e texto: cinco nomes que nao sao pessoas. O dono do lead e a ponta da
+   corrente que leva ate o pedido (lead -> cotacao -> pedido), e corrente que
+   comeca num texto nao chega em ninguem.
+
+   So quem esta APROVADO. Pessoa esperando aprovacao nao pode receber lead:
+   ela ainda nao entra no sistema, e o lead ficaria com dono que nao abre a
+   tela onde ele aparece.
+
+   E nao filtra por papel de proposito. Quem pode mexer no lead quem decide e o
+   banco, e o papel e configuravel desde a 028: uma lista fixa de papeis aqui
+   envelheceria na primeira vez que a fabrica criasse um papel novo. */
+export type DonoPossivel = { id: string; nome: string }
+
+export async function carregarDonosPossiveis(): Promise<DonoPossivel[]> {
+  return tabela<DonoPossivel[]>(
+    'equipe?select=id,nome&situacao=eq.aprovado&order=nome.asc',
+  )
+}
+
 /* --- a conversa ---------------------------------------------------------- */
 
 type LinhaDaMensagem = {

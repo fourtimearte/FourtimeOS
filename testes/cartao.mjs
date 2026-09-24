@@ -46,11 +46,13 @@ põe('dtf', ['corte','dtf','prensa','conferencia','cd-costura','costura','embala
 const ha = (d) => new Date(Date.now() - d*86400000).toISOString()
 const FATIAS = [
   { id:'1', pedido_id:'p1', numero:'PD-TESTE-0029', nome:'Uniforme Equipe Verão', cliente:'Drogaria Viver Bem',
+    cliente_id:'C1',
     vendedor:'Dani', tecnica:'subli', etapa:'subli', etapa_em:ha(0), fechado_em:null, layouts:[1,2],
     pecas:299, entrega_em:null, aviso:'', estado:'producao', teste:true,
     marcas:['VIP','PRIORIDADE'], tags:['montagem','prova_de_cor'],
     pego_por:'1', pego_por_nome:'Henrique', pego_em:ha(0), falas:2 },
   { id:'2', pedido_id:'p2', numero:'PD-TESTE-0057', nome:'Camisa Congresso 2026', cliente:'Igreja Araguaia',
+    cliente_id:'C2',
     vendedor:'Lucas', tecnica:'dtf', etapa:'corte', etapa_em:ha(4), fechado_em:null, layouts:[1],
     pecas:160, entrega_em:null, aviso:'falta-material', estado:'producao', teste:true,
     marcas:['EVENTO','URGENTE'], tags:['falta_tecido'],
@@ -104,6 +106,19 @@ const ANTIGA = [{
   },
 }]
 
+/* TRES PEDIDOS ANTERIORES DO MESMO CLIENTE, um deles com a cotacao que o
+   comparar ja usa. A demonstracao no banco de verdade nao serve para provar
+   esta lista: a semente da um pedido por cliente, entao la ela sai sempre
+   vazia e o vazio passaria por certo sem nunca ter desenhado uma linha. */
+const ANTERIORES = [
+  { id:'p9', numero:'PD-TESTE-0084', nome:'Uniforme Equipe Inverno',
+    cliente:'Drogaria Viver Bem', estado:'entregue', cotacao_id:'c9', entrega_em:'2025-11-20' },
+  { id:'p8', numero:'PD-TESTE-0061', nome:'Camiseta Campanha',
+    cliente:'Drogaria Viver Bem', estado:'enviado', cotacao_id:'c9', entrega_em:'2025-08-02' },
+  { id:'p7', numero:'PD-TESTE-0042', nome:'Jaleco Balcao',
+    cliente:'Drogaria Viver Bem', estado:'entregue', cotacao_id:'c9', entrega_em:'2025-03-14' },
+]
+
 const nav = await chromium.launch()
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
@@ -135,6 +150,7 @@ for (const tema of ['light', 'dark']) {
       else if (u.includes('tag_do_posto')) corpo = TAGS_POSTO
       else if (u.includes('/tag?')) corpo = TAGS
       else if (u.includes('rota_da_tecnica')) corpo = ROTAS
+      else if (u.includes('pedido_na_fabrica') && u.includes('cliente_id=eq')) corpo = ANTERIORES
       else if (u.includes('pedido_na_fabrica')) corpo = [
         { id:'p9', numero:'PD-TESTE-0084', nome:'Uniforme Equipe Inverno',
           cliente:'Drogaria Viver Bem', estado:'entregue', cotacao_id:'c9', entrega_em:null },
@@ -283,6 +299,63 @@ for (const tema of ['light', 'dark']) {
       if (b) b.click()
     })
     await pg.waitForTimeout(600)
+
+    /* ---- os ultimos pedidos do cliente ---- */
+    const hist = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const h = d.querySelector('.ca-historico')
+      if (!h) return null
+      const linhas = [...h.querySelectorAll('.ca-antigo')]
+      const conversa = d.querySelector('.ca-conversa')
+      return {
+        titulo: h.querySelector('.ca-rot')?.textContent.trim() ?? '',
+        quantas: linhas.length,
+        primeira: linhas[0]?.innerText.replace(/\n/g, ' ') ?? '',
+        botoesDaPrimeira: [...(linhas[0]?.querySelectorAll('button') ?? [])].map((b) =>
+          b.getAttribute('aria-label'),
+        ),
+        /* ABAIXO DA CONVERSA, e nao acima: a conversa e sobre ESTE cartao,
+           agora, e e ela que a pessoa veio ler. */
+        abaixoDaConversa:
+          !!conversa &&
+          (conversa.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+        rolaDeLado: h.scrollWidth > h.clientWidth + 1,
+      }
+    })
+    conta(!!hist && hist.titulo === 'Últimos pedidos do cliente',
+      `${tema} ${nome}: a seção dos pedidos do cliente existe`)
+    conta(!!hist && hist.quantas === 3,
+      `${tema} ${nome}: ela lista os 3 pedidos anteriores (${hist?.quantas})`)
+    conta(!!hist && hist.botoesDaPrimeira.length === 2,
+      `${tema} ${nome}: cada pedido tem dois botões (${hist?.botoesDaPrimeira.join(', ')})`)
+    conta(!!hist && hist.abaixoDaConversa,
+      `${tema} ${nome}: ela fica abaixo da conversa`)
+    conta(!!hist && !hist.rolaDeLado, `${tema} ${nome}: a lista não rola de lado`)
+
+    /* O COMPARAR DA LISTA E O MESMO COMPARAR DA BUSCA. Se fossem dois caminhos
+       diferentes para a mesma tela, um deles ia divergir do outro. */
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      d.querySelector('.ca-antigo-botoes button').click()
+    })
+    await pg.waitForTimeout(1600)
+    const daLista = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      return {
+        comparando: !!d.querySelector('.ca-outro'),
+        semDireita: !d.querySelector('.ca-dir'),
+      }
+    })
+    conta(daLista.comparando && daLista.semDireita,
+      `${tema} ${nome}: o botão comparar da lista abre a comparação`)
+
+    /* volta ao normal para a busca do comparar ser medida do zero */
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const b = [...d.querySelectorAll('button')].find(x => /Fechar a compara/.test(x.innerText))
+      if (b) b.click()
+    })
+    await pg.waitForTimeout(900)
     await pg.evaluate(() => {
       const d = document.querySelector('dialog[open]')
       const i = d.querySelector('.ca-caixa-busca input')

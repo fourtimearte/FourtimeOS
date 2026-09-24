@@ -80,11 +80,8 @@ type LinhaDaFatia = {
   falas: number | null
 }
 
-export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
-  const linhas = await tabela<LinhaDaFatia[]>(
-    'fatia_na_fabrica?select=*&estado=in.(producao,pronto)&order=entrega_em.asc.nullslast,numero.asc',
-  )
-  return linhas.map((l) => ({
+function deLinhaDaFatia(l: LinhaDaFatia): FatiaNoQuadro {
+  return {
     id: l.id,
     pedidoId: l.pedido_id,
     numero: l.numero,
@@ -108,7 +105,29 @@ export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
     pegoEm: l.pego_em ?? '',
     falas: Number(l.falas) || 0,
     anexos: 0,
-  }))
+  }
+}
+
+export async function carregarOQuadro(): Promise<FatiaNoQuadro[]> {
+  const linhas = await tabela<LinhaDaFatia[]>(
+    'fatia_na_fabrica?select=*&estado=in.(producao,pronto)&order=entrega_em.asc.nullslast,numero.asc',
+  )
+  return linhas.map(deLinhaDaFatia)
+}
+
+/* AS FATIAS DE UM PEDIDO SÓ, SEM FILTRO DE ESTADO.
+
+   O quadro pede as que estão em produção porque é isso que o quadro desenha.
+   O modal da timeline pergunta outra coisa: onde foi parar cada pedaço DESTE
+   pedido. Filtrar por estado aqui abriria um modal vazio justamente no pedido
+   que já terminou, que é quando alguém abre a timeline para conferir quando é
+   que cada parte ficou pronta. */
+export async function carregarAsFatiasDoPedido(pedidoId: string): Promise<FatiaNoQuadro[]> {
+  if (!pedidoId) return []
+  const linhas = await tabela<LinhaDaFatia[]>(
+    `fatia_na_fabrica?select=*&pedido_id=eq.${encodeURIComponent(pedidoId)}&order=tecnica.asc`,
+  )
+  return linhas.map(deLinhaDaFatia)
 }
 
 export type Rota = { tecnica: string; ordem: number; posto: Etapa }
@@ -183,4 +202,44 @@ export function corDoPosto(e: Etapa): string {
 export function paradoHa(iso: string): number {
   if (!iso) return 0
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000))
+}
+
+/* QUANTOS POSTOS AINDA FALTAM PARA ESTA FATIA CHEGAR NO FIM DA ROTA.
+
+   É a medida honesta de atraso entre duas técnicas, e não o nome do posto. Um
+   cartão em Costura pela rota de DTF e um cartão em Costura pela rota de subli
+   não estão no mesmo lugar da vida: as rotas têm tamanhos diferentes, e é
+   quanto falta que diz qual das duas segura a entrega.
+
+   Fora da rota devolve -1, e quem chama trata isso como "não sei dizer". Vale
+   zero e vale como pronto seriam as duas mentiras fáceis aqui. */
+export function faltamPostos(rotas: Rota[], tecnica: string, etapa: Etapa): number {
+  const r = rotaDe(rotas, tecnica)
+  const i = r.indexOf(etapa)
+  if (i < 0) return -1
+  return r.length - 1 - i
+}
+
+/* QUAL FATIA ESTÁ SEGURANDO O PEDIDO.
+
+   A regra é a de 21/09, a mesma que decide a tag do painel: a do trabalho mais
+   atrasado, quer dizer, a que está mais longe do fim da rota dela. Mostrar a
+   mais adiantada seria uma mentira que a tela conta sozinha: a linha diria
+   "Embalagem" com metade do pedido no corte.
+
+   Empate vai para a que está parada há mais tempo, porque entre dois pedaços
+   igualmente longe do fim, quem não anda há quatro dias é o problema. */
+export function quemSeguraOPedido(rotas: Rota[], fatias: FatiaNoQuadro[]): string {
+  const correndo = fatias.filter((f) => f.etapa !== 'finalizado')
+  if (!correndo.length) return ''
+  let melhor = correndo[0]
+  let falta = faltamPostos(rotas, melhor.tecnica, melhor.etapa)
+  for (const f of correndo.slice(1)) {
+    const x = faltamPostos(rotas, f.tecnica, f.etapa)
+    if (x > falta || (x === falta && paradoHa(f.etapaEm) > paradoHa(melhor.etapaEm))) {
+      melhor = f
+      falta = x
+    }
+  }
+  return melhor.id
 }

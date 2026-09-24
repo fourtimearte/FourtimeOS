@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
-import { ArrowsClockwise, DotsSixVertical, Printer } from '@phosphor-icons/react'
+import { ArrowsClockwise, DotsSixVertical, Path, Printer } from '@phosphor-icons/react'
 import { Aviso as Faixa, Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
 import {
   AVISO,
@@ -34,6 +34,7 @@ import {
   type Etapa,
   type Pedido,
 } from '@dominio/producao'
+import { ModalDaTimeline } from './timeline'
 import './atividades.css'
 
 /* ==========================================================================
@@ -159,6 +160,14 @@ export function TelaAtividades() {
      uma vez. Sem esta referencia ele leria a lista de quando foi montado. */
   const todosAgora = useRef<Pedido[]>([])
   todosAgora.current = todos
+
+  /* O PEDIDO QUE ESTA COM A TIMELINE ABERTA.
+
+     Guardado por ID e nao pelo objeto: o painel se rele sozinho a cada trinta
+     segundos, e um objeto guardado aqui seria uma foto do pedido de ate meio
+     minuto atras aberta na frente de quem foi justamente conferir onde ele
+     esta agora. */
+  const [linhaDoTempo, setLinhaDoTempo] = useState('')
 
   /* 0 e esta semana, -1 a passada, +1 a que vem */
   const [semana, setSemana] = useState(0)
@@ -319,12 +328,6 @@ export function TelaAtividades() {
               aria-label="Semana anterior"
               title="Semana anterior"
             >
-      {falha ? (
-        <Faixa tom="brand" titulo="Não consegui carregar os pedidos">
-          {falha}
-        </Faixa>
-      ) : null}
-
               ‹
             </button>
             <b className="at-semana-txt">{tituloDaSemana(inicio)}</b>
@@ -376,6 +379,19 @@ export function TelaAtividades() {
         </>
       }
     >
+      {/* A FAIXA DE ERRO MORA AQUI, no corpo da pagina.
+
+          Ate 24/09 ela estava DENTRO do botao de semana anterior, onde nunca
+          apareceu para ninguem: um aviso de tela inteira desenhado dentro de
+          um botao de 30px, que so existe porque o JSX aceitou. Quando a
+          consulta falhava, o painel ficava mudo e parecia so uma semana
+          vazia. */}
+      {falha ? (
+        <Faixa tom="brand" titulo="Não consegui carregar os pedidos">
+          {falha}
+        </Faixa>
+      ) : null}
+
       <div className="at-topo">
         {/* Os quatro numeros do Relatorio de Atividade do editor. A segunda
             linha de cada um e o que faz o numero valer: "1.173" sozinho nao
@@ -534,6 +550,7 @@ export function TelaAtividades() {
                       void gravar(finalizarEm(p.id, d))
                     }}
                     aoPegar={(ev) => pegar(ev, p)}
+                    aoVerATimeline={() => setLinhaDoTempo(p.id)}
                     aoTrocarEtapa={(e) => {
                       const de = POSTO[p.etapa].nome
                       avisar(p.numero + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
@@ -576,6 +593,19 @@ export function TelaAtividades() {
         </div>
       ) : null}
 
+      {/* A TIMELINE LÊ O PEDIDO DA LISTA VIVA, pelo id guardado. Se o painel
+          reler enquanto o modal está aberto, o modal acompanha; se o pedido
+          sair da semana por uma mexida de outra pessoa, o modal fecha sozinho
+          em vez de ficar mostrando um pedido que já não está ali. */}
+      {linhaDoTempo ? (
+        (() => {
+          const alvo = todos.find((p) => p.id === linhaDoTempo)
+          return alvo ? (
+            <ModalDaTimeline pedido={alvo} aoFechar={() => setLinhaDoTempo('')} />
+          ) : null
+        })()
+      ) : null}
+
       <div className="at-legenda">
         <span>
           <i className="at-marca atrasado" />
@@ -593,6 +623,7 @@ function Linha({
   colocacao,
   carregando,
   aoPegar,
+  aoVerATimeline,
   aoTrocarEtapa,
   aoTrocarAviso,
   aoTrocarEntrega,
@@ -603,6 +634,7 @@ function Linha({
   colocacao?: Colocacao
   carregando: boolean
   aoPegar: (e: PointerEventoReact<HTMLElement>) => void
+  aoVerATimeline: () => void
   aoTrocarEtapa: (e: Etapa) => void
   aoTrocarAviso: (a: Aviso) => void
   aoTrocarEntrega: (d: string) => void
@@ -729,16 +761,35 @@ function Linha({
           perguntas: em que posto o pedido está, e se isso ainda vale. Etapa
           sem ninguém tocar há mais de três dias sai com a borda tracejada. */}
       <span className={velha ? 'at-etapa velha' : 'at-etapa'}>
-        <Seletor
-          tamanho="sm"
-          bloco
-          comBusca={false}
-          cor={POSTO[p.etapa].cor}
-          valor={p.etapa}
-          opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
-          vazio="sem etapa"
-          aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
-        />
+        {/* O BOTÃO DA TIMELINE MORA NESTA CÉLULA, e não numa coluna própria.
+
+            Ele existe porque o posto ao lado dele é UM posto para um pedido
+            que quase nunca está num posto só: o PCP fatiou por técnica, e esta
+            coluna mostra a fatia mais atrasada. Colapsar assim é honesto
+            enquanto existir um jeito de abrir, e o jeito precisa estar onde a
+            pergunta nasce, encostado na resposta curta. Uma coluna nova no fim
+            da tabela seria o mesmo botão longe do motivo dele. */}
+        <span className="at-etapa-linha">
+          <Seletor
+            tamanho="sm"
+            bloco
+            comBusca={false}
+            cor={POSTO[p.etapa].cor}
+            valor={p.etapa}
+            opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
+            vazio="sem etapa"
+            aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
+          />
+          <button
+            type="button"
+            className="at-timeline"
+            onClick={aoVerATimeline}
+            aria-label={'Ver onde está cada parte do ' + p.numero}
+            title="Ver onde está cada parte deste pedido"
+          >
+            <Path size={16} weight="bold" />
+          </button>
+        </span>
         {/* EM QUE DIA ELE FICOU PRONTO, e não em que dia alguém lembrou de
             apontar. É este campo que devolve o pedido para a semana em que o
             trabalho aconteceu: a colocação lê a finalização antes de tudo,

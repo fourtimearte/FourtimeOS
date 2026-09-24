@@ -725,3 +725,18 @@
 .at-veio.novo {
   color: var(--text-3);
 }
+
+/* --- a celula de Atualizacao: o posto e o botao da timeline ---------------
+   O seletor cresce e o botao nunca encolhe. Ao contrario: seletor com
+   flex:1 e botao com flex:none e o unico arranjo em que o nome do posto
+   perde largura antes de o alvo de toque perder. */
+.at-etapa-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-width: 0;
+}
+.at-etapa-linha > *:first-child {
+  flex: 1;
+  min-width: 0;
+}

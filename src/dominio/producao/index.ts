@@ -28,13 +28,16 @@ export type { PedidoNoPcp } from './pcp'
 
 export {
   COLUNAS,
+  carregarAsFatiasDoPedido,
   carregarAsRotas,
   carregarOQuadro,
   corDoPosto,
   estaNaRota,
+  faltamPostos,
   moverAFatia,
   nomeDoPosto,
   paradoHa,
+  quemSeguraOPedido,
   rotaDe,
   vizinhoNaRota,
 } from './kanban'

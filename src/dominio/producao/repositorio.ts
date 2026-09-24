@@ -114,10 +114,27 @@ function diaLocal(ts: string | null): string {
    "Finalizado" continua aparecendo de propósito. Ele é o fim da linha DENTRO da
    fábrica, e não o fim do pedido: a peça está pronta e ainda está lá, esperando
    alguém despachar. Sumir do quadro no instante em que é embalada é como o
-   pedido pronto vira pedido esquecido. */
+   pedido pronto vira pedido esquecido.
+
+   "APROVADO" SAIU DA LISTA EM 24/09, e esta é a mudança que vale explicar.
+
+   Enquanto o portão do PCP não existia, `aprovado` era o mais perto de "está
+   na fábrica" que o dado sabia dizer, e o painel usava isso por falta de coisa
+   melhor. Agora existe: o pedido só vira `producao` quando o diretor aprova, e
+   é a aprovação dele que cria a fatia no quadro. Um pedido aprovado em venda e
+   parado na separação ou na mesa do PCP não tem cartão nenhum no chão de
+   fábrica, então contá-lo aqui enchia a semana de peças que ninguém está
+   produzindo.
+
+   Isso não é cosmético: a saturação do topo e a cor de cada dia saem dessa
+   soma, e a pergunta que esta tela existe para responder é justamente se a
+   semana cabe. Uma semana que parece cheia por causa de oito pedidos que nem
+   desceram faz o operador empurrar trabalho de verdade para a semana seguinte.
+   O pedido não some do sistema: ele está no PCP, que é a tela onde ele espera
+   e onde alguém precisa olhar para ele. */
 export async function carregarPedidos(): Promise<Pedido[]> {
   const linhas = await tabela<LinhaDaFabrica[]>(
-    `pedido_na_fabrica?select=${COLUNAS}&estado=in.(aprovado,producao,pronto)` +
+    `pedido_na_fabrica?select=${COLUNAS}&estado=in.(producao,pronto)` +
       '&order=entrega_em.asc.nullslast,numero.asc',
   )
   return linhas.map(deLinha)

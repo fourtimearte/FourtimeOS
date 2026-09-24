@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { ArrowUUpLeft, Check, Stamp, Warning } from '@phosphor-icons/react'
 import {
   AreaTexto,
@@ -26,6 +25,7 @@ import {
   marcarParaAprovacao,
   type PedidoNoPcp,
 } from '@dominio/producao'
+import { ModalDaFolha } from '@modules/cotacao'
 import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import './pcp.css'
 
@@ -91,6 +91,10 @@ export function TelaPcp() {
   const [devolvendo, setDevolvendo] = useState<PedidoNoPcp | null>(null)
   const [motivo, setMotivo] = useState('')
   const [confirmando, setConfirmando] = useState(false)
+  /* A FOLHA ABERTA POR CIMA. Guardada pelo pedido inteiro e não pelo id: o
+     título do modal diz o número do PEDIDO, e quem abre isto está olhando
+     para um pedido, não para uma cotação. */
+  const [naFolha, setNaFolha] = useState<PedidoNoPcp | null>(null)
 
   const carregar = useCallback(async () => {
     try {
@@ -269,6 +273,7 @@ export function TelaPcp() {
             aoDesmarcar={(p) => void desmarcar(p)}
             aoEscolher={() => {}}
             aoDevolver={() => {}}
+            aoVerAFolha={setNaFolha}
           />
 
           <Fila
@@ -290,9 +295,18 @@ export function TelaPcp() {
               setDevolvendo(p)
               setMotivo('')
             }}
+            aoVerAFolha={setNaFolha}
           />
         </div>
       )}
+
+      {naFolha ? (
+        <ModalDaFolha
+          cotacaoId={naFolha.cotacaoId}
+          numeroDoPedido={naFolha.numero}
+          aoFechar={() => setNaFolha(null)}
+        />
+      ) : null}
 
       {/* A CONFIRMAÇÃO DO LOTE MOSTRA O QUE VAI DESCER. Aprovar rápido é bom;
           aprovar sem ver o que está aprovando não é. */}
@@ -375,6 +389,7 @@ function Fila({
   aoDesmarcar,
   aoEscolher,
   aoDevolver,
+  aoVerAFolha,
 }: {
   titulo: string
   linha: string
@@ -389,6 +404,7 @@ function Fila({
   aoDesmarcar: (p: PedidoNoPcp) => void
   aoEscolher: (p: PedidoNoPcp) => void
   aoDevolver: (p: PedidoNoPcp) => void
+  aoVerAFolha: (p: PedidoNoPcp) => void
 }) {
   return (
     <Cartao className="pcp-coluna">
@@ -471,12 +487,17 @@ function Fila({
               ) : null}
 
               <footer className="pcp-botoes">
-                {/* Link com a roupa de botão, e não Botao com um Link dentro:
-                    âncora dentro de botão é HTML inválido, e o navegador faz o
-                    que quer com o clique. */}
-                <Link className="btn btn-contorno sm" to={`/cotacao/${p.cotacaoId}/producao`}>
+                {/* A FOLHA ABRE POR CIMA, e não leva a pessoa embora.
+
+                    Era um link para /cotacao/:id/producao, e conferir um
+                    pedido custava sair do PCP: voltar significava recarregar a
+                    fila, reencontrar o pedido na coluna e refazer a rolagem.
+                    Quem confere quinze pedidos numa manhã pagava esse preço
+                    trinta vezes. A folha é uma consulta, e consulta não muda
+                    de lugar. */}
+                <Botao tom="contorno" tamanho="sm" onClick={() => aoVerAFolha(p)}>
                   Ver a folha
-                </Link>
+                </Botao>
 
                 {eu === 'pcp' && podeMarcar ? (
                   <Botao

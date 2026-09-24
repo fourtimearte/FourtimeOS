@@ -110,7 +110,11 @@ const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((c
 
 for (const tema of ['light', 'dark']) {
   for (const [larg, alt, nome] of [[1440,900,'computador'], [768,1024,'tablet'], [390,844,'celular']]) {
-    const ctx = await nav.newContext({ viewport:{width:larg,height:alt}, reducedMotion:'reduce' })
+    /* hasTouch liga o `pointer: coarse` do CSS, que e o que faz o alvo de toque
+       crescer. Sem ele o teste mediria o botao de mouse no tablet. */
+    const ctx = await nav.newContext({
+      viewport:{width:larg,height:alt}, reducedMotion:'reduce', hasTouch: nome !== 'computador',
+    })
     await ctx.route('**supabase.co/**', async (r) => {
       const req = r.request(); const u = req.url()
       let corpo = []
@@ -167,13 +171,40 @@ for (const tema of ['light', 'dark']) {
         mestres: mestres ? [...mestres.querySelectorAll('.etiqueta')].map(e => e.textContent.trim()) : [],
         temBorda: mestres ? getComputedStyle(mestres).borderTopWidth !== '0px' : false,
         tags: [...c.querySelectorAll('.kb-tags .etiqueta')].map(e => e.textContent.trim()),
-        alturaDoBotao: Math.round(c.querySelector('.kb-pe .btn')?.getBoundingClientRect().height ?? 0),
+        botao: (() => {
+          const b = c.querySelector('.kb-terminei')
+          if (!b) return null
+          const cx = b.getBoundingClientRect(); const e = getComputedStyle(b)
+          return {
+            alt: Math.round(cx.height), larg: Math.round(cx.width),
+            fundo: e.backgroundColor, borda: e.borderTopWidth,
+            texto: b.textContent.trim(),
+          }
+        })(),
       }
     })
     conta(!!cartao && cartao.linhasDoNumero <= 1, `${tema} ${nome}: o número do pedido cabe em uma linha`)
     conta(!!cartao && cartao.mestres.length === 2 && cartao.temBorda,
       `${tema} ${nome}: a faixa das mestres tem ${cartao?.mestres.length} tags e divisor`)
     conta(!!cartao && cartao.tags.length === 2, `${tema} ${nome}: as tags do posto aparecem (${cartao?.tags.join(', ')})`)
+
+    /* O BOTAO DE TERMINAR E QUADRADO, SEM TEXTO E SEM VERMELHO.
+
+       O vermelho e a marca, e no V7 marca quer dizer acao e ATRASO. Repetido
+       em cada cartao de um quadro de treze colunas ele para de querer dizer
+       qualquer coisa, e o que precisa gritar la e o cartao empacado. A medida
+       do fundo pega justamente quem voltar a pintar o botao de marca. */
+    const bt = cartao?.botao
+    conta(!!bt && bt.texto === '', `${tema} ${nome}: o botão de terminar não tem texto`)
+    conta(!!bt && Math.abs(bt.alt - bt.larg) <= 1,
+      `${tema} ${nome}: o botão é quadrado (${bt?.larg}x${bt?.alt})`)
+    conta(!!bt && bt.borda !== '0px', `${tema} ${nome}: o botão tem borda`)
+    conta(!!bt && !/(198, 22, 27)|(224, 38, 46)/.test(bt.fundo),
+      `${tema} ${nome}: o botão não é vermelho de marca (${bt?.fundo})`)
+    /* 44px onde ha dedo, 30 onde ha mouse: trinta num tablet e um botao que se
+       erra, e quarenta e quatro no computador rouba a largura do nome. */
+    conta(!!bt && (nome === 'computador' ? bt.alt === 30 : bt.alt === 44),
+      `${tema} ${nome}: o alvo do botão é o do ponteiro (${bt?.alt}px)`)
 
     await pg.screenshot({ path: `${PASTA}/quadro-${tema}-${nome}.png`, fullPage:false })
 

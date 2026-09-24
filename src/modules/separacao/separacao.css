@@ -1,9 +1,11 @@
 /* ==========================================================================
    Separação.
 
-   Fila à esquerda, pedido aberto à direita. Abaixo de 1100px as duas viram
-   uma coluna, com a fila em cima: no tablet do galpão quem separa escolhe o
-   pedido uma vez e trabalha na lista, então a lista é quem merece a tela.
+   Fila à esquerda, pedido aberto à direita. Quando a MESA não tem 716px as
+   duas viram uma coluna, com a fila em cima: no tablet do galpão quem separa
+   escolhe o pedido uma vez e trabalha na lista, então a lista é quem merece a
+   tela. A conta é da mesa e não da janela, e o porquê está no palco lá
+   embaixo.
 
    A folga ENTRE os blocos é da página, então nada aqui escreve margin-bottom.
    ========================================================================== */
@@ -19,13 +21,35 @@
   }
 }
 
+/* --- o palco, que so existe para ser medido -------------------------------
+
+   AQUI ESTAVA O DEFEITO, e ele nao era desta tela sozinha: a mesa perguntava
+   o tamanho da JANELA, e a janela tem 248px de menu lateral que a mesa nao
+   pode usar. Num monitor de 1080 a area util tem 758px, entao a regra de
+   1100px nunca ligava: as duas colunas viravam uma so, a fila esticava para
+   758px de largura com conteudo de 300, e o pedido aberto ia para baixo de
+   treze cartoes.
+
+   O contentor resolve porque ele responde a pergunta certa: quanto espaco EU
+   tenho, e nao quanto espaco a tela tem. Com o menu recolhido a mesa ganha
+   180px e passa a caber sem ninguem mexer em numero nenhum.
+
+   `container-type: inline-size` mede so a largura. Medir os dois lados
+   obrigaria a declarar altura, e a fila tem a altura do que tem dentro. */
+.sp-palco {
+  container-type: inline-size;
+  container-name: mesa;
+}
+
 .sp-mesa {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-4);
   align-items: start;
 }
-@media (min-width: 1100px) {
+/* 716px e a conta, e nao um numero redondo: 300 da fila, 16 do vao e 400 do
+   minimo em que a tabela de material ainda se le sem rolar de lado. */
+@container mesa (min-width: 716px) {
   .sp-mesa {
     grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
   }
@@ -41,7 +65,7 @@
   overflow: hidden;
   min-width: 0;
 }
-@media (min-width: 1100px) {
+@container mesa (min-width: 716px) {
   .sp-fila {
     max-height: 70vh;
     overflow-y: auto;

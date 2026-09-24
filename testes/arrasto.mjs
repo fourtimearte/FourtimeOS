@@ -110,7 +110,9 @@ console.log('antes:', 'PD-0401 em', await onde('PD-0401'))
 // move direto seria o desenho de 22/09 desfeito sem ninguem notar.
 await pg.evaluate(() => {
   const c = [...document.querySelectorAll('.kb-cartao')].find(x => x.textContent.includes('PD-0402'))
-  ;[...c.querySelectorAll('button')].find(b => b.textContent.includes('Terminei')).click()
+  /* O BOTAO NAO TEM MAIS TEXTO: desde 24/09 ele e quadrado e so com a seta, e
+     procurar por "Terminei" acharia nada. A classe e o que sobrou de estavel. */
+  c.querySelector('.kb-terminei').click()
 })
 await pg.waitForTimeout(700)
 const semConfirmar = await onde('PD-0402')

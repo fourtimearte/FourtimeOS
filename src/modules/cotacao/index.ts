@@ -2,3 +2,4 @@
 export { TelaCotacao } from './tela'
 export { EditorDeCotacao } from './editor'
 export { DocumentoDaCotacao } from './documento'
+export { ModalDaFolha } from './modal-da-folha'

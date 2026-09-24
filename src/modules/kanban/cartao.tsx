@@ -1,6 +1,6 @@
 import type { PointerEvent as EventoDePonteiro } from 'react'
 import { ArrowRight, ChatCircleText, Paperclip, Warning } from '@phosphor-icons/react'
-import { Botao, Etiqueta, PilulaTecnica, Selo } from '@ds'
+import { Etiqueta, PilulaTecnica, Selo } from '@ds'
 import {
   NOME_DA_TECNICA,
   nomeDoPosto,
@@ -133,19 +133,34 @@ export function CartaoDaFatia({
             </span>
           ) : null}
 
+          {/* SÓ A SETA, E EM CLARO COM BORDA.
+
+              Ele era vermelho com a palavra Terminei, e num quadro de treze
+              colunas isso é uma parede de vermelho: a cor da marca é ação e
+              ATRASO no V7, e quando ela se repete em cada cartão ela para de
+              querer dizer qualquer coisa. O que precisa gritar num quadro é o
+              cartão empacado, não o botão que se aperta o dia inteiro.
+
+              A palavra saiu porque o destino já está no title e a seta já é a
+              gramática do quadro: o cartão anda para a direita. Quem duvida
+              passa o dedo e lê "Terminar aqui e mandar para Calandra".
+
+              É um botão nosso e não o Botao do DS porque nenhuma variante de
+              lá é quadrada: as do V7 têm recheio lateral para caber texto, e
+              aqui não há texto. O alvo continua com 44px no toque. */}
           {podeMover && proximo ? (
-            <Botao
-              tamanho="sm"
-              tom="primario"
+            <button
+              type="button"
+              className="kb-terminei"
+              aria-label={'Terminar aqui e mandar para ' + nomeDoPosto(proximo)}
               title={'Terminar aqui e mandar para ' + nomeDoPosto(proximo)}
               /* o clique não pode virar arrasto: sem isto, tocar o botão
                  começa a arrastar o cartão junto */
               onPointerDown={(e) => e.stopPropagation()}
               onClick={aoTerminar}
             >
-              Terminei
-              <ArrowRight size={14} weight="bold" />
-            </Botao>
+              <ArrowRight size={16} weight="bold" />
+            </button>
           ) : null}
         </footer>
       </div>

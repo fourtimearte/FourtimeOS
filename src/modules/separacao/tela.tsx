@@ -349,113 +349,118 @@ export function TelaSeparacao() {
           texto="Todo pedido aprovado já teve o material separado e seguiu para o PCP. Pedido novo aparece aqui no instante em que a cotação é aprovada."
         />
       ) : (
-        <div className="sp-mesa">
-          <section className="cartao sp-fila" aria-label="Fila de separação">
-            {fila.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={escolhido?.id === p.id ? 'sp-item escolhido' : 'sp-item'}
-                onClick={() => setEscolhido(p)}
-              >
-                <span className="sp-item-topo">
-                  <b className="sp-numero">{p.numero}</b>
-                  {p.estado === 'separacao' ? <Selo tom="info">em separação</Selo> : null}
-                </span>
-                <span className="sp-nome sp-cliente">{p.cliente || 'sem cliente'}</span>
-                <span className="sp-item-pe">
-                  <small className="sp-apoio">
-                    {p.pecas} pçs · entrega {dataCurta(p.entregaEm)}
-                  </small>
-                  <small className={p.tudoSeparado ? 'sp-pronto' : 'sp-apoio'}>
-                    {p.materiais ? `${p.separados} de ${p.materiais}` : 'sem material'}
-                  </small>
-                </span>
-              </button>
-            ))}
-          </section>
-
-          <section className="cartao sp-quadro">
-            {escolhido ? (
-              <>
-                <header className="sp-topo">
-                  <div className="pilha colada">
-                    <b>
-                      {escolhido.numero} · {escolhido.cliente || 'sem cliente'}
-                    </b>
+        /* O PALCO SÓ EXISTE PARA SER MEDIDO. Ele é o contêiner que a mesa
+           consulta: sem ele, a mesa perguntaria o tamanho da JANELA, e a
+           janela tem 248px de menu lateral que a mesa não pode usar. */
+        <div className="sp-palco">
+          <div className="sp-mesa">
+            <section className="cartao sp-fila" aria-label="Fila de separação">
+              {fila.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={escolhido?.id === p.id ? 'sp-item escolhido' : 'sp-item'}
+                  onClick={() => setEscolhido(p)}
+                >
+                  <span className="sp-item-topo">
+                    <b className="sp-numero">{p.numero}</b>
+                    {p.estado === 'separacao' ? <Selo tom="info">em separação</Selo> : null}
+                  </span>
+                  <span className="sp-nome sp-cliente">{p.cliente || 'sem cliente'}</span>
+                  <span className="sp-item-pe">
                     <small className="sp-apoio">
-                      {escolhido.pecas} peças · {escolhido.departamento || 'sem departamento'} ·
-                      entrega {dataCurta(escolhido.entregaEm)}
+                      {p.pecas} pçs · entrega {dataCurta(p.entregaEm)}
                     </small>
-                  </div>
-                  {/* CONCLUIR FICA TRANCADO ENQUANTO A LISTA NAO ABRIU.
+                    <small className={p.tudoSeparado ? 'sp-pronto' : 'sp-apoio'}>
+                      {p.materiais ? `${p.separados} de ${p.materiais}` : 'sem material'}
+                    </small>
+                  </span>
+                </button>
+              ))}
+            </section>
 
-                      Concluir manda o pedido para o PCP com a falta carimbada,
-                      e a falta e calculada no banco a partir do que foi
-                      baixado. Concluir sem ter visto o material e carimbar uma
-                      falta que ninguem conferiu, e o pedido segue para a
-                      frente com um numero inventado atras dele. */}
-                  <Botao
-                    tom="primario"
-                    onClick={() => void concluir()}
-                    carregando={ocupado === 'concluir'}
-                    disabled={!!ocupado || !!erroDoMaterial}
-                    title={
-                      erroDoMaterial
-                        ? 'A lista de material não abriu. Recarregue a página antes de concluir.'
-                        : undefined
-                    }
-                  >
-                    Concluir a separação
-                  </Botao>
-                </header>
+            <section className="cartao sp-quadro">
+              {escolhido ? (
+                <>
+                  <header className="sp-topo">
+                    <div className="pilha colada">
+                      <b>
+                        {escolhido.numero} · {escolhido.cliente || 'sem cliente'}
+                      </b>
+                      <small className="sp-apoio">
+                        {escolhido.pecas} peças · {escolhido.departamento || 'sem departamento'} ·
+                        entrega {dataCurta(escolhido.entregaEm)}
+                      </small>
+                    </div>
+                    {/* CONCLUIR FICA TRANCADO ENQUANTO A LISTA NAO ABRIU.
 
-                {abrindo ? (
-                  <div className="sp-espera">
-                    <Esqueleto altura={18} />
-                    <Esqueleto altura={18} />
-                    <Esqueleto altura={18} />
-                  </div>
-                ) : (
-                  <Tabela
-                    colunas={colunas}
-                    linhas={linhas}
-                    chaveDaLinha={(l) => l.id}
-                    marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
-                    vazio={
-                      erroDoMaterial ? (
-                        <Vazio
-                          titulo="Não consegui ler o material deste pedido"
-                          texto={
-                            erroDoMaterial +
-                            ' A fila ao lado diz quantos materiais este pedido tem; não conclua a separação enquanto esta lista não abrir.'
-                          }
-                        />
-                      ) : (
-                        <Vazio
-                          titulo="Nenhum material neste pedido"
-                          texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
-                        />
-                      )
-                    }
-                  />
-                )}
+                        Concluir manda o pedido para o PCP com a falta carimbada,
+                        e a falta e calculada no banco a partir do que foi
+                        baixado. Concluir sem ter visto o material e carimbar uma
+                        falta que ninguem conferiu, e o pedido segue para a
+                        frente com um numero inventado atras dele. */}
+                    <Botao
+                      tom="primario"
+                      onClick={() => void concluir()}
+                      carregando={ocupado === 'concluir'}
+                      disabled={!!ocupado || !!erroDoMaterial}
+                      title={
+                        erroDoMaterial
+                          ? 'A lista de material não abriu. Recarregue a página antes de concluir.'
+                          : undefined
+                      }
+                    >
+                      Concluir a separação
+                    </Botao>
+                  </header>
 
-                <footer className="sp-pe">
-                  <small className="sp-apoio">
-                    {erroDoMaterial
-                      ? 'a lista de material não abriu'
-                      : linhas.length
-                        ? `${separados} de ${linhas.length} materiais separados`
-                        : 'sem material para separar'}
-                    . Concluir move o pedido para o PCP, com falta ou sem.
-                  </small>
-                </footer>
-              </>
-            ) : (
-              <Vazio titulo="Escolha um pedido" texto="A fila está à esquerda." />
-            )}
-          </section>
+                  {abrindo ? (
+                    <div className="sp-espera">
+                      <Esqueleto altura={18} />
+                      <Esqueleto altura={18} />
+                      <Esqueleto altura={18} />
+                    </div>
+                  ) : (
+                    <Tabela
+                      colunas={colunas}
+                      linhas={linhas}
+                      chaveDaLinha={(l) => l.id}
+                      marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
+                      vazio={
+                        erroDoMaterial ? (
+                          <Vazio
+                            titulo="Não consegui ler o material deste pedido"
+                            texto={
+                              erroDoMaterial +
+                              ' A fila ao lado diz quantos materiais este pedido tem; não conclua a separação enquanto esta lista não abrir.'
+                            }
+                          />
+                        ) : (
+                          <Vazio
+                            titulo="Nenhum material neste pedido"
+                            texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
+                          />
+                        )
+                      }
+                    />
+                  )}
+
+                  <footer className="sp-pe">
+                    <small className="sp-apoio">
+                      {erroDoMaterial
+                        ? 'a lista de material não abriu'
+                        : linhas.length
+                          ? `${separados} de ${linhas.length} materiais separados`
+                          : 'sem material para separar'}
+                      . Concluir move o pedido para o PCP, com falta ou sem.
+                    </small>
+                  </footer>
+                </>
+              ) : (
+                <Vazio titulo="Escolha um pedido" texto="A fila está à esquerda." />
+              )}
+            </section>
+          </div>
         </div>
       )}
     </Pagina>

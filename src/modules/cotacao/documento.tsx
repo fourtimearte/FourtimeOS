@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, Esqueleto, LogoFourtime, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, empresaAConferir } from '@dominio/empresa'
@@ -83,12 +83,33 @@ const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') :
    ========================================================================== */
 export type DestinoDaFolha = 'cliente' | 'producao'
 
-export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha }) {
-  const { id = '' } = useParams()
-  const navegar = useNavigate()
-  const { cotacao: c, carregando, falha } = usarCotacao(id)
-  /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
-  const [comValor, setComValor] = useState(para !== 'producao')
+/* ==========================================================================
+   A FOLHA SEM A PAGINA EM VOLTA.
+
+   Ela nasceu em 24/09, quando o PCP passou a abrir a folha num modal em vez de
+   sair da tela. Antes disso a folha e a pagina eram a mesma peca, e ver a
+   folha custava perder a fila, o pedido escolhido e a rolagem: quem confere
+   quinze pedidos abria e voltava quinze vezes.
+
+   Aqui dentro mora tudo que a folha precisa para existir: a paginacao, a
+   medicao das duas alturas, a compressao e o desenho. O que fica de fora e o
+   que e da PAGINA: titulo, o segmentado de com valor e sem valor, e os botoes.
+   Quem monta a folha decide onde esses controles ficam, e no modal eles ficam
+   no rodape dele.
+
+   `aoContar` existe porque o numero de paginas so se sabe DEPOIS de paginar, e
+   quem escreve "3 paginas" no subtitulo esta do lado de fora. Devolver por
+   retorno obrigaria a paginar duas vezes.
+   ========================================================================== */
+export function FolhaDaCotacao({
+  cotacao: c,
+  comValor,
+  aoContar,
+}: {
+  cotacao: Cotacao
+  comValor: boolean
+  aoContar?: (paginas: number) => void
+}) {
 
   /* ==========================================================================
      A PAGINACAO: uma regra para os layouts, uma regua para os dados.
@@ -118,29 +139,23 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
      medicao pode cortar. Errar sobrando e um espaco em branco; errar
      faltando e uma clausula pela metade.
      ========================================================================== */
-  const chave =
-    (c?.id ?? '') + ':' + (c?.alteradaEm ?? '') + ':' + (c?.produtos.length ?? 0) + ':' + comValor
+  const chave = c.id + ':' + c.alteradaEm + ':' + c.produtos.length + ':' + comValor
 
   const blocosDeDados: BlocoDaFolha[] = useMemo(
-    () =>
-      c
-        ? [
-            { id: 'd-tabela', conteudo: <ResumoDoPedido cotacao={c} comValor={comValor} /> },
-            { id: 'd-condicoes', conteudo: <Condicoes cotacao={c} comValor={comValor} /> },
-            ...(comValor ? [{ id: 'd-aceite', conteudo: <Aceite cotacao={c} /> }] : []),
-          ]
-        : [],
+    () => [
+      { id: 'd-tabela', conteudo: <ResumoDoPedido cotacao={c} comValor={comValor} /> },
+      { id: 'd-condicoes', conteudo: <Condicoes cotacao={c} comValor={comValor} /> },
+      ...(comValor ? [{ id: 'd-aceite', conteudo: <Aceite cotacao={c} /> }] : []),
+    ],
     [c, comValor],
   )
 
   const blocosDeLayout: BlocoDaFolha[] = useMemo(
     () =>
-      c
-        ? c.produtos.map((p) => ({
-            id: p.bloco.id,
-            conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
-          }))
-        : [],
+      c.produtos.map((p) => ({
+        id: p.bloco.id,
+        conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
+      })),
     [c, comValor],
   )
 
@@ -160,6 +175,13 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
     ...dados.paginas.map((blocos, i) => ({ blocos, comCabecalho: i === 0 })),
     ...folhasDeLayout.map((blocos) => ({ blocos, comCabecalho: false })),
   ].filter((f) => f.blocos.length)
+
+  /* Quem escreve "3 paginas" esta do lado de fora, e o numero so existe
+     depois de paginar. Efeito e nao retorno: contar durante o desenho faria o
+     pai redesenhar no meio do desenho do filho. */
+  useEffect(() => {
+    aoContar?.(folhas.length)
+  }, [folhas.length, aoContar])
 
   const palco = useRef<HTMLDivElement>(null)
 
@@ -200,69 +222,8 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
     }
   })
 
-  if (carregando) {
-    return (
-      <Pagina acima="Comercial" titulo="Abrindo a folha...">
-        <Esqueleto altura={420} />
-      </Pagina>
-    )
-  }
-
-  if (!c) {
-    return (
-      <Pagina acima="Comercial" titulo={falha ? 'Não consegui abrir' : 'Cotação não encontrada'}>
-        <Vazio
-          titulo={falha ? 'Não consegui abrir esta cotação' : 'Esta cotação não existe mais'}
-          texto={falha || 'Volte para a lista e escolha outra.'}
-          acao={
-            <Botao tom="primario" onClick={() => navegar('/cotacao')}>
-              Voltar para a lista
-            </Botao>
-          }
-        />
-      </Pagina>
-    )
-  }
-
   return (
-    <Pagina
-      acima={
-        <button type="button" className="ct-volta" onClick={() => navegar('/cotacao/' + c.id)}>
-          Voltar ao editor
-        </button>
-      }
-      titulo={
-        (para === 'producao' ? 'Folha da produção ' : 'Folha do cliente ') + c.numero
-      }
-      sub={
-        (para === 'producao'
-          ? 'O que vai para o chão de fábrica, do jeito que sai na impressora. '
-          : 'O que o cliente recebe, do jeito que sai na impressora. ') +
-        folhas.length +
-        (folhas.length === 1 ? ' página.' : ' páginas.')
-      }
-      acoes={
-        <>
-          {/* O DESTINO JA DECIDIU, E ESTE BOTAO E SO PARA A IMPRESSAO. Ele nao
-              muda para onde a folha vai nem o que foi enviado: muda o papel
-              que sai agora da impressora. */}
-          <Segmentado
-            valor={comValor ? 'com' : 'sem'}
-            opcoes={[
-              { valor: 'com', rotulo: 'Com valor' },
-              { valor: 'sem', rotulo: 'Sem valor' },
-            ]}
-            aoMudar={(v) => setComValor(v === 'com')}
-          />
-          <Botao tom="contorno" onClick={() => navegar('/cotacao/' + c.id)}>
-            Editar
-          </Botao>
-          <Botao tom="primario" onClick={imprimir}>
-            Imprimir ou salvar em PDF
-          </Botao>
-        </>
-      }
-    >
+    <>
       {empresaAConferir() ? (
         <div className="fl-nao-imprime" style={{ marginBottom: 'var(--sp-5)' }}>
           <Aviso tom="warn" titulo="O rodapé ainda está com dados de molde">
@@ -307,6 +268,84 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
           ))}
         </Palco>
       </div>
+    </>
+  )
+}
+
+/* ==========================================================================
+   A folha como PAGINA: a rota /cotacao/:id/folha e a /producao.
+   ========================================================================== */
+export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha }) {
+  const { id = '' } = useParams()
+  const navegar = useNavigate()
+  const { cotacao: c, carregando, falha } = usarCotacao(id)
+  /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
+  const [comValor, setComValor] = useState(para !== 'producao')
+  const [paginas, setPaginas] = useState(0)
+  const contar = useCallback((n: number) => setPaginas(n), [])
+
+  if (carregando) {
+    return (
+      <Pagina acima="Comercial" titulo="Abrindo a folha...">
+        <Esqueleto altura={420} />
+      </Pagina>
+    )
+  }
+
+  if (!c) {
+    return (
+      <Pagina acima="Comercial" titulo={falha ? 'Não consegui abrir' : 'Cotação não encontrada'}>
+        <Vazio
+          titulo={falha ? 'Não consegui abrir esta cotação' : 'Esta cotação não existe mais'}
+          texto={falha || 'Ela pode ter sido apagada por outra pessoa.'}
+          acao={
+            <Botao tom="primario" onClick={() => navegar('/cotacao')}>
+              Voltar para a lista
+            </Botao>
+          }
+        />
+      </Pagina>
+    )
+  }
+
+  return (
+    <Pagina
+      acima={
+        <button type="button" className="ct-volta" onClick={() => navegar('/cotacao/' + c.id)}>
+          Voltar ao editor
+        </button>
+      }
+      titulo={(para === 'producao' ? 'Folha da produção ' : 'Folha do cliente ') + c.numero}
+      sub={
+        (para === 'producao'
+          ? 'O que vai para o chão de fábrica, do jeito que sai na impressora. '
+          : 'O que o cliente recebe, do jeito que sai na impressora. ') +
+        paginas +
+        (paginas === 1 ? ' página.' : ' páginas.')
+      }
+      acoes={
+        <>
+          {/* O DESTINO JA DECIDIU, E ESTE BOTAO E SO PARA A IMPRESSAO. Ele nao
+              muda para onde a folha vai nem o que foi enviado: muda o papel
+              que sai agora da impressora. */}
+          <Segmentado
+            valor={comValor ? 'com' : 'sem'}
+            opcoes={[
+              { valor: 'com', rotulo: 'Com valor' },
+              { valor: 'sem', rotulo: 'Sem valor' },
+            ]}
+            aoMudar={(v) => setComValor(v === 'com')}
+          />
+          <Botao tom="contorno" onClick={() => navegar('/cotacao/' + c.id)}>
+            Editar
+          </Botao>
+          <Botao tom="primario" onClick={imprimir}>
+            Imprimir ou salvar em PDF
+          </Botao>
+        </>
+      }
+    >
+      <FolhaDaCotacao cotacao={c} comValor={comValor} aoContar={contar} />
     </Pagina>
   )
 }

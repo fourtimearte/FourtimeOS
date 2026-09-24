@@ -190,7 +190,14 @@ export function leadEmBranco(): Lead {
   return {
     id: '',
     clienteId: '',
-    nomeLivre: 'Novo lead',
+    /* O NOME NASCE VAZIO, e não com o texto "Novo lead" dentro dele.
+
+       Campo que já vem preenchido com um rótulo é campo que a pessoa salva
+       sem ler: o funil acabaria com três leads chamados "Novo lead" na
+       primeira semana. O banco continua tendo essa palavra como último
+       recurso (em `paraLinha`), porque a tabela recusa nome vazio, mas isso é
+       rede de segurança e não valor inicial. */
+    nomeLivre: '',
     contato: '',
     telefone: '',
     estagio: 'novo',

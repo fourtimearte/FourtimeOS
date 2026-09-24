@@ -94,12 +94,15 @@ for (const tema of ['light', 'dark']) {
       const req = r.request(); const u = req.url(); const m = req.method()
       let corpo = []
       if (u.includes('meu_perfil')) corpo = PERFIL
+      /* A RPC VEM ANTES. A url dela e rpc/lead_vira_cliente, e um teste que
+         casasse por '/lead' engoliria a chamada da funcao junto com a gravacao
+         da tabela: foi o que aconteceu na primeira rodada. */
+      else if (u.includes('rpc/lead_vira_cliente')) { chamouVirar = true; corpo = { id:'C7' } }
       else if (u.includes('/equipe?')) corpo = DONOS
       else if (u.includes('/lead') && (m === 'POST' || m === 'PATCH')) {
         try { gravou = JSON.parse(req.postData() || 'null') } catch { gravou = 'corpo ilegivel' }
         corpo = [{ id:'L9' }]
       }
-      else if (u.includes('rpc/lead_vira_cliente')) { chamouVirar = true; corpo = { id:'C7' } }
       else if (u.includes('/lead?')) corpo = LEADS
       else if (u.includes('/mensagem?')) corpo = [
         { id:'m1', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?',
@@ -257,8 +260,15 @@ for (const tema of ['light', 'dark']) {
         modais: document.querySelectorAll('dialog[open]').length,
       }
     })
-    conta(conf.aviso && conf.formAindaVisivel && conf.modais === 1,
-      `${tema} ${nome}: a confirmação de apagar entra dentro do mesmo modal`)
+    /* TRES MEDIDAS, e nao uma com tres condicoes. Medida que junta condicoes
+       reprova sem dizer qual delas quebrou, e foi exatamente o que aconteceu na
+       primeira rodada: gastei uma bancada de depuracao para descobrir que as
+       outras duas estavam certas. */
+    conta(conf.aviso, `${tema} ${nome}: a confirmação de apagar aparece`)
+    conta(conf.formAindaVisivel,
+      `${tema} ${nome}: o formulário continua à vista enquanto se confirma`)
+    conta(conf.modais === 1,
+      `${tema} ${nome}: não abre um segundo modal por cima (${conf.modais} aberto)`)
 
     await pg.screenshot({ path: `${PASTA}/funil-editar-${tema}-${nome}.png`, fullPage:false })
     await pg.keyboard.press('Escape')

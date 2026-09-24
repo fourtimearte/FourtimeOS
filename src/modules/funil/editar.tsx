@@ -54,12 +54,22 @@ export function EditarLead({
   const [gravando, setGravando] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
 
-  /* O rascunho nasce de novo a cada abertura. Guardar o que a pessoa digitou e
-     mostrar no próximo lead é o jeito clássico de gravar o telefone de um no
-     cadastro do outro. */
+  /* TUDO NASCE DE NOVO A CADA ABERTURA, e `gravando` junto.
+
+     O rascunho é o motivo óbvio: guardar o que a pessoa digitou e mostrar no
+     próximo lead é o jeito clássico de gravar o telefone de um no cadastro do
+     outro.
+
+     `gravando` é o motivo que só o teste achou. Ele é ligado antes de gravar e
+     só volta a false quando a gravação FALHA: no sucesso quem fecha o modal é
+     o pai, e o estado fica ligado aqui dentro. Criar um lead e abrir outro em
+     seguida mostrava "Gravando..." para sempre, com Salvar e Apagar mortos, e
+     a única saída era recarregar a página. A foto do teste mostrou o botão
+     preso; a medida sozinha só dizia que a confirmação não aparecia. */
   useEffect(() => {
     setRascunho(lead)
     setConfirmando(false)
+    setGravando(false)
   }, [lead])
 
   useEffect(() => {

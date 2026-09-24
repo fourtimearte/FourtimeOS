@@ -58,6 +58,7 @@ export {
   comentarNoCartao,
   conferirASaida,
   cotacaoDoPedido,
+  pedidosDoCliente,
   pegarOCartao,
   pontosDeAtencao,
   porATag,

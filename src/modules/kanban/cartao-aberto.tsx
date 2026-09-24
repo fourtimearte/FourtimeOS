@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowRight, Hand, PaperPlaneRight, Plus, X } from '@phosphor-icons/react'
+import { ArrowRight, ArrowsLeftRight, Hand, PaperPlaneRight, Plus, X } from '@phosphor-icons/react'
 import {
   Botao,
   Busca,
@@ -19,6 +19,7 @@ import {
   type Bloco,
 } from '@dominio/layout'
 import { acharCotacao, type Cotacao } from '@dominio/cotacao'
+import { ModalDaFolha } from '@modules/cotacao'
 import {
   NOME_DA_TECNICA,
   buscarPedidosParaComparar,
@@ -26,6 +27,7 @@ import {
   comentarNoCartao,
   cotacaoDoPedido,
   nomeDoPosto,
+  pedidosDoCliente,
   paradoHa,
   pegarOCartao,
   porATag,
@@ -152,6 +154,37 @@ export function CartaoAberto({
       clearTimeout(t)
     }
   }, [termo, fatia.pedidoId])
+
+  /* ---------- OS ULTIMOS PEDIDOS DO MESMO CLIENTE ----------
+
+     A pergunta que quem confere faz antes de qualquer outra: como foi o do ano
+     passado? A cor bateu, a gola era essa, a grade era essa. Hoje essa resposta
+     mora na cabeca de quem esta ha mais tempo na casa, e some junto com a
+     pessoa.
+
+     Ela carrega uma vez, quando o cartao abre, e nao a cada digitacao como a
+     busca do comparar: a lista nao depende do que se digita, ela depende de
+     quem e o cliente. */
+  const [doCliente, setDoCliente] = useState<PedidoParaComparar[]>([])
+  const [lendoDoCliente, setLendoDoCliente] = useState(false)
+  /* o pedido antigo aberto numa folha propria, por cima desta */
+  const [emFolha, setEmFolha] = useState<PedidoParaComparar | null>(null)
+
+  useEffect(() => {
+    if (!fatia.clienteId) {
+      setDoCliente([])
+      return
+    }
+    let vivo = true
+    setLendoDoCliente(true)
+    pedidosDoCliente(fatia.clienteId, fatia.pedidoId)
+      .then((l) => vivo && setDoCliente(l))
+      .catch(() => vivo && setDoCliente([]))
+      .finally(() => vivo && setLendoDoCliente(false))
+    return () => {
+      vivo = false
+    }
+  }, [fatia.clienteId, fatia.pedidoId])
 
   async function comparar(p: PedidoParaComparar) {
     setComparado(p)
@@ -545,9 +578,80 @@ export function CartaoAberto({
               </div>
             ) : null}
           </div>
+
+          {/* ---------- OS ULTIMOS PEDIDOS DO CLIENTE ----------
+
+              Abaixo da conversa, e nao acima: a conversa e sobre ESTE cartao,
+              agora, e e ela que a pessoa veio ler. O historico do cliente e a
+              segunda pergunta, e ela so aparece depois da primeira.
+
+              DOIS BOTOES POR LINHA, e eles fazem coisas diferentes de
+              proposito. COMPARAR poe os layouts do antigo ao lado dos deste,
+              na mesma tela, que e o que se quer quando a duvida e "a cor era
+              essa?". ABRIR traz a folha inteira do antigo por cima, que e o
+              que se quer quando a duvida e sobre prazo, pagamento ou o que
+              estava escrito nas observacoes. */}
+          <div className="ca-historico">
+            <span className="ca-rot">Últimos pedidos do cliente</span>
+            {lendoDoCliente ? (
+              <p className="ca-nada">procurando...</p>
+            ) : !fatia.clienteId ? (
+              <p className="ca-nada">
+                este pedido não está ligado a um cliente cadastrado, então não dá para achar os
+                anteriores dele
+              </p>
+            ) : !doCliente.length ? (
+              <p className="ca-nada">é o primeiro pedido deste cliente no sistema</p>
+            ) : (
+              <ul className="ca-antigos">
+                {/* SEM ESTADO DE "ESCOLHIDO" nesta lista, e o TypeScript foi
+                    quem mostrou por quê: esta coluna inteira sai de cena
+                    enquanto se compara, então um item aceso aqui nunca
+                    chegaria a ser visto. Para trocar de comparação, fecha-se a
+                    comparação pelo cabeçalho e escolhe-se de novo. */}
+                {doCliente.map((p) => (
+                  <li key={p.id} className="ca-antigo">
+                    <span className="ca-antigo-quem">
+                      <b>{p.numero}</b>
+                      <small>
+                        {p.nome || p.cliente}
+                        {p.entregaEm ? ' · ' + p.entregaEm.split('-').reverse().join('/') : ''}
+                      </small>
+                    </span>
+                    <span className="ca-antigo-botoes">
+                      <button
+                        type="button"
+                        title={'Pôr os layouts do ' + p.numero + ' ao lado destes'}
+                        aria-label={'Comparar com ' + p.numero}
+                        onClick={() => void comparar(p)}
+                      >
+                        <ArrowsLeftRight size={15} weight="bold" />
+                      </button>
+                      <button
+                        type="button"
+                        title={'Abrir a folha do ' + p.numero + ' por cima'}
+                        aria-label={'Abrir ' + p.numero}
+                        onClick={() => setEmFolha(p)}
+                      >
+                        <Plus size={15} weight="bold" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
         )}
       </div>
+
+      {emFolha ? (
+        <ModalDaFolha
+          cotacaoId={emFolha.cotacaoId}
+          numeroDoPedido={emFolha.numero}
+          aoFechar={() => setEmFolha(null)}
+        />
+      ) : null}
     </Modal>
   )
 }

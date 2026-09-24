@@ -283,26 +283,14 @@ export function TelaKanban() {
           consulta. Sem ele a conta seria da janela, que tem 248px de menu
           lateral que o quadro não pode usar. */}
       <div className="kb-palco">
-      {/* UM TERÇO DE NÚMEROS, DOIS TERÇOS DE ENTREGAS.
+      {/* UMA FILEIRA SÓ: O TRILHO PRIMEIRO, OS NÚMEROS DEPOIS.
 
-          Os quatro números respondem como a fábrica está, e essa é uma pergunta
-          que se faz uma vez por dia. O trilho responde o que sai primeiro, e
-          essa é a pergunta que se faz o dia inteiro. Dois terços para a
-          segunda é a proporção entre as duas perguntas, e não uma escolha de
-          gosto. */}
+          O trilho vem à esquerda porque é ele que começa a leitura: a pergunta
+          da manhã é o que sai primeiro, e os quatro números respondem como a
+          fábrica está, que é pergunta de conferência. Em português se lê da
+          esquerda para a direita, então o que se pergunta primeiro fica à
+          esquerda. */}
       <div className="kb-cima">
-        <div className="kb-kpis">
-          <Kpi rotulo="No chão de fábrica" valor={conta.cartoes} sub="fora do finalizado" />
-          <Kpi rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os cartões" />
-          <Kpi
-            rotulo="Parados há 3 dias ou mais"
-            valor={conta.parados}
-            sub={conta.parados ? 'é o que segura a entrega' : 'nada empacado'}
-            aviso={conta.parados > 0}
-          />
-          <Kpi rotulo="Finalizados" valor={conta.prontos} sub="chegaram ao fim da rota" />
-        </div>
-
         <section className="kb-entregas" aria-label="Entregas">
           <header className="kb-entregas-topo">
             <span className="kb-rot">Sai primeiro</span>
@@ -316,6 +304,18 @@ export function TelaKanban() {
           </header>
           <Trilho pedidos={trilho} aceso={aceso} aoEscolher={escolherNoTrilho} />
         </section>
+
+        <div className="kb-kpis">
+          <Kpi rotulo="No chão de fábrica" valor={conta.cartoes} sub="fora do finalizado" />
+          <Kpi rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os cartões" />
+          <Kpi
+            rotulo="Parados há 3 dias ou mais"
+            valor={conta.parados}
+            sub={conta.parados ? 'é o que segura a entrega' : 'nada empacado'}
+            aviso={conta.parados > 0}
+          />
+          <Kpi rotulo="Finalizados" valor={conta.prontos} sub="chegaram ao fim da rota" />
+        </div>
       </div>
       </div>
 

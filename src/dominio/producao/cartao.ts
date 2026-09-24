@@ -284,6 +284,61 @@ export type PedidoParaComparar = {
   entregaEm: string
 }
 
+/* ==========================================================================
+   OS ULTIMOS PEDIDOS DO MESMO CLIENTE.
+
+   Quem confere um uniforme pergunta, antes de qualquer coisa: como foi o do
+   ano passado? A cor bateu, a gola era essa, a grade era essa. Hoje essa
+   resposta mora na cabeca de quem esta ha mais tempo na casa, e some junto com
+   a pessoa.
+
+   POR ID, E NAO POR NOME. Casar pedido com pedido pelo texto do cliente e o
+   que a migracao 025 mandou nao fazer: "Escola Girassol" e "ESCOLA GIRASSOL
+   LTDA" sao a mesma escola e dois textos. O id entrou nas views na 040.
+
+   TODOS OS ESTADOS, e de proposito. O pedido que interessa comparar e quase
+   sempre o que ja foi entregue, e uma lista presa ao que esta em producao
+   mostraria justamente o que a pessoa nao precisa.
+
+   A ORDEM E A DO NUMERO, decrescente: o numero do pedido cresce com o tempo e
+   nunca e nulo, enquanto a data de entrega pode faltar. Ordenar pela data
+   jogaria o pedido sem data para uma ponta qualquer da lista.
+   ========================================================================== */
+export async function pedidosDoCliente(
+  clienteId: string,
+  foraId: string,
+  quantos = 12,
+): Promise<PedidoParaComparar[]> {
+  if (!clienteId) return []
+  const linhas = await tabela<
+    {
+      id: string
+      numero: string
+      nome: string | null
+      cliente: string | null
+      estado: string
+      cotacao_id: string | null
+      entrega_em: string | null
+    }[]
+  >(
+    'pedido_na_fabrica?select=id,numero,nome,cliente,estado,cotacao_id,entrega_em' +
+      `&cliente_id=eq.${encodeURIComponent(clienteId)}` +
+      `&order=numero.desc&limit=${quantos + 1}`,
+  )
+  return linhas
+    .filter((l) => l.id !== foraId)
+    .slice(0, quantos)
+    .map((l) => ({
+      id: l.id,
+      numero: l.numero,
+      nome: l.nome ?? '',
+      cliente: l.cliente ?? '',
+      estado: l.estado,
+      cotacaoId: l.cotacao_id ?? '',
+      entregaEm: l.entrega_em ?? '',
+    }))
+}
+
 export async function buscarPedidosParaComparar(
   termo: string,
   foraId: string,

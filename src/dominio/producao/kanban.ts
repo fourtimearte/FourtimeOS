@@ -26,6 +26,9 @@ export type FatiaNoQuadro = {
      nome do cliente, entao aqui ele nunca vem em branco por engano */
   nome: string
   cliente: string
+  /* o ID do cliente, para achar os pedidos anteriores dele sem casar por
+     texto. Entrou nas views na migracao 040. */
+  clienteId: string
   vendedor: string
   tecnica: Tecnica
   etapa: Etapa
@@ -61,6 +64,7 @@ type LinhaDaFatia = {
   numero: string
   nome: string
   cliente: string
+  cliente_id: string | null
   vendedor: string
   tecnica: Tecnica
   etapa: Etapa
@@ -87,6 +91,7 @@ function deLinhaDaFatia(l: LinhaDaFatia): FatiaNoQuadro {
     numero: l.numero,
     nome: l.nome || l.cliente || '',
     cliente: l.cliente || '',
+    clienteId: l.cliente_id ?? '',
     vendedor: l.vendedor || '',
     tecnica: l.tecnica,
     etapa: l.etapa,

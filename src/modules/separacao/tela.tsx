@@ -63,6 +63,17 @@ export function TelaSeparacao() {
   const [abrindo, setAbrindo] = useState(false)
   const [ocupado, setOcupado] = useState('')
   const [erro, setErro] = useState('')
+  /* A LEITURA QUE FALHOU FICA GUARDADA, e nao vira lista vazia.
+
+     Ate 24/09 o catch aqui embaixo so soltava um recado, que some sozinho em
+     alguns segundos, e deixava `linhas` vazia. O que ficava na tela depois
+     disso era "Nenhum material neste pedido", uma frase plausivel e falsa: o
+     cartao da fila ao lado dizia "0 de 1" ao mesmo tempo. Foi assim que a
+     view quebrada da 027 passou despercebida por dias.
+
+     Tela que nao distingue "nao ha nada" de "nao consegui ler" mente sempre
+     que a segunda acontece, e mente com confianca. */
+  const [erroDoMaterial, setErroDoMaterial] = useState('')
 
   /* O que a pessoa digitou, por linha. Ele nasce com o reservado e é ele que
      vai para o razão: o campo é a balança, e não um espelho da conta. */
@@ -99,6 +110,7 @@ export function TelaSeparacao() {
       return
     }
     setAbrindo(true)
+    setErroDoMaterial('')
     try {
       const r = await carregarReservasDoPedido(p.id)
       setLinhas(r)
@@ -110,7 +122,10 @@ export function TelaSeparacao() {
       })
       setPesado(inicial)
     } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui ler o material do pedido.', 'brand')
+      const recado = e instanceof Error ? e.message : 'Não consegui ler o material do pedido.'
+      setLinhas([])
+      setErroDoMaterial(recado)
+      avisar(recado, 'brand')
     } finally {
       setAbrindo(false)
     }
@@ -373,11 +388,23 @@ export function TelaSeparacao() {
                       entrega {dataCurta(escolhido.entregaEm)}
                     </small>
                   </div>
+                  {/* CONCLUIR FICA TRANCADO ENQUANTO A LISTA NAO ABRIU.
+
+                      Concluir manda o pedido para o PCP com a falta carimbada,
+                      e a falta e calculada no banco a partir do que foi
+                      baixado. Concluir sem ter visto o material e carimbar uma
+                      falta que ninguem conferiu, e o pedido segue para a
+                      frente com um numero inventado atras dele. */}
                   <Botao
                     tom="primario"
                     onClick={() => void concluir()}
                     carregando={ocupado === 'concluir'}
-                    disabled={!!ocupado}
+                    disabled={!!ocupado || !!erroDoMaterial}
+                    title={
+                      erroDoMaterial
+                        ? 'A lista de material não abriu. Recarregue a página antes de concluir.'
+                        : undefined
+                    }
                   >
                     Concluir a separação
                   </Botao>
@@ -396,19 +423,31 @@ export function TelaSeparacao() {
                     chaveDaLinha={(l) => l.id}
                     marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
                     vazio={
-                      <Vazio
-                        titulo="Nenhum material neste pedido"
-                        texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
-                      />
+                      erroDoMaterial ? (
+                        <Vazio
+                          titulo="Não consegui ler o material deste pedido"
+                          texto={
+                            erroDoMaterial +
+                            ' A fila ao lado diz quantos materiais este pedido tem; não conclua a separação enquanto esta lista não abrir.'
+                          }
+                        />
+                      ) : (
+                        <Vazio
+                          titulo="Nenhum material neste pedido"
+                          texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
+                        />
+                      )
                     }
                   />
                 )}
 
                 <footer className="sp-pe">
                   <small className="sp-apoio">
-                    {linhas.length
-                      ? `${separados} de ${linhas.length} materiais separados`
-                      : 'sem material para separar'}
+                    {erroDoMaterial
+                      ? 'a lista de material não abriu'
+                      : linhas.length
+                        ? `${separados} de ${linhas.length} materiais separados`
+                        : 'sem material para separar'}
                     . Concluir move o pedido para o PCP, com falta ou sem.
                   </small>
                 </footer>

@@ -3,13 +3,6 @@
    Nenhuma classe daqui é do Design System.
    ========================================================================== */
 
-.kb-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-}
-
 /* O QUADRO ROLA DENTRO DELE, e a página nunca de lado. Treze postos não cabem
    em tela nenhuma, e empurrar a página inteira faria o menu sair junto. */
 .kb-quadro {
@@ -322,5 +315,206 @@
   .kb-terminei {
     width: 44px;
     height: 44px;
+  }
+}
+
+/* ==========================================================================
+   O TOPO: um terco de numeros, dois tercos de entregas.
+
+   A conta e da MESA e nao da janela: o menu lateral come 248px que o quadro
+   nao pode usar, e regra escrita contra a janela e regra que nao liga no
+   monitor de 1080. Ver claude/REGRA-A-LARGURA-E-DA-MESA-E-NAO-DA-JANELA.md.
+   ========================================================================== */
+.kb-palco {
+  container-type: inline-size;
+  container-name: mesa;
+}
+
+.kb-cima {
+  margin-bottom: var(--sp-5);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+/* 900px e a conta: um terco disso da 300, que e o minimo em que dois KPIs
+   lado a lado ainda cabem sem o numero encostar no rotulo. Abaixo disso os
+   dois blocos empilham, e o trilho continua rolando de lado. */
+@container mesa (min-width: 900px) {
+  .kb-cima {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+}
+
+/* Em um terco os quatro KPIs viram 2 por 2. Quatro numa fileira de 300px
+   dariam 75px por numero, e 1.173 nao cabe em 75px. */
+.kb-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--sp-3);
+}
+@container mesa (min-width: 900px) {
+  .kb-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- o trilho de entregas ------------------------------------------------ */
+.kb-entregas {
+  min-width: 0;
+}
+.kb-entregas-topo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-miudo);
+  flex-wrap: wrap;
+  margin-bottom: var(--re-5);
+}
+.kb-rot {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kb-entregas-dica {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.kb-limpar {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.kb-limpar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* A fileira rola DENTRO DELA, e nao com a pagina: o quadro la embaixo ja rola
+   de lado por conta dele, e duas rolagens horizontais que andam juntas seriam
+   uma so bagunca. */
+.kb-trilho {
+  display: flex;
+  gap: var(--re-6);
+  overflow-x: auto;
+  padding-bottom: var(--re-4);
+  scroll-snap-type: x proximate;
+}
+.kb-trilho-vazio {
+  padding: var(--pad-cartao);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-lg);
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+
+.kb-tr {
+  flex: 0 0 216px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-miudo);
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--re-8);
+  cursor: pointer;
+  min-width: 0;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+.kb-tr:hover {
+  border-color: var(--border-2);
+}
+.kb-tr:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* O ESCOLHIDO E PRETO, e nao vermelho: no V7 preto e selecao e vermelho e
+   acao ou atraso. O vermelho deste trilho ja tem dono, que e a data vencida. */
+.kb-tr.aceso {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.kb-tr.apagado {
+  opacity: 0.4;
+}
+
+.kb-tr-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+  min-width: 0;
+}
+.kb-tr-topo > b {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kb-tr-prazo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.kb-tr-prazo.aperta {
+  color: var(--warn);
+}
+.kb-tr-prazo.atrasado {
+  color: var(--brand-text);
+}
+
+.kb-tr-nome {
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kb-tr-marcas {
+  display: flex;
+  gap: var(--re-2);
+  flex-wrap: wrap;
+}
+.kb-tr-pe {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap-miudo);
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- o destaque no quadro -----------------------------------------------
+   APAGAR E OPACIDADE, e nao cinza. Cinza repintaria o cartao e apagaria junto
+   a cor da tecnica e a da tag, que sao o que a pessoa usa para reconhecer o
+   cartao de longe: o cartao apagado ainda precisa ser reconhecivel, ele so
+   nao pode disputar atencao com o aceso. */
+.kb-cartao.apagado {
+  opacity: 0.28;
+}
+.kb-cartao.aceso {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb-tr,
+  .kb-cartao {
+    transition: none;
   }
 }

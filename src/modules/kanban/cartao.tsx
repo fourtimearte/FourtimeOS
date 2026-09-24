@@ -37,6 +37,8 @@ export function CartaoDaFatia({
   tags,
   podeMover,
   arrastando,
+  aceso,
+  apagado,
   aoPegar,
   aoAbrir,
   aoTerminar,
@@ -46,6 +48,10 @@ export function CartaoDaFatia({
   tags: Map<string, Tag>
   podeMover: boolean
   arrastando: boolean
+  /* o pedido deste cartão é o que está escolhido no trilho */
+  aceso?: boolean
+  /* há um pedido escolhido no trilho, e não é o deste cartão */
+  apagado?: boolean
   aoPegar: (e: EventoDePonteiro) => void
   aoAbrir: () => void
   aoTerminar: () => void
@@ -53,7 +59,13 @@ export function CartaoDaFatia({
   const dias = paradoHa(fatia.etapaEm)
   const proximo = vizinhoNaRota(rotas, fatia.tecnica, fatia.etapa, 1)
   const empacado = dias >= 3 && fatia.etapa !== 'finalizado'
-  const classes = ['kb-cartao', arrastando ? 'saindo' : '', empacado ? 'empacado' : '']
+  const classes = [
+    'kb-cartao',
+    arrastando ? 'saindo' : '',
+    empacado ? 'empacado' : '',
+    aceso ? 'aceso' : '',
+    apagado ? 'apagado' : '',
+  ]
     .filter(Boolean)
     .join(' ')
 

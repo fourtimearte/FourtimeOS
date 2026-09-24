@@ -32,16 +32,20 @@ export {
   carregarAsRotas,
   carregarOQuadro,
   corDoPosto,
+  diasParaAEntrega,
   estaNaRota,
   faltamPostos,
   moverAFatia,
   nomeDoPosto,
   paradoHa,
+  pedidosDoQuadro,
   quemSeguraOPedido,
   rotaDe,
   vizinhoNaRota,
 } from './kanban'
-export type { FatiaNoQuadro, Rota } from './kanban'
+export type { FatiaNoQuadro, PedidoNoTrilho, Rota } from './kanban'
+
+export { BlocoDaFatia } from './degraus'
 
 export {
   TONS_DE_TAG,

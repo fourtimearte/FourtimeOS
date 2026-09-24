@@ -11,14 +11,18 @@ import {
   moverAFatia,
   nomeDoPosto,
   paradoHa,
+  pedidosDoQuadro,
   vizinhoNaRota,
   type Etapa,
   type FatiaNoQuadro,
+  type PedidoNoTrilho,
   type Rota,
   type Tag,
 } from '@dominio/producao'
 import { pode, useSessao } from '@dominio/sessao'
 import { CartaoDaFatia } from './cartao'
+import { PedidoAberto } from './pedido-aberto'
+import { Trilho } from './trilho'
 import { CartaoAberto } from './cartao-aberto'
 import { ConfirmarSaida } from './confirmar-saida'
 import './kanban.css'
@@ -66,6 +70,16 @@ export function TelaKanban() {
      cópia guardada aqui ficaria velha na primeira mexida. */
   const [aberto, setAberto] = useState('')
   const [confirmando, setConfirmando] = useState('')
+  /* O PEDIDO ACESO. Guardado por id, como o cartão aberto, e pelo mesmo
+     motivo: a lista se relê e uma cópia guardada aqui ficaria velha.
+
+     O DESTAQUE SOBREVIVE AO MODAL, de propósito. Fechar a folha e continuar
+     vendo onde as peças daquele pedido estão espalhadas pelo quadro é
+     justamente para o que o destaque serve; some-lo junto com o modal
+     obrigaria a abrir o pedido de novo para olhar o quadro. Clicar no mesmo
+     cartão do trilho, ou apertar Esc com o modal já fechado, limpa. */
+  const [aceso, setAceso] = useState('')
+  const [pedidoAberto, setPedidoAberto] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [arrasto, setArrasto] = useState<Arrasto | null>(null)
@@ -107,7 +121,19 @@ export function TelaKanban() {
     return m
   }, [fatias])
 
+  /* O TRILHO SAI DAS FATIAS QUE O QUADRO JÁ TEM, e não de consulta própria:
+     os dois têm que concordar sempre. Vindo de consultas diferentes bastaria
+     meio segundo entre as duas para o trilho apontar para um pedido sem
+     cartão nenhum. */
+  const trilho = useMemo(() => pedidosDoQuadro(fatias), [fatias])
+
   const porChave = useMemo(() => new Map(tags.map((t) => [t.chave, t])), [tags])
+  const oPedidoAberto = trilho.find((p) => p.id === pedidoAberto) ?? null
+  const asFatiasDoPedido = useMemo(
+    () => (pedidoAberto ? fatias.filter((f) => f.pedidoId === pedidoAberto) : []),
+    [fatias, pedidoAberto],
+  )
+
   const aFatiaAberta = fatias.find((f) => f.id === aberto) ?? null
   const aFatiaConfirmando = fatias.find((f) => f.id === confirmando) ?? null
 
@@ -120,6 +146,38 @@ export function TelaKanban() {
     }),
     [fatias],
   )
+
+  function limparODestaque() {
+    setAceso('')
+    setPedidoAberto('')
+  }
+
+  /* UM CLIQUE FAZ AS DUAS COISAS: acende o quadro e abre o pedido. Foi o que o
+     Henrique pediu, e é o certo: acender sem abrir deixaria a pessoa olhando
+     cartões acesos sem saber o que eles são, e abrir sem acender perderia o
+     motivo de o pedido estar espalhado. Clicar no mesmo cartão limpa. */
+  function escolherNoTrilho(p: PedidoNoTrilho) {
+    if (aceso === p.id && !pedidoAberto) {
+      limparODestaque()
+      return
+    }
+    setAceso(p.id)
+    setPedidoAberto(p.id)
+  }
+
+  /* ESC LIMPA O DESTAQUE, e só quando não há modal na frente: o <dialog> já
+     usa Esc para fechar a si mesmo, e as duas coisas no mesmo toque fariam o
+     quadro apagar junto com a folha sem ninguém ter pedido. */
+  useEffect(() => {
+    if (!aceso) return
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (document.querySelector('dialog[open]')) return
+      limparODestaque()
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
 
   async function mover(f: FatiaNoQuadro, para: Etapa) {
     if (para === f.etapa) return
@@ -221,16 +279,44 @@ export function TelaKanban() {
         </>
       }
     >
-      <div className="kb-kpis">
-        <Kpi rotulo="No chão de fábrica" valor={conta.cartoes} sub="fora do finalizado" />
-        <Kpi rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os cartões" />
-        <Kpi
-          rotulo="Parados há 3 dias ou mais"
-          valor={conta.parados}
-          sub={conta.parados ? 'é o que segura a entrega' : 'nada empacado'}
-          aviso={conta.parados > 0}
-        />
-        <Kpi rotulo="Finalizados" valor={conta.prontos} sub="chegaram ao fim da rota" />
+      {/* O palco só existe para ser medido: ele é o contêiner que o topo
+          consulta. Sem ele a conta seria da janela, que tem 248px de menu
+          lateral que o quadro não pode usar. */}
+      <div className="kb-palco">
+      {/* UM TERÇO DE NÚMEROS, DOIS TERÇOS DE ENTREGAS.
+
+          Os quatro números respondem como a fábrica está, e essa é uma pergunta
+          que se faz uma vez por dia. O trilho responde o que sai primeiro, e
+          essa é a pergunta que se faz o dia inteiro. Dois terços para a
+          segunda é a proporção entre as duas perguntas, e não uma escolha de
+          gosto. */}
+      <div className="kb-cima">
+        <div className="kb-kpis">
+          <Kpi rotulo="No chão de fábrica" valor={conta.cartoes} sub="fora do finalizado" />
+          <Kpi rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os cartões" />
+          <Kpi
+            rotulo="Parados há 3 dias ou mais"
+            valor={conta.parados}
+            sub={conta.parados ? 'é o que segura a entrega' : 'nada empacado'}
+            aviso={conta.parados > 0}
+          />
+          <Kpi rotulo="Finalizados" valor={conta.prontos} sub="chegaram ao fim da rota" />
+        </div>
+
+        <section className="kb-entregas" aria-label="Entregas">
+          <header className="kb-entregas-topo">
+            <span className="kb-rot">Sai primeiro</span>
+            {aceso ? (
+              <button type="button" className="kb-limpar" onClick={limparODestaque}>
+                Tirar o destaque
+              </button>
+            ) : (
+              <span className="kb-entregas-dica">clique num pedido para acendê-lo no quadro</span>
+            )}
+          </header>
+          <Trilho pedidos={trilho} aceso={aceso} aoEscolher={escolherNoTrilho} />
+        </section>
+      </div>
       </div>
 
       {erro ? (
@@ -282,6 +368,13 @@ export function TelaKanban() {
                       tags={porChave}
                       podeMover={podeMover}
                       arrastando={arrasto?.fatia.id === f.id && arrasto.valendo}
+                      /* DUAS PALAVRAS PARA DUAS COISAS. `aceso` é este cartão
+                         pertence ao pedido escolhido; `apagado` é o contrário.
+                         Sem pedido escolhido nenhum dos dois vale, e o quadro
+                         fica como sempre foi: apagar tudo por padrão seria um
+                         quadro que nasce meio morto. */
+                      aceso={!!aceso && f.pedidoId === aceso}
+                      apagado={!!aceso && f.pedidoId !== aceso}
                       aoPegar={(e) => comecar(e, f)}
                       aoAbrir={() => setAberto(f.id)}
                       aoTerminar={() => setConfirmando(f.id)}
@@ -299,6 +392,17 @@ export function TelaKanban() {
           e por isso ele vive aqui dentro e não numa rota própria. Rota própria
           faria o Voltar do navegador sair do quadro e perder a rolagem de
           treze colunas que a pessoa acabou de fazer. */}
+      {oPedidoAberto ? (
+        <PedidoAberto
+          pedido={oPedidoAberto}
+          fatias={asFatiasDoPedido}
+          rotas={rotas}
+          /* FECHAR O MODAL NÃO APAGA O QUADRO. O destaque é o que sobra, e é
+             ele que responde onde as peças estão espalhadas. */
+          aoFechar={() => setPedidoAberto('')}
+        />
+      ) : null}
+
       {aFatiaAberta ? (
         <CartaoAberto
           fatia={aFatiaAberta}

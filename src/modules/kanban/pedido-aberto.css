@@ -1,0 +1,54 @@
+/* ==========================================================================
+   O pedido inteiro, aberto do trilho.
+
+   Nada aqui escreve regra com classe do Design System: os nomes começam com
+   pa-, e o que é do V7 entra por componente. A regra está em
+   claude/REGRA-CLASSE-DO-DESIGN-SYSTEM.md.
+   ========================================================================== */
+
+.pa-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gap-miudo);
+  margin: 0 0 var(--sp-4);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.pa-sub > b {
+  font-weight: 700;
+  color: var(--text);
+}
+.pa-sub > i {
+  font-style: normal;
+  color: var(--text-3);
+}
+.pa-sem-valor {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* --- onde cada parte está -------------------------------------------------
+   Em fileira quando cabem duas, empilhado quando não. As rotas têm alturas
+   diferentes (oito postos numa, sete noutra), então `align-items: start`
+   impede que a mais curta estique para acompanhar a mais longa. */
+.pa-onde {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--sp-3);
+  align-items: start;
+  margin-bottom: var(--sp-5);
+}
+
+.pa-titulo {
+  margin: 0 0 var(--sp-3);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pa-layouts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}

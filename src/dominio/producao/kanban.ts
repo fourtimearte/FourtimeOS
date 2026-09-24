@@ -243,3 +243,80 @@ export function quemSeguraOPedido(rotas: Rota[], fatias: FatiaNoQuadro[]): strin
   }
   return melhor.id
 }
+
+/* ==========================================================================
+   O TRILHO DE ENTREGAS: os PEDIDOS que estão no quadro, por data.
+
+   Ele nasce das fatias que o quadro já carregou, e não de uma consulta nova.
+   Isso é decisão e não economia: o trilho e o quadro têm que concordar sempre.
+   Vindo de consultas diferentes, bastaria meio segundo entre as duas para o
+   trilho mostrar um pedido que não tem cartão nenhum, ou esconder um que tem,
+   e o destaque apontaria para o vazio.
+
+   O pedido finalizado por inteiro sai do trilho. Ele continua no quadro, na
+   última coluna, porque lá ele é peça pronta esperando despacho; no trilho ele
+   seria uma data de entrega que já não pergunta nada.
+   ========================================================================== */
+export type PedidoNoTrilho = {
+  id: string
+  numero: string
+  nome: string
+  cliente: string
+  entregaEm: string
+  pecas: number
+  fatias: number
+  teste: boolean
+  marcas: string[]
+}
+
+export function pedidosDoQuadro(fatias: FatiaNoQuadro[]): PedidoNoTrilho[] {
+  const m = new Map<string, PedidoNoTrilho>()
+  for (const f of fatias) {
+    const p = m.get(f.pedidoId)
+    if (p) {
+      p.pecas += f.pecas
+      p.fatias += 1
+      /* as marcas são do PEDIDO e vêm repetidas em cada fatia dele */
+      for (const x of f.marcas) if (!p.marcas.includes(x)) p.marcas.push(x)
+    } else {
+      m.set(f.pedidoId, {
+        id: f.pedidoId,
+        numero: f.numero,
+        nome: f.nome,
+        cliente: f.cliente,
+        entregaEm: f.entregaEm,
+        pecas: f.pecas,
+        fatias: 1,
+        teste: f.teste,
+        marcas: [...f.marcas],
+      })
+    }
+  }
+
+  const correndo = new Set(fatias.filter((f) => f.etapa !== 'finalizado').map((f) => f.pedidoId))
+
+  /* SEM DATA VAI PARA O FIM, e não para o começo. Data vazia ordenada como
+     texto vazio sobe ao topo e empurra para baixo justamente o que tem prazo,
+     que é o que o trilho existe para mostrar. */
+  return [...m.values()]
+    .filter((p) => correndo.has(p.id))
+    .sort((a, b) => {
+      if (!a.entregaEm && !b.entregaEm) return a.numero.localeCompare(b.numero)
+      if (!a.entregaEm) return 1
+      if (!b.entregaEm) return -1
+      return a.entregaEm.localeCompare(b.entregaEm) || a.numero.localeCompare(b.numero)
+    })
+}
+
+/* QUANTOS DIAS FALTAM PARA A ENTREGA. Negativo é atraso.
+
+   A conta é em DIA de calendário, e não em horas: "entrega amanhã" tem que
+   continuar dizendo 1 às oito da manhã e às seis da tarde. Contar por hora
+   faria o mesmo pedido dizer 1 de manhã e 0 à tarde. */
+export function diasParaAEntrega(iso: string, hoje = new Date()): number | null {
+  if (!iso) return null
+  const d = new Date(iso + 'T00:00:00')
+  if (Number.isNaN(d.getTime())) return null
+  const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+  return Math.round((d.getTime() - base.getTime()) / 86400000)
+}

@@ -265,3 +265,61 @@ export async function cotacaoDoPedido(pedidoId: string): Promise<string> {
   )
   return linhas[0]?.cotacao_id ?? ''
 }
+
+/* --- achar outro pedido para comparar -------------------------------------
+   A BUSCA NÃO É TRAVADA PELO CARTÃO ABERTO, e isso é o ponto: quem está com um
+   pedido na frente e quer conferir contra o do ano passado não pode ter que
+   fechar o que está olhando para procurar o outro.
+
+   Ela varre TODOS os estados, inclusive entregue e cancelado. Comparar com um
+   pedido que ainda está na fábrica é o caso raro; o caso comum é o pedido
+   antigo do mesmo cliente, e ele já saiu faz meses. */
+export type PedidoParaComparar = {
+  id: string
+  numero: string
+  nome: string
+  cliente: string
+  estado: string
+  cotacaoId: string
+  entregaEm: string
+}
+
+export async function buscarPedidosParaComparar(
+  termo: string,
+  foraId: string,
+): Promise<PedidoParaComparar[]> {
+  const t = termo.trim()
+  if (t.length < 2) return []
+  /* O ponto e a vírgula quebram o or= do PostgREST, e o % é o curinga dele:
+     deixar os três passarem é deixar quem digita "PD-01, 02" receber um erro
+     de sintaxe em vez de nenhum resultado. */
+  const limpo = t.replace(/[,.*()%]/g, ' ').trim()
+  if (!limpo) return []
+  const busca = encodeURIComponent(`*${limpo}*`)
+  const linhas = await tabela<
+    {
+      id: string
+      numero: string
+      nome: string | null
+      cliente: string | null
+      estado: string
+      cotacao_id: string | null
+      entrega_em: string | null
+    }[]
+  >(
+    'pedido_na_fabrica?select=id,numero,nome,cliente,estado,cotacao_id,entrega_em' +
+      `&or=(numero.ilike.${busca},cliente.ilike.${busca},nome.ilike.${busca})` +
+      '&order=numero.desc&limit=8',
+  )
+  return linhas
+    .filter((l) => l.id !== foraId)
+    .map((l) => ({
+      id: l.id,
+      numero: l.numero,
+      nome: l.nome || l.cliente || '',
+      cliente: l.cliente || '',
+      estado: l.estado,
+      cotacaoId: l.cotacao_id ?? '',
+      entregaEm: l.entrega_em ?? '',
+    }))
+}

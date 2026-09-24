@@ -88,6 +88,22 @@ const COTACAO = [{
   },
 }]
 
+/* O pedido antigo da comparação: mesmo cliente, um layout só, e um código de
+   cor diferente. Ele existe para o teste ver os DOIS lados desenhados. */
+const ANTIGA = [{
+  id:'c9', numero:'CO2026-0044', versao_do_formato:4, estado:'aprovada',
+  criada_em:ha(200), atualizado_em:ha(190),
+  corpo: {
+    numero:'CO2026-0044', versaoDoFormato:4, estado:'aprovada', vendedor:'Dani',
+    cliente:{ id:'C1', nome:'Drogaria Viver Bem', documento:'', contato:'', telefone:'', email:'', cidade:'Goiânia', uf:'GO' },
+    produtos:[
+      { bloco: BLOCO(1,'FT-010-000M','CAMISETA MASC TRAD','masculino','adulto',{P:3,M:9,G:11,GG:5}), precoPorTamanho:{}, precoBase:55 },
+    ],
+    ajustes:[], informe:{}, informes:[], enviadas:[],
+    producao:{ pedido:'', dataDeEnvio:'', departamento:'', embalagem:'', marcas:[], observacao:'' },
+  },
+}]
+
 const nav = await chromium.launch()
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
@@ -115,8 +131,12 @@ for (const tema of ['light', 'dark']) {
       else if (u.includes('tag_do_posto')) corpo = TAGS_POSTO
       else if (u.includes('/tag?')) corpo = TAGS
       else if (u.includes('rota_da_tecnica')) corpo = ROTAS
+      else if (u.includes('pedido_na_fabrica')) corpo = [
+        { id:'p9', numero:'PD-TESTE-0084', nome:'Uniforme Equipe Inverno',
+          cliente:'Drogaria Viver Bem', estado:'entregue', cotacao_id:'c9', entrega_em:null },
+      ]
       else if (u.includes('/pedido?')) corpo = [{ cotacao_id:'c1' }]
-      else if (u.includes('/cotacao?')) corpo = COTACAO
+      else if (u.includes('/cotacao?')) corpo = u.includes('c9') ? ANTIGA : COTACAO
       return r.fulfill({ status:200, contentType:'application/json',
         headers:{'access-control-allow-origin':'*'}, body: JSON.stringify(corpo) })
     })
@@ -223,6 +243,56 @@ for (const tema of ['light', 'dark']) {
     conta(conf.tirar, `${tema} ${nome}: tem o botão de tirar a tag e terminar`)
 
     await pg.screenshot({ path: `${PASTA}/confirmar-${tema}-${nome}.png`, fullPage:false })
+
+    /* ---- comparar com outro pedido ---- */
+    await pg.evaluate(() => {
+      const ds = [...document.querySelectorAll('dialog[open]')]
+      const d = ds[ds.length - 1]
+      const b = [...d.querySelectorAll('.sobre-pe button')].find(x => x.textContent.includes('Voltar'))
+      if (b) b.click()
+    })
+    await pg.waitForTimeout(600)
+    await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const i = d.querySelector('.ca-caixa-busca input')
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(i, 'PD-TESTE-0084')
+      i.dispatchEvent(new Event('input', { bubbles:true }))
+    })
+    await pg.waitForTimeout(1200)
+    const achou = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const li = [...d.querySelectorAll('.ca-achados button')]
+      if (!li.length) return { achou:0 }
+      li[0].click()
+      return { achou: li.length }
+    })
+    conta(achou.achou > 0, `${tema} ${nome}: a busca do comparar acha o pedido antigo`)
+    await pg.waitForTimeout(1500)
+
+    const comp = await pg.evaluate(() => {
+      const d = document.querySelector('dialog[open]')
+      const esq = d.querySelector('.ca-esq')?.getBoundingClientRect()
+      const outro = d.querySelector('.ca-outro')?.getBoundingClientRect()
+      return {
+        temOutro: !!outro,
+        acaoSumiu: !d.querySelector('.ca-acao'),
+        conversaSumiu: !d.querySelector('.ca-conversa'),
+        layoutsDele: d.querySelector('.ca-outro')?.querySelectorAll('.mod').length ?? 0,
+        iguais: !!esq && !!outro && Math.abs(esq.width - outro.width) <= 2,
+        empilhado: !!esq && !!outro && Math.abs(esq.top - outro.top) > 40,
+        rolaDeLado: d.scrollWidth > d.clientWidth + 1,
+      }
+    })
+    conta(comp.temOutro && comp.layoutsDele === 1,
+      `${tema} ${nome}: o pedido comparado entra com os layouts dele`)
+    conta(comp.acaoSumiu && comp.conversaSumiu,
+      `${tema} ${nome}: a ação e a conversa saem de cena enquanto se compara`)
+    conta(comp.iguais || comp.empilhado,
+      `${tema} ${nome}: as duas metades são iguais, ou empilham (${comp.iguais ? 'iguais' : 'pilha'})`)
+    conta(!comp.rolaDeLado, `${tema} ${nome}: comparando, não rola de lado`)
+
+    await pg.screenshot({ path: `${PASTA}/comparar-${tema}-${nome}.png`, fullPage:false })
     await ctx.close()
   }
 }

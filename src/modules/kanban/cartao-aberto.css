@@ -74,6 +74,132 @@
   gap: var(--sp-3);
 }
 
+/* --- a busca do comparar, no cabeçalho ----------------------------------
+   Ela fica AQUI e não dentro do corpo, e é isso que faz ela não ser travada
+   pelo modal: quem está com um pedido na frente e quer conferir contra o do
+   ano passado não pode ter que fechar o que está olhando para procurar o
+   outro. */
+.ca-comparar {
+  display: flex;
+  align-items: center;
+}
+.ca-caixa-busca {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+}
+.ca-achados {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + var(--re-2));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--re-2);
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ca-achados button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  padding: var(--re-4) var(--re-5);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ca-achados button:hover {
+  background: var(--surface-2);
+}
+.ca-achados .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.ca-achados .e {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ca-sem-achado {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + var(--re-2));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--pad-linha);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* --- comparando: as duas colunas viram os layouts dos dois pedidos -------
+   METADES EXATAS, com grid e minmax(0, 1fr). Com flex-grow o navegador mede o
+   conteúdo de cada lado antes de repartir a sobra, e a largura passaria a
+   depender do nome do cliente.
+
+   A ação, a rota e a conversa saem de cena enquanto se compara, e não ficam
+   espremidas: comparar é uma coisa só, e deixar o Terminei aceso ao lado de um
+   pedido entregue em julho é um convite a terminar o pedido errado. */
+.ca-corpo.comparando {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.ca-outro {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  border-left: 1px solid var(--border);
+  padding-left: var(--sp-5);
+}
+.ca-outro-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
+.ca-outro-topo > div {
+  min-width: 0;
+}
+.ca-outro-nome {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.ca-outro-nome b {
+  font-size: 17px;
+  font-weight: 700;
+}
+.ca-outro-topo span {
+  display: block;
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* --- a linha de tags e anexos ------------------------------------------- */
 .ca-faixa {
   display: flex;
@@ -407,10 +533,22 @@
    As duas colunas viram uma pilha, e a AÇÃO VAI PARA CIMA. Numa pilha, o que
    muda o estado da fábrica não pode ficar depois de oito layouts. */
 @media (max-width: 1100px) {
-  .ca-corpo {
+  .ca-corpo,
+  .ca-corpo.comparando {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     overflow-y: auto;
+  }
+  /* empilhado, o outro pedido perde a linha da esquerda e ganha a de cima:
+     numa pilha a borda lateral não separa nada */
+  .ca-outro {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: var(--sp-4);
+  }
+  .ca-caixa-busca {
+    width: 100%;
   }
   .ca-dir {
     order: -1;

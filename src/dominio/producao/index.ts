@@ -44,6 +44,7 @@ export {
   TONS_DE_TAG,
   TOM_DA_MARCA,
   apagarTag,
+  buscarPedidosParaComparar,
   carregarALinhaDoTempo,
   carregarAsTags,
   chaveDaTag,
@@ -62,6 +63,7 @@ export {
 } from './cartao'
 export type {
   Conferencia,
+  PedidoParaComparar,
   EventoDoCartao,
   ItemDaConferencia,
   Tag,

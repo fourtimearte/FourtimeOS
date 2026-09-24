@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowRight, Hand, PaperPlaneRight, Plus } from '@phosphor-icons/react'
-import { Botao, Entrada, Esqueleto, Etiqueta, Modal, PilulaTecnica, Selo, Vazio, avisar } from '@ds'
+import { ArrowRight, Hand, PaperPlaneRight, Plus, X } from '@phosphor-icons/react'
+import {
+  Botao,
+  Busca,
+  Entrada,
+  Esqueleto,
+  Etiqueta,
+  Modal,
+  PilulaTecnica,
+  Selo,
+  Vazio,
+  avisar,
+} from '@ds'
 import {
   CaixaDeImagem,
   GradeDeTamanhos,
@@ -10,6 +21,7 @@ import {
 import { acharCotacao, type Cotacao } from '@dominio/cotacao'
 import {
   NOME_DA_TECNICA,
+  buscarPedidosParaComparar,
   carregarALinhaDoTempo,
   comentarNoCartao,
   cotacaoDoPedido,
@@ -24,6 +36,7 @@ import {
   tomDaMarca,
   type EventoDoCartao,
   type FatiaNoQuadro,
+  type PedidoParaComparar,
   type Rota,
   type Tag,
 } from '@dominio/producao'
@@ -75,6 +88,18 @@ export function CartaoAberto({
   const [enviando, setEnviando] = useState(false)
   const [escolhendo, setEscolhendo] = useState(false)
 
+  /* A COMPARAÇÃO. Ela guarda o pedido escolhido e os blocos dele, e enquanto
+     estiver de pé o cartão troca de forma: as duas colunas passam a ser os
+     layouts dos DOIS pedidos, e a ação, a rota e a conversa saem de cena.
+
+     Elas saem porque comparar é uma coisa só. Deixar o Terminei aceso ao lado
+     de um pedido entregue em julho é um convite a terminar o pedido errado. */
+  const [comparado, setComparado] = useState<PedidoParaComparar | null>(null)
+  const [blocosDele, setBlocosDele] = useState<Bloco[]>([])
+  const [lendoDele, setLendoDele] = useState(false)
+  const [termo, setTermo] = useState('')
+  const [achados, setAchados] = useState<PedidoParaComparar[]>([])
+
   const naMinhaMao = !!fatia.pegoPor && fatia.pegoPor === euId
   const rota = rotaDe(rotas, fatia.tecnica)
   const ondeEstou = rota.indexOf(fatia.etapa)
@@ -106,6 +131,49 @@ export function CartaoAberto({
       vivo = false
     }
   }, [fatia.pedidoId, lerALinha])
+
+  /* A BUSCA ESPERA A PESSOA PARAR DE DIGITAR. Sem os 300 ms, cada letra vira
+     uma viagem ao banco, e a resposta da letra anterior chega depois e pisa na
+     lista certa: quem digita rápido vê o resultado de PD-01 enquanto já
+     escreveu PD-013. */
+  useEffect(() => {
+    if (termo.trim().length < 2) {
+      setAchados([])
+      return
+    }
+    let vivo = true
+    const t = setTimeout(() => {
+      buscarPedidosParaComparar(termo, fatia.pedidoId)
+        .then((r) => vivo && setAchados(r))
+        .catch(() => vivo && setAchados([]))
+    }, 300)
+    return () => {
+      vivo = false
+      clearTimeout(t)
+    }
+  }, [termo, fatia.pedidoId])
+
+  async function comparar(p: PedidoParaComparar) {
+    setComparado(p)
+    setAchados([])
+    setTermo('')
+    setBlocosDele([])
+    if (!p.cotacaoId) return
+    setLendoDele(true)
+    try {
+      const c = await acharCotacao(p.cotacaoId)
+      /* AQUI VÊM TODOS OS LAYOUTS, e não só os de uma técnica. O pedido
+         comparado não tem fatia aberta nenhuma: ele não está no chão de
+         fábrica, e escolher uma técnica dele seria inventar um recorte que
+         não existe. */
+      setBlocosDele((c?.produtos ?? []).map((x) => x.bloco))
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui ler o outro pedido.', 'brand')
+      setComparado(null)
+    } finally {
+      setLendoDele(false)
+    }
+  }
 
   /* OS LAYOUTS DESTA FATIA, e não os do pedido inteiro. A fatia guarda os
      números dos blocos que passam por esta técnica; os outros estão no cartão
@@ -178,10 +246,47 @@ export function CartaoAberto({
             </span>
             <span className="ca-sem-valor">esta tela não mostra valor</span>
           </div>
+
+          {/* A BUSCA MORA NO CABEÇALHO DO CARTÃO, e é isso que faz ela não
+              ficar travada pelo modal: quem está com um pedido na frente e
+              quer conferir contra o do ano passado não pode ter que fechar o
+              que está olhando para procurar o outro. */}
+          <div className="ca-comparar">
+            {comparado ? (
+              <Botao tamanho="sm" tom="contorno" onClick={() => setComparado(null)}>
+                <X size={14} weight="bold" />
+                Fechar a comparação
+              </Botao>
+            ) : (
+              <div className="ca-caixa-busca">
+                <Busca
+                  value={termo}
+                  onChange={(e) => setTermo(e.target.value)}
+                  placeholder="Comparar com outro pedido"
+                  aria-label="Buscar outro pedido para comparar"
+                />
+                {achados.length ? (
+                  <ul className="ca-achados">
+                    {achados.map((p) => (
+                      <li key={p.id}>
+                        <button type="button" onClick={() => void comparar(p)}>
+                          <b>{p.numero}</b>
+                          <span className="n">{p.nome}</span>
+                          <span className="e">{p.estado}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : termo.trim().length >= 2 ? (
+                  <p className="ca-sem-achado">nenhum pedido com esse texto</p>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
       }
     >
-      <div className="ca-corpo">
+      <div className={comparado ? 'ca-corpo comparando' : 'ca-corpo'}>
         {/* ---------------- esquerda: o pedido ---------------- */}
         <div className="ca-esq">
           <div className="ca-faixa">
@@ -284,7 +389,55 @@ export function CartaoAberto({
           </div>
         </div>
 
+        {/* ---------------- direita, comparando: o outro pedido ----------- */}
+        {comparado ? (
+          <div className="ca-outro">
+            <div className="ca-outro-topo">
+              <div>
+                <div className="ca-outro-nome">
+                  <b>{comparado.numero}</b>
+                  <Selo>{comparado.estado}</Selo>
+                </div>
+                <span>
+                  {comparado.nome}
+                  {comparado.cliente && comparado.cliente !== comparado.nome
+                    ? ', ' + comparado.cliente
+                    : ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="ca-layouts">
+              {lendoDele ? (
+                <>
+                  <Esqueleto altura={200} />
+                  <Esqueleto altura={200} />
+                </>
+              ) : !blocosDele.length ? (
+                <Vazio
+                  titulo="Este pedido não tem layout"
+                  texto="A cotação dele não guardou bloco nenhum."
+                />
+              ) : (
+                blocosDele.map((b) => (
+                  <section className="ca-layout" key={b.id}>
+                    <ModuloDeLayout
+                      bloco={b}
+                      aoMudar={() => {}}
+                      leitura
+                      semValor
+                      arte={<CaixaDeImagem leitura imagem={b.imagem} arte={b.arte} />}
+                      tabela={<GradeDeTamanhos leitura faixa={b.faixa} grade={b.grade} />}
+                    />
+                  </section>
+                ))
+              )}
+            </div>
+          </div>
+        ) : null}
+
         {/* ---------------- direita: o que muda a fábrica ---------------- */}
+        {comparado ? null : (
         <div className="ca-dir">
           <div className="ca-acao">
             <div className="ca-mao">
@@ -393,6 +546,7 @@ export function CartaoAberto({
             ) : null}
           </div>
         </div>
+        )}
       </div>
     </Modal>
   )

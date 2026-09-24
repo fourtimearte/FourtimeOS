@@ -612,3 +612,38 @@
 .fn-card.aberto {
   box-shadow: var(--tinta-sombra);
 }
+
+/* --- a janela de 24 horas, no topo da conversa ---------------------------
+   Faixa e nao pilula: ela e uma condicao da conversa inteira, e nao um
+   atributo de um pedaco dela. Texto e cor de significado, sem fundo grande:
+   estado no V7 e tarja, ponto ou texto, nunca area pintada. */
+.fn-janela {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: var(--re-5) var(--re-8);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.fn-janela > svg {
+  flex: none;
+  color: var(--text-3);
+}
+.fn-janela b {
+  font-weight: 700;
+  color: var(--text-2);
+}
+.fn-janela span {
+  min-width: 0;
+}
+.fn-janela.aperta > svg,
+.fn-janela.aperta b {
+  color: var(--warn);
+}
+.fn-janela.fechada > svg,
+.fn-janela.fechada b {
+  color: var(--brand-text);
+}

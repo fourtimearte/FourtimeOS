@@ -8,8 +8,10 @@ import {
   carregarConversa,
   carregarLeads,
   emMil,
+  leadViraCliente,
   marcarLido,
   moverLead,
+  nomeDoLead,
   registrarMensagem,
   salvarLead,
   semResposta,
@@ -176,6 +178,28 @@ export function TelaFunil() {
     navegar('/cotacao/' + salva.id)
   }
 
+  /* O LEAD VIRA CLIENTE, e depois a tela de clientes abre naquele cliente.
+
+     A funcao do banco e de 11/09 e ficou parada duas semanas atras de um botao
+     que avisava "entra junto com o Supabase". Ela ja fazia tudo: achava o
+     cliente que ja existe pela chave do nome em vez de criar o segundo, passava
+     a carteira ao vendedor do lead e ligava os dois.
+
+     `?abrir=` em vez de rota nova: o destino nao e uma tela de cliente, e a
+     LISTA com aquele cliente aberto. Uma rota /clientes/:id prometeria uma
+     pagina propria que nao existe, e quem fechasse a ficha cairia numa tela em
+     branco em vez de voltar para a lista. */
+  async function virarCliente(l: Lead) {
+    try {
+      const id = await leadViraCliente(l.id)
+      await recarregar()
+      avisar(nomeDoLead(l) + ' agora tem cadastro de cliente', 'ok')
+      navegar('/clientes?abrir=' + encodeURIComponent(id))
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui criar o cliente', 'warn')
+    }
+  }
+
   /* o que foi mandado pelo WhatsApp entra na conversa, senao o funil mente
      sobre quem falou por ultimo */
   async function registrar(l: Lead, texto: string) {
@@ -240,7 +264,8 @@ export function TelaFunil() {
         conversa={conversa}
         carregandoConversa={carregandoConversa}
         aoFechar={() => setAbertoId('')}
-        aoAbrirCliente={() => navegar('/clientes')}
+        aoAbrirCliente={(id) => navegar('/clientes?abrir=' + encodeURIComponent(id))}
+        aoVirarCliente={(l) => void virarCliente(l)}
         aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
         aoMontarCotacao={(l) => void montarCotacao(l)}
         aoRegistrar={(l, texto) => void registrar(l, texto)}

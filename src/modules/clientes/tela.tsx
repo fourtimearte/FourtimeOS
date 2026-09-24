@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Buildings, MapPin, Trash, Truck, User } from '@phosphor-icons/react'
+import { useSearchParams } from 'react-router-dom'
 import { Botao, Busca, Esqueleto, Gaveta, Kpi, Pagina, Seletor, Vazio, avisar } from '@ds'
 import { formatarCep, semAcento } from '@shared'
 import { FichaDoCliente } from './ficha'
@@ -115,6 +116,32 @@ export function TelaClientes() {
 
   const [naFicha, setNaFicha] = useState<Cliente | null>(null)
   const [naEntrega, setNaEntrega] = useState<Cliente | null>(null)
+
+  /* ---------- ABRIR NUM CLIENTE, vindo de outra tela --------------------
+
+     O funil manda para cá com `?abrir=<id>` depois de o lead virar cliente:
+     quem acabou de criar o cadastro quer ver o cadastro, e não a lista inteira
+     com ele em algum lugar dentro.
+
+     É um parâmetro e não uma rota própria porque o destino é a LISTA com uma
+     ficha aberta. Uma rota /clientes/:id prometeria uma página que não existe,
+     e quem fechasse a ficha cairia numa tela em branco.
+
+     UMA VEZ SÓ, e o parâmetro sai da barra logo depois. Sem isso, fechar a
+     ficha e o React redesenhar a tela reabriria a mesma ficha, e a pessoa
+     ficaria presa num modal que não fecha. */
+  const [parametros, setParametros] = useSearchParams()
+  const jaAbriu = useRef(false)
+  const pedido = parametros.get('abrir') ?? ''
+
+  useEffect(() => {
+    if (!pedido || jaAbriu.current || !todos.length) return
+    const achado = todos.find((c) => c.id === pedido)
+    jaAbriu.current = true
+    setParametros({}, { replace: true })
+    if (achado) setNaFicha(achado)
+    else avisar('Não achei esse cliente na lista.', 'warn')
+  }, [pedido, todos, setParametros])
 
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState('')

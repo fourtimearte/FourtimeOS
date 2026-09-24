@@ -136,6 +136,47 @@ export function semResposta(l: Lead, agora = Date.now()): boolean {
   )
 }
 
+/* ==========================================================================
+   A JANELA DE 24 HORAS DO WHATSAPP.
+
+   Ela abre quando O CLIENTE fala e dura 24 horas. Dentro dela dá para escrever
+   o que quiser; fora dela, pela API oficial, só um modelo aprovado pela Meta.
+
+   O CÁLCULO NÃO SAI DE `ultimaMsgEm`, e isso é o principal. Aquela coluna é a
+   última mensagem de qualquer um, inclusive nossa, e contar dali reabriria a
+   janela toda vez que o vendedor respondesse. Responder não estende nada. Por
+   isso a janela tem coluna própria no banco, escrita por gatilho, e aqui só se
+   lê o que ele escreveu.
+
+   A JANELA AINDA NÃO TRANCA NADA, e o texto na tela diz isso. Hoje a mensagem
+   sai pelo `wa.me`, quer dizer, pelo WhatsApp da própria pessoa, onde a regra
+   das 24 horas não existe: ela é uma restrição da API oficial. Uma tela que
+   bloqueasse o envio hoje estaria inventando uma trava que a Meta não aplica
+   neste caminho, e ensinando a equipe a desconfiar do aviso justamente antes
+   do dia em que ele passa a valer.
+   ========================================================================== */
+
+export type JanelaDaConversa =
+  | { estado: 'sem'; minutos: 0 }
+  | { estado: 'aberta'; minutos: number }
+  | { estado: 'fechada'; minutos: number }
+
+export function janelaDaConversa(l: Lead, agora = Date.now()): JanelaDaConversa {
+  /* SEM JANELA NÃO É JANELA FECHADA. Lead que nunca recebeu fala de cliente
+     nunca teve janela: dizer "fechada" faria parecer que ela existiu e
+     passou. */
+  if (!l.janelaAte) return { estado: 'sem', minutos: 0 }
+  const t = new Date(l.janelaAte).getTime()
+  if (!Number.isFinite(t)) return { estado: 'sem', minutos: 0 }
+  const min = Math.round((t - agora) / 60000)
+  return min > 0 ? { estado: 'aberta', minutos: min } : { estado: 'fechada', minutos: -min }
+}
+
+/** Menos de duas horas para fechar: é o que ainda dá para resolver hoje. */
+export function janelaApertada(j: JanelaDaConversa): boolean {
+  return j.estado === 'aberta' && j.minutos <= 120
+}
+
 export function nomeDoLead(l: Lead): string {
   return l.nomeLivre
 }

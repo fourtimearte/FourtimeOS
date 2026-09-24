@@ -6,6 +6,7 @@ export {
   apagarLead,
   carregarConversa,
   carregarLeads,
+  leadViraCliente,
   marcarLido,
   moverLead,
   porEstagio,

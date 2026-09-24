@@ -1,5 +1,5 @@
 import { vinculo } from '@shared'
-import { tabela } from '@shared/supabase'
+import { chamar, tabela } from '@shared/supabase'
 import { ESTAGIOS, type Estagio, type Lead, type Mensagem } from './tipos'
 
 /* ==========================================================================
@@ -131,6 +131,28 @@ export async function marcarLido(id: string): Promise<void> {
     metodo: 'PATCH',
     corpo: { nao_lidas: 0 },
   })
+}
+
+/* O LEAD VIRA CLIENTE, e quem faz isso e o banco.
+
+   A funcao `lead_vira_cliente` existe desde a migracao 011 e ficou parada:
+   ela acha o cliente que ja existe pela chave do nome em vez de criar o
+   segundo (foi a falta dessa trava que virou 225 clientes em 900), passa a
+   carteira ao vendedor do lead quando o cliente ainda nao tinha dono, e liga o
+   lead ao cliente. Tres coisas numa transacao so.
+
+   Ela devolve a LINHA do cliente. Aqui so o id volta, de proposito: quem sabe
+   montar um Cliente e o dominio de cliente, e ele tem uma view com mais coluna
+   do que a tabela crua que a funcao devolve. Devolver o id e deixar a tela de
+   clientes ler pela porta dela mantem a montagem num lugar so. */
+export async function leadViraCliente(leadId: string): Promise<string> {
+  const c = await chamar<{ id: string } | { id: string }[]>('lead_vira_cliente', {
+    p_lead: leadId,
+  })
+  const linha = Array.isArray(c) ? c[0] : c
+  const id = linha?.id
+  if (!id) throw new Error('O banco criou o cliente mas não devolveu o id.')
+  return id
 }
 
 export async function apagarLead(id: string): Promise<void> {

@@ -4,6 +4,8 @@ import { formatarTelefone } from '@shared'
 import {
   RESPOSTAS,
   iniciais,
+  janelaApertada,
+  janelaDaConversa,
   linkDoWhatsApp,
   nomeDoLead,
   minutosDesde,
@@ -29,6 +31,7 @@ export function Inbox({
   lead,
   aoFechar,
   aoAbrirCliente,
+  aoVirarCliente,
   aoAbrirCotacao,
   aoMontarCotacao,
   aoRegistrar,
@@ -43,6 +46,7 @@ export function Inbox({
   carregandoConversa: boolean
   aoFechar: () => void
   aoAbrirCliente: (id: string) => void
+  aoVirarCliente: (l: Lead) => void
   aoAbrirCotacao: (numero: string) => void
   aoMontarCotacao: (l: Lead) => void
   aoRegistrar: (l: Lead, texto: string) => void
@@ -86,6 +90,20 @@ export function Inbox({
           </svg>
         </button>
       </header>
+
+      {/* A JANELA DE 24 HORAS MORA AQUI, e nao no cartao do quadro.
+
+          Ela responde uma pergunta que so existe na hora de escrever, e o
+          quadro ja carrega numero, nome, tag, mensagem, valor e tempo. Mais uma
+          pilula la seria uma informacao que nao muda nada enquanto o olho varre
+          a coluna.
+
+          E ela NAO TRANCA o envio. Hoje a mensagem sai pelo WhatsApp da propria
+          pessoa, onde a regra das 24 horas nao existe: ela e da API oficial.
+          Trancar agora seria inventar uma trava que a Meta nao aplica neste
+          caminho, e ensinar a equipe a ignorar o aviso antes do dia em que ele
+          passa a valer. */}
+      <Janela lead={l} />
 
       <div className="fn-in-msgs">
         {carregandoConversa ? (
@@ -145,15 +163,10 @@ export function Inbox({
       <div className="fn-in-acoes">
         {l.clienteId ? (
           <Botao tom="contorno" tamanho="sm" bloco onClick={() => aoAbrirCliente(l.clienteId)}>
-            Cliente
+            Ver cliente
           </Botao>
         ) : (
-          <Botao
-            tom="contorno"
-            tamanho="sm"
-            bloco
-            onClick={() => avisar('Criar cliente a partir do lead entra junto com o Supabase', 'info')}
-          >
+          <Botao tom="contorno" tamanho="sm" bloco onClick={() => aoVirarCliente(l)}>
             Criar cliente
           </Botao>
         )}
@@ -168,6 +181,45 @@ export function Inbox({
         )}
       </div>
     </aside>
+  )
+}
+
+/* --- a faixa da janela ---------------------------------------------------- */
+function Janela({ lead }: { lead: Lead }) {
+  const j = janelaDaConversa(lead)
+  /* Lead que nunca recebeu fala de cliente nunca teve janela. Desenhar "sem
+     janela" seria ocupar uma faixa para dizer que nada aconteceu. */
+  if (j.estado === 'sem') return null
+
+  const quanto = tempoCurto(j.minutos)
+  return (
+    <p className={'fn-janela ' + (j.estado === 'fechada' ? 'fechada' : janelaApertada(j) ? 'aperta' : '')}>
+      <Ampulheta />
+      {j.estado === 'aberta' ? (
+        <>
+          <b>A janela fecha em {quanto}</b>
+          <span>contando da última mensagem do cliente</span>
+        </>
+      ) : (
+        <>
+          <b>Janela fechada há {quanto}</b>
+          <span>pela API oficial só valeria modelo aprovado; pelo WhatsApp normal, manda</span>
+        </>
+      )}
+    </p>
+  )
+}
+
+function Ampulheta() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 3h10M7 21h10M8 3v3.2a4 4 0 0 0 1.5 3.1L12 12l-2.5 2.7A4 4 0 0 0 8 17.8V21M16 3v3.2a4 4 0 0 1-1.5 3.1L12 12l2.5 2.7a4 4 0 0 1 1.5 3.1V21"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 

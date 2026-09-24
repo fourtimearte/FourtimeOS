@@ -95,11 +95,13 @@ export function ModalDaTimeline({
         <i>·</i>
         {pedido.pecas} peças
         <i>·</i>
+        {/* "0 finalizadas" nao e informacao, e ruido: ele ocupa a linha para
+            dizer que nada aconteceu. So aparece quando ha o que contar. */}
         {fatias
-          ? fatias.length === 1
-            ? '1 fatia no quadro'
-            : fatias.length + ' fatias no quadro, ' + prontas + ' finalizada' +
-              (prontas === 1 ? '' : 's')
+          ? (fatias.length === 1 ? '1 fatia no quadro' : fatias.length + ' fatias no quadro') +
+            (prontas
+              ? ', ' + prontas + ' finalizada' + (prontas === 1 ? '' : 's')
+              : '')
           : 'lendo o quadro...'}
       </p>
 

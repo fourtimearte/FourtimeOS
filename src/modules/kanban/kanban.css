@@ -337,10 +337,21 @@
   gap: var(--sp-4);
   align-items: start;
 }
-/* 900px e a conta: um terco disso da 300, que e o minimo em que dois KPIs
-   lado a lado ainda cabem sem o numero encostar no rotulo. Abaixo disso os
-   dois blocos empilham, e o trilho continua rolando de lado. */
-@container mesa (min-width: 900px) {
+/* DOIS DEGRAUS, e o primeiro NAO e um terco exato de proposito.
+
+   Um terco de 758px (a mesa num monitor de 1080) da 246, e dois KPIs lado a
+   lado em 246 dao 123 cada: "Parados ha 3 dias ou mais" sai em quatro linhas e
+   "7.262" encosta no rotulo. Entao no degrau apertado a coluna da esquerda e
+   300 fixos, que e 40 por cento da mesa e o minimo em que o 2 por 2 se le.
+
+   Passando de 1100 a conta vira o terco de verdade, porque ai um terco ja da
+   mais de 360 e a proporcao que o Henrique pediu cabe sem apertar nada. */
+@container mesa (min-width: 700px) {
+  .kb-cima {
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  }
+}
+@container mesa (min-width: 1100px) {
   .kb-cima {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   }
@@ -353,7 +364,7 @@
   grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: var(--sp-3);
 }
-@container mesa (min-width: 900px) {
+@container mesa (min-width: 700px) {
   .kb-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

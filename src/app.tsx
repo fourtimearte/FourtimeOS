@@ -390,13 +390,22 @@ export function App() {
     Ferramentas: <Wrench size={21} />,
   }
 
-  const maisNoPe: Item[] = [
-    { chave: 'inicio', para: '/perfil', rotulo: 'Meu perfil', icone: <UserCircle size={20} /> },
+  /* AS FERRAMENTAS VÃO PARA OS TRÊS PONTOS NA BARRA DE BAIXO. No menu
+     lateral elas são uma seção como as outras; na barra, uma sétima coluna
+     cortava o nome em "Ferrame..." num celular de 390px. E ferramenta não é
+     navegação de trabalho: é a calculadora que se abre de vez em quando, que
+     é exatamente o que os três pontos guardam. */
+  const SO_NO_MAIS = 'Ferramentas'
+  const ferramentas = secoes.find((s) => s.titulo === SO_NO_MAIS)?.itens ?? []
+
+  const maisNoPe: ItemDeNavegacao[] = [
+    { para: '/perfil', rotulo: 'Meu perfil', icone: <UserCircle size={20} /> },
+    ...ferramentas,
     ...meusFilhos,
   ]
 
   const rodapeNav: ItemDeNavegacao[] = [
-    ...secoes.map((s) =>
+    ...secoes.filter((s) => s.titulo !== SO_NO_MAIS).map((s) =>
       s.titulo === ''
         ? { para: '/', rotulo: 'Início', icone: <House size={21} /> }
         : {

@@ -8,9 +8,10 @@ import {
   SquaresFour,
   Tag as IconeTag,
   UsersThree,
+  Wrench,
 } from '@phosphor-icons/react'
 import { podeVer, souAdmin, useSessao } from '@dominio/sessao'
-import type { Painel } from '@dominio/sessao'
+import type { Painel, Pessoa } from '@dominio/sessao'
 
 /* ==========================================================================
    As subpáginas de Configurações.
@@ -23,6 +24,13 @@ import type { Painel } from '@dominio/sessao'
    Cada aba tem o painel dela. O banco tem painel próprio de propósito: um
    gerente de produção precisa consertar o nome de uma referência sem ganhar,
    junto, o poder de aprovar conta de gente.
+
+   ESTA LISTA É A ÚNICA. O menu lateral e a barra de baixo leem daqui, e não
+   têm cópia própria. Enquanto tinham, cada página nova de Configurações
+   entrava nas abas e esquecia o menu: em 29/09 o menu mostrava quatro das
+   oito. A regra está em claude/REGRA-MENU-DE-CONFIGURACOES.md, e
+   testes/menu-config.mjs reprova a rota de Configurações que não estiver
+   aqui.
    ========================================================================== */
 
 export type AbaDaConfig =
@@ -32,10 +40,11 @@ export type AbaDaConfig =
   | 'banco'
   | 'empresa'
   | 'paginas'
+  | 'ferramentas'
   | 'ensaio'
   | 'kit'
 
-const ABAS: {
+export type AbaDeConfig = {
   chave: AbaDaConfig
   para: string
   rotulo: string
@@ -45,26 +54,37 @@ const ABAS: {
      todas as outras. Um gerente que só lê Configurações não pode se dar
      controle total aqui e sair lendo o sistema inteiro. */
   soAdmin?: boolean
-}[] = [
+}
+
+export const ABAS_DA_CONFIG: AbaDeConfig[] = [
   { chave: 'pessoas', para: '/config', rotulo: 'Pessoas', painel: 'config' },
   { chave: 'acessos', para: '/config/acessos', rotulo: 'Acessos', painel: 'config', soAdmin: true },
   { chave: 'tags', para: '/config/tags', rotulo: 'Tags do quadro', painel: 'config' },
   { chave: 'banco', para: '/banco', rotulo: 'Banco de dados', painel: 'banco' },
   { chave: 'empresa', para: '/config/empresa', rotulo: 'Empresa', painel: 'config' },
   { chave: 'paginas', para: '/config/paginas', rotulo: 'Páginas', painel: 'config' },
+  { chave: 'ferramentas', para: '/config/ferramentas', rotulo: 'Ferramentas', painel: 'config' },
   { chave: 'ensaio', para: '/config/ensaio', rotulo: 'Ensaio', painel: 'config' },
   { chave: 'kit', para: '/kit', rotulo: 'Design System', painel: 'kit' },
 ]
 
-const ICONE: Record<AbaDaConfig, typeof UsersThree> = {
+export const ICONE_DA_ABA: Record<AbaDaConfig, typeof UsersThree> = {
   pessoas: UsersThree,
   acessos: Lock,
   tags: IconeTag,
   banco: Database,
   empresa: Buildings,
   paginas: SquaresFour,
+  ferramentas: Wrench,
   ensaio: Flask,
   kit: Palette,
+}
+
+/** As abas que esta pessoa alcança. O menu lateral usa a mesma peneira. */
+export function abasDaConfigDe(pessoa: Pessoa | null): AbaDeConfig[] {
+  return ABAS_DA_CONFIG.filter(
+    (a) => !!pessoa && podeVer(pessoa, a.painel) && (!a.soAdmin || souAdmin(pessoa)),
+  )
 }
 
 export function AbasDaConfig({ atual }: { atual: AbaDaConfig }) {
@@ -73,15 +93,13 @@ export function AbasDaConfig({ atual }: { atual: AbaDaConfig }) {
 
   /* Uma aba sozinha não é escolha nenhuma: ela vira um enfeite que a pessoa
      clica e continua no mesmo lugar. */
-  const minhas = ABAS.filter(
-    (a) => !!pessoa && podeVer(pessoa, a.painel) && (!a.soAdmin || souAdmin(pessoa)),
-  )
+  const minhas = abasDaConfigDe(pessoa)
   if (minhas.length < 2) return null
 
   return (
     <nav className="cfg-abas" aria-label="Configurações">
       {minhas.map((a) => {
-        const Icone = ICONE[a.chave]
+        const Icone = ICONE_DA_ABA[a.chave]
         return (
           <NavLink
             key={a.chave}

@@ -1,0 +1,337 @@
+/* ==========================================================================
+   A calculadora de DTF.
+
+   Nada aqui escreve regra com classe do Design System: os nomes começam com
+   dtf-, e o que é do V7 entra por componente. A regra está em
+   claude/REGRA-CLASSE-DO-DESIGN-SYSTEM.md.
+
+   AS DUAS COLUNAS SÃO DA MESA, E NÃO DA JANELA. Quem decide se cabe lado a
+   lado é a largura que sobra depois do menu, e o menu encolhe e abre. A regra
+   está em claude/REGRA-A-LARGURA-E-DA-MESA-E-NAO-DA-JANELA.md: o contêiner é
+   um invólucro que só existe para ser medido, e nunca a .vista.
+   ========================================================================== */
+
+.dtf-palco {
+  container: dtf / inline-size;
+  max-width: 1080px;
+}
+
+.dtf-grade {
+  display: grid;
+  gap: var(--sp-4);
+}
+@container dtf (min-width: 720px) {
+  .dtf-grade {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+.dtf-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* --- os dois campos da medida ------------------------------------------- */
+.dtf-medidas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: var(--sp-3);
+}
+.dtf-mais {
+  display: grid;
+  place-items: center;
+  height: 72px;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.dtf-num {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.dtf-num > label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.dtf-caixa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 72px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: text;
+  transition: border-color var(--t-fast);
+}
+.dtf-caixa:hover {
+  border-color: var(--text-3);
+}
+/* o foco é da caixa inteira, e não só do número: a unidade faz parte do
+   que está sendo digitado */
+.dtf-caixa:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.dtf-caixa > input {
+  /* o anel mora na caixa, logo acima, pelo :focus-within */
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.dtf-caixa > input::placeholder {
+  color: var(--text-3);
+  opacity: 0.6;
+}
+
+.dtf-unidade,
+.dtf-antes {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.dtf-num.pequeno .dtf-caixa {
+  height: 56px;
+}
+.dtf-num.pequeno .dtf-caixa > input {
+  font-size: 24px;
+}
+
+.dtf-num.erro .dtf-caixa {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.dtf-erro {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--brand-text);
+}
+
+/* --- somar à medida ------------------------------------------------------ */
+.dtf-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.dtf-atalhos > span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* --- o preço, no pé da coluna -------------------------------------------- */
+.dtf-preco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.dtf-origem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+/* o preço trocado não é o da casa, e a tela diz isso com um ponto, e não
+   pintando o texto: amarelo em texto pequeno não passa no contraste */
+.dtf-origem.manual {
+  color: var(--text-2);
+}
+.dtf-origem.manual::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--warn);
+}
+
+.dtf-voltar {
+  min-height: var(--btn-h-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.dtf-voltar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+@media (pointer: coarse) {
+  .dtf-voltar {
+    min-height: 44px;
+  }
+}
+
+/* --- o resultado -------------------------------------------------------- */
+.dtf-sobre {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.dtf-valor {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+@container dtf (min-width: 720px) {
+  .dtf-valor {
+    font-size: 56px;
+  }
+}
+.dtf-resultado.apagado .dtf-valor {
+  color: var(--text-3);
+}
+
+.dtf-como {
+  margin: calc(var(--sp-2) * -1) 0 0;
+  font-size: 14.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- o filme contra a régua --------------------------------------------- */
+.dtf-filme {
+  padding-top: var(--sp-2);
+}
+.dtf-trilho {
+  position: relative;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+/* O ROLO CRESCE POR TRANSFORM, e não por largura: o V7 só anima transform,
+   opacidade e fundo. O pedaço é a largura inteira do trilho encolhida da
+   esquerda para a direita, e a linha do corte é uma segunda camada que anda
+   pelo trilho, para o tracejado não esticar junto. */
+.dtf-rolo,
+.dtf-corte {
+  position: absolute;
+  inset: 0;
+}
+.dtf-rolo {
+  transform-origin: left center;
+  background: var(--tec-dtf-soft);
+  transition: transform var(--t-slow) var(--ease-out);
+}
+.dtf-corte {
+  border-left: 2px dashed var(--tec-dtf);
+  transition:
+    transform var(--t-slow) var(--ease-out),
+    opacity var(--t-fast);
+}
+.dtf-corte.escondido {
+  opacity: 0;
+}
+
+.dtf-regua {
+  position: relative;
+  height: 20px;
+  margin-top: var(--sp-2);
+}
+.dtf-regua > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dtf-regua > span:first-child {
+  transform: none;
+}
+.dtf-regua > span:last-child {
+  transform: translateX(-100%);
+}
+
+/* --- a conta partida ---------------------------------------------------- */
+.dtf-partes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+.dtf-partes > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: var(--row-h);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.dtf-partes dt {
+  color: var(--text-2);
+}
+.dtf-partes dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* o botão de copiar desce para o pé do cartão, alinhado com o preço do outro
+   lado quando as duas colunas estão lado a lado */
+.dtf-resultado > :last-child {
+  margin-top: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dtf-rolo,
+  .dtf-corte,
+  .dtf-caixa {
+    transition: none;
+  }
+}

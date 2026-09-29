@@ -1,9 +1,10 @@
 /* A porta da frente do módulo. */
-export { AbasDaConfig } from './abas'
-export type { AbaDaConfig } from './abas'
+export { ABAS_DA_CONFIG, AbasDaConfig, ICONE_DA_ABA, abasDaConfigDe } from './abas'
+export type { AbaDaConfig, AbaDeConfig } from './abas'
 export { TelaAcessos } from './acessos'
 export { TelaTags } from './tags'
 export { TelaEquipe } from './equipe'
 export { TelaEmpresa } from './empresa'
 export { TelaEnsaio } from './ensaio'
 export { TelaPaginas } from './paginas'
+export { TelaConfigDeFerramentas } from './ferramentas'

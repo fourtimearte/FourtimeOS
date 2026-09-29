@@ -42,6 +42,13 @@ const PAGINAS: Pagina[] = [
     rota: '/produtos',
     porque: 'Ainda é uma tela de aviso, e não uma tela de trabalho.',
   },
+  {
+    chave: 'dtf',
+    nome: 'Calculadora de DTF',
+    onde: 'Ferramentas',
+    rota: '/ferramentas/dtf',
+    porque: 'Conta solta do custo do filme por metragem. Não lê nem grava nada do sistema.',
+  },
 ]
 
 export function TelaPaginas() {

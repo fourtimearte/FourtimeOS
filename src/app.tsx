@@ -3,11 +3,10 @@ import type { ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
-  Buildings,
+  Calculator,
   CalendarCheck,
   ChartBar,
   ClipboardText,
-  Database,
   DotsThree,
   Factory,
   Gear,
@@ -16,14 +15,13 @@ import {
   ListChecks,
   Moon,
   Package,
-  Palette,
   Receipt,
   SignOut,
   Sun,
   TShirt,
   UserCircle,
   Users,
-  UsersThree,
+  Wrench,
 } from '@phosphor-icons/react'
 import {
   aplicarTema,
@@ -51,6 +49,7 @@ import { paginasEscondidas } from '@dominio/regulagem'
 import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
 import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
+import { abasDaConfigDe, ICONE_DA_ABA } from '@modules/config'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
    roteador e a lista de modulos ao mesmo tempo. A casca em si nao sabe o que e
@@ -173,11 +172,16 @@ export function App() {
      proprio a ele, entao hoje nenhum item usa `painel`. O campo continua
      porque a proxima pagina que nascer antes do painel dela vai precisar, e
      porque a alternativa e descobrir isso de novo do jeito dificil. */
+  /* A CHAVE DEIXOU DE SER SÓ PAINEL em 29/09, com a calculadora de DTF: ela
+     é a primeira página que nasce sem painel próprio (usa o do Início, porque
+     todo aprovado enxerga). Por isso a chave é texto, e quem não é painel
+     escreve o `painel` que exige. */
   type Item = Omit<ItemDeNavegacao, 'filhos'> & {
-    chave: Painel
+    chave: string
     painel?: Painel
     filhos?: Item[]
   }
+  const painelDe = (i: Item): Painel => i.painel ?? (i.chave as Painel)
 
   const todas: { titulo: string; itens: Item[] }[] = [
     /* O Início não pertence a nenhuma família: ele é a porta de entrada, e a
@@ -280,6 +284,26 @@ export function App() {
         },
       ],
     },
+    /* FERRAMENTAS SÃO CONTAS SOLTAS, e por isso moram depois de tudo que é
+       trabalho do pedido. Nenhuma delas lê nem grava nada do sistema: são a
+       calculadora que a fábrica usava no celular, trazida para dentro.
+
+       A calculadora de DTF usa o painel do Início, e não um painel próprio:
+       todo aprovado precisa dela, e um painel novo seria uma migração só para
+       dizer "todo mundo". No dia em que alguma ferramenta tiver de ser de um
+       papel só, ela ganha painel e linha na matriz de Acessos. */
+    {
+      titulo: 'Ferramentas',
+      itens: [
+        {
+          chave: 'dtf',
+          painel: 'inicio',
+          para: '/ferramentas/dtf',
+          rotulo: 'Calculadora de DTF',
+          icone: <Calculator {...icone} />,
+        },
+      ],
+    },
   ]
 
   /* Configurações não entra em nenhuma seção: ela mora colada no pé do menu,
@@ -293,37 +317,29 @@ export function App() {
     rotulo: 'Configurações',
     icone: <Gear {...icone} />,
     contagem: naFila || undefined,
-    filhos: [
-      {
-        chave: 'config',
-        para: '/config',
-        rotulo: 'Pessoas',
-        icone: <UsersThree size={18} />,
-        ativo: local.pathname === '/config',
-      },
-      {
-        chave: 'banco',
-        para: '/banco',
-        rotulo: 'Banco de dados',
-        icone: <Database size={18} />,
-      },
-      {
-        chave: 'config',
-        para: '/config/empresa',
-        rotulo: 'Empresa',
-        icone: <Buildings size={18} />,
-        ativo: local.pathname === '/config/empresa',
-      },
-      {
-        chave: 'kit',
-        para: '/kit',
-        rotulo: 'Design System',
-        icone: <Palette size={18} />,
-      },
-    ],
+    /* OS GALHOS SAEM DAS ABAS, e não de uma lista escrita aqui. Enquanto
+       eram escritos à mão, cada página nova de Configurações entrava nas abas
+       e esquecia o menu: em 29/09 ele mostrava Pessoas, Banco, Empresa e
+       Design System, e faltavam Acessos, Tags, Páginas e Ensaio. Agora uma
+       página nova em ABAS_DA_CONFIG aparece nos dois lugares, e a peneira de
+       quem vê o quê é a mesma. Regra em claude/REGRA-MENU-DE-CONFIGURACOES.md.
+
+       `ativo` é exato nas que moram debaixo de /config: sem ele, estar em
+       /config/empresa acenderia Pessoas junto, porque /config é o começo das
+       duas. */
+    filhos: abasDaConfigDe(pessoa).map((a) => {
+      const Icone = ICONE_DA_ABA[a.chave]
+      return {
+        chave: a.painel,
+        para: a.para,
+        rotulo: a.rotulo,
+        icone: <Icone size={18} />,
+        ...(a.para.startsWith('/config') ? { ativo: local.pathname === a.para } : {}),
+      }
+    }),
   }
 
-  const posso = (chave: Painel) => !!pessoa && podeVer(pessoa, chave)
+  const posso = (painel: Painel) => !!pessoa && podeVer(pessoa, painel)
 
   /* AS PAGINAS GUARDADAS.
 
@@ -351,13 +367,13 @@ export function App() {
   const secoes: SecaoDeNavegacao[] = todas
     .map((s) => ({
       titulo: s.titulo,
-      itens: s.itens.filter((i) => posso(i.painel ?? i.chave) && !escondidas.has(i.chave)),
+      itens: s.itens.filter((i) => posso(painelDe(i)) && !escondidas.has(i.chave)),
     }))
     .filter((s) => s.itens.length > 0)
 
   /* Uma arvore sem nenhum galho que a pessoa alcance nao vira item vazio no
      pe do menu: ela some inteira. */
-  const meusFilhos = (configuracoes.filhos ?? []).filter((f) => posso(f.chave))
+  const meusFilhos = (configuracoes.filhos ?? []).filter((f) => posso(painelDe(f)))
   const ramoDeConfig = meusFilhos.length > 0 ? { ...configuracoes, filhos: meusFilhos } : undefined
 
   /* A barra de baixo é o menu inteiro, e não cinco telas escolhidas a dedo.
@@ -371,6 +387,7 @@ export function App() {
     Produção: <Factory size={21} />,
     Gestão: <ChartBar size={21} />,
     Materiais: <Package size={21} />,
+    Ferramentas: <Wrench size={21} />,
   }
 
   const maisNoPe: Item[] = [

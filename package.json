@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run arquitetura && npm run classes && tsc -b && vite build",
+    "build": "npm run arquitetura && npm run classes && npm run menu && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "fmt": "prettier --write .",
@@ -15,6 +15,7 @@
     "espelho": "sh testes/espelho.sh",
     "visual:aprovar": "python3 testes/comparar.py --aprovar",
     "classes": "node testes/classes.mjs",
+    "menu": "node testes/menu-config.mjs",
     "arquivo": "sh testes/arquivo-ficha.sh",
     "sessao": "sh testes/sessao.sh",
     "semana": "sh testes/semana.sh",

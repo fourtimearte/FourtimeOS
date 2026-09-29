@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { App } from './app'
 import { ExigePainel, Protegido } from '@dominio/sessao/protegido'
 import type { Painel } from '@dominio/sessao'
@@ -8,6 +8,7 @@ import { TelaClientes } from '@modules/clientes'
 import {
   AbasDaConfig,
   TelaAcessos,
+  TelaConfigDeFerramentas,
   TelaTags,
   TelaEmpresa,
   TelaEnsaio,
@@ -20,6 +21,7 @@ import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
 import { TelaEmBreve } from '@modules/em-breve'
 import { TelaEstoque } from '@modules/estoque'
+import { TelaCalculadoraDeDtf } from '@modules/ferramentas'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFunil } from '@modules/funil'
 import { TelaPcp } from '@modules/pcp'
@@ -83,6 +85,12 @@ export const rotas = createBrowserRouter([
       { path: 'ficha', element: pede('ficha', <TelaFicha />) },
       { path: 'kanban', element: pede('kanban', <TelaKanban />) },
       { path: 'estoque', element: pede('estoque', <TelaEstoque />) },
+      /* AS FERRAMENTAS PEDEM O PAINEL DO INICIO, que todo aprovado tem. Elas
+         nao leem nem gravam nada do sistema, e um painel proprio seria uma
+         migracao so para dizer "todo mundo". O endereco /ferramentas sozinho
+         leva para a primeira, para ninguem cair numa pagina em branco. */
+      { path: 'ferramentas', element: <Navigate to="/ferramentas/dtf" replace /> },
+      { path: 'ferramentas/dtf', element: pede('inicio', <TelaCalculadoraDeDtf />) },
       { path: 'kit', element: pede('kit', <TelaKit abas={<AbasDaConfig atual="kit" />} />) },
       { path: 'atividades', element: pede('atividades', <TelaAtividades />) },
       { path: 'relatorio', element: pede('relatorio', <TelaRelatorio />) },
@@ -95,6 +103,7 @@ export const rotas = createBrowserRouter([
       { path: 'config/empresa', element: pede('config', <TelaEmpresa />) },
       { path: 'config/ensaio', element: pede('config', <TelaEnsaio />) },
       { path: 'config/paginas', element: pede('config', <TelaPaginas />) },
+      { path: 'config/ferramentas', element: pede('config', <TelaConfigDeFerramentas />) },
       { path: 'config/tags', element: pede('config', <TelaTags />) },
 
       /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar

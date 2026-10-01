@@ -763,10 +763,13 @@
   background: var(--border);
 }
 
+/* O PÉ NUNCA QUEBRA. Dentro da caixa da coluna o cartão tem 20px a menos, e
+   "420 pçs" e "1 d" estavam virando duas linhas cada. */
 .kb-pe {
   display: flex;
   align-items: center;
-  gap: var(--re-5);
+  gap: var(--re-4);
+  white-space: nowrap;
   font-size: 12.5px;
   color: var(--text-2);
 }

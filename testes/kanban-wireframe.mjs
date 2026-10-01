@@ -128,11 +128,10 @@ for (const tema of ['light', 'dark']) {
   await pg.waitForTimeout(1500)
   const T = tema
 
-  /* ---------- 1. a faixa de cima ---------- */
+  /* ---------- 1. a faixa de cima: o trilho sozinho ---------- */
   const cima = await pg.evaluate(() => {
     const cx = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null }
     const cs = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e) : null }
-    const caixas = [...document.querySelectorAll('.kb-caixa')].map(e => e.getBoundingClientRect())
     const t = cs('.kb-trilho')
     const titulo = [...document.querySelectorAll('h1')].find(h => h.offsetParent !== null && h.getBoundingClientRect().height > 2)
     return {
@@ -140,12 +139,7 @@ for (const tema of ['light', 'dark']) {
       cima: cx('.kb-cima'), trilho: cx('.kb-trilho'), janela: cx('.kb-trilho-janela'),
       tPad: t.paddingTop, tRaio: t.borderTopLeftRadius, tBorda: t.borderTopWidth,
       setas: [...document.querySelectorAll('.kb-trilho .kb-seta')].map(e => { const r = e.getBoundingClientRect(); return [r.width, r.height, getComputedStyle(e).borderTopLeftRadius] }),
-      caixas: caixas.map(r => [r.left, r.width, r.height]),
-      cxPad: [cs('.kb-caixa').paddingTop, cs('.kb-caixa').paddingRight, cs('.kb-caixa').paddingBottom],
-      cxRaio: cs('.kb-caixa').borderTopLeftRadius,
-      cxRot: [cs('.kb-caixa-rot').fontSize, cs('.kb-caixa-rot').fontWeight],
-      cxN: [cs('.kb-caixa-n').fontSize, cs('.kb-caixa-n').fontWeight],
-      cxSub: [cs('.kb-caixa-sub').fontSize, cs('.kb-caixa-sub').marginTop],
+      caixas: document.querySelectorAll('.kb-caixa').length,
       /* a borda direita da área útil: a vista termina antes da calha de 10px
          que o sistema guarda para a barra de rolagem */
       larg: document.querySelector('.vista').getBoundingClientRect().right,
@@ -153,20 +147,13 @@ for (const tema of ['light', 'dark']) {
   })
   conta(!cima.tituloVisivel, `${T}: sem cabeçalho MARK45 visível`)
   conta(igual(cima.cima.top, 88), `${T}: a faixa começa 28px abaixo do topo de 60 (${cima.cima.top})`)
-  conta(igual(cima.cima.height, 148) && igual(cima.trilho.height, 148), `${T}: trilho e faixa com 148 de altura (${cima.trilho.height})`)
-  conta(igual(cima.trilho.left, 280), `${T}: o trilho começa em 280, depois do menu de 248 e 32 de margem (${cima.trilho.left})`)
+  conta(igual(cima.trilho.height, 148), `${T}: trilho com 148 de altura (${cima.trilho.height})`)
+  conta(igual(cima.trilho.left, 280) && igual(cima.trilho.right, cima.larg - 32),
+    `${T}: o trilho ocupa a largura inteira, de 280 até a margem de 32 (${cima.trilho.left} a ${cima.trilho.right})`)
+  conta(cima.caixas === 0, `${T}: as caixas de número saíram do lado do trilho`)
   conta(cima.tPad === '10px' && cima.tRaio === '14px' && cima.tBorda === '1px', `${T}: trilho com recheio 10, raio 14, borda 1 (${cima.tPad} ${cima.tRaio} ${cima.tBorda})`)
   conta(igual(cima.janela.height, 126), `${T}: a janela do trilho tem 126 (${cima.janela.height})`)
   conta(cima.setas.length === 2 && cima.setas.every(s => s[0] === 44 && s[1] === 44 && s[2] === '10px'), `${T}: as duas setas do trilho são 44x44 raio 10`)
-  conta(cima.caixas.length === 4 && cima.caixas.every(c => igual(c[1], 148) && igual(c[2], 148)), `${T}: as quatro caixas são quadradas, 148x148`)
-  conta(cima.caixas.length === 4 && cima.caixas.slice(1).every((c, i) => igual(c[0] - (cima.caixas[i][0] + 148), 12)), `${T}: 12 entre as caixas`)
-  conta(igual(cima.caixas[0][0] - cima.trilho.right, 16), `${T}: 16 entre o trilho e as caixas (${cima.caixas[0][0] - cima.trilho.right})`)
-  /* o sistema guarda 10px de calha para a barra de rolagem (base.css), que o
-     wireframe não tinha: a margem de 32 é contada a partir dela */
-  conta(igual(cima.caixas[3][0] + 148, cima.larg - 32), `${T}: a última caixa encosta na margem de 32 (${cima.caixas[3][0] + 148} de ${cima.larg})`)
-  conta(cima.cxPad.join(' ') === '14px 14px 12px' && cima.cxRaio === '14px', `${T}: caixa com recheio 14 14 12 e raio 14 (${cima.cxPad.join(' ')})`)
-  conta(cima.cxRot.join(' ') === '12.5px 600' && cima.cxN.join(' ') === '30px 600' && cima.cxSub.join(' ') === '11.5px 6px',
-    `${T}: fontes da caixa 12.5/600, 30/600, 11.5 com 6 em cima`)
 
   /* ---------- 2. o trilho, fechado ---------- */
   const tr = await pg.evaluate(() => {
@@ -213,7 +200,7 @@ for (const tema of ['light', 'dark']) {
     const pil = h.querySelector('.kb-topo-nome')
     const n = h.querySelector('.kb-conta')
     const card = document.querySelector('.kb-cartao')
-    const tag = document.querySelector('.kb-tag')
+    const tag = null
     const bt = document.querySelector('.kb-terminei')
     return {
       topoH: topo.getBoundingClientRect().height, h2: [cs(topo.querySelector('h2')).fontSize, cs(topo.querySelector('h2')).fontWeight],
@@ -225,12 +212,22 @@ for (const tema of ['light', 'dark']) {
       pil: [cs(pil).fontSize, cs(pil).fontWeight, cs(pil).paddingTop, cs(pil).paddingLeft],
       conta: [cs(n).fontSize, cs(n).fontWeight, cs(n).paddingTop, cs(n).paddingLeft],
       card: [cs(card).paddingTop, cs(card).borderTopWidth, cs(card).borderTopLeftRadius, cs(card).rowGap],
-      av: card.querySelector('.kb-avatar').getBoundingClientRect().width,
       nome: [cs(card.querySelector('.kb-nome')).fontSize, cs(card.querySelector('.kb-nome')).fontWeight],
       origem: [cs(card.querySelector('.kb-origem')).fontSize, cs(card.querySelector('.kb-origem')).fontWeight],
       pe: cs(card.querySelector('.kb-pe')).fontSize, pecas: [cs(card.querySelector('.kb-pecas')).fontSize, cs(card.querySelector('.kb-pecas')).fontWeight],
       tag: tag ? [cs(tag).fontSize, cs(tag).paddingTop, cs(tag).paddingLeft] : null,
       bt: [bt.getBoundingClientRect().width, bt.getBoundingClientRect().height, cs(bt).borderTopLeftRadius],
+      bordas2: [...document.querySelectorAll('.kb-cartao:not(.escuro)')].map(c => cs(c).borderTopColor),
+      bordaRef: (() => { const x = document.createElement('div'); x.style.color = 'var(--border)'; document.body.appendChild(x); const c = cs(x).color; x.remove(); return c })(),
+      avatar: document.querySelectorAll('.kb-cartao .kb-avatar').length,
+      fileira: [...document.querySelectorAll('.kb-cartao')].filter(c => c.querySelector('.kb-fileira .etiqueta')).length,
+      dados: (() => {
+        const d = document.querySelector('.kb-dados'); const r = d.getBoundingClientRect()
+        const seta = document.querySelector('.kb-postos-topo .kb-seta').getBoundingClientRect()
+        return { h: r.height, raio: cs(d).borderTopLeftRadius, ateASeta: seta.left - r.right, mesmaLinha: Math.abs(r.top - seta.top) < 1,
+          itens: [...d.querySelectorAll('.kb-dado')].map(x => x.textContent.replace(/\s+/g, ' ').trim()),
+          n: [cs(d.querySelector('.kb-dado > b')).fontSize, cs(d.querySelector('.kb-dado > b')).fontWeight], rot: cs(d.querySelector('.kb-dado')).fontSize }
+      })(),
     }
   })
   conta(igual(q.topoH, 44) && q.h2.join(' ') === '15px 600' && q.faixa === '13px', `${T}: barra dos postos 44, título 15/600, faixa 13`)
@@ -241,10 +238,15 @@ for (const tema of ['light', 'dark']) {
   conta(q.pil.join(' ') === '12.5px 700 4px 10px', `${T}: pílula do posto 12.5/700, 4 10 (${q.pil.join(' ')})`)
   conta(q.conta.join(' ') === '12px 600 2px 8px', `${T}: contador 12/600, 2 8`)
   conta(q.card.join(' ') === '14px 2px 14px 8px', `${T}: cartão com recheio 14, borda 2, raio 14, vão 8 (${q.card.join(' ')})`)
-  conta(q.av === 28 && q.nome.join(' ') === '14.5px 600' && q.origem.join(' ') === '11.5px 600',
-    `${T}: bolinha 28, nome 14.5/600, origem 11.5/600`)
+  conta(q.nome.join(' ') === '14.5px 600' && q.origem.join(' ') === '11.5px 600', `${T}: nome 14.5/600, origem 11.5/600`)
+  conta(q.avatar === 0, `${T}: nenhum cartão tem bolinha ao lado do título`)
+  conta(q.bordas2.length > 0 && q.bordas2.every(b => b === q.bordaRef), `${T}: a borda dos cartões é cinza neutra, a mesma em todo posto (${q.bordaRef})`)
+  conta(q.fileira >= 5, `${T}: os cartões com tag mostram a fileira de tags (${q.fileira})`)
+  conta(igual(q.dados.h, 44) && q.dados.raio === '10px' && q.dados.mesmaLinha && igual(q.dados.ateASeta, 10),
+    `${T}: os números num retângulo de 44, raio 10, colado à esquerda das setas (${q.dados.ateASeta})`)
+  conta(q.dados.itens.length === 4 && q.dados.n.join(' ') === '15px 700' && q.dados.rot === '12.5px',
+    `${T}: quatro números, 15/700 com rótulo 12.5 (${q.dados.itens.join(' | ')})`)
   conta(q.pe === '12.5px' && q.pecas.join(' ') === '13px 700', `${T}: pé 12.5, peças 13/700`)
-  conta(!!q.tag && q.tag.join(' ') === '11.5px 3px 9px', `${T}: tag do posto 11.5 com 3 9 (${q.tag?.join(' ')})`)
   conta(q.bt[0] === 32 && q.bt[1] === 32 && q.bt[2] === '7px', `${T}: seta do Terminei 32x32 raio 7`)
 
   await pg.screenshot({ path: `${PASTA}/wf-quadro-${T}.png` })

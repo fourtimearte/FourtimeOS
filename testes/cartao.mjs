@@ -181,11 +181,12 @@ for (const tema of ['light', 'dark']) {
       if (!c) return null
       const n = c.querySelector('.kb-origem')
       const linhas = Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight || '20'))
-      const mestres = c.querySelector('.kb-mestres')
       return {
         linhasDoNumero: linhas,
-        mestres: mestres ? mestres.textContent.split('·').map(e => e.trim()) : [],
-        tags: [...c.querySelectorAll('.kb-tags .kb-tag')].map(e => e.textContent.trim()),
+        mestres: [...c.querySelectorAll('.kb-fileira .etiqueta.mestre')].map(e => e.textContent.trim()),
+        tags: [...c.querySelectorAll('.kb-fileira .etiqueta:not(.mestre)')].map(e => e.textContent.trim()),
+        avatar: !!c.querySelector('.kb-avatar'),
+        borda: getComputedStyle(c).borderTopColor,
         botao: (() => {
           const b = c.querySelector('.kb-terminei')
           if (!b) return null
@@ -200,7 +201,8 @@ for (const tema of ['light', 'dark']) {
     })
     conta(!!cartao && cartao.linhasDoNumero <= 1, `${tema} ${nome}: o número do pedido cabe em uma linha`)
     conta(!!cartao && cartao.mestres.join(',') === 'VIP,PRIORIDADE',
-      `${tema} ${nome}: as tags mestre aparecem em letra miúda (${cartao?.mestres.join(', ')})`)
+      `${tema} ${nome}: a fileira de tags traz as mestre (${cartao?.mestres.join(', ')})`)
+    conta(!!cartao && !cartao.avatar, `${tema} ${nome}: o cartão não tem bolinha ao lado do título`)
     conta(!!cartao && cartao.tags.length === 2, `${tema} ${nome}: as tags do posto aparecem (${cartao?.tags.join(', ')})`)
 
     /* O BOTAO DE TERMINAR E QUADRADO, SEM TEXTO E SEM VERMELHO.

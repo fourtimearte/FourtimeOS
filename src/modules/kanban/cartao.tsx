@@ -1,10 +1,12 @@
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
 import { Paperclip } from '@phosphor-icons/react'
+import { Etiqueta } from '@ds'
 import {
   NOME_DA_TECNICA,
   corDoPosto,
   nomeDoPosto,
   paradoHa,
+  tomDaMarca,
   vizinhoNaRota,
   type FatiaNoQuadro,
   type Rota,
@@ -14,26 +16,20 @@ import {
 /* ==========================================================================
    O cartão do quadro, fechado, do jeito do wireframe de 01/10/2026.
 
-   O DESENHO VEIO DO CARTÃO DO FUNIL, a pedido do Henrique: borda de 2px na
-   cor do posto, a cor entrando de leve pelo canto de cima, a bolinha com as
-   iniciais, e uma linha com o ponto colorido dizendo de onde o cartão é.
-   Nenhum bloco de cor: a cor aparece em três lugares fracos somados.
+   O DESENHO VEIO DO CARTÃO DO FUNIL, e em 01/10 o Henrique tirou dele a cor
+   e a bolinha: a borda é cinza neutra, igual em todo posto, e o título vem
+   sozinho na primeira linha. A única cor que sobrou é o ponto miúdo da linha
+   de origem, que diz de que posto o cartão é.
 
    O QUE ELE MOSTRA, de cima para baixo: o nome do pedido, o número e a
-   técnica, as tags mestre em letra miúda, as tags do posto, e no pé as peças,
-   a conversa, o tempo parado e a seta do Terminei.
+   técnica, a FILEIRA DE TAGS (as mestre, que vêm da cotação, e as do posto,
+   separadas por um risco), e no pé as peças, a conversa, o tempo parado e a
+   seta do Terminei.
 
    ESCOLHIDO NO TRILHO, ELE FICA ESCURO. É o mesmo escuro do cartão aberto do
    trilho, e é isso que liga um ao outro de longe: o que está aceso lá em cima
    é o que está escuro aqui embaixo. Os outros apagam.
    ========================================================================== */
-
-function iniciais(nome: string) {
-  const p = nome.split(/\s+/).filter((x) => x.length > 2 || /\d/.test(x))
-  const a = (p[0] ?? nome)[0] ?? '?'
-  const b = p[1]?.[0] ?? ''
-  return (a + b).toUpperCase()
-}
 
 function Fala() {
   return (
@@ -113,32 +109,40 @@ export function CartaoDaFatia({
           onClick não recebe Tab, e esta tela roda em tablet onde metade das
           pessoas chega nas coisas pelo teclado de acessibilidade. */}
       <button type="button" className="kb-abrir" onClick={aoAbrir}>
-        <span className="kb-cartao-topo">
-          <span className="kb-avatar" aria-hidden="true">
-            {iniciais(fatia.nome || fatia.cliente || fatia.numero)}
-          </span>
-          <span className="kb-nome">{fatia.nome || fatia.cliente}</span>
-        </span>
+        <span className="kb-nome">{fatia.nome || fatia.cliente}</span>
         <span className="kb-origem">
           {fatia.numero} · {NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica}
         </span>
       </button>
 
-      {fatia.marcas.length ? <span className="kb-mestres">{fatia.marcas.join(' · ')}</span> : null}
-
-      {fatia.tags.length || fatia.aviso ? (
-        <span className="kb-tags">
-          {fatia.aviso ? (
-            <span className="kb-tag kb-tag-aviso">
-              {fatia.aviso === 'falta-material' ? 'falta material' : fatia.aviso.replace(/-/g, ' ')}
-            </span>
-          ) : null}
-          {fatia.tags.map((chave) => (
-            <span key={chave} className="kb-tag">
-              {tags.get(chave)?.nome ?? chave}
-            </span>
+      {/* A FILEIRA DE TAGS. As mestre primeiro, porque valem para o pedido
+          inteiro e em todo posto; um risco; e depois as do posto, que mudam o
+          dia todo. São as mesmas etiquetas do cartão aberto, com a cor de
+          cada uma, para a tag ser reconhecida de longe pela cor. */}
+      {fatia.marcas.length || fatia.tags.length || fatia.aviso ? (
+        <div className="kb-fileira">
+          {fatia.marcas.map((m) => (
+            <Etiqueta key={'m-' + m} mestre pequena tom={tomDaMarca(m)}>
+              {m}
+            </Etiqueta>
           ))}
-        </span>
+          {fatia.marcas.length && (fatia.tags.length || fatia.aviso) ? (
+            <span className="kb-risco" aria-hidden="true" />
+          ) : null}
+          {fatia.aviso ? (
+            <Etiqueta pequena tom="vermelha">
+              {fatia.aviso === 'falta-material' ? 'falta material' : fatia.aviso.replace(/-/g, ' ')}
+            </Etiqueta>
+          ) : null}
+          {fatia.tags.map((chave) => {
+            const t = tags.get(chave)
+            return (
+              <Etiqueta key={chave} pequena tom={t?.tom ?? 'cinza'}>
+                {t?.nome ?? chave}
+              </Etiqueta>
+            )
+          })}
+        </div>
       ) : null}
 
       <footer className="kb-pe">

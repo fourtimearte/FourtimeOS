@@ -35,81 +35,47 @@
 }
 
 /* ==========================================================================
-   A FAIXA DE CIMA: o trilho à esquerda e as quatro caixas à direita, as duas
-   com 148px de altura.
+   A FAIXA DE CIMA: o trilho sozinho, na largura inteira.
 
-   A conta é da MESA e não da janela (claude/REGRA-A-LARGURA-E-DA-MESA-E-NAO-
-   DA-JANELA.md). Lado a lado eles pedem 1084px de mesa: 628 das caixas, 16 de
-   vão e 440 para o trilho mostrar duas setas e dois cartões. Um monitor de
-   1080p dá 1608, e a fileira é a do wireframe. Abaixo disso o trilho fica em
-   cima e as caixas descem, ainda quadradas onde cabem quatro.
+   Em 01/10 as quatro caixas de número saíram daqui: elas comiam 644px que o
+   trilho precisava para mostrar mais pedidos. Os números foram para a barra
+   dos postos, num retângulo ao lado das setas do quadro.
    ========================================================================== */
-.kb-palco {
-  container-type: inline-size;
-  container-name: mesa;
-}
-
 .kb-cima {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-@container mesa (min-width: 1084px) {
-  .kb-cima {
-    flex-direction: row;
-    height: 148px;
-  }
-}
-
-.kb-kpis {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-3);
-  flex: none;
-}
-@container mesa (min-width: 640px) {
-  .kb-kpis {
-    grid-template-columns: repeat(4, 148px);
-  }
-}
-
-/* --- a caixa de número, quadrada ---------------------------------------- */
-.kb-caixa {
-  display: flex;
-  flex-direction: column;
   height: 148px;
+}
+
+/* --- os números do quadro, num retângulo só ------------------------------ */
+.kb-dados {
+  display: flex;
+  align-items: center;
+  height: 44px;
   box-sizing: border-box;
-  padding: var(--re-7) var(--re-7) var(--re-6);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   background: var(--surface);
-  min-width: 0;
 }
-.kb-caixa.alerta {
-  border-color: color-mix(in oklab, var(--brand) 35%, var(--border));
-}
-.kb-caixa-rot {
+.kb-dado {
+  display: flex;
+  align-items: baseline;
+  gap: var(--re-3);
+  padding: 0 var(--sp-4);
   font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.35;
   color: var(--text-2);
+  white-space: nowrap;
 }
-.kb-caixa-n {
-  font-size: 30px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+.kb-dado + .kb-dado {
+  border-left: 1px solid var(--border);
+}
+.kb-dado > b {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
-.kb-caixa.alerta .kb-caixa-n {
+.kb-dado.alerta > b {
   color: var(--brand);
-}
-.kb-caixa-sub {
-  margin-top: var(--re-3);
-  font-size: 11.5px;
-  line-height: 1.3;
-  color: var(--text-3);
 }
 
 /* --- as setas, do trilho e do quadro ------------------------------------ */
@@ -447,10 +413,48 @@
    O QUADRO
    ========================================================================== */
 .kb-postos {
+  container-type: inline-size;
+  container-name: postos;
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
   min-width: 0;
+}
+/* ONDE A BARRA NÃO CABE NUMA LINHA SÓ, os números descem para uma linha
+   própria, na largura inteira, e as setas continuam ao lado do título. Na
+   tela estreita os quatro viram dois por dois. */
+@container postos (max-width: 1180px) {
+  .kb-dados {
+    order: 9;
+    flex-basis: 100%;
+  }
+  .kb-dado {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@container postos (max-width: 560px) {
+  .kb-dados {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+  }
+  .kb-dado {
+    height: 44px;
+    align-items: center;
+    padding: 0 var(--sp-3);
+    white-space: normal;
+    line-height: 1.2;
+  }
+  .kb-dado + .kb-dado {
+    border-left: 0;
+  }
+  .kb-dado:nth-child(even) {
+    border-left: 1px solid var(--border);
+  }
+  .kb-dado:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
 }
 .kb-postos-topo {
   display: flex;
@@ -584,7 +588,12 @@
 }
 
 /* ==========================================================================
-   O CARTÃO DO QUADRO, do jeito do cartão do funil
+   O CARTÃO DO QUADRO
+
+   A BORDA É CINZA NEUTRA EM TODO POSTO, pedido do Henrique em 01/10: a cor do
+   posto mora no cabeçalho da coluna e no ponto miúdo da linha de origem, e o
+   cartão em si fica quieto. Saiu junto a lavagem de cor do canto de cima,
+   que sem a borda colorida virava uma mancha sem motivo.
    ========================================================================== */
 .kb-cartao {
   position: relative;
@@ -592,14 +601,9 @@
   flex-direction: column;
   gap: var(--sp-2);
   padding: var(--re-7);
-  border: 2px solid color-mix(in oklab, var(--c, var(--border)) 42%, var(--border));
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
   background-color: var(--surface);
-  background-image: radial-gradient(
-    115% 88% at 0% 0%,
-    color-mix(in oklab, var(--c, transparent) 9%, transparent) 0%,
-    transparent 56%
-  );
   box-shadow: var(--shadow-card);
   color: var(--text);
   cursor: grab;
@@ -657,26 +661,7 @@
   outline-offset: 4px;
   border-radius: var(--radius-sm);
 }
-.kb-cartao-topo {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-width: 0;
-}
-.kb-avatar {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 10.5px;
-  font-weight: 700;
-}
 .kb-nome {
-  flex-grow: 1;
   min-width: 0;
   font-size: 14.5px;
   font-weight: 600;
@@ -700,28 +685,18 @@
   border-radius: var(--radius-pill);
   background: var(--c, var(--border-2));
 }
-.kb-mestres {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-2);
-}
-.kb-tags {
+/* A FILEIRA DE TAGS: as mestre, um risco, e as do posto. São as etiquetas
+   do Design System, as mesmas do cartão aberto. */
+.kb-fileira {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--re-3);
 }
-.kb-tag {
-  padding: calc(var(--re-1) + var(--re-1) / 2) calc(var(--re-4) + var(--re-1) / 2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-2);
-}
-.kb-tag-aviso {
-  border-color: color-mix(in oklab, var(--brand) 40%, var(--border));
-  color: var(--brand-text);
+.kb-risco {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
 }
 
 .kb-pe {
@@ -784,20 +759,12 @@
 }
 
 /* --- o cartão escolhido, por dentro ------------------------------------- */
-.kb-cartao.escuro .kb-avatar {
-  background: color-mix(in oklab, var(--branco) 12%, transparent);
-  color: color-mix(in oklab, var(--branco) 78%, transparent);
-}
 .kb-cartao.escuro .kb-origem,
-.kb-cartao.escuro .kb-pe,
-.kb-cartao.escuro .kb-tag {
+.kb-cartao.escuro .kb-pe {
   color: color-mix(in oklab, var(--branco) 78%, transparent);
 }
-.kb-cartao.escuro .kb-mestres {
-  color: color-mix(in oklab, var(--branco) 86%, transparent);
-}
-.kb-cartao.escuro .kb-tag {
-  border-color: color-mix(in oklab, var(--branco) 30%, transparent);
+.kb-cartao.escuro .kb-risco {
+  background: color-mix(in oklab, var(--branco) 24%, transparent);
 }
 .kb-cartao.escuro .kb-pecas {
   color: var(--branco);

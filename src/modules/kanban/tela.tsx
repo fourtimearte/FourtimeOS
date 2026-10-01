@@ -330,35 +330,19 @@ export function TelaKanban() {
           cabeçalho do MARK45 da vista, e não da página. */}
       <h1 className="kb-titulo-oculto">Kanban de produção</h1>
 
-      {/* O palco só existe para ser medido: ele é o contêiner que a faixa de
-          cima consulta. Sem ele a conta seria da janela, que tem 248px de
-          menu lateral que o quadro não pode usar. */}
-      <div className="kb-palco">
-        <section className="kb-cima" aria-label="Entregas e números do quadro">
-          <Trilho
-            pedidos={trilho}
-            fatias={fatias}
-            rotas={rotas}
-            aceso={aceso}
-            aoEscolher={escolherNoTrilho}
-            aoAbrirPedido={(p) => setPedidoAberto(p.id)}
-          />
-
-          {/* QUATRO CAIXAS QUADRADAS, LADO A LADO, DA ALTURA DO TRILHO. Duas
-              fileiras de duas era o que o Henrique não queria. */}
-          <div className="kb-kpis">
-            <Caixa rotulo="No chão de fábrica" valor={conta.cartoes} sub="cartões correndo" />
-            <Caixa rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os pedidos" />
-            <Caixa
-              rotulo="Parados 3 dias ou mais"
-              valor={conta.parados}
-              sub={conta.parados ? 'segurando entrega' : 'nada empacado'}
-              alerta={conta.parados > 0}
-            />
-            <Caixa rotulo="Finalizados" valor={conta.prontos} sub="no fim da rota" />
-          </div>
-        </section>
-      </div>
+      {/* O TRILHO SOZINHO, NA LARGURA INTEIRA. As quatro caixas de número
+          sairam daqui em 01/10 para o trilho mostrar mais pedidos: elas
+          moram agora na barra dos postos, ao lado das setas do quadro. */}
+      <section className="kb-cima" aria-label="Entregas">
+        <Trilho
+          pedidos={trilho}
+          fatias={fatias}
+          rotas={rotas}
+          aceso={aceso}
+          aoEscolher={escolherNoTrilho}
+          aoAbrirPedido={(p) => setPedidoAberto(p.id)}
+        />
+      </section>
 
       {erro ? (
         <Vazio titulo="Não consegui ler o quadro" texto={erro} />
@@ -388,6 +372,22 @@ export function TelaKanban() {
               </button>
             ) : null}
             <span className="kb-empurra" />
+            {/* OS NÚMEROS DO QUADRO, num retângulo largo, à esquerda das
+                setas. Eram quatro caixas quadradas ao lado do trilho. */}
+            <div className="kb-dados" role="group" aria-label="Números do quadro">
+              <span className="kb-dado">
+                <b>{conta.cartoes}</b> no chão de fábrica
+              </span>
+              <span className="kb-dado">
+                <b>{conta.pecas.toLocaleString('pt-BR')}</b> peças correndo
+              </span>
+              <span className={conta.parados ? 'kb-dado alerta' : 'kb-dado'}>
+                <b>{conta.parados}</b> parados 3 dias ou mais
+              </span>
+              <span className="kb-dado">
+                <b>{conta.prontos}</b> finalizados
+              </span>
+            </div>
             <button
               type="button"
               className="kb-seta"
@@ -529,31 +529,6 @@ export function TelaKanban() {
           <span>{arrasto.fatia.pecas} pçs</span>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-/* UMA CAIXA DE NÚMERO, quadrada, do wireframe: rótulo em cima, número
-   embaixo, e a frase miúda no pé. Não é o Kpi do Design System porque o Kpi
-   tem altura e recheio próprios, e a caixa aqui tem que medir exatamente o
-   mesmo que o trilho do lado. */
-function Caixa({
-  rotulo,
-  valor,
-  sub,
-  alerta,
-}: {
-  rotulo: string
-  valor: number | string
-  sub: string
-  alerta?: boolean
-}) {
-  return (
-    <div className={alerta ? 'kb-caixa alerta' : 'kb-caixa'}>
-      <span className="kb-caixa-rot">{rotulo}</span>
-      <span className="kb-empurra" />
-      <span className="kb-caixa-n">{valor}</span>
-      <span className="kb-caixa-sub">{sub}</span>
     </div>
   )
 }

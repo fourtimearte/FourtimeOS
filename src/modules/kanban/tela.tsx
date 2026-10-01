@@ -92,34 +92,56 @@ export function TelaKanban() {
   const [alvo, setAlvo] = useState<Etapa | null>(null)
   const quadro = useRef<HTMLDivElement>(null)
 
-  /* O QUADRO ANDA POR COLUNA, COM SETAS, e não rola. Quantas colunas cabem
-     sai da largura medida, com 12 de vão. O wireframe dá sete colunas de 219
-     em 1080p; o sistema guarda 10px de calha para a barra de rolagem da
-     página (base.css, scrollbar-gutter), então a mesa real tem 1598 e não
-     1608. Por isso a conta aceita coluna a partir de 212: as sete continuam
-     cabendo, com 218 cada, e esticam até encostar nas duas bordas. */
+  /* O QUADRO ROLA DE LADO, MAS SEM BARRA. Ele é uma janela de rolagem de
+     verdade com a barra escondida, e não mais uma fita movida por transform:
+     é isso que deixa ele andar pelas setas, pelo botão do meio do mouse
+     apertado, pela roda com Shift e pelo deslizar do trackpad, tudo pelo
+     mesmo scrollLeft.
+
+     Quantas colunas cabem sai da largura medida, com 12 de vão. O wireframe
+     dá sete colunas de 219 em 1080p; o sistema guarda 10px de calha para a
+     barra de rolagem da página (base.css, scrollbar-gutter), então a mesa
+     real tem 1598 e não 1608. Por isso a conta aceita coluna a partir de 212:
+     as sete continuam cabendo, com 218 cada, e esticam até encostar nas duas
+     bordas. */
   const [largura, setLargura] = useState(0)
-  const [desvio, setDesvio] = useState(0)
+  const [posicao, setPosicao] = useState(0)
+  const [fimDoQuadro, setFimDoQuadro] = useState(0)
+  const [panando, setPanando] = useState(false)
+  const pan = useRef<{ x: number; esquerda: number } | null>(null)
   useLayoutEffect(() => {
     const el = quadro.current
     if (!el) return
-    const medir = () => setLargura(el.clientWidth)
+    const medir = () => {
+      setLargura(el.clientWidth)
+      setPosicao(el.scrollLeft)
+      setFimDoQuadro(Math.max(0, el.scrollWidth - el.clientWidth))
+    }
     medir()
     const ro = new ResizeObserver(medir)
     ro.observe(el)
-    return () => ro.disconnect()
+    el.addEventListener('scroll', medir, { passive: true })
+    return () => {
+      ro.disconnect()
+      el.removeEventListener('scroll', medir)
+    }
     /* o quadro só existe depois de carregar e quando há fatia: é quando o
        ref aparece que a medida precisa começar */
   }, [carregando, fatias.length > 0])
   const VAO = 12
   const cabem = Math.max(1, Math.min(COLUNAS.length, Math.floor((largura + VAO) / (212 + VAO))))
   const larguraDaColuna = largura ? (largura - VAO * (cabem - 1)) / cabem : 219
+  const passoDaColuna = larguraDaColuna + VAO
   const desvioMaximo = COLUNAS.length - cabem
-  const inicio = Math.min(desvio, desvioMaximo)
-  const ultimoAndar = useRef(0)
-  /* o laço do arrasto roda fora do render e precisa do teto de hoje */
-  const teto = useRef(0)
-  teto.current = desvioMaximo
+  const inicio = Math.max(0, Math.min(desvioMaximo, Math.round(posicao / passoDaColuna)))
+
+  /* vai até a coluna i, alinhada na borda esquerda */
+  function irParaAColuna(i: number) {
+    const el = quadro.current
+    if (!el) return
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ left: Math.max(0, Math.min(desvioMaximo, i)) * passoDaColuna, behavior: suave ? 'smooth' : 'auto' })
+  }
 
   /* O laço do arrasto lê destes, e não do estado: ele roda a cada quadro de
      vídeo, e reassinar o laço a cada setState faria ele nascer e morrer
@@ -206,7 +228,7 @@ export function TelaKanban() {
       .filter((i) => i >= 0)
     if (colunasDele.length) {
       const primeira = Math.min(...colunasDele)
-      if (primeira < inicio || primeira >= inicio + cabem) setDesvio(Math.min(desvioMaximo, primeira))
+      if (primeira < inicio || primeira >= inicio + cabem) irParaAColuna(primeira)
     }
   }
 
@@ -243,6 +265,8 @@ export function TelaKanban() {
      Um só caminho para dedo, caneta e ponteiro: escrever mouse e touch
      separados é escrever a mesma regra duas vezes e ver as duas divergirem. */
   function comecar(e: EventoDePonteiro, f: FatiaNoQuadro) {
+    /* só o botão principal arrasta cartão: o do meio é de andar o quadro */
+    if (e.button !== 0) return
     if (!podeMover || f.etapa === 'finalizado') return
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
     ponto.current = { x: e.clientX, y: e.clientY }
@@ -273,7 +297,7 @@ export function TelaKanban() {
      adiante. Sem isto, arrastar só funciona para a coluna do lado, e a fábrica
      ia concluir que arrastar não funciona.
 
-     O alvo também é decidido aqui, e não no pointermove: com o quadro andando
+     O alvo também é decidido aqui, e não no pointermove: com o quadro rolando
      sozinho, a coluna embaixo do dedo muda sem o dedo se mexer. */
   useEffect(() => {
     if (!arrasto?.valendo) return
@@ -287,18 +311,10 @@ export function TelaKanban() {
         const caixa = el.getBoundingClientRect()
         const beira = 72
         const { x, y } = ponto.current
-        /* sem barra de rolagem, o quadro anda uma coluna inteira por vez,
-           e espera 450ms entre uma e outra para dar tempo de o olho achar o
-           alvo antes de ele passar */
-        const agora = performance.now()
-        if (agora - ultimoAndar.current > 450) {
-          if (x < caixa.left + beira) {
-            setDesvio((d) => Math.max(0, Math.min(d, teto.current) - 1))
-            ultimoAndar.current = agora
-          } else if (x > caixa.right - beira) {
-            setDesvio((d) => Math.min(teto.current, d + 1))
-            ultimoAndar.current = agora
-          }
+        if (x < caixa.left + beira) {
+          el.scrollLeft -= Math.min(24, (caixa.left + beira - x) / 2)
+        } else if (x > caixa.right - beira) {
+          el.scrollLeft += Math.min(24, (x - (caixa.right - beira)) / 2)
         }
 
         /* elementFromPoint em vez de onDragOver, porque o cartão flutuante
@@ -392,8 +408,8 @@ export function TelaKanban() {
               type="button"
               className="kb-seta"
               aria-label="Postos anteriores"
-              disabled={inicio <= 0}
-              onClick={() => setDesvio(Math.max(0, inicio - 1))}
+              disabled={posicao <= 1}
+              onClick={() => irParaAColuna(inicio - 1)}
             >
               <SetaEsquerda />
             </button>
@@ -401,30 +417,63 @@ export function TelaKanban() {
               type="button"
               className="kb-seta"
               aria-label="Próximos postos"
-              disabled={inicio >= desvioMaximo}
-              onClick={() => setDesvio(Math.min(desvioMaximo, inicio + 1))}
+              disabled={posicao >= fimDoQuadro - 1}
+              onClick={() => irParaAColuna(inicio + 1)}
             >
               <SetaDireita />
             </button>
           </div>
 
+          {/* O BOTÃO DO MEIO APERTADO ANDA O QUADRO DE LADO, como arrastar
+              uma folha: a mão vai para a direita e o quadro acompanha. O
+              preventDefault desliga a rolagem automática do Windows, aquela
+              bolinha com quatro setas, que andaria a página e não o quadro. */}
           <div
-            className="kb-quadro"
+            className={panando ? 'kb-quadro panando' : 'kb-quadro'}
             ref={quadro}
-            onPointerMove={andar}
-            onPointerUp={largar}
-            onPointerCancel={largar}
+            onMouseDown={(e) => {
+              if (e.button === 1) e.preventDefault()
+            }}
+            onAuxClick={(e) => {
+              if (e.button === 1) e.preventDefault()
+            }}
+            onPointerDown={(e) => {
+              if (e.button !== 1 || !quadro.current) return
+              e.preventDefault()
+              pan.current = { x: e.clientX, esquerda: quadro.current.scrollLeft }
+              quadro.current.setPointerCapture(e.pointerId)
+              setPanando(true)
+            }}
+            onPointerMove={(e) => {
+              if (pan.current && quadro.current) {
+                quadro.current.scrollLeft = pan.current.esquerda - (e.clientX - pan.current.x)
+                return
+              }
+              andar(e)
+            }}
+            onPointerUp={() => {
+              if (pan.current) {
+                pan.current = null
+                setPanando(false)
+                return
+              }
+              largar()
+            }}
+            onPointerCancel={() => {
+              if (pan.current) {
+                pan.current = null
+                setPanando(false)
+                return
+              }
+              largar()
+            }}
           >
-            <div
-              className="kb-quadro-fita"
-              style={{ transform: `translateX(${-inicio * (larguraDaColuna + VAO)}px)` }}
-            >
-              {COLUNAS.map((posto, i) => {
+            <div className="kb-quadro-fita">
+              {COLUNAS.map((posto) => {
                 const lista = porPosto.get(posto) ?? []
                 const naRota = arrasto?.valendo
                   ? estaNaRota(rotas, arrasto.fatia.tecnica, posto)
                   : true
-                const fora = i < inicio || i >= ultima
                 const classes = [
                   'kb-coluna',
                   arrasto?.valendo && !naRota ? 'fora' : '',
@@ -437,8 +486,6 @@ export function TelaKanban() {
                     key={posto}
                     className={classes}
                     data-posto={posto}
-                    aria-hidden={fora || undefined}
-                    inert={fora || undefined}
                     style={{ width: larguraDaColuna, '--c': corDoPosto(posto) } as CSSProperties}
                   >
                     <header className="kb-topo">

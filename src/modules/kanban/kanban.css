@@ -17,6 +17,24 @@
      o trilho */
   padding-top: var(--re-2);
   min-width: 0;
+  box-sizing: border-box;
+  /* A PÁGINA TEM A ALTURA DA TELA E NÃO ROLA. Quem rola para baixo é cada
+     coluna, pela quantidade de cartões dela; o chão do quadro é sempre o
+     chão da tela. A conta tira o topo de 60 e o recheio da vista, que no
+     celular inclui a barra de baixo (casca.css). O mínimo de 560 é para uma
+     janela muito baixa não esmagar as colunas: abaixo dele a página volta a
+     rolar, que é melhor que coluna de três cartões de altura. */
+  height: calc(100dvh - var(--topbar-h) - 20px - var(--bottomnav-h) - env(safe-area-inset-bottom) - 28px);
+  min-height: 560px;
+}
+@media (min-width: 1024px) {
+  .kb-pagina {
+    height: calc(100dvh - var(--topbar-h) - 24px - 40px);
+  }
+}
+/* o carregando e o vazio também ficam dentro da altura */
+.kb-pagina > * {
+  flex: none;
 }
 
 /* o título continua na página para quem lê com leitor de tela; o wireframe
@@ -188,7 +206,9 @@
   overflow: hidden;
   border: 1.5px solid var(--ink-soft);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  /* CINZA CLARO SOBRE O BRANCO DO TRILHO, pedido de 01/10: o cartão branco
+     sumia dentro da caixa branca */
+  background: var(--surface-2);
   color: var(--text);
   transition: opacity var(--t-base) var(--ease-out);
 }
@@ -412,6 +432,10 @@
 /* ==========================================================================
    O QUADRO
    ========================================================================== */
+.kb-pagina > .kb-postos {
+  flex: 1;
+  min-height: 0;
+}
 .kb-postos {
   container-type: inline-size;
   container-name: postos;
@@ -457,6 +481,7 @@
   }
 }
 .kb-postos-topo {
+  flex: none;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -496,50 +521,77 @@
   outline-offset: 2px;
 }
 
-/* SEM BARRA DE ROLAGEM AQUI TAMBÉM. A janela corta, a fita anda uma coluna
-   por toque nas setas, e o recheio de baixo é só para a sombra do cartão
-   escuro não ser cortada pela borda da janela. */
+/* O QUADRO ROLA DE LADO, SEM BARRA À VISTA. Ele anda pelas setas, pelo
+   botão do meio do mouse apertado, pela roda com Shift e pelo trackpad; a
+   barra do navegador fica escondida porque as setas já dizem que há mais. */
 .kb-quadro {
   position: relative;
-  overflow: hidden;
-  padding-bottom: var(--sp-6);
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
   /* sem isto, arrastar o cartão no tablet rola a página junto */
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
+}
+.kb-quadro::-webkit-scrollbar {
+  display: none;
+}
+.kb-quadro.panando {
+  cursor: grabbing;
+  user-select: none;
 }
 .kb-quadro-fita {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--sp-3);
-  transition: transform var(--t-slow) var(--ease-out);
+  height: 100%;
 }
 
+/* A COLUNA É UMA CAIXA, pedido de 01/10: os cartões ficam dentro dela, com
+   recheio, e a coluna se separa da vizinha. Soltos na página eles pareciam
+   uma pilha só. A altura é a do quadro inteiro, e quem rola é a pilha. */
 .kb-coluna {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--re-5);
+  gap: var(--sp-2);
+  height: 100%;
   min-width: 0;
-  transition: opacity var(--t-fast) var(--ease-out);
+  box-sizing: border-box;
+  padding: var(--re-5) var(--re-5) 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  transition:
+    opacity var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    background-color var(--t-fast) var(--ease-out);
+}
+/* no Grafite a coluna fica mais funda que o cartão, e não mais clara: o
+   cartão é o que sobe da coluna nos dois temas */
+[data-theme='dark'] .kb-coluna {
+  background: color-mix(in oklab, var(--surface) 50%, var(--bg));
 }
 /* Enquanto um cartão está no ar, a coluna que a rota dele não conhece apaga.
    Recusar só no fim seria ensinar errado e depois corrigir. */
 .kb-coluna.fora {
   opacity: 0.35;
 }
-.kb-coluna.alvo .kb-pilha {
-  background: color-mix(in oklab, var(--c) 8%, transparent);
-  outline: 2px dashed color-mix(in oklab, var(--c) 45%, transparent);
-  outline-offset: 2px;
-  border-radius: var(--radius-lg);
+.kb-coluna.alvo {
+  border-color: color-mix(in oklab, var(--c) 60%, var(--border));
+  background: color-mix(in oklab, var(--c) 8%, var(--surface-2));
 }
 
 /* o cabeçalho não é cartão: é o nome do posto numa pílula da cor dele, e um
    filete de 2px na mesma cor, igual ao funil */
 .kb-topo {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--re-5) var(--re-1) var(--sp-3);
+  padding: 0 var(--re-1) var(--re-5);
   border-bottom: 2px solid var(--c);
 }
 .kb-topo-nome {
@@ -570,10 +622,16 @@
 }
 
 .kb-pilha {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--re-5);
-  min-height: 96px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 2 em cima para o cartão subir 1 no hover sem ser cortado, e 10 embaixo
+     para o último cartão não encostar no fundo da coluna */
+  padding: var(--re-1) 0 var(--re-5);
 }
 .kb-vazio {
   display: grid;

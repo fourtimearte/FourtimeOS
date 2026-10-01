@@ -54,6 +54,9 @@ const PEDIDOS = [
   ['p8','PD-0420','Vôlei Clube Araras',5,48,[],[['subli','conferencia',[1,2],1,0,[]]]],
   ['p9','PD-0423','Clínica Bem Viver',7,90,[],[['patch','prensa',[1],0,0,[]]]],
 ]
+/* doze pedidos a mais, todos no corte, só para a coluna do corte passar da
+   altura da tela e ter que rolar por dentro */
+for (let i = 0; i < 12; i++) PEDIDOS.push(['x' + i, 'PD-05' + String(10 + i), 'Pedido de enchimento ' + (i + 1), 9 + i, 20, [], [['dtf','corte',[1],0,0,[]]]])
 const FATIAS = []
 for (const [pid, numero, nome, d, pecas, marcas, fatias] of PEDIDOS) {
   const nLay = fatias.reduce((s, f) => s + f[2].length, 0)
@@ -166,7 +169,7 @@ for (const tema of ['light', 'dark']) {
     const cartoes = [...document.querySelectorAll('.kb-dia-cartoes')].find(e => e.children.length > 1)
     const doisCartoes = cartoes ? cartoes.children[1].getBoundingClientRect().left - cartoes.children[0].getBoundingClientRect().right : null
     return {
-      dias, w: r.width, h: r.height, borda: cs(c).borderTopWidth, raio: cs(c).borderTopLeftRadius,
+      dias, w: r.width, h: r.height, fundo: cs(c).backgroundColor, borda: cs(c).borderTopWidth, raio: cs(c).borderTopLeftRadius,
       pad: cs(c.querySelector('.kb-tr-esq')).paddingTop,
       num: [cs(c.querySelector('.kb-tr-topo b')).fontSize, cs(c.querySelector('.kb-tr-topo b')).fontWeight],
       prazo: [cs(c.querySelector('.kb-tr-prazo')).fontSize, cs(c.querySelector('.kb-tr-prazo')).fontWeight],
@@ -181,6 +184,7 @@ for (const tema of ['light', 'dark']) {
   conta(tr.dias[0] === 'Atrasado' && tr.dias[1] === 'Hoje' && tr.dias[2] === 'Amanhã', `${T}: grupos por data em ordem (${tr.dias.slice(0,4).join(', ')})`)
   conta(igual(tr.w, 156) && igual(tr.h, 104), `${T}: cartão do trilho fechado 156x104 (${tr.w}x${tr.h})`)
   /* 1.5px vira 1px na tela de densidade 1, no wireframe e no sistema igual */
+  conta(tr.fundo === (T === 'light' ? 'rgb(241, 243, 246)' : 'rgb(37, 40, 44)'), `${T}: o cartão do trilho é cinza claro sobre o branco (${tr.fundo})`)
   conta(['1px', '1.5px'].includes(tr.borda) && tr.raio === '14px' && tr.pad === '12px', `${T}: borda 1.5, raio 14, recheio 12 (${tr.borda} ${tr.raio} ${tr.pad})`)
   conta(tr.num.join(' ') === '12.5px 700' && tr.prazo.join(' ') === '11.5px 600' && tr.nome.join(' ') === '13.5px 600',
     `${T}: fontes do cartão do trilho 12.5/700, 11.5/600, 13.5/600`)
@@ -209,6 +213,9 @@ for (const tema of ['light', 'dark']) {
       vao: vis[1].getBoundingClientRect().left - vis[0].getBoundingClientRect().right,
       bordas: [vis[0].getBoundingClientRect().left - quadro.left, quadro.right - vis[vis.length - 1].getBoundingClientRect().right],
       cab: [cs(h).paddingTop, cs(h).paddingRight, cs(h).paddingBottom, cs(h).borderBottomWidth],
+      caixa: [cs(cols[0]).paddingTop, cs(cols[0]).borderTopWidth, cs(cols[0]).borderTopLeftRadius],
+      caixaFundo: cs(cols[0]).backgroundColor, paginaFundo: cs(document.body).backgroundColor,
+      cartaoFundo: cs(document.querySelector('.kb-cartao')).backgroundColor,
       pil: [cs(pil).fontSize, cs(pil).fontWeight, cs(pil).paddingTop, cs(pil).paddingLeft],
       conta: [cs(n).fontSize, cs(n).fontWeight, cs(n).paddingTop, cs(n).paddingLeft],
       card: [cs(card).paddingTop, cs(card).borderTopWidth, cs(card).borderTopLeftRadius, cs(card).rowGap],
@@ -234,7 +241,9 @@ for (const tema of ['light', 'dark']) {
   conta(q.visiveis === 7, `${T}: sete colunas à vista em 1080p (${q.visiveis})`)
   conta(Math.abs(q.largura - (q.quadroW - 72) / 7) < 0.6 && q.largura > 217, `${T}: sete colunas iguais de ~219 (${q.largura?.toFixed(1)})`)
   conta(igual(q.vao, 12) && q.bordas.every(b => Math.abs(b) < 1), `${T}: 12 entre colunas, encostando nas duas bordas (${q.vao}, ${q.bordas})`)
-  conta(q.cab.join(' ') === '10px 2px 12px 2px', `${T}: cabeçalho da coluna 10 2 12 com filete de 2 (${q.cab.join(' ')})`)
+  conta(q.cab.join(' ') === '0px 2px 10px 2px', `${T}: cabeçalho da coluna 0 2 10 com filete de 2 (${q.cab.join(' ')})`)
+  conta(q.caixa.join(' ') === '10px 1px 14px', `${T}: a coluna é uma caixa com recheio 10, borda 1 e raio 14 (${q.caixa.join(' ')})`)
+  conta(q.caixaFundo !== q.paginaFundo && q.caixaFundo !== q.cartaoFundo, `${T}: a caixa da coluna se distingue da página e do cartão (${q.caixaFundo})`)
   conta(q.pil.join(' ') === '12.5px 700 4px 10px', `${T}: pílula do posto 12.5/700, 4 10 (${q.pil.join(' ')})`)
   conta(q.conta.join(' ') === '12px 600 2px 8px', `${T}: contador 12/600, 2 8`)
   conta(q.card.join(' ') === '14px 2px 14px 8px', `${T}: cartão com recheio 14, borda 2, raio 14, vão 8 (${q.card.join(' ')})`)
@@ -248,6 +257,36 @@ for (const tema of ['light', 'dark']) {
     `${T}: quatro números, 15/700 com rótulo 12.5 (${q.dados.itens.join(' | ')})`)
   conta(q.pe === '12.5px' && q.pecas.join(' ') === '13px 700', `${T}: pé 12.5, peças 13/700`)
   conta(q.bt[0] === 32 && q.bt[1] === 32 && q.bt[2] === '7px', `${T}: seta do Terminei 32x32 raio 7`)
+
+  /* ---------- 3b. a altura da tela, e quem rola ---------- */
+  const alt = await pg.evaluate(() => {
+    const doc = document.scrollingElement
+    const q = document.querySelector('.kb-quadro').getBoundingClientRect()
+    const corte = document.querySelector('[data-posto="corte"] .kb-pilha')
+    return {
+      paginaRola: doc.scrollHeight > doc.clientHeight + 1,
+      fundoDoQuadro: q.bottom, janela: window.innerHeight,
+      corteRola: corte.scrollHeight > corte.clientHeight && getComputedStyle(corte).overflowY === 'auto',
+    }
+  })
+  conta(!alt.paginaRola, `${T}: a página não rola para baixo`)
+  conta(igual(alt.fundoDoQuadro, alt.janela - 40), `${T}: o chão do quadro é o chão da tela, 40 acima da borda (${alt.fundoDoQuadro} de ${alt.janela})`)
+  conta(alt.corteRola, `${T}: a coluna cheia rola por dentro`)
+
+  /* ---------- 3c. o botão do meio apertado anda o quadro ---------- */
+  const antes = await pg.evaluate(() => document.querySelector('.kb-quadro').scrollLeft)
+  const meio = await pg.evaluate(() => { const r = document.querySelector('.kb-quadro').getBoundingClientRect(); return [r.left + r.width / 2, r.top + 40] })
+  await pg.mouse.move(meio[0], meio[1])
+  await pg.mouse.down({ button: 'middle' })
+  await pg.mouse.move(meio[0] - 400, meio[1], { steps: 8 })
+  await pg.mouse.up({ button: 'middle' })
+  await pg.waitForTimeout(200)
+  const depois = await pg.evaluate(() => document.querySelector('.kb-quadro').scrollLeft)
+  conta(depois - antes > 350, `${T}: o botão do meio arrastado anda o quadro para a direita (${antes} para ${depois})`)
+  const faixa = await pg.evaluate(() => document.querySelector('.kb-faixa').textContent)
+  conta(!faixa.startsWith('1 a'), `${T}: a faixa acompanha o quadro (${faixa})`)
+  await pg.evaluate(() => { document.querySelector('.kb-quadro').scrollLeft = 0 })
+  await pg.waitForTimeout(200)
 
   await pg.screenshot({ path: `${PASTA}/wf-quadro-${T}.png` })
 

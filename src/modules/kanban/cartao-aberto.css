@@ -721,10 +721,12 @@
   color: var(--text);
   cursor: pointer;
 }
-.ca-antigo-botoes button::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
+/* 36 no mouse, que é o do wireframe, e 44 onde há dedo */
+@media (pointer: coarse) {
+  .ca-antigo-botoes button {
+    width: 44px;
+    height: 44px;
+  }
 }
 .ca-antigo-botoes button:hover {
   background: var(--surface-2);
@@ -857,8 +859,17 @@
 }
 @media (max-width: 900px) {
   .ca-topo {
+    position: relative;
     flex-wrap: wrap;
     padding: var(--sp-4) var(--sp-5);
+  }
+  .ca-titulo {
+    padding-right: 44px;
+  }
+  .ca-topo > .mk-fechar {
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-2);
   }
   .ca-caixa-busca {
     order: 3;
@@ -878,8 +889,15 @@
   .ca-esq,
   .ca-outro,
   .ca-dir {
+    flex: none;
     overflow: visible;
     padding: var(--sp-5);
+  }
+  /* NA PILHA A AÇÃO VAI PARA CIMA: o que muda o estado da fábrica não pode
+     ficar depois de oito layouts */
+  .ca-dir {
+    order: -1;
+    border-bottom: 1px solid var(--ink-soft);
   }
   .ca-esq {
     border-right: 0;

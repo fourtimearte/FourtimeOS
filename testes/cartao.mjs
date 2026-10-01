@@ -305,7 +305,7 @@ for (const tema of ['light', 'dark']) {
       const linhas = [...h.querySelectorAll('.ca-antigo')]
       const conversa = d.querySelector('.ca-conversa')
       return {
-        titulo: h.querySelector('.ca-rot')?.textContent.trim() ?? '',
+        titulo: h.querySelector('.mk-rot')?.textContent.trim() ?? '',
         quantas: linhas.length,
         primeira: linhas[0]?.innerText.replace(/\n/g, ' ') ?? '',
         botoesDaPrimeira: [...(linhas[0]?.querySelectorAll('button') ?? [])].map((b) =>

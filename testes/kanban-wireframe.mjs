@@ -146,7 +146,9 @@ for (const tema of ['light', 'dark']) {
       cxRot: [cs('.kb-caixa-rot').fontSize, cs('.kb-caixa-rot').fontWeight],
       cxN: [cs('.kb-caixa-n').fontSize, cs('.kb-caixa-n').fontWeight],
       cxSub: [cs('.kb-caixa-sub').fontSize, cs('.kb-caixa-sub').marginTop],
-      larg: document.documentElement.clientWidth,
+      /* a borda direita da área útil: a vista termina antes da calha de 10px
+         que o sistema guarda para a barra de rolagem */
+      larg: document.querySelector('.vista').getBoundingClientRect().right,
     }
   })
   conta(!cima.tituloVisivel, `${T}: sem cabeçalho MARK45 visível`)
@@ -307,7 +309,7 @@ for (const tema of ['light', 'dark']) {
     const esq = d.querySelector('.ca-esq').getBoundingClientRect()
     const dir = d.querySelector('.ca-outro').getBoundingClientRect()
     const linha = d.querySelector('.kb-gg-linha:not(.kb-gg-eixo)')
-    const L = document.documentElement.clientWidth
+    const L = document.querySelector('.vista').getBoundingClientRect().right
     return {
       caixa: [caixa.left, caixa.top, caixa.width, caixa.height, cs(d.querySelector('.caixa')).borderTopLeftRadius],
       margens: [caixa.left, L - caixa.right],

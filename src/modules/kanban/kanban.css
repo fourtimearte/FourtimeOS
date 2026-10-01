@@ -735,6 +735,12 @@
   font-weight: 600;
   color: var(--text-2);
 }
+.kb-origem > span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .kb-origem::before {
   content: '';
   flex: none;

@@ -110,8 +110,12 @@ export function CartaoDaFatia({
           pessoas chega nas coisas pelo teclado de acessibilidade. */}
       <button type="button" className="kb-abrir" onClick={aoAbrir}>
         <span className="kb-nome">{fatia.nome || fatia.cliente}</span>
+        {/* uma linha só: o número nunca quebra, e se não couber quem leva
+            as reticências é a técnica */}
         <span className="kb-origem">
-          {fatia.numero} · {NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica}
+          <span>
+            {fatia.numero} · {NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica}
+          </span>
         </span>
       </button>
 

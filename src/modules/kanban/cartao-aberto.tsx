@@ -246,7 +246,7 @@ export function CartaoAberto({
 
   return (
     <Modal aberto cheio solto aoFechar={aoFechar}>
-      <div className="ca">
+      <div className="ca" tabIndex={-1} data-foco-inicial>
         {/* ---------------- o cabeçalho ---------------- */}
         <header className="ca-topo">
           <div className="ca-titulo">

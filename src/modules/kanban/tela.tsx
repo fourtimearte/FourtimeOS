@@ -93,9 +93,11 @@ export function TelaKanban() {
   const quadro = useRef<HTMLDivElement>(null)
 
   /* O QUADRO ANDA POR COLUNA, COM SETAS, e não rola. Quantas colunas cabem
-     sai da largura medida: 219px é a coluna do wireframe em 1080p, mais 12 de
-     vão. Em 1608px de mesa cabem sete, e elas esticam até encostar nas duas
-     bordas, que é o que o wireframe desenha. */
+     sai da largura medida, com 12 de vão. O wireframe dá sete colunas de 219
+     em 1080p; o sistema guarda 10px de calha para a barra de rolagem da
+     página (base.css, scrollbar-gutter), então a mesa real tem 1598 e não
+     1608. Por isso a conta aceita coluna a partir de 212: as sete continuam
+     cabendo, com 218 cada, e esticam até encostar nas duas bordas. */
   const [largura, setLargura] = useState(0)
   const [desvio, setDesvio] = useState(0)
   useLayoutEffect(() => {
@@ -110,7 +112,7 @@ export function TelaKanban() {
        ref aparece que a medida precisa começar */
   }, [carregando, fatias.length > 0])
   const VAO = 12
-  const cabem = Math.max(1, Math.min(COLUNAS.length, Math.floor((largura + VAO) / (219 + VAO))))
+  const cabem = Math.max(1, Math.min(COLUNAS.length, Math.floor((largura + VAO) / (212 + VAO))))
   const larguraDaColuna = largura ? (largura - VAO * (cabem - 1)) / cabem : 219
   const desvioMaximo = COLUNAS.length - cabem
   const inicio = Math.min(desvio, desvioMaximo)

@@ -20,7 +20,15 @@ function usarDialogo(aberto: boolean, aoFechar: () => void) {
   useEffect(() => {
     const d = ref.current
     if (!d) return
-    if (aberto && !d.open) d.showModal()
+    if (aberto && !d.open) {
+      d.showModal()
+      /* O FOCO INICIAL PODE SER ESCOLHIDO. Sem isto o navegador foca o
+         primeiro campo da caixa, e no cartão do kanban isso era a busca do
+         comparar: no tablet o teclado subia toda vez que alguém abria um
+         cartão para olhar o layout. Quem marca data-foco-inicial recebe o
+         foco no lugar. */
+      d.querySelector<HTMLElement>('[data-foco-inicial]')?.focus({ preventScroll: true })
+    }
     if (!aberto && d.open) d.close()
   }, [aberto])
   useEffect(() => {

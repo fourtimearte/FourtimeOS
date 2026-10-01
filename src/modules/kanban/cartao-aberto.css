@@ -58,6 +58,11 @@
   height: 100%;
   min-height: 0;
 }
+/* a caixa recebe o foco ao abrir só para o teclado do tablet não subir; ela
+   não é um controle, e o anel em volta da tela inteira não diria nada */
+.ca:focus {
+  outline: 0;
+}
 .ca-empurra {
   flex-grow: 1;
 }

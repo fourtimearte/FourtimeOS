@@ -146,7 +146,7 @@ for (const tema of ['light', 'dark']) {
       cxRot: [cs('.kb-caixa-rot').fontSize, cs('.kb-caixa-rot').fontWeight],
       cxN: [cs('.kb-caixa-n').fontSize, cs('.kb-caixa-n').fontWeight],
       cxSub: [cs('.kb-caixa-sub').fontSize, cs('.kb-caixa-sub').marginTop],
-      vista: document.querySelector('.vista').getBoundingClientRect().left,
+      larg: document.documentElement.clientWidth,
     }
   })
   conta(!cima.tituloVisivel, `${T}: sem cabeçalho MARK45 visível`)
@@ -159,7 +159,9 @@ for (const tema of ['light', 'dark']) {
   conta(cima.caixas.length === 4 && cima.caixas.every(c => igual(c[1], 148) && igual(c[2], 148)), `${T}: as quatro caixas são quadradas, 148x148`)
   conta(cima.caixas.length === 4 && cima.caixas.slice(1).every((c, i) => igual(c[0] - (cima.caixas[i][0] + 148), 12)), `${T}: 12 entre as caixas`)
   conta(igual(cima.caixas[0][0] - cima.trilho.right, 16), `${T}: 16 entre o trilho e as caixas (${cima.caixas[0][0] - cima.trilho.right})`)
-  conta(igual(cima.caixas[3][0] + 148, 1888), `${T}: a última caixa encosta na margem de 32 (${cima.caixas[3][0] + 148})`)
+  /* o sistema guarda 10px de calha para a barra de rolagem (base.css), que o
+     wireframe não tinha: a margem de 32 é contada a partir dela */
+  conta(igual(cima.caixas[3][0] + 148, cima.larg - 32), `${T}: a última caixa encosta na margem de 32 (${cima.caixas[3][0] + 148} de ${cima.larg})`)
   conta(cima.cxPad.join(' ') === '14px 14px 12px' && cima.cxRaio === '14px', `${T}: caixa com recheio 14 14 12 e raio 14 (${cima.cxPad.join(' ')})`)
   conta(cima.cxRot.join(' ') === '12.5px 600' && cima.cxN.join(' ') === '30px 600' && cima.cxSub.join(' ') === '11.5px 6px',
     `${T}: fontes da caixa 12.5/600, 30/600, 11.5 com 6 em cima`)
@@ -189,7 +191,8 @@ for (const tema of ['light', 'dark']) {
   })
   conta(tr.dias[0] === 'Atrasado' && tr.dias[1] === 'Hoje' && tr.dias[2] === 'Amanhã', `${T}: grupos por data em ordem (${tr.dias.slice(0,4).join(', ')})`)
   conta(igual(tr.w, 156) && igual(tr.h, 104), `${T}: cartão do trilho fechado 156x104 (${tr.w}x${tr.h})`)
-  conta(tr.borda === '1.5px' && tr.raio === '14px' && tr.pad === '12px', `${T}: borda 1.5, raio 14, recheio 12`)
+  /* 1.5px vira 1px na tela de densidade 1, no wireframe e no sistema igual */
+  conta(['1px', '1.5px'].includes(tr.borda) && tr.raio === '14px' && tr.pad === '12px', `${T}: borda 1.5, raio 14, recheio 12 (${tr.borda} ${tr.raio} ${tr.pad})`)
   conta(tr.num.join(' ') === '12.5px 700' && tr.prazo.join(' ') === '11.5px 600' && tr.nome.join(' ') === '13.5px 600',
     `${T}: fontes do cartão do trilho 12.5/700, 11.5/600, 13.5/600`)
   conta(tr.pe[0] === '11.5px' && igual(tr.pe[1], 16), `${T}: pé do cartão 11.5 em 16 de altura`)
@@ -213,7 +216,7 @@ for (const tema of ['light', 'dark']) {
     return {
       topoH: topo.getBoundingClientRect().height, h2: [cs(topo.querySelector('h2')).fontSize, cs(topo.querySelector('h2')).fontWeight],
       faixa: cs(topo.querySelector('.kb-faixa')).fontSize,
-      visiveis: vis.length, largura: vis[0]?.getBoundingClientRect().width,
+      visiveis: vis.length, largura: vis[0]?.getBoundingClientRect().width, quadroW: quadro.width,
       vao: vis[1].getBoundingClientRect().left - vis[0].getBoundingClientRect().right,
       bordas: [vis[0].getBoundingClientRect().left - quadro.left, quadro.right - vis[vis.length - 1].getBoundingClientRect().right],
       cab: [cs(h).paddingTop, cs(h).paddingRight, cs(h).paddingBottom, cs(h).borderBottomWidth],
@@ -230,7 +233,7 @@ for (const tema of ['light', 'dark']) {
   })
   conta(igual(q.topoH, 44) && q.h2.join(' ') === '15px 600' && q.faixa === '13px', `${T}: barra dos postos 44, título 15/600, faixa 13`)
   conta(q.visiveis === 7, `${T}: sete colunas à vista em 1080p (${q.visiveis})`)
-  conta(Math.abs(q.largura - 219.4) < 1, `${T}: coluna com 219 de largura (${q.largura?.toFixed(1)})`)
+  conta(Math.abs(q.largura - (q.quadroW - 72) / 7) < 0.6 && q.largura > 217, `${T}: sete colunas iguais de ~219 (${q.largura?.toFixed(1)})`)
   conta(igual(q.vao, 12) && q.bordas.every(b => Math.abs(b) < 1), `${T}: 12 entre colunas, encostando nas duas bordas (${q.vao}, ${q.bordas})`)
   conta(q.cab.join(' ') === '10px 2px 12px 2px', `${T}: cabeçalho da coluna 10 2 12 com filete de 2 (${q.cab.join(' ')})`)
   conta(q.pil.join(' ') === '12.5px 700 4px 10px', `${T}: pílula do posto 12.5/700, 4 10 (${q.pil.join(' ')})`)
@@ -304,8 +307,10 @@ for (const tema of ['light', 'dark']) {
     const esq = d.querySelector('.ca-esq').getBoundingClientRect()
     const dir = d.querySelector('.ca-outro').getBoundingClientRect()
     const linha = d.querySelector('.kb-gg-linha:not(.kb-gg-eixo)')
+    const L = document.documentElement.clientWidth
     return {
       caixa: [caixa.left, caixa.top, caixa.width, caixa.height, cs(d.querySelector('.caixa')).borderTopLeftRadius],
+      margens: [caixa.left, L - caixa.right],
       topo: [cs(topo).paddingTop, cs(topo).paddingRight, cs(topo).paddingBottom],
       numero: [cs(d.querySelector('.ca-numero')).fontSize, cs(d.querySelector('.ca-numero')).fontWeight],
       nome: [cs(d.querySelector('.ca-nome')).fontSize, cs(d.querySelector('.ca-nome')).fontWeight],
@@ -318,8 +323,8 @@ for (const tema of ['light', 'dark']) {
       col: [cs(d.querySelector('.ca-esq')).paddingTop, cs(d.querySelector('.ca-esq')).paddingLeft, cs(d.querySelector('.ca-esq')).rowGap],
     }
   })
-  conta(p.caixa.slice(0, 4).map(Math.round).join(' ') === '40 32 1840 1016' && p.caixa[4] === '18px',
-    `${T}: o modal tem 1840x1016 a 40 e 32 da borda, raio 18 (${p.caixa.slice(0, 4).map(Math.round).join(' ')})`)
+  conta(p.margens.every(m => igual(m, 40)) && igual(p.caixa[1], 32) && igual(p.caixa[3], 1016) && p.caixa[4] === '18px',
+    `${T}: o modal tem 40 dos lados, 32 em cima, 1016 de altura e raio 18 (${p.margens.map(Math.round)} ${Math.round(p.caixa[1])} ${Math.round(p.caixa[3])})`)
   conta(p.topo.join(' ') === '22px 32px 18px', `${T}: cabeçalho com 22 32 18 (${p.topo.join(' ')})`)
   conta(p.numero.join(' ') === '24px 700' && p.nome.join(' ') === '24px 400' && p.meta === '13.5px', `${T}: título 24/700 e 24/400, linha de dados 13.5`)
   conta(p.fechar.join('x') === '44x44', `${T}: fechar 44x44`)

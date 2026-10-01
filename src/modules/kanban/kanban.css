@@ -13,8 +13,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-6);
-  /* a vista já dá 20 em cima, e o wireframe mede 28 do topo até o trilho */
-  padding-top: var(--sp-2);
+  /* a vista dá 24 em cima no computador, e o wireframe mede 28 do topo até
+     o trilho */
+  padding-top: var(--re-2);
   min-width: 0;
 }
 

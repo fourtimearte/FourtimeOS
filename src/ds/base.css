@@ -1298,8 +1298,10 @@ dialog.modal.gigante .caixa {
    de folga dos lados e 32 em cima e embaixo. E o tamanho em que dois pedidos
    cabem lado a lado com a mesma largura numa tela de 1080p, e foi o que o
    wireframe aprovado mediu. */
+/* 100% e nao 100vw: o 100vw conta a calha da barra de rolagem da pagina, e
+   o modal ficava com 35 de um lado e 45 do outro */
 dialog.modal.cheio {
-  width: calc(100vw - 80px);
+  width: calc(100% - 80px);
   max-width: none;
 }
 dialog.modal.cheio .caixa {

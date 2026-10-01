@@ -78,7 +78,7 @@ export function PedidoAberto({
 
   return (
     <Modal aberto cheio solto aoFechar={aoFechar}>
-      <div className="ca">
+      <div className="ca" tabIndex={-1} data-foco-inicial>
         <header className="ca-topo pi-topo">
           <div className="ca-titulo">
             <div className="ca-linha1">

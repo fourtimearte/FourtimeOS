@@ -1,38 +1,35 @@
 import { useEffect, useState } from 'react'
 import { Esqueleto, Modal, Vazio } from '@ds'
-import { CaixaDeImagem, GradeDeTamanhos, ModuloDeLayout } from '@dominio/layout'
-import { acharCotacao, type Cotacao } from '@dominio/cotacao'
+import { LayoutDeLeitura, type Bloco } from '@dominio/layout'
+import { acharCotacao } from '@dominio/cotacao'
 import {
-  BlocoDaFatia,
+  NOME_DA_TECNICA,
   cotacaoDoPedido,
-  quemSeguraOPedido,
   type FatiaNoQuadro,
   type PedidoNoTrilho,
   type Rota,
 } from '@dominio/producao'
+import { GraficoDoPedido } from './grafico'
+import { Fechar, Mestre, entregaEmTexto } from './pecas-do-modal'
 import './cartao-aberto.css'
-import './pedido-aberto.css'
 
 /* ==========================================================================
-   O PEDIDO INTEIRO, aberto do trilho de entregas.
+   O PEDIDO INTEIRO, aberto pelo "Abrir o pedido" do trilho, do jeito do
+   wireframe de 01/10/2026.
 
-   ELE NÃO É O CARTÃO ABERTO COM OUTRO NOME, e a diferença é a pergunta.
+   ELE NÃO É O CARTÃO ABERTO COM OUTRO NOME, e a diferença é a pergunta. O
+   cartão aberto é a tela de quem trabalha num posto: os layouts daquela
+   técnica, a ação, a conversa. Este é a tela de quem olha o pedido: o gráfico
+   de onde cada layout está, em cima, e todos os layouts embaixo, em duas
+   colunas iguais. Nenhum botão mexe na fábrica.
 
-   O cartão aberto é a tela de QUEM TRABALHA naquele posto: ele mostra os
-   layouts DAQUELA técnica, porque é o que está na mesa da pessoa, e ao lado
-   traz a ação, a conversa e o Terminei. É uma tela de fazer.
+   OS LAYOUTS SE REPARTEM EM DUAS COLUNAS na ordem da folha: L-01 e L-03 de
+   um lado, L-02 e L-04 do outro, como o wireframe desenha. Cada coluna tem a
+   largura de uma metade do cartão aberto, e por isso o layout fica idêntico
+   nas duas telas.
 
-   Este aqui é a tela de QUEM OLHA O PEDIDO: todos os layouts de todas as
-   técnicas juntos, e no topo onde cada fatia está. É uma tela de conferir, e
-   por isso não tem nenhum botão que mexa na fábrica. Quem quer mexer abre o
-   cartão do posto, que é onde a responsabilidade mora.
-
-   OS LAYOUTS VÊM TODOS, SEM FILTRO. No cartão a fatia diz qual técnica está na
-   mão daquele posto; aqui não existe fatia escolhida, e filtrar por alguma
-   seria esconder justamente o layout que a pessoa abriu o pedido para ver.
-
-   SEM VALOR, sempre. Isto é chão de fábrica, e a regra está em
-   claude/REGRA-COM-VALOR-E-SEM-VALOR.md.
+   SEM VALOR, sempre. Isto é chão de fábrica (claude/REGRA-COM-VALOR-E-SEM-
+   VALOR.md).
    ========================================================================== */
 
 export function PedidoAberto({
@@ -42,103 +39,107 @@ export function PedidoAberto({
   aoFechar,
 }: {
   pedido: PedidoNoTrilho
-  /* as fatias DESTE pedido, já filtradas pela tela: ela tem a lista inteira e
-     não faz sentido cada modal refiltrar a mesma coisa */
   fatias: FatiaNoQuadro[]
   rotas: Rota[]
   aoFechar: () => void
 }) {
-  const [cotacao, setCotacao] = useState<Cotacao | null>(null)
+  const [blocos, setBlocos] = useState<Bloco[]>([])
   const [lendo, setLendo] = useState(true)
   const [erro, setErro] = useState('')
 
   useEffect(() => {
     let vivo = true
     setLendo(true)
-    setCotacao(null)
+    setBlocos([])
     setErro('')
     cotacaoDoPedido(pedido.id)
       .then((id) => (id ? acharCotacao(id) : null))
       .then((c) => {
         if (!vivo) return
-        setCotacao(c)
+        setBlocos((c?.produtos ?? []).map((p) => p.bloco))
         if (!c) setErro('Este pedido não aponta para nenhuma cotação.')
       })
-      .catch((e) => {
-        if (!vivo) return
-        setErro(e instanceof Error ? e.message : 'Não consegui ler os layouts deste pedido.')
-      })
+      .catch((e) => vivo && setErro(e instanceof Error ? e.message : 'Não consegui ler os layouts deste pedido.'))
       .finally(() => vivo && setLendo(false))
     return () => {
       vivo = false
     }
   }, [pedido.id])
 
-  const segura = rotas.length ? quemSeguraOPedido(rotas, fatias) : ''
-  const blocos = cotacao?.produtos.map((p) => p.bloco) ?? []
+  /* a técnica de cada layout vem da fatia que carrega ele */
+  const tecnicaDe = (n: number) => {
+    const f = fatias.find((x) => x.layouts.includes(n))
+    return f ? (NOME_DA_TECNICA[f.tecnica] ?? f.tecnica) : undefined
+  }
+
+  const entrega = entregaEmTexto(pedido.entregaEm)
+  const esquerda = blocos.filter((_, i) => i % 2 === 0)
+  const direita = blocos.filter((_, i) => i % 2 === 1)
 
   return (
-    <Modal
-      aberto
-      aoFechar={aoFechar}
-      gigante
-      titulo={pedido.numero + ' · ' + (pedido.nome || pedido.cliente)}
-    >
-      <p className="pa-sub">
-        <b>{pedido.cliente}</b>
-        <i>·</i>
-        {pedido.pecas} peças
-        <i>·</i>
-        {blocos.length} {blocos.length === 1 ? 'layout' : 'layouts'}
-        <i>·</i>
-        {fatias.length} {fatias.length === 1 ? 'cartão no quadro' : 'cartões no quadro'}
-        <span className="pa-sem-valor">esta tela não mostra valor</span>
-      </p>
+    <Modal aberto cheio solto aoFechar={aoFechar}>
+      <div className="ca">
+        <header className="ca-topo pi-topo">
+          <div className="ca-titulo">
+            <div className="ca-linha1">
+              <b className="ca-numero">{pedido.numero}</b>
+              <span className="ca-nome">{pedido.nome || pedido.cliente}</span>
+              {pedido.marcas.map((m) => (
+                <Mestre key={m}>{m}</Mestre>
+              ))}
+            </div>
+            <div className="ca-meta">
+              <span>
+                Cliente <b>{pedido.cliente || 'sem cliente'}</b>
+              </span>
+              <span>
+                Entrega <b className={entrega.perto ? 'perto' : ''}>{entrega.texto}</b>
+              </span>
+              <span>
+                <b>{pedido.pecas} peças</b> em {blocos.length || '...'}{' '}
+                {blocos.length === 1 ? 'layout' : 'layouts'} e {fatias.length}{' '}
+                {fatias.length === 1 ? 'cartão' : 'cartões'} no quadro
+              </span>
+              <span>esta tela não mostra valor</span>
+            </div>
+          </div>
+          <Fechar aoFechar={aoFechar} />
+        </header>
 
-      {/* ONDE CADA PARTE ESTÁ, EM CIMA DOS LAYOUTS.
+        <div className="pi-grafico">
+          <GraficoDoPedido fatias={fatias} rotas={rotas} tamanho="grande" />
+        </div>
 
-          Em cima e não embaixo: a pessoa abre este pedido porque viu a data de
-          entrega no trilho, e a primeira pergunta depois da data é o que está
-          segurando. Os layouts respondem a segunda, que é o que é a peça. */}
-      <section className="pa-onde">
-        {fatias.map((f) => (
-          <BlocoDaFatia key={f.id} fatia={f} rotas={rotas} segurando={f.id === segura} />
-        ))}
-      </section>
-
-      <h3 className="pa-titulo">
-        {blocos.length === 1 ? 'O layout do pedido' : 'Os ' + blocos.length + ' layouts do pedido'}
-      </h3>
-
-      {lendo ? (
-        <>
-          <Esqueleto altura={220} />
-          <Esqueleto altura={220} />
-        </>
-      ) : null}
-
-      {!lendo && erro ? <Vazio titulo="Não consegui abrir os layouts" texto={erro} /> : null}
-
-      {!lendo && !erro && !blocos.length ? (
-        <Vazio
-          titulo="Esta cotação não tem layout"
-          texto="O pedido existe e desceu para o quadro, mas a cotação dele não tem nenhum produto."
-        />
-      ) : null}
-
-      <div className="pa-layouts">
-        {blocos.map((b) => (
-          <div className="ca-layout" key={b.id}>
-            <ModuloDeLayout
-              bloco={b}
-              aoMudar={() => {}}
-              leitura
-              semValor
-              arte={<CaixaDeImagem leitura imagem={b.imagem} arte={b.arte} />}
-              tabela={<GradeDeTamanhos leitura faixa={b.faixa} grade={b.grade} />}
+        {lendo ? (
+          <div className="ca-corpo">
+            <div className="ca-esq">
+              <Esqueleto altura={300} />
+            </div>
+            <div className="ca-outro">
+              <Esqueleto altura={300} />
+            </div>
+          </div>
+        ) : erro || !blocos.length ? (
+          <div className="pi-vazio">
+            <Vazio
+              titulo={erro ? 'Não consegui abrir os layouts' : 'Esta cotação não tem layout'}
+              texto={erro || 'O pedido existe e desceu para o quadro, mas a cotação dele não tem nenhum produto.'}
             />
           </div>
-        ))}
+        ) : (
+          <div className="ca-corpo">
+            <div className="ca-esq">
+              {esquerda.map((b) => (
+                <LayoutDeLeitura key={b.id} bloco={b} tecnica={tecnicaDe(b.n)} />
+              ))}
+            </div>
+            <div className="ca-outro">
+              {direita.map((b) => (
+                <LayoutDeLeitura key={b.id} bloco={b} tecnica={tecnicaDe(b.n)} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   )

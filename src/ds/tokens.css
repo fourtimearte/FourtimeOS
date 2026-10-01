@@ -186,6 +186,18 @@
   --fora-inf-fg: #7a1216;
   --fora-ad-bg: #e3eefb;
   --fora-ad-fg: #12213f;
+
+  /* O CARTAO ESCOLHIDO DO KANBAN, chapado e com pontilhado inteiro, do jeito
+     do wireframe de 01/10. Nao e a tinta do V7, que tem degrade e o
+     pontilhado so num canto: o Henrique aprovou este, e ele precisa ser
+     escuro nos dois temas, porque e o cartao que destoa da pagina. */
+  --cartao-escuro: #22252b;
+  --cartao-escuro-borda: #1a1d23;
+  --cartao-escuro-sombra: 0 10px 24px rgba(26, 29, 35, 0.22);
+  /* o vermelho sobre o escuro: o do texto (prazo, parado) e o do ponto do
+     grafico, que precisa de um tom a mais para nao sumir em 9px */
+  --cartao-escuro-vermelho: #ff8a8e;
+  --cartao-escuro-ponto: #ff6b70;
 }
 
 /* --- Grafite (escuro) ---------------------------------------------------- */
@@ -227,6 +239,14 @@
   --fora-inf-fg: #f7b3b6;
   --fora-ad-bg: #15263e;
   --fora-ad-fg: #a9cbfb;
+
+  /* no Grafite a pagina ja e escura: o escolhido sobe um tom e ganha borda
+     clara, senao ele some no meio dos outros cartoes */
+  --cartao-escuro: #343840;
+  --cartao-escuro-borda: #5a606b;
+  --cartao-escuro-sombra: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --cartao-escuro-vermelho: #ff8a8e;
+  --cartao-escuro-ponto: #ff6b70;
 }
 
 /* --- cor com significado ------------------------------------------------- */

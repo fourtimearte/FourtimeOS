@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
-import { Esqueleto, Kpi, Pagina, Vazio, avisar } from '@ds'
+import { Esqueleto, Vazio, avisar } from '@ds'
 import {
   COLUNAS,
   carregarAsRotas,
@@ -25,6 +25,7 @@ import { PedidoAberto } from './pedido-aberto'
 import { Trilho } from './trilho'
 import { CartaoAberto } from './cartao-aberto'
 import { ConfirmarSaida } from './confirmar-saida'
+import { SetaDireita, SetaEsquerda } from './setas'
 import './kanban.css'
 
 /* ==========================================================================
@@ -46,6 +47,11 @@ import './kanban.css'
 
    A MUDANÇA APARECE ANTES DE O BANCO RESPONDER, e volta atrás se ele recusar.
    Esperar a viagem faz a pessoa arrastar de novo achando que não pegou.
+
+   O DESENHO É O DO WIREFRAME DE 01/10/2026, aprovado pelo Henrique com a
+   ordem de ficar idêntico: sem o cabeçalho do MARK45, uma faixa só com o
+   trilho e as quatro caixas quadradas da mesma altura, e o quadro andando por
+   setas, sem barra de rolagem.
    ========================================================================== */
 
 type Arrasto = {
@@ -85,6 +91,33 @@ export function TelaKanban() {
   const [arrasto, setArrasto] = useState<Arrasto | null>(null)
   const [alvo, setAlvo] = useState<Etapa | null>(null)
   const quadro = useRef<HTMLDivElement>(null)
+
+  /* O QUADRO ANDA POR COLUNA, COM SETAS, e não rola. Quantas colunas cabem
+     sai da largura medida: 219px é a coluna do wireframe em 1080p, mais 12 de
+     vão. Em 1608px de mesa cabem sete, e elas esticam até encostar nas duas
+     bordas, que é o que o wireframe desenha. */
+  const [largura, setLargura] = useState(0)
+  const [desvio, setDesvio] = useState(0)
+  useLayoutEffect(() => {
+    const el = quadro.current
+    if (!el) return
+    const medir = () => setLargura(el.clientWidth)
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    return () => ro.disconnect()
+    /* o quadro só existe depois de carregar e quando há fatia: é quando o
+       ref aparece que a medida precisa começar */
+  }, [carregando, fatias.length > 0])
+  const VAO = 12
+  const cabem = Math.max(1, Math.min(COLUNAS.length, Math.floor((largura + VAO) / (219 + VAO))))
+  const larguraDaColuna = largura ? (largura - VAO * (cabem - 1)) / cabem : 219
+  const desvioMaximo = COLUNAS.length - cabem
+  const inicio = Math.min(desvio, desvioMaximo)
+  const ultimoAndar = useRef(0)
+  /* o laço do arrasto roda fora do render e precisa do teto de hoje */
+  const teto = useRef(0)
+  teto.current = desvioMaximo
 
   /* O laço do arrasto lê destes, e não do estado: ele roda a cada quadro de
      vídeo, e reassinar o laço a cada setState faria ele nascer e morrer
@@ -157,12 +190,22 @@ export function TelaKanban() {
      cartões acesos sem saber o que eles são, e abrir sem acender perderia o
      motivo de o pedido estar espalhado. Clicar no mesmo cartão limpa. */
   function escolherNoTrilho(p: PedidoNoTrilho) {
-    if (aceso === p.id && !pedidoAberto) {
+    if (aceso === p.id) {
       limparODestaque()
       return
     }
     setAceso(p.id)
-    setPedidoAberto(p.id)
+    /* O QUADRO ANDA ATÉ O PEDIDO. Acender cartões que estão fora da janela
+       seria acender no escuro: ele vai até a primeira coluna onde o pedido
+       tem cartão, se ela não estiver à vista. */
+    const colunasDele = fatias
+      .filter((f) => f.pedidoId === p.id)
+      .map((f) => COLUNAS.indexOf(f.etapa))
+      .filter((i) => i >= 0)
+    if (colunasDele.length) {
+      const primeira = Math.min(...colunasDele)
+      if (primeira < inicio || primeira >= inicio + cabem) setDesvio(Math.min(desvioMaximo, primeira))
+    }
   }
 
   /* ESC LIMPA O DESTAQUE, e só quando não há modal na frente: o <dialog> já
@@ -228,7 +271,7 @@ export function TelaKanban() {
      adiante. Sem isto, arrastar só funciona para a coluna do lado, e a fábrica
      ia concluir que arrastar não funciona.
 
-     O alvo também é decidido aqui, e não no pointermove: com o quadro rolando
+     O alvo também é decidido aqui, e não no pointermove: com o quadro andando
      sozinho, a coluna embaixo do dedo muda sem o dedo se mexer. */
   useEffect(() => {
     if (!arrasto?.valendo) return
@@ -242,10 +285,18 @@ export function TelaKanban() {
         const caixa = el.getBoundingClientRect()
         const beira = 72
         const { x, y } = ponto.current
-        if (x < caixa.left + beira) {
-          el.scrollLeft -= Math.min(24, (caixa.left + beira - x) / 2)
-        } else if (x > caixa.right - beira) {
-          el.scrollLeft += Math.min(24, (x - (caixa.right - beira)) / 2)
+        /* sem barra de rolagem, o quadro anda uma coluna inteira por vez,
+           e espera 450ms entre uma e outra para dar tempo de o olho achar o
+           alvo antes de ele passar */
+        const agora = performance.now()
+        if (agora - ultimoAndar.current > 450) {
+          if (x < caixa.left + beira) {
+            setDesvio((d) => Math.max(0, Math.min(d, teto.current) - 1))
+            ultimoAndar.current = agora
+          } else if (x > caixa.right - beira) {
+            setDesvio((d) => Math.min(teto.current, d + 1))
+            ultimoAndar.current = agora
+          }
         }
 
         /* elementFromPoint em vez de onDragOver, porque o cartão flutuante
@@ -268,61 +319,49 @@ export function TelaKanban() {
 
   if (!eu) return null
 
+  const ultima = Math.min(COLUNAS.length, inicio + cabem)
+  const oAceso = trilho.find((p) => p.id === aceso) ?? null
+
   return (
-    <Pagina
-      acima="Produção"
-      titulo="MARK45"
-      sub={
-        <>
-          <b>{conta.cartoes}</b> {conta.cartoes === 1 ? 'cartão' : 'cartões'} no chão de fábrica ·{' '}
-          {conta.pecas.toLocaleString('pt-BR')} peças · um cartão é um pedido numa técnica
-        </>
-      }
-    >
-      {/* O palco só existe para ser medido: ele é o contêiner que o topo
-          consulta. Sem ele a conta seria da janela, que tem 248px de menu
-          lateral que o quadro não pode usar. */}
+    <div className="kb-pagina">
+      {/* O título existe para quem lê a tela com leitor: o wireframe tirou o
+          cabeçalho do MARK45 da vista, e não da página. */}
+      <h1 className="kb-titulo-oculto">Kanban de produção</h1>
+
+      {/* O palco só existe para ser medido: ele é o contêiner que a faixa de
+          cima consulta. Sem ele a conta seria da janela, que tem 248px de
+          menu lateral que o quadro não pode usar. */}
       <div className="kb-palco">
-      {/* UMA FILEIRA SÓ: O TRILHO PRIMEIRO, OS NÚMEROS DEPOIS.
-
-          O trilho vem à esquerda porque é ele que começa a leitura: a pergunta
-          da manhã é o que sai primeiro, e os quatro números respondem como a
-          fábrica está, que é pergunta de conferência. Em português se lê da
-          esquerda para a direita, então o que se pergunta primeiro fica à
-          esquerda. */}
-      <div className="kb-cima">
-        <section className="kb-entregas" aria-label="Entregas">
-          <header className="kb-entregas-topo">
-            <span className="kb-rot">Sai primeiro</span>
-            {aceso ? (
-              <button type="button" className="kb-limpar" onClick={limparODestaque}>
-                Tirar o destaque
-              </button>
-            ) : (
-              <span className="kb-entregas-dica">clique num pedido para acendê-lo no quadro</span>
-            )}
-          </header>
-          <Trilho pedidos={trilho} aceso={aceso} aoEscolher={escolherNoTrilho} />
-        </section>
-
-        <div className="kb-kpis">
-          <Kpi rotulo="No chão de fábrica" valor={conta.cartoes} sub="fora do finalizado" />
-          <Kpi rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os cartões" />
-          <Kpi
-            rotulo="Parados há 3 dias ou mais"
-            valor={conta.parados}
-            sub={conta.parados ? 'é o que segura a entrega' : 'nada empacado'}
-            aviso={conta.parados > 0}
+        <section className="kb-cima" aria-label="Entregas e números do quadro">
+          <Trilho
+            pedidos={trilho}
+            fatias={fatias}
+            rotas={rotas}
+            aceso={aceso}
+            aoEscolher={escolherNoTrilho}
+            aoAbrirPedido={(p) => setPedidoAberto(p.id)}
           />
-          <Kpi rotulo="Finalizados" valor={conta.prontos} sub="chegaram ao fim da rota" />
-        </div>
-      </div>
+
+          {/* QUATRO CAIXAS QUADRADAS, LADO A LADO, DA ALTURA DO TRILHO. Duas
+              fileiras de duas era o que o Henrique não queria. */}
+          <div className="kb-kpis">
+            <Caixa rotulo="No chão de fábrica" valor={conta.cartoes} sub="cartões correndo" />
+            <Caixa rotulo="Peças correndo" valor={conta.pecas.toLocaleString('pt-BR')} sub="somando os pedidos" />
+            <Caixa
+              rotulo="Parados 3 dias ou mais"
+              valor={conta.parados}
+              sub={conta.parados ? 'segurando entrega' : 'nada empacado'}
+              alerta={conta.parados > 0}
+            />
+            <Caixa rotulo="Finalizados" valor={conta.prontos} sub="no fim da rota" />
+          </div>
+        </section>
       </div>
 
       {erro ? (
         <Vazio titulo="Não consegui ler o quadro" texto={erro} />
       ) : carregando ? (
-        <div className="cartao">
+        <div className="kb-carregando">
           <Esqueleto altura={18} />
           <Esqueleto altura={18} />
           <Esqueleto altura={18} />
@@ -333,59 +372,103 @@ export function TelaKanban() {
           texto="Cartão nasce quando o diretor aprova um pedido no PCP. Enquanto nada for aprovado, não há o que a fábrica possa começar."
         />
       ) : (
-        <div
-          className="kb-quadro"
-          ref={quadro}
-          onPointerMove={andar}
-          onPointerUp={largar}
-          onPointerCancel={largar}
-        >
-          {COLUNAS.map((posto) => {
-            const lista = porPosto.get(posto) ?? []
-            const naRota = arrasto?.valendo
-              ? estaNaRota(rotas, arrasto.fatia.tecnica, posto)
-              : true
-            const classes = [
-              'kb-coluna',
-              arrasto?.valendo && !naRota ? 'fora' : '',
-              alvo === posto ? 'alvo' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')
-            return (
-              <section key={posto} className={classes} data-posto={posto}>
-                <header className="kb-topo" style={{ '--posto-cor': corDoPosto(posto) } as CSSProperties}>
-                  <b>{nomeDoPosto(posto)}</b>
-                  <span className="kb-conta">{lista.length}</span>
-                </header>
+        <section className="kb-postos" aria-label="Postos">
+          <div className="kb-postos-topo">
+            <h2>Postos</h2>
+            <span className="kb-faixa">
+              {inicio + 1} a {ultima} de {COLUNAS.length} · {nomeDoPosto(COLUNAS[inicio])} até{' '}
+              {nomeDoPosto(COLUNAS[ultima - 1])}
+            </span>
+            {oAceso ? (
+              <button type="button" className="kb-aceso" onClick={limparODestaque}>
+                Acesos: {oAceso.numero} · {oAceso.fatias} {oAceso.fatias === 1 ? 'cartão' : 'cartões'}
+                <span aria-hidden="true">×</span>
+              </button>
+            ) : null}
+            <span className="kb-empurra" />
+            <button
+              type="button"
+              className="kb-seta"
+              aria-label="Postos anteriores"
+              disabled={inicio <= 0}
+              onClick={() => setDesvio(Math.max(0, inicio - 1))}
+            >
+              <SetaEsquerda />
+            </button>
+            <button
+              type="button"
+              className="kb-seta"
+              aria-label="Próximos postos"
+              disabled={inicio >= desvioMaximo}
+              onClick={() => setDesvio(Math.min(desvioMaximo, inicio + 1))}
+            >
+              <SetaDireita />
+            </button>
+          </div>
 
-                <div className="kb-pilha">
-                  {lista.map((f) => (
-                    <CartaoDaFatia
-                      key={f.id}
-                      fatia={f}
-                      rotas={rotas}
-                      tags={porChave}
-                      podeMover={podeMover}
-                      arrastando={arrasto?.fatia.id === f.id && arrasto.valendo}
-                      /* DUAS PALAVRAS PARA DUAS COISAS. `aceso` é este cartão
-                         pertence ao pedido escolhido; `apagado` é o contrário.
-                         Sem pedido escolhido nenhum dos dois vale, e o quadro
-                         fica como sempre foi: apagar tudo por padrão seria um
-                         quadro que nasce meio morto. */
-                      aceso={!!aceso && f.pedidoId === aceso}
-                      apagado={!!aceso && f.pedidoId !== aceso}
-                      aoPegar={(e) => comecar(e, f)}
-                      aoAbrir={() => setAberto(f.id)}
-                      aoTerminar={() => setConfirmando(f.id)}
-                    />
-                  ))}
-                  {!lista.length ? <p className="kb-vazio">vazio</p> : null}
-                </div>
-              </section>
-            )
-          })}
-        </div>
+          <div
+            className="kb-quadro"
+            ref={quadro}
+            onPointerMove={andar}
+            onPointerUp={largar}
+            onPointerCancel={largar}
+          >
+            <div
+              className="kb-quadro-fita"
+              style={{ transform: `translateX(${-inicio * (larguraDaColuna + VAO)}px)` }}
+            >
+              {COLUNAS.map((posto, i) => {
+                const lista = porPosto.get(posto) ?? []
+                const naRota = arrasto?.valendo
+                  ? estaNaRota(rotas, arrasto.fatia.tecnica, posto)
+                  : true
+                const fora = i < inicio || i >= ultima
+                const classes = [
+                  'kb-coluna',
+                  arrasto?.valendo && !naRota ? 'fora' : '',
+                  alvo === posto ? 'alvo' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+                return (
+                  <section
+                    key={posto}
+                    className={classes}
+                    data-posto={posto}
+                    aria-hidden={fora || undefined}
+                    inert={fora || undefined}
+                    style={{ width: larguraDaColuna, '--c': corDoPosto(posto) } as CSSProperties}
+                  >
+                    <header className="kb-topo">
+                      <span className="kb-topo-nome">{nomeDoPosto(posto)}</span>
+                      <span className="kb-empurra" />
+                      <span className="kb-conta">{lista.length}</span>
+                    </header>
+
+                    <div className="kb-pilha">
+                      {lista.map((f) => (
+                        <CartaoDaFatia
+                          key={f.id}
+                          fatia={f}
+                          rotas={rotas}
+                          tags={porChave}
+                          podeMover={podeMover}
+                          arrastando={arrasto?.fatia.id === f.id && arrasto.valendo}
+                          aceso={!!aceso && f.pedidoId === aceso}
+                          apagado={!!aceso && f.pedidoId !== aceso}
+                          aoPegar={(e) => comecar(e, f)}
+                          aoAbrir={() => setAberto(f.id)}
+                          aoTerminar={() => setConfirmando(f.id)}
+                        />
+                      ))}
+                      {!lista.length ? <p className="kb-vazio">nada aqui</p> : null}
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* O CARTÃO ABERTO. Ele não é uma tela nova: é o mesmo cartão, aberto,
@@ -444,6 +527,31 @@ export function TelaKanban() {
           <span>{arrasto.fatia.pecas} pçs</span>
         </div>
       ) : null}
-    </Pagina>
+    </div>
+  )
+}
+
+/* UMA CAIXA DE NÚMERO, quadrada, do wireframe: rótulo em cima, número
+   embaixo, e a frase miúda no pé. Não é o Kpi do Design System porque o Kpi
+   tem altura e recheio próprios, e a caixa aqui tem que medir exatamente o
+   mesmo que o trilho do lado. */
+function Caixa({
+  rotulo,
+  valor,
+  sub,
+  alerta,
+}: {
+  rotulo: string
+  valor: number | string
+  sub: string
+  alerta?: boolean
+}) {
+  return (
+    <div className={alerta ? 'kb-caixa alerta' : 'kb-caixa'}>
+      <span className="kb-caixa-rot">{rotulo}</span>
+      <span className="kb-empurra" />
+      <span className="kb-caixa-n">{valor}</span>
+      <span className="kb-caixa-sub">{sub}</span>
+    </div>
   )
 }

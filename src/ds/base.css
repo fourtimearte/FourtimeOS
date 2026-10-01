@@ -1294,6 +1294,19 @@ dialog.modal.gigante {
 dialog.modal.gigante .caixa {
   height: calc(100dvh - 32px);
 }
+/* O CHEIO E O CARTAO DO KANBAN DESDE 01/10: a tela quase inteira, com 40px
+   de folga dos lados e 32 em cima e embaixo. E o tamanho em que dois pedidos
+   cabem lado a lado com a mesma largura numa tela de 1080p, e foi o que o
+   wireframe aprovado mediu. */
+dialog.modal.cheio {
+  width: calc(100vw - 80px);
+  max-width: none;
+}
+dialog.modal.cheio .caixa {
+  height: calc(100dvh - 64px);
+  max-height: none;
+}
+
 /* O CORPO SOLTO tira o recheio e a rolagem do modal. Ele existe para a tela
    que rola por dentro, em colunas separadas: com a rolagem no corpo inteiro,
    a coluna da acao subiria junto com a lista de layouts e o botao Terminei
@@ -1373,6 +1386,15 @@ dialog.gaveta .caixa {
     border-left: 0;
     border-top: 1px solid var(--border);
     animation: a-entrar-baixo var(--t-slow) var(--ease-revelar) both;
+  }
+  /* o cheio vira folha de baixo como os outros, mas com altura fixa: quem
+     esta dentro dele rola por colunas, e coluna precisa de altura para rolar */
+  dialog.modal.cheio {
+    width: auto;
+  }
+  dialog.modal.cheio .caixa {
+    height: 92dvh;
+    max-height: 92dvh;
   }
   .sobre-topo,
   .sobre-corpo,

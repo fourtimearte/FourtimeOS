@@ -1,92 +1,181 @@
 /* ==========================================================================
-   O cartão aberto e a confirmação do Terminei.
+   O cartão aberto, o pedido inteiro e o comparar, com as medidas do
+   wireframe de 01/10/2026.
 
-   Nada aqui escreve regra com classe do Design System: os nomes começam com
-   ca- e cs-, e o que é do V7 entra por componente. A regra está em
-   claude/REGRA-CLASSE-DO-DESIGN-SYSTEM.md.
+   As três telas dividem o cabeçalho, a linha das tags e as duas metades
+   iguais. Cada número aqui é o do wireframe; quando o degrau do V7 não
+   existe, ele é montado com calc a partir dos tokens.
+
+   Nenhuma regra daqui escreve com classe do Design System.
    ========================================================================== */
 
-/* --- o cabeçalho do modal ------------------------------------------------ */
-.ca-topo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-}
-.ca-titulo {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-miudo);
-  flex-wrap: wrap;
-  min-width: 0;
-}
-.ca-titulo > b {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
-}
-.ca-nome {
-  font-size: 16px;
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 320px;
-}
-.ca-linhas {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-5);
-  flex-wrap: wrap;
-  font-size: 13.5px;
+/* --- as peças em comum --------------------------------------------------- */
+.mk-fechar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text);
+  cursor: pointer;
 }
-.ca-linhas i {
-  font-style: normal;
-  color: var(--text-3);
-  margin-right: var(--re-2);
+.mk-fechar:hover {
+  background: var(--surface-2);
 }
-.ca-sem-valor {
+.mk-fechar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.mk-mestre {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 var(--re-5);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+.mk-rot {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-3);
-  font-size: 12.5px;
 }
 
-/* --- o corpo, duas colunas ----------------------------------------------
-   GRID COM minmax(0, ...), e nunca flex-grow. O flex mede o conteúdo de cada
-   coluna antes de repartir a sobra, então a coluna com o texto mais longo fica
-   mais larga: a largura passaria a depender do nome do cliente. */
-.ca-corpo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
-  gap: var(--sp-5);
-  padding: var(--sp-5);
+/* --- o esqueleto da tela ------------------------------------------------- */
+.ca {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
 }
-.ca-esq,
-.ca-dir {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
+.ca-empurra {
+  flex-grow: 1;
 }
 
-/* --- a busca do comparar, no cabeçalho ----------------------------------
-   Ela fica AQUI e não dentro do corpo, e é isso que faz ela não ser travada
-   pelo modal: quem está com um pedido na frente e quer conferir contra o do
-   ano passado não pode ter que fechar o que está olhando para procurar o
-   outro. */
-.ca-comparar {
+/* --- o cabeçalho --------------------------------------------------------- */
+.ca-topo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: var(--sp-6);
+  padding: calc(var(--sp-5) + var(--re-1)) var(--sp-8) calc(var(--sp-5) - var(--re-1));
+  border-bottom: 1px solid var(--ink-soft);
 }
+.ca-titulo {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ca-linha1 {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.ca-numero {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.ca-nome {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--text-2);
+  min-width: 0;
+}
+.ca-onde {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--re-3) + var(--re-1) / 2);
+  height: 28px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ca-onde::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c, var(--border-2));
+}
+.ca-onde.sem-ponto::before {
+  display: none;
+}
+.ca-meta {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: calc(var(--sp-5) + var(--re-1));
+  row-gap: var(--re-2);
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+.ca-meta b {
+  font-weight: 600;
+  color: var(--text);
+}
+.ca-meta b.perto {
+  color: var(--brand);
+}
+
+/* a busca do comparar, 340 por 40 */
 .ca-caixa-busca {
   position: relative;
-  width: 300px;
+  width: 340px;
   max-width: 100%;
+  flex: none;
+}
+.ca-busca {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: text;
+}
+.ca-busca:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.ca-busca > input {
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+}
+.ca-busca > input::placeholder {
+  color: var(--text-3);
+}
+.ca-busca > input::-webkit-search-cancel-button {
+  display: none;
 }
 .ca-achados {
   position: absolute;
@@ -151,73 +240,86 @@
   font-size: 13px;
   color: var(--text-3);
 }
-
-/* --- comparando: as duas colunas viram os layouts dos dois pedidos -------
-   METADES EXATAS, com grid e minmax(0, 1fr). Com flex-grow o navegador mede o
-   conteúdo de cada lado antes de repartir a sobra, e a largura passaria a
-   depender do nome do cliente.
-
-   A ação, a rota e a conversa saem de cena enquanto se compara, e não ficam
-   espremidas: comparar é uma coisa só, e deixar o Terminei aceso ao lado de um
-   pedido entregue em julho é um convite a terminar o pedido errado. */
-.ca-corpo.comparando {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-.ca-outro {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  border-left: 1px solid var(--border);
-  padding-left: var(--sp-5);
-}
-.ca-outro-topo {
+.ca-fechar-comp {
   display: flex;
   align-items: center;
-  gap: var(--gap-miudo);
-  padding-bottom: var(--sp-3);
-  border-bottom: 1px solid var(--border);
-}
-.ca-outro-topo > div {
-  min-width: 0;
-}
-.ca-outro-nome {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-miudo);
-}
-.ca-outro-nome b {
-  font-size: 17px;
-  font-weight: 700;
-}
-.ca-outro-topo span {
-  display: block;
-  font-size: 13px;
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: var(--sp-2);
+  height: 40px;
+  flex: none;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
 }
 
-/* --- a linha de tags e anexos ------------------------------------------- */
-.ca-faixa {
+/* --- a linha das tags ---------------------------------------------------- */
+.ca-tags {
   display: flex;
   align-items: center;
-  gap: var(--re-4);
   flex-wrap: wrap;
-  padding-bottom: var(--sp-3);
-  border-bottom: 1px solid var(--border);
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-8);
+  border-bottom: 1px solid var(--ink-soft);
 }
 .ca-risco {
   width: 1px;
   height: 20px;
-  background: var(--border-2);
+  margin: 0 var(--re-3);
+  background: var(--border);
 }
-.ca-empurra {
-  flex: 1;
+.ca-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 var(--re-3) 0 var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
 }
-.ca-anexos {
+.ca-tag > button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+/* 20px é o desenho; o dedo ganha 44 por fora */
+.ca-tag > button::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+.ca-tag > button:hover {
+  color: var(--text);
+}
+.ca-mais-tag {
+  height: 28px;
+  padding: 0 var(--sp-3);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.ca-sem-valor {
   font-size: 12.5px;
   color: var(--text-3);
 }
@@ -226,215 +328,572 @@
   align-items: center;
   gap: var(--re-4);
   flex-wrap: wrap;
-  padding: var(--pad-linha);
+  padding: var(--sp-3) var(--sp-8);
+  border-bottom: 1px solid var(--ink-soft);
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 
-/* --- os layouts, que rolam sozinhos -------------------------------------
-   A rolagem é DESTA coluna, e não do modal inteiro. Com a rolagem no corpo, a
-   coluna da ação subiria junto e o Terminei sairia da tela exatamente quando a
-   pessoa termina de ler o último layout. */
-.ca-layouts {
-  flex: 1;
+/* --- as duas metades ----------------------------------------------------- */
+.ca-corpo {
+  flex-grow: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.ca-esq,
+.ca-outro,
+.ca-dir {
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  padding: var(--sp-6) var(--sp-8);
+}
+.ca-esq,
+.ca-outro {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  padding-right: var(--re-3);
+  gap: calc(var(--sp-6) + var(--re-2));
 }
-.ca-layout {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--pad-cartao);
+.ca-esq {
+  border-right: 1px solid var(--ink-soft);
+}
+.ca-dir {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-8);
+  align-items: start;
+}
+.ca-dir-col {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--sp-6) + var(--re-2));
+  min-width: 0;
 }
 
-/* --- a ação, em preto ---------------------------------------------------- */
+/* o topo de cada metade enquanto se compara */
+.ca-coltopo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--re-5);
+  padding-bottom: var(--re-7);
+  border-bottom: 1px solid var(--ink-soft);
+  min-width: 0;
+}
+.ca-coltopo > b {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ca-coltopo > span:not(.ca-empurra) {
+  font-size: 15px;
+  color: var(--text-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ca-coltopo > small {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* --- a ação -------------------------------------------------------------- */
 .ca-acao {
-  background: var(--ink);
-  color: var(--on-ink);
-  border-radius: var(--radius-lg);
-  padding: var(--pad-cartao);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--re-7);
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 .ca-mao {
   display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.ca-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.ca-mao > div {
+  display: flex;
   flex-direction: column;
-  gap: var(--re-1);
+  min-width: 0;
 }
 .ca-mao b {
   font-size: 15px;
   font-weight: 600;
 }
 .ca-mao span {
-  font-size: 13px;
-  opacity: 0.72;
+  font-size: 12.5px;
+  color: var(--text-3);
 }
 .ca-botoes {
   display: flex;
-  align-items: center;
   gap: var(--gap-btn);
 }
-/* O TERMINEI OCUPA O RESTO DA LINHA de propósito: ele é a ação que a pessoa
-   veio fazer, e o Peguei ao lado é o que ela faz antes. Tamanhos iguais
-   fariam as duas parecerem a mesma decisão. */
-.ca-terminei {
-  flex: 1;
+.ca-bt {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--re-5);
+  height: 44px;
+  padding: 0 calc(var(--sp-4) + var(--re-1));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.ca-bt.forte {
+  flex-grow: 1;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.ca-bt:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .ca-proximo {
-  margin: 0;
-  text-align: center;
   font-size: 12.5px;
-  opacity: 0.72;
-}
-
-/* --- a rota em trilho ---------------------------------------------------- */
-.ca-rota {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--pad-linha);
-}
-.ca-rot {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--text-3);
 }
-.ca-trilho {
-  margin-top: var(--sp-2);
+.ca-proximo b {
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* --- a rota, de cima para baixo ----------------------------------------- */
+.ca-rota {
   display: flex;
-  align-items: center;
-  gap: var(--re-2);
+  flex-direction: column;
+  gap: var(--re-3);
+}
+.ca-passos {
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
 }
 .ca-passo {
-  flex: 1;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-3);
-}
-.ca-passo.andou {
-  background: var(--border-2);
-}
-.ca-passo.agora {
-  height: 10px;
-  background: var(--brand);
-}
-.ca-pontas {
-  margin-top: var(--re-3);
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  font-size: 12.5px;
+  gap: var(--re-7);
+  height: 34px;
+}
+.ca-passo:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  width: 1px;
+  height: 22px;
+  background: var(--ink-soft);
+}
+.ca-passo-ponto {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  flex: none;
+}
+.ca-passo-ponto > span {
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+}
+.ca-passo.feito .ca-passo-ponto > span {
+  width: 8px;
+  height: 8px;
+  background: var(--border-2);
+}
+.ca-passo.agora .ca-passo-ponto > span {
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  box-shadow: 0 0 0 4px var(--ink-soft);
+}
+.ca-passo.falta .ca-passo-ponto > span {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--border-2);
+}
+.ca-passo-nome {
+  flex-grow: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.ca-passo.feito .ca-passo-nome {
   color: var(--text-3);
 }
-.ca-pontas b {
-  color: var(--text);
+.ca-passo.agora .ca-passo-nome {
   font-weight: 700;
+  color: var(--text);
+}
+.ca-passo-lado {
+  font-size: 12px;
+  color: var(--text-3);
 }
 
-/* --- a conversa ---------------------------------------------------------- */
+/* --- a conversa --------------------------------------------------------- */
 .ca-conversa {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--pad-linha);
-}
-.ca-fila {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding-right: var(--re-3);
+  gap: var(--sp-4);
 }
 .ca-nada {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-3);
 }
 .ca-fala {
   display: flex;
-  gap: var(--gap-miudo);
+  gap: var(--sp-3);
 }
 .ca-quem {
   flex: none;
-  width: 30px;
-  height: 30px;
   display: grid;
   place-items: center;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-pill);
-  background: var(--surface-3);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-2);
-  font-size: 12px;
-  font-weight: 600;
+}
+.ca-fala > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
 }
 .ca-cabeca {
   margin: 0;
-  font-size: 12.5px;
-  color: var(--text-3);
+  font-size: 13px;
 }
 .ca-cabeca b {
-  color: var(--text);
   font-weight: 600;
 }
-.ca-balao {
-  margin: var(--re-2) 0 0 0;
-  padding: var(--pad-linha);
-  background: var(--surface-2);
-  border-radius: var(--radius);
-  font-size: 14px;
-  color: var(--text);
+.ca-cabeca span {
+  color: var(--text-3);
 }
-/* O FATO NÃO TEM BALÃO. Dar a mesma forma para o que o sistema registrou e
-   para o que alguém falou faria o "andou de Cd costura para Costura" parecer
-   alguém falando, e a primeira pessoa a responder um evento descobriria isso
-   do jeito ruim. */
+.ca-balao {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
 .ca-fato {
   display: flex;
-  align-items: flex-start;
-  gap: var(--gap-miudo);
-  padding-left: var(--re-4);
+  align-items: center;
+  gap: var(--sp-3);
+  padding-left: calc(var(--sp-2) + var(--re-1) / 2);
 }
 .ca-ponto {
   flex: none;
-  width: 8px;
-  height: 8px;
-  margin-top: var(--re-3);
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--border-2);
   border-radius: var(--radius-pill);
-  background: var(--border-2);
 }
-.ca-fato p {
+.ca-fato > p {
   margin: 0;
-  font-size: 13px;
-  color: var(--text-2);
-}
-.ca-fato i {
-  font-style: normal;
+  font-size: 12.5px;
   color: var(--text-3);
 }
 .ca-escrever {
   display: flex;
   gap: var(--gap-btn);
+  margin-top: var(--re-2);
 }
 .ca-campo {
-  flex: 1;
+  flex-grow: 1;
   min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+}
+.ca-campo:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.ca-campo::placeholder {
+  color: var(--text-3);
+}
+.ca-enviar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-ink);
+  cursor: pointer;
+}
+.ca-enviar:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- os últimos pedidos do cliente --------------------------------------- */
+.ca-historico {
+  display: flex;
+  flex-direction: column;
+}
+.ca-historico > .ca-nada {
+  margin-top: var(--re-3);
+}
+.ca-antigos {
+  margin: var(--re-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ca-antigo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 56px;
+  border-bottom: 1px solid var(--ink-soft);
+}
+.ca-antigo-quem {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.ca-antigo-quem b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ca-antigo-quem small {
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ca-antigo-botoes {
+  display: flex;
+  gap: var(--gap-btn);
+  flex: none;
+}
+.ca-antigo-botoes button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.ca-antigo-botoes button::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.ca-antigo-botoes button:hover {
+  background: var(--surface-2);
+}
+
+/* ==========================================================================
+   O PEDIDO INTEIRO, aberto do trilho
+   ========================================================================== */
+.pi-topo .ca-linha1 {
+  align-items: baseline;
+}
+.pi-topo .mk-mestre {
+  align-self: center;
+}
+.pi-grafico {
+  padding: var(--sp-5) var(--sp-8) var(--sp-6);
+  border-bottom: 1px solid var(--ink-soft);
+}
+
+/* o gráfico grande, claro */
+.kb-gg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+}
+.kb-gg-cima {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--sp-5) - var(--re-1));
+}
+.kb-gg-titulo {
+  flex-grow: 1;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kb-gg-leg {
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.kb-gg-linha {
+  display: grid;
+  grid-template-columns: 170px repeat(var(--kb-n), minmax(0, 1fr));
+  align-items: center;
+  height: 40px;
+  border-bottom: 1px solid var(--ink-soft);
+  background-image: linear-gradient(var(--surface-2), var(--surface-2));
+  background-size: calc(100% - 170px) 1px;
+  background-position: 170px 50%;
+  background-repeat: no-repeat;
+}
+.kb-gg-eixo {
+  height: 30px;
+  background-image: none;
+}
+.kb-gg-posto {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kb-gg-rot {
+  font-size: 13.5px;
+}
+.kb-gg-rot b {
+  font-weight: 700;
+}
+.kb-gg-rot i {
+  font-style: normal;
+  color: var(--text-3);
+}
+.kb-gg-cel {
+  display: grid;
+  place-items: center;
+}
+.kb-gg-ponto {
+  display: inline-block;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+}
+.kb-gg-ponto.passou {
+  width: 8px;
+  height: 8px;
+  background: var(--border-2);
+}
+.kb-gg-ponto.aqui {
+  width: 14px;
+  height: 14px;
+  background: var(--ink);
+  box-shadow: 0 0 0 4px var(--ink-soft);
+}
+.kb-gg-ponto.aqui.sem-anel {
+  width: 12px;
+  height: 12px;
+  box-shadow: none;
+}
+.kb-gg-ponto.aqui.parado {
+  background: var(--brand);
+}
+.kb-gg-ponto.falta {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--border-2);
+}
+
+/* ==========================================================================
+   ABAIXO DA TELA DE 1080
+   O wireframe é de 1920. Num notebook de 1366 o modal tem 1286 e cada metade
+   643: os layouts ainda cabem (o layout reorganiza sozinho abaixo de 640),
+   mas a metade da direita não aguenta duas colunas, então ela empilha a ação
+   em cima da conversa. No celular as metades viram uma coluna só.
+   ========================================================================== */
+.ca-corpo {
+  container-type: inline-size;
+  container-name: modal;
+}
+@container modal (max-width: 1400px) {
+  .ca-dir {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .ca-topo {
+    flex-wrap: wrap;
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .ca-caixa-busca {
+    order: 3;
+    width: 100%;
+  }
+  .ca-tags,
+  .ca-escolher,
+  .pi-grafico {
+    padding-left: var(--sp-5);
+    padding-right: var(--sp-5);
+  }
+  .ca-corpo {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .ca-esq,
+  .ca-outro,
+  .ca-dir {
+    overflow: visible;
+    padding: var(--sp-5);
+  }
+  .ca-esq {
+    border-right: 0;
+    border-bottom: 1px solid var(--ink-soft);
+  }
+  .ca-numero,
+  .ca-nome {
+    font-size: 20px;
+  }
+  .pi-grafico {
+    overflow-x: auto;
+  }
+  .kb-gg {
+    min-width: 640px;
+  }
+}
+
+.pi-vazio {
+  padding: var(--sp-6) var(--sp-8);
 }
 
 /* --- a confirmação do Terminei ------------------------------------------- */
@@ -527,126 +986,4 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.66;
-}
-
-/* --- no tablet e no celular ---------------------------------------------
-   As duas colunas viram uma pilha, e a AÇÃO VAI PARA CIMA. Numa pilha, o que
-   muda o estado da fábrica não pode ficar depois de oito layouts. */
-@media (max-width: 1100px) {
-  .ca-corpo,
-  .ca-corpo.comparando {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    overflow-y: auto;
-  }
-  /* empilhado, o outro pedido perde a linha da esquerda e ganha a de cima:
-     numa pilha a borda lateral não separa nada */
-  .ca-outro {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-    padding-left: 0;
-    padding-top: var(--sp-4);
-  }
-  .ca-caixa-busca {
-    width: 100%;
-  }
-  .ca-dir {
-    order: -1;
-  }
-  .ca-layouts,
-  .ca-fila {
-    overflow: visible;
-  }
-  .ca-conversa {
-    flex: none;
-  }
-  .ca-nome {
-    max-width: 180px;
-  }
-}
-
-/* --- os ultimos pedidos do cliente ---------------------------------------
-   Abaixo da conversa. Lista miuda e nao cartoes: sao ate doze linhas de
-   consulta, e cartao aqui competiria com os layouts da esquerda, que sao o
-   assunto da tela. */
-.ca-historico {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--pad-linha);
-}
-.ca-antigos {
-  list-style: none;
-  margin: var(--re-5) 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-2);
-  max-height: 240px;
-  overflow-y: auto;
-}
-.ca-antigo {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-miudo);
-  min-width: 0;
-  padding: var(--re-3) 0;
-  border-bottom: 1px solid var(--border);
-}
-.ca-antigo:last-child {
-  border-bottom: 0;
-}
-.ca-antigo-quem {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-colado);
-}
-.ca-antigo-quem > b {
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.ca-antigo-quem > small {
-  font-size: 11.5px;
-  color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ca-antigo-botoes {
-  display: flex;
-  gap: var(--re-2);
-  flex: none;
-}
-.ca-antigo-botoes > button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-2);
-  cursor: pointer;
-  transition:
-    background var(--t-fast) var(--ease-out),
-    color var(--t-fast) var(--ease-out),
-    border-color var(--t-fast) var(--ease-out);
-}
-.ca-antigo-botoes > button:hover {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
-}
-.ca-antigo-botoes > button:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-@media (pointer: coarse) {
-  .ca-antigo-botoes > button {
-    width: 40px;
-    height: 40px;
-  }
 }

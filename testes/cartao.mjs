@@ -179,14 +179,13 @@ for (const tema of ['light', 'dark']) {
     const cartao = await pg.evaluate(() => {
       const c = [...document.querySelectorAll('.kb-cartao')].find(x => x.textContent.includes('PD-TESTE-0029'))
       if (!c) return null
-      const n = c.querySelector('.kb-cartao-topo > b')
+      const n = c.querySelector('.kb-origem')
       const linhas = Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight || '20'))
       const mestres = c.querySelector('.kb-mestres')
       return {
         linhasDoNumero: linhas,
-        mestres: mestres ? [...mestres.querySelectorAll('.etiqueta')].map(e => e.textContent.trim()) : [],
-        temBorda: mestres ? getComputedStyle(mestres).borderTopWidth !== '0px' : false,
-        tags: [...c.querySelectorAll('.kb-tags .etiqueta')].map(e => e.textContent.trim()),
+        mestres: mestres ? mestres.textContent.split('·').map(e => e.trim()) : [],
+        tags: [...c.querySelectorAll('.kb-tags .kb-tag')].map(e => e.textContent.trim()),
         botao: (() => {
           const b = c.querySelector('.kb-terminei')
           if (!b) return null
@@ -200,8 +199,8 @@ for (const tema of ['light', 'dark']) {
       }
     })
     conta(!!cartao && cartao.linhasDoNumero <= 1, `${tema} ${nome}: o número do pedido cabe em uma linha`)
-    conta(!!cartao && cartao.mestres.length === 2 && cartao.temBorda,
-      `${tema} ${nome}: a faixa das mestres tem ${cartao?.mestres.length} tags e divisor`)
+    conta(!!cartao && cartao.mestres.join(',') === 'VIP,PRIORIDADE',
+      `${tema} ${nome}: as tags mestre aparecem em letra miúda (${cartao?.mestres.join(', ')})`)
     conta(!!cartao && cartao.tags.length === 2, `${tema} ${nome}: as tags do posto aparecem (${cartao?.tags.join(', ')})`)
 
     /* O BOTAO DE TERMINAR E QUADRADO, SEM TEXTO E SEM VERMELHO.
@@ -217,9 +216,8 @@ for (const tema of ['light', 'dark']) {
     conta(!!bt && bt.borda !== '0px', `${tema} ${nome}: o botão tem borda`)
     conta(!!bt && !/(198, 22, 27)|(224, 38, 46)/.test(bt.fundo),
       `${tema} ${nome}: o botão não é vermelho de marca (${bt?.fundo})`)
-    /* 44px onde ha dedo, 30 onde ha mouse: trinta num tablet e um botao que se
-       erra, e quarenta e quatro no computador rouba a largura do nome. */
-    conta(!!bt && (nome === 'computador' ? bt.alt === 30 : bt.alt === 44),
+    /* 44px onde ha dedo, 32 onde ha mouse, que e o do wireframe de 01/10 */
+    conta(!!bt && (nome === 'computador' ? bt.alt === 32 : bt.alt === 44),
       `${tema} ${nome}: o alvo do botão é o do ponteiro (${bt?.alt}px)`)
 
     await pg.screenshot({ path: `${PASTA}/quadro-${tema}-${nome}.png`, fullPage:false })
@@ -237,16 +235,15 @@ for (const tema of ['light', 'dark']) {
       const esq = d.querySelector('.ca-esq')?.getBoundingClientRect()
       const dir = d.querySelector('.ca-dir')?.getBoundingClientRect()
       return {
-        layouts: d.querySelectorAll('.ca-layout').length,
-        modulos: d.querySelectorAll('.mod').length,
+        layouts: d.querySelectorAll('.ca-esq .lr').length,
         empilhado: !!esq && !!dir && Math.abs(esq.top - dir.top) > 40,
         esq: Math.round(esq?.width ?? 0),
         dir: Math.round(dir?.width ?? 0),
         rolaDeLado: d.scrollWidth > d.clientWidth + 1,
       }
     })
-    conta(!!modal && modal.layouts === 2 && modal.modulos === 2,
-      `${tema} ${nome}: o cartão aberto traz os 2 layouts pelo módulo do editor`)
+    conta(!!modal && modal.layouts === 2,
+      `${tema} ${nome}: o cartão aberto traz os 2 layouts no desenho do wireframe`)
     conta(!!modal && !modal.rolaDeLado, `${tema} ${nome}: o cartão aberto não rola de lado`)
 
     await pg.screenshot({ path: `${PASTA}/cartao-${tema}-${nome}.png`, fullPage:false })
@@ -254,7 +251,7 @@ for (const tema of ['light', 'dark']) {
     /* ---- o escolhedor de tags: a que nao vale aparece APAGADA ---- */
     const escolher = await pg.evaluate(async () => {
       const d = document.querySelector('dialog[open]')
-      const b = [...d.querySelectorAll('button')].find(x => x.textContent.trim() === 'tag')
+      const b = [...d.querySelectorAll('button')].find(x => x.textContent.trim() === '+ tag')
       if (!b) return { semBotao: true }
       b.click()
       await new Promise(r => setTimeout(r, 400))
@@ -382,7 +379,7 @@ for (const tema of ['light', 'dark']) {
         temOutro: !!outro,
         acaoSumiu: !d.querySelector('.ca-acao'),
         conversaSumiu: !d.querySelector('.ca-conversa'),
-        layoutsDele: d.querySelector('.ca-outro')?.querySelectorAll('.mod').length ?? 0,
+        layoutsDele: d.querySelector('.ca-outro')?.querySelectorAll('.lr').length ?? 0,
         iguais: !!esq && !!outro && Math.abs(esq.width - outro.width) <= 2,
         empilhado: !!esq && !!outro && Math.abs(esq.top - outro.top) > 40,
         rolaDeLado: d.scrollWidth > d.clientWidth + 1,

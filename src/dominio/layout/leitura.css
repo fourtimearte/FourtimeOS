@@ -1,0 +1,267 @@
+/* ==========================================================================
+   O layout em leitura, com as medidas do wireframe de 01/10/2026.
+
+   Cada número aqui foi tirado do wireframe aprovado, e não arredondado para
+   o degrau mais perto: quando o degrau não existe, ele é montado com calc a
+   partir dos tokens (28 é 24 + 4, 18 é 20 - 2, 7 é 6 + 1). Arredondar seria
+   o jeito mais fácil de a tela ficar "quase igual", que foi o que o Henrique
+   pediu para não acontecer.
+   ========================================================================== */
+
+.lr {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding-bottom: calc(var(--sp-6) + var(--sp-1));
+  border-bottom: 1px solid var(--ink-soft);
+  min-width: 0;
+}
+
+/* --- o cabeçalho: número, referência, técnica e peças -------------------- */
+.lr-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.lr-n {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 var(--re-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.lr-ref {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 var(--re-6);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lr-ref[data-genero='masculino'] {
+  background: var(--gen-masc-bg);
+  color: var(--gen-masc-fg);
+}
+.lr-ref[data-genero='feminino'] {
+  background: var(--gen-fem-bg);
+  color: var(--gen-fem-fg);
+}
+.lr-ref[data-genero='infantil'] {
+  background: var(--gen-inf-bg);
+  color: var(--gen-inf-fg);
+}
+.lr-qual {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* --- o corpo: arte, grade e o resto, lado a lado ------------------------- */
+.lr-corpo {
+  display: grid;
+  grid-template-columns: 340px 120px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+.lr-corpo.info {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+.lr-arte {
+  display: grid;
+  place-items: center;
+  height: 300px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--border-2);
+  overflow: hidden;
+  font: inherit;
+}
+button.lr-arte {
+  cursor: zoom-in;
+}
+button.lr-arte:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.lr-arte > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* --- a grade ------------------------------------------------------------- */
+.lr-grade {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lr-grade-topo,
+.lr-grade-linha,
+.lr-grade-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lr-grade-topo {
+  height: 30px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.lr-grade-linha {
+  height: 34px;
+  border-bottom: 1px solid var(--ink-soft);
+  font-size: 13.5px;
+}
+.lr-grade-linha > b {
+  font-weight: 600;
+}
+.lr-grade-linha > span {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.lr-grade-total {
+  height: 38px;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- tecido, design e observação ----------------------------------------- */
+.lr-info {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--re-9) - var(--re-1));
+  min-width: 0;
+}
+.lr-parte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.lr-rot {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.lr-tecido {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+}
+.lr-amostra {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--text) 8%, transparent);
+}
+.lr-tecido-txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lr-tecido-txt > b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.lr-tecido-txt > span {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.lr-design {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.lr-design-tag {
+  margin-right: var(--sp-1);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.lr-cod {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--re-3) + var(--re-1) / 2);
+  height: 28px;
+  padding: 0 var(--re-5) 0 var(--re-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+.lr-cod-amostra {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  border: 1px solid color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+.lr-obs {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.lr-obs > :first-child {
+  margin-top: 0;
+}
+.lr-obs > :last-child {
+  margin-bottom: 0;
+}
+.lr-nada {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* --- coluna estreita: a arte em cima, grade e o resto embaixo ------------
+   Em 1080p o cartão aberto dá 856px para cada layout e as três partes cabem
+   lado a lado, que é o desenho. Abaixo de 640 a arte sobe e ocupa a largura. */
+@container (max-width: 640px) {
+  .lr-corpo {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+  .lr-corpo.info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lr-arte {
+    grid-column: 1 / -1;
+    height: 240px;
+  }
+}
+@container (max-width: 360px) {
+  .lr-corpo,
+  .lr-corpo.info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lr-topo {
+    flex-wrap: wrap;
+  }
+}

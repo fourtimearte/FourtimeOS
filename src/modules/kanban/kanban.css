@@ -1,247 +1,796 @@
 /* ==========================================================================
-   MARK45. O quadro do chão de fábrica.
+   O Kanban de produção, com as medidas do wireframe de 01/10/2026.
+
+   O Henrique aprovou o wireframe com a ordem de ficar IDÊNTICO no sistema:
+   bordas, margens, recheios e tamanhos de fonte. Por isso cada número aqui é
+   o do wireframe, e quando o degrau do V7 não existe ele é montado com calc a
+   partir dos tokens, em vez de arredondado para o degrau mais perto.
+
    Nenhuma classe daqui é do Design System.
    ========================================================================== */
 
-/* O QUADRO ROLA DENTRO DELE, e a página nunca de lado. Treze postos não cabem
-   em tela nenhuma, e empurrar a página inteira faria o menu sair junto. */
-.kb-quadro {
+.kb-pagina {
   display: flex;
-  gap: var(--sp-3);
-  overflow-x: auto;
-  padding-bottom: var(--sp-3);
-  /* sem isto, arrastar o cartão no tablet rola o quadro junto */
-  touch-action: pan-y;
-  scrollbar-width: thin;
-}
-
-.kb-coluna {
-  flex: 0 0 258px;
+  flex-direction: column;
+  gap: var(--sp-6);
+  /* a vista já dá 20 em cima, e o wireframe mede 28 do topo até o trilho */
+  padding-top: var(--sp-2);
   min-width: 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--re-5);
-  transition: opacity var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 
-/* Enquanto um cartão está no ar, a coluna que a rota dele não conhece apaga.
-   Recusar só no fim seria ensinar errado e depois corrigir. */
-.kb-coluna.fora {
-  opacity: 0.35;
-}
-
-.kb-coluna.alvo {
-  border-color: var(--ink);
-  background: var(--surface-3);
-}
-
-.kb-topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-miudo);
-  padding-bottom: var(--re-4);
-  margin-bottom: var(--re-4);
-  border-bottom: 2px solid var(--posto-cor);
-  font-size: 13.5px;
-}
-
-.kb-conta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 var(--re-3);
-  border-radius: var(--radius-pill);
-  background: var(--surface-3);
-  color: var(--text-2);
-  font-size: 11.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* A coluna tem chão mesmo vazia. Um quadro em que as colunas sobem e descem
-   com o que tem dentro deixa de parecer um quadro, e o alvo de largar some
-   junto: não dá para soltar um cartão numa coluna de 40px de altura. */
-.kb-pilha {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-  min-height: 220px;
-}
-
-.kb-vazio {
-  color: var(--text-3);
-  font-size: 12px;
-  text-align: center;
-  padding: var(--sp-4) 0;
-}
-
-/* ---------- o cartão ---------- */
-.kb-cartao {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
+/* o título continua na página para quem lê com leitor de tela; o wireframe
+   tirou da vista o cabeçalho do MARK45, e não da página */
+.kb-titulo-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  cursor: grab;
-  /* o cartão é o alvo do arrasto: deixar o dedo selecionar texto no meio do
-     caminho faz o navegador abrir a lupa em vez de mover */
-  user-select: none;
-  touch-action: none;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.kb-cartao.saindo {
-  opacity: 0.35;
+.kb-empurra {
+  flex-grow: 1;
 }
 
-/* Vermelho é atraso, e aqui atraso é o cartão que não anda. A borda de três
-   pixels basta: fundo vermelho numa coluna cheia vira um quadro vermelho. */
-.kb-cartao.empacado {
-  border-left: 3px solid var(--brand);
+/* ==========================================================================
+   A FAIXA DE CIMA: o trilho à esquerda e as quatro caixas à direita, as duas
+   com 148px de altura.
+
+   A conta é da MESA e não da janela (claude/REGRA-A-LARGURA-E-DA-MESA-E-NAO-
+   DA-JANELA.md). Lado a lado eles pedem 1084px de mesa: 628 das caixas, 16 de
+   vão e 440 para o trilho mostrar duas setas e dois cartões. Um monitor de
+   1080p dá 1608, e a fileira é a do wireframe. Abaixo disso o trilho fica em
+   cima e as caixas descem, ainda quadradas onde cabem quatro.
+   ========================================================================== */
+.kb-palco {
+  container-type: inline-size;
+  container-name: mesa;
 }
 
-/* O NÚMERO NUNCA QUEBRA. Com o número encolhível, "PD-TESTE-0029" virava
-   "PD-TESTE-" e "0029" em duas linhas assim que a pílula da técnica era um
-   pouco mais longa, e número de pedido partido ao meio é o pior lugar para
-   economizar espaço: é por ele que a pessoa acha o cartão varrendo a coluna.
-
-   A fileira quebra, mas nunca uma peça dela: cada filho é inteiro ou vai para
-   a linha de baixo. */
-.kb-cartao-topo {
+.kb-cima {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--re-3);
-  font-size: 14px;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+@container mesa (min-width: 1084px) {
+  .kb-cima {
+    flex-direction: row;
+    height: 148px;
+  }
+}
+
+.kb-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+  flex: none;
+}
+@container mesa (min-width: 640px) {
+  .kb-kpis {
+    grid-template-columns: repeat(4, 148px);
+  }
+}
+
+/* --- a caixa de número, quadrada ---------------------------------------- */
+.kb-caixa {
+  display: flex;
+  flex-direction: column;
+  height: 148px;
+  box-sizing: border-box;
+  padding: var(--re-7) var(--re-7) var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   min-width: 0;
 }
-.kb-cartao-topo > b {
-  white-space: nowrap;
-  font-size: 15px;
+.kb-caixa.alerta {
+  border-color: color-mix(in oklab, var(--brand) 35%, var(--border));
+}
+.kb-caixa-rot {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+.kb-caixa-n {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.kb-caixa.alerta .kb-caixa-n {
+  color: var(--brand);
+}
+.kb-caixa-sub {
+  margin-top: var(--re-3);
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--text-3);
 }
 
-/* O CARTÃO INTEIRO ABRE, e por isso a parte de cima é um <button>. Ele tem
-   que parecer o cartão e não um botão: sem borda, sem fundo, alinhado à
-   esquerda. O que dá o aspecto de clicável é o cartão todo mudar no hover. */
-.kb-abrir {
+/* --- as setas, do trilho e do quadro ------------------------------------ */
+.kb-seta {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease-out);
+}
+.kb-seta:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.kb-seta:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   O TRILHO
+   ========================================================================== */
+.kb-trilho {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 148px;
+  box-sizing: border-box;
+  padding: var(--re-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.kb-trilho-vazio {
+  margin: 0;
+  padding: 0 var(--sp-3);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* SEM BARRA DE ROLAGEM: a janela corta, e a fita anda por transform */
+.kb-trilho-janela {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 126px;
+  overflow: hidden;
+}
+.kb-trilho-fita {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 126px;
+  display: flex;
+  gap: var(--sp-4);
+  transition: transform var(--t-slow) var(--ease-out);
+}
+
+.kb-dia {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+}
+.kb-dia-rot {
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  height: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.kb-dia-rot.perto {
+  color: var(--text);
+}
+.kb-dia-rot.atraso {
+  color: var(--brand);
+}
+.kb-dia-rot > span {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+}
+.kb-dia-cartoes {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* --- o cartão do trilho, fechado e em sanfona ---------------------------- */
+.kb-tr {
+  flex: none;
+  display: flex;
+  width: 156px;
+  height: 104px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1.5px solid var(--ink-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  transition: opacity var(--t-base) var(--ease-out);
+}
+.kb-tr.apagado {
+  opacity: 0.45;
+}
+.kb-tr.aberto {
+  width: 580px;
+  border-color: var(--cartao-escuro-borda);
+  background-color: var(--cartao-escuro);
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--branco) 14%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 10px 10px;
+  box-shadow: var(--cartao-escuro-sombra);
+  color: var(--branco);
+}
+
+.kb-tr-esq {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--re-2) - var(--re-1) / 2);
+  width: 156px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--sp-3);
+}
+.kb-tr-bt {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--re-2) - var(--re-1) / 2);
+  width: 100%;
+  padding: 0;
   border: 0;
   background: transparent;
   font: inherit;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  padding: var(--re-6) var(--re-6) 0 var(--re-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-2);
-  min-width: 0;
 }
-
-.kb-nome {
+.kb-tr-bt:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.kb-tr-topo {
   display: flex;
+  justify-content: space-between;
   align-items: baseline;
-  gap: var(--gap-miudo);
-  min-width: 0;
-  color: var(--text-2);
-  font-size: 13px;
+  width: 100%;
 }
-.kb-nome > .n {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kb-nome > .q {
-  flex: none;
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-/* A FAIXA DAS TAGS MESTRE: fundo branco, e uma linha clara em cima e embaixo,
-   só como divisor. Decisão do Henrique em 22/09.
-
-   Ela existe porque a tag mestre vem do cabeçalho da cotação e vale para o
-   pedido inteiro, em todo posto e para sempre, enquanto a tag de baixo é do
-   posto e muda o dia todo. Com fundo cinza a faixa parecia outro cartão
-   dentro do cartão; como divisor ela só diz que aquilo ali é de outra
-   natureza, e sai do caminho. */
-.kb-mestres {
-  margin-top: var(--re-4);
-  padding: var(--re-3) var(--re-6);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-3);
-}
-
-.kb-corpo {
-  padding: var(--re-5) var(--re-6) var(--re-6) var(--re-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-}
-
-.kb-tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-3);
-}
-
-/* O SINAL, e não o arquivo. O cartão diz que existe conversa e que existe
-   anexo; o que eles são fica dentro. */
-.kb-sinal {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--re-2);
+.kb-tr-topo > b {
   font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kb-tr-prazo {
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-2);
 }
+.kb-tr-prazo.atrasado {
+  color: var(--brand);
+}
+.kb-tr.aberto .kb-tr-prazo {
+  color: color-mix(in oklab, var(--branco) 72%, transparent);
+}
+.kb-tr.aberto .kb-tr-prazo.atrasado {
+  color: var(--cartao-escuro-vermelho);
+}
+.kb-tr-nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kb-tr-pe {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 16px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.kb-tr.aberto .kb-tr-pe {
+  color: color-mix(in oklab, var(--branco) 66%, transparent);
+}
+.kb-tr-abrir {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--branco);
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* o link tem 16px de altura, que é o que a linha do wireframe dá; o alvo do
+   dedo cresce por fora, sem mexer no desenho */
+.kb-tr-abrir::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px;
+}
+.kb-tr-abrir:focus-visible {
+  outline: 2px solid var(--branco);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
 
-.kb-aviso {
+/* --- o gráfico pequeno, dentro da sanfona -------------------------------- */
+.kb-tr-grafico {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: var(--sp-3) 0;
+  padding: 0 var(--sp-3);
+  border-left: 1px solid color-mix(in oklab, var(--branco) 14%, transparent);
+}
+.kb-gm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.kb-gm-linha {
+  display: grid;
+  grid-template-columns: 44px repeat(var(--kb-n), minmax(0, 1fr));
+  column-gap: calc(var(--re-1) + var(--re-1) / 2);
+  align-items: center;
+  background-image: linear-gradient(
+    color-mix(in oklab, var(--branco) 10%, transparent),
+    color-mix(in oklab, var(--branco) 10%, transparent)
+  );
+  background-size: calc(100% - 50px) 1px;
+  background-position: 50px 50%;
+  background-repeat: no-repeat;
+}
+.kb-gm-eixo {
+  height: 15px;
+  background-image: none;
+}
+.kb-gm-posto {
   display: flex;
   align-items: center;
-  gap: var(--re-2);
-  font-size: 11.5px;
-  color: var(--brand-text);
-  background: var(--brand-soft);
+  justify-content: center;
+  height: 15px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--c) 34%, var(--cartao-escuro));
+  color: color-mix(in oklab, var(--c) 28%, var(--branco));
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.kb-gm-rot {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.kb-gm-rot > i {
+  font-style: normal;
+  font-weight: 500;
+  color: color-mix(in oklab, var(--branco) 60%, transparent);
+}
+.kb-gm-cel {
+  display: flex;
+  justify-content: center;
+}
+.kb-gm-ponto {
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+}
+.kb-gm-ponto.passou {
+  width: 6px;
+  height: 6px;
+  background: color-mix(in oklab, var(--branco) 38%, transparent);
+}
+.kb-gm-ponto.aqui {
+  width: 9px;
+  height: 9px;
+  background: var(--branco);
+}
+.kb-gm-ponto.aqui.parado {
+  background: var(--cartao-escuro-ponto);
+}
+.kb-gm-ponto.falta {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid color-mix(in oklab, var(--branco) 38%, transparent);
+}
+
+/* ==========================================================================
+   O QUADRO
+   ========================================================================== */
+.kb-postos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.kb-postos-topo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--re-5);
+  min-height: 44px;
+}
+.kb-postos-topo > h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.kb-faixa {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.kb-aceso {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 34px;
+  margin-left: var(--re-5);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kb-aceso > span {
+  opacity: 0.7;
+}
+.kb-aceso:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* SEM BARRA DE ROLAGEM AQUI TAMBÉM. A janela corta, a fita anda uma coluna
+   por toque nas setas, e o recheio de baixo é só para a sombra do cartão
+   escuro não ser cortada pela borda da janela. */
+.kb-quadro {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: var(--sp-6);
+  /* sem isto, arrastar o cartão no tablet rola a página junto */
+  touch-action: pan-y;
+}
+.kb-quadro-fita {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  transition: transform var(--t-slow) var(--ease-out);
+}
+
+.kb-coluna {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+  min-width: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+}
+/* Enquanto um cartão está no ar, a coluna que a rota dele não conhece apaga.
+   Recusar só no fim seria ensinar errado e depois corrigir. */
+.kb-coluna.fora {
+  opacity: 0.35;
+}
+.kb-coluna.alvo .kb-pilha {
+  background: color-mix(in oklab, var(--c) 8%, transparent);
+  outline: 2px dashed color-mix(in oklab, var(--c) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--radius-lg);
+}
+
+/* o cabeçalho não é cartão: é o nome do posto numa pílula da cor dele, e um
+   filete de 2px na mesma cor, igual ao funil */
+.kb-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--re-5) var(--re-1) var(--sp-3);
+  border-bottom: 2px solid var(--c);
+}
+.kb-topo-nome {
+  padding: var(--re-2) var(--re-5);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--c) 14%, var(--surface));
+  color: color-mix(in oklab, var(--c) 78%, var(--preto));
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+/* no Grafite o nome escuro some na pílula escura: ele clareia */
+[data-theme='dark'] .kb-topo-nome {
+  color: color-mix(in oklab, var(--c) 45%, var(--branco));
+}
+.kb-conta {
+  flex: none;
+  padding: var(--re-1) var(--re-4);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.kb-pilha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+  min-height: 96px;
+}
+.kb-vazio {
+  display: grid;
+  place-items: center;
+  height: 96px;
+  margin: 0;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* ==========================================================================
+   O CARTÃO DO QUADRO, do jeito do cartão do funil
+   ========================================================================== */
+.kb-cartao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--re-7);
+  border: 2px solid color-mix(in oklab, var(--c, var(--border)) 42%, var(--border));
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+  background-image: radial-gradient(
+    115% 88% at 0% 0%,
+    color-mix(in oklab, var(--c, transparent) 9%, transparent) 0%,
+    transparent 56%
+  );
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  cursor: grab;
+  /* o cartão é o alvo do arrasto: deixar o dedo selecionar texto no meio do
+     caminho faz o navegador abrir a lupa em vez de mover */
+  user-select: none;
+  touch-action: none;
+  transition:
+    opacity var(--t-base) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+.kb-cartao:hover {
+  transform: translateY(-1px);
+}
+.kb-cartao.saindo {
+  opacity: 0.35;
+}
+/* APAGAR É OPACIDADE, e não cinza: o cartão apagado ainda precisa ser
+   reconhecível pela cor do posto, ele só não pode disputar atenção */
+.kb-cartao.apagado {
+  opacity: 0.28;
+}
+/* ESCOLHIDO NO TRILHO: o mesmo escuro do cartão aberto lá em cima */
+.kb-cartao.escuro {
+  border-color: var(--cartao-escuro-borda);
+  background-color: var(--cartao-escuro);
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--branco) 16%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 10px 10px;
+  box-shadow: var(--cartao-escuro-sombra);
+  color: var(--branco);
+}
+
+/* O CARTÃO INTEIRO ABRE, e por isso a parte de cima é um <button>. Ele tem
+   que parecer o cartão e não um botão: sem borda, sem fundo, alinhado à
+   esquerda. */
+.kb-abrir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.kb-abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
   border-radius: var(--radius-sm);
-  padding: var(--re-2) var(--re-3);
+}
+.kb-cartao-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.kb-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.kb-nome {
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kb-origem {
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.kb-origem::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c, var(--border-2));
+}
+.kb-mestres {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+.kb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.kb-tag {
+  padding: calc(var(--re-1) + var(--re-1) / 2) calc(var(--re-4) + var(--re-1) / 2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.kb-tag-aviso {
+  border-color: color-mix(in oklab, var(--brand) 40%, var(--border));
+  color: var(--brand-text);
 }
 
 .kb-pe {
   display: flex;
   align-items: center;
-  gap: var(--re-4);
-  margin-top: var(--re-1);
+  gap: var(--re-5);
+  font-size: 12.5px;
+  color: var(--text-2);
 }
-
-/* O TEXTO ENCOLHE E CORTA, e o botão nunca. O contrário fazia "299 pçs,
-   chegou hoje" virar duas linhas e empurrar o Terminei para fora do alinho,
-   e num quadro de treze colunas a altura desigual dos cartões é o que
-   transforma a varredura com o olho em leitura. */
+.kb-pecas {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.kb-sinal,
 .kb-parado {
-  flex: 1;
-  min-width: 0;
-  color: var(--text-3);
-  font-size: 11.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: var(--re-2);
+}
+.kb-parado {
+  font-weight: 600;
+}
+.kb-parado.forte {
+  color: var(--brand);
 }
 
-.kb-parado.forte {
-  color: var(--brand-text);
-  font-weight: 600;
+/* A SETA DO TERMINEI: quadrada, clara e com borda, decisão de 29/09. */
+.kb-terminei {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+.kb-terminei:hover {
+  background-color: var(--surface-3);
+  border-color: var(--border-2);
+}
+.kb-terminei:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* 44px onde há dedo, e 32 onde há mouse */
+@media (pointer: coarse) {
+  .kb-terminei {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* --- o cartão escolhido, por dentro ------------------------------------- */
+.kb-cartao.escuro .kb-avatar {
+  background: color-mix(in oklab, var(--branco) 12%, transparent);
+  color: color-mix(in oklab, var(--branco) 78%, transparent);
+}
+.kb-cartao.escuro .kb-origem,
+.kb-cartao.escuro .kb-pe,
+.kb-cartao.escuro .kb-tag {
+  color: color-mix(in oklab, var(--branco) 78%, transparent);
+}
+.kb-cartao.escuro .kb-mestres {
+  color: color-mix(in oklab, var(--branco) 86%, transparent);
+}
+.kb-cartao.escuro .kb-tag {
+  border-color: color-mix(in oklab, var(--branco) 30%, transparent);
+}
+.kb-cartao.escuro .kb-pecas {
+  color: var(--branco);
+}
+.kb-cartao.escuro .kb-parado.forte {
+  color: var(--cartao-escuro-vermelho);
+}
+.kb-cartao.escuro .kb-terminei {
+  border-color: color-mix(in oklab, var(--branco) 28%, transparent);
+  background-color: color-mix(in oklab, var(--branco) 6%, transparent);
+  color: var(--branco);
 }
 
 /* ---------- o cartão que segue o dedo ---------- */
@@ -260,272 +809,29 @@
   gap: var(--re-1);
   font-size: 13px;
 }
-
 .kb-fantasma span {
   opacity: 0.7;
   font-size: 11.5px;
+}
+
+.kb-carregando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .kb-fantasma {
     transform: translate(-50%, -50%);
   }
-}
-
-/* No toque a coluna encolhe, mas não abaixo do que cabe um cartão legível. */
-@media (max-width: 760px) {
-  .kb-coluna {
-    flex-basis: 230px;
-  }
-}
-
-/* --- o botao de terminar, no pe do cartao --------------------------------
-   Quadrado, claro e com borda. Ele nao e o assunto do cartao: o assunto e o
-   pedido e o tempo parado. Botao que se aperta o dia inteiro nao precisa de
-   cor de marca para ser achado, precisa de estar sempre no mesmo canto. */
-.kb-terminei {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: none;
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-2);
-  cursor: pointer;
-  transition:
-    background var(--t-fast) var(--ease-out),
-    border-color var(--t-fast) var(--ease-out),
-    color var(--t-fast) var(--ease-out);
-}
-.kb-terminei:hover {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
-}
-.kb-terminei:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-/* 44px onde ha dedo, e 30 onde ha mouse. Trinta num tablet e um botao que se
-   erra; quarenta e quatro num quadro de treze colunas no computador e um
-   botao que rouba a largura do nome do cliente. */
-@media (pointer: coarse) {
-  .kb-terminei {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-/* ==========================================================================
-   O TOPO: um terco de numeros, dois tercos de entregas.
-
-   A conta e da MESA e nao da janela: o menu lateral come 248px que o quadro
-   nao pode usar, e regra escrita contra a janela e regra que nao liga no
-   monitor de 1080. Ver claude/REGRA-A-LARGURA-E-DA-MESA-E-NAO-DA-JANELA.md.
-   ========================================================================== */
-.kb-palco {
-  container-type: inline-size;
-  container-name: mesa;
-}
-
-.kb-cima {
-  margin-bottom: var(--sp-5);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-4);
-  align-items: start;
-}
-/* DOIS DEGRAUS, e o primeiro NAO e um terco exato de proposito.
-
-   Um terco de 758px (a mesa num monitor de 1080) da 246, e dois KPIs lado a
-   lado em 246 dao 123 cada: "Parados ha 3 dias ou mais" sai em quatro linhas e
-   "7.262" encosta no rotulo. Entao no degrau apertado a coluna da esquerda e
-   300 fixos, que e 40 por cento da mesa e o minimo em que o 2 por 2 se le.
-
-   Passando de 1100 a conta vira o terco de verdade, porque ai um terco ja da
-   mais de 360 e a proporcao que o Henrique pediu cabe sem apertar nada. */
-@container mesa (min-width: 700px) {
-  .kb-cima {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
-  }
-}
-@container mesa (min-width: 1100px) {
-  .kb-cima {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  }
-}
-
-/* Em um terco os quatro KPIs viram 2 por 2. Quatro numa fileira de 300px
-   dariam 75px por numero, e 1.173 nao cabe em 75px. */
-.kb-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-  gap: var(--sp-3);
-}
-@container mesa (min-width: 700px) {
-  .kb-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* --- o trilho de entregas ------------------------------------------------ */
-.kb-entregas {
-  min-width: 0;
-}
-.kb-entregas-topo {
-  display: flex;
-  align-items: baseline;
-  gap: var(--gap-miudo);
-  flex-wrap: wrap;
-  margin-bottom: var(--re-5);
-}
-.kb-rot {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.kb-entregas-dica {
-  font-size: 12.5px;
-  color: var(--text-3);
-}
-.kb-limpar {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--brand-text);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.kb-limpar:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* A fileira rola DENTRO DELA, e nao com a pagina: o quadro la embaixo ja rola
-   de lado por conta dele, e duas rolagens horizontais que andam juntas seriam
-   uma so bagunca. */
-.kb-trilho {
-  display: flex;
-  gap: var(--re-6);
-  overflow-x: auto;
-  padding-bottom: var(--re-4);
-  scroll-snap-type: x proximate;
-}
-.kb-trilho-vazio {
-  padding: var(--pad-cartao);
-  border: 1px dashed var(--border-2);
-  border-radius: var(--radius-lg);
-  font-size: 13.5px;
-  color: var(--text-3);
-}
-
-.kb-tr {
-  flex: 0 0 216px;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-miudo);
-  text-align: left;
-  font: inherit;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--re-8);
-  cursor: pointer;
-  min-width: 0;
-  transition:
-    border-color var(--t-fast) var(--ease-out),
-    opacity var(--t-fast) var(--ease-out),
-    box-shadow var(--t-fast) var(--ease-out);
-}
-.kb-tr:hover {
-  border-color: var(--border-2);
-}
-.kb-tr:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-/* O ESCOLHIDO E PRETO, e nao vermelho: no V7 preto e selecao e vermelho e
-   acao ou atraso. O vermelho deste trilho ja tem dono, que e a data vencida. */
-.kb-tr.aceso {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
-}
-.kb-tr.apagado {
-  opacity: 0.4;
-}
-
-.kb-tr-topo {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--gap-miudo);
-  min-width: 0;
-}
-.kb-tr-topo > b {
-  font-size: 13.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.kb-tr-prazo {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-.kb-tr-prazo.aperta {
-  color: var(--warn);
-}
-.kb-tr-prazo.atrasado {
-  color: var(--brand-text);
-}
-
-.kb-tr-nome {
-  font-size: 13px;
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kb-tr-marcas {
-  display: flex;
-  gap: var(--re-2);
-  flex-wrap: wrap;
-}
-.kb-tr-pe {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--gap-miudo);
-  font-size: 11.5px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- o destaque no quadro -----------------------------------------------
-   APAGAR E OPACIDADE, e nao cinza. Cinza repintaria o cartao e apagaria junto
-   a cor da tecnica e a da tag, que sao o que a pessoa usa para reconhecer o
-   cartao de longe: o cartao apagado ainda precisa ser reconhecivel, ele so
-   nao pode disputar atencao com o aceso. */
-.kb-cartao.apagado {
-  opacity: 0.28;
-}
-.kb-cartao.aceso {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
-}
-@media (prefers-reduced-motion: reduce) {
+  .kb-trilho-fita,
+  .kb-quadro-fita,
   .kb-tr,
-  .kb-cartao {
+  .kb-cartao,
+  .kb-seta {
     transition: none;
+  }
+  .kb-cartao:hover {
+    transform: none;
   }
 }

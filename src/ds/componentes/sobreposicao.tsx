@@ -47,12 +47,15 @@ export function Modal({
   largo,
   gigante,
   solto,
+  cheio,
   topo,
 }: Props & {
   /** o tamanho do cartão do kanban: duas colunas de conteúdo lado a lado */
   gigante?: boolean
   /** sem recheio e sem rolagem no corpo, para a tela que rola por dentro */
   solto?: boolean
+  /** a tela quase inteira: 40px de folga dos lados e 32px em cima e embaixo */
+  cheio?: boolean
   /** um cabeçalho próprio no lugar do título simples */
   topo?: ReactNode
 }) {
@@ -60,7 +63,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      className={['sobrepoe', 'modal', gigante ? 'gigante' : largo ? 'largo' : '']
+      className={['sobrepoe', 'modal', cheio ? 'cheio' : gigante ? 'gigante' : largo ? 'largo' : '']
         .filter(Boolean)
         .join(' ')}
       onClick={(e) => cliqueNoEscuro(e, aoFechar)}

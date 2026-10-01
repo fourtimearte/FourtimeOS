@@ -1,28 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowRight, ArrowsLeftRight, Hand, PaperPlaneRight, Plus, X } from '@phosphor-icons/react'
-import {
-  Botao,
-  Busca,
-  Entrada,
-  Esqueleto,
-  Etiqueta,
-  Modal,
-  PilulaTecnica,
-  Selo,
-  Vazio,
-  avisar,
-} from '@ds'
-import {
-  CaixaDeImagem,
-  GradeDeTamanhos,
-  ModuloDeLayout,
-  type Bloco,
-} from '@dominio/layout'
+import type { CSSProperties } from 'react'
+import { Esqueleto, Etiqueta, Modal, Vazio, avisar } from '@ds'
+import { LayoutDeLeitura, type Bloco } from '@dominio/layout'
 import { acharCotacao, type Cotacao } from '@dominio/cotacao'
 import { ModalDaFolha } from '@modules/cotacao'
 import {
   NOME_DA_TECNICA,
   buscarPedidosParaComparar,
+  corDoPosto,
   carregarALinhaDoTempo,
   comentarNoCartao,
   cotacaoDoPedido,
@@ -35,32 +20,45 @@ import {
   soltarOCartao,
   tagValeNoPosto,
   tirarATag,
-  tomDaMarca,
   type EventoDoCartao,
   type FatiaNoQuadro,
   type PedidoParaComparar,
   type Rota,
   type Tag,
 } from '@dominio/producao'
+import {
+  Fechar,
+  IconeEnviar,
+  IconeLupa,
+  IconeMais,
+  IconeSeta,
+  IconeTroca,
+  IconeX,
+  Mestre,
+  Rotulo,
+  entregaEmTexto,
+} from './pecas-do-modal'
 import './cartao-aberto.css'
 
 /* ==========================================================================
-   O cartão aberto.
+   O cartão aberto, do jeito do wireframe de 01/10/2026.
 
-   Duas colunas. A ESQUERDA É O PEDIDO SEM VALOR: cabeçalho, uma linha só de
-   tags e anexos, e os layouts. A DIREITA É O QUE MUDA A FÁBRICA: quem está
-   com o cartão, Terminei e Travou, a rota, e a conversa.
+   A TELA QUASE INTEIRA, EM DUAS METADES IGUAIS. A esquerda é o pedido sem
+   valor: os layouts. A direita se parte em duas: a ação e a rota de um lado,
+   a conversa e os últimos pedidos do cliente do outro.
 
-   OS LAYOUTS SÃO O MÓDULO DO EDITOR DE COTAÇÃO, em modo leitura, e não uma
-   versão resumida. É o mesmo ModuloDeLayout que a ficha de produção usa desde
-   a fusão: ele já sabe vários tecidos com a cor de cada um, as fileiras de
-   etiqueta, técnica e acabamento, a grade sem valor e a observação. Uma versão
-   própria aqui seria a terceira maneira de desenhar a mesma peça, e no dia em
-   que a fábrica mudasse alguma coisa, duas delas ficariam mentindo.
+   AS METADES SÃO IGUAIS DE PROPÓSITO, e é isso que faz o comparar funcionar:
+   comparar troca a metade da direita pelos layouts do outro pedido, e os dois
+   ficam com exatamente a mesma largura. Em 1080p cada metade dá 856px de
+   layout, e o layout inteiro cabe lado a lado.
 
-   O BLOCO PRETO DA AÇÃO FICA NO TOPO DA DIREITA, e não no rodapé. Ele é a
-   única coisa desta tela inteira que muda o estado da fábrica; todo o resto é
-   leitura. O que muda o mundo não fica embaixo de uma rolagem.
+   OS LAYOUTS SÃO O DESENHO DO WIREFRAME, e não mais o módulo do editor de
+   cotação. Decisão do Henrique em 01/10, que trocou a de 22/09: o desenho
+   limpo, só com linhas finas, ganhou. Ele mora em @dominio/layout como
+   LayoutDeLeitura.
+
+   A AÇÃO FICA NO TOPO DA DIREITA, e não no rodapé. Ela é a única coisa desta
+   tela inteira que muda o estado da fábrica; todo o resto é leitura.
    ========================================================================== */
 
 export function CartaoAberto({
@@ -243,162 +241,174 @@ export function CartaoAberto({
 
   const postas = new Set(fatia.tags)
   const disponiveis = tags.filter((t) => t.ativa)
+  const entrega = entregaEmTexto(fatia.entregaEm)
+  const tecnica = NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica
 
   return (
-    <Modal
-      aberto
-      gigante
-      solto
-      aoFechar={aoFechar}
-      topo={
-        <div className="ca-topo">
+    <Modal aberto cheio solto aoFechar={aoFechar}>
+      <div className="ca">
+        {/* ---------------- o cabeçalho ---------------- */}
+        <header className="ca-topo">
           <div className="ca-titulo">
-            <b>{fatia.numero}</b>
-            <span className="ca-nome">{fatia.nome}</span>
-            <PilulaTecnica tecnica={fatia.tecnica} tamanho="sm">
-              {NOME_DA_TECNICA[fatia.tecnica] ?? fatia.tecnica}
-            </PilulaTecnica>
-            <Selo tom="info">{nomeDoPosto(fatia.etapa)}</Selo>
-            {fatia.teste ? <Selo tom="warn">teste</Selo> : null}
-          </div>
-          <div className="ca-linhas">
-            <span>
-              <i>Cliente</i> {fatia.cliente || 'sem cliente'}
-            </span>
-            {fatia.vendedor ? (
-              <span>
-                <i>Vendedor</i> {fatia.vendedor}
+            <div className="ca-linha1">
+              <b className="ca-numero">{fatia.numero}</b>
+              <span className="ca-nome">{fatia.nome}</span>
+              <span
+                className="ca-onde"
+                style={{ '--c': corDoPosto(fatia.etapa) } as CSSProperties}
+              >
+                {tecnica} · em {nomeDoPosto(fatia.etapa)}
               </span>
-            ) : null}
-            <span>
-              <i>Entrega</i> {fatia.entregaEm ? dataCurta(fatia.entregaEm) : 'sem data'}
-            </span>
-            <span>
-              <i>Nesta fatia</i> {fatia.pecas} peças, {blocos.length}{' '}
-              {blocos.length === 1 ? 'layout' : 'layouts'}
-            </span>
-            <span className="ca-sem-valor">esta tela não mostra valor</span>
+              {fatia.teste ? <span className="ca-onde sem-ponto">teste</span> : null}
+            </div>
+            <div className="ca-meta">
+              <span>
+                Cliente <b>{fatia.cliente || 'sem cliente'}</b>
+              </span>
+              {fatia.vendedor ? (
+                <span>
+                  Vendedor <b>{fatia.vendedor}</b>
+                </span>
+              ) : null}
+              <span>
+                Entrega <b className={entrega.perto ? 'perto' : ''}>{entrega.texto}</b>
+              </span>
+              <span>
+                Nesta fatia{' '}
+                <b>
+                  {fatia.pecas} peças, {blocos.length} {blocos.length === 1 ? 'layout' : 'layouts'}
+                </b>
+              </span>
+            </div>
           </div>
 
           {/* A BUSCA MORA NO CABEÇALHO DO CARTÃO, e é isso que faz ela não
               ficar travada pelo modal: quem está com um pedido na frente e
               quer conferir contra o do ano passado não pode ter que fechar o
               que está olhando para procurar o outro. */}
-          <div className="ca-comparar">
-            {comparado ? (
-              <Botao tamanho="sm" tom="contorno" onClick={() => setComparado(null)}>
-                <X size={14} weight="bold" />
-                Fechar a comparação
-              </Botao>
-            ) : (
-              <div className="ca-caixa-busca">
-                <Busca
+          {comparado ? (
+            <button type="button" className="ca-fechar-comp" onClick={() => setComparado(null)}>
+              <IconeX tamanho={14} />
+              Fechar a comparação
+            </button>
+          ) : (
+            <div className="ca-caixa-busca">
+              <label className="ca-busca">
+                <IconeLupa />
+                <input
+                  type="search"
                   value={termo}
                   onChange={(e) => setTermo(e.target.value)}
                   placeholder="Comparar com outro pedido"
                   aria-label="Buscar outro pedido para comparar"
                 />
-                {achados.length ? (
-                  <ul className="ca-achados">
-                    {achados.map((p) => (
-                      <li key={p.id}>
-                        <button type="button" onClick={() => void comparar(p)}>
-                          <b>{p.numero}</b>
-                          <span className="n">{p.nome}</span>
-                          <span className="e">{p.estado}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : termo.trim().length >= 2 ? (
-                  <p className="ca-sem-achado">nenhum pedido com esse texto</p>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      }
-    >
-      <div className={comparado ? 'ca-corpo comparando' : 'ca-corpo'}>
-        {/* ---------------- esquerda: o pedido ---------------- */}
-        <div className="ca-esq">
-          <div className="ca-faixa">
-            {fatia.marcas.map((m) => (
-              <Etiqueta key={m} mestre tom={tomDaMarca(m)}>
-                {m}
-              </Etiqueta>
-            ))}
-            {fatia.marcas.length ? <span className="ca-risco" /> : null}
+              </label>
+              {achados.length ? (
+                <ul className="ca-achados">
+                  {achados.map((p) => (
+                    <li key={p.id}>
+                      <button type="button" onClick={() => void comparar(p)}>
+                        <b>{p.numero}</b>
+                        <span className="n">{p.nome}</span>
+                        <span className="e">{p.estado}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : termo.trim().length >= 2 ? (
+                <p className="ca-sem-achado">nenhum pedido com esse texto</p>
+              ) : null}
+            </div>
+          )}
 
-            {fatia.tags.map((chave) => {
-              const t = tags.find((x) => x.chave === chave)
+          <Fechar aoFechar={aoFechar} />
+        </header>
+
+        {/* ---------------- a linha das tags ---------------- */}
+        <div className="ca-tags">
+          {fatia.marcas.map((m) => (
+            <Mestre key={m}>{m}</Mestre>
+          ))}
+          {fatia.marcas.length ? <span className="ca-risco" /> : null}
+
+          {fatia.tags.map((chave) => {
+            const t = tags.find((x) => x.chave === chave)
+            return (
+              <span key={chave} className="ca-tag">
+                {t?.nome ?? chave}
+                {podeMover ? (
+                  <button
+                    type="button"
+                    aria-label={'Tirar a tag ' + (t?.nome ?? chave)}
+                    onClick={() => void mexer(() => tirarATag(fatia.id, chave))}
+                  >
+                    <IconeX tamanho={12} />
+                  </button>
+                ) : null}
+              </span>
+            )
+          })}
+
+          {podeMover ? (
+            <button
+              type="button"
+              className="ca-mais-tag"
+              onClick={() => setEscolhendo((x) => !x)}
+              aria-expanded={escolhendo}
+            >
+              + tag
+            </button>
+          ) : null}
+
+          <span className="ca-empurra" />
+          <span className="ca-sem-valor">esta tela não mostra valor</span>
+        </div>
+
+        {/* AS TAGS QUE O POSTO NÃO USA APARECEM APAGADAS, e não somem.
+            Mostrar em cinza ensina que a tag existe; esconder faz a pessoa
+            achar que ela foi apagada e ir procurar em Configurações. */}
+        {escolhendo ? (
+          <div className="ca-escolher">
+            {disponiveis.map((t) => {
+              const vale = tagValeNoPosto(t, fatia.etapa)
+              const ja = postas.has(t.chave)
               return (
                 <Etiqueta
-                  key={chave}
-                  tom={t?.tom ?? 'cinza'}
-                  aoTirar={podeMover ? () => void mexer(() => tirarATag(fatia.id, chave)) : undefined}
+                  key={t.chave}
+                  tom={t.tom}
+                  fora={!vale}
+                  desligada={!vale || ja}
+                  title={
+                    !vale ? 'não vale em ' + nomeDoPosto(fatia.etapa) : ja ? 'já está neste cartão' : undefined
+                  }
+                  aoClicar={() => {
+                    setEscolhendo(false)
+                    void mexer(() => porATag(fatia.id, t.chave))
+                  }}
                 >
-                  {t?.nome ?? chave}
+                  {t.nome}
                 </Etiqueta>
               )
             })}
-
-            {podeMover ? (
-              <Botao
-                tamanho="sm"
-                tom="contorno"
-                onClick={() => setEscolhendo((x) => !x)}
-                aria-expanded={escolhendo}
-              >
-                <Plus size={14} weight="bold" />
-                tag
-              </Botao>
-            ) : null}
-
-            <span className="ca-empurra" />
-            <span className="ca-anexos">anexos vêm da cotação, no passo do Drive</span>
           </div>
+        ) : null}
 
-          {/* AS TAGS QUE O POSTO NÃO USA APARECEM APAGADAS, e não somem.
-              Mostrar em cinza ensina que a tag existe; esconder faz a pessoa
-              achar que ela foi apagada e ir procurar em Configurações. */}
-          {escolhendo ? (
-            <div className="ca-escolher">
-              {disponiveis.map((t) => {
-                const vale = tagValeNoPosto(t, fatia.etapa)
-                const ja = postas.has(t.chave)
-                return (
-                  <Etiqueta
-                    key={t.chave}
-                    tom={t.tom}
-                    fora={!vale}
-                    desligada={!vale || ja}
-                    title={
-                      !vale
-                        ? 'não vale em ' + nomeDoPosto(fatia.etapa)
-                        : ja
-                          ? 'já está neste cartão'
-                          : undefined
-                    }
-                    aoClicar={() => {
-                      setEscolhendo(false)
-                      void mexer(() => porATag(fatia.id, t.chave))
-                    }}
-                  >
-                    {t.nome}
-                  </Etiqueta>
-                )
-              })}
-            </div>
-          ) : null}
-
-          <div className="ca-layouts">
+        {/* ---------------- as duas metades ---------------- */}
+        <div className={comparado ? 'ca-corpo comparando' : 'ca-corpo'}>
+          <div className="ca-esq">
+            {comparado ? (
+              <TopoDaColuna
+                numero={fatia.numero}
+                nome={fatia.nome}
+                quando={'em produção · entrega ' + (fatia.entregaEm ? entrega.texto.split(', ').pop() : 'sem data')}
+              />
+            ) : null}
             {erro ? (
               <Vazio titulo="Não consegui ler os layouts" texto={erro} />
             ) : carregando ? (
               <>
-                <Esqueleto altura={200} />
-                <Esqueleto altura={200} />
+                <Esqueleto altura={300} />
+                <Esqueleto altura={300} />
               </>
             ) : !blocos.length ? (
               <Vazio
@@ -407,242 +417,210 @@ export function CartaoAberto({
               />
             ) : (
               blocos.map((b) => (
-                <section className="ca-layout" key={b.id}>
-                  <ModuloDeLayout
-                    bloco={b}
-                    aoMudar={() => {}}
-                    leitura
-                    semValor
-                    arte={<CaixaDeImagem leitura imagem={b.imagem} arte={b.arte} />}
-                    tabela={<GradeDeTamanhos leitura faixa={b.faixa} grade={b.grade} />}
-                  />
-                </section>
+                <LayoutDeLeitura key={b.id} bloco={b} tecnica={tecnica} />
               ))
             )}
           </div>
-        </div>
 
-        {/* ---------------- direita, comparando: o outro pedido ----------- */}
-        {comparado ? (
-          <div className="ca-outro">
-            <div className="ca-outro-topo">
-              <div>
-                <div className="ca-outro-nome">
-                  <b>{comparado.numero}</b>
-                  <Selo>{comparado.estado}</Selo>
-                </div>
-                <span>
-                  {comparado.nome}
-                  {comparado.cliente && comparado.cliente !== comparado.nome
-                    ? ', ' + comparado.cliente
-                    : ''}
-                </span>
-              </div>
-            </div>
-
-            <div className="ca-layouts">
+          {/* ---------------- direita, comparando: o outro pedido ----------- */}
+          {comparado ? (
+            <div className="ca-outro">
+              <TopoDaColuna
+                numero={comparado.numero}
+                nome={comparado.nome || comparado.cliente}
+                quando={
+                  comparado.estado +
+                  (comparado.entregaEm ? ' · ' + comparado.entregaEm.split('-').reverse().join('/') : '')
+                }
+              />
               {lendoDele ? (
                 <>
-                  <Esqueleto altura={200} />
-                  <Esqueleto altura={200} />
+                  <Esqueleto altura={300} />
+                  <Esqueleto altura={300} />
                 </>
               ) : !blocosDele.length ? (
-                <Vazio
-                  titulo="Este pedido não tem layout"
-                  texto="A cotação dele não guardou bloco nenhum."
-                />
+                <Vazio titulo="Este pedido não tem layout" texto="A cotação dele não guardou bloco nenhum." />
               ) : (
                 blocosDele.map((b) => (
-                  <section className="ca-layout" key={b.id}>
-                    <ModuloDeLayout
-                      bloco={b}
-                      aoMudar={() => {}}
-                      leitura
-                      semValor
-                      arte={<CaixaDeImagem leitura imagem={b.imagem} arte={b.arte} />}
-                      tabela={<GradeDeTamanhos leitura faixa={b.faixa} grade={b.grade} />}
-                    />
-                  </section>
+                  <LayoutDeLeitura key={b.id} bloco={b} />
                 ))
               )}
             </div>
-          </div>
-        ) : null}
+          ) : (
+            /* ---------------- direita: o que muda a fábrica ---------------- */
+            <div className="ca-dir">
+              <div className="ca-dir-col">
+                <section className="ca-acao">
+                  <div className="ca-mao">
+                    <span className="ca-avatar">
+                      {fatia.pegoPor ? iniciais(fatia.pegoPorNome) : '?'}
+                    </span>
+                    <div>
+                      <b>
+                        {fatia.pegoPor
+                          ? naMinhaMao
+                            ? 'Está na sua mão'
+                            : 'Está com ' + (fatia.pegoPorNome || 'alguém')
+                          : 'Na fila'}
+                      </b>
+                      <span>
+                        {fatia.pegoPor
+                          ? 'em ' + nomeDoPosto(fatia.etapa) + ' ' + quando(fatia.pegoEm)
+                          : 'esperando ' + quando(fatia.etapaEm) + ' em ' + nomeDoPosto(fatia.etapa)}
+                      </span>
+                    </div>
+                  </div>
 
-        {/* ---------------- direita: o que muda a fábrica ---------------- */}
-        {comparado ? null : (
-        <div className="ca-dir">
-          <div className="ca-acao">
-            <div className="ca-mao">
-              {fatia.pegoPor ? (
-                <>
-                  <b>{naMinhaMao ? 'Está na sua mão' : fatia.pegoPorNome + ' pegou'}</b>
-                  <span>
-                    em {nomeDoPosto(fatia.etapa)} há {desde(fatia.pegoEm)}
+                  {podeMover ? (
+                    <div className="ca-botoes">
+                      {naMinhaMao ? (
+                        <button
+                          type="button"
+                          className="ca-bt"
+                          onClick={() => void mexer(() => soltarOCartao(fatia.id))}
+                        >
+                          Soltar
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ca-bt"
+                          onClick={() => void mexer(() => pegarOCartao(fatia.id))}
+                        >
+                          Peguei
+                        </button>
+                      )}
+                      {proximo ? (
+                        <button type="button" className="ca-bt forte" onClick={aoTerminar}>
+                          Terminei
+                          <IconeSeta />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <span className="ca-proximo">
+                    {proximo ? (
+                      <>
+                        depois vai para <b>{nomeDoPosto(proximo)}</b>
+                      </>
+                    ) : (
+                      'este é o fim da rota desta técnica'
+                    )}
                   </span>
-                </>
-              ) : (
-                <>
-                  <b>Na fila</b>
-                  <span>
-                    esperando há {desde(fatia.etapaEm)} em {nomeDoPosto(fatia.etapa)}
-                  </span>
-                </>
-              )}
-            </div>
+                </section>
 
-            <div className="ca-botoes">
-              {podeMover ? (
-                naMinhaMao ? (
-                  <Botao tom="contorno" onClick={() => void mexer(() => soltarOCartao(fatia.id))}>
-                    Soltar
-                  </Botao>
-                ) : (
-                  <Botao tom="contorno" onClick={() => void mexer(() => pegarOCartao(fatia.id))}>
-                    <Hand size={16} weight="bold" />
-                    Peguei
-                  </Botao>
-                )
-              ) : null}
-
-              {podeMover && proximo ? (
-                <Botao tom="primario" className="ca-terminei" onClick={aoTerminar}>
-                  Terminei
-                  <ArrowRight size={16} weight="bold" />
-                </Botao>
-              ) : null}
-            </div>
-
-            {proximo ? (
-              <p className="ca-proximo">o próximo posto da rota é {nomeDoPosto(proximo)}</p>
-            ) : (
-              <p className="ca-proximo">este é o fim da rota desta técnica</p>
-            )}
-          </div>
-
-          {/* A ROTA INTEIRA, com o de agora em destaque. Ela responde a
-              pergunta que o operador faz sem falar: quanto falta. */}
-          <div className="ca-rota">
-            <span className="ca-rot">A rota desta fatia</span>
-            <div className="ca-trilho">
-              {rota.map((p, i) => (
-                <span
-                  key={p}
-                  className={
-                    p === fatia.etapa ? 'ca-passo agora' : i < ondeEstou ? 'ca-passo andou' : 'ca-passo'
-                  }
-                  title={nomeDoPosto(p)}
-                />
-              ))}
-            </div>
-            <div className="ca-pontas">
-              <span>{nomeDoPosto(rota[0] ?? fatia.etapa)}</span>
-              <b>{nomeDoPosto(fatia.etapa)}</b>
-              <span>{nomeDoPosto(rota[rota.length - 1] ?? fatia.etapa)}</span>
-            </div>
-          </div>
-
-          {/* A CONVERSA E O HISTÓRICO NA MESMA LINHA DO TEMPO, e não em duas
-              abas. Um comentário lido sem saber que o cartão mudou de posto
-              três minutos antes é meio comentário. */}
-          <div className="ca-conversa">
-            <span className="ca-rot">Conversa e histórico</span>
-            <div className="ca-fila">
-              {!linha.length ? (
-                <p className="ca-nada">nada aconteceu com este cartão ainda</p>
-              ) : (
-                linha.map((e) => <Evento key={e.id} evento={e} />)
-              )}
-            </div>
-            {podeMover ? (
-              <div className="ca-escrever">
-                <Entrada
-                  className="ca-campo"
-                  value={recado}
-                  onChange={(e) => setRecado(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') void enviar()
-                  }}
-                  placeholder="Escrever para a equipe"
-                  aria-label="Escrever para a equipe"
-                />
-                <Botao
-                  tom="forte"
-                  icone
-                  aria-label="Enviar o recado"
-                  disabled={recado.trim().length < 2 || enviando}
-                  onClick={() => void enviar()}
-                >
-                  <PaperPlaneRight size={16} weight="bold" />
-                </Botao>
+                {/* A ROTA INTEIRA, de cima para baixo, com o de agora em
+                    destaque. Ela responde a pergunta que o operador faz sem
+                    falar: quanto falta. */}
+                <section className="ca-rota">
+                  <Rotulo>A rota desta fatia</Rotulo>
+                  <ol className="ca-passos">
+                    {rota.map((p, i) => {
+                      const estado = p === fatia.etapa ? 'agora' : i < ondeEstou ? 'feito' : 'falta'
+                      return (
+                        <li key={p} className={'ca-passo ' + estado}>
+                          <span className="ca-passo-ponto">
+                            <span />
+                          </span>
+                          <span className="ca-passo-nome">{nomeDoPosto(p)}</span>
+                          {estado === 'agora' ? <span className="ca-passo-lado">agora</span> : null}
+                        </li>
+                      )
+                    })}
+                  </ol>
+                </section>
               </div>
-            ) : null}
-          </div>
 
-          {/* ---------- OS ULTIMOS PEDIDOS DO CLIENTE ----------
-
-              Abaixo da conversa, e nao acima: a conversa e sobre ESTE cartao,
-              agora, e e ela que a pessoa veio ler. O historico do cliente e a
-              segunda pergunta, e ela so aparece depois da primeira.
-
-              DOIS BOTOES POR LINHA, e eles fazem coisas diferentes de
-              proposito. COMPARAR poe os layouts do antigo ao lado dos deste,
-              na mesma tela, que e o que se quer quando a duvida e "a cor era
-              essa?". ABRIR traz a folha inteira do antigo por cima, que e o
-              que se quer quando a duvida e sobre prazo, pagamento ou o que
-              estava escrito nas observacoes. */}
-          <div className="ca-historico">
-            <span className="ca-rot">Últimos pedidos do cliente</span>
-            {lendoDoCliente ? (
-              <p className="ca-nada">procurando...</p>
-            ) : !fatia.clienteId ? (
-              <p className="ca-nada">
-                este pedido não está ligado a um cliente cadastrado, então não dá para achar os
-                anteriores dele
-              </p>
-            ) : !doCliente.length ? (
-              <p className="ca-nada">é o primeiro pedido deste cliente no sistema</p>
-            ) : (
-              <ul className="ca-antigos">
-                {/* SEM ESTADO DE "ESCOLHIDO" nesta lista, e o TypeScript foi
-                    quem mostrou por quê: esta coluna inteira sai de cena
-                    enquanto se compara, então um item aceso aqui nunca
-                    chegaria a ser visto. Para trocar de comparação, fecha-se a
-                    comparação pelo cabeçalho e escolhe-se de novo. */}
-                {doCliente.map((p) => (
-                  <li key={p.id} className="ca-antigo">
-                    <span className="ca-antigo-quem">
-                      <b>{p.numero}</b>
-                      <small>
-                        {p.nome || p.cliente}
-                        {p.entregaEm ? ' · ' + p.entregaEm.split('-').reverse().join('/') : ''}
-                      </small>
-                    </span>
-                    <span className="ca-antigo-botoes">
+              <div className="ca-dir-col">
+                {/* A CONVERSA E O HISTÓRICO NA MESMA LINHA DO TEMPO, e não em
+                    duas abas. Um comentário lido sem saber que o cartão mudou
+                    de posto três minutos antes é meio comentário. */}
+                <section className="ca-conversa">
+                  <Rotulo>Conversa e histórico</Rotulo>
+                  {!linha.length ? (
+                    <p className="ca-nada">nada aconteceu com este cartão ainda</p>
+                  ) : (
+                    linha.map((e) => <Evento key={e.id} evento={e} />)
+                  )}
+                  {podeMover ? (
+                    <div className="ca-escrever">
+                      <input
+                        className="ca-campo"
+                        value={recado}
+                        onChange={(e) => setRecado(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void enviar()
+                        }}
+                        placeholder="Escrever para a equipe"
+                        aria-label="Escrever para a equipe"
+                      />
                       <button
                         type="button"
-                        title={'Pôr os layouts do ' + p.numero + ' ao lado destes'}
-                        aria-label={'Comparar com ' + p.numero}
-                        onClick={() => void comparar(p)}
+                        className="ca-enviar"
+                        aria-label="Enviar o recado"
+                        disabled={recado.trim().length < 2 || enviando}
+                        onClick={() => void enviar()}
                       >
-                        <ArrowsLeftRight size={15} weight="bold" />
+                        <IconeEnviar />
                       </button>
-                      <button
-                        type="button"
-                        title={'Abrir a folha do ' + p.numero + ' por cima'}
-                        aria-label={'Abrir ' + p.numero}
-                        onClick={() => setEmFolha(p)}
-                      >
-                        <Plus size={15} weight="bold" />
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                    </div>
+                  ) : null}
+                </section>
+
+                {/* OS ÚLTIMOS PEDIDOS DO CLIENTE, abaixo da conversa: a conversa
+                    é sobre ESTE cartão, agora, e é ela que a pessoa veio ler.
+                    COMPARAR põe os layouts do antigo ao lado dos deste; ABRIR
+                    traz a folha inteira do antigo por cima. */}
+                <section className="ca-historico">
+                  <Rotulo>Últimos pedidos do cliente</Rotulo>
+                  {lendoDoCliente ? (
+                    <p className="ca-nada">procurando...</p>
+                  ) : !fatia.clienteId ? (
+                    <p className="ca-nada">
+                      este pedido não está ligado a um cliente cadastrado, então não dá para achar os
+                      anteriores dele
+                    </p>
+                  ) : !doCliente.length ? (
+                    <p className="ca-nada">é o primeiro pedido deste cliente no sistema</p>
+                  ) : (
+                    <ul className="ca-antigos">
+                      {doCliente.map((p) => (
+                        <li key={p.id} className="ca-antigo">
+                          <span className="ca-antigo-quem">
+                            <b>{p.numero}</b>
+                            <small>
+                              {p.nome || p.cliente}
+                              {p.entregaEm ? ' · ' + p.entregaEm.split('-').reverse().join('/') : ''}
+                            </small>
+                          </span>
+                          <span className="ca-antigo-botoes">
+                            <button
+                              type="button"
+                              title={'Pôr os layouts do ' + p.numero + ' ao lado destes'}
+                              aria-label={'Comparar com ' + p.numero}
+                              onClick={() => void comparar(p)}
+                            >
+                              <IconeTroca />
+                            </button>
+                            <button
+                              type="button"
+                              title={'Abrir a folha do ' + p.numero + ' por cima'}
+                              aria-label={'Abrir ' + p.numero}
+                              onClick={() => setEmFolha(p)}
+                            >
+                              <IconeMais />
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </div>
+          )}
         </div>
-        )}
       </div>
 
       {emFolha ? (
@@ -653,6 +631,18 @@ export function CartaoAberto({
         />
       ) : null}
     </Modal>
+  )
+}
+
+/* O topo de cada metade enquanto se compara: número, nome, e de que época */
+function TopoDaColuna({ numero, nome, quando: q }: { numero: string; nome: string; quando: string }) {
+  return (
+    <div className="ca-coltopo">
+      <b>{numero}</b>
+      <span>{nome}</span>
+      <span className="ca-empurra" />
+      <small>{q}</small>
+    </div>
   )
 }
 
@@ -667,7 +657,7 @@ function Evento({ evento }: { evento: EventoDoCartao }) {
         <span className="ca-quem">{iniciais(evento.quemNome)}</span>
         <div>
           <p className="ca-cabeca">
-            <b>{evento.quemNome || 'alguém'}</b> {quando(evento.em)}
+            <b>{evento.quemNome || 'alguém'}</b> <span>{quando(evento.em)}</span>
           </p>
           <p className="ca-balao">{evento.texto}</p>
         </div>
@@ -678,7 +668,7 @@ function Evento({ evento }: { evento: EventoDoCartao }) {
     <div className="ca-fato">
       <span className="ca-ponto" />
       <p>
-        {frase(evento)} <i>{quando(evento.em)}</i>
+        {frase(evento)} · {desde(evento.em)}
       </p>
     </div>
   )
@@ -719,10 +709,4 @@ function desde(iso: string): string {
   if (h < 24) return `${h} h`
   const d = paradoHa(iso)
   return `${d} dia${d === 1 ? '' : 's'}`
-}
-
-function dataCurta(iso: string): string {
-  const d = new Date(iso.length <= 10 ? iso + 'T12:00:00' : iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }

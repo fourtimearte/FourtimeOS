@@ -863,8 +863,9 @@
     flex-wrap: wrap;
     padding: var(--sp-4) var(--sp-5);
   }
+  /* o espaço do botão de fechar, que é 44 */
   .ca-titulo {
-    padding-right: 44px;
+    padding-right: calc(var(--sp-8) + var(--sp-3));
   }
   .ca-topo > .mk-fechar {
     position: absolute;

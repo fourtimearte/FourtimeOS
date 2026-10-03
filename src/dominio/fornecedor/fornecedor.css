@@ -1,0 +1,124 @@
+/* ==========================================================================
+   O fornecedor fora da página dele.
+
+   Duas peças que mais de uma tela usa: o campo de escolher (com criar na
+   hora) e o ponto da situação. Moram no domínio porque o estoque, o
+   verificador de boleto e a própria página de fornecedores desenham as duas,
+   e três cópias do mesmo ponto verde seriam três verdes daqui a um mês.
+   ========================================================================== */
+
+/* --- o campo de escolher --------------------------------------------------
+   Ele tem a altura de um campo quando está vazio e cresce para duas linhas
+   quando há alguém escolhido: o nome e, embaixo, por que aquele nome foi
+   sugerido. A borda, o raio e o foco são os do campo do sistema. */
+.fn-escolher {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+.fn-gatilho {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--btn-h);
+  padding: 0 var(--re-6) 0 var(--re-7);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
+}
+.fn-gatilho.cheio {
+  padding-block: var(--re-4);
+}
+.fn-gatilho:hover {
+  border-color: var(--text-3);
+}
+.fn-escolher.aberto .fn-gatilho,
+.fn-gatilho:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+}
+.fn-gatilho-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.fn-gatilho-texto b {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fn-gatilho-texto small {
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fn-gatilho-vazio {
+  color: var(--text-3);
+}
+.fn-seta {
+  flex: none;
+  color: var(--text-3);
+}
+
+.fn-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.fn-mais {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--brand);
+}
+.fn-falha {
+  padding: var(--re-4) var(--re-5);
+  font-size: 12.5px;
+  color: var(--brand-text);
+}
+
+/* --- o ponto da situação ---------------------------------------------------
+   Estado é ponto e texto, nunca fundo colorido. A cor chega em --c, escolhida
+   pelo domínio. */
+.fn-situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+  margin-left: auto;
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.fn-situacao.forte {
+  margin-left: 0;
+  font-size: 13px;
+}
+.fn-situacao i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--text-3));
+}

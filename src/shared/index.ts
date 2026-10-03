@@ -14,3 +14,4 @@ export {
 
 export { quadradoPequeno } from './imagem'
 export { ehUuid, vinculo } from './id'
+export { usarConsulta } from './tela'

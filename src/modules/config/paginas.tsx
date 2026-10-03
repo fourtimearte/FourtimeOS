@@ -43,11 +43,26 @@ const PAGINAS: Pagina[] = [
     porque: 'Ainda é uma tela de aviso, e não uma tela de trabalho.',
   },
   {
+    chave: 'fornecedores',
+    nome: 'Fornecedores',
+    onde: 'Materiais',
+    rota: '/fornecedores',
+    porque:
+      'De quem a Fourtime compra. Guardar a página não apaga a lista: o estoque e o verificador de boleto continuam lendo dela.',
+  },
+  {
     chave: 'dtf',
     nome: 'Calculadora de DTF',
     onde: 'Ferramentas',
     rota: '/ferramentas/dtf',
     porque: 'Conta solta do custo do filme por metragem. Não lê nem grava nada do sistema.',
+  },
+  {
+    chave: 'boleto',
+    nome: 'Verificador de Boleto',
+    onde: 'Ferramentas',
+    rota: '/ferramentas/boleto',
+    porque: 'Confere o boleto antes de pagar. O registro das conferências fica guardado mesmo com a página fora do menu.',
   },
 ]
 

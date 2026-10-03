@@ -20,15 +20,17 @@
     "sessao": "sh testes/sessao.sh",
     "semana": "sh testes/semana.sh",
     "tipos": "sh testes/tipos.sh",
-    "conferir": "npm run tipos && npm run classes && npm run tokens && npm run ligacoes && npm run contas && npm run semana",
+    "conferir": "npm run tipos && npm run classes && npm run tokens && npm run ligacoes && npm run contas && npm run semana && npm run boleto",
     "tokens": "node testes/tokens.mjs",
     "ligacoes": "node testes/ligacoes.mjs",
     "prova": "node testes/prova.mjs",
     "arrasto": "node testes/arrasto.mjs",
-    "cartao": "node testes/cartao.mjs"
+    "cartao": "node testes/cartao.mjs",
+    "boleto": "sh testes/boleto.sh"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0"

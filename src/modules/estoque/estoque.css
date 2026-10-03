@@ -1,28 +1,33 @@
 /* ==========================================================================
    Estoque.
 
-   A tela é tabela: a pergunta dela é "tem ou não tem", e tabela responde isso
-   melhor que cartão. O que mora aqui é só o que a tabela de materiais precisa
-   e o Design System não tem: a bolinha da cor do tecido, a coluna de apoio e o
-   vermelho de "acabou".
+   A tela é feita de caixas. Cada parte tem a sua, e por isso o celular não
+   precisa de desenho próprio: as caixas que no computador ficam lado a lado
+   empilham, e a ordem de cima para baixo é a mesma ordem de leitura.
+
+   O CINZA CLARO SEPARA, E NÃO DESTACA. Três tons, todos do sistema:
+     a caixa branca            --surface      o conteúdo
+     a faixa e a caixa cinza   --surface-2    categoria, fornecedor, número
+     o topo de cada caixa      meio caminho   o título do que vem embaixo
+   Nenhum deles é cor de estado. Estado é ponto, texto ou o vermelho do número.
 
    A folga ENTRE os blocos é da página (.pagina tem gap), então nada aqui
-   escreve margin-bottom. Foi assim que os cartões colaram uns nos outros a
-   primeira vez.
+   escreve margin-bottom entre caixas.
    ========================================================================== */
 
-.es-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-  gap: var(--sp-3);
+/* --- os botões do topo, no celular ----------------------------------------
+   No computador eles moram no cabeçalho da página. No celular a ação
+   principal ocupa a largura e a segunda vira um quadrado ao lado. */
+.es-acoes {
+  display: flex;
+  gap: var(--gap-btn);
 }
-@media (min-width: 1024px) {
-  .es-kpis {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.es-acoes .es-cresce {
+  flex: 1;
+  min-width: 0;
 }
 
-/* --- a fileira de controle ----------------------------------------------- */
+/* --- a barra de controle --------------------------------------------------- */
 .es-barra {
   display: flex;
   flex-wrap: wrap;
@@ -30,157 +35,1158 @@
   gap: var(--gap-btn);
   min-width: 0;
 }
-.es-barra .busca {
-  flex: 1;
+.es-barra .es-busca {
+  flex: 0 1 300px;
   min-width: 200px;
 }
+.es-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.es-conta {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+.es-ver {
+  margin-left: auto;
+}
+.es-rotulo-com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+}
 
-/* --- o quadro da tabela --------------------------------------------------- */
+/* --- as duas colunas ------------------------------------------------------- */
+.es-duas {
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.es-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.es-fila {
+  display: flex;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.es-fila > * {
+  min-width: 0;
+}
+.es-metades {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+/* --- a caixa ---------------------------------------------------------------
+   A caixa é o cartão do sistema. O que esta folha acrescenta é o topo em
+   cinza claro e as linhas com divisória. */
+.es-caixa {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.es-caixa-topo {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 0 var(--re-9);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+.es-caixa-nota {
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: right;
+  min-width: 0;
+}
+.es-ver-todos {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.es-ver-todos:hover {
+  color: var(--brand-text);
+}
+
+/* a caixa cinza: fornecedor e número */
+.es-cinza {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+/* a linha de duas alturas de texto, com divisória */
+.es-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--re-4) var(--re-9);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.es-linha:last-child {
+  border-bottom: 0;
+}
+button.es-linha {
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+button.es-linha:hover {
+  background: var(--surface-2);
+}
+.es-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.es-texto b {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-texto small {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-valor {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.es-pouco {
+  color: var(--brand-text);
+}
+.es-sem-linhas {
+  padding: var(--sp-6) var(--re-9);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+/* a bolinha da cor. Redonda com fio, para o branco aparecer sobre o branco. */
+.es-bola {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: var(--bola, var(--surface));
+}
+.es-bola.sem-cor {
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+}
+.es-bola.pequena {
+  width: 14px;
+  height: 14px;
+}
+
+/* --- a lista ---------------------------------------------------------------
+   Uma faixa de cinza claro abre cada categoria, e cada linha tem divisória.
+   A linha escolhida fica preta, que é a seleção do sistema. */
+.es-lista {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.es-faixa {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  height: 36px;
+  padding: 0 var(--re-9);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.es-faixa span {
+  font-weight: 500;
+  color: var(--text-3);
+}
+.es-item {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--row-h);
+  padding: var(--re-2) var(--re-9);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.es-item:last-child {
+  border-bottom: 0;
+}
+.es-item:hover {
+  background: var(--surface-2);
+}
+.es-item .es-falta {
+  color: var(--warn);
+}
+.es-item.escolhido,
+.es-item.escolhido:hover {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.es-item.escolhido .es-texto small,
+.es-item.escolhido .es-falta {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.es-minis {
+  flex: none;
+  display: flex;
+  gap: var(--re-2);
+}
+.es-ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.es-ponto.apagado {
+  background: none;
+}
+.es-item.escolhido .es-ponto {
+  background: var(--brand-no-ink);
+}
+.es-item.escolhido .es-ponto.apagado {
+  background: none;
+}
+.es-seta {
+  flex: none;
+  color: var(--text-3);
+  display: none;
+}
+
+/* --- o vão da prateleira ---------------------------------------------------
+   Um vão cinza com o tecido dentro, na cor dele. A altura do tecido é o que
+   tem livre contra o dobro do mínimo, então o risco tracejado do mínimo cai
+   sempre no meio. A borda de cima do tecido é picotada, que é como tecido
+   cortado termina.
+
+   O PICOTADO É MÁSCARA, e não desenho: assim ele vale em qualquer largura,
+   do vão de 14 px da lista ao de 300 da caixa da cor. O fio fino em volta
+   existe para o tecido branco não sumir no vão claro. */
+.es-vao {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--ink-soft);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.es-vao-tecido {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--vao-pct, 50%);
+  filter: drop-shadow(0 -1px 0 color-mix(in srgb, var(--vao-cor, var(--text-3)) 72%, var(--ink)));
+}
+.es-vao-tecido i {
+  position: absolute;
+  inset: 0;
+  background: var(--vao-cor, var(--text-3));
+  --dente: 10px;
+  mask:
+    conic-gradient(from 135deg at 50% 0, var(--preto) 90deg, transparent 0) 50% 0 / var(--dente) calc(var(--dente) / 2) repeat-x,
+    linear-gradient(var(--preto) 0 0) 0 100% / 100% calc(100% - var(--dente) / 2 + 0.5px) no-repeat;
+}
+.es-vao-risco {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1.5px dashed var(--ink);
+  opacity: 0.85;
+}
+/* o vão miúdo da lista: sem picotado e sem risco, só o nível */
+.es-vao.mini {
+  width: 14px;
+  height: 26px;
+  border-radius: var(--radius-xs);
+}
+.es-vao.mini .es-vao-tecido {
+  filter: none;
+}
+.es-vao.mini .es-vao-tecido i {
+  mask: none;
+  border: 1px solid color-mix(in srgb, var(--vao-cor, var(--text-3)) 72%, var(--ink));
+}
+.es-item.escolhido .es-vao.mini {
+  background: color-mix(in srgb, var(--on-ink) 22%, transparent);
+}
+
+/* --- a visão geral --------------------------------------------------------- */
+.es-heroi {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--re-9) var(--re-10);
+  min-width: 0;
+}
+.es-heroi-numero {
+  flex: none;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-text);
+}
+.es-heroi-numero.em-dia {
+  color: var(--ok);
+}
+.es-sobre {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.es-heroi h2 {
+  margin: var(--re-1) 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.es-heroi p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.es-numero {
+  flex: none;
+  width: 176px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--re-2);
+  padding: var(--re-8) var(--re-9);
+}
+.es-numero b {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.es-numero span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* a prateleira: uma tábua por malha, um vão por cor */
+.es-prateleira {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--re-10) var(--re-9);
+  overflow-x: auto;
+  min-width: 0;
+}
+.es-tabua {
+  flex: none;
+  min-width: 124px;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.es-tabua-nome {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 46px;
+  padding-bottom: var(--re-4);
+  /* o nome não alarga a tábua: quem dá a largura são os vãos */
+  width: 0;
+  min-width: 100%;
+}
+.es-tabua-nome b {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.es-tabua-nome small {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-tabua-vaos {
+  display: flex;
+  gap: var(--re-4);
+  border-bottom: 3px solid var(--ink);
+}
+.es-tabua-vaos .es-vao {
+  flex: none;
+  width: 80px;
+  height: 200px;
+}
+.es-tabua-numeros {
+  display: flex;
+  gap: var(--re-4);
+  margin-top: var(--re-3);
+}
+.es-tabua-numeros b {
+  flex: none;
+  width: 80px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.es-tabua:hover .es-tabua-nome b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- o material escolhido --------------------------------------------------- */
+.es-nome {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  padding: var(--re-9) var(--re-10);
+  min-width: 0;
+}
+.es-nome-texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.es-nome h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-nome p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.es-nome-botoes {
+  flex: none;
+  display: flex;
+  gap: var(--gap-btn);
+}
+.es-fornecedor {
+  position: relative;
+  flex: none;
+  width: 420px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--re-8) var(--re-9) var(--re-8) var(--sp-12);
+}
+/* o furo da etiqueta: o fornecedor é a etiqueta presa no rolo */
+.es-fornecedor::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+}
+.es-fornecedor-texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.es-fornecedor-texto b {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-fornecedor-texto small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.es-fornecedor-texto .es-falta {
+  color: var(--warn);
+}
+
+/* as caixas das cores */
+.es-cores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: var(--sp-4);
+}
+.es-cor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.es-cor .es-vao {
+  height: 190px;
+  border-radius: 0;
+}
+.es-cor .es-vao-tecido i {
+  --dente: 14px;
+}
+.es-etiqueta-minimo {
+  position: absolute;
+  right: var(--re-5);
+  top: 95px;
+  transform: translateY(calc(-100% - var(--re-2)));
+  padding: var(--re-1) var(--re-4);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.es-etiqueta-comprar {
+  position: absolute;
+  left: var(--re-5);
+  top: var(--re-5);
+  padding: var(--re-2) var(--re-5);
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.es-cor-corpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  padding: var(--re-8) var(--re-9) var(--re-9);
+  min-width: 0;
+}
+.es-cor-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-cor-livre {
+  display: flex;
+  align-items: baseline;
+  gap: var(--re-4);
+  font-size: 14px;
+  color: var(--text-2);
+}
+.es-cor-livre b {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.es-cor-livre b.es-pouco {
+  color: var(--brand-text);
+}
+.es-cor-conta {
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.es-alerta {
+  color: var(--warn);
+}
+.es-cor-botao {
+  margin-top: auto;
+  padding-top: var(--re-8);
+}
+.es-cor-nova {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-4);
+  min-height: 200px;
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-lg);
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast),
+    color var(--t-fast);
+}
+.es-cor-nova:hover {
+  border-color: var(--ink);
+  color: var(--text);
+}
+
+/* os movimentos do material escolhido, em colunas */
+.es-mov {
+  display: grid;
+  grid-template-columns: 116px 104px minmax(0, 1.3fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--sp-4);
+  min-height: var(--row-h);
+  padding: 0 var(--re-9);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.es-mov:last-child {
+  border-bottom: 0;
+}
+.es-mov-quando,
+.es-mov-obs {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-mov-cor {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-width: 0;
+  font-weight: 600;
+}
+.es-mov-cor span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-mov-quanto {
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.es-reservado {
+  flex: none;
+  width: 380px;
+}
+.es-cresce-caixa {
+  flex: 1;
+}
+
+/* --- as tabelas ------------------------------------------------------------- */
 .es-quadro {
   overflow: hidden;
   min-width: 0;
 }
-
 .es-espera {
   display: flex;
   flex-direction: column;
   gap: var(--gap-dentro);
   padding: var(--pad-cartao);
 }
-
-/* A COLUNA DO NÍVEL PEDE LARGURA, SENÃO A DO NOME FICA COM TODA A SOBRA.
-   Tabela de largura automática dá o espaço que ninguém pediu para a primeira
-   coluna de texto: em 1440 o nome terminava no meio da tela e a barra começava
-   quatrocentos pixels depois, longe do número que ela explica. Com a dica de
-   largura aqui, a barra encosta no nome e o olho faz o caminho curto. */
-.es-materiais .tabela th:nth-child(2),
-.es-materiais .tabela td:nth-child(2) {
-  width: 26%;
+.es-tabela .es-grupo-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
 }
-
-/* --- a célula do material ------------------------------------------------- */
-.es-material {
+.es-tabela .es-grupo-nome b {
+  font-weight: 600;
+  color: var(--text);
+}
+.es-tabela tr.es-recolhe {
+  cursor: pointer;
+}
+/* a faixa da malha: mais clara que a da categoria, e as cores dela ficam
+   brancas embaixo */
+.es-tabela tr.es-malha td {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  font-weight: 600;
+}
+.es-tabela tr.es-malha:hover td {
+  background: var(--surface-2);
+}
+.es-tabela tr.es-folha {
+  cursor: pointer;
+}
+.es-tabela td.es-recuo {
+  padding-left: var(--sp-12);
+}
+.es-celula {
   display: flex;
   align-items: center;
-  gap: var(--gap-btn);
+  gap: var(--re-5);
   min-width: 0;
 }
-
-/* A amostra da cor do tecido. Quadrada e não redonda de propósito: é a mesma
-   amostra do editor, e duas formas para a mesma coisa fazem o olho procurar
-   duas vezes.
-
-   O LUGAR DELA EXISTE MESMO QUANDO NÃO HÁ COR. Aviamento e insumo não têm cor,
-   e sem o espaço reservado o nome deles começa 26px à esquerda do nome dos
-   tecidos: a coluna fica com a margem esquerda serrilhada e o olho perde o
-   trilho ao descer a lista. */
-.es-cor {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-2);
-  flex: none;
+.es-celula b {
+  font-weight: 600;
 }
-.es-cor.vazia {
-  border-color: transparent;
-  background: none;
-}
-
-/* NO CELULAR A TABELA PERDE COLUNA, E NAO GANHA ROLAGEM.
-
-   A tabela rola dentro da propria caixa, entao em 390 ela nao empurra a pagina.
-   So que rolar de lado para ver o numero e o mesmo que nao ter o numero: quem
-   abre o estoque no galpao quer saber se tem ou nao tem, e essa resposta nao
-   pode estar fora da tela. Entao as colunas de apoio somem e o minimo desce
-   para a linha de baixo do nome, onde ele continua ao lado do que explica. */
-.es-no-celular {
-  display: none;
-}
-
-/* O nome corta com reticencia na tabela larga e QUEBRA em duas linhas no
-   celular. Cortar no celular seria trocar rolagem por reticencia: continuaria
-   sem dizer qual material e. */
-.es-nome {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* A TABELA PERDE COLUNA POR ORDEM DE QUEM PROCURA MENOS.
-
-   Materiais: 1 nome, 2 nivel, 3 na prateleira, 4 livre, 5 minimo, 6 mexeu em.
-   Primeiro sai a data, que e a unica que ninguem procura; depois o minimo;
-   depois a barra e a prateleira. O que NUNCA sai e o nome e o LIVRE, que
-   juntos sao a pergunta inteira: tem ou nao tem. Rolar de lado para ver esse
-   numero seria o mesmo que nao te-lo. */
-@media (max-width: 1200px) {
-  .es-materiais .tabela th:nth-child(6),
-  .es-materiais .tabela td:nth-child(6) {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .es-materiais .tabela th:nth-child(5),
-  .es-materiais .tabela td:nth-child(5),
-  .es-razao .tabela th:nth-child(6),
-  .es-razao .tabela td:nth-child(6) {
-    display: none;
-  }
-}
-
-/* No celular o minimo reaparece embaixo do nome, onde ele continua ao lado do
-   que explica. */
-@media (max-width: 760px) {
-  .es-no-celular {
-    display: inline;
-  }
-  .es-nome {
-    white-space: normal;
-    overflow: visible;
-  }
-  .es-materiais .tabela th:nth-child(2),
-  .es-materiais .tabela td:nth-child(2),
-  .es-materiais .tabela th:nth-child(3),
-  .es-materiais .tabela td:nth-child(3),
-  .es-razao .tabela th:nth-child(2),
-  .es-razao .tabela td:nth-child(2),
-  .es-razao .tabela th:nth-child(5),
-  .es-razao .tabela td:nth-child(5) {
-    display: none;
-  }
-}
-
-.es-apoio {
-  color: var(--text-3);
+.es-celula small {
   font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
 }
-
-/* A pilha de uma celula de numero alinha a direita como o resto da coluna. */
-.es-fim {
-  align-items: flex-end;
+.es-apoio {
+  color: var(--text-2);
 }
-
-/* O que a reserva tirou, debaixo do que tem na prateleira. Ambar e nao
-   vermelho: reserva nao e problema, e trabalho vendido. O vermelho fica para o
-   livre que furou o minimo, que e a unica coisa aqui que pede acao. */
-.es-reserva {
-  color: var(--warn);
-  font-size: 12px;
+.es-situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
-
-.es-pouco {
+.es-situacao i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--text-3));
+}
+.es-situacao.calma {
+  font-weight: 400;
+  color: var(--text-2);
+}
+.es-situacao.comprar {
   color: var(--brand-text);
+}
+.es-direita {
+  display: flex;
+  justify-content: flex-end;
 }
 .es-entrou {
   color: var(--ok);
 }
-
-.es-rodape {
-  margin: 0;
+.es-chevron {
   color: var(--text-3);
+  display: block;
+}
+
+/* --- a folha de movimento --------------------------------------------------- */
+.es-antes-depois {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--re-8);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.es-ad-vaos {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--re-4);
+  color: var(--text-3);
+}
+.es-ad-vao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.es-ad-vao .es-vao {
+  width: 48px;
+  height: 76px;
+}
+.es-ad-vao .es-vao-tecido i {
+  --dente: 8px;
+}
+.es-ad-seta {
+  align-self: center;
+}
+.es-ad-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.es-ad-texto b {
+  color: var(--text);
+  font-weight: 600;
+}
+.es-ad-nome {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+.es-ad-cor {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  font-size: 14px;
+  color: var(--text);
+}
+.es-dois-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: var(--sp-3);
+  align-items: start;
+}
+.es-campo-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.es-campo-topo small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-3);
+}
+.es-ajuda {
+  margin: 0;
   font-size: 12.5px;
-  max-width: 78ch;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* --- o material novo --------------------------------------------------------- */
+.es-novo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.es-novo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}
+.es-novo-tres {
+  display: grid;
+  grid-template-columns: 110px 130px minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+.es-ja-tem {
+  opacity: 0.45;
+}
+.es-largo {
+  display: flex;
+  width: 100%;
+}
+.es-largo button {
+  flex: 1;
+}
+
+/* ==========================================================================
+   A TELA ESTREITA: tablet e celular.
+
+   As caixas empilham. A visão geral vem antes da lista, porque quem abre o
+   estoque no galpão quer primeiro saber o que falta. Com um material
+   escolhido, a lista some e o material vira a tela inteira, com a volta no
+   cabeçalho da página.
+   ========================================================================== */
+@media (max-width: 1099px) {
+  .es-duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .es-duas .es-lado {
+    order: -1;
+  }
+  .es-duas.com-escolhido .es-lista {
+    display: none;
+  }
+  .es-seta {
+    display: block;
+  }
+  .es-barra .es-ver {
+    display: none;
+  }
+  .es-fila {
+    flex-wrap: wrap;
+  }
+  .es-fornecedor,
+  .es-reservado {
+    width: 100%;
+  }
+  .es-numero {
+    flex: 1 1 0;
+    width: auto;
+  }
+  .es-heroi {
+    flex: 1 1 100%;
+  }
+  .es-so-largo {
+    display: none;
+  }
+  .es-fornecedor-texto b {
+    white-space: normal;
+  }
+  /* o nome do material já está no cabeçalho da página */
+  .es-nome {
+    display: none;
+  }
+  .es-prateleira {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767px) {
+  .es-barra .es-aba {
+    width: 100%;
+  }
+  .es-barra .es-aba button {
+    flex: 1;
+  }
+  .es-barra .es-busca {
+    flex: 1 1 100%;
+  }
+  /* os filtros rolam de lado dentro da própria fileira, e não a página */
+  .es-chips {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+  .es-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .es-metades {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .es-heroi {
+    gap: var(--sp-4);
+    padding: var(--re-8) var(--re-9);
+  }
+  .es-heroi-numero {
+    font-size: 44px;
+  }
+  .es-heroi p {
+    display: none;
+  }
+  .es-numero {
+    padding: var(--re-7) var(--re-6);
+  }
+  .es-numero b {
+    font-size: 24px;
+  }
+  .es-numero span {
+    font-size: 12.5px;
+  }
+  .es-prateleira {
+    gap: var(--sp-4);
+    padding-inline: var(--re-9);
+  }
+  .es-tabua-vaos .es-vao {
+    width: 52px;
+    height: 110px;
+  }
+  .es-tabua-numeros b {
+    width: 52px;
+  }
+  .es-cores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+  .es-cor .es-vao {
+    height: 110px;
+  }
+  .es-etiqueta-minimo {
+    top: 55px;
+    right: var(--re-3);
+  }
+  .es-cor-corpo {
+    padding: var(--re-6) var(--re-7) var(--re-7);
+  }
+  .es-cor-livre b {
+    font-size: 24px;
+  }
+  .es-cor-botao {
+    padding-top: var(--re-6);
+  }
+  .es-cor-nova {
+    min-height: 120px;
+  }
+  .es-linha,
+  .es-item,
+  .es-faixa,
+  .es-caixa-topo {
+    padding-inline: var(--re-8);
+  }
+  .es-dois-campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .es-novo-tres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .es-novo-tres > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- editar o grupo ---------------------------------------------------------- */
+.es-editar {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.es-editar-topo,
+.es-editar-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 110px minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: center;
+  padding: var(--re-4) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.es-editar-topo {
+  min-height: 36px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.es-editar-linha:last-child {
+  border-bottom: 0;
+}
+.es-escolhido-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  height: var(--btn-h-sm);
+  padding: 0 var(--re-3) 0 var(--re-6);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.es-escolhido-chip button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.es-escolhido-chip button:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+@media (max-width: 767px) {
+  .es-editar-topo {
+    display: none;
+  }
+  .es-editar-linha {
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+  .es-editar-linha > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.es-so-estreito {
+  display: none;
+}
+@media (max-width: 1099px) {
+  .es-so-estreito {
+    display: inline;
+  }
+}
+
+/* --- miudezas ---------------------------------------------------------------- */
+.es-lista-bloco {
+  display: flex;
+  flex-direction: column;
+}
+.es-lista-bloco + .es-lista-bloco .es-faixa {
+  border-top: 1px solid var(--border);
+}
+/* a volta do detalhe estreito mora na sobrelinha do cabeçalho da página */
+.es-volta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.es-volta:hover {
+  color: var(--text);
 }

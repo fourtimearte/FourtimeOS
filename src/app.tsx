@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
+  Barcode,
   Bell,
   Calculator,
   CalendarCheck,
@@ -10,6 +11,7 @@ import {
   DotsThree,
   Factory,
   Gear,
+  Handshake,
   House,
   Kanban,
   ListChecks,
@@ -282,6 +284,18 @@ export function App() {
           contagem: faltando || undefined,
           aviso: true,
         },
+        /* FORNECEDORES USA O PAINEL DO ESTOQUE, e não um painel próprio. Quem
+           enxerga o estoque enxerga de quem ele compra, e quem edita o
+           estoque cria e arruma fornecedor: são a mesma responsabilidade. O
+           que só o administrador faz (marcar como confiável, bloquear) é
+           trava do banco, na 041, e não página. */
+        {
+          chave: 'fornecedores',
+          painel: 'estoque',
+          para: '/fornecedores',
+          rotulo: 'Fornecedores',
+          icone: <Handshake {...icone} />,
+        },
       ],
     },
     /* FERRAMENTAS SÃO CONTAS SOLTAS, e por isso moram depois de tudo que é
@@ -301,6 +315,18 @@ export function App() {
           para: '/ferramentas/dtf',
           rotulo: 'Calculadora de DTF',
           icone: <Calculator {...icone} />,
+        },
+        /* O VERIFICADOR DE BOLETO também é de todo aprovado: qualquer pessoa
+           pode conferir um boleto antes de mandar pagar. Quem APROVA o boleto
+           de um fornecedor desconhecido é só o administrador, e essa trava é
+           do banco. Diferente da calculadora, ele lê e grava: o registro das
+           conferências e a lista de fornecedores. */
+        {
+          chave: 'boleto',
+          painel: 'inicio',
+          para: '/ferramentas/boleto',
+          rotulo: 'Verificador de Boleto',
+          icone: <Barcode {...icone} />,
         },
       ],
     },

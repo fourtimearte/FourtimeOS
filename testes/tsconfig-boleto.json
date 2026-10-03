@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "outDir": "./compilado-boleto",
+    "rootDir": ".."
+  },
+  "files": [
+    "../src/dominio/boleto/linha.ts",
+    "../src/dominio/boleto/texto.ts",
+    "../src/dominio/fornecedor/cnpj.ts"
+  ]
+}

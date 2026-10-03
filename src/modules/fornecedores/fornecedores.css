@@ -1,0 +1,559 @@
+/* ==========================================================================
+   Fornecedores.
+
+   A página tem dois jeitos de olhar a mesma lista: por tipo (uma faixa de
+   cinza claro para cada família) e por fornecedor, de A a Z, com a ficha de
+   quem foi escolhido ao lado. A ficha é a mesma nos dois, e no celular ela
+   sobe como folha.
+
+   Os tons de cinza são os mesmos do estoque: faixa em --surface-2, topo de
+   caixa a meio caminho do branco. Situação é ponto e texto.
+   ========================================================================== */
+
+/* --- a barra de controle --------------------------------------------------- */
+.fo-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.fo-barra .fo-busca {
+  flex: 0 1 340px;
+  min-width: 200px;
+}
+.fo-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.fo-conta {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+.fo-fim {
+  margin-left: auto;
+}
+
+/* --- as duas colunas da vista por fornecedor -------------------------------- */
+.fo-duas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.fo-duas.com-ficha {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+}
+
+.fo-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+.fo-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* --- a tabela --------------------------------------------------------------- */
+.fo-tabela tr.fo-linha {
+  cursor: pointer;
+}
+.fo-tabela tr.fo-recolhe {
+  cursor: pointer;
+}
+.fo-grupo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.fo-grupo b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.fo-grupo span {
+  font-weight: 500;
+}
+.fo-grupo-fim {
+  display: flex;
+  justify-content: flex-end;
+}
+.fo-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.fo-nome b {
+  font-weight: 600;
+  line-height: 1.3;
+}
+.fo-nome small {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+.fo-apoio {
+  color: var(--text-2);
+}
+.fo-falta {
+  color: var(--text-3);
+}
+.fo-numero {
+  font-variant-numeric: tabular-nums;
+}
+.fo-corta {
+  display: block;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.fo-direita {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--text-3);
+}
+
+/* --- a ficha ---------------------------------------------------------------- */
+.fo-ficha {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.fo-ficha-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--re-10) var(--re-10) 0;
+}
+.fo-ficha-topo h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.fo-ficha-topo p {
+  margin: var(--re-2) 0 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.fo-fechar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.fo-fechar:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.fo-ficha-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--re-10) var(--re-10);
+  min-width: 0;
+}
+.fo-ficha-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+}
+.fo-ficha-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}
+.fo-dados {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.fo-dado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: 34px;
+  padding: var(--re-3) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.fo-dado span {
+  flex: none;
+  color: var(--text-2);
+}
+.fo-dado b {
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.fo-dado b.fo-falta {
+  font-weight: 400;
+}
+.fo-secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-width: 0;
+}
+.fo-secao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.fo-secao-topo small {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.fo-lista {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fo-lista-faixa {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 var(--re-6);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.fo-lista-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 36px;
+  padding: var(--re-2) var(--re-6);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.fo-lista-linha:last-child {
+  border-bottom: 0;
+}
+.fo-lista-linha span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fo-lista-linha b {
+  font-weight: 600;
+}
+.fo-lista-linha small {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fo-vazio-dentro {
+  padding: var(--re-6);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.fo-onde {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--re-2) 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.fo-onde:first-of-type {
+  border-top: 1px solid var(--border);
+}
+.fo-onde b {
+  font-weight: 600;
+}
+.fo-onde span {
+  color: var(--text-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fo-onde:hover b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.fo-onde svg {
+  color: var(--text-3);
+}
+.fo-ficha-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  padding: var(--re-8) var(--re-10);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.fo-bloqueio {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--brand-text);
+}
+
+/* a ficha dentro da folha: o cabeçalho e o rodapé já são da folha */
+.fo-na-folha .fo-ficha-corpo {
+  padding: 0;
+}
+
+/* --- o formulário ------------------------------------------------------------ */
+.fo-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.fo-ajuda {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.fo-cnpj {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.fo-cnpj .fo-cnpj-campo {
+  flex: 0 1 240px;
+  min-width: 180px;
+}
+.fo-link {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.fo-link:hover {
+  color: var(--text);
+}
+.fo-receita {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--re-6) var(--re-8);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.fo-receita svg {
+  flex: none;
+  color: var(--ok);
+}
+.fo-receita.ruim svg {
+  color: var(--warn);
+}
+.fo-receita div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.fo-receita b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.fo-receita small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fo-dois {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.fo-campo-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.fo-campo-topo small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.fo-form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.fo-form-chips .fo-tracejado {
+  border-style: dashed;
+}
+.fo-material {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  height: var(--btn-h-sm);
+  padding: 0 var(--re-3) 0 var(--re-6);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.fo-material button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.fo-material button:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.fo-marcar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.fo-marcar small {
+  padding-left: var(--sp-8);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fo-novo-tipo {
+  display: flex;
+  gap: var(--gap-btn);
+}
+
+/* --- os tipos ---------------------------------------------------------------- */
+.fo-tipos {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fo-tipo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: var(--row-h);
+  padding: var(--re-2) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.fo-tipo:last-child {
+  border-bottom: 0;
+}
+.fo-tipo b {
+  font-weight: 600;
+}
+.fo-tipo small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* ==========================================================================
+   A TELA ESTREITA
+   ========================================================================== */
+@media (max-width: 1199px) {
+  .fo-duas.com-ficha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fo-some-medio {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .fo-barra .fo-busca {
+    flex: 1 1 100%;
+  }
+  .fo-barra .fo-vista {
+    width: 100%;
+  }
+  .fo-barra .fo-vista button {
+    flex: 1;
+  }
+  .fo-chips {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+  .fo-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .fo-fim {
+    margin-left: 0;
+  }
+  .fo-some-estreito {
+    display: none;
+  }
+  .fo-dois {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fo-onde {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .fo-onde span {
+    grid-column: 1;
+  }
+  .fo-onde svg {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}

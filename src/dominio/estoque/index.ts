@@ -47,6 +47,11 @@ export type Material = {
   corHex: string
   abaixoDoMinimo: boolean
   ultimoMovimento: string
+  /** o que junta aviamento e insumo na lista: Linha, Botão, DTF (041) */
+  grupo: string
+  /** prateleira, armário ou caixa: onde a pessoa acha na fábrica */
+  ondeFica: string
+  criadoEm: string
 }
 
 /* Os cinco motivos que o banco aceita. A tela só oferece três: separação nasce
@@ -75,6 +80,14 @@ export type Movimento = {
   pedido: string
   quem: string
   quando: string
+  /** de quem veio, quando o movimento é uma entrada com fornecedor (041) */
+  fornecedorId: string
+  fornecedor: string
+  tecidoId: string
+  grupo: string
+  tecido: string
+  cor: string
+  corHex: string
 }
 
 /* ---------- a leitura ---------------------------------------------------- */
@@ -97,12 +110,16 @@ type LinhaDoMaterial = {
   cor_hex: string | null
   abaixo_do_minimo: boolean
   ultimo_movimento: string | null
+  grupo?: string | null
+  onde_fica?: string | null
+  criado_em?: string | null
 }
 
-const COLUNAS_DO_MATERIAL =
-  'id,categoria,nome,unidade,minimo,saldo,reservado,livre,pedidos_reservando,' +
-  'reserva_sem_consumo,tecido_id,cor_id,tecido,cor,cor_hex,' +
-  'abaixo_do_minimo,ultimo_movimento'
+/* A LEITURA PEDE TODAS AS COLUNAS DA VIEW, e não uma lista escrita aqui. As
+   colunas da 041 (grupo, onde fica) entram no fim da view; pedindo tudo, a
+   mesma tela lê o banco de antes e o de depois da migração, e uma coluna que
+   ainda não existe vira campo vazio em vez de erro 400 na tela do estoque. A
+   view não tem coluna pesada: é uma linha de números por material. */
 
 /* O Postgres devolve numeric como TEXTO no JSON, e não como número: numeric
    não cabe em double sem mentir, então o PostgREST manda "9.000" em vez de 9.
@@ -131,12 +148,15 @@ function deLinha(l: LinhaDoMaterial): Material {
     corHex: l.cor_hex ?? '',
     abaixoDoMinimo: l.abaixo_do_minimo,
     ultimoMovimento: l.ultimo_movimento ?? '',
+    grupo: l.grupo ?? '',
+    ondeFica: l.onde_fica ?? '',
+    criadoEm: l.criado_em ?? '',
   }
 }
 
 export async function carregarMateriais(): Promise<Material[]> {
   const linhas = await tabela<LinhaDoMaterial[]>(
-    `material_na_prateleira?select=${COLUNAS_DO_MATERIAL}&order=categoria.asc,nome.asc`,
+    'material_na_prateleira?select=*&order=categoria.asc,nome.asc',
   )
   return linhas.map(deLinha)
 }
@@ -154,12 +174,19 @@ type LinhaDoMovimento = {
   pedido: string | null
   quem_nome: string | null
   quando: string
+  fornecedor_id?: string | null
+  fornecedor?: string | null
+  tecido_id?: string | null
+  grupo?: string | null
+  tecido?: string | null
+  cor?: string | null
+  cor_hex?: string | null
+  quem_na_equipe?: string | null
 }
 
 export async function carregarMovimentos(limite = 200): Promise<Movimento[]> {
   const linhas = await tabela<LinhaDoMovimento[]>(
-    'movimento_do_estoque?select=id,material_id,material,unidade,categoria,quantidade,' +
-      `motivo,observacao,pedido_id,pedido,quem_nome,quando&order=quando.desc&limit=${limite}`,
+    `movimento_do_estoque?select=*&order=quando.desc&limit=${limite}`,
   )
   return linhas.map((l) => ({
     id: l.id,
@@ -172,8 +199,16 @@ export async function carregarMovimentos(limite = 200): Promise<Movimento[]> {
     observacao: l.observacao ?? '',
     pedidoId: l.pedido_id ?? '',
     pedido: l.pedido ?? '',
-    quem: l.quem_nome ?? '',
+    /* a view da equipe enxerga todo mundo; a da pessoa, só a própria linha */
+    quem: l.quem_na_equipe ?? l.quem_nome ?? '',
     quando: l.quando,
+    fornecedorId: l.fornecedor_id ?? '',
+    fornecedor: l.fornecedor ?? '',
+    tecidoId: l.tecido_id ?? '',
+    grupo: l.grupo ?? '',
+    tecido: l.tecido ?? '',
+    cor: l.cor ?? '',
+    corHex: l.cor_hex ?? '',
   }))
 }
 
@@ -189,14 +224,20 @@ export async function mexerNoEstoque(
   motivo: Motivo,
   observacao = '',
   pedidoId = '',
+  fornecedorId = '',
 ): Promise<void> {
-  await chamar('mexer_no_estoque', {
+  /* O FORNECEDOR SÓ VAI QUANDO EXISTE. A função do banco ganhou o sexto
+     argumento na 041; mandando só os cinco de sempre quando não há
+     fornecedor, a mesma chamada serve ao banco de antes e ao de depois. */
+  const argumentos: Record<string, unknown> = {
     p_material: materialId,
     p_quantidade: quantidade,
     p_motivo: motivo,
     p_observacao: observacao,
     p_pedido: pedidoId || null,
-  })
+  }
+  if (fornecedorId) argumentos.p_fornecedor = fornecedorId
+  await chamar('mexer_no_estoque', argumentos)
 }
 
 export type MaterialNovo = {
@@ -207,6 +248,8 @@ export type MaterialNovo = {
   tecidoId?: string
   corId?: string
   teste?: boolean
+  grupo?: string
+  ondeFica?: string
 }
 
 export async function cadastrarMaterial(m: MaterialNovo): Promise<string> {
@@ -221,6 +264,10 @@ export async function cadastrarMaterial(m: MaterialNovo): Promise<string> {
       tecido_id: m.tecidoId || null,
       cor_id: m.corId || null,
       teste: m.teste ?? false,
+      /* grupo e lugar só vão quando escritos: o banco de antes da 041 não
+         tem as duas colunas, e o ensaio antigo não manda nenhuma */
+      ...(m.grupo ? { grupo: m.grupo.trim() } : {}),
+      ...(m.ondeFica ? { onde_fica: m.ondeFica.trim() } : {}),
     },
   })
   return linhas[0]?.id ?? ''
@@ -231,11 +278,18 @@ export async function cadastrarMaterial(m: MaterialNovo): Promise<string> {
    o nome, a unidade e o mínimo. */
 export async function salvarCadastroDoMaterial(
   id: string,
-  m: { nome: string; unidade: string; minimo: number },
+  m: { nome: string; unidade: string; minimo: number; grupo?: string; ondeFica?: string },
 ): Promise<void> {
   await tabela<void>(`material?id=eq.${id}`, {
     metodo: 'PATCH',
-    corpo: { nome: m.nome, unidade: m.unidade, minimo: m.minimo, atualizado_em: new Date().toISOString() },
+    corpo: {
+      nome: m.nome,
+      unidade: m.unidade,
+      minimo: m.minimo,
+      ...(m.grupo !== undefined ? { grupo: m.grupo.trim() } : {}),
+      ...(m.ondeFica !== undefined ? { onde_fica: m.ondeFica.trim() } : {}),
+      atualizado_em: new Date().toISOString(),
+    },
   })
 }
 
@@ -287,6 +341,191 @@ export function numeroNaUnidade(valor: number, unidade: string): string {
     ' ' +
     unidade
   )
+}
+
+/* ---------- a prateleira ------------------------------------------------- */
+
+/* O NÚMERO DO JEITO QUE SE FALA. "42 kg", "0,6 L", "1,5 kg": a casa decimal
+   só aparece quando existe. numeroNaUnidade continua com a casa fixa para as
+   colunas em que os números precisam alinhar pela vírgula; este é o da frase
+   e do número grande, onde "42,0 kg" só polui. */
+export function quantoNaUnidade(valor: number, unidade: string): string {
+  const casas = casasDaUnidade(unidade)
+  return (
+    valor.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: casas }) +
+    ' ' +
+    unidade
+  )
+}
+
+export function soONumero(valor: number, unidade: string): string {
+  return valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: casasDaUnidade(unidade),
+  })
+}
+
+export type SituacaoDoMaterial = 'comprar' | 'perto' | 'em-dia'
+
+/* Três respostas, sempre pelo livre: comprar é abaixo do mínimo, perto é até
+   30% acima dele, e em dia é o resto. */
+export function situacaoDoMaterial(m: Material): SituacaoDoMaterial {
+  if (m.livre < m.minimo) return 'comprar'
+  if (m.livre < m.minimo * 1.3) return 'perto'
+  return 'em-dia'
+}
+
+export const NOME_DA_SITUACAO_DO_MATERIAL: Record<SituacaoDoMaterial, string> = {
+  comprar: 'comprar',
+  perto: 'perto do mínimo',
+  'em-dia': 'em dia',
+}
+
+/* O VÃO DA PRATELEIRA. A altura do tecido dentro do vão é o livre contra o
+   dobro do mínimo, então o risco do mínimo cai sempre na metade e o olho
+   compara sem ler número. O chão de 6% existe para o material que zerou
+   continuar tendo um fio de cor: vão totalmente vazio parece vão sem dado. */
+export function enchimentoDoVao(m: Pick<Material, 'livre' | 'minimo'>): number {
+  if (m.minimo <= 0) return m.livre > 0 ? 100 : 6
+  return Math.max(6, Math.min(100, Math.round((m.livre / (m.minimo * 2)) * 100)))
+}
+
+/** Quanto falta para voltar ao mínimo. Zero quando não falta. */
+export function faltaDoMaterial(m: Material): number {
+  return Math.max(0, m.minimo - m.livre)
+}
+
+/* O GRUPO DA LISTA. Tecido se agrupa pela malha do catálogo, e as cores
+   entram dentro dela; aviamento e insumo se agrupam pelo grupo escrito no
+   cadastro. Material sem malha e sem grupo vira um grupo de um só, com o
+   próprio nome, que é melhor que um saco "Outros" onde ninguém acha nada. */
+export type GrupoDoEstoque = {
+  chave: string
+  categoria: Categoria
+  nome: string
+  tecidoId: string
+  itens: Material[]
+  paraComprar: number
+  livre: number
+  reservado: number
+  /** uma unidade só quando todos os itens usam a mesma; senão vazio */
+  unidade: string
+}
+
+export function chaveDoGrupo(m: Pick<Material, 'categoria' | 'tecidoId' | 'tecido' | 'grupo' | 'id'>): string {
+  if (m.categoria === 'tecido') {
+    if (m.tecidoId) return 'tecido:' + m.tecidoId
+    return m.tecido ? 'tecido:' + m.tecido.toLowerCase() : 'solto:' + m.id
+  }
+  return m.grupo ? m.categoria + ':' + m.grupo.toLowerCase() : 'solto:' + m.id
+}
+
+export function gruposDoEstoque(materiais: Material[]): GrupoDoEstoque[] {
+  const porChave = new Map<string, GrupoDoEstoque>()
+  for (const m of materiais) {
+    const chave = chaveDoGrupo(m)
+    let g = porChave.get(chave)
+    if (!g) {
+      g = {
+        chave,
+        categoria: m.categoria,
+        nome: m.categoria === 'tecido' ? m.tecido || m.nome : m.grupo || m.nome,
+        tecidoId: m.categoria === 'tecido' ? m.tecidoId : '',
+        itens: [],
+        paraComprar: 0,
+        livre: 0,
+        reservado: 0,
+        unidade: m.unidade,
+      }
+      porChave.set(chave, g)
+    }
+    g.itens.push(m)
+    if (m.livre < m.minimo) g.paraComprar += 1
+    g.livre += m.livre
+    g.reservado += m.reservado
+    if (g.unidade !== m.unidade) g.unidade = ''
+  }
+  const ordem = (c: Categoria) => CATEGORIAS.indexOf(c)
+  return [...porChave.values()].sort(
+    (a, b) => ordem(a.categoria) - ordem(b.categoria) || a.nome.localeCompare(b.nome, 'pt-BR'),
+  )
+}
+
+/** O nome do item DENTRO do grupo: a cor do tecido, ou o nome do material. */
+export function nomeNoGrupo(m: Material): string {
+  if (m.categoria === 'tecido' && m.cor) return m.cor
+  return m.nome
+}
+
+/** O nome inteiro, para onde o grupo não está escrito ao lado. */
+export function nomeInteiro(m: Pick<Material, 'categoria' | 'tecido' | 'cor' | 'nome'>): string {
+  if (m.categoria === 'tecido' && m.tecido && m.cor) return `${m.tecido} · ${m.cor}`
+  return m.nome
+}
+
+/* ---------- o catálogo de tecido, para o material novo --------------------- */
+
+export type MalhaDoCatalogo = { id: string; nome: string }
+export type CorDoCatalogo = { id: string; nome: string; hex: string }
+
+/* Só o que o cadastro de material precisa do banco de dados do editor: o nome
+   da malha e a cor com o hex. O catálogo inteiro (referências, consumo,
+   listas) é de outra tela e pesa dez vezes mais. */
+export async function carregarCatalogoDeTecido(): Promise<{
+  malhas: MalhaDoCatalogo[]
+  cores: CorDoCatalogo[]
+}> {
+  const [malhas, cores] = await Promise.all([
+    tabela<MalhaDoCatalogo[]>('tecido?select=id,nome&ativo=is.true&order=nome.asc'),
+    tabela<CorDoCatalogo[]>('cor_de_tecido?select=id,nome,hex&ativo=is.true&order=ordem.asc,nome.asc'),
+  ])
+  return { malhas, cores }
+}
+
+/* ---------- a reserva em aberto ------------------------------------------ */
+
+/** O que um pedido ainda segura de um material, com a data de entrega. */
+export type ReservaEmAberto = {
+  id: string
+  pedidoId: string
+  pedido: string
+  entrega: string
+  materialId: string
+  quantidade: number
+  unidade: string
+  semConsumo: boolean
+}
+
+/* A lista de quem segura o quê é apoio da tela, e a view nasce na 041. Uma
+   falha aqui vira lista vazia: o número do reservado continua certo, porque
+   ele vem do próprio material. */
+export async function carregarReservasEmAberto(): Promise<ReservaEmAberto[]> {
+  try {
+    const linhas = await tabela<
+      {
+        id: string
+        pedido_id: string
+        pedido: string | null
+        entrega: string | null
+        material_id: string
+        quantidade: number | string
+        unidade: string
+        sem_consumo: boolean
+      }[]
+    >('reserva_em_aberto?select=*&order=entrega.asc.nullslast')
+    return linhas.map((l) => ({
+      id: l.id,
+      pedidoId: l.pedido_id,
+      pedido: l.pedido ?? '',
+      entrega: l.entrega ?? '',
+      materialId: l.material_id,
+      quantidade: numero(l.quantidade),
+      unidade: l.unidade,
+      semConsumo: !!l.sem_consumo,
+    }))
+  } catch {
+    return []
+  }
 }
 
 /* ---------- a reserva ---------------------------------------------------- */

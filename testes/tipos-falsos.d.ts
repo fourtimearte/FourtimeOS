@@ -54,6 +54,7 @@ declare module 'react' {
   export type AnchorHTMLAttributes<T = any> = any
   export type ButtonHTMLAttributes<T = any> = any
   export type ChangeEvent<T = any> = any
+  export type DragEvent<T = any> = any
   export type FormEvent<T = any> = any
   export type KeyboardEvent<T = any> = any
   export type MouseEvent<T = any> = any
@@ -135,4 +136,14 @@ declare module 'react-router-dom' {
 /* Sem chaves: o modulo abreviado faz TODO import dele virar `any`, e e o
    unico jeito de um pacote com centenas de icones nomeados nao precisar de
    uma lista escrita a mao aqui. */
+/* o leitor de PDF do Verificador de Boleto: carregado sob demanda, e so a
+   forma do que a tela usa importa aqui */
+declare module 'pdfjs-dist/legacy/build/pdf.mjs' {
+  export const GlobalWorkerOptions: { workerSrc: string }
+  export function getDocument(fonte: any): { promise: Promise<any> }
+}
+declare module '*?url' {
+  const endereco: string
+  export default endereco
+}
 declare module '@phosphor-icons/react'

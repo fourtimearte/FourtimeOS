@@ -199,3 +199,31 @@ uma a uma, com a razao escrita dentro do teste em `ESPACO_COM_RAZAO`: quatro sao
 recuo negativo, que e tecnica de sobreposicao e nao espacamento, e tres sao
 numero preso ao tamanho de outro elemento. **Excecao nova nao entra sozinha: ela
 entra la, com a razao.**
+
+## npm run materiais
+
+Estoque, Fornecedores e Verificador de Boleto contra o wireframe de 03/10/2026,
+medida por medida, do mesmo jeito que o `kanban-wireframe.mjs` faz com o quadro.
+
+```
+npm run materiais                              confere o site publicado
+node testes/materiais.mjs http://localhost:5173
+```
+
+O banco e de mentira (`testes/materiais-dados.mjs`, os mesmos nomes do
+wireframe) e o PDF do boleto e montado dentro do proprio teste, com linha
+digitavel que fecha a conta. Nada e gravado no banco de verdade.
+
+O que ele confere, em 252 pontos:
+
+- as medidas em 1920 por 1080 nos dois temas: titulo, botoes, chips, busca,
+  caixas, linhas, etiquetas, gaveta, modal e tabela
+- que nada rola para o lado em 1920, 820 e 390
+- que a folha de movimento grava a entrada com o fornecedor escolhido
+- que o boleto fica verde, amarelo e vermelho, que a linha fica escondida
+  enquanto nao aprovam, e que o arquivo do boleto nunca sai do navegador
+- que nao houve erro de JavaScript
+
+As fotos ficam em `testes/atual/materiais/`, fora do repositorio. Precisa do
+`playwright`, como o teste visual do kit.
+

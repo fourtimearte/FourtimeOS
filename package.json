@@ -26,7 +26,8 @@
     "prova": "node testes/prova.mjs",
     "arrasto": "node testes/arrasto.mjs",
     "cartao": "node testes/cartao.mjs",
-    "boleto": "sh testes/boleto.sh"
+    "boleto": "sh testes/boleto.sh",
+    "materiais": "node testes/materiais.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

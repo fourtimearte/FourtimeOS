@@ -59,7 +59,7 @@ type Filtro = '' | Meio | 'aberto'
 export function TelaTransporte() {
   const { estado } = useSessao()
   const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
-  const podeEditar = !!pessoa && pode(pessoa, 'inicio', 'editar')
+  const podeEditar = !!pessoa && pode(pessoa, 'transporte', 'editar')
 
   const [hoje] = useState(() => new Date())
   const meses = useMemo(() => ultimosMeses(hoje), [hoje])

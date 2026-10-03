@@ -214,7 +214,7 @@ O banco e de mentira (`testes/materiais-dados.mjs`, os mesmos nomes do
 wireframe) e o PDF do boleto e montado dentro do proprio teste, com linha
 digitavel que fecha a conta. Nada e gravado no banco de verdade.
 
-O que ele confere, em 252 pontos:
+O que ele confere:
 
 - as medidas em 1920 por 1080 nos dois temas: titulo, botoes, chips, busca,
   caixas, linhas, etiquetas, gaveta, modal e tabela
@@ -226,4 +226,31 @@ O que ele confere, em 252 pontos:
 
 As fotos ficam em `testes/atual/materiais/`, fora do repositorio. Precisa do
 `playwright`, como o teste visual do kit.
+
+## npm run transporte
+
+A página de Transporte contra o wireframe de 03/10/2026, do mesmo jeito.
+
+```
+npm run transporte                             confere o site publicado
+node testes/transporte.mjs http://localhost:5173
+```
+
+O banco é de mentira (`testes/transporte-dados.mjs`) e o relógio do navegador
+fica congelado na sexta, 23 de outubro de 2026, que é o dia do wireframe. Sem
+isso o "hoje" da lista andaria e as contas do mês mudariam a cada rodada.
+
+O que ele confere:
+
+- as medidas em 1920 por 1080 nos dois temas, nas três abas, na folha de
+  lançar, na ficha e no cadastro
+- que lançar manda o que foi preenchido, que acertar marca como pago, que o
+  cadastro leva o CNPJ só com os 14 caracteres e que a planilha sai com uma
+  linha por lançamento
+- que nada rola para o lado em 1920, 820 e 390, e que no celular a tabela
+  vira lista
+- que quem só lê não vê botão de gravar, e quem não tem a página não entra
+
+A regra do banco (quem pode lançar, o que o banco recusa) não é deste teste:
+ela está em `banco/ferramentas/prova-do-transporte.sql`.
 

@@ -104,6 +104,7 @@ export type Lancamento = {
   pedido: string
   cliente: string
   /** de quem veio o material, quando é busca */
+  fornecedorId: string
   fornecedor: string
   /** para onde foi, ou de onde veio: bairro e cidade bastam */
   destino: string
@@ -136,6 +137,7 @@ type LinhaDoLancamento = {
   motivo: Motivo
   pedido: string | null
   cliente: string | null
+  fornecedor_id: string | null
   fornecedor: string | null
   destino: string | null
   valor: number | string
@@ -163,7 +165,7 @@ export async function carregarTransportadores(): Promise<Transportador[]> {
 /** Os lançamentos de um intervalo, do mais novo para o mais velho. */
 export async function carregarLancamentos(de: string, ate: string): Promise<Lancamento[]> {
   const linhas = await tabela<LinhaDoLancamento[]>(
-    `lancamento_de_transporte_na_lista?select=*&quando=gte.${de}&quando=lt.${ate}&order=quando.desc`,
+    `lancamento_de_transporte_na_lista?select=*&quando=gte.${encodeURIComponent(de)}&quando=lt.${encodeURIComponent(ate)}&order=quando.desc`,
   )
   return linhas.map((l) => ({
     id: l.id,
@@ -174,6 +176,7 @@ export async function carregarLancamentos(de: string, ate: string): Promise<Lanc
     motivo: l.motivo,
     pedido: l.pedido ?? '',
     cliente: l.cliente ?? '',
+    fornecedorId: l.fornecedor_id ?? '',
     fornecedor: l.fornecedor ?? '',
     destino: l.destino ?? '',
     valor: Number(l.valor) || 0,
@@ -191,8 +194,9 @@ export type LancamentoNovo = {
   quando: string
   transportadorId: string
   motivo: Motivo
+  /** o número do pedido; a função do banco acha o id */
   pedido: string
-  fornecedor: string
+  fornecedorId: string
   destino: string
   valor: number
   forma: Forma
@@ -207,7 +211,7 @@ export async function lancarTransporte(n: LancamentoNovo): Promise<void> {
     p_transportador: n.transportadorId,
     p_motivo: n.motivo,
     p_pedido: n.pedido || null,
-    p_fornecedor: n.fornecedor || null,
+    p_fornecedor: n.fornecedorId || null,
     p_destino: n.destino,
     p_valor: n.valor,
     p_forma: n.forma,
@@ -264,11 +268,12 @@ export function combinaComLancamento(l: Lancamento, busca: string): boolean {
   ).includes(b)
 }
 
-/** O primeiro e o último instante de um mês, no formato que o banco compara. */
+/* O primeiro instante de um mês e o primeiro do mês seguinte, NA HORA DE QUEM
+   ESTÁ OLHANDO. O banco guarda em UTC, e a corrida das dez da noite do dia 31
+   em Goiânia já é dia 1º lá: pedir o mês pela data solta jogaria essa corrida
+   no relatório do mês seguinte. */
 export function limitesDoMes(ano: number, mes: number): { de: string; ate: string } {
-  const p = (n: number) => String(n).padStart(2, '0')
-  const depois = mes === 11 ? { a: ano + 1, m: 0 } : { a: ano, m: mes + 1 }
-  return { de: `${ano}-${p(mes + 1)}-01`, ate: `${depois.a}-${p(depois.m + 1)}-01` }
+  return { de: new Date(ano, mes, 1).toISOString(), ate: new Date(ano, mes + 1, 1).toISOString() }
 }
 
 /** A planilha do relatório: uma linha por lançamento, separada por ponto e vírgula. */

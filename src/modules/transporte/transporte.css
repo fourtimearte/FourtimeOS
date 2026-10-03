@@ -275,7 +275,6 @@
   justify-content: center;
   gap: var(--re-2);
   padding: var(--re-8) var(--re-9);
-  background: var(--surface-2);
   min-width: 0;
 }
 .tp-numero-caixa b {

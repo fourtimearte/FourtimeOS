@@ -66,7 +66,7 @@ export function FolhaDeLancamento({
   const [gravando, setGravando] = useState(false)
 
   const [pedidos, setPedidos] = useState<{ numero: string; cliente: string }[]>([])
-  const [fornecedores, setFornecedores] = useState<string[]>([])
+  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([])
 
   const doMeio = useMemo(() => transportadores.filter((t) => t.meio === meio), [transportadores, meio])
 
@@ -80,7 +80,7 @@ export function FolhaDeLancamento({
     setQuemId(e?.transportadorId ?? inicio.transportadorId ?? (candidatos.length === 1 ? candidatos[0].id : ''))
     setMotivo(e?.motivo ?? inicio.motivo ?? 'entrega')
     setPedido(e?.pedido ?? '')
-    setFornecedor(e?.fornecedor ?? '')
+    setFornecedor(e?.fornecedorId ?? '')
     setDestino(e?.destino ?? '')
     setDia(e ? chaveDoDia(e.quando) : chaveDoDia(hoje.toISOString()))
     setValor(e ? String(e.valor).replace('.', ',') : '')
@@ -89,7 +89,9 @@ export function FolhaDeLancamento({
     setObservacao(e?.observacao ?? '')
     /* as duas listas são apoio: nenhuma das duas falha para fora */
     void pedidosParaOTransporte().then(setPedidos)
-    void fornecedoresParaOEstoque().then((r) => setFornecedores(r.fornecedores.map((f) => f.nome)))
+    void fornecedoresParaOEstoque().then((r) =>
+      setFornecedores(r.fornecedores.map((f) => ({ id: f.id, nome: f.nome }))),
+    )
   }, [inicio, transportadores, hoje])
 
   function trocarMeio(m: Meio) {
@@ -124,7 +126,7 @@ export function FolhaDeLancamento({
         transportadorId: quemId,
         motivo,
         pedido: motivo === 'entrega' ? pedido : '',
-        fornecedor: motivo === 'busca' ? fornecedor : '',
+        fornecedorId: motivo === 'busca' ? fornecedor : '',
         destino: destino.trim(),
         valor: numero,
         forma,
@@ -219,7 +221,7 @@ export function FolhaDeLancamento({
               bloco
               comBusca
               valor={fornecedor}
-              opcoes={fornecedores.map((f) => ({ valor: f, rotulo: f }))}
+              opcoes={fornecedores.map((f) => ({ valor: f.id, rotulo: f.nome }))}
               aoEscolher={setFornecedor}
               vazio="Sem fornecedor"
             />

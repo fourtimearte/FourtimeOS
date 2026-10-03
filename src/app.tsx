@@ -263,12 +263,11 @@ export function App() {
           icone: <ChartBar {...icone} />,
         },
         /* TRANSPORTE É GESTÃO, e não material: é o que a Fourtime paga para
-           levar e buscar, com relatório de gasto. Usa o painel do Início por
-           enquanto, como as ferramentas; ganha painel próprio quando a
-           migração dele existir. */
+           levar e buscar, com relatório de gasto. Tem painel próprio (042),
+           porque é dinheiro: quem vê e quem lança se decide na matriz de
+           Acessos, e não por tabela de outra página. */
         {
           chave: 'transporte',
-          painel: 'inicio',
           para: '/transporte',
           rotulo: 'Transporte',
           icone: <Truck {...icone} />,

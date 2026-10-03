@@ -153,7 +153,7 @@ export const conferencias = [
   conf('1004', 2, 15, 22, 'Tecidos Exemplo S.A.', '34567890000102', 6120, 13, 'pode_pagar', 'conferido'),
 ]
 export const perfil = (papel = 'admin') => {
-  const PAGINAS = ['inicio','funil','clientes','cotacao','separacao','pcp','ficha','kanban','produtos','estoque','atividades','relatorio','banco','config','kit']
+  const PAGINAS = ['inicio','funil','clientes','cotacao','separacao','pcp','ficha','kanban','produtos','estoque','atividades','relatorio','transporte','banco','config','kit']
   const permissoes = {}; PAGINAS.forEach((k) => permissoes[k] = { ver: true, editar: papel !== 'vendedor' || k !== 'estoque', deletar: papel === 'admin', total: papel === 'admin' })
   return [{ id: '1', nome: papel === 'admin' ? 'Henrique' : 'Financeiro', papel, situacao: 'aprovado', paineis: PAGINAS, permissoes, email: 't@f', foto_em: null }]
 }

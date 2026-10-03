@@ -90,7 +90,7 @@ export const rotas = createBrowserRouter([
       /* Fornecedores pede o painel do estoque: quem vê o estoque vê de quem
          ele compra. */
       { path: 'fornecedores', element: pede('estoque', <TelaFornecedores />) },
-      { path: 'transporte', element: pede('inicio', <TelaTransporte />) },
+      { path: 'transporte', element: pede('transporte', <TelaTransporte />) },
       /* AS FERRAMENTAS PEDEM O PAINEL DO INICIO, que todo aprovado tem. Elas
          nao leem nem gravam nada do sistema, e um painel proprio seria uma
          migracao so para dizer "todo mundo". O endereco /ferramentas sozinho

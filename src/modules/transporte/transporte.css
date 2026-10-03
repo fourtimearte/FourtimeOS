@@ -1,0 +1,845 @@
+/* ==========================================================================
+   Transporte.
+
+   A mesma gramática do Estoque e de Fornecedores: barra de controle em cima,
+   caixas brancas de borda fina sobre o fundo do sistema, a lista de um lado e
+   o escolhido do outro. No celular as mesmas caixas empilham.
+
+   Os tons de cinza são os de sempre: faixa de dia em --surface-2 (a classe
+   .grupo da tabela), topo de caixa a meio caminho do branco. Situação é
+   ponto e texto. A barra do gráfico usa a tinta do sistema, uma cor só.
+   ========================================================================== */
+
+/* --- a barra de controle --------------------------------------------------- */
+.tp-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.tp-barra .tp-busca {
+  flex: 0 1 300px;
+  min-width: 200px;
+}
+.tp-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.tp-conta {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+.tp-fim {
+  margin-left: auto;
+}
+
+/* --- as duas colunas: a lista e o lado -------------------------------------- */
+.tp-duas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.tp-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.tp-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+.tp-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* --- a tabela --------------------------------------------------------------- */
+.tp-tabela tr.tp-linha {
+  cursor: pointer;
+}
+.tp-grupo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.tp-grupo b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tp-grupo span {
+  font-weight: 500;
+}
+.tp-grupo-fim {
+  display: flex;
+  justify-content: flex-end;
+}
+.tp-quem {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.tp-icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+}
+.tp-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.tp-nome b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-nome small {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-apoio {
+  color: var(--text-2);
+}
+.tp-falta {
+  color: var(--text-3);
+}
+.tp-numero {
+  font-variant-numeric: tabular-nums;
+}
+.tp-numero-forte {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* o total do dia é texto cheio, e não o cinza do resto da faixa: três classes
+   para passar por cima da regra da faixa, que é do Design System */
+.tp-tabela .tp-do-grupo.tp-numero-forte {
+  color: var(--text);
+  font-size: 14px;
+}
+.tp-alerta {
+  color: var(--brand-text);
+}
+.tp-direita {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--text-3);
+}
+.tp-situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tp-situacao i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--text-3));
+}
+
+/* --- a lista do celular: uma faixa por dia e uma linha de duas linhas ------- */
+.tp-dias {
+  display: flex;
+  flex-direction: column;
+}
+.tp-faixa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 36px;
+  padding: 0 var(--re-8);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.tp-faixa b {
+  font-weight: 600;
+}
+.tp-faixa b small {
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.tp-faixa span {
+  flex: none;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.tp-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--re-4) var(--re-8);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.tp-item:last-child {
+  border-bottom: 0;
+}
+.tp-item .tp-nome {
+  flex: 1;
+}
+.tp-item .tp-nome b,
+.tp-item .tp-nome small {
+  white-space: nowrap;
+}
+.tp-item-fim {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  font-variant-numeric: tabular-nums;
+}
+.tp-item-fim b {
+  font-weight: 600;
+}
+.tp-item-fim .tp-situacao {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.tp-so-estreito {
+  display: none;
+}
+
+/* --- o resumo do mês -------------------------------------------------------- */
+.tp-heroi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  padding: var(--re-9) var(--re-10);
+  min-width: 0;
+}
+.tp-heroi-numero {
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tp-heroi h2 {
+  margin: 0 0 var(--re-1);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.tp-heroi p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.tp-minis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.tp-numero-caixa {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--re-2);
+  padding: var(--re-8) var(--re-9);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.tp-numero-caixa b {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tp-numero-caixa span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* --- a caixa com topo cinza ------------------------------------------------- */
+.tp-caixa {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.tp-caixa-topo {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 0 var(--re-9);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+.tp-caixa-topo > :first-child {
+  flex: none;
+}
+.tp-caixa-nota {
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: right;
+  min-width: 0;
+}
+.tp-caixa-corpo {
+  padding: var(--re-6) var(--re-9) var(--re-8);
+}
+.tp-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.tp-link:hover {
+  color: var(--text);
+}
+.tp-linha-caixa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--re-4) var(--re-9);
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.tp-linha-caixa:last-child {
+  border-bottom: 0;
+}
+.tp-linha-caixa .tp-nome {
+  flex: 1;
+}
+.tp-valor {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tp-vazio-dentro {
+  margin: 0;
+  padding: var(--re-8) var(--re-9);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* --- as barras deitadas ----------------------------------------------------- */
+.tp-barras {
+  display: flex;
+  flex-direction: column;
+}
+.tp-barra-linha {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 96px 40px;
+  align-items: center;
+  column-gap: var(--sp-3);
+  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.tp-barra-linha:last-child {
+  border-bottom: 0;
+}
+.tp-barra-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.tp-barra-nome b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.tp-barra-nome small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+.tp-trilho {
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.tp-cheio {
+  display: block;
+  width: var(--l, 0%);
+  height: 100%;
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+}
+.tp-barra-valor {
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.tp-barra-parte {
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: right;
+}
+/* na coluna estreita a barra desce para a linha de baixo e ganha a largura toda */
+.tp-barras.empilhada .tp-barra-linha {
+  grid-template-columns: minmax(0, 1fr) auto 40px;
+  grid-template-areas:
+    'nome valor parte'
+    'trilho trilho trilho';
+  row-gap: var(--re-4);
+  padding-block: var(--re-6);
+}
+.tp-barras.empilhada .tp-barra-nome {
+  grid-area: nome;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--re-4);
+}
+.tp-barras.empilhada .tp-trilho {
+  grid-area: trilho;
+}
+.tp-barras.empilhada .tp-barra-valor {
+  grid-area: valor;
+}
+.tp-barras.empilhada .tp-barra-parte {
+  grid-area: parte;
+}
+
+/* --- a ficha da corrida ----------------------------------------------------- */
+.tp-ficha {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.tp-ficha-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--re-10) var(--re-10) 0;
+}
+.tp-ficha-topo h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.tp-ficha-topo p {
+  margin: var(--re-2) 0 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.tp-fechar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.tp-fechar:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.tp-ficha-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--re-10) var(--re-10);
+  min-width: 0;
+}
+.tp-ficha-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  font-size: 13.5px;
+}
+.tp-dados {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.tp-dado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: 34px;
+  padding: var(--re-3) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.tp-dado span {
+  flex: none;
+  color: var(--text-2);
+}
+.tp-dado b {
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.tp-dado b.tp-falta {
+  font-weight: 400;
+}
+.tp-secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-width: 0;
+}
+.tp-secao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tp-secao-topo small {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.tp-obs {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.tp-ficha-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  padding: var(--re-8) var(--re-10);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.tp-ficha-pe:empty {
+  display: none;
+}
+
+/* a ficha dentro da folha: o cabeçalho e o rodapé já são da folha */
+.tp-na-folha .tp-ficha-corpo {
+  padding: 0;
+}
+.tp-lista {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tp-lista-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 48px;
+  padding: var(--re-3) var(--re-6);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.tp-lista-linha:last-child {
+  border-bottom: 0;
+}
+.tp-lista-linha .tp-nome {
+  flex: 1;
+}
+.tp-lista-linha .tp-situacao {
+  font-size: 12.5px;
+}
+.tp-acerto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--re-6) var(--re-8);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.tp-acerto b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- a folha de lançar ------------------------------------------------------ */
+.tp-seg-cheio {
+  width: 100%;
+}
+.tp-seg-cheio button {
+  flex: 1;
+  padding-inline: var(--re-4);
+}
+.tp-dois-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 148px;
+  gap: var(--sp-3);
+  align-items: start;
+}
+.tp-dois-iguais {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+.tp-ajuda {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* --- o relatório ------------------------------------------------------------ */
+.tp-relatorio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.tp-rel-duas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+.tp-colunas {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-4);
+  padding: var(--re-9) var(--re-9) var(--re-8);
+}
+.tp-coluna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-3);
+  min-width: 0;
+}
+.tp-coluna-valor {
+  min-height: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tp-coluna-vao {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 160px;
+  border-bottom: 1px solid var(--border-2);
+}
+.tp-coluna-cheia {
+  display: block;
+  width: min(56px, 60%);
+  height: var(--a, 0%);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--ink);
+}
+.tp-coluna-cheia.vazia {
+  display: none;
+}
+.tp-coluna-nome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-colado);
+  text-align: center;
+}
+.tp-coluna-nome b {
+  font-size: 13px;
+  font-weight: 600;
+}
+.tp-coluna-nome small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.tp-rodape {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ==========================================================================
+   A TELA ESTREITA
+   ========================================================================== */
+@media (max-width: 1199px) {
+  .tp-duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* o resumo sobe e a lista vem depois, como no Estoque */
+  .tp-duas .tp-lado {
+    order: -1;
+  }
+  .tp-some-medio {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .tp-barra .tp-aba {
+    width: 100%;
+  }
+  .tp-barra .tp-aba button {
+    flex: 1;
+    padding-inline: var(--re-4);
+  }
+  .tp-barra .tp-busca {
+    flex: 1 1 100%;
+  }
+  .tp-chips {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+  .tp-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .tp-fim {
+    margin-left: 0;
+  }
+  .tp-some-estreito {
+    display: none;
+  }
+  .tp-so-estreito {
+    display: inline;
+  }
+  .tp-relatorio .tp-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+  .tp-heroi {
+    padding: var(--re-8) var(--re-9);
+  }
+  .tp-heroi-numero {
+    font-size: 44px;
+  }
+  .tp-minis {
+    gap: var(--sp-3);
+  }
+  .tp-numero-caixa {
+    padding: var(--re-7) var(--re-6);
+  }
+  .tp-numero-caixa b {
+    font-size: 20px;
+  }
+  .tp-numero-caixa span {
+    font-size: 12.5px;
+  }
+  .tp-caixa-topo {
+    padding-inline: var(--re-8);
+  }
+  .tp-caixa-corpo,
+  .tp-linha-caixa,
+  .tp-vazio-dentro {
+    padding-inline: var(--re-8);
+  }
+  .tp-barra-linha {
+    grid-template-columns: minmax(0, 1fr) auto 40px;
+    grid-template-areas:
+      'nome valor parte'
+      'trilho trilho trilho';
+    row-gap: var(--re-4);
+    padding-block: var(--re-6);
+  }
+  .tp-barra-nome {
+    grid-area: nome;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--re-4);
+  }
+  .tp-barra-nome b,
+  .tp-barra-nome small {
+    white-space: nowrap;
+  }
+  .tp-trilho {
+    grid-area: trilho;
+  }
+  .tp-barra-valor {
+    grid-area: valor;
+  }
+  .tp-barra-parte {
+    grid-area: parte;
+  }
+  .tp-rel-duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tp-colunas {
+    gap: var(--sp-2);
+    padding-inline: var(--re-6);
+  }
+  .tp-coluna-vao {
+    height: 120px;
+  }
+  .tp-coluna-valor {
+    font-size: 12px;
+  }
+  .tp-coluna-nome small {
+    display: none;
+  }
+  .tp-dois-campos,
+  .tp-dois-iguais {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

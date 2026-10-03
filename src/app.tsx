@@ -21,6 +21,7 @@ import {
   SignOut,
   Sun,
   TShirt,
+  Truck,
   UserCircle,
   Users,
   Wrench,
@@ -260,6 +261,17 @@ export function App() {
           para: '/relatorio',
           rotulo: 'Relatório mensal',
           icone: <ChartBar {...icone} />,
+        },
+        /* TRANSPORTE É GESTÃO, e não material: é o que a Fourtime paga para
+           levar e buscar, com relatório de gasto. Usa o painel do Início por
+           enquanto, como as ferramentas; ganha painel próprio quando a
+           migração dele existir. */
+        {
+          chave: 'transporte',
+          painel: 'inicio',
+          para: '/transporte',
+          rotulo: 'Transporte',
+          icone: <Truck {...icone} />,
         },
       ],
     },

@@ -51,6 +51,13 @@ const PAGINAS: Pagina[] = [
       'De quem a Fourtime compra. Guardar a página não apaga a lista: o estoque e o verificador de boleto continuam lendo dela.',
   },
   {
+    chave: 'transporte',
+    nome: 'Transporte',
+    onde: 'Gestão',
+    rota: '/transporte',
+    porque: 'O que a Fourtime paga para levar e buscar. Guardar a página não apaga os lançamentos.',
+  },
+  {
     chave: 'dtf',
     nome: 'Calculadora de DTF',
     onde: 'Ferramentas',

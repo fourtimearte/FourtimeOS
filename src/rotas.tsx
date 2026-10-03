@@ -24,6 +24,7 @@ import { TelaEstoque } from '@modules/estoque'
 import { TelaCalculadoraDeDtf, TelaVerificadorDeBoleto } from '@modules/ferramentas'
 import { TelaFicha } from '@modules/ficha'
 import { TelaFornecedores } from '@modules/fornecedores'
+import { TelaTransporte } from '@modules/transporte'
 import { TelaFunil } from '@modules/funil'
 import { TelaPcp } from '@modules/pcp'
 import { TelaSeparacao } from '@modules/separacao'
@@ -89,6 +90,7 @@ export const rotas = createBrowserRouter([
       /* Fornecedores pede o painel do estoque: quem vê o estoque vê de quem
          ele compra. */
       { path: 'fornecedores', element: pede('estoque', <TelaFornecedores />) },
+      { path: 'transporte', element: pede('inicio', <TelaTransporte />) },
       /* AS FERRAMENTAS PEDEM O PAINEL DO INICIO, que todo aprovado tem. Elas
          nao leem nem gravam nada do sistema, e um painel proprio seria uma
          migracao so para dizer "todo mundo". O endereco /ferramentas sozinho

@@ -7,6 +7,7 @@ import { carregarMateriais, gruposDoEstoque, type Material } from '@dominio/esto
 import {
   NOME_DA_ENTRADA,
   NOME_DA_SITUACAO,
+  TIPO_QUE_MORA_EM_TRANSPORTE,
   carregarFornecedores,
   carregarLigacoes,
   carregarTiposDeFornecedor,
@@ -86,8 +87,13 @@ export function TelaFornecedores() {
       /* o material é apoio aqui: sem ele a página ainda lista os fornecedores */
       carregarMateriais().catch(() => [] as Material[]),
     ])
-    setFornecedores(fs)
-    setTipos(ts)
+    /* o frete mora em Transporte: a transportadora não aparece aqui */
+    setFornecedores(
+      fs
+        .filter((f) => !(f.tipos.length > 0 && f.tipos.every((t) => t === TIPO_QUE_MORA_EM_TRANSPORTE)))
+        .map((f) => ({ ...f, tipos: f.tipos.filter((t) => t !== TIPO_QUE_MORA_EM_TRANSPORTE) })),
+    )
+    setTipos(ts.filter((t) => t.chave !== TIPO_QUE_MORA_EM_TRANSPORTE))
     setLigacoes(ls)
     setMateriais(ms)
     setErro('')
@@ -236,7 +242,7 @@ export function TelaFornecedores() {
     <Pagina
       acima="Materiais"
       titulo="Fornecedores"
-      sub="De quem a Fourtime compra. Tecido, aviamento, insumo, frete e serviço: todo fornecedor que entra por qualquer página aparece aqui."
+      sub="De quem a Fourtime compra. Tecido, aviamento, insumo e serviço: todo fornecedor que entra por qualquer página aparece aqui. Transportadora e motoboy moram em Transporte."
       acoes={
         <>
           <Botao onClick={() => setVerTipos(true)}>Tipos de fornecedor</Botao>
@@ -507,7 +513,9 @@ export function TelaFornecedores() {
           await recarregar()
           abrir(id)
         }}
-        aoMudarTipos={async () => setTipos(await carregarTiposDeFornecedor())}
+        aoMudarTipos={async () =>
+          setTipos((await carregarTiposDeFornecedor()).filter((t) => t.chave !== TIPO_QUE_MORA_EM_TRANSPORTE))
+        }
       />
       <BloquearFornecedor
         fornecedor={bloqueando}

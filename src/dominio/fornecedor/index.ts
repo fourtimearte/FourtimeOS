@@ -22,6 +22,13 @@ import { cnpjValido, limparCnpj } from './cnpj'
    começo de os dois discordarem.
    ========================================================================== */
 
+/* O FRETE MORA EM TRANSPORTE. A transportadora continua sendo uma linha desta
+   lista, porque o Verificador de Boleto precisa conhecer o CNPJ dela, mas a
+   página de Fornecedores não a mostra: quem cuida dela é a página de
+   Transporte. Quem só tem este tipo some daqui; quem tem este e outro
+   aparece sem ele. */
+export const TIPO_QUE_MORA_EM_TRANSPORTE = 'frete'
+
 export type SituacaoGravada = 'novo' | 'esperando' | 'confiavel' | 'bloqueado'
 export type Situacao = SituacaoGravada | 'sem-cnpj'
 export type EntrouPor = 'cadastro' | 'estoque' | 'entrega' | 'boleto'
@@ -221,7 +228,11 @@ export async function fornecedoresParaOEstoque(): Promise<{
   disponivel: boolean
 }> {
   try {
-    const [fornecedores, ligacoes] = await Promise.all([carregarFornecedores(), carregarLigacoes()])
+    const [todos, ligacoes] = await Promise.all([carregarFornecedores(), carregarLigacoes()])
+    /* quem só faz frete não vende material: não entra na lista da entrada */
+    const fornecedores = todos.filter(
+      (f) => !(f.tipos.length > 0 && f.tipos.every((t) => t === TIPO_QUE_MORA_EM_TRANSPORTE)),
+    )
     return { fornecedores, ligacoes, disponivel: true }
   } catch {
     return { fornecedores: [], ligacoes: [], disponivel: false }

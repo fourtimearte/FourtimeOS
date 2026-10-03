@@ -380,7 +380,7 @@ export function FormularioDeFornecedor({
         ) : null}
 
         {temServico || oQueFornece ? (
-          <Campo rotulo="O que ele faz, em palavras" dica="Para frete e serviço, que não são material do estoque.">
+          <Campo rotulo="O que ele faz, em palavras" dica="Para serviço, que não é material do estoque.">
             <Entrada
               value={oQueFornece}
               onChange={(e) => setOQueFornece(e.currentTarget.value)}

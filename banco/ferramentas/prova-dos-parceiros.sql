@@ -1,5 +1,5 @@
 -- ===========================================================================
--- A PROVA DA 043: os parceiros da loja.
+-- A PROVA DA 043 E DA 044: os parceiros da loja.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. O relatorio sai dentro da
@@ -369,10 +369,20 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 23. trocar a colecao esvazia os produtos; a venda continua guardada';
 
-  -- 24. as colecoes que o porteiro le: so de parceiro ativo
+  -- 24. as colecoes que o porteiro le: a de todo parceiro, com a pagina ligada ou nao (044)
   select count(*) into n from public.colecoes_dos_parceiros() c where c.parceiro_id in (g, vi, y);
-  txt := txt || E'\n' || case when n = 2 then 'ok  ' else 'RUIM' end
-             || ' 24. o porteiro le a colecao dos ativos, e nao a do desligado (' || n || ')';
+  txt := txt || E'\n' || case when n = 3 then 'ok  ' else 'RUIM' end
+             || ' 24. o porteiro le a colecao dos tres, inclusive do que esta com a pagina desligada (' || n || ')';
+  perform set_config('request.jwt.claim.sub', '', true);
+  update public.parceiro set produtos_em = null where id = vi;
+  j := public.registrar_pedido_da_loja(jsonb_build_object(
+         'id', 800007, 'nome', '#P7', 'criado_em', now(), 'atualizado_em', now(), 'situacao', 'paid',
+         'itens', jsonb_build_array(
+           jsonb_build_object('id', 700008, 'produto_id', 999998, 'produto', 'Produto novo', 'variante', 'M',
+                              'quantidade', 1, 'devolvida', 0, 'preco', 10, 'desconto', 0))), 'orders/paid');
+  txt := txt || E'\n' || case when (j ->> 'reler_produtos')::boolean then 'ok  ' else 'RUIM' end
+             || ' 24b. produto sem dono manda reler os produtos mesmo quando so o parceiro desligado esta sem leitura';
+  perform set_config('request.jwt.claim.sub', a::text, true);
 
   -- 25. a lista do OS: acordo de hoje e contagem de produtos
   select * into r from public.parceiro_na_lista where id = g;

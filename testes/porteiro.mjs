@@ -291,5 +291,32 @@ confere('28. sem o segredo colocado, todo aviso e recusado e nada chega ao banco
 r = await semSegredo.atender(new Request(`${BANCO}/functions/v1/loja`))
 confere('29. e a porta de conferencia avisa que falta a assinatura', (await r.json()).assinatura === false)
 
+chamadas = []
+respostas = { 'rpc/colecoes_dos_parceiros': { corpo: [] } }
+r = await porteiro.atender(new Request(`${BANCO}/functions/v1/loja?banco=1`))
+j = await r.json()
+confere('29b. com ?banco=1 a conferencia fala com o banco e diz que conseguiu', j.banco === true && chamadas.length === 1)
+respostas = { 'rpc/colecoes_dos_parceiros': { status: 401, corpo: { message: 'chave recusada' } } }
+r = await porteiro.atender(new Request(`${BANCO}/functions/v1/loja?banco=1`))
+j = await r.json()
+confere('29c. e diz que nao conseguiu quando o banco recusa a chave', j.banco === false && j.motivo.includes('401') && !JSON.stringify(j).includes('chave-de-servico-de-mentira'))
+
+const chavesNovas = await carregar(
+  { SUPABASE_URL: BANCO, SUPABASE_SECRET_KEYS: JSON.stringify({ outra: 'sb_secret_outra', default: 'sb_secret_padrao' }), SUPABASE_SERVICE_ROLE_KEY: 'antiga', SHOPIFY_WEBHOOK_SECRET: SEGREDO },
+  'chaves-novas',
+)
+chamadas = []
+respostas = { 'rpc/registrar_pedido_da_loja': { corpo: { ok: true, itens: 2, reler_produtos: false } } }
+await chavesNovas.atender(aviso(texto, assinar(texto)))
+confere('30. com o dicionario de chaves secretas, o porteiro usa a "default" e nao a antiga', chamadas[0]?.cabecalhos.apikey === 'sb_secret_padrao' && chamadas[0]?.cabecalhos.Authorization === 'Bearer sb_secret_padrao')
+
+const dicionarioTorto = await carregar(
+  { SUPABASE_URL: BANCO, SUPABASE_SECRET_KEYS: 'isto nao e json', SUPABASE_SERVICE_ROLE_KEY: 'antiga', SHOPIFY_WEBHOOK_SECRET: SEGREDO },
+  'dicionario-torto',
+)
+chamadas = []
+await dicionarioTorto.atender(aviso(texto, assinar(texto)))
+confere('31. dicionario ilegivel cai na chave antiga', chamadas[0]?.cabecalhos.apikey === 'antiga')
+
 console.log(`\n${certas} certas, ${erradas} erradas`)
 process.exit(erradas ? 1 : 0)

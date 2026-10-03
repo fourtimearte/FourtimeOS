@@ -24,7 +24,8 @@
 //   SHOPIFY_WEBHOOK_SECRET   a chave com que a Shopify assina os avisos.
 //                            Quem cola e o Henrique. Sem ela, todo aviso e
 //                            recusado.
-//   SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY ja vem postos pelo Supabase.
+//   SUPABASE_URL e a chave de servico (SUPABASE_SECRET_KEYS, ou a antiga
+//   SUPABASE_SERVICE_ROLE_KEY) ja vem postos pelo Supabase.
 //
 // PUBLICAR: esta funcao tem de ficar com "Verify JWT" DESLIGADO. A Shopify
 // nao manda cracha do Supabase; quem protege cada porta e o codigo abaixo.
@@ -38,8 +39,26 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined
 
 const LOJA = (Deno.env.get('LOJA_ENDERECO') ?? 'https://fourtimefit.com.br').replace(/\/+$/, '')
 const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/+$/, '')
-const CHAVE_DE_SERVICO = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const CHAVE_DE_SERVICO = chaveDeServico()
 const SEGREDO = Deno.env.get('SHOPIFY_WEBHOOK_SECRET') ?? ''
+
+/* A chave que fala com o banco como servico. O Supabase de hoje entrega as
+   chaves secretas num dicionario JSON (SUPABASE_SECRET_KEYS, com a "default");
+   projeto mais antigo entrega a service_role solta. Vale a primeira que
+   existir. O valor nunca sai desta funcao. */
+function chaveDeServico(): string {
+  const novas = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (novas) {
+    try {
+      const dicionario = JSON.parse(novas) as Record<string, unknown>
+      const escolhida = dicionario.default ?? Object.values(dicionario)[0]
+      if (typeof escolhida === 'string' && escolhida) return escolhida
+    } catch {
+      /* dicionario ilegivel: segue para a chave antiga */
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+}
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -288,8 +307,19 @@ export async function atender(req: Request): Promise<Response> {
   try {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
     if (req.method === 'GET') {
-      /* so diz se as duas chaves estao postas, nunca o valor delas */
-      return responder({ ok: true, porteiro: 'loja', assinatura: SEGREDO !== '', servico: CHAVE_DE_SERVICO !== '' })
+      /* so diz se as duas chaves estao postas, nunca o valor delas. Com
+         ?banco=1 tambem tenta falar com o banco, e diz se conseguiu */
+      const conferencia: Solto = { ok: true, porteiro: 'loja', assinatura: SEGREDO !== '', servico: CHAVE_DE_SERVICO !== '' }
+      if (new URL(req.url).searchParams.get('banco') === '1') {
+        try {
+          await chamar('colecoes_dos_parceiros', {})
+          conferencia.banco = true
+        } catch (erro) {
+          conferencia.banco = false
+          conferencia.motivo = (erro instanceof Error ? erro.message : String(erro)).slice(0, 60)
+        }
+      }
+      return responder(conferencia)
     }
     if (req.method !== 'POST') return responder({ ok: false, erro: 'Método não atendido.' }, 405)
     const corpo = new Uint8Array(await req.arrayBuffer())

@@ -28,7 +28,8 @@
     "cartao": "node testes/cartao.mjs",
     "boleto": "sh testes/boleto.sh",
     "materiais": "node testes/materiais.mjs",
-    "transporte": "node testes/transporte.mjs"
+    "transporte": "node testes/transporte.mjs",
+    "porteiro": "node --experimental-strip-types testes/porteiro.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

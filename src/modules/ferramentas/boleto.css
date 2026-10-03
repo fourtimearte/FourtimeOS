@@ -185,6 +185,7 @@
 }
 .bo-linha.escondida {
   color: var(--text-3);
+  font-size: 18px;
   letter-spacing: 0.08em;
   padding-right: var(--re-7);
 }

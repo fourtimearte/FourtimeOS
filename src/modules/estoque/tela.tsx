@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, CalendarBlank, CaretRight, ListBullets, Plus, Stack, Table } from '@phosphor-icons/react'
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
@@ -72,9 +72,13 @@ export function TelaEstoque() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
 
-  const [aba, setAba] = useState<Aba>('materiais')
+  /* A PÁGINA ABRE JÁ FILTRADA quando alguém chega de outra: a ficha do
+     fornecedor manda para cá com o nome dele na busca, e para as
+     movimentações dele com a aba junto. */
+  const [endereco] = useSearchParams()
+  const [aba, setAba] = useState<Aba>(endereco.get('aba') === 'razao' ? 'razao' : 'materiais')
   const [vista, setVista] = useState<Vista>('lista')
-  const [busca, setBusca] = useState('')
+  const [busca, setBusca] = useState(endereco.get('busca') ?? '')
   const [filtro, setFiltro] = useState<Filtro>('')
   const [motivo, setMotivo] = useState<'' | Motivo>('')
   const [agrupar, setAgrupar] = useState<Agrupar>('dia')

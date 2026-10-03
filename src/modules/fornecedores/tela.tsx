@@ -187,8 +187,8 @@ export function TelaFornecedores() {
 
   function irPara(f: Fornecedor, onde: 'estoque' | 'movimentos' | 'boleto') {
     if (onde === 'boleto') navegar('/ferramentas/boleto')
-    else navegar('/estoque')
-    void f
+    else if (onde === 'movimentos') navegar('/estoque?aba=razao&busca=' + encodeURIComponent(f.nome))
+    else navegar('/estoque?busca=' + encodeURIComponent(f.nome))
   }
 
   const virar = (chave: string) =>

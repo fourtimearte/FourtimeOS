@@ -374,6 +374,8 @@ begin
   txt := txt || E'\n' || case when n = 3 then 'ok  ' else 'RUIM' end
              || ' 24. o porteiro le a colecao dos tres, inclusive do que esta com a pagina desligada (' || n || ')';
   perform set_config('request.jwt.claim.sub', '', true);
+  /* so o parceiro desligado fica sem leitura: e ele que tem de bastar para pedir a releitura */
+  update public.parceiro set produtos_em = now() where id in (g, y);
   update public.parceiro set produtos_em = null where id = vi;
   j := public.registrar_pedido_da_loja(jsonb_build_object(
          'id', 800007, 'nome', '#P7', 'criado_em', now(), 'atualizado_em', now(), 'situacao', 'paid',

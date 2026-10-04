@@ -12,6 +12,7 @@ export const gruposDeTecido = [
   { cod: 'PIQ', nome: 'PIQUE', ordem: 4 },
   { cod: 'MOL', nome: 'MOLETOM', ordem: 5 },
   { cod: 'SPX', nome: 'SUPLEX', ordem: 6 },
+  { cod: 'VIS', nome: 'VISCOSE', ordem: 7 },
   { cod: '', nome: 'Sem tipo', ordem: 99 },
 ]
 const DO_TECIDO = {
@@ -23,10 +24,23 @@ const DO_TECIDO = {
   MOLETOM: ['MOL', 300, 1.85],
 }
 /* numeric chega como texto no JSON de verdade: aqui também */
-export const tecidos = D.tecidos.map((t, i) => {
+const comEstoque = D.tecidos.map((t, i) => {
   const [grupo, gramatura, largura] = DO_TECIDO[t.nome]
-  return { ...t, grupo, gramatura: gramatura === null ? null : gramatura.toFixed(2), largura: largura === null ? null : largura.toFixed(3), ordem: i + 1 }
+  return { ...t, grupo, gramatura: gramatura === null ? null : gramatura.toFixed(2), largura: largura === null ? null : largura.toFixed(3), ordem: i + 1, ativo: true }
 })
+/* O CATÁLOGO É MAIOR QUE O ESTOQUE: tecidos que ninguém cadastrou no estoque
+   ainda. Dois em grupos que já têm estoque (um deles antes, na ordem do
+   catálogo, do tecido que tem), dois num grupo que não tem nada (VIS), o
+   suplex sozinho no grupo dele, e um desligado, que não pode aparecer. */
+export const tecidosSemEstoque = [
+  { id: 'ts1', nome: 'DRYFIT JAKAR 100%', grupo: 'DRY', gramatura: null, largura: null, ordem: 0, ativo: true },
+  { id: 'ts2', nome: 'PIQUET MISTO', grupo: 'PIQ', gramatura: '200.00', largura: '1.200', ordem: 20, ativo: true },
+  { id: 'ts3', nome: 'VISCOSE PV ANTIPILING', grupo: 'VIS', gramatura: null, largura: null, ordem: 21, ativo: true },
+  { id: 'ts4', nome: 'VISCOSE COM ELASTANO PROTEÇÃO UV50', grupo: 'VIS', gramatura: null, largura: null, ordem: 22, ativo: true },
+  { id: 'ts5', nome: 'SUPLEX POLIAMIDA', grupo: 'SPX', gramatura: null, largura: null, ordem: 23, ativo: true },
+  { id: 'ts6', nome: 'ALGODAO DESLIGADO', grupo: 'ALG', gramatura: null, largura: null, ordem: 24, ativo: false },
+]
+export const tecidos = [...comEstoque, ...tecidosSemEstoque]
 
 const M = (nome) => D.materiais.find((m) => m.nome === nome)
 const F = (nome) => D.fornecedores.find((f) => f.nome === nome)
@@ -82,7 +96,7 @@ export const coresAMais = Array.from({ length: 26 }, (_, i) => ({
   ...base, id: 'mx' + i, nome: `DRYFIT POLIESTER 100% · Cor de prova ${i + 1}`, cor_id: 'cx' + i, cor: `Cor de prova ${i + 1}`, cor_hex: matiz(i),
   minimo: 20, saldo: 4 + ((i * 7) % 60), reservado: 0, livre: 4 + ((i * 7) % 60), abaixo_do_minimo: 4 + ((i * 7) % 60) < 20,
 }))
-export const tecidosAMais = Array.from({ length: 5 }, (_, i) => ({ id: 'tx' + i, nome: `DRY DE PROVA ${i + 1}`, grupo: 'DRY', gramatura: '150.00', largura: '1.600', ordem: 50 + i }))
+export const tecidosAMais = Array.from({ length: 5 }, (_, i) => ({ id: 'tx' + i, nome: `DRY DE PROVA ${i + 1}`, grupo: 'DRY', gramatura: '150.00', largura: '1.600', ordem: 50 + i, ativo: true }))
 export const materiaisDosTecidosAMais = tecidosAMais.flatMap((t, i) => Array.from({ length: 6 }, (_, k) => ({
   ...base, id: `my${i}-${k}`, nome: `${t.nome} · Cor ${k + 1}`, tecido_id: t.id, tecido: t.nome, cor_id: `cy${i}-${k}`, cor: `Cor ${k + 1}`, cor_hex: matiz(i * 6 + k + 3),
   minimo: 10, saldo: 6 + k * 5, reservado: 0, livre: 6 + k * 5, abaixo_do_minimo: 6 + k * 5 < 10,

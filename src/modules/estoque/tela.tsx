@@ -14,7 +14,9 @@ import {
   carregarMateriais,
   carregarMovimentos,
   carregarReservasEmAberto,
+  chaveDoTecido,
   conferirORazao,
+  grupoSemEstoque,
   gruposDoEstoque,
   nomeNoGrupo,
   refazerAsReservasAbertas,
@@ -212,6 +214,14 @@ export function TelaEstoque() {
   /* A BUSCA ACHA PELO QUE A PESSOA LEMBRA: o nome do material, a malha, a
      cor, o grupo ou o fornecedor. */
   const termo = semAcento(busca.trim())
+  /* o grupo de tecido do catálogo também acha: "dry fit" tem de trazer o
+     Dryfit Poliéster, que não tem o espaço no nome */
+  const grupoDoTecido = useMemo(() => {
+    const nome = new Map(hierarquia.grupos.map(g => [g.cod, g.nome]))
+    return new Map(
+      hierarquia.tecidos.map(t => [t.id, t.grupo ? t.grupo + ' ' + (nome.get(t.grupo) ?? '') : '']),
+    )
+  }, [hierarquia])
   const filtrados = useMemo(() => {
     if (!termo) return materiais
     return materiais.filter(m => {
@@ -219,9 +229,12 @@ export function TelaEstoque() {
         .filter(l => l.materialId === m.id)
         .map(l => fornecimento.fornecedores.find(f => f.id === l.fornecedorId)?.nome ?? '')
         .join(' ')
-      return semAcento([m.nome, m.tecido, m.cor, m.grupo, forn].join(' ')).includes(termo)
+      const doCatalogo = m.categoria === 'tecido' ? (grupoDoTecido.get(m.tecidoId) ?? '') : ''
+      return semAcento([m.nome, m.tecido, m.cor, m.grupo, doCatalogo, forn].join(' ')).includes(
+        termo,
+      )
     })
-  }, [materiais, termo, fornecimento])
+  }, [materiais, termo, fornecimento, grupoDoTecido])
   /* os chips de categoria e o "para comprar" só valem na tabela */
   const gruposDaTabela = useMemo(
     () =>
@@ -244,8 +257,13 @@ export function TelaEstoque() {
     () =>
       materialEscolhido
         ? (todosOsGrupos.find(g => g.itens.some(i => i.id === materialEscolhido.id)) ?? null)
-        : (todosOsGrupos.find(g => g.chave === escolhido) ?? null),
-    [todosOsGrupos, materialEscolhido, escolhido],
+        : (todosOsGrupos.find(g => g.chave === escolhido) ??
+          /* o tecido do catálogo que ainda não tem cor no estoque também se escolhe */
+          (() => {
+            const t = hierarquia.tecidos.find(x => x.ativo && chaveDoTecido(x.id) === escolhido)
+            return t ? grupoSemEstoque(t) : null
+          })()),
+    [todosOsGrupos, materialEscolhido, escolhido, hierarquia],
   )
   useEffect(() => {
     if (escolhido && !carregando && !grupoEscolhido) setEscolhido('')
@@ -386,7 +404,9 @@ export function TelaEstoque() {
               ? grupoEscolhido.nome
               : materialEscolhido
                 ? materialEscolhido.grupo
-                : plural(grupoEscolhido.itens.length, 'cor', 'cores'),
+                : grupoEscolhido.itens.length
+                  ? plural(grupoEscolhido.itens.length, 'cor', 'cores')
+                  : 'sem estoque',
         }
       : {
           acima: 'Materiais',
@@ -746,7 +766,7 @@ export function TelaEstoque() {
           /* o tecido novo abre a ficha do tecido; o item novo, a dele */
           escolher(
             categoriaNova === 'tecido' && tecidoId
-              ? 'tecido:' + tecidoId
+              ? chaveDoTecido(tecidoId)
               : id
                 ? chaveDoMaterial(id)
                 : '',

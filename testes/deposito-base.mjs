@@ -59,7 +59,7 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     else if (u.includes('pedido_na_separacao')) { if (estoque === 'sem-apoio') return json(r, { message: 'permission denied for view pedido_na_separacao' }, 403); corpo = E.fila }
     else if (u.includes('reserva_do_pedido')) { const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]; corpo = E.reservasDoPedido.filter((x) => x.pedido_id === id) }
     else if (u.includes('tipo_de_fornecedor')) corpo = D.tipos
-    else if (u.includes('/tecido?')) corpo = estoque === 'grande' ? [...E.tecidos, ...E.tecidosAMais] : E.tecidos
+    else if (u.includes('/tecido?')) corpo = (estoque === 'grande' ? [...E.tecidos, ...E.tecidosAMais] : E.tecidos).filter((t) => !u.includes('ativo=is.true') || t.ativo)
     else if (u.includes('/cor_de_tecido?')) corpo = D.cores
     else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : [] }
     else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : []

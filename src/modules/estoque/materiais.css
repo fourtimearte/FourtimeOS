@@ -522,6 +522,28 @@ button.em-lin:hover {
   text-align: left;
   cursor: pointer;
 }
+/* o nome do tecido quebra em duas linhas em vez de ganhar reticências: os
+   nomes do catálogo só diferem no fim ("... C/ ELASTANO PROTEÇÃO UV50"), e é
+   o fim que as reticências comeriam */
+.em-t .em-nomes b {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* o tecido do catálogo que ainda não tem cor no estoque: o lugar da seta fica
+   vazio (a linha continua alinhada com as outras), o nome apagado, e o atalho
+   "Nova cor" no fim, dentro da linha */
+.em-t.em-sem > .em-t-seta {
+  cursor: default;
+}
+.em-t.em-sem:not(.em-sel) .em-nomes b {
+  font-weight: 500;
+  color: var(--text-2);
+}
+.em-t-nova {
+  flex: none;
+  align-self: center;
+  margin-right: var(--re-7);
+}
 .em-nomes {
   flex: 1;
   min-width: 0;

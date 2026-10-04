@@ -83,6 +83,7 @@ function Topo({
   aoEditar,
   aoMovimentar,
   aoFechar,
+  acoes,
 }: {
   trilha: ReactNode
   titulo: ReactNode
@@ -93,6 +94,8 @@ function Topo({
   aoEditar: () => void
   aoMovimentar: () => void
   aoFechar: () => void
+  /** no lugar de Editar e Registrar movimento, para a ficha que não tem o que editar nem movimentar */
+  acoes?: ReactNode
 }) {
   return (
     <div className="em-ficha-topo">
@@ -107,7 +110,9 @@ function Topo({
       </div>
       {podeEditar || !noCelular ? (
         <div className="fileira">
-          {podeEditar ? (
+          {!podeEditar ? null : acoes !== undefined ? (
+            acoes
+          ) : (
             <>
               <Botao onClick={aoEditar}>
                 <PencilSimple size={16} aria-hidden="true" />
@@ -117,7 +122,7 @@ function Topo({
                 Registrar movimento
               </Botao>
             </>
-          ) : null}
+          )}
           {noCelular ? null : (
             <Botao onClick={aoFechar}>
               <X size={16} aria-hidden="true" />
@@ -281,6 +286,85 @@ export function FichaDoTecido({
       .sort((a, b) => b.cores.size - a.cores.size)
   }, [tecido.cores, guardado])
   const comLugar = tecido.cores.filter(m => lugaresDe(guardado, m.id).length > 0)
+
+  /* O TECIDO DO CATÁLOGO QUE AINDA NÃO TEM COR NO ESTOQUE. Não há número,
+     movimento nem lugar para mostrar: a ficha diz isso e convida a cadastrar a
+     primeira cor. Editar e Registrar movimento saem, porque os dois mexem em
+     material, e aqui ainda não há nenhum. */
+  if (tecido.cores.length === 0) {
+    const novaCor = (
+      <Botao tom="primario" onClick={aoNovaCor}>
+        <Plus size={16} aria-hidden="true" />
+        Nova cor
+      </Botao>
+    )
+    return (
+      <div className="em-ficha" data-ficha="tecido" data-sem-estoque="">
+        <Topo
+          trilha={
+            <>
+              <Codigo cod={grupo?.cod ?? ''} />
+              {grupo?.nome ?? 'Tecido'}
+              <span aria-hidden="true">›</span>
+              tecido
+            </>
+          }
+          titulo={tecido.nome}
+          sub={['sem estoque', medidasDoTecido(tecido)].filter(Boolean).join(' · ')}
+          podeEditar={podeEditar}
+          noCelular={noCelular}
+          aoEditar={aoEditar}
+          aoMovimentar={aoNovaCor}
+          aoFechar={aoFechar}
+          acoes={novaCor}
+        />
+        <div className="em-metades">
+          <div className="pilha larga">
+            <section className="cartao em-col">
+              <div className="em-topo">
+                <h3 className="cartao-titulo">
+                  <span className="marca" />
+                  As cores deste tecido
+                </h3>
+              </div>
+              <div className="em-corpo">
+                <p className="em-nota">
+                  Este tecido está no catálogo, mas nenhuma cor dele foi cadastrada no estoque.
+                  {podeEditar
+                    ? ' A cor nova entra com saldo zero; a entrada de material é que põe o saldo.'
+                    : ''}
+                </p>
+              </div>
+              {podeEditar ? (
+                <div className="em-grade-cores">
+                  <button type="button" className="em-cor-nova" onClick={aoNovaCor}>
+                    <Plus size={18} aria-hidden="true" />
+                    Nova cor
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          </div>
+          <div className="pilha larga">
+            {fornecimento.disponivel ? (
+              <Caixa titulo="Fornecedor">
+                <div className="em-campo">
+                  <span>Fornecedor do tecido</span>
+                  <div className="em-fornecedor">
+                    <b className="em-falta">Falta escolher</b>
+                  </div>
+                </div>
+                <p className="em-nota">
+                  Sem cor no estoque, ainda não há de quem veio. A entrada de material pergunta o
+                  fornecedor.
+                </p>
+              </Caixa>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="em-ficha" data-ficha="tecido">

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { CaretRight } from '@phosphor-icons/react'
-import { Nivel, Segmentado, Vazio } from '@ds'
+import { CaretRight, Plus } from '@phosphor-icons/react'
+import { Botao, Nivel, Segmentado, Vazio } from '@ds'
 import {
   CATEGORIAS,
   nivel,
@@ -35,6 +35,10 @@ import { Bola } from './vao'
    ABRIR NÃO É ESCOLHER. A seta abre e fecha a gaveta; o clique no nome do
    tecido ou na cor escolhe, e aí o lado direito da página vira a ficha. Dá
    para abrir três tecidos e comparar as cores sem sair da visão geral.
+
+   O TECIDO DO CATÁLOGO APARECE MESMO SEM ESTOQUE (04/10/2026): apagado, com
+   "sem estoque" e o atalho "Nova cor". Ele não tem seta, porque não há cor
+   para abrir; o nome abre a ficha dele, que convida a cadastrar a primeira.
    ========================================================================== */
 
 export const NOME_DA_ABA: Record<Categoria, string> = {
@@ -130,6 +134,8 @@ export function Arvore({
   escolhido,
   aoEscolher,
   buscando,
+  podeEditar,
+  aoNovaCor,
 }: {
   categoria: Categoria
   aoTrocarCategoria: (c: Categoria) => void
@@ -146,6 +152,9 @@ export function Arvore({
   escolhido: string
   aoEscolher: (chave: string) => void
   buscando: boolean
+  podeEditar: boolean
+  /** cadastrar a primeira cor de um tecido que ainda não tem estoque */
+  aoNovaCor: (t: TecidoNaArvore) => void
 }) {
   const vazio = categoria === 'tecido' ? tecidos.length === 0 : itens.length === 0
 
@@ -195,24 +204,34 @@ export function Arvore({
                 <b>{g.nome}</b>
                 <span className="em-conta">
                   {plural(g.tecidos.length, 'tecido', 'tecidos')} ·{' '}
-                  {plural(g.cores, 'cor', 'cores')}
+                  {g.cores ? plural(g.cores, 'cor', 'cores') : 'sem estoque'}
                 </span>
                 <Alerta n={g.paraComprar} />
               </button>
               {aberto ? (
                 <div className="em-dentro">
-                  {g.tecidos.map(t => (
-                    <Tecido
-                      key={t.chave}
-                      t={t}
-                      aberto={abertos.has('t:' + t.chave)}
-                      fornecimento={fornecimento}
-                      guardado={guardado}
-                      escolhido={escolhido}
-                      aoAbrir={() => aoAbrir('t:' + t.chave)}
-                      aoEscolher={aoEscolher}
-                    />
-                  ))}
+                  {g.tecidos.map(t =>
+                    t.cores.length ? (
+                      <Tecido
+                        key={t.chave}
+                        t={t}
+                        aberto={abertos.has('t:' + t.chave)}
+                        fornecimento={fornecimento}
+                        guardado={guardado}
+                        escolhido={escolhido}
+                        aoAbrir={() => aoAbrir('t:' + t.chave)}
+                        aoEscolher={aoEscolher}
+                      />
+                    ) : (
+                      <TecidoSemEstoque
+                        key={t.chave}
+                        t={t}
+                        escolhido={escolhido === t.chave}
+                        aoEscolher={() => aoEscolher(t.chave)}
+                        aoNovaCor={podeEditar ? () => aoNovaCor(t) : undefined}
+                      />
+                    ),
+                  )}
                 </div>
               ) : null}
             </div>
@@ -265,6 +284,48 @@ export function Arvore({
         })
       )}
     </section>
+  )
+}
+
+/* O tecido do catálogo que ainda não tem cor nenhuma no estoque: sem seta (não
+   há o que abrir), o nome apagado e "sem estoque" embaixo. O nome abre a ficha
+   e, para quem edita, "Nova cor" cadastra a primeira já neste tecido. */
+function TecidoSemEstoque({
+  t,
+  escolhido,
+  aoEscolher,
+  aoNovaCor,
+}: {
+  t: TecidoNaArvore
+  escolhido: boolean
+  aoEscolher: () => void
+  aoNovaCor?: () => void
+}) {
+  return (
+    <div
+      className={escolhido ? 'em-t em-sem em-sel' : 'em-t em-sem'}
+      data-tecido={t.nome}
+      data-sem-estoque=""
+    >
+      <span className="em-t-seta" aria-hidden="true" />
+      <button type="button" className="em-t-nome" aria-pressed={escolhido} onClick={aoEscolher}>
+        <span className="em-nomes">
+          <b>{t.nome}</b>
+          <small>sem estoque</small>
+        </span>
+      </button>
+      {aoNovaCor ? (
+        <Botao
+          tamanho="sm"
+          className="em-t-nova"
+          aria-label={'Nova cor de ' + t.nome}
+          onClick={aoNovaCor}
+        >
+          <Plus size={14} weight="bold" aria-hidden="true" />
+          Nova cor
+        </Botao>
+      ) : null}
+    </div>
   )
 }
 

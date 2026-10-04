@@ -119,7 +119,7 @@ for (const tema of ['light', 'dark']) {
     const abas = await texto(pg, '.em-abas')
     conta(/Tecido 10/.test(abas) && /Aviamentos 7/.test(abas) && /Insumo 9/.test(abas), `${T} sanfona: três abas com a conta de cada uma (${abas})`)
     const grupos = await pg.locator('[data-arvore] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
-    conta(grupos.join(' | ') === 'ALGODÃO | DRY FIT* | PIQUE | MOLETOM | Sem tipo', `${T} sanfona: os grupos na ordem do catálogo, o Sem tipo por último, e o que tem mais para comprar já aberto (${grupos.join(' | ')})`)
+    conta(grupos.join(' | ') === 'ALGODÃO | DRY FIT* | PIQUE | MOLETOM | SUPLEX | VISCOSE | Sem tipo', `${T} sanfona: os grupos na ordem do catálogo, com os dois que não têm estoque, o Sem tipo por último, e o que tem mais para comprar já aberto (${grupos.join(' | ')})`)
     const alg = await texto(pg, '[data-arvore] .em-g[data-grupo="ALGODÃO"]')
     conta(/ALG/.test(alg) && /2 tecidos · 2 cores/.test(alg), `${T} sanfona: o grupo diz o código, quantos tecidos e quantas cores (${alg})`)
     const st = await texto(pg, '[data-arvore] .em-g[data-grupo="Sem tipo"]')
@@ -369,6 +369,123 @@ await caso('sem o apoio', async () => {
   conta(erros.length === 0, `sem o apoio: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 })
+
+/* O CATÁLOGO INTEIRO NA ÁRVORE (pedido do Henrique, 04/10/2026): os grupos e os
+   tecidos do catálogo aparecem mesmo sem nada no estoque; a cor, não. */
+const SEM = (nome) => `[data-arvore] .em-t[data-tecido="${nome}"]`
+await caso('catálogo inteiro', async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light' })
+  await ir(pg, '/estoque', '[data-arvore]')
+  const T = 'catálogo inteiro'
+  const K = await tokens(pg, ['--text-2', '--ink', '--surface'])
+  const vis = await texto(pg, '[data-arvore] .em-g[data-grupo="VISCOSE"]')
+  const dry = await texto(pg, '[data-arvore] .em-g[data-grupo="DRY FIT"]')
+  conta(/VIS VISCOSE 2 tecidos · sem estoque/.test(vis) && /DRY DRY FIT 2 tecidos · 4 cores/.test(dry), `${T}: o grupo sem estoque diz "sem estoque", e o que tem conta também o tecido vazio (${vis} | ${dry})`)
+  conta(/Tecido 10/.test(await texto(pg, '.em-abas')), `${T}: a conta da aba continua sendo a dos materiais (${(await texto(pg, '.em-abas')).slice(0, 30)})`)
+  const doDry = await pg.locator('[data-arvore] .em-gaveta:has(.em-g[data-grupo="DRY FIT"]) .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
+  conta(doDry.join(' | ') === 'DRYFIT POLIESTER 100% | DRYFIT JAKAR 100%', `${T}: dentro do grupo vem primeiro o tecido que tem estoque, e depois o vazio, mesmo ele sendo o primeiro do catálogo (${doDry.join(' | ')})`)
+  const linha = await pg.locator(SEM('DRYFIT JAKAR 100%')).evaluate((e) => {
+    const b = e.querySelector('.em-nomes b'); const cs = getComputedStyle(b); const nova = e.querySelector('.em-t-nova'); const r = e.getBoundingClientRect(); const n = nova.getBoundingClientRect()
+    return { sem: e.hasAttribute('data-sem-estoque'), texto: e.innerText.replace(/\s+/g, ' ').trim(), setas: e.querySelectorAll('button.em-t-seta').length, cor: cs.color, peso: cs.fontWeight, alto: r.height, botao: n.height, dentro: n.right <= r.right - 13.5 && n.top >= r.top && n.bottom <= r.bottom, recuo: e.querySelector('.em-t-nome').getBoundingClientRect().left - r.left }
+  })
+  conta(linha.sem && linha.texto === 'DRYFIT JAKAR 100% sem estoque Nova cor' && linha.setas === 0, `${T}: o tecido vazio diz "sem estoque", tem o atalho Nova cor e não tem seta para abrir (${linha.texto}; ${linha.setas} setas)`)
+  conta(linha.cor === K['--text-2'] && linha.peso === '500', `${T}: o nome do tecido vazio vem apagado, no tom do texto de apoio e sem negrito (${linha.cor}, peso ${linha.peso})`)
+  const recuoDoCheio = await pg.locator(`${DRY}`).evaluate((e) => e.querySelector('.em-t-nome').getBoundingClientRect().left - e.getBoundingClientRect().left)
+  conta(linha.alto >= 52 && linha.botao === 34 && linha.dentro && igual(linha.recuo, recuoDoCheio), `${T}: a linha tem a altura das outras, o botão de 34 cabe dentro dela, e o nome começa onde o dos outros tecidos começa (${Math.round(linha.alto)}, ${linha.botao}, recuo ${Math.round(linha.recuo)} e ${Math.round(recuoDoCheio)})`)
+  await pg.locator('[data-arvore] .em-g[data-grupo="ALGODÃO"]').click(); await pausa(pg, 300)
+  const doAlg = await pg.locator('[data-arvore] .em-gaveta:has(.em-g[data-grupo="ALGODÃO"]) .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
+  conta(doAlg.length === 2 && !doAlg.includes('ALGODAO DESLIGADO') && await pg.getByText('ALGODAO DESLIGADO').count() === 0, `${T}: o tecido desligado no catálogo não aparece no grupo aberto (${doAlg.join(' | ')})`)
+
+  /* a prateleira é só o que há */
+  await pg.locator('[data-estante] .em-g[data-grupo="DRY FIT"][aria-expanded="false"]').click().catch(() => {}); await pausa(pg, 300)
+  const estante = await pg.locator('[data-estante] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo))
+  conta(estante.join(' | ') === 'ALGODÃO | DRY FIT | PIQUE | MOLETOM | Sem tipo' && await pg.locator('[data-estante] [data-tabua="DRYFIT JAKAR 100%"]').count() === 0 && await pg.locator('[data-estante] [data-tabua="DRYFIT POLIESTER 100%"]').count() === 1, `${T}: a prateleira continua só com o que tem estoque, sem grupo nem tecido vazio (${estante.join(' | ')})`)
+
+  /* a ficha do tecido vazio */
+  await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 500)
+  const ficha = await texto(pg, '[data-ficha="tecido"]')
+  const botoes = (await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()).map((b) => b.trim()).join('|')
+  conta(await pg.locator('[data-ficha="tecido"][data-sem-estoque]').count() === 1 && /DRY FIT › tecido DRYFIT JAKAR 100% sem estoque/.test(ficha) && /nenhuma cor dele foi cadastrada no estoque/.test(ficha), `${T}: o nome abre a ficha, que diz que o tecido é do catálogo e não tem cor no estoque (${ficha.slice(0, 90)})`)
+  conta(botoes === 'Nova cor|Fechar' && await pg.locator('[data-ficha] .em-nums').count() === 0 && await pg.locator('[data-ficha] .em-cor-nova').count() === 1, `${T}: a ficha vazia tem Nova cor e Fechar, sem Editar, sem Registrar movimento e sem os quatro números (${botoes})`)
+  const sel = await pg.locator(`${SEM('DRYFIT JAKAR 100%')}`).evaluate((e) => ({ c: e.className, f: getComputedStyle(e).backgroundColor }))
+  conta(/em-sel/.test(sel.c) && sel.f === K['--ink'], `${T}: o tecido vazio escolhido fica marcado na árvore como os outros`)
+  await pg.screenshot({ path: `${PASTA}/sem-estoque-1440-light.png`, fullPage: true })
+  await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 400)
+  conta(await pg.locator('[data-ficha]').count() === 0, `${T}: clicar de novo no tecido vazio escolhido solta`)
+
+  /* a medida do catálogo aparece mesmo sem estoque */
+  await pg.locator('[data-arvore] .em-g[data-grupo="PIQUE"]').click(); await pausa(pg, 250)
+  await pg.locator(`${SEM('PIQUET MISTO')} .em-t-nome`).click(); await pausa(pg, 500)
+  conta(/PIQUET MISTO sem estoque · 200 g\/m² · 1,20 m de largura/.test(await texto(pg, '[data-ficha="tecido"]')), `${T}: a gramatura e a largura do catálogo aparecem na ficha vazia (${(await texto(pg, '[data-ficha="tecido"]')).slice(0, 80)})`)
+  await pg.locator('[data-ficha] .em-ficha-topo').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+
+  /* Nova cor abre o cadastro já no tecido, e grava nele */
+  await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nova`).click(); await pausa(pg, 700)
+  const modal = await texto(pg, 'dialog[open] .caixa')
+  conta(/Malha[^]*DRYFIT JAKAR 100%/.test(modal) && await pg.locator('dialog[open] .es-ja-tem').count() === 0, `${T}: Nova cor abre o cadastro com a malha já escolhida e nenhuma cor apagada (${modal.slice(0, 80)})`)
+  await pg.locator('dialog[open] .es-novo-chips .chip').first().click(); await pausa(pg, 200)
+  await pg.locator('dialog[open] .btn-primario').click(); await pausa(pg, 800)
+  const criado = gravados.find((x) => /^material(\?|$)/.test(x.u))
+  conta(criado && JSON.stringify(criado.corpo).includes('"tecido_id":"ts1"'), `${T}: a cor nova vai para o banco apontando para o tecido do catálogo (${criado ? JSON.stringify(criado.corpo).slice(0, 120) : 'nada gravado'})`)
+  if (await pg.locator('dialog[open]').count()) { await pg.keyboard.press('Escape'); await pausa(pg) }
+  if (await pg.locator('[data-ficha]').count()) { await pg.locator('[data-ficha] .em-ficha-topo').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300) }
+
+  /* a busca acha o tecido do catálogo pelo nome e pelo grupo */
+  const busca = pg.locator('[data-barra] input[type="search"], [data-barra] input').first()
+  await busca.fill('viscose'); await pausa(pg, 500)
+  const achou = await pg.locator('[data-arvore] .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
+  conta(achou.join(' | ') === 'VISCOSE PV ANTIPILING | VISCOSE COM ELASTANO PROTEÇÃO UV50' && await pg.locator('[data-arvore] .em-g').count() === 1, `${T}: a busca por "viscose" traz os dois tecidos do catálogo, já abertos, e só o grupo deles (${achou.join(' | ')})`)
+  await busca.fill('dry fit'); await pausa(pg, 500)
+  const comEspaco = await pg.locator('[data-arvore] .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
+  conta(comEspaco.join(' | ') === 'DRYFIT POLIESTER 100% | DRYFIT JAKAR 100%' && await pg.locator('[data-arvore] .em-c').count() === 4, `${T}: a busca pelo nome do grupo ("dry fit", com espaço) traz o tecido com estoque, com as 4 cores, e o vazio (${comEspaco.join(' | ')})`)
+  await busca.fill('preto'); await pausa(pg, 500)
+  conta(await pg.locator('[data-arvore] .em-t[data-sem-estoque]').count() === 0 && await pg.locator('[data-arvore] .em-c').count() > 0, `${T}: a busca por uma cor não traz tecido vazio`)
+  await busca.fill(''); await pausa(pg, 300)
+  await pg.locator('.em-abas').getByRole('tab', { name: /Aviamentos/ }).click(); await pausa(pg, 300)
+  await busca.fill('viscose'); await pausa(pg, 600)
+  conta(/Tecido/.test(await texto(pg, '.em-abas button.ligado')) && await pg.locator('[data-arvore] .em-t').count() === 2, `${T}: procurar "viscose" na aba Aviamentos leva para a aba Tecido`)
+  await busca.fill(''); await pausa(pg, 300)
+  conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+await caso('catálogo inteiro, quem só lê', async () => {
+  const { ctx, pg } = await abrir(nav, { largura: 1440, altura: 900, tema: 'dark', papel: 'vendedor' })
+  await ir(pg, '/estoque', '[data-arvore]')
+  const T = 'catálogo inteiro, quem só lê'
+  conta(await pg.locator(SEM('DRYFIT JAKAR 100%')).count() === 1 && await pg.locator('[data-arvore] .em-t-nova').count() === 0, `${T}: vê o tecido vazio, sem o atalho Nova cor`)
+  await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 500)
+  const botoes = (await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()).map((b) => b.trim()).join('|')
+  conta(botoes === 'Fechar' && await pg.locator('[data-ficha] .em-cor-nova').count() === 0, `${T}: a ficha vazia só tem Fechar (${botoes})`)
+  await pg.screenshot({ path: `${PASTA}/sem-estoque-so-le-1440-dark.png`, fullPage: true })
+  await ctx.close()
+})
+
+for (const [largura, altura] of [[820, 1180], [390, 844]]) {
+  await caso(`catálogo inteiro ${largura}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema: 'light' })
+    await ir(pg, '/estoque', '[data-arvore]')
+    const T = `catálogo inteiro em ${largura}`
+    await pg.locator('[data-arvore] .em-g[data-grupo="VISCOSE"]').click(); await pausa(pg, 300)
+    const m = await pg.locator(SEM('VISCOSE PV ANTIPILING')).evaluate((e) => {
+      const r = e.getBoundingClientRect(); const n = e.querySelector('.em-t-nova').getBoundingClientRect(); const b = e.querySelector('.em-nomes b')
+      return { dentro: n.right <= r.right && n.left >= r.left, alto: r.height, botao: n.height, nome: b.getBoundingClientRect().width, cortado: b.scrollWidth > b.clientWidth }
+    })
+    conta(m.dentro && m.alto >= 48 && m.nome > 90 && (await sobra(pg)) <= 0, `${T}: a linha do tecido vazio cabe, com o botão dentro e o nome legível, sem rolar para o lado (linha ${Math.round(m.alto)}, botão ${Math.round(m.botao)}, nome com ${Math.round(m.nome)} px${m.cortado ? ', com reticências' : ''})`)
+    const longo = await pg.locator(`${SEM('VISCOSE COM ELASTANO PROTEÇÃO UV50')} .em-nomes b`).evaluate((b) => ({ cortado: b.scrollWidth > b.clientWidth + 0.5, alto: b.getBoundingClientRect().height }))
+    conta(!longo.cortado, `${T}: o nome comprido do catálogo aparece inteiro, quebrando de linha em vez de ganhar reticências (${Math.round(longo.alto)} de altura)`)
+    await pg.screenshot({ path: `${PASTA}/sem-estoque-arvore-${largura}-light.png`, fullPage: true })
+    await pg.locator(`${SEM('VISCOSE PV ANTIPILING')} .em-t-nome`).click(); await pausa(pg, 500)
+    if (largura < 768) {
+      const topo = await texto(pg, '.pagina-topo')
+      conta(/VISCOSE PV ANTIPILING/.test(topo) && /sem estoque/.test(topo) && await pg.locator('.es-volta').count() === 1, `${T}: a ficha do tecido vazio toma a página, com o nome, "sem estoque" e a volta no topo (${topo.slice(0, 80)})`)
+    }
+    conta(await pg.locator('[data-ficha="tecido"][data-sem-estoque]').count() === 1 && (await sobra(pg)) <= 0, `${T}: a ficha vazia abre e nada rola para o lado`)
+    await pg.screenshot({ path: `${PASTA}/sem-estoque-ficha-${largura}-light.png`, fullPage: true })
+    conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
 
 /* um tecido de trinta cores e um grupo com seis tecidos: nada estoura */
 for (const [largura, altura] of [[1440, 900], [390, 844]]) {

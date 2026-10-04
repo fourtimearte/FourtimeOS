@@ -14,6 +14,7 @@ import {
   type ReservaEmAberto,
 } from '@dominio/estoque'
 import type { Fornecedor } from '@dominio/fornecedor'
+import { semAcento } from '@shared'
 import type { Fornecimento, Guardado } from './apoio'
 import { Arvore, chaveDoMaterial } from './arvore'
 import { ParaComprar, ParaSeparacao, UltimosMovimentos } from './colunas'
@@ -105,16 +106,31 @@ export function Materiais({
 }) {
   const buscando = termo.length > 0
 
-  /* a árvore inteira serve à prateleira e às fichas; a filtrada, à sanfona */
+  /* A árvore inteira serve às fichas e ao que vem aberto; a filtrada, à
+     sanfona. As duas trazem os tecidos do catálogo que ainda não têm estoque:
+     todos na inteira, e na filtrada os que combinam com a busca (pelo nome do
+     tecido, pelo código ou pelo nome do grupo). */
   const todosOsGrupos = useMemo(() => gruposDoEstoque(materiais), [materiais])
   const arvoreInteira = useMemo(
-    () => arvoreDeTecidos(todosOsGrupos, hierarquia),
+    () => arvoreDeTecidos(todosOsGrupos, hierarquia, () => true),
     [todosOsGrupos, hierarquia],
   )
   const gruposFiltrados = useMemo(() => gruposDoEstoque(filtrados), [filtrados])
   const arvore = useMemo(
-    () => arvoreDeTecidos(gruposFiltrados, hierarquia),
-    [gruposFiltrados, hierarquia],
+    () =>
+      arvoreDeTecidos(gruposFiltrados, hierarquia, (t, nomeDoGrupo) =>
+        termo ? semAcento([t.nome, t.grupo, nomeDoGrupo].join(' ')).includes(termo) : true,
+      ),
+    [gruposFiltrados, hierarquia, termo],
+  )
+  /* a prateleira é o que HÁ: só os tecidos com cor no estoque, e só os grupos
+     que têm algum */
+  const naPrateleira = useMemo(
+    () =>
+      arvoreInteira
+        .map(g => ({ ...g, tecidos: g.tecidos.filter(t => t.cores.length > 0) }))
+        .filter(g => g.tecidos.length > 0),
+    [arvoreInteira],
   )
   const itens = useMemo(
     () => (categoria === 'tecido' ? [] : gruposDeItens(gruposFiltrados, categoria)),
@@ -129,12 +145,15 @@ export function Materiais({
 
   /* A BUSCA LEVA PARA A ABA ONDE ACHOU. Quem procura "linha" com a aba Tecido
      aberta não precisa descobrir sozinho que a resposta está em Aviamentos. */
+  /* na aba Tecido também conta o tecido do catálogo achado pelo nome, que não
+     é material e por isso não entra na contagem */
+  const achouNaAba = (c: Categoria) => contagem[c] > 0 || (c === 'tecido' && arvore.length > 0)
   useEffect(() => {
-    if (!buscando || contagem[categoria] > 0) return
-    const outra = (['tecido', 'aviamento', 'insumo'] as Categoria[]).find(c => contagem[c] > 0)
+    if (!buscando || achouNaAba(categoria)) return
+    const outra = (['tecido', 'aviamento', 'insumo'] as Categoria[]).find(achouNaAba)
     if (outra) aoTrocarCategoria(outra)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [termo, contagem])
+  }, [termo, contagem, arvore.length])
 
   /* --- as gavetas -----------------------------------------------------------
      Sem busca, vale o que a pessoa abriu. Com busca, tudo o que sobrou vem
@@ -174,7 +193,11 @@ export function Materiais({
   useEffect(() => {
     if (jaAbriu.current || !arvoreInteira.length) return
     jaAbriu.current = true
-    const porUrgencia = [...arvoreInteira].sort((a, b) => b.paraComprar - a.paraComprar)
+    /* quem tem o que comprar primeiro; no empate, quem tem estoque antes do
+       grupo que só veio do catálogo */
+    const porUrgencia = [...arvoreInteira].sort(
+      (a, b) => b.paraComprar - a.paraComprar || (b.cores ? 1 : 0) - (a.cores ? 1 : 0),
+    )
     const comFalta = porUrgencia.filter(g => g.paraComprar > 0)
     const naEstante = (comFalta.length ? comFalta : porUrgencia).slice(0, 2).map(g => g.cod)
     setEstante(new Set(naEstante))
@@ -278,6 +301,8 @@ export function Materiais({
       escolhido={escolhido}
       aoEscolher={escolherOuSoltar}
       buscando={buscando}
+      podeEditar={podeEditar}
+      aoNovaCor={t => aoNovo(t.doEstoque)}
     />
   )
   const separacao = (
@@ -303,7 +328,7 @@ export function Materiais({
   )
   const prateleira = (
     <PrateleiraDeTecidos
-      grupos={arvoreInteira}
+      grupos={naPrateleira}
       fornecimento={fornecimento}
       abertos={estante}
       aoAbrir={cod =>

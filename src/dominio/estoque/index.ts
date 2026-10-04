@@ -488,7 +488,13 @@ export async function carregarCatalogoDeTecido(): Promise<{
    A hierarquia é a do catálogo (Configurações, Banco de dados, Tecidos): o
    grupo tem um código de três letras (ALG, PIQ), o tecido aponta para o grupo,
    e a cor é o material. O Estoque não inventa uma arrumação própria: mostra a
-   do catálogo, só com o que tem material cadastrado.
+   do catálogo.
+
+   OS GRUPOS E OS TECIDOS DO CATÁLOGO APARECEM SEMPRE, mesmo sem nada no
+   estoque (pedido do Henrique, 04/10/2026: "tecidos e grupos de tecido,
+   aqueles são exatamente o que trabalhamos"). A COR NÃO: no catálogo ela é
+   uma lista só, para todos os tecidos, e 42 tecidos vezes 122 cores seriam
+   cinco mil linhas vazias. Cor na árvore é cor que tem material cadastrado.
 
    Este arquivo é só conta. Quem lê o banco é o index.ts.
    ========================================================================== */
@@ -505,6 +511,8 @@ export type TecidoDoCatalogo = {
   /** em metros; 0 quando ninguém cadastrou */
   largura: number
   ordem: number
+  /** tecido desligado no catálogo só aparece se ainda tiver material */
+  ativo: boolean
 }
 
 export type Hierarquia = { grupos: GrupoDeTecido[]; tecidos: TecidoDoCatalogo[] }
@@ -520,6 +528,7 @@ export type TecidoNaArvore = {
   nome: string
   gramatura: number
   largura: number
+  /** vazio quando o tecido é do catálogo e ainda não tem cor nenhuma no estoque */
   cores: Material[]
   livre: number
   reservado: number
@@ -540,19 +549,43 @@ export type GrupoNaArvore = {
   paraComprar: number
 }
 
+/** a chave do tecido na árvore, a mesma do grupo do estoque */
+export const chaveDoTecido = (tecidoId: string) => 'tecido:' + tecidoId
+
+/** O grupo do estoque de um tecido do catálogo que ainda não tem cor nenhuma:
+    sem itens, só com o que o "Nova cor" precisa para abrir já no tecido. */
+export function grupoSemEstoque(t: Pick<TecidoDoCatalogo, 'id' | 'nome'>): GrupoDoEstoque {
+  return {
+    chave: chaveDoTecido(t.id),
+    categoria: 'tecido',
+    nome: t.nome,
+    tecidoId: t.id,
+    itens: [],
+    paraComprar: 0,
+    livre: 0,
+    reservado: 0,
+    unidade: 'kg',
+  }
+}
+
 /* Junta os tecidos do estoque debaixo do grupo do catálogo. Tecido que o
    catálogo não conhece (material antigo, sem a malha escolhida) e tecido sem
    grupo caem no "Sem tipo", que vai por último: é melhor um grupo que diz que
-   falta o tipo do que um tecido que some da árvore. */
-export function arvoreDeTecidos(grupos: GrupoDoEstoque[], h: Hierarquia): GrupoNaArvore[] {
+   falta o tipo do que um tecido que some da árvore.
+
+   `semEstoque` diz quais tecidos do catálogo entram mesmo sem cor nenhuma no
+   estoque: ausente, nenhum (a árvore só do que há); `() => true`, todos; com a
+   busca, os que combinam com o que foi escrito. Dentro do grupo vem primeiro
+   quem tem estoque, e depois os vazios, cada turma na ordem do catálogo. */
+export function arvoreDeTecidos(
+  grupos: GrupoDoEstoque[],
+  h: Hierarquia,
+  semEstoque?: (t: TecidoDoCatalogo, nomeDoGrupo: string) => boolean,
+): GrupoNaArvore[] {
   const doCatalogo = new Map(h.tecidos.map(t => [t.id, t]))
   const nomeDoGrupo = new Map(h.grupos.map(g => [g.cod, g]))
   const porCod = new Map<string, GrupoNaArvore>()
-
-  for (const g of grupos) {
-    if (g.categoria !== 'tecido') continue
-    const t = doCatalogo.get(g.tecidoId)
-    const cod = t?.grupo ?? ''
+  const grupoDe = (cod: string) => {
     let alvo = porCod.get(cod)
     if (!alvo) {
       alvo = {
@@ -564,6 +597,15 @@ export function arvoreDeTecidos(grupos: GrupoDoEstoque[], h: Hierarquia): GrupoN
       }
       porCod.set(cod, alvo)
     }
+    return alvo
+  }
+
+  const comEstoque = new Set<string>()
+  for (const g of grupos) {
+    if (g.categoria !== 'tecido') continue
+    const t = doCatalogo.get(g.tecidoId)
+    if (g.tecidoId) comEstoque.add(g.tecidoId)
+    const alvo = grupoDe(t?.grupo ?? '')
     alvo.tecidos.push({
       chave: g.chave,
       tecidoId: g.tecidoId,
@@ -582,12 +624,39 @@ export function arvoreDeTecidos(grupos: GrupoDoEstoque[], h: Hierarquia): GrupoN
     alvo.paraComprar += g.paraComprar
   }
 
+  if (semEstoque) {
+    for (const t of h.tecidos) {
+      if (!t.ativo || comEstoque.has(t.id)) continue
+      const nome = t.grupo ? (nomeDoGrupo.get(t.grupo)?.nome ?? t.grupo) : NOME_DO_SEM_TIPO
+      if (!semEstoque(t, nome)) continue
+      grupoDe(t.grupo).tecidos.push({
+        chave: chaveDoTecido(t.id),
+        tecidoId: t.id,
+        nome: t.nome,
+        gramatura: t.gramatura,
+        largura: t.largura,
+        cores: [],
+        livre: 0,
+        reservado: 0,
+        saldo: 0,
+        paraComprar: 0,
+        ordem: t.ordem,
+        doEstoque: grupoSemEstoque(t),
+      })
+    }
+  }
+
   const ordemDoGrupo = (cod: string) => (cod ? (nomeDoGrupo.get(cod)?.ordem ?? 9998) : 9999)
   const lista = [...porCod.values()].sort(
     (a, b) => ordemDoGrupo(a.cod) - ordemDoGrupo(b.cod) || a.nome.localeCompare(b.nome, 'pt-BR'),
   )
   for (const g of lista) {
-    g.tecidos.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt-BR'))
+    g.tecidos.sort(
+      (a, b) =>
+        (a.cores.length ? 0 : 1) - (b.cores.length ? 0 : 1) ||
+        a.ordem - b.ordem ||
+        a.nome.localeCompare(b.nome, 'pt-BR'),
+    )
   }
   return lista
 }
@@ -667,8 +736,9 @@ export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
           gramatura: number | string | null
           largura: number | string | null
           ordem: number | null
+          ativo: boolean | null
         }[]
-      >('tecido?select=id,nome,grupo,gramatura,largura,ordem&order=ordem.asc,nome.asc'),
+      >('tecido?select=id,nome,grupo,gramatura,largura,ordem,ativo&order=ordem.asc,nome.asc'),
     ])
     return {
       grupos: grupos.filter((g) => g.cod).map((g) => ({ cod: g.cod, nome: g.nome, ordem: Number(g.ordem) || 0 })),
@@ -679,6 +749,7 @@ export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
         gramatura: numero(t.gramatura),
         largura: numero(t.largura),
         ordem: Number(t.ordem) || 0,
+        ativo: t.ativo !== false,
       })),
     }
   } catch {

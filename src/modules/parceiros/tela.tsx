@@ -4,7 +4,7 @@ import { Botao, Esqueleto, Pagina, Segmentado, Seletor, Vazio } from '@ds'
 import { mesesAte, quandoFoi, usarConsulta } from '@shared'
 import {
   carregarParceiros,
-  carregarVendasDesde,
+  carregarVendas,
   colecoesDaLoja,
   diaDaLoja,
   fraseCompletaDoAcordo,
@@ -22,7 +22,7 @@ import {
   type VendaDoParceiro,
 } from '@dominio/parceiro'
 import { pode, useSessao } from '@dominio/sessao'
-import { intervaloDosMeses, mesSozinho, parteNaTela, plural } from './apoio'
+import { intervaloDosMeses, mesSozinho, parteNaTela, plural, sanfonaDeChegada } from './apoio'
 import { FichaDoParceiro } from './ficha'
 import { VisaoGeral } from './geral'
 import { VendasDoParceiro } from './vendas'
@@ -44,9 +44,10 @@ import './parceiros.css'
    cabeçalho do parceiro, as abas. Pedido do Henrique de 04/10/2026, na versão
    2 do wireframe: eram quatro fileiras e ele quis uma ou duas.
 
-   UMA LEITURA SÓ. A página lê os doze meses de todos os parceiros de uma vez,
-   e tudo o que aparece é conta em cima disso: trocar o período, o parceiro ou
-   a aba não vai ao banco. A coluna da lista é sempre o mês em andamento.
+   UMA LEITURA SÓ. A página lê as vendas de todos os parceiros de uma vez,
+   desde a primeira, e tudo o que aparece é conta em cima disso: trocar o
+   período, o parceiro ou a aba, e voltar aos meses antigos, não vai ao banco.
+   A coluna da lista é sempre o mês em andamento.
 
    NA TELA QUE NÃO CABE AS DUAS COLUNAS a visão geral é a página, com a lista
    de parceiros dentro dela, e tocar num parceiro troca a página pela dele, com
@@ -54,8 +55,6 @@ import './parceiros.css'
    ========================================================================== */
 
 const NOVO = 'novo'
-/** o maior período que a tela oferece: é quanto a página lê */
-const MAIOR_PERIODO = 12
 type Aba = 'vendas' | 'acordo'
 
 export function TelaParceiros() {
@@ -80,6 +79,8 @@ export function TelaParceiros() {
      o id de um parceiro */
   const [aberto, setAberto] = useState('')
   const [aba, setAba] = useState<Aba>('vendas')
+  /* o que está aberto na sanfona dos meses do parceiro escolhido */
+  const [sanfona, setSanfona] = useState(() => sanfonaDeChegada(mesAtual))
 
   /* as duas colunas só cabem na tela larga; o celular troca tabela por lista */
   const larga = usarConsulta('(min-width: 1366px)')
@@ -88,14 +89,14 @@ export function TelaParceiros() {
   const ler = useCallback(async () => {
     const [ps, vs, av] = await Promise.all([
       carregarParceiros(),
-      carregarVendasDesde(mesesAte(mesAtual, MAIOR_PERIODO)[0]),
+      carregarVendas(),
       ultimoAvisoDaLoja(),
     ])
     setParceiros(ps)
     setVendas(vs)
     setAviso(av)
     setErro('')
-  }, [mesAtual])
+  }, [])
 
   const recarregar = useCallback(async () => {
     try {
@@ -170,14 +171,17 @@ export function TelaParceiros() {
 
   const novo = aberto === NOVO
   const escolhido = novo ? null : (parceiros.find(p => p.id === aberto) ?? null)
+  /* todas as vendas dele, e não só as do período: a aba Vendas deixa voltar
+     aos meses antigos */
   const dele = useMemo(
-    () => (escolhido ? doPeriodo.filter(v => v.parceiroId === escolhido.id) : []),
-    [doPeriodo, escolhido],
+    () => (escolhido ? vendas.filter(v => v.parceiroId === escolhido.id) : []),
+    [vendas, escolhido],
   )
 
   const escolher = (id: string) => {
     setAberto(id)
     setAba('vendas')
+    setSanfona(sanfonaDeChegada(mesAtual))
   }
 
   /* ---------- a fileira de cima: o período e o parceiro novo ---------------- */
@@ -314,6 +318,8 @@ export function TelaParceiros() {
           mesAtual={mesAtual}
           dia={dia}
           estreita={estreita}
+          sanfona={sanfona}
+          aoMudar={setSanfona}
         />
       ) : null}
       {/* a ficha fica montada com a aba Vendas à mostra: o que foi digitado e

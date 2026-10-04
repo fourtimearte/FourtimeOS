@@ -553,6 +553,31 @@ table.tabela.pa-vendas tr.pa-mais td {
 .pa-ver-mais:hover {
   color: var(--text);
 }
+/* a linha dos meses antigos, no pé da tabela: o "ver mais" e o "ver menos"
+   lado a lado, alinhados com o nome dos meses pelo quadro vazio da seta */
+.pa-mais-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-4);
+  min-width: 0;
+}
+/* o quadro vazio da seta fica na altura da primeira fileira de botões */
+.pa-mais-linha > .pa-chev {
+  height: 44px;
+}
+/* quando os dois não cabem lado a lado, o segundo desce alinhado com o primeiro */
+.pa-mais-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--sp-5);
+  min-width: 0;
+}
+table.tabela.pa-meses tr.pa-mais-meses > td {
+  height: 44px;
+  padding-left: var(--re-6);
+  white-space: normal;
+}
 .pa-mes-vazio {
   padding: var(--re-8) var(--re-9) var(--re-8) var(--sp-10);
 }
@@ -602,6 +627,15 @@ button.pa-mes-linha {
   border-bottom: 0;
   font-weight: 700;
   background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pa-mes-mais {
+  padding: 0 var(--re-8) 0 var(--re-5);
+  border-bottom: 1px solid var(--border);
+}
+/* "Total de 12 meses" não cabe numa linha na coluna do mês: ele quebra */
+.pa-mes-linha.total .pa-mes-nome {
+  white-space: normal;
+  line-height: 1.25;
 }
 div.pa-mes-dentro {
   background: var(--surface-2);

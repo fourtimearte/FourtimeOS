@@ -15,4 +15,15 @@ export {
 export { quadradoPequeno } from './imagem'
 export { ehUuid, vinculo } from './id'
 export { usarConsulta } from './tela'
-export { chaveDoMes, hojeEmData, lerMes, limitesDoMes, MES_LONGO, mesesAte, nomeDoMes, quandoFoi, ultimosMeses } from './meses'
+export {
+  chaveDoMes,
+  hojeEmData,
+  lerMes,
+  limitesDoMes,
+  MES_LONGO,
+  mesesAte,
+  mesesEntre,
+  nomeDoMes,
+  quandoFoi,
+  ultimosMeses,
+} from './meses'

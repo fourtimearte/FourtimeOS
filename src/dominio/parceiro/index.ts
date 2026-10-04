@@ -198,20 +198,22 @@ function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
   }
 }
 
-/* O banco devolve no máximo mil linhas por pedido. Doze meses de todos os
-   parceiros um dia passam disso, e a tela somaria só as mil mais novas sem
+/* O banco devolve no máximo mil linhas por pedido. O histórico de todos os
+   parceiros um dia passa disso, e a tela somaria só as mil mais novas sem
    avisar ninguém: por isso a leitura vai de página em página até acabar. */
 const PAGINA = 1000
 
-/** Todas as vendas dos parceiros de um mês em diante ("2026-05"), da mais nova
-    para a mais velha, com a foto do produto. Entra o que aparece para o
-    parceiro: a venda paga e também a devolvida e a cancelada, que vêm marcadas
-    e não somam. */
-export async function carregarVendasDesde(mes: string): Promise<VendaDoParceiro[]> {
+/** Todas as vendas dos parceiros, desde a primeira, da mais nova para a mais
+    velha, com a foto do produto. Entra o que aparece para o parceiro: a venda
+    paga e também a devolvida e a cancelada, que vêm marcadas e não somam.
+
+    É o histórico inteiro, e não só o período da tela, porque a tabela dos
+    meses deixa voltar aos meses antigos até a primeira venda do parceiro. */
+export async function carregarVendas(): Promise<VendaDoParceiro[]> {
   const vendas: VendaDoParceiro[] = []
   for (let pulo = 0; ; pulo += PAGINA) {
     const linhas = await tabela<LinhaDaVenda[]>(
-      `venda_do_parceiro?select=${CAMPOS_DA_VENDA}&aparece=is.true&mes=gte.${encodeURIComponent(mes)}` +
+      `venda_do_parceiro?select=${CAMPOS_DA_VENDA}&aparece=is.true` +
         `&order=vendido_em.desc,item_id.asc&limit=${PAGINA}&offset=${pulo}`,
     )
     vendas.push(...linhas.map(vendaDaLinha))

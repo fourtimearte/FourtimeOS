@@ -62,6 +62,14 @@ export function mesesAte(fim: string, quantos: number): string[] {
   return lista
 }
 
+/** Quantos meses vão de um mês até outro: de "2025-08" até "2026-05" são 9.
+    Zero ou menos quando o segundo não vem depois do primeiro. */
+export function mesesEntre(de: string, ate: string): number {
+  const a = lerMes(de)
+  const b = lerMes(ate)
+  return (b.ano - a.ano) * 12 + (b.mes - a.mes)
+}
+
 /* O primeiro instante de um mês e o primeiro do mês seguinte, NA HORA DE QUEM
    ESTÁ OLHANDO. O banco guarda em UTC, e a venda das dez da noite do dia 31 em
    Goiânia já é dia 1º lá. */

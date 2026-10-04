@@ -1,7 +1,7 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo } from 'react'
 import { CaretDown, CaretRight, CaretUp, TShirt } from '@phosphor-icons/react'
 import { Kpi, Selo } from '@ds'
-import { nomeDoMes } from '@shared'
+import { mesesAte, mesesEntre, nomeDoMes } from '@shared'
 import {
   miniatura,
   quandoNaLoja,
@@ -20,6 +20,7 @@ import {
   parteNaTela,
   plural,
   semCifrao,
+  type SanfonaDosMeses,
 } from './apoio'
 import { GraficoPorMes } from './grafico'
 
@@ -37,10 +38,19 @@ import { GraficoPorMes } from './grafico'
 
    Venda devolvida ou cancelada aparece na lista, riscada e com o selo, e não
    entra em nenhuma soma: é o que o parceiro também vê.
+
+   OS MESES ANTIGOS. Depois do último mês do período vem a linha "Ver mais N
+   meses anteriores", do mesmo jeito que o "ver mais" das vendas: cada clique
+   traz até 6 meses, até chegar no mês da primeira venda do parceiro, e "Ver
+   menos" volta ao período. Com meses antigos à mostra, o total da tabela soma
+   tudo o que ela mostra e diz de quantos meses é. Os quatro números e os
+   gráficos continuam sendo os do período. Pedido do Henrique de 04/10/2026.
    ========================================================================== */
 
 /** quantas vendas o mês aberto mostra antes do "ver mais" */
 const PRIMEIRAS = 5
+/** quantos meses antigos cada clique no "ver mais" traz */
+const MESES_POR_VEZ = 6
 
 export function VendasDoParceiro({
   vendas,
@@ -48,8 +58,10 @@ export function VendasDoParceiro({
   mesAtual,
   dia,
   estreita,
+  sanfona,
+  aoMudar,
 }: {
-  /** as vendas deste parceiro no período, da mais nova para a mais velha */
+  /** todas as vendas deste parceiro, da mais nova para a mais velha */
   vendas: VendaDoParceiro[]
   /** os meses do período, do mais velho para o mais novo */
   meses: string[]
@@ -57,24 +69,44 @@ export function VendasDoParceiro({
   /** o dia de hoje na loja, "03": até onde o mês em andamento foi */
   dia: string
   estreita: boolean
+  sanfona: SanfonaDosMeses
+  aoMudar: (s: SanfonaDosMeses) => void
 }) {
-  const [aberto, setAberto] = useState(mesAtual)
-  const [inteira, setInteira] = useState(false)
+  const { aberto, inteira, pedidos } = sanfona
 
+  /* o período: os quatro números e os gráficos */
   const porMes = useMemo(() => somarPorMes(vendas, meses), [vendas, meses])
-  const total = useMemo(() => somar(vendas), [vendas])
+  const total = useMemo(() => somar(vendas.filter(v => v.mes >= meses[0])), [vendas, meses])
   const noMes = porMes[meses.indexOf(mesAtual)] ?? { pecas: 0, valor: 0, parte: 0, semAcordo: 0 }
-  const doNovoParaOVelho = useMemo(
-    () => meses.map((m, i) => ({ mes: m, soma: porMes[i] })).reverse(),
-    [meses, porMes],
+
+  /* A tabela: o período e, antes dele, os meses antigos que a pessoa abriu. Só
+     há mês antigo para abrir até o mês da primeira venda do parceiro; a lista
+     vem da mais nova para a mais velha, então a primeira venda é a última. */
+  const antesDoPeriodo = vendas.length
+    ? Math.max(0, mesesEntre(vendas[vendas.length - 1].mes, meses[0]))
+    : 0
+  /* o período pode ter crescido depois do pedido: o que já entrou nele não é mais antigo */
+  const antigos = Math.min(pedidos, antesDoPeriodo)
+  const restam = antesDoPeriodo - antigos
+  const mesesDaTabela = useMemo(
+    () => (antigos > 0 ? [...mesesAte(meses[0], antigos + 1).slice(0, antigos), ...meses] : meses),
+    [meses, antigos],
   )
+  const doNovoParaOVelho = useMemo(() => {
+    const somas = somarPorMes(vendas, mesesDaTabela)
+    return mesesDaTabela.map((m, i) => ({ mes: m, soma: somas[i] })).reverse()
+  }, [vendas, mesesDaTabela])
+  const totalDaTabela = useMemo(
+    () => (antigos > 0 ? somar(vendas.filter(v => v.mes >= mesesDaTabela[0])) : total),
+    [vendas, mesesDaTabela, antigos, total],
+  )
+  const nomeDoTotal = antigos > 0 ? `Total de ${mesesDaTabela.length} meses` : 'Total'
 
   const nosUltimos = `nos últimos ${meses.length} meses`
   const esteMes = mesSozinho(mesAtual)
 
   const abrir = (m: string) => {
-    setAberto(antes => (antes === m ? '' : m))
-    setInteira(false)
+    aoMudar({ ...sanfona, aberto: aberto === m ? '' : m, inteira: false })
   }
 
   const doMes = (m: string) => vendas.filter(v => v.mes === m)
@@ -115,13 +147,45 @@ export function VendasDoParceiro({
         type="button"
         className="pa-ver-mais"
         aria-expanded={inteira}
-        onClick={() => setInteira(i => !i)}
+        onClick={() => aoMudar({ ...sanfona, inteira: !inteira })}
       >
         {inteira ? 'Ver menos' : `Ver mais ${plural(resto, 'venda', 'vendas')} de ${mesSozinho(m)}`}
         {inteira ? <CaretUp size={16} /> : <CaretDown size={16} />}
       </button>
     )
   }
+  /* a linha que traz os meses de antes do período, e a que os guarda de novo */
+  const maisMeses =
+    restam > 0 || antigos > 0 ? (
+      <span className="pa-mais-linha">
+        <span className="pa-chev" />
+        <span className="pa-mais-botoes">
+          {restam > 0 ? (
+            <button
+              type="button"
+              className="pa-ver-mais"
+              onClick={() =>
+                aoMudar({ ...sanfona, pedidos: antigos + Math.min(MESES_POR_VEZ, restam) })
+              }
+            >
+              Ver mais {plural(Math.min(MESES_POR_VEZ, restam), 'mês anterior', 'meses anteriores')}
+              <CaretDown size={16} />
+            </button>
+          ) : null}
+          {antigos > 0 ? (
+            <button
+              type="button"
+              className="pa-ver-mais"
+              onClick={() => aoMudar({ ...sanfona, pedidos: 0 })}
+            >
+              Ver menos
+              <CaretUp size={16} />
+            </button>
+          ) : null}
+        </span>
+      </span>
+    ) : null
+
   const semVenda = (m: string) => (
     <p className="pa-ajuda pa-mes-vazio">
       Nenhuma venda em {mesSozinho(m)}
@@ -239,16 +303,21 @@ export function VendasDoParceiro({
                 </Fragment>
               )
             })}
+            {maisMeses ? (
+              <tr className="pa-mais-meses">
+                <td colSpan={4}>{maisMeses}</td>
+              </tr>
+            ) : null}
             <tr className="total">
               <td>
                 <span className="pa-mes-nome">
                   <span className="pa-chev" />
-                  Total
+                  {nomeDoTotal}
                 </span>
               </td>
-              <td className="dir">{inteiro(total.pecas)}</td>
-              <td className="dir">{dinheiro(total.valor)}</td>
-              <td className="dir">{parteNaTela(total)}</td>
+              <td className="dir">{inteiro(totalDaTabela.pecas)}</td>
+              <td className="dir">{dinheiro(totalDaTabela.valor)}</td>
+              <td className="dir">{parteNaTela(totalDaTabela)}</td>
             </tr>
           </tbody>
         </table>
@@ -337,14 +406,15 @@ export function VendasDoParceiro({
             </Fragment>
           )
         })}
+        {maisMeses ? <div className="pa-mes-mais">{maisMeses}</div> : null}
         <div className="pa-mes-linha total">
           <span className="pa-mes-nome">
             <span className="pa-chev" />
-            Total
+            {nomeDoTotal}
           </span>
-          <span>{inteiro(total.pecas)}</span>
-          <span>{semCifrao(total.valor)}</span>
-          <span>{parteNaTela(total, semCifrao)}</span>
+          <span>{inteiro(totalDaTabela.pecas)}</span>
+          <span>{semCifrao(totalDaTabela.valor)}</span>
+          <span>{parteNaTela(totalDaTabela, semCifrao)}</span>
         </div>
       </div>
       <p className="pa-ajuda">Valores em reais. Toque num mês para abrir as vendas dele.</p>

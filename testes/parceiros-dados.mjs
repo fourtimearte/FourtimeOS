@@ -50,7 +50,9 @@ export const outubro = [
 
 /* Os meses de antes, com os totais do wireframe: uma linha de pedido por mes e
    por parceiro, que e o bastante para a soma. De maio a setembro sao os seis
-   meses da prancha; abril e de fora deles, e so aparece nos doze meses. */
+   meses da prancha; abril e de fora deles, e so aparece nos doze meses. Agosto
+   e outubro de 2025 sao de antes dos doze meses: so aparecem quando alguem
+   pede os meses antigos do Goias, e agosto e a primeira venda dele. */
 const MES = (parceiro, mes, produto, pecas, valor, parte) => V(parceiro, `${mes}-15T15:00:00Z`, produto, 'M', pecas, valor, parte)
 const G = 'Camisa Saneago Goiás Vôlei 2025 Verde'
 const VI = 'Camiseta Oficial Viapol Vôlei São José - AZUL'
@@ -62,6 +64,8 @@ export const antes = [
   MES('p1', '2026-06', G, 7, '1829.30', '182.93'), MES('p2', '2026-06', VI, 3, '749.70', '75.00'),
   MES('p1', '2026-05', G, 4, '999.60', '99.96'), MES('p2', '2026-05', VI, 2, '499.80', '50.00'),
   MES('p1', '2026-04', G, 3, '749.70', '74.97'),
+  MES('p1', '2025-10', G, 1, '249.90', '24.99'),
+  MES('p1', '2025-08', G, 2, '499.80', '49.98'),
 ]
 /* da mais nova para a mais velha, como o banco devolve */
 export const vendas = [...outubro, ...antes].sort((a, b) => (a.vendido_em < b.vendido_em ? 1 : -1))

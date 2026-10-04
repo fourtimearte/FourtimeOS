@@ -50,6 +50,27 @@ export function faltaDeAcordo(s: SomaDoParceiro): string {
     : ''
 }
 
+/* ---------- a sanfona dos meses -------------------------------------------- */
+
+/* O que a pessoa abriu na sanfona. Mora na página, e não na aba, porque a aba
+   Vendas troca de lugar na árvore quando a tela cruza a largura das duas colunas
+   (ao lado da lista, ou sozinha): guardado na aba, o mês aberto e os meses
+   antigos se perderiam ao redimensionar a janela. */
+export type SanfonaDosMeses = {
+  /** o mês aberto, ou vazio */
+  aberto: string
+  /** o mês aberto mostra todas as vendas, e não só as primeiras */
+  inteira: boolean
+  /** quantos meses de antes do período a pessoa pediu para ver */
+  pedidos: number
+}
+
+export const sanfonaDeChegada = (mesAtual: string): SanfonaDosMeses => ({
+  aberto: mesAtual,
+  inteira: false,
+  pedidos: 0,
+})
+
 /* ---------- o eixo do gráfico ---------------------------------------------- */
 
 /** O degrau do eixo: três degraus cobrem o maior valor, em número redondo. É a

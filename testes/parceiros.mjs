@@ -13,8 +13,8 @@
         as duas fileiras de controle, a lista com "Todos os parceiros", a visão
         geral, a aba Vendas com os meses em sanfona, o período, a aba Acordo e
         página com tudo o que ela grava, e o parceiro novo
-     2. que a página lê o banco uma vez só, e que trocar o período, o parceiro
-        ou a aba não lê de novo
+     2. que a página lê o banco uma vez só, o histórico inteiro, e que trocar o
+        período, o parceiro ou a aba, e voltar aos meses antigos, não lê de novo
      3. em 820 e em 390, que é a largura das pranchas 9 e 10: a lista entra na
         página, o parceiro vira a página com a volta em cima, e no celular a
         tabela dos meses vira lista e cada venda vira cartão
@@ -103,9 +103,9 @@ async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semAcordo = 
       lista = P.linhasDaLoja
     }
     else if (u.includes('venda_do_parceiro')) {
-      /* a leitura unica: tudo o que aparece, de um mes em diante, em paginas de mil */
+      /* a leitura unica: tudo o que aparece, desde a primeira venda, em paginas de mil */
       gravados.push(['leu-vendas', u])
-      const desde = /mes=gte\.(\d{4}-\d{2})/.exec(u)?.[1] ?? '9999-99'
+      const desde = /mes=gte\.(\d{4}-\d{2})/.exec(u)?.[1] ?? '0000-00'
       const pulo = Number(/offset=(\d+)/.exec(u)?.[1] ?? 0)
       lista = pulo > 0 ? [] : P.vendas.filter((v) => v.mes >= desde).map((v) => (semAcordo && v.conta ? { ...v, parte: null } : v))
     }
@@ -202,6 +202,9 @@ const meses = (pg) => pg.evaluate(() => {
     cabecalhoDasVendas: v ? [...v.querySelectorAll(':scope > thead th')].map(limpo).join(' | ') : '',
     vendas: v ? [...v.querySelectorAll(':scope > tbody > tr:not(.pa-mais)')].map((l) => ({ texto: celulas(l), h: l.getBoundingClientRect().height, fora: l.classList.contains('pa-fora'), riscado: [...l.querySelectorAll('.pa-riscado')].map(limpo).join(' | '), selo: limpo(l.querySelector('.selo')) })) : [],
     mais: v ? limpo(v.querySelector('.pa-ver-mais')) : '', maisH: v?.querySelector('.pa-ver-mais')?.getBoundingClientRect().height ?? 0,
+    /* a linha dos meses antigos: o que ela diz, a altura dos botoes e quem vem antes e depois dela */
+    maisMeses: limpo(t.querySelector(':scope > tbody > tr.pa-mais-meses')), maisMesesH: [...t.querySelectorAll(':scope > tbody > tr.pa-mais-meses .pa-ver-mais')].map((b) => b.getBoundingClientRect().height),
+    depoisDosMeses: (() => { const k = linhas.findIndex((l) => l.classList.contains('pa-mais-meses')); return k > 0 ? [linhas[k - 1].className, linhas[k + 1]?.className].join(' > ') : '' })(),
     fundoDeDentro: dentro[0] ? getComputedStyle(dentro[0].children[0]).backgroundColor : '',
     /* a borda direita de Peças, Total vendido e Parte, e a de Qtd., Valor e Parte */
     foraDir: bordas(linhas[0]).slice(1), dentroDir: v ? bordas(v.querySelector(':scope > tbody > tr')).slice(3) : [],
@@ -280,7 +283,7 @@ for (const tema of ['light', 'dark']) {
 
   /* ------------------------------------------------------ A LEITURA É UMA SÓ */
   const leitura = ultimo(gravados, 'leu-vendas')
-  conta(quantos(gravados, 'leu-vendas') === 1 && leitura.includes('mes=gte.2025-11') && leitura.includes('aparece=is.true') && leitura.includes('order=vendido_em.desc') && leitura.includes('limit=1000') && leitura.includes('imagem') && leitura.includes('motivo'), `${G} leitura: uma vez só, os doze meses de todos os parceiros, com a foto e o motivo, em páginas de mil`)
+  conta(quantos(gravados, 'leu-vendas') === 1 && !leitura.includes('mes=') && leitura.includes('aparece=is.true') && leitura.includes('order=vendido_em.desc') && leitura.includes('limit=1000') && leitura.includes('imagem') && leitura.includes('motivo'), `${G} leitura: uma vez só, as vendas de todos os parceiros desde a primeira, com a foto e o motivo, em páginas de mil`)
   conta(quantos(gravados, 'leu-loja') === 1 && ultimo(gravados, 'leu-loja').includes('item_id=in.(9006)'), `${G} leitura: o valor riscado é pedido só para a venda que não conta`)
 
   /* ------------------------------------------- UM PARCEIRO, A ABA VENDAS */
@@ -316,7 +319,7 @@ for (const tema of ['light', 'dark']) {
   conta(S.cabe && await sobra(pg) <= 0, `${G} sanfona: nada passa da borda da caixa e nada rola para o lado`)
   await foto(pg, `vendas-1440-${tema}`)
 
-  await pg.locator('.pa-ver-mais').click(); await pausa(pg)
+  await pg.locator('table.pa-vendas .pa-ver-mais').click(); await pausa(pg)
   S = await meses(pg)
   conta(S.vendas.length === 6 && S.mais === 'Ver menos', `${G} sanfona: ver mais mostra as 6 do mês e vira Ver menos`)
   conta(S.vendas[5].fora && S.vendas[5].selo === 'Devolvida' && S.vendas[5].texto === '01/10 18:40 | Camisa Saneago Goiás Vôlei 2026/2027 Verde Devolvida | G | 1 | R$ 249,90 | não conta' && S.vendas[5].riscado === 'Camisa Saneago Goiás Vôlei 2026/2027 Verde | R$ 249,90', `${G} sanfona: a devolvida aparece riscada, com o selo e o valor que tinha sido pago, e não conta (${S.vendas[5].texto})`)
@@ -331,10 +334,33 @@ for (const tema of ['light', 'dark']) {
   S = await meses(pg)
   conta(S.quantasAbertas === 1 && S.meses[0].aberto && S.vendas.length === 5, `${G} sanfona: pelo teclado, Enter no mês abre, e ele volta com as 5 primeiras`)
 
+  /* ---------------------------------------------------- OS MESES ANTIGOS */
+  conta(S.maisMeses === 'Ver mais 6 meses anteriores' && S.depoisDosMeses === 'pa-mes > total' && S.maisMesesH.every((h) => h >= 44), `${G} meses antigos: depois do último mês e antes do total, a linha "Ver mais 6 meses anteriores" (${S.maisMeses})`)
+  await pg.locator('tr.pa-mais-meses .pa-ver-mais', { hasText: 'Ver mais' }).click(); await pausa(pg)
+  S = await meses(pg)
+  conta(S.meses.length === 12 && S.meses[5].texto.startsWith('Maio de 2026') && S.meses[6].texto === 'Abril de 2026 | 3 | R$ 749,70 | R$ 74,97' && S.meses[11].texto === 'Novembro de 2025 | 0 | R$ 0,00 | R$ 0,00', `${G} meses antigos: o clique traz os 6 meses de antes do período, na mesma tabela (${S.meses[6]?.texto})`)
+  conta(S.total === 'Total de 12 meses | 46 | R$ 10.525,40 | R$ 1.052,54', `${G} meses antigos: o total passa a somar o que a tabela mostra, e diz de quantos meses é (${S.total})`)
+  conta(S.maisMeses === 'Ver mais 3 meses anteriores Ver menos' && S.meses[0].aberto && S.vendas.length === 5, `${G} meses antigos: sobram 3 até a primeira venda do parceiro, aparece o Ver menos, e o mês aberto continua aberto (${S.maisMeses})`)
+  conta((await numeros(pg)).join(' | ') === 'Peças em outubro 6 | Vendido em outubro R$ 1.559,40 | Parte em outubro R$ 155,94 | Parte em 6 meses R$ 977,57' && (await grafico(pg, 0)).colunas.length === 6, `${G} meses antigos: os quatro números e os gráficos continuam sendo os do período`)
+  await pg.locator('tr.pa-mais-meses .pa-ver-mais', { hasText: 'Ver mais' }).click(); await pausa(pg)
+  S = await meses(pg)
+  conta(S.meses.length === 15 && S.meses[12].texto === 'Outubro de 2025 | 1 | R$ 249,90 | R$ 24,99' && S.meses[14].texto === 'Agosto de 2025 | 2 | R$ 499,80 | R$ 49,98' && S.total === 'Total de 15 meses | 49 | R$ 11.275,10 | R$ 1.127,51', `${G} meses antigos: o segundo clique chega no mês da primeira venda, agosto de 2025 (${S.total})`)
+  conta(S.maisMeses === 'Ver menos' && S.cabe && await sobra(pg) <= 0, `${G} meses antigos: no fim só sobra o Ver menos, e nada passa da borda`)
+  await abrirMes(pg, 'Agosto de 2025')
+  S = await meses(pg)
+  conta(S.quantasAbertas === 1 && S.acimaDoAberto.startsWith('Agosto de 2025') && S.vendas.length === 1 && S.vendas[0].texto === '15/08 12:00 | Camisa Saneago Goiás Vôlei 2025 Verde | M | 2 | R$ 499,80 | R$ 49,98', `${G} meses antigos: o mês antigo abre como os outros, com as vendas dele (${S.vendas[0]?.texto})`)
+  await foto(pg, `meses-antigos-1440-${tema}`)
+  await pg.locator('tr.pa-mais-meses .pa-ver-mais', { hasText: 'Ver menos' }).click(); await pausa(pg)
+  S = await meses(pg)
+  conta(S.meses.length === 6 && S.total === 'Total | 43 | R$ 9.775,70 | R$ 977,57' && S.maisMeses === 'Ver mais 6 meses anteriores' && S.quantasAbertas === 0, `${G} meses antigos: Ver menos volta aos meses do período`)
+  await abrirMes(pg, 'Outubro de 2026')
+  conta(quantos(gravados, 'leu-vendas') === 1, `${G} meses antigos: voltar no tempo não foi ao banco de novo`)
+
   /* ----------------------------------------- OUTRO PARCEIRO E O MÊS VAZIO */
   await parceiroNaLista(pg, 'Colégio')
   S = await meses(pg)
   conta((await numeros(pg)).join(' | ') === 'Peças em outubro 0 | Vendido em outubro R$ 0,00 | Parte em outubro R$ 0,00 | Parte em 6 meses R$ 161,88' && S.meses[0].aberto && S.vazio === 'Nenhuma venda em outubro até agora.' && S.total === 'Total | 9 | R$ 1.079,10 | R$ 161,88', `${G} parceiro sem venda no mês: os números zeram e o mês aberto diz que não houve venda (${S.vazio})`)
+  conta(S.maisMeses === '', `${G} meses antigos: parceiro sem venda antes do período não tem a linha`)
   conta((await medir(pg, ['.pa-cabeca p']))['.pa-cabeca p'].texto === '15% por peça, sobre o valor pago · Página ligada, ainda não aberta', `${G} parceiro que nunca abriu a página: o cabeçalho diz isso`)
 
   /* --------------------------------------------------------------- O PERÍODO */
@@ -344,6 +370,7 @@ for (const tema of ['light', 'dark']) {
   S = await meses(pg)
   const g12 = await grafico(pg, 1)
   conta(S.meses.length === 12 && S.meses[6].texto === 'Abril de 2026 | 3 | R$ 749,70 | R$ 74,97' && S.meses[11].texto === 'Novembro de 2025 | 0 | R$ 0,00 | R$ 0,00' && S.total === 'Total | 46 | R$ 10.525,40 | R$ 1.052,54', `${G} 12 meses: doze linhas, abril entra e o total cresce (${S.total})`)
+  conta(S.maisMeses === 'Ver mais 3 meses anteriores', `${G} 12 meses: a linha dos meses antigos conta o que sobra até a primeira venda (${S.maisMeses})`)
   conta((await numeros(pg))[3] === 'Parte em 12 meses R$ 1.052,54' && g12.colunas.length === 12 && g12.muitos && g12.meses.startsWith('nov dez jan') && g12.sub === 'em vendas nos últimos 12 meses', `${G} 12 meses: o número e o gráfico acompanham, com doze barras`)
   conta(g12.colunas.filter((c) => c.visivel).length === 0 && g12.colunas.every((c) => c.w >= 12), `${G} 12 meses: no cartão estreito, com as barras perto, nenhum número fica fixo, e nenhuma barra some (${Math.round(g12.colunas[0].w)} de largura)`)
   await pg.locator('.pa-grafico').nth(1).locator('.pa-coluna').nth(5).hover(); await pausa(pg, 200)
@@ -360,6 +387,13 @@ for (const tema of ['light', 'dark']) {
   await parceiroNaLista(pg, 'Saneago')
   S = await meses(pg)
   conta(S.meses.length === 3 && S.total === 'Total | 27 | R$ 5.617,30 | R$ 561,73' && (await numeros(pg))[3] === 'Parte em 3 meses R$ 561,73' && (await textos(pg, '.pa-lado .pa-item'))[1].endsWith('R$ 155,94 6 peças'), `${G} 3 meses: três linhas, e a coluna da lista continua sendo o mês atual (${S.total})`)
+  await parceiroNaLista(pg, 'Colégio')
+  S = await meses(pg)
+  conta(S.maisMeses === 'Ver mais 1 mês anterior', `${G} 3 meses: o Colégio, que vendeu pela primeira vez em julho, tem um mês só para voltar (${S.maisMeses})`)
+  await pg.locator('tr.pa-mais-meses .pa-ver-mais').click(); await pausa(pg)
+  S = await meses(pg)
+  conta(S.meses.length === 4 && S.meses[3].texto === 'Julho de 2026 | 3 | R$ 269,70 | R$ 40,46' && S.total === 'Total de 4 meses | 9 | R$ 1.079,10 | R$ 161,88' && S.maisMeses === 'Ver menos', `${G} 3 meses: o clique traz julho e fecha a conta do parceiro (${S.total})`)
+  await parceiroNaLista(pg, 'Saneago')
   await escolherPeriodo(pg, 'Últimos 6 meses')
   conta(quantos(gravados, 'leu-vendas') === 1, `${G} trocar de parceiro, de mês e de período não foi ao banco de novo (${quantos(gravados, 'leu-vendas')} leitura)`)
 
@@ -546,12 +580,21 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
       conta(todas.length === 6 && todas[5].texto === '01/10 às 18:40 Devolvida Camisa Saneago Goiás Vôlei 2026/2027 Verde R$ 249,90 não conta', `${G} sanfona: ver mais traz a devolvida, com o selo, e ela não conta (${todas[5]?.texto})`)
       await pg.locator('button.pa-mes-linha', { hasText: 'set/26' }).click(); await pausa(pg)
       conta(await pg.locator('.pa-mes-linha.aberto').count() === 1 && (await pg.locator('.pa-mes-linha.aberto').innerText()).includes('set/26') && (await todos(pg, 'div.pa-mes-dentro .pa-venda')).length === 1, `${G} sanfona: tocar em setembro fecha outubro e abre setembro`)
+      const maisM = await todos(pg, '.pa-mes-mais .pa-ver-mais')
+      conta(maisM.length === 1 && maisM[0].texto === 'Ver mais 6 meses anteriores' && maisM[0].h >= 44, `${G} meses antigos: a linha "Ver mais 6 meses anteriores" antes do total, com alvo de toque (${maisM[0]?.texto})`)
+      await pg.locator('.pa-mes-mais .pa-ver-mais').click(); await pausa(pg)
+      const antigas = await todos(pg, '.pa-meses-cel .pa-mes-linha')
+      conta(antigas.length === 14 && antigas[7].texto === 'abr/26 3 749,70 74,97' && antigas[13].texto === 'Total de 12 meses 46 10.525,40 1.052,54' && linha(await todos(pg, '.pa-mes-mais .pa-ver-mais')) === 'Ver mais 3 meses anteriores | Ver menos', `${G} meses antigos: o toque traz 6 meses, o total diz de quantos meses é, e aparece o Ver menos (${antigas[13]?.texto})`)
+      await foto(pg, `meses-antigos-${nome}-${tema}`)
       const cabe = await pg.evaluate(() => { const c = document.querySelector('.pa-meses-cel').getBoundingClientRect(); return [...document.querySelectorAll('.pa-meses-cel *')].every((e) => { const r = e.getBoundingClientRect(); return !r.width || (r.right <= c.right + 0.6 && r.left >= c.left - 0.6) }) })
       conta(cabe, `${G} sanfona: nada passa da borda da caixa`)
+      await pg.locator('.pa-mes-mais .pa-ver-mais', { hasText: 'Ver menos' }).click(); await pausa(pg)
+      conta((await todos(pg, '.pa-meses-cel .pa-mes-linha')).length === 8, `${G} meses antigos: Ver menos volta aos meses do período`)
       await pg.locator('button.pa-mes-linha', { hasText: 'out/26' }).click(); await pausa(pg)
     } else {
       const S = await meses(pg)
       conta(S && S.meses.length === 6 && S.meses[0].aberto && S.vendas.length === 5 && S.mais === 'Ver mais 1 venda de outubro' && S.cabe && S.foraDir.every((x, i) => igual(x, S.dentroDir[i])), `${G} sanfona: no tablet a tabela continua, inteira dentro da caixa e alinhada`)
+      conta(S.maisMeses === 'Ver mais 6 meses anteriores', `${G} meses antigos: a linha também está na tabela do tablet`)
     }
     conta(await sobra(pg) <= 0, `${G} vendas: nada rola para o lado`)
     await foto(pg, `vendas-${nome}-${tema}`)
@@ -607,7 +650,7 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
   const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', lojaCai: true })
   await ir(pg, '/parceiros', '.pa-lado')
   await parceiroNaLista(pg, 'Saneago')
-  await pg.locator('.pa-ver-mais').click(); await pausa(pg)
+  await pg.locator('table.pa-vendas .pa-ver-mais').click(); await pausa(pg)
   const S = await meses(pg)
   conta(S.vendas.length === 6 && S.vendas[5].texto === '01/10 18:40 | Camisa Saneago Goiás Vôlei 2026/2027 Verde Devolvida | G | 1 |  | não conta' && erros.length === 0, `se a leitura do valor riscado cai, a devolvida aparece sem o valor e a página continua de pé (${S.vendas[5]?.texto})`)
   await ctx.close()

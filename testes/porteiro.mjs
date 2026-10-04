@@ -188,7 +188,7 @@ respostas = {
   'rpc/colecoes_dos_parceiros': { corpo: [{ parceiro_id: 'p-1', colecao: 'colecao-um' }, { parceiro_id: 'p-2', colecao: 'colecao-que-caiu' }] },
   'loja.exemplo/api/graphql.json': (_u, corpo) =>
     corpo.variables.colecao === 'colecao-um'
-      ? { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/10149030232339', title: 'Camisa Verde', vendor: 'x' }, { id: 'gid://shopify/Product/222', title: 'Camisa Branca' }], pageInfo: { hasNextPage: false, endCursor: null } } } } } }
+      ? { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/10149030232339', title: 'Camisa Verde', vendor: 'x', featuredImage: { url: 'https://cdn.shopify.com/s/files/verde.jpg?v=1', altText: 'x' } }, { id: 'gid://shopify/Product/222', title: 'Camisa Branca', featuredImage: null }], pageInfo: { hasNextPage: false, endCursor: null } } } } } }
       : { corpo: { data: { collection: null } } },
   'rpc/registrar_produtos_do_parceiro': { corpo: 2 },
 }
@@ -199,7 +199,7 @@ confere(
   r.status === 200 &&
     gravou.length === 1 &&
     gravou[0].corpo.p_parceiro === 'p-1' &&
-    JSON.stringify(gravou[0].corpo.p_produtos) === JSON.stringify([{ id: '10149030232339', titulo: 'Camisa Verde' }, { id: '222', titulo: 'Camisa Branca' }]),
+    JSON.stringify(gravou[0].corpo.p_produtos) === JSON.stringify([{ id: '10149030232339', titulo: 'Camisa Verde', imagem: 'https://cdn.shopify.com/s/files/verde.jpg?v=1' }, { id: '222', titulo: 'Camisa Branca', imagem: '' }]),
   JSON.stringify(gravou.map((c) => c.corpo)),
 )
 
@@ -269,7 +269,7 @@ chamadas = []
 respostas = {
   'rpc/posso': { corpo: true },
   'rpc/colecoes_dos_parceiros': { corpo: [{ parceiro_id: 'p-1', colecao: 'colecao-um' }, { parceiro_id: 'p-2', colecao: 'colecao-dois' }] },
-  'loja.exemplo/api/graphql.json': { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/333', title: 'Moletom' }], pageInfo: { hasNextPage: false, endCursor: null } } } } } },
+  'loja.exemplo/api/graphql.json': { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/333', title: 'Moletom', featuredImage: { url: 'http://sem-s.exemplo/m.jpg' } }], pageInfo: { hasNextPage: false, endCursor: null } } } } } },
   'rpc/registrar_produtos_do_parceiro': { corpo: 1 },
 }
 r = await porteiro.atender(doOS({ acao: 'produtos', parceiro: 'p-2' }, CRACHA))
@@ -280,7 +280,7 @@ confere(
     j.parceiros.length === 1 &&
     j.parceiros[0].produtos === 1 &&
     chamadas.filter((c) => c.endereco.includes('loja.exemplo')).every((c) => c.corpo.variables.colecao === 'colecao-dois') &&
-    JSON.stringify(chamadas.find((c) => c.endereco.endsWith('rpc/registrar_produtos_do_parceiro')).corpo.p_produtos) === JSON.stringify([{ id: '333', titulo: 'Moletom' }]),
+    JSON.stringify(chamadas.find((c) => c.endereco.endsWith('rpc/registrar_produtos_do_parceiro')).corpo.p_produtos) === JSON.stringify([{ id: '333', titulo: 'Moletom', imagem: '' }]),
   JSON.stringify(j),
 )
 

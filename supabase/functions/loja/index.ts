@@ -246,20 +246,24 @@ async function colecoesDaLoja(): Promise<Solto[]> {
 }
 
 /* O id que a API devolve e "gid://shopify/Product/123": o banco guarda o 123,
-   que e o mesmo numero que vem no aviso de pedido. */
+   que e o mesmo numero que vem no aviso de pedido. Junto vem a foto principal
+   (o aviso de pedido nao traz foto nenhuma). */
 async function produtosDaColecao(colecao: string): Promise<Solto[]> {
   const todos: Solto[] = []
   let depois: string | null = null
   for (let pagina = 0; pagina < 20; pagina++) {
     const d = await perguntarALoja(
-      'query Produtos($colecao: String!, $depois: String) { collection(handle: $colecao) { products(first: 250, after: $depois) { nodes { id title } pageInfo { hasNextPage endCursor } } } }',
+      'query Produtos($colecao: String!, $depois: String) { collection(handle: $colecao) { products(first: 250, after: $depois) { nodes { id title featuredImage { url } } pageInfo { hasNextPage endCursor } } } }',
       { colecao, depois },
     )
     if (!d.collection) throw new Error(`a loja não tem a coleção ${colecao}`)
     const p = dentro(dentro(d.collection).products)
     for (const n of lista(p.nodes)) {
       const id = texto(n.id).split('/').pop() ?? ''
-      if (/^[0-9]+$/.test(id)) todos.push({ id, titulo: texto(n.title) })
+      /* a foto principal do produto, para a miniatura ao lado de cada compra.
+         So entra endereco https; produto sem foto vai com o campo vazio. */
+      const foto = texto(dentro(n.featuredImage).url)
+      if (/^[0-9]+$/.test(id)) todos.push({ id, titulo: texto(n.title), imagem: foto.startsWith('https://') ? foto : '' })
     }
     const info = dentro(p.pageInfo)
     if (info.hasNextPage !== true) break

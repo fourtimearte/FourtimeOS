@@ -80,7 +80,7 @@ begin
 
   -- 5. o porteiro registra os produtos; produto de um nao passa para outro
   perform set_config('request.jwt.claim.sub', '', true);
-  n := public.registrar_produtos_do_parceiro(g, '[{"id": 900101, "titulo": "Camisa Verde"}, {"id": 900102, "titulo": "Camisa Branca"}]'::jsonb);
+  n := public.registrar_produtos_do_parceiro(g, '[{"id": 900101, "titulo": "Camisa Verde", "imagem": "https://cdn.shopify.com/prova/verde.jpg?v=1"}, {"id": 900102, "titulo": "Camisa Branca", "imagem": "javascript:alert(1)"}]'::jsonb);
   perform public.registrar_produtos_do_parceiro(vi, '[{"id": 900201, "titulo": "Camisa Azul"}, {"id": 900101, "titulo": "Tentativa"}]'::jsonb);
   perform public.registrar_produtos_do_parceiro(y, '[{"id": 900301, "titulo": "Moletom"}]'::jsonb);
   txt := txt || E'\n' || case when n = 2
@@ -281,6 +281,18 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 18b. a devolvida traz o que foi vendido (R$ 249,90) e conta zero; a devolvida em parte traz R$ 180 vendidos e R$ 90 que contam';
 
+  -- 18c. a foto do produto vai em cada venda; endereco que nao e https nao entra; releitura sem foto nao apaga (046)
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform public.registrar_produtos_do_parceiro(g, '[{"id": 900101, "titulo": "Camisa Verde"}]'::jsonb);
+  perform set_config('request.jwt.claim.sub', a::text, true);
+  txt := txt || E'\n' || case when
+               (select x ->> 'imagem' from jsonb_array_elements(j -> 'vendas') x where x ->> 'produto' = 'Camisa Verde' limit 1) = 'https://cdn.shopify.com/prova/verde.jpg?v=1'
+           and (select bool_and(x ->> 'imagem' = '') from jsonb_array_elements(j -> 'vendas') x where x ->> 'produto' = 'Camisa Branca')
+           and (select imagem from public.produto_do_parceiro where produto_id = 900101) = 'https://cdn.shopify.com/prova/verde.jpg?v=1'
+           and (select imagem from public.venda_do_parceiro where item_id = 700001) = 'https://cdn.shopify.com/prova/verde.jpg?v=1'
+                              then 'ok  ' else 'RUIM' end
+             || ' 18c. a venda traz a foto do produto; endereco que nao e https fica de fora; releitura sem foto nao apaga a que estava';
+
   -- 19. pagina desligada e link trocado
   perform public.salvar_parceiro(vi, 'Viapol da Prova', 'colecao-viapol-prova', 'Viapol da Prova', false);
   select chave, senha into r from public.parceiro where id = vi;
@@ -401,5 +413,5 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 25. a lista traz o acordo de hoje e os 2 produtos';
 
-  raise exception E'PROVA DOS PARCEIROS, 043 a 045 (tudo desfeito):%', txt;
+  raise exception E'PROVA DOS PARCEIROS, 043 a 046 (tudo desfeito):%', txt;
 end $$;

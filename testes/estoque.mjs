@@ -192,7 +192,7 @@ for (const tema of ['light', 'dark']) {
     conta(linhas.join(' | ') === 'DRYFIT POLIESTER 100% · Preto | PIQUET 100% · Branco | Tinta sublimática magenta | Gola retilínea piquet marinho', `${T} comprar: os 4 abaixo do mínimo, o mais urgente primeiro (${linhas.join(' | ')})`)
     const um = await texto(pg, '[data-coluna="comprar"] .em-lin')
     conta(/tem 3 kg · mínimo 20 kg/.test(um) && /Malharia Exemplo Ltda/.test(um) && /17 kg faltam/.test(um), `${T} comprar: a linha diz o que tem, o mínimo, o fornecedor e quanto falta (${um})`)
-    conta(/4 abaixo do mínimo/.test(await texto(pg, '[data-coluna="comprar"] .em-topo')), `${T} comprar: o topo diz quantos estão abaixo do mínimo`)
+    conta(/Para comprar 4 materiais$/.test(await texto(pg, '[data-coluna="comprar"] .em-topo')) && await pg.locator('[data-coluna="comprar"] .em-topo-n').getAttribute('title') === '4 abaixo do mínimo', `${T} comprar: o topo diz quantos estão abaixo do mínimo, na escrita breve da caixa estreita e com a inteira na dica (${await texto(pg, '[data-coluna="comprar"] .em-topo')})`)
     await pg.locator('[data-coluna="comprar"] .em-pe').click(); await pausa(pg, 400)
     conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 4 && /ligado/.test(await pg.locator('.es-chips .chip', { hasText: 'Para comprar' }).getAttribute('class')), `${T} comprar: "Ver mais" abre a tabela só com os 4 para comprar`)
     await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Lista' }).click(); await pausa(pg, 300)
@@ -387,6 +387,53 @@ for (const [largura, altura] of [[1440, 900], [390, 844]]) {
     const cores = await pg.locator('[data-ficha] .em-cor-col').evaluateAll((l) => Math.max(...l.map((e) => e.getBoundingClientRect().right)))
     conta(await pg.locator('[data-ficha] .em-cor-col').count() === 30 && cores <= ficha.dir + 0.5 && (await sobra(pg)) <= 0, `${T}: a ficha do tecido mostra as 30 cores em grade, sem rolar para o lado`)
     await pg.screenshot({ path: `${PASTA}/grande-${largura}-light.png`, fullPage: true })
+    conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+/* o topo das três caixas baixas: a conta nunca encosta na borda. Achado no dia
+   04/10/2026: "16 abaixo do mínimo" passava do recheio da caixa em 1440 */
+for (const [largura, espera] of [[1366, /^16 materiais$/], [1440, /^16 materiais$/], [1536, /^16 abaixo do mínimo$/], [1680, /^16 abaixo do mínimo$/]]) {
+  await caso(`topo das caixas ${largura}`, async () => {
+    const { ctx, pg } = await abrir(nav, { largura, altura: 900, tema: 'light', estoque: 'grande' })
+    await ir(pg, '/estoque', '[data-arvore]')
+    const m = await pg.locator('.em-quatro > .em-curta .em-topo').evaluateAll((l) => l.map((t) => {
+      const fim = t.lastElementChild.getBoundingClientRect().right
+      const c = t.getBoundingClientRect(); const cs = getComputedStyle(t)
+      return { sobra: fim - (c.right - parseFloat(cs.paddingRight)), alto: c.height }
+    }))
+    const conta_ = await texto(pg, '[data-coluna="comprar"] .em-topo-n')
+    conta(m.length === 3 && m.every((x) => x.sobra <= 0.5), `topo das caixas em ${largura}: nenhuma conta passa do recheio do topo (${m.map((x) => Math.round(x.sobra)).join(', ')})`)
+    conta(m.every((x) => igual(x.alto, m[0].alto)), `topo das caixas em ${largura}: os três topos têm a mesma altura (${m.map((x) => Math.round(x.alto)).join(', ')})`)
+    conta(espera.test(conta_), `topo das caixas em ${largura}: a conta do para comprar aparece na escrita que cabe (${conta_})`)
+    await ctx.close()
+  })
+}
+
+/* a árvore aberta fica mais comprida que as caixas do lado: a sobra de altura
+   desce para a última fileira, e não abre um buraco entre as caixas baixas e a
+   prateleira. Achado no dia 04/10/2026 com o estoque de verdade (34 cores de
+   dry fit abertas na árvore empurravam a prateleira 160 px para baixo) */
+for (const [largura, altura] of [[1440, 900], [820, 1180]]) {
+  await caso(`árvore comprida ${largura}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema: 'light', estoque: 'grande' })
+    await ir(pg, '/estoque', '[data-arvore]')
+    const T = `árvore comprida em ${largura}`
+    for (let i = await pg.locator('[data-estante] .em-g.aberto').count(); i > 0; i--) { await pg.locator('[data-estante] .em-g.aberto').first().click(); await pausa(pg, 150) }
+    if (await pg.locator(DRY).count() === 0) { await pg.locator('[data-arvore] .em-g[data-grupo="DRY FIT"]').click(); await pausa(pg, 250) }
+    if (await pg.locator('[data-arvore] .em-c').count() === 0) { await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 350) }
+    const arvore = await caixa(pg, '[data-arvore]')
+    const baixas = await pg.locator('.em-quatro > .em-curta').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return { y: r.top, baixo: r.bottom } }))
+    const est = await caixa(pg, '[data-estante]')
+    conta(await pg.locator('[data-arvore] .em-c').count() === 30 && arvore.h > 1300, `${T}: a árvore está aberta nas 30 cores e é a peça mais comprida da página (${Math.round(arvore.h)} de altura)`)
+    if (largura >= 1440) {
+      conta(igual(est.y - baixas[0].baixo, 16, 1), `${T}: a prateleira fica 16 px abaixo das três caixas, sem buraco (${Math.round(est.y - baixas[0].baixo)})`)
+    } else {
+      const vaos = [baixas[1].y - baixas[0].baixo, baixas[2].y - baixas[1].baixo]
+      conta(vaos.every((v) => igual(v, 16, 1)), `${T}: as três caixas empilhadas ficam a 16 px uma da outra, sem buraco (${vaos.map(Math.round).join(' e ')})`)
+    }
+    await pg.screenshot({ path: `${PASTA}/arvore-comprida-${largura}-light.png`, fullPage: true })
     conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
     await ctx.close()
   })

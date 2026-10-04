@@ -289,7 +289,14 @@ export function ParaComprar({
       inteira={inteira}
       direita={
         comprar.length ? (
-          <span className="em-topo-n alerta">{comprar.length} abaixo do mínimo</span>
+          /* na caixa estreita (tela de 1366 e de 1440) a frase inteira encostava
+             na borda: ali fica só a conta, como no "13 pedidos" da caixa ao lado */
+          <span className="em-topo-n alerta" title={`${comprar.length} abaixo do mínimo`}>
+            <span className="em-topo-longo">{comprar.length} abaixo do mínimo</span>
+            <span className="em-topo-breve">
+              {plural(comprar.length, 'material', 'materiais')}
+            </span>
+          </span>
         ) : undefined
       }
       verMais={

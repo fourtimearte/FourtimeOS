@@ -111,10 +111,19 @@
 .em-quatro {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  /* a árvore atravessa as duas fileiras. Quando ela abre e fica mais comprida
+     que as caixas do lado, a sobra de altura tem de ir inteira para a ÚLTIMA
+     fileira: com as duas em auto o navegador reparte a sobra, e a prateleira
+     descia deixando um buraco debaixo das três caixas baixas */
+  grid-template-rows: auto 1fr;
   gap: var(--sp-4);
   align-items: start;
 }
 .em-quatro > .em-arvore {
+  grid-row: 1 / span 2;
+}
+/* a ficha ocupa as mesmas duas fileiras da árvore */
+.em-quatro.com-ficha > .em-largo {
   grid-row: 1 / span 2;
 }
 .em-quatro > .em-estante,
@@ -127,6 +136,7 @@
 @container em-palco (max-width: 1039px) {
   .em-quatro {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
   }
   .em-quatro > .em-arvore {
     grid-row: 1 / span 3;
@@ -134,7 +144,13 @@
   .em-quatro > .em-estante {
     grid-column: 1 / -1;
   }
-  .em-quatro.com-ficha > .em-arvore {
+  /* com a ficha aberta são só duas peças lado a lado: sem fileira declarada,
+     senão as fileiras vazias somam o vão delas no pé da página */
+  .em-quatro.com-ficha {
+    grid-template-rows: none;
+  }
+  .em-quatro.com-ficha > .em-arvore,
+  .em-quatro.com-ficha > .em-largo {
     grid-row: auto;
   }
   .em-quatro > .em-largo {
@@ -144,6 +160,7 @@
 @container em-palco (max-width: 719px) {
   .em-quatro {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
   }
   .em-quatro > .em-arvore {
     grid-row: auto;
@@ -291,6 +308,20 @@ button.em-lin:hover {
 /* --- a caixa baixa: rola sem barra e termina no "Ver mais" --------------------- */
 .em-curta {
   height: 368px;
+  container: em-caixa / inline-size;
+}
+/* a conta do topo tem duas escritas: a inteira, e a breve para a caixa em que
+   a inteira não cabe. Só uma aparece de cada vez */
+.em-topo-breve {
+  display: none;
+}
+@container em-caixa (max-width: 251px) {
+  .em-topo-longo {
+    display: none;
+  }
+  .em-topo-breve {
+    display: inline;
+  }
 }
 .em-rolagem {
   flex: 1 1 auto;

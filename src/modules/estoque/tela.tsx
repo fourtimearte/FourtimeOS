@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CalendarBlank, CaretRight, ListBullets, Plus, Stack, Table } from '@phosphor-icons/react'
+import {
+  ArrowLeft,
+  CalendarBlank,
+  CaretRight,
+  ListBullets,
+  Plus,
+  Stack,
+  Table,
+} from '@phosphor-icons/react'
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
 import {
@@ -21,12 +29,21 @@ import {
   type Movimento,
   type ReservaEmAberto,
 } from '@dominio/estoque'
+import {
+  carregarDeposito,
+  carregarLugares,
+  type LugarDoMaterial,
+  type Planta,
+} from '@dominio/deposito'
 import { fornecedoresParaOEstoque } from '@dominio/fornecedor'
 import { pode, useSessao } from '@dominio/sessao'
 import { fornecedorDoGrupo, materialDoMovimento, plural, type Fornecimento } from './apoio'
+import { BotaoEditarODeposito, Deposito } from './deposito'
 import { EditarGrupo } from './editar-grupo'
+import { EditorDoDeposito } from './editor-do-deposito'
 import { MaterialEscolhido, resumoDoGrupo, rotuloDeNovoItem } from './escolhido'
 import { FolhaDeMovimento } from './folha-de-movimento'
+import { MarcarLugar } from './marcar-lugar'
 import { VisaoGeral } from './geral'
 import { Movimentacoes, type Agrupar } from './movimentacoes'
 import { NovoMaterial, type InicioDoNovo } from './novo-material'
@@ -50,9 +67,13 @@ import './estoque.css'
    material escolhido, na tabela e no movimento. Ele vem da página de
    Fornecedores; quando a lista de lá não responde, a tela se cala sobre
    fornecedor e continua respondendo o que é dela, que é tem ou não tem.
+
+   O DEPÓSITO É LIDO À PARTE (047). O desenho do depósito e o lugar de cada
+   material têm a sua própria leitura e o seu próprio erro: se ela falhar, a
+   aba Depósito diz isso, e a lista de materiais continua de pé.
    ========================================================================== */
 
-type Aba = 'materiais' | 'razao'
+type Aba = 'materiais' | 'razao' | 'deposito'
 type Vista = 'lista' | 'tabela'
 type Filtro = '' | Categoria | 'comprar'
 
@@ -76,7 +97,13 @@ export function TelaEstoque() {
      fornecedor manda para cá com o nome dele na busca, e para as
      movimentações dele com a aba junto. */
   const [endereco] = useSearchParams()
-  const [aba, setAba] = useState<Aba>(endereco.get('aba') === 'razao' ? 'razao' : 'materiais')
+  const [aba, setAba] = useState<Aba>(
+    endereco.get('aba') === 'razao'
+      ? 'razao'
+      : endereco.get('aba') === 'deposito'
+        ? 'deposito'
+        : 'materiais',
+  )
   const [vista, setVista] = useState<Vista>('lista')
   const [busca, setBusca] = useState(endereco.get('busca') ?? '')
   const [filtro, setFiltro] = useState<Filtro>('')
@@ -88,6 +115,14 @@ export function TelaEstoque() {
   const [novo, setNovo] = useState<InicioDoNovo | null>(null)
   const [editando, setEditando] = useState<GrupoDoEstoque | null>(null)
   const [refazendo, setRefazendo] = useState(false)
+
+  /* o depósito: o desenho, o lugar de cada material, e o que está aberto por cima */
+  const [deposito, setDeposito] = useState<Planta | null>(null)
+  const [lugares, setLugares] = useState<LugarDoMaterial[]>([])
+  const [lendoDeposito, setLendoDeposito] = useState(true)
+  const [erroDoDeposito, setErroDoDeposito] = useState('')
+  const [editandoDeposito, setEditandoDeposito] = useState(false)
+  const [marcando, setMarcando] = useState<Material | null>(null)
 
   /* abaixo disto as caixas empilham e o material escolhido vira a tela */
   const estreita = usarConsulta('(max-width: 1099px)')
@@ -129,6 +164,22 @@ export function TelaEstoque() {
     }
   }, [ler])
 
+  const lerDeposito = useCallback(async () => {
+    try {
+      const [d, ls] = await Promise.all([carregarDeposito(), carregarLugares()])
+      setDeposito(d)
+      setLugares(ls)
+      setErroDoDeposito('')
+    } catch (e) {
+      setErroDoDeposito(e instanceof Error ? e.message : 'Não consegui ler o depósito.')
+    } finally {
+      setLendoDeposito(false)
+    }
+  }, [])
+  useEffect(() => {
+    void lerDeposito()
+  }, [lerDeposito])
+
   const recarregarFornecedores = useCallback(async () => {
     setFornecimento(await fornecedoresParaOEstoque())
   }, [])
@@ -140,12 +191,13 @@ export function TelaEstoque() {
      cor, o grupo ou o fornecedor. */
   const filtrados = useMemo(() => {
     const termo = semAcento(busca.trim())
-    return materiais.filter((m) => {
-      if (filtro === 'comprar' ? m.livre >= m.minimo : filtro && m.categoria !== filtro) return false
+    return materiais.filter(m => {
+      if (filtro === 'comprar' ? m.livre >= m.minimo : filtro && m.categoria !== filtro)
+        return false
       if (!termo) return true
       const forn = fornecimento.ligacoes
-        .filter((l) => l.materialId === m.id)
-        .map((l) => fornecimento.fornecedores.find((f) => f.id === l.fornecedorId)?.nome ?? '')
+        .filter(l => l.materialId === m.id)
+        .map(l => fornecimento.fornecedores.find(f => f.id === l.fornecedorId)?.nome ?? '')
         .join(' ')
       return semAcento([m.nome, m.tecido, m.cor, m.grupo, forn].join(' ')).includes(termo)
     })
@@ -153,7 +205,7 @@ export function TelaEstoque() {
   const grupos = useMemo(() => gruposDoEstoque(filtrados), [filtrados])
 
   const grupoEscolhido = useMemo(
-    () => todosOsGrupos.find((g) => g.chave === escolhido) ?? null,
+    () => todosOsGrupos.find(g => g.chave === escolhido) ?? null,
     [todosOsGrupos, escolhido],
   )
   /* o grupo que sumiu (o último item foi arquivado, o nome do grupo mudou)
@@ -164,7 +216,7 @@ export function TelaEstoque() {
 
   const movimentosFiltrados = useMemo(() => {
     const termo = semAcento(busca.trim())
-    return movimentos.filter((v) => {
+    return movimentos.filter(v => {
       if (motivo && v.motivo !== motivo) return false
       if (!termo) return true
       return semAcento(
@@ -180,7 +232,10 @@ export function TelaEstoque() {
     try {
       const quantos = await refazerAsReservasAbertas()
       await recarregar()
-      avisar(quantos === 1 ? 'Refiz a reserva de 1 pedido.' : `Refiz a reserva de ${quantos} pedidos.`, 'ok')
+      avisar(
+        quantos === 1 ? 'Refiz a reserva de 1 pedido.' : `Refiz a reserva de ${quantos} pedidos.`,
+        'ok',
+      )
     } catch (e) {
       avisar(e instanceof Error ? e.message : 'Não consegui refazer as reservas.', 'brand')
     } finally {
@@ -230,12 +285,12 @@ export function TelaEstoque() {
   const noDetalhe = estreita && !!grupoEscolhido && aba === 'materiais'
   const mostraTabela = aba === 'materiais' && vista === 'tabela' && !estreita
 
-  const contagem = (c: Categoria) => materiais.filter((m) => m.categoria === c).length
-  const contagemDoMotivo = (m: Motivo) => movimentos.filter((v) => v.motivo === m).length
+  const contagem = (c: Categoria) => materiais.filter(m => m.categoria === c).length
+  const contagemDoMotivo = (m: Motivo) => movimentos.filter(v => v.motivo === m).length
 
   const maisAcoes = podeEditar ? (
     <BotaoComMenu valor="Mais" titulo="Mais ações do estoque">
-      {(fechar) => (
+      {fechar => (
         <div className="mn-lista">
           <button type="button" className="mn-item" onClick={() => void refazer(fechar)}>
             <span className="nm">Refazer as reservas</span>
@@ -251,49 +306,66 @@ export function TelaEstoque() {
   const sub = (
     <>
       {plural(materiais.length, 'material', 'materiais')} ·{' '}
-      {baixo.length ? (
-        <b className="es-pouco">{baixo.length} para comprar</b>
-      ) : (
-        'nada para comprar'
-      )}
+      {baixo.length ? <b className="es-pouco">{baixo.length} para comprar</b> : 'nada para comprar'}
     </>
   )
 
   /* --- o cabeçalho ---------------------------------------------------------
      No detalhe estreito, o cabeçalho da página é o do material: a volta em
      cima, o nome no título e os botões dele. */
-  const cabecalho = noDetalhe && grupoEscolhido
-    ? {
-        acima: (
-          <button type="button" className="es-volta" onClick={() => setEscolhido('')}>
-            <ArrowLeft size={14} weight="bold" />
-            Estoque · {NOME_DA_CATEGORIA[grupoEscolhido.categoria]}
-          </button>
-        ),
-        titulo: grupoEscolhido.nome,
-        sub: resumoDoGrupo(grupoEscolhido),
-        acoes: podeEditar ? (
-          <>
-            <Botao onClick={() => abrirNovo(grupoEscolhido)}>{rotuloDeNovoItem(grupoEscolhido)}</Botao>
-            <Botao onClick={() => setEditando(grupoEscolhido)}>Editar</Botao>
-          </>
-        ) : undefined,
-      }
-    : {
-        acima: 'Materiais',
-        titulo: 'Estoque',
-        sub,
-        acoes:
-          podeEditar && !celular ? (
+  const cabecalho =
+    noDetalhe && grupoEscolhido
+      ? {
+          acima: (
+            <button type="button" className="es-volta" onClick={() => setEscolhido('')}>
+              <ArrowLeft size={14} weight="bold" />
+              Estoque · {NOME_DA_CATEGORIA[grupoEscolhido.categoria]}
+            </button>
+          ),
+          titulo: grupoEscolhido.nome,
+          sub: resumoDoGrupo(grupoEscolhido),
+          acoes: podeEditar ? (
             <>
-              {maisAcoes}
-              <Botao onClick={() => abrirNovo()}>Novo material</Botao>
-              <Botao tom="primario" onClick={abrirMovimento}>
-                Registrar movimento
+              <Botao onClick={() => abrirNovo(grupoEscolhido)}>
+                {rotuloDeNovoItem(grupoEscolhido)}
               </Botao>
+              <Botao onClick={() => setEditando(grupoEscolhido)}>Editar</Botao>
             </>
           ) : undefined,
-      }
+        }
+      : {
+          acima: 'Materiais',
+          titulo: 'Estoque',
+          sub,
+          acoes:
+            podeEditar && !celular ? (
+              <>
+                {maisAcoes}
+                <Botao onClick={() => abrirNovo()}>Novo material</Botao>
+                <Botao tom="primario" onClick={abrirMovimento}>
+                  Registrar movimento
+                </Botao>
+              </>
+            ) : undefined,
+        }
+
+  /* O EDITOR DO DEPÓSITO TOMA A PÁGINA: tem os próprios botões no topo
+     (Descartar e Salvar) e só devolve a tela quando a pessoa sai dele. */
+  if (editandoDeposito && podeEditar) {
+    return (
+      <EditorDoDeposito
+        sub={sub}
+        plantaInicial={deposito}
+        lugares={lugares}
+        materiais={materiais}
+        aoSalvar={lerDeposito}
+        aoSair={para => {
+          setEditandoDeposito(false)
+          setAba(para)
+        }}
+      />
+    )
+  }
 
   return (
     <Pagina {...cabecalho}>
@@ -314,29 +386,40 @@ export function TelaEstoque() {
           <Segmentado
             className="es-aba"
             valor={aba}
-            aoMudar={(a) => {
+            aoMudar={a => {
               setAba(a)
               setBusca('')
             }}
             opcoes={[
               { valor: 'materiais', rotulo: 'Materiais' },
               { valor: 'razao', rotulo: 'Movimentações' },
+              { valor: 'deposito', rotulo: 'Depósito' },
             ]}
           />
           <Busca
-            className="es-busca"
+            className={aba === 'deposito' ? 'es-busca dp-busca' : 'es-busca'}
             value={busca}
-            onChange={(e) => setBusca(e.currentTarget.value)}
-            placeholder={aba === 'materiais' ? 'Buscar material ou fornecedor' : 'Buscar material, pedido ou pessoa'}
-            aria-label="Buscar"
+            onChange={e => setBusca(e.currentTarget.value)}
+            placeholder={
+              aba === 'materiais'
+                ? 'Buscar material ou fornecedor'
+                : aba === 'razao'
+                  ? 'Buscar material, pedido ou pessoa'
+                  : 'Onde está? Buscar tecido, cor ou item'
+            }
+            aria-label={aba === 'deposito' ? 'Onde está?' : 'Buscar'}
           />
-          {aba === 'materiais' ? (
+          {aba === 'deposito' ? null : aba === 'materiais' ? (
             <div className="es-chips">
               <Chip ligado={filtro === ''} onClick={() => setFiltro('')}>
                 Todos <span className="es-conta">{materiais.length}</span>
               </Chip>
-              {CATEGORIAS.map((c) => (
-                <Chip key={c} ligado={filtro === c} onClick={() => setFiltro(filtro === c ? '' : c)}>
+              {CATEGORIAS.map(c => (
+                <Chip
+                  key={c}
+                  ligado={filtro === c}
+                  onClick={() => setFiltro(filtro === c ? '' : c)}
+                >
                   {NOME_DA_CATEGORIA[c]} <span className="es-conta">{contagem(c)}</span>
                 </Chip>
               ))}
@@ -353,14 +436,27 @@ export function TelaEstoque() {
               <Chip ligado={motivo === ''} onClick={() => setMotivo('')}>
                 Todos <span className="es-conta">{movimentos.length}</span>
               </Chip>
-              {MOTIVOS.map((m) => (
-                <Chip key={m} ligado={motivo === m} onClick={() => setMotivo(motivo === m ? '' : m)}>
+              {MOTIVOS.map(m => (
+                <Chip
+                  key={m}
+                  ligado={motivo === m}
+                  onClick={() => setMotivo(motivo === m ? '' : m)}
+                >
                   {NOME_DO_MOTIVO[m]} <span className="es-conta">{contagemDoMotivo(m)}</span>
                 </Chip>
               ))}
             </div>
           )}
-          {aba === 'materiais' ? (
+          {aba === 'deposito' ? (
+            podeEditar && !celular && !lendoDeposito && !erroDoDeposito && deposito ? (
+              <span className="dp-na-barra">
+                <BotaoEditarODeposito
+                  temDeposito={!!deposito}
+                  aoEditar={() => setEditandoDeposito(true)}
+                />
+              </span>
+            ) : null
+          ) : aba === 'materiais' ? (
             <Segmentado
               className="es-ver"
               valor={vista}
@@ -416,11 +512,19 @@ export function TelaEstoque() {
         </div>
       )}
 
-      {erro ? (
+      {aba === 'deposito' && erroDoDeposito ? (
+        <section className="cartao es-quadro">
+          <Vazio
+            titulo="Não consegui ler o depósito"
+            texto={erroDoDeposito}
+            acao={<Botao onClick={() => void lerDeposito()}>Tentar de novo</Botao>}
+          />
+        </section>
+      ) : erro ? (
         <section className="cartao es-quadro">
           <Vazio titulo="Não consegui ler o estoque" texto={erro} />
         </section>
-      ) : carregando ? (
+      ) : carregando || (aba === 'deposito' && lendoDeposito) ? (
         <section className="cartao es-quadro">
           <div className="es-espera">
             <Esqueleto altura={18} />
@@ -431,6 +535,19 @@ export function TelaEstoque() {
             <Esqueleto altura={18} />
           </div>
         </section>
+      ) : aba === 'deposito' ? (
+        <Deposito
+          planta={deposito}
+          lugares={lugares}
+          materiais={materiais}
+          busca={busca}
+          podeEditar={podeEditar}
+          estreita={estreita}
+          celular={celular}
+          aoEditar={() => setEditandoDeposito(true)}
+          aoMarcar={setMarcando}
+          aoMovimentar={setNoMovimento}
+        />
       ) : aba === 'razao' ? (
         <section className="cartao es-quadro">
           <Movimentacoes
@@ -446,7 +563,7 @@ export function TelaEstoque() {
             grupos={grupos}
             fornecimento={fornecimento}
             haMateriais={materiais.length > 0}
-            aoAbrir={(m) => (podeEditar ? setNoMovimento(m) : undefined)}
+            aoAbrir={m => (podeEditar ? setNoMovimento(m) : undefined)}
           />
         </section>
       ) : materiais.length === 0 ? (
@@ -463,7 +580,7 @@ export function TelaEstoque() {
             grupos={grupos}
             escolhido={escolhido}
             fornecimento={fornecimento}
-            aoEscolher={(chave) => setEscolhido(chave === escolhido && !estreita ? '' : chave)}
+            aoEscolher={chave => setEscolhido(chave === escolhido && !estreita ? '' : chave)}
           />
           <div className="es-lado">
             {grupoEscolhido ? (
@@ -473,11 +590,17 @@ export function TelaEstoque() {
                 temFornecedores={fornecimento.disponivel}
                 ultimaEntrada={
                   movimentos.find(
-                    (v) => v.motivo === 'entrada' && grupoEscolhido.itens.some((m) => m.id === v.materialId),
+                    v =>
+                      v.motivo === 'entrada' &&
+                      grupoEscolhido.itens.some(m => m.id === v.materialId),
                   )?.quando ?? ''
                 }
-                movimentos={movimentos.filter((v) => grupoEscolhido.itens.some((m) => m.id === v.materialId))}
-                reservas={reservas.filter((r) => grupoEscolhido.itens.some((m) => m.id === r.materialId))}
+                movimentos={movimentos.filter(v =>
+                  grupoEscolhido.itens.some(m => m.id === v.materialId),
+                )}
+                reservas={reservas.filter(r =>
+                  grupoEscolhido.itens.some(m => m.id === r.materialId),
+                )}
                 podeEditar={podeEditar}
                 estreita={estreita}
                 aoMovimentar={setNoMovimento}
@@ -517,6 +640,17 @@ export function TelaEstoque() {
         }}
         aoCriarFornecedor={recarregarFornecedores}
       />
+      <MarcarLugar
+        material={marcando}
+        planta={deposito}
+        lugares={lugares}
+        materiais={materiais}
+        aoFechar={() => setMarcando(null)}
+        aoGravar={async () => {
+          setMarcando(null)
+          await lerDeposito()
+        }}
+      />
       <NovoMaterial
         inicio={novo}
         materiais={materiais}
@@ -542,7 +676,7 @@ export function TelaEstoque() {
         grupo={editando}
         fornecimento={fornecimento}
         aoFechar={() => setEditando(null)}
-        aoSalvar={async (grupoNovo) => {
+        aoSalvar={async grupoNovo => {
           const antes = editando
           setEditando(null)
           await recarregar()
@@ -573,14 +707,17 @@ function ListaDoEstoque({
   if (!grupos.length) {
     return (
       <section className="cartao es-lista">
-        <Vazio titulo="Nada neste filtro" texto="Nenhum material combina com o que está escolhido." />
+        <Vazio
+          titulo="Nada neste filtro"
+          texto="Nenhum material combina com o que está escolhido."
+        />
       </section>
     )
   }
   return (
     <section className="cartao es-lista">
-      {CATEGORIAS.map((c) => {
-        const daCategoria = grupos.filter((g) => g.categoria === c)
+      {CATEGORIAS.map(c => {
+        const daCategoria = grupos.filter(g => g.categoria === c)
         if (!daCategoria.length) return null
         return (
           <div key={c} className="es-lista-bloco">
@@ -592,7 +729,7 @@ function ListaDoEstoque({
                   : plural(daCategoria.length, 'grupo', 'grupos')}
               </span>
             </div>
-            {daCategoria.map((g) => {
+            {daCategoria.map(g => {
               const f = fornecedorDoGrupo(g, fornecimento)
               return (
                 <button
@@ -617,7 +754,7 @@ function ListaDoEstoque({
                     )}
                   </span>
                   <span className="es-minis">
-                    {g.itens.slice(0, 6).map((m) => (
+                    {g.itens.slice(0, 6).map(m => (
                       <VaoDoMaterial key={m.id} m={m} mini />
                     ))}
                   </span>

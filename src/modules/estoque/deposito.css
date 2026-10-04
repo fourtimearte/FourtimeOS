@@ -1,0 +1,965 @@
+/* ==========================================================================
+   O depósito: o mapa visto de cima, o lugar aberto, a caixa de marcar o lugar
+   e o editor.
+
+   O DESENHO É O CENTRO DA TELA, e é feito das mesmas três superfícies do
+   resto do Estoque: branco é vazio, o cinza claro é o que tem material, e a
+   linha é a borda do sistema. Preto é o lugar aberto, vermelho é o que a
+   pessoa procurou. O aviso de compra é um ponto no canto, e nunca o lugar
+   inteiro pintado.
+
+   O NÍVEL DA PRATELEIRA É UMA COR (--nivel-1 a --nivel-6, do tokens.css), e a
+   cor nunca vai sozinha: o número está sempre dentro dela.
+
+   A folga ENTRE os blocos é da página (.pagina tem gap), então nada aqui
+   escreve margin-bottom entre caixas.
+   ========================================================================== */
+
+/* --- a tela: o desenho à esquerda e o que está aberto à direita ------------ */
+.dp-tela {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+.dp-tela.estreita {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dp-pilha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  container-type: inline-size;
+}
+.dp-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* --- a caixa ---------------------------------------------------------------- */
+.dp-cartao {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.dp-topo {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-3) var(--sp-4);
+  padding: var(--re-2) var(--re-7);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+.dp-topo .cartao-titulo {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.dp-topo .cartao-titulo small {
+  margin-left: var(--re-4);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-3);
+}
+.dp-topo.ferramentas {
+  padding-block: var(--re-5);
+}
+.dp-conta {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.dp-recheio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  padding: var(--re-7) var(--re-7) var(--re-8);
+  min-width: 0;
+}
+.dp-nota {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.dp-nota.grande {
+  font-size: 14px;
+  color: var(--text);
+}
+.dp-nota.no-vazio {
+  padding: 0 var(--re-9) var(--re-9);
+  text-align: center;
+}
+.dp-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-4) var(--sp-4);
+  padding: var(--re-5) var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.dp-pe.botoes {
+  gap: var(--gap-btn);
+}
+
+/* a busca do depósito cresce até o botão de editar, que encosta na margem */
+.es-barra .es-busca.dp-busca {
+  flex: 1 1 300px;
+  max-width: 560px;
+}
+.dp-na-barra {
+  margin-left: auto;
+}
+
+/* --- o desenho --------------------------------------------------------------- */
+.dp-area {
+  padding: var(--re-6) var(--re-6) var(--re-4);
+  overflow: hidden;
+}
+.dp-moldura-da-planta {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+.dp-planta {
+  flex: none;
+  display: block;
+  font-family: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dp-planta.editando {
+  touch-action: none;
+}
+.dp-chao {
+  fill: var(--surface);
+}
+.dp-quadricula {
+  fill: none;
+  stroke: var(--surface-3);
+  stroke-width: 1;
+}
+.dp-parede {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.dp-moldura {
+  fill: var(--surface);
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+
+/* o lugar: o vão da prateleira e o palete */
+.dp-lugar .dp-caixa {
+  fill: var(--surface);
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+.dp-lugar .dp-fundo-do-nome {
+  fill: var(--surface);
+}
+.dp-lugar .dp-nome {
+  fill: var(--text-3);
+  font-weight: 600;
+  pointer-events: none;
+}
+.dp-lugar .dp-ripa {
+  stroke: var(--border-2);
+  stroke-width: 0.75;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.dp-lugar.tem .dp-caixa,
+.dp-lugar.tem .dp-fundo-do-nome {
+  fill: var(--ink-soft);
+}
+.dp-lugar.tem .dp-nome {
+  fill: var(--text);
+}
+.dp-lugar.aberto .dp-caixa,
+.dp-lugar.aberto .dp-fundo-do-nome {
+  fill: var(--ink);
+}
+.dp-lugar.aberto .dp-caixa {
+  stroke: var(--ink);
+}
+.dp-lugar.aberto .dp-nome {
+  fill: var(--on-ink);
+}
+.dp-lugar.aberto .dp-ripa {
+  stroke: var(--on-ink);
+  opacity: 0.25;
+}
+.dp-lugar.achado .dp-caixa,
+.dp-lugar.achado .dp-fundo-do-nome {
+  fill: var(--brand);
+}
+.dp-lugar.achado .dp-caixa {
+  stroke: var(--brand);
+}
+.dp-lugar.achado .dp-nome {
+  fill: var(--on-brand);
+}
+.dp-lugar.achado .dp-ripa {
+  stroke: var(--on-brand);
+  opacity: 0.3;
+}
+.dp-lugar.apagado .dp-caixa,
+.dp-lugar.apagado .dp-fundo-do-nome {
+  fill: var(--surface-2);
+}
+.dp-lugar.apagado .dp-caixa {
+  stroke: var(--border);
+}
+.dp-lugar .dp-comprar {
+  fill: var(--brand);
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.dp-lugar.aberto .dp-comprar {
+  stroke: var(--ink);
+}
+.dp-alvo {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+.dp-lugar.clica {
+  cursor: pointer;
+}
+.dp-lugar.clica:hover .dp-caixa {
+  stroke: var(--text-2);
+}
+.dp-lugar.aberto.clica:hover .dp-caixa {
+  stroke: var(--ink);
+}
+.dp-lugar.clica:focus-visible,
+.dp-movel.pega:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* a escada e a porta: estão no desenho para a pessoa se achar */
+.dp-escada {
+  fill: var(--surface-2);
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+.dp-degrau {
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+.dp-seta {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dp-porta {
+  fill: var(--surface);
+  stroke: var(--text-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.dp-legenda {
+  fill: var(--text-3);
+  pointer-events: none;
+}
+.dp-legenda.forte {
+  fill: var(--text-2);
+  font-weight: 600;
+}
+.dp-legenda.no-piso {
+  paint-order: stroke;
+  stroke: var(--surface-2);
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+.dp-movel.escolhido .dp-legenda.no-piso {
+  stroke: var(--ink-soft);
+}
+.dp-medida {
+  fill: var(--text-3);
+}
+.dp-regua {
+  fill: none;
+  stroke: var(--text-3);
+  stroke-width: 1.2;
+}
+.dp-aviso {
+  fill: var(--text);
+  font-weight: 600;
+}
+.dp-aviso.leve {
+  fill: var(--text-2);
+  font-weight: 400;
+}
+
+/* o marcador: o lugar onde a busca achou, ou a ordem dos lugares do material */
+.dp-marcador {
+  pointer-events: none;
+  animation: dp-pino var(--t-slow) var(--ease-out) both;
+}
+.dp-marcador circle {
+  fill: var(--brand);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.dp-marcador text {
+  fill: var(--on-brand);
+  font-weight: 700;
+}
+@keyframes dp-pino {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* o editor: a peça que se pega, a seleção e as alças */
+.dp-movel.pega {
+  cursor: grab;
+}
+.dp-moldura-da-planta.arrastando .dp-movel.pega {
+  cursor: grabbing;
+}
+.dp-movel.escolhido .dp-escada,
+.dp-movel.escolhido .dp-porta {
+  fill: var(--ink-soft);
+  stroke: var(--ink);
+  stroke-dasharray: none;
+}
+.dp-selecao {
+  animation: dp-surge var(--t-fast) var(--ease-out);
+}
+.dp-contorno {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  pointer-events: none;
+}
+.dp-contorno.tracejado {
+  stroke-dasharray: 7 5;
+}
+.dp-alca {
+  fill: var(--surface);
+  stroke: var(--brand);
+  stroke-width: 2;
+  pointer-events: none;
+}
+.dp-cota {
+  fill: var(--brand-text);
+  font-weight: 600;
+  pointer-events: none;
+}
+.dp-fundo-da-cota {
+  fill: var(--surface);
+  pointer-events: none;
+}
+
+/* --- a legenda ---------------------------------------------------------------- */
+.dp-legenda-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--sp-4);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.dp-legenda-fila span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+}
+.dp-legenda-fila i {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border-radius: var(--radius-marca);
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+}
+.dp-legenda-fila i.tem,
+.dp-legenda-fila i.comprar {
+  background: var(--ink-soft);
+}
+.dp-legenda-fila i.comprar::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.dp-legenda-fila i.aberto {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.dp-legenda-fila i.achado {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+/* --- os números embaixo do desenho -------------------------------------------- */
+.dp-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+@container (max-width: 620px) {
+  .dp-numeros {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+}
+
+/* --- a linha: o material dentro do lugar, e o que está sem lugar --------------- */
+.dp-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+}
+.dp-linha:last-child {
+  border-bottom: 0;
+}
+.dp-linha.clica {
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.dp-linha.clica:hover {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.dp-linha.achada {
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.dp-linha.achada.clica:hover {
+  background: color-mix(in srgb, var(--brand) 11%, var(--surface));
+}
+.dp-linha.escolhida,
+.dp-linha.escolhida.clica:hover {
+  background: var(--ink);
+  color: var(--on-ink);
+  box-shadow: none;
+}
+.dp-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.dp-texto b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.dp-texto small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+.dp-texto small.dp-cor {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.dp-valor {
+  flex: none;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dp-valor small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.dp-valor.pouco {
+  color: var(--brand-text);
+}
+.dp-linha.escolhida .dp-texto small,
+.dp-linha.escolhida .dp-texto small.dp-cor,
+.dp-linha.escolhida .dp-valor small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.dp-linha.escolhida .dp-valor.pouco {
+  color: var(--brand-no-ink);
+}
+.dp-linha .dp-marcar {
+  flex: none;
+  gap: var(--re-3);
+}
+/* no celular o botão fica só com o alfinete: quem anda pelo depósito com o
+   celular na mão é quem mais marca lugar, e esconder o botão tirava isso dele */
+@container (max-width: 520px) {
+  .dp-marcar .dp-marcar-texto {
+    display: none;
+  }
+}
+.dp-ver-mais {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.dp-ver-mais:hover {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.dp-secao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--re-3) var(--re-7);
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.dp-secao span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+}
+.dp-nivel-bloco:last-of-type .dp-linha:last-child {
+  border-bottom: 0;
+}
+.dp-passo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dp-passo.feito {
+  background: var(--ok);
+}
+
+/* o painel entra de leve cada vez que outro lugar é aberto */
+.dp-painel {
+  animation: dp-surge var(--t-base) var(--ease-out);
+}
+@keyframes dp-surge {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* --- o nível: a cor com o número dentro ----------------------------------------- */
+.dp-nv {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--re-1);
+  border-radius: var(--radius-xs);
+  background: var(--nv, var(--text-2));
+  color: var(--on-nivel);
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dp-nv.n1 {
+  --nv: var(--nivel-1);
+}
+.dp-nv.n2 {
+  --nv: var(--nivel-2);
+}
+.dp-nv.n3 {
+  --nv: var(--nivel-3);
+}
+.dp-nv.n4 {
+  --nv: var(--nivel-4);
+}
+.dp-nv.n5 {
+  --nv: var(--nivel-5);
+}
+.dp-nv.n6 {
+  --nv: var(--nivel-6);
+}
+
+/* --- a etiqueta do lugar --------------------------------------------------------- */
+.dp-etiqueta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  min-height: 22px;
+  padding: 0 var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dp-etiqueta.sem {
+  border-style: dashed;
+  color: var(--text-3);
+  font-weight: 500;
+}
+.dp-etiqueta.forte {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.dp-etiqueta.forte .dp-nv {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--on-ink) 55%, transparent);
+}
+.dp-ponto-do-meio {
+  opacity: 0.6;
+}
+
+/* --- a prateleira vista de frente -------------------------------------------------- */
+.dp-frente {
+  display: grid;
+  gap: var(--re-2);
+  align-items: stretch;
+}
+.dp-frente-vao {
+  padding: 0 var(--re-1);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dp-frente-vao.aberto {
+  color: var(--text);
+}
+.dp-frente-nivel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  padding-right: var(--re-2);
+  font-size: 11.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.dp-casa {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-1);
+  min-width: 0;
+  min-height: 38px;
+  padding: var(--re-1);
+  border: 1px solid color-mix(in srgb, var(--nv) 34%, var(--surface));
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--nv) 6%, var(--surface));
+  font: inherit;
+  color: var(--text-2);
+}
+.dp-bola {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dp-bola, var(--text-3));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 45%, transparent);
+}
+.dp-bola.sem-cor {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-marca);
+  box-shadow: none;
+}
+.dp-casa small {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.dp-casa.n1 {
+  --nv: var(--nivel-1);
+}
+.dp-casa.n2 {
+  --nv: var(--nivel-2);
+}
+.dp-casa.n3 {
+  --nv: var(--nivel-3);
+}
+.dp-casa.n4 {
+  --nv: var(--nivel-4);
+}
+.dp-casa.n5 {
+  --nv: var(--nivel-5);
+}
+.dp-casa.n6 {
+  --nv: var(--nivel-6);
+}
+.dp-casa.tem {
+  border-color: color-mix(in srgb, var(--nv) 55%, var(--surface));
+  background: color-mix(in srgb, var(--nv) 20%, var(--surface));
+}
+.dp-casa.do-aberto {
+  border-color: var(--nv);
+  box-shadow: inset 0 0 0 1px var(--nv);
+}
+.dp-casa.de-fora {
+  border-style: dashed;
+  opacity: 0.6;
+}
+.dp-casa.marcada {
+  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--ink),
+    0 0 0 3px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+button.dp-casa {
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+button.dp-casa:hover {
+  border-color: var(--nv);
+}
+button.dp-casa:active {
+  transform: scale(0.96);
+}
+@media (pointer: coarse) {
+  button.dp-casa {
+    min-height: 44px;
+  }
+}
+
+/* --- a caixa de marcar o lugar ------------------------------------------------------ */
+.dp-marcar-caixa {
+  container-type: inline-size;
+}
+.dp-marcar-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: var(--sp-5);
+  align-items: start;
+}
+@container (max-width: 760px) {
+  .dp-marcar-corpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.dp-marcar-corpo .dp-pilha {
+  gap: var(--re-6);
+}
+.dp-no-pe {
+  flex: 1;
+  min-width: 180px;
+  margin-right: auto;
+}
+.dp-lugares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+}
+.dp-lugar-da-lista {
+  display: flex;
+  align-items: center;
+  gap: var(--re-2);
+  min-width: 0;
+  padding: var(--re-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+.dp-lugar-da-lista.atual {
+  border-color: var(--border-2);
+  background: var(--surface-2);
+}
+.dp-lugar-botao {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--re-2);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dp-lugar-botao .dp-etiqueta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dp-miudo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.dp-miudo:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+@media (pointer: coarse) {
+  .dp-miudo {
+    width: 44px;
+    height: 44px;
+  }
+  .dp-lugar-botao {
+    min-height: 44px;
+  }
+}
+
+/* --- o editor ------------------------------------------------------------------------ */
+.dp-selo-editando {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--re-5);
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand-text);
+  white-space: nowrap;
+}
+.dp-ferramentas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-4);
+}
+.dp-ferramentas .btn {
+  gap: var(--re-3);
+  white-space: nowrap;
+}
+.dp-formulario {
+  gap: var(--re-6);
+}
+.dp-dois {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+  align-items: start;
+}
+.dp-com-sufixo {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+.dp-com-sufixo .entrada {
+  flex: 1;
+  min-width: 0;
+  padding-right: var(--sp-8);
+}
+.dp-com-sufixo i {
+  position: absolute;
+  top: 50%;
+  right: var(--re-6);
+  transform: translateY(-50%);
+  font-style: normal;
+  font-size: 13px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.dp-nomes-dos-vaos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: var(--re-4);
+}
+.dp-nomes-dos-vaos .entrada {
+  min-width: 0;
+}
+/* um nível por linha, o de cima em cima: é a prateleira lida de pé */
+.dp-cores-dos-niveis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+}
+.dp-cor-do-nivel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.dp-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}
+.dp-botoes .btn {
+  gap: var(--re-3);
+}
+.dp-passo-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-5);
+  font-size: 13.5px;
+}
+.dp-lista-simples {
+  margin: var(--sp-3) 0 0;
+  padding: 0 0 0 var(--sp-5);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}

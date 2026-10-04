@@ -156,6 +156,10 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
               Cor com significado
             </h3>
             <Cores nomes={SINAIS} />
+            <h3 className="kit-nota" style={{ marginTop: 'var(--sp-6)' }}>
+              Nível da prateleira do depósito: a cor nunca vai sem o número
+            </h3>
+            <Cores nomes={NIVEIS} />
           </Secao>
 
           <Secao
@@ -1273,6 +1277,16 @@ const SINAIS: [string, string][] = [
   ['--warn', 'atenção'],
   ['--info', 'informação'],
   ['--wa', 'WhatsApp'],
+]
+
+const NIVEIS: [string, string][] = [
+  ['--nivel-1', 'nível 1, o de baixo'],
+  ['--nivel-2', 'nível 2'],
+  ['--nivel-3', 'nível 3'],
+  ['--nivel-4', 'nível 4'],
+  ['--nivel-5', 'nível 5'],
+  ['--nivel-6', 'nível 6, o de cima'],
+  ['--on-nivel', 'o número sobre a cor'],
 ]
 
 const TECNICAS: [Tecnica, string][] = [

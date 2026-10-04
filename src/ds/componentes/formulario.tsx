@@ -164,8 +164,13 @@ export function Segmentado<T extends string>({
       setInd({ x: ativo.offsetLeft, w: ativo.offsetWidth })
     }
     medir()
+    /* A CAIXA NÃO BASTA: quando ela ocupa a largura toda (as abas do Estoque no
+       celular), a fonte que chega depois muda a largura de cada botão sem
+       mudar a da caixa, e o indicador ficava parado no lugar antigo, fora da
+       aba. Cada botão avisa quando muda de tamanho. */
     const obs = new ResizeObserver(medir)
     obs.observe(raiz)
+    raiz.querySelectorAll('button').forEach((b) => obs.observe(b))
     return () => obs.disconnect()
   }, [valor, opcoes])
 

@@ -206,7 +206,10 @@ button.es-linha:hover {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 1px solid var(--border-2);
+  /* o anel sai do texto, e não da borda do cartão: no Grafite a borda do
+     cartão é quase a cor do fundo, e a bolinha de um tecido preto ou marinho
+     sumia na linha */
+  border: 1px solid color-mix(in srgb, var(--text) 38%, transparent);
   background: var(--bola, var(--surface));
 }
 .es-bola.sem-cor {

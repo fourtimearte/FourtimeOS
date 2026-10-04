@@ -504,3 +504,31 @@
     0 12px 28px rgba(0, 0, 0, 0.55),
     0 3px 10px rgba(0, 0, 0, 0.4);
 }
+
+/* --- os niveis da prateleira do deposito ----------------------------------
+   Cada nivel da prateleira tem uma cor, de baixo (1) para cima (6): e por ela
+   que a pessoa acha o material de longe ("esta no azul"). A cor nunca vai
+   sozinha: o numero do nivel esta sempre dentro ou ao lado dela.
+
+   O matiz e o mesmo nos dois temas (verde, azul, ambar, roxo, ciano, rosa); o
+   tom muda para o numero continuar legivel: branco sobre a cor no Gelo,
+   quase preto sobre a cor no Grafite. As duas listas passaram no conferidor
+   de paleta (daltonismo, contraste e croma) em 04/10/2026. */
+[data-theme='light'] {
+  --nivel-1: #047857;
+  --nivel-2: #2563eb;
+  --nivel-3: #b45309;
+  --nivel-4: #7c3aed;
+  --nivel-5: #0077a8;
+  --nivel-6: #be185d;
+  --on-nivel: #ffffff;
+}
+[data-theme='dark'] {
+  --nivel-1: #059669;
+  --nivel-2: #3b82f6;
+  --nivel-3: #d97706;
+  --nivel-4: #9670f7;
+  --nivel-5: #0891b2;
+  --nivel-6: #e55397;
+  --on-nivel: #131416;
+}

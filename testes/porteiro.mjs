@@ -121,7 +121,7 @@ const DO_COMPRADOR = ['maria', 'Maria', 'MARIA', 'compradora', 'Rua das Flores',
 
 // ---------- 1. as contas puras ---------------------------------------------
 const porteiro = await carregar(
-  { SUPABASE_URL: BANCO, SUPABASE_SERVICE_ROLE_KEY: 'chave-de-servico-de-mentira', SHOPIFY_WEBHOOK_SECRET: SEGREDO, LOJA_ENDERECO: 'https://loja.exemplo' },
+  { SUPABASE_URL: BANCO, SUPABASE_SERVICE_ROLE_KEY: 'chave-de-servico-de-mentira', SHOPIFY_WEBHOOK_SECRET: SEGREDO, LOJA_API: 'https://loja.exemplo/api/graphql.json' },
   'inteiro',
 )
 
@@ -186,8 +186,10 @@ chamadas = []
 respostas = {
   'rpc/registrar_pedido_da_loja': { corpo: { ok: true, itens: 2, reler_produtos: true } },
   'rpc/colecoes_dos_parceiros': { corpo: [{ parceiro_id: 'p-1', colecao: 'colecao-um' }, { parceiro_id: 'p-2', colecao: 'colecao-que-caiu' }] },
-  'loja.exemplo/collections/colecao-um/products.json': { corpo: { products: [{ id: 10149030232339, title: 'Camisa Verde', vendor: 'x' }, { id: 222, title: 'Camisa Branca' }] } },
-  'loja.exemplo/collections/colecao-que-caiu/products.json': { status: 404, corpo: {} },
+  'loja.exemplo/api/graphql.json': (_u, corpo) =>
+    corpo.variables.colecao === 'colecao-um'
+      ? { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/10149030232339', title: 'Camisa Verde', vendor: 'x' }, { id: 'gid://shopify/Product/222', title: 'Camisa Branca' }], pageInfo: { hasNextPage: false, endCursor: null } } } } } }
+      : { corpo: { data: { collection: null } } },
   'rpc/registrar_produtos_do_parceiro': { corpo: 2 },
 }
 r = await porteiro.atender(aviso(texto, assinar(texto)))
@@ -248,13 +250,18 @@ confere(
 chamadas = []
 respostas = {
   'rpc/posso': { corpo: true },
-  'loja.exemplo/collections.json': { corpo: { collections: [{ handle: 'viapol', title: 'Viapol Vôlei', products_count: 8, body_html: '<p>x</p>' }, { handle: 'goias', title: 'Goiás Vôlei', products_count: 8 }] } },
+  'loja.exemplo/api/graphql.json': (_u, corpo) =>
+    corpo.variables.depois === null
+      ? { corpo: { data: { collections: { nodes: [{ handle: 'viapol', title: 'Viapol Vôlei', description: 'x' }], pageInfo: { hasNextPage: true, endCursor: 'cursor-2' } } } } }
+      : { corpo: { data: { collections: { nodes: [{ handle: 'goias', title: 'Goiás Vôlei' }], pageInfo: { hasNextPage: false, endCursor: null } } } } },
 }
 r = await porteiro.atender(doOS({ acao: 'colecoes' }, CRACHA))
 let j = await r.json()
 confere(
-  '23. quem pode recebe as colecoes da loja, em ordem de nome, so com endereco, nome e contagem',
-  r.status === 200 && JSON.stringify(j.colecoes) === JSON.stringify([{ colecao: 'goias', nome: 'Goiás Vôlei', produtos: 8 }, { colecao: 'viapol', nome: 'Viapol Vôlei', produtos: 8 }]),
+  '23. quem pode recebe as colecoes da loja, das duas paginas, em ordem de nome, so com endereco e nome',
+  r.status === 200 &&
+    JSON.stringify(j.colecoes) === JSON.stringify([{ colecao: 'goias', nome: 'Goiás Vôlei' }, { colecao: 'viapol', nome: 'Viapol Vôlei' }]) &&
+    chamadas.filter((c) => c.endereco.includes('loja.exemplo')).length === 2,
   JSON.stringify(j),
 )
 
@@ -262,14 +269,18 @@ chamadas = []
 respostas = {
   'rpc/posso': { corpo: true },
   'rpc/colecoes_dos_parceiros': { corpo: [{ parceiro_id: 'p-1', colecao: 'colecao-um' }, { parceiro_id: 'p-2', colecao: 'colecao-dois' }] },
-  'loja.exemplo/collections/colecao-dois/products.json': { corpo: { products: [{ id: 333, title: 'Moletom' }] } },
+  'loja.exemplo/api/graphql.json': { corpo: { data: { collection: { products: { nodes: [{ id: 'gid://shopify/Product/333', title: 'Moletom' }], pageInfo: { hasNextPage: false, endCursor: null } } } } } },
   'rpc/registrar_produtos_do_parceiro': { corpo: 1 },
 }
 r = await porteiro.atender(doOS({ acao: 'produtos', parceiro: 'p-2' }, CRACHA))
 j = await r.json()
 confere(
   '24. reler os produtos de um parceiro le so a colecao dele',
-  r.status === 200 && j.parceiros.length === 1 && j.parceiros[0].produtos === 1 && !chamadas.some((c) => c.endereco.includes('colecao-um')),
+  r.status === 200 &&
+    j.parceiros.length === 1 &&
+    j.parceiros[0].produtos === 1 &&
+    chamadas.filter((c) => c.endereco.includes('loja.exemplo')).every((c) => c.corpo.variables.colecao === 'colecao-dois') &&
+    JSON.stringify(chamadas.find((c) => c.endereco.endsWith('rpc/registrar_produtos_do_parceiro')).corpo.p_produtos) === JSON.stringify([{ id: '333', titulo: 'Moletom' }]),
   JSON.stringify(j),
 )
 

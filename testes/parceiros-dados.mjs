@@ -46,10 +46,10 @@ export const outubro = [
 export const aviso = [{ recebido_em: '2026-10-03T17:32:00Z', topico: 'orders/paid', resultado: 'paid' }]
 
 export const colecoes = [
-  { colecao: 'colegio-professora-yolanda', nome: 'Colégio Professora Yolanda', produtos: 6 },
-  { colecao: 'fourtime-run', nome: 'Fourtime Run', produtos: 12 },
-  { colecao: 'saneago-goias-volei-completo', nome: 'Saneago Goiás Vôlei Completo', produtos: 8 },
-  { colecao: 'viapol-volei-sao-jose', nome: 'Viapol Vôlei São José', produtos: 8 },
+  { colecao: 'colegio-professora-yolanda', nome: 'Colégio Professora Yolanda' },
+  { colecao: 'fourtime-run', nome: 'Fourtime Run' },
+  { colecao: 'saneago-goias-volei-completo', nome: 'Saneago Goiás Vôlei Completo' },
+  { colecao: 'viapol-volei-sao-jose', nome: 'Viapol Vôlei São José' },
 ]
 
 export const PEDE_CONFIRMACAO = 'Este acordo muda a parte de 6 venda(s) já registrada(s). Confirme para refazer a conta.'

@@ -37,7 +37,10 @@ declare const Deno: {
 }
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined
 
-const LOJA = (Deno.env.get('LOJA_ENDERECO') ?? 'https://fourtimefit.com.br').replace(/\/+$/, '')
+/* O endereco da API de vitrine usa o dominio myshopify da loja, e nao o
+   fourtimefit.com.br. A versao da API e a do nome; quando ela sair de linha, a
+   Shopify atende pela mais velha que ainda vale. */
+const LOJA_API = Deno.env.get('LOJA_API') ?? 'https://0e952b-76.myshopify.com/api/2026-07/graphql.json'
 const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/+$/, '')
 const CHAVE_DE_SERVICO = chaveDeServico()
 const SEGREDO = Deno.env.get('SHOPIFY_WEBHOOK_SECRET') ?? ''
@@ -198,38 +201,69 @@ async function podeEditar(req: Request): Promise<boolean> {
 
 // ---------- a leitura da loja ----------------------------------------------
 
-/* A vitrine da loja entrega a lista de colecoes e os produtos de cada uma em
-   JSON, sem chave nenhuma: sao os mesmos dados que qualquer visitante ve. E o
-   que dispensa um app na Shopify so para saber de que colecao e um produto.
-   So entra produto publicado na loja, o que basta: produto que vendeu estava
-   publicado. */
-async function lerDaLoja(caminho: string): Promise<Solto> {
-  const r = await fetch(`${LOJA}${caminho}`, { headers: { Accept: 'application/json' } })
-  if (!r.ok) throw new Error(`a loja respondeu ${r.status} em ${caminho.split('?')[0]}`)
-  return (await r.json()) as Solto
+/* A loja entrega a lista de colecoes e os produtos de cada uma pela API de
+   vitrine da Shopify (Storefront API), que responde sem chave nenhuma: sao os
+   mesmos dados que qualquer visitante ve. E o que dispensa um app na Shopify
+   so para saber de que colecao e um produto. So entra produto publicado na
+   loja, o que basta: produto que vendeu estava publicado.
+
+   NAO E A PAGINA DA LOJA. A primeira versao lia /collections.json do site, e a
+   protecao contra robo da Shopify respondeu 429 ao servidor do Supabase (visto
+   em outubro de 2026). A API e a porta feita para servidor. */
+async function perguntarALoja(consulta: string, variaveis: Solto): Promise<Solto> {
+  const r = await fetch(LOJA_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ query: consulta, variables: variaveis }),
+  })
+  if (!r.ok) throw new Error(`a loja respondeu ${r.status}`)
+  const j = (await r.json()) as Solto
+  const erros = lista(j.errors)
+  if (erros.length) throw new Error(`a loja recusou a consulta: ${texto(erros[0].message).slice(0, 120)}`)
+  return (j.data && typeof j.data === 'object' ? j.data : {}) as Solto
+}
+
+function dentro(v: unknown): Solto {
+  return v && typeof v === 'object' ? (v as Solto) : {}
 }
 
 async function colecoesDaLoja(): Promise<Solto[]> {
   const todas: Solto[] = []
-  for (let pagina = 1; pagina <= 8; pagina++) {
-    const j = await lerDaLoja(`/collections.json?limit=250&page=${pagina}`)
-    const vieram = lista(j.collections)
-    for (const c of vieram) {
-      todas.push({ colecao: texto(c.handle), nome: texto(c.title), produtos: numero(c.products_count) })
-    }
-    if (vieram.length < 250) break
+  let depois: string | null = null
+  for (let pagina = 0; pagina < 8; pagina++) {
+    const d = await perguntarALoja(
+      'query Colecoes($depois: String) { collections(first: 250, after: $depois) { nodes { handle title } pageInfo { hasNextPage endCursor } } }',
+      { depois },
+    )
+    const c = dentro(d.collections)
+    for (const n of lista(c.nodes)) todas.push({ colecao: texto(n.handle), nome: texto(n.title) })
+    const info = dentro(c.pageInfo)
+    if (info.hasNextPage !== true) break
+    depois = texto(info.endCursor)
   }
   todas.sort((a, b) => texto(a.nome).localeCompare(texto(b.nome), 'pt-BR'))
   return todas
 }
 
+/* O id que a API devolve e "gid://shopify/Product/123": o banco guarda o 123,
+   que e o mesmo numero que vem no aviso de pedido. */
 async function produtosDaColecao(colecao: string): Promise<Solto[]> {
   const todos: Solto[] = []
-  for (let pagina = 1; pagina <= 20; pagina++) {
-    const j = await lerDaLoja(`/collections/${encodeURIComponent(colecao)}/products.json?limit=250&page=${pagina}`)
-    const vieram = lista(j.products)
-    for (const p of vieram) todos.push({ id: texto(p.id), titulo: texto(p.title) })
-    if (vieram.length < 250) break
+  let depois: string | null = null
+  for (let pagina = 0; pagina < 20; pagina++) {
+    const d = await perguntarALoja(
+      'query Produtos($colecao: String!, $depois: String) { collection(handle: $colecao) { products(first: 250, after: $depois) { nodes { id title } pageInfo { hasNextPage endCursor } } } }',
+      { colecao, depois },
+    )
+    if (!d.collection) throw new Error(`a loja não tem a coleção ${colecao}`)
+    const p = dentro(dentro(d.collection).products)
+    for (const n of lista(p.nodes)) {
+      const id = texto(n.id).split('/').pop() ?? ''
+      if (/^[0-9]+$/.test(id)) todos.push({ id, titulo: texto(n.title) })
+    }
+    const info = dentro(p.pageInfo)
+    if (info.hasNextPage !== true) break
+    depois = texto(info.endCursor)
   }
   return todos
 }

@@ -93,17 +93,17 @@ export function FichaDoParceiro({
 
   const aberto = novo || !!parceiro
 
-  /* a coleção que o parceiro já tem aparece na lista mesmo quando a loja não
-     respondeu, ou quando ela saiu de lá */
+  /* A loja devolve só o endereço e o nome de cada coleção. A contagem que
+     aparece é a dos produtos que o sistema já leu da coleção DESTE parceiro,
+     e por isso só a coleção dele traz número. Ela aparece na lista mesmo
+     quando a loja não respondeu, ou quando a coleção saiu de lá. */
+  const comContagem = (nome: string) => `${nome} (${plural(parceiro?.produtos ?? 0, 'produto', 'produtos')})`
   const opcoes = colecoes.map((c) => ({
     valor: c.colecao,
-    rotulo: `${c.nome} (${plural(c.produtos, 'produto', 'produtos')})`,
+    rotulo: c.colecao === parceiro?.colecao ? comContagem(c.nome) : c.nome,
   }))
   if (parceiro?.colecao && !opcoes.some((o) => o.valor === parceiro.colecao)) {
-    opcoes.unshift({
-      valor: parceiro.colecao,
-      rotulo: `${parceiro.colecaoNome || parceiro.colecao} (${plural(parceiro.produtos, 'produto', 'produtos')})`,
-    })
+    opcoes.unshift({ valor: parceiro.colecao, rotulo: comContagem(parceiro.colecaoNome || parceiro.colecao) })
   }
   const nomeDaColecao =
     colecoes.find((c) => c.colecao === colecao)?.nome ?? (colecao === parceiro?.colecao ? parceiro.colecaoNome : '')

@@ -81,7 +81,7 @@ export type VendaDoParceiro = {
   conta: boolean
 }
 
-export type Colecao = { colecao: string; nome: string; produtos: number }
+export type Colecao = { colecao: string; nome: string }
 
 export type AvisoDaLoja = { quando: string; topico: string; resultado: string }
 

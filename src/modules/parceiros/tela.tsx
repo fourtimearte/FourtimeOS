@@ -22,7 +22,7 @@ import {
   type VendaDoParceiro,
 } from '@dominio/parceiro'
 import { pode, useSessao } from '@dominio/sessao'
-import { intervaloDosMeses, mesSozinho, parteNaTela, plural, sanfonaDeChegada } from './apoio'
+import { mesSozinho, parteNaTela, plural, sanfonaDeChegada } from './apoio'
 import { FichaDoParceiro } from './ficha'
 import { VisaoGeral } from './geral'
 import { VendasDoParceiro } from './vendas'
@@ -346,8 +346,6 @@ export function TelaParceiros() {
     )
   }
 
-  const andamento = `${intervaloDosMeses(meses)}. ${mesSozinho(mesAtual)[0].toUpperCase()}${mesSozinho(mesAtual).slice(1)} em andamento, até o dia ${dia}.`
-
   return (
     <Pagina
       acima="Gestão"
@@ -404,12 +402,9 @@ export function TelaParceiros() {
             {itens}
           </section>
           <div className="pa-miolo">
-            {doParceiro ?? (
-              <>
-                {cabeca('Todos os parceiros', andamento)}
-                {visaoGeral()}
-              </>
-            )}
+            {/* a visão geral não tem cabeçalho: a fileira dos números começa na
+                altura do topo da lista (pedido do Henrique de 04/10/2026) */}
+            {doParceiro ?? visaoGeral()}
           </div>
         </div>
       ) : (

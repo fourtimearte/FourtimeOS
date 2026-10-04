@@ -251,9 +251,9 @@ for (const tema of ['light', 'dark']) {
   conta(igual(M['.pa-lado'].w, 300) && igual(M['.pa-miolo'].x - M['.pa-lado'].dir, 24) && igual(M['.pa-lado'].y, M['.pa-miolo'].y), `${G} a lista de 300 ao lado do miolo, alinhados em cima, com 24 entre os dois (${M['.pa-lado'].w}, ${M['.pa-miolo'].x - M['.pa-lado'].dir})`)
 
   /* ----------------------------------------------------------- A VISÃO GERAL */
-  conta(M['.pa-cabeca h2'].texto === 'Todos os parceiros' && M['.pa-cabeca h2'].letra === '20px/600' && M['.pa-cabeca p'].texto === 'Maio a outubro de 2026. Outubro em andamento, até o dia 03.', `${G} geral: o cabeçalho diz Todos os parceiros e o período (${M['.pa-cabeca p'].texto})`)
-  conta(await pg.locator('.pa-abas').count() === 0, `${G} geral: sem abas`)
+  conta(await pg.locator('.pa-cabeca').count() === 0 && await pg.locator('.pa-abas').count() === 0 && !(await pg.locator('.pa-miolo').innerText()).includes('Todos os parceiros'), `${G} geral: sem cabeçalho e sem abas`)
   const kg = await todos(pg, '.pa-numeros .kpi')
+  conta(igual(kg[0].y, M['.pa-lado'].y), `${G} geral: a fileira dos quatro números começa na altura do topo do cartão da lista (${kg[0].y} e ${M['.pa-lado'].y})`)
   conta(kg.map((k) => k.texto).join(' | ') === 'Peças vendidas 66 | Total vendido R$ 14.353,40 | Parte dos parceiros R$ 1.489,45 | Fica com a Fourtime R$ 12.863,95', `${G} geral: os quatro números do período (${kg.map((k) => k.texto).join(' | ')})`)
   conta(kg.every((k) => igual(k.y, kg[0].y) && igual(k.h, kg[0].h)) && igual(kg[1].x - kg[0].dir, 16), `${G} geral: os quatro numa fileira só, da mesma altura, com 16 entre eles`)
   const gg = await grafico(pg, 0)
@@ -380,7 +380,7 @@ for (const tema of ['light', 'dark']) {
   conta(await sobra(pg) <= 0, `${G} 12 meses: nada rola para o lado`)
   await foto(pg, `vendas-12-meses-1440-${tema}`)
   await pg.locator('.pa-item', { hasText: 'Todos os parceiros' }).click(); await pausa(pg)
-  conta((await medir(pg, ['.pa-cabeca p']))['.pa-cabeca p'].texto === 'Novembro de 2025 a outubro de 2026. Outubro em andamento, até o dia 03.' && (await numeros(pg))[1] === 'Total vendido R$ 15.103,10', `${G} 12 meses: a visão geral acompanha o período, e diz os dois anos`)
+  conta((await numeros(pg))[1] === 'Total vendido R$ 15.103,10', `${G} 12 meses: a visão geral acompanha o período`)
   const gg12 = await grafico(pg, 0)
   conta(gg12.colunas.length === 12 && gg12.colunas.map((c) => (c.visivel ? c.texto : '.')).join(' ') === '. . . . . . . . . . . 2.059', `${G} 12 meses: no gráfico largo só a última barra mostra o número, na forma curta (${gg12.colunas.map((c) => (c.visivel ? c.texto : '.')).join(' ')})`)
   await escolherPeriodo(pg, 'Últimos 3 meses')
@@ -505,7 +505,7 @@ for (const tema of ['light', 'dark']) {
   conta(acordoDoNovo.p_parceiro === 'p-novo' && acordoDoNovo.p_valor === 8 && acordoDoNovo.p_vale_desde === '2026-10-03', `${G} novo: o acordo vai para o id que o banco devolveu, valendo de hoje`)
   await pg.getByRole('button', { name: 'Novo parceiro' }).click(); await pausa(pg)
   await pg.getByRole('button', { name: 'Cancelar' }).click(); await pausa(pg)
-  conta((await medir(pg, ['.pa-cabeca h2']))['.pa-cabeca h2'].texto === 'Todos os parceiros', `${G} novo: Cancelar volta para a visão geral`)
+  conta(await pg.locator('.pa-cabeca').count() === 0 && (await todos(pg, '.pa-item.ligado'))[0].texto.startsWith('Todos os parceiros') && (await numeros(pg))[0].startsWith('Peças vendidas'), `${G} novo: Cancelar volta para a visão geral`)
 
   conta(erros.length === 0, `${G}: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()

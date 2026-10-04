@@ -23,19 +23,6 @@ export const mesCurto = (chave: string) => mesSozinho(chave).slice(0, 3)
 export const mesCurtoComAno = (chave: string) =>
   `${mesCurto(chave)}/${String(lerMes(chave).ano).slice(2)}`
 
-const maiuscula = (t: string) => `${t[0].toUpperCase()}${t.slice(1)}`
-
-/** "Maio a outubro de 2026", "Novembro de 2025 a outubro de 2026". */
-export function intervaloDosMeses(meses: string[]): string {
-  const de = meses[0]
-  const ate = meses[meses.length - 1]
-  const anoDe = lerMes(de).ano
-  const anoAte = lerMes(ate).ano
-  if (de === ate) return `${maiuscula(mesSozinho(ate))} de ${anoAte}`
-  const inicio = anoDe === anoAte ? mesSozinho(de) : `${mesSozinho(de)} de ${anoDe}`
-  return `${maiuscula(inicio)} a ${mesSozinho(ate)} de ${anoAte}`
-}
-
 /** A parte do parceiro numa soma. Quando nenhuma peça tinha acordo no dia da
     venda, não há número para mostrar: a tela diz "sem acordo". */
 export function parteNaTela(s: SomaDoParceiro, formato: (v: number) => string = dinheiro): string {

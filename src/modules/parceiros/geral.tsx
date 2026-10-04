@@ -18,6 +18,9 @@ import { GraficoPorMes } from './grafico'
 /* ==========================================================================
    A visão geral: todos os parceiros juntos.
 
+   Sem cabeçalho próprio: na lista ao lado, "Todos os parceiros" já diz o que é,
+   e o período está no seletor do topo da página.
+
    É o que aparece quando nenhum parceiro está escolhido: quanto a loja vendeu
    de peças de parceiros no período, quanto disso é deles e quanto fica com a
    Fourtime, o vendido mês a mês, a soma de cada parceiro e as últimas compras.

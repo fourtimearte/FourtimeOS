@@ -58,6 +58,14 @@ const PAGINAS: Pagina[] = [
     porque: 'O que a Fourtime paga para levar e buscar. Guardar a página não apaga os lançamentos.',
   },
   {
+    chave: 'parceiros',
+    nome: 'Parceiros',
+    onde: 'Gestão',
+    rota: '/parceiros',
+    porque:
+      'Quem vende peças na loja e quanto recebe. Guardar a página não apaga as vendas nem desliga a página de cada parceiro na loja.',
+  },
+  {
     chave: 'dtf',
     nome: 'Calculadora de DTF',
     onde: 'Ferramentas',

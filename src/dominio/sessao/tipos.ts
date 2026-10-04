@@ -35,6 +35,7 @@ export type Painel =
   | 'atividades'
   | 'relatorio'
   | 'transporte'
+  | 'parceiros'
   | 'banco'
   | 'config'
   | 'kit'

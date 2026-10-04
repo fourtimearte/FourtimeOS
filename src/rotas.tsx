@@ -25,6 +25,7 @@ import { TelaCalculadoraDeDtf, TelaVerificadorDeBoleto } from '@modules/ferramen
 import { TelaFicha } from '@modules/ficha'
 import { TelaFornecedores } from '@modules/fornecedores'
 import { TelaTransporte } from '@modules/transporte'
+import { TelaParceiros } from '@modules/parceiros'
 import { TelaFunil } from '@modules/funil'
 import { TelaPcp } from '@modules/pcp'
 import { TelaSeparacao } from '@modules/separacao'
@@ -91,6 +92,9 @@ export const rotas = createBrowserRouter([
          ele compra. */
       { path: 'fornecedores', element: pede('estoque', <TelaFornecedores />) },
       { path: 'transporte', element: pede('transporte', <TelaTransporte />) },
+      /* PARCEIROS TEM PAINEL PRÓPRIO (043): é o acordo de quem vende na loja,
+         e quem vê e quem mexe se decide na matriz de Acessos. */
+      { path: 'parceiros', element: pede('parceiros', <TelaParceiros />) },
       /* AS FERRAMENTAS PEDEM O PAINEL DO INICIO, que todo aprovado tem. Elas
          nao leem nem gravam nada do sistema, e um painel proprio seria uma
          migracao so para dizer "todo mundo". O endereco /ferramentas sozinho

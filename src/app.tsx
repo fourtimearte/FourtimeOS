@@ -19,6 +19,7 @@ import {
   Package,
   Receipt,
   SignOut,
+  Storefront,
   Sun,
   TShirt,
   Truck,
@@ -271,6 +272,15 @@ export function App() {
           para: '/transporte',
           rotulo: 'Transporte',
           icone: <Truck {...icone} />,
+        },
+        /* PARCEIROS É GESTÃO: quem vende peças na loja e quanto recebe por
+           venda. Painel próprio (043), de partida só para o administrador e
+           o gerente. */
+        {
+          chave: 'parceiros',
+          para: '/parceiros',
+          rotulo: 'Parceiros',
+          icone: <Storefront {...icone} />,
         },
       ],
     },

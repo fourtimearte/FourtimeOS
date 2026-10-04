@@ -1,0 +1,271 @@
+/* ==========================================================================
+   Parceiros.
+
+   A mesma gramática de Transporte, Estoque e Fornecedores: barra de controle
+   em cima, caixas brancas de borda fina sobre o fundo do sistema, a lista de
+   um lado e o escolhido do outro. Na tela estreita a ficha vira folha.
+
+   Estado é texto: "Página ativa", "Página desligada", "sem acordo". Nenhuma
+   cor nova.
+   ========================================================================== */
+
+/* --- a barra de controle --------------------------------------------------- */
+.pa-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.pa-aviso {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.pa-aviso b {
+  font-weight: 600;
+  color: var(--text);
+}
+.pa-fim {
+  margin-left: auto;
+}
+
+/* --- as duas colunas: a lista e a ficha ------------------------------------ */
+.pa-duas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: start;
+}
+.pa-duas.com-ficha {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+}
+.pa-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+.pa-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* --- a tabela -------------------------------------------------------------- */
+.pa-tabela tr.pa-linha {
+  cursor: pointer;
+}
+/* a linha tem duas linhas de texto no nome, e por isso é mais alta que a da
+   tabela comum. Três nomes na regra, para passar por cima da do Design System. */
+.pa-tabela tr.pa-linha td {
+  height: 56px;
+}
+.pa-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.pa-nome b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa-nome small {
+  font-size: 12.5px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa-direita {
+  align-items: flex-end;
+}
+.pa-forte {
+  font-weight: 600;
+}
+.pa-falta {
+  color: var(--text-3);
+}
+.pa-seta {
+  width: 1px;
+  color: var(--text-3);
+}
+
+/* --- a lista do celular ----------------------------------------------------- */
+.pa-lista {
+  display: flex;
+  flex-direction: column;
+}
+.pa-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 64px;
+  padding: var(--re-5) var(--re-8);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pa-item:last-child {
+  border-bottom: 0;
+}
+.pa-item:hover {
+  background: var(--surface-2);
+}
+.pa-item-fim {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  font-variant-numeric: tabular-nums;
+}
+.pa-item-fim b {
+  font-weight: 600;
+}
+.pa-item-fim small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* --- a ficha ---------------------------------------------------------------- */
+.pa-ficha {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pa-ficha-topo {
+  padding: var(--re-10) var(--re-10) 0;
+}
+.pa-ficha-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--re-10) var(--re-10);
+  min-width: 0;
+}
+/* dentro da folha o recheio já é da folha */
+.pa-na-folha .pa-ficha-corpo {
+  padding: 0;
+}
+.pa-ficha-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-btn);
+  padding: var(--re-8) var(--re-10);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.pa-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.pa-seg-cheio {
+  width: 100%;
+}
+.pa-seg-cheio button {
+  flex: 1;
+  padding-inline: var(--re-4);
+}
+.pa-dois {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+  align-items: start;
+}
+/* o campo com a unidade dentro: o % depois do número, o R$ antes */
+.pa-unidade {
+  position: relative;
+  display: block;
+}
+.pa-unidade i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.pa-unidade.depois i {
+  right: var(--re-7);
+}
+.pa-unidade.antes i {
+  left: var(--re-7);
+}
+.pa-unidade.depois input {
+  padding-right: var(--sp-8);
+  text-align: right;
+}
+.pa-unidade.antes input {
+  padding-left: var(--sp-10);
+}
+.pa-ajuda {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.pa-risco {
+  height: 1px;
+  background: var(--border);
+}
+/* o campo que não se edita e os botões dele, na mesma fileira */
+.pa-com-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.pa-com-botoes input {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 0;
+}
+.pa-chave {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.pa-pergunta {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* ==========================================================================
+   A TELA ESTREITA
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .pa-some-medio {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .pa-fim {
+    margin-left: 0;
+  }
+}
+@media (max-width: 420px) {
+  .pa-dois {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

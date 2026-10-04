@@ -59,12 +59,14 @@ function perfil(acesso) {
   return [p]
 }
 
-async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semVendas = false }) {
+async function abrir(nav, { largura, altura, tema, acesso = 'tudo', comprasCaem = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: P.FUSO, locale: 'pt-BR' })
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {})
   const gravados = []
   let jaPerguntou = false
   await ctx.clock.setFixedTime(new Date(P.HOJE))
+  /* a foto do produto mora no cdn da loja: aqui ela e um quadradinho de mentira */
+  await ctx.route('**cdn.shopify.com/**', (r) => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#1f8a50"/></svg>' }))
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
@@ -90,9 +92,11 @@ async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semVendas = 
     if (u.includes('meu_perfil')) lista = perfil(acesso)
     else if (u.includes('parceiro_na_lista')) lista = P.parceiros
     else if (u.includes('venda_do_parceiro') && u.includes('limit=')) {
-      /* as ultimas compras: so as que contam, da mais nova para a mais velha, cortadas no limite */
-      gravados.push(['leu-ultimas', u])
-      lista = (semVendas ? [] : P.outubro).filter((v) => v.conta).sort((a, b) => (a.vendido_em < b.vendido_em ? 1 : -1)).slice(0, Number(/limit=(\d+)/.exec(u)[1]))
+      /* as ultimas compras de um parceiro: so as que contam, da mais nova para a mais velha */
+      gravados.push(['leu-compras', u])
+      const de = /parceiro_id=eq\.([\w-]+)/.exec(u)?.[1]
+      if (de === 'p3' && comprasCaem) return json(r, { message: 'caiu' }, 500)
+      lista = P.outubro.filter((v) => v.conta && v.parceiro_id === de).sort((a, b) => (a.vendido_em < b.vendido_em ? 1 : -1)).slice(0, Number(/limit=(\d+)/.exec(u)[1]))
     }
     else if (u.includes('venda_do_parceiro')) { gravados.push(['leu-vendas', u]); lista = u.includes('gte.2026-10-01') ? P.outubro : [] }
     else if (u.includes('aviso_da_loja')) lista = P.aviso
@@ -176,7 +180,7 @@ for (const tema of ['light', 'dark']) {
   conta(igual(M['.pa-quadro'].baixo < M['.pa-ficha'].baixo ? M['.pa-quadro'].y : M['.pa-ficha'].y, M['.pa-ficha'].y) && igual(M['.pa-ficha'].x - M['.pa-quadro'].dir, 24), `${G} lista e ficha lado a lado, alinhadas em cima, com 24 entre as duas (${M['.pa-ficha'].x - M['.pa-quadro'].dir})`)
 
   /* ----------------------------------------------------------- A FICHA */
-  await pg.locator('.pa-tabela tbody tr', { hasText: 'Saneago' }).click(); await pausa(pg)
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Saneago' }).click(); await pausa(pg)
   const F = await medir(pg, ['.pa-ficha', '.pa-ficha .cartao-titulo', '.pa-ficha-corpo', '.pa-ficha-pe'])
   conta(F['.pa-ficha'].w <= 460.5 && F['.pa-ficha'].raio === '14px' && F['.pa-ficha'].borda === '1px', `${G} ficha: caixa de até 460, raio 14, borda de 1 (${F['.pa-ficha'].w})`)
   conta(F['.pa-ficha .cartao-titulo'].texto === 'Saneago Goiás Vôlei' && F['.pa-ficha .cartao-titulo'].letra === '15px/600', `${G} ficha: o título é o nome do parceiro, 15/600 (${F['.pa-ficha .cartao-titulo'].letra})`)
@@ -200,31 +204,47 @@ for (const tema of ['light', 'dark']) {
   conta(linha(pe) === 'Abrir a página | Salvar' && igual(pe[1].x - pe[0].dir, 10) && pe[1].dir > pe[0].dir, `${G} ficha: Abrir a página e Salvar no pé, o vermelho por último, com 10 entre os dois`)
   conta(await sobra(pg) <= 0, `${G} 1920: nada rola para o lado`)
 
-  /* ------------------------------------------------ AS ÚLTIMAS COMPRAS */
-  const U = await medir(pg, ['.pa-ultimas', '.pa-ultimas .cartao-titulo', '.pa-quadro', '.pa-ficha', '.pa-compra-valor'])
-  conta(U['.pa-ultimas .cartao-titulo'].texto === 'Últimas compras' && U['.pa-ultimas .cartao-titulo'].letra === '15px/600', `${G} compras: a coluna se chama Últimas compras, com o título de cartão (${U['.pa-ultimas .cartao-titulo'].letra})`)
-  conta(igual(U['.pa-ultimas'].w, 300) && U['.pa-ultimas'].dir < U['.pa-quadro'].x && igual(U['.pa-quadro'].x - U['.pa-ultimas'].dir, 24) && igual(U['.pa-ultimas'].y, U['.pa-quadro'].y), `${G} compras: coluna de 300 à esquerda da lista, alinhada em cima, com 24 entre as duas (${U['.pa-ultimas'].w}, ${U['.pa-quadro'].x - U['.pa-ultimas'].dir})`)
-  conta(U['.pa-quadro'].dir < U['.pa-ficha'].x, `${G} compras: em 1920 ficam as três lado a lado, compras, lista e ficha`)
-  conta(U['.pa-ultimas'].raio === '14px' && U['.pa-ultimas'].borda === '1px', `${G} compras: a mesma caixa das outras, raio 14 e borda de 1`)
+  /* ------------------------------------------- A SANFONA DAS COMPRAS */
+  /* o clique no Goiás, logo acima, abriu a ficha dele e também a sanfona */
+  const san = await pg.evaluate(() => {
+    const linhas = [...document.querySelectorAll('.pa-tabela tbody tr')]
+    const i = linhas.findIndex((l) => l.classList.contains('pa-sanfona'))
+    return { quantas: linhas.filter((l) => l.classList.contains('pa-sanfona')).length, acima: i > 0 ? linhas[i - 1].innerText.replace(/\s+/g, ' ') : '', aberta: i > 0 ? linhas[i - 1].getAttribute('aria-expanded') : '', colunas: i > 0 ? linhas[i].children[0].colSpan : 0 }
+  })
+  conta(san.quantas === 1 && san.acima.startsWith('Saneago Goiás Vôlei') && san.aberta === 'true' && san.colunas === 5, `${G} sanfona: clicar no parceiro abre as compras logo embaixo da linha dele, na largura da tabela (${JSON.stringify(san).slice(0, 120)})`)
+  const S = await medir(pg, ['.pa-sanfona-titulo', '.pa-sanfona td', '.pa-quadro', '.pa-ficha'])
+  conta(S['.pa-sanfona-titulo'].texto === 'Últimas compras' && S['.pa-sanfona-titulo'].letra === '12px/600', `${G} sanfona: o título é Últimas compras (${S['.pa-sanfona-titulo'].letra})`)
+  conta(!!S['.pa-ficha'] && (await pg.locator('.pa-ficha .cartao-titulo').innerText()) === 'Saneago Goiás Vôlei', `${G} sanfona: a ficha do mesmo parceiro continua aberta ao lado`)
   const compras = await todos(pg, '.pa-compra')
-  conta(compras.length === 7, `${G} compras: as sete vendas que contam, sem a devolvida (${compras.length})`)
-  conta(compras[0].texto === 'Camisa Saneago Goiás Vôlei 2026/2027 Verde hoje às 14:32 · Saneago Goiás Vôlei R$ 249,90', `${G} compras: a mais nova em cima, com a peça, o dia, o parceiro e o valor (${compras[0].texto})`)
-  conta(compras[2].texto === 'Camisa Saneago Goiás Vôlei 2026/2027 Verde Personalizado ontem às 21:48 · Saneago Goiás Vôlei · 2 peças R$ 579,80', `${G} compras: venda de duas peças diz que são duas (${compras[2].texto})`)
-  conta(compras[4].texto === 'Camiseta Oficial Viapol Vôlei São José - AZUL ontem às 12:00 · Viapol Vôlei São José R$ 249,90' && compras[6].texto.includes('01/10 às 12:00'), `${G} compras: as dos outros parceiros entram na mesma fila, por hora (${compras[4].texto})`)
-  const leuUltimas = gravados.filter((g) => g[0] === 'leu-ultimas').map((g) => g[1])
-  conta(leuUltimas.length >= 1 && leuUltimas.every((u) => u.includes('conta=is.true') && u.includes('order=vendido_em.desc') && u.includes('limit=12') && !u.includes('gte.')), `${G} compras: pede ao banco as 12 últimas que contam, sem olhar o mês`)
-  const dentroDaColuna = await pg.evaluate(() => { const c = document.querySelector('.pa-ultimas').getBoundingClientRect(); return [...document.querySelectorAll('.pa-ultimas *')].every((e) => { const r = e.getBoundingClientRect(); return !r.width || (r.right <= c.right + 0.6 && r.left >= c.left - 0.6) }) })
-  conta(dentroDaColuna, `${G} compras: nome comprido quebra a linha e nada passa da borda da coluna`)
+  conta(compras.length === 5, `${G} sanfona: as cinco compras do Goiás que contam, sem a devolvida e sem as dos outros (${compras.length})`)
+  conta(compras[0].texto === 'Camisa Saneago Goiás Vôlei 2026/2027 Verde hoje às 14:32 R$ 249,90', `${G} sanfona: a mais nova em cima, com a peça, o dia e o valor (${compras[0].texto})`)
+  conta(compras[2].texto === 'Camisa Saneago Goiás Vôlei 2026/2027 Verde Personalizado ontem às 21:48 · 2 peças R$ 579,80', `${G} sanfona: venda de duas peças diz que são duas (${compras[2].texto})`)
+  conta(compras.every((c) => c.h >= 56), `${G} sanfona: cada compra tem a altura da linha da tabela (${[...new Set(compras.map((c) => Math.round(c.h)))].join(', ')})`)
+  const fotos = await pg.evaluate(() => [...document.querySelectorAll('.pa-compra .pa-foto')].map((f) => { const i = f.querySelector('img'); const r = f.getBoundingClientRect(); return { w: r.width, h: r.height, src: i ? i.getAttribute('src') : '', carregou: i ? i.complete && i.naturalWidth > 0 : false, desenho: !!f.querySelector('svg') } }))
+  conta(fotos.length === 5 && fotos.every((f) => f.w === 40 && f.h === 40), `${G} sanfona: toda compra tem o quadro da foto, de 40 por 40`)
+  conta(fotos[0].src === 'https://cdn.shopify.com/s/files/1/0000/exemplo/goias.jpg?v=1&width=96' && fotos[0].carregou, `${G} sanfona: a foto do produto vem da loja, pedida em miniatura (${fotos[0].src})`)
+  conta(fotos[4].src === '' && fotos[4].desenho, `${G} sanfona: produto sem foto fica com a camiseta desenhada no quadro`)
+  const pedido = ultimo(gravados, 'leu-compras')
+  conta(pedido.includes('parceiro_id=eq.p1') && pedido.includes('conta=is.true') && pedido.includes('order=vendido_em.desc') && pedido.includes('limit=8') && pedido.includes('imagem') && !pedido.includes('gte.'), `${G} sanfona: pede ao banco as 8 últimas compras desse parceiro que contam, com a foto, sem olhar o mês`)
+  const dentroDaLista = await pg.evaluate(() => { const c = document.querySelector('.pa-quadro').getBoundingClientRect(); return [...document.querySelectorAll('.pa-sanfona *')].every((e) => { const r = e.getBoundingClientRect(); return !r.width || (r.right <= c.right + 0.6 && r.left >= c.left - 0.6) }) })
+  conta(dentroDaLista && await sobra(pg) <= 0, `${G} sanfona: nada passa da borda da lista`)
   await foto(pg, `larga-${tema}`)
 
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Saneago' }).click(); await pausa(pg)
+  conta(await pg.locator('.pa-sanfona').count() === 0 && (await pg.locator('.pa-ficha .cartao-titulo').innerText()) === 'Saneago Goiás Vôlei', `${G} sanfona: clicar de novo no mesmo fecha a sanfona e deixa a ficha`)
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Colégio' }).click(); await pausa(pg)
+  conta((await pg.locator('.pa-sanfona .pa-ajuda').innerText()) === 'Nenhuma compra das peças deste parceiro ainda.' && (await pg.locator('.pa-ficha .cartao-titulo').innerText()) === 'Colégio Professora Yolanda', `${G} sanfona: parceiro sem compra diz isso, e a ficha troca para ele`)
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Saneago' }).click(); await pausa(pg)
+  conta(await pg.locator('.pa-sanfona').count() === 1 && (await todos(pg, '.pa-compra')).length === 5 && quantos(gravados, 'leu-compras') === 2, `${G} sanfona: só uma aberta por vez, e a que já foi lida não é pedida de novo (${quantos(gravados, 'leu-compras')} leituras)`)
+
   /* ------------------------------------------------- VALOR POR PEÇA */
-  await pg.locator('.pa-tabela tbody tr', { hasText: 'Viapol' }).click(); await pausa(pg)
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Viapol' }).click(); await pausa(pg)
   const v = await todos(pg, '.pa-ficha-corpo input')
   conta((await pg.locator('.pa-ficha .cartao-titulo').innerText()) === 'Viapol Vôlei São José' && v[1].valor === '25,00' && await pg.locator('.pa-ficha-corpo .seg button.ligado', { hasText: 'Valor por peça' }).count() === 1, `${G} valor por peça: a ficha troca de parceiro e mostra R$ 25,00 (${v[1].valor})`)
   conta(!(await todos(pg, '.pa-ficha-corpo .campo > span:first-child')).some((r) => r.texto === 'O percentual é sobre'), `${G} valor por peça: some a pergunta "o percentual é sobre"`)
 
   /* ----------------------------------------------------------- SALVAR */
-  await pg.locator('.pa-tabela tbody tr', { hasText: 'Saneago' }).click(); await pausa(pg)
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Saneago' }).click(); await pausa(pg)
   gravados.length = 0
   await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
   conta(quantos(gravados, 'parceiro') === 1 && quantos(gravados, 'acordo') === 0, `${G} salvar sem mexer no acordo: grava o cadastro e não escreve acordo novo`)
@@ -298,30 +318,12 @@ for (const tema of ['light', 'dark']) {
   await ctx.close()
 }
 
-/* ==========================================================================
-   1B. A TELA DE 1440: AS COMPRAS À ESQUERDA, A LISTA, E A FICHA EM FOLHA
-   ========================================================================== */
-for (const tema of ['light', 'dark']) {
-  const G = `1440 ${tema === 'light' ? 'gelo' : 'grafite'}`
-  const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema })
-  await ir(pg, '/parceiros', '.pa-tabela')
-  const M = await medir(pg, ['.pa-ultimas', '.pa-quadro'])
-  conta(igual(M['.pa-ultimas'].w, 300) && igual(M['.pa-quadro'].x - M['.pa-ultimas'].dir, 24) && igual(M['.pa-ultimas'].y, M['.pa-quadro'].y), `${G}: as últimas compras à esquerda da lista, com 300 de largura e 24 entre as duas`)
-  conta(await pg.locator('.pa-ficha').count() === 0 && await pg.locator('.pa-tabela tbody tr.marcada').count() === 0, `${G}: a ficha não fica ao lado e ninguém vem escolhido`)
-  conta(linha(await todos(pg, '.pa-tabela thead th')).startsWith('Parceiro | Acordo | Peças no mês | Vendido no mês | Parte do parceiro'), `${G}: a lista continua com as cinco colunas`)
-  conta(await sobra(pg) <= 0, `${G}: nada rola para o lado`)
-  await foto(pg, `media-${tema}`)
-  await pg.locator('.pa-tabela tbody tr', { hasText: 'Saneago' }).click(); await pausa(pg, 600)
-  const folha = await medir(pg, ['dialog.gaveta[open] .caixa', 'dialog.gaveta[open] .t'])
-  conta(!!folha['dialog.gaveta[open] .caixa'] && folha['dialog.gaveta[open] .t'].texto === 'Saneago Goiás Vôlei', `${G}: clicar no parceiro abre a ficha numa folha`)
-  await foto(pg, `media-folha-${tema}`, false)
-  conta(erros.length === 0, `${G}: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
-  await ctx.close()
-}
+/* a leitura das compras que cai: a sanfona diz, e a página continua de pé */
 {
-  const { ctx, pg } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', semVendas: true })
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1920, altura: 1080, tema: 'light', comprasCaem: true })
   await ir(pg, '/parceiros', '.pa-tabela')
-  conta((await pg.locator('.pa-compras-vazio').innerText()) === 'Nenhuma compra registrada ainda.' && await pg.locator('.pa-compra').count() === 0, 'sem compra nenhuma, a coluna diz isso em vez de ficar vazia')
+  await pg.locator('.pa-tabela tbody tr.pa-linha', { hasText: 'Colégio' }).click(); await pausa(pg)
+  conta((await pg.locator('.pa-sanfona .pa-ajuda').innerText()) === 'Não consegui ler as compras agora. Feche e abra de novo para tentar.' && await pg.locator('.pa-ficha').count() === 1 && erros.length === 0, 'sanfona: se a leitura das compras cai, ela avisa e a ficha continua aberta')
   await ctx.close()
 }
 
@@ -336,9 +338,7 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
     await ir(pg, '/parceiros', estreito ? '.pa-lista' : '.pa-tabela')
     conta(await sobra(pg) <= 0, `${G}: nada rola para o lado`)
     conta(await pg.locator('.pa-ficha').count() === 0, `${G}: a ficha não fica ao lado`)
-    const E = await medir(pg, ['.pa-ultimas', '.pa-quadro'])
-    conta(E['.pa-ultimas'].y >= E['.pa-quadro'].baixo && igual(E['.pa-ultimas'].y - E['.pa-quadro'].baixo, 24) && igual(E['.pa-ultimas'].w, E['.pa-quadro'].w), `${G}: as últimas compras descem para depois da lista, da mesma largura, com 24 de respiro (${E['.pa-ultimas'].y - E['.pa-quadro'].baixo})`)
-    conta((await todos(pg, '.pa-compra')).length === 7, `${G}: as sete compras continuam lá`)
+    conta(await pg.locator('.pa-sanfona').count() === 0, `${G}: nenhuma sanfona aberta antes do clique`)
     if (estreito) {
       const itens = await todos(pg, '.pa-item')
       conta(itens.length === 3 && itens.every((i) => i.h >= 44), `${G}: a tabela vira lista de três, com alvo de toque (${itens.map((i) => i.h).join(', ')})`)
@@ -347,7 +347,7 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
       conta((await todos(pg, '.pa-tabela tbody tr')).length === 3 && await pg.locator('.pa-tabela td.pa-seta').count() === 3, `${G}: a tabela continua, com a seta de abrir`)
     }
     await foto(pg, `lista-${nome}-${tema}`)
-    await pg.locator(estreito ? '.pa-item' : '.pa-tabela tbody tr', { hasText: 'Saneago' }).click(); await pausa(pg, 600)
+    await pg.locator(estreito ? '.pa-item' : '.pa-tabela tbody tr.pa-linha', { hasText: 'Saneago' }).click(); await pausa(pg, 600)
     const folha = await medir(pg, ['dialog.gaveta[open] .caixa', 'dialog.gaveta[open] .t', 'dialog.gaveta[open] .sobre-pe'])
     conta(!!folha['dialog.gaveta[open] .caixa'] && folha['dialog.gaveta[open] .t'].texto === 'Saneago Goiás Vôlei', `${G}: tocar no parceiro abre a ficha numa folha, com o nome no topo`)
     conta(linha(await todos(pg, 'dialog.gaveta[open] .sobre-pe .btn')) === 'Abrir a página | Salvar', `${G}: Abrir a página e Salvar ficam no pé da folha`)
@@ -356,6 +356,13 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
     conta(dentro.every((d) => d.dir <= caixa.dir + 0.6 && d.x >= caixa.x - 0.6), `${G}: nada passa da borda da folha`)
     conta(await sobra(pg) <= 0, `${G}: com a folha aberta, nada rola para o lado`)
     await foto(pg, `folha-${nome}-${tema}`, false)
+    /* fechada a folha, a sanfona do parceiro clicado está aberta embaixo dele */
+    await pg.keyboard.press('Escape'); await pausa(pg, 600)
+    const cs = await todos(pg, '.pa-compra')
+    conta(await pg.locator('dialog.gaveta[open]').count() === 0 && cs.length === 5 && cs[0].texto.includes('Camisa Saneago Goiás Vôlei 2026/2027 Verde') && cs[0].texto.includes('R$ 249,90'), `${G}: fechada a folha, as últimas compras do parceiro estão abertas embaixo dele (${cs.length})`)
+    const cabe = await pg.evaluate(() => { const c = document.querySelector('.pa-quadro').getBoundingClientRect(); return [...document.querySelectorAll('.pa-sanfona *')].every((e) => { const r = e.getBoundingClientRect(); return !r.width || (r.right <= c.right + 0.6 && r.left >= c.left - 0.6) }) })
+    conta(cabe && await sobra(pg) <= 0, `${G}: a sanfona cabe na lista e nada rola para o lado`)
+    await foto(pg, `sanfona-${nome}-${tema}`)
     conta(erros.length === 0, `${G}: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
     await ctx.close()
   }

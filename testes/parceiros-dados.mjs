@@ -27,9 +27,13 @@ export const parceiros = [
 ]
 
 let n = 0
+/* a foto vem do produto: os da linha 2026/2027 tem foto, o de 2025 saiu da
+   loja e nao tem, e os do Viapol tem */
+const FOTO = (produto) => (produto.includes('2025') ? '' : `https://cdn.shopify.com/s/files/1/0000/exemplo/${produto.includes('Viapol') ? 'viapol' : 'goias'}.jpg?v=1`)
 const V = (parceiro, quando, produto, variante, quantidade, valor, parte, conta = true) => ({
   item_id: 9000 + (++n), parceiro_id: parceiro, vendido_em: quando, produto, variante,
   quantidade, pecas: conta ? quantidade : 0, valor: conta ? valor : 0, parte: conta ? parte : 0, conta, aparece: true,
+  imagem: FOTO(produto),
 })
 /* as seis pecas do Goias que contam, a devolvida que nao conta, e as duas do Viapol */
 export const outubro = [

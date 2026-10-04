@@ -79,6 +79,8 @@ export type VendaDoParceiro = {
   /** nula quando não havia acordo no dia da venda */
   parte: number | null
   conta: boolean
+  /** o endereço da foto principal do produto na loja; vazio quando não há */
+  imagem: string
 }
 
 export type Colecao = { colecao: string; nome: string }
@@ -129,7 +131,7 @@ function acordoDe(
 
 export async function carregarParceiros(): Promise<Parceiro[]> {
   const linhas = await tabela<LinhaDoParceiro[]>('parceiro_na_lista?select=*&order=nome.asc')
-  return linhas.map((l) => ({
+  return linhas.map(l => ({
     id: l.id,
     nome: l.nome,
     colecao: l.colecao ?? '',
@@ -156,9 +158,11 @@ type LinhaDaVenda = {
   valor: number | string
   parte: number | string | null
   conta: boolean
+  imagem?: string | null
 }
 
-const CAMPOS_DA_VENDA = 'item_id,parceiro_id,vendido_em,produto,variante,quantidade,pecas,valor,parte,conta'
+const CAMPOS_DA_VENDA =
+  'item_id,parceiro_id,vendido_em,produto,variante,quantidade,pecas,valor,parte,conta'
 
 function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
   return {
@@ -172,6 +176,7 @@ function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
     valor: Number(l.valor) || 0,
     parte: l.parte === null ? null : Number(l.parte) || 0,
     conta: !!l.conta,
+    imagem: l.imagem ?? '',
   }
 }
 
@@ -185,14 +190,25 @@ export async function carregarVendasDoMes(mes: string): Promise<VendaDoParceiro[
   return linhas.map(vendaDaLinha)
 }
 
-/** As últimas compras feitas na loja, de todos os parceiros, da mais nova para
-    a mais velha. Só entra a venda que conta: devolvida e cancelada ficam de
-    fora. Não depende do mês escolhido na tela. */
-export async function carregarUltimasCompras(limite = 12): Promise<VendaDoParceiro[]> {
+/** As últimas compras das peças de um parceiro, da mais nova para a mais
+    velha, com a foto do produto. Só entra a venda que conta: devolvida e
+    cancelada ficam de fora. Não depende do mês escolhido na tela. */
+export async function carregarUltimasCompras(
+  parceiroId: string,
+  limite = 8,
+): Promise<VendaDoParceiro[]> {
   const linhas = await tabela<LinhaDaVenda[]>(
-    `venda_do_parceiro?select=${CAMPOS_DA_VENDA}&conta=is.true&order=vendido_em.desc,item_id.asc&limit=${limite}`,
+    `venda_do_parceiro?select=${CAMPOS_DA_VENDA},imagem&parceiro_id=eq.${encodeURIComponent(parceiroId)}` +
+      `&conta=is.true&order=vendido_em.desc,item_id.asc&limit=${limite}`,
   )
   return linhas.map(vendaDaLinha)
+}
+
+/** A foto do produto no tamanho de miniatura. O endereço é o da loja (cdn da
+    Shopify), que aceita a largura no próprio endereço. Só passa https. */
+export function miniatura(imagem: string, largura = 96): string {
+  if (!imagem.startsWith('https://')) return ''
+  return `${imagem}${imagem.includes('?') ? '&' : '?'}width=${largura}`
 }
 
 /* O último aviso que a loja mandou. A carga das vendas antigas não é aviso da
@@ -200,11 +216,13 @@ export async function carregarUltimasCompras(limite = 12): Promise<VendaDoParcei
    foi; ela não cai por isso. */
 export async function ultimoAvisoDaLoja(): Promise<AvisoDaLoja | null> {
   try {
-    const linhas = await tabela<{ recebido_em: string; topico: string | null; resultado: string | null }[]>(
-      'aviso_da_loja?select=recebido_em,topico,resultado&topico=neq.carga&order=id.desc&limit=1',
-    )
+    const linhas = await tabela<
+      { recebido_em: string; topico: string | null; resultado: string | null }[]
+    >('aviso_da_loja?select=recebido_em,topico,resultado&topico=neq.carga&order=id.desc&limit=1')
     const l = linhas[0]
-    return l ? { quando: l.recebido_em, topico: l.topico ?? '', resultado: l.resultado ?? '' } : null
+    return l
+      ? { quando: l.recebido_em, topico: l.topico ?? '', resultado: l.resultado ?? '' }
+      : null
   } catch {
     return null
   }
@@ -273,17 +291,20 @@ export function trocarLink(parceiroId: string): Promise<string> {
 /** As coleções da loja, para escolher a do parceiro. */
 export async function colecoesDaLoja(): Promise<Colecao[]> {
   const r = await funcao<{ colecoes?: Colecao[] }>('loja', { acao: 'colecoes' })
-  return (r?.colecoes ?? []).filter((c) => !!c.colecao)
+  return (r?.colecoes ?? []).filter(c => !!c.colecao)
 }
 
 /** Manda o porteiro reler os produtos da coleção de um parceiro. Devolve
     quantos produtos ele tem depois da leitura. */
 export async function relerProdutos(parceiroId: string): Promise<number> {
-  const r = await funcao<{ parceiros?: { parceiro: string; produtos?: number; erro?: string }[] }>('loja', {
-    acao: 'produtos',
-    parceiro: parceiroId,
-  })
-  const dele = (r?.parceiros ?? []).find((p) => p.parceiro === parceiroId)
+  const r = await funcao<{ parceiros?: { parceiro: string; produtos?: number; erro?: string }[] }>(
+    'loja',
+    {
+      acao: 'produtos',
+      parceiro: parceiroId,
+    },
+  )
+  const dele = (r?.parceiros ?? []).find(p => p.parceiro === parceiroId)
   if (!dele) throw new Error('A loja não devolveu os produtos deste parceiro.')
   if (dele.erro) throw new Error(dele.erro)
   return Number(dele.produtos) || 0
@@ -299,13 +320,16 @@ export function percentualNaTela(v: number): string {
 /** "10% por peça", "R$ 25,00 por peça", "Sem acordo". */
 export function fraseDoAcordo(a: Acordo | null): string {
   if (!a) return 'Sem acordo'
-  return a.tipo === 'percentual' ? `${percentualNaTela(a.valor)} por peça` : `${formatarDinheiroExato(a.valor)} por peça`
+  return a.tipo === 'percentual'
+    ? `${percentualNaTela(a.valor)} por peça`
+    : `${formatarDinheiroExato(a.valor)} por peça`
 }
 
 /** A segunda linha do nome na lista: o estado da página do parceiro. */
 export function situacaoDaPagina(p: Parceiro, agora = new Date()): string {
   if (!p.ativo) return 'Página desligada'
-  if (p.travadoAte && new Date(p.travadoAte).getTime() > agora.getTime()) return 'Página travada por senha errada'
+  if (p.travadoAte && new Date(p.travadoAte).getTime() > agora.getTime())
+    return 'Página travada por senha errada'
   if (!p.abertaEm) return 'Página ligada, ainda não aberta'
   return 'Página ativa'
 }
@@ -346,7 +370,11 @@ export function lerNumero(texto: string): number | null {
 export function numeroNoCampo(valor: number, tipo: TipoDeAcordo): string {
   return tipo === 'percentual'
     ? valor.toLocaleString('pt-BR', { maximumFractionDigits: 2, useGrouping: false })
-    : valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false })
+    : valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        useGrouping: false,
+      })
 }
 
 export function mesmoAcordo(a: Acordo | null, b: Acordo | null): boolean {

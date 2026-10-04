@@ -272,6 +272,15 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 18. o painel traz 2 pecas que contam, 3 linhas (uma devolvida) e nenhum id nem numero de pedido (' || n || ', ' || jsonb_array_length(j -> 'vendas') || ')';
 
+  -- 18b. a devolvida traz o valor que tinha, para a pagina riscar; o valor que conta nao muda (045)
+  txt := txt || E'\n' || case when
+               (select (x ->> 'vendido')::numeric = 249.90 and (x ->> 'valor')::numeric = 0
+                  from jsonb_array_elements(j -> 'vendas') x where x ->> 'motivo' = 'devolvida')
+           and (select (x ->> 'vendido')::numeric = 180 and (x ->> 'valor')::numeric = 90
+                  from jsonb_array_elements(j -> 'vendas') x where x ->> 'produto' = 'Camisa Verde' and x ->> 'variante' = 'M')
+                              then 'ok  ' else 'RUIM' end
+             || ' 18b. a devolvida traz o que foi vendido (R$ 249,90) e conta zero; a devolvida em parte traz R$ 180 vendidos e R$ 90 que contam';
+
   -- 19. pagina desligada e link trocado
   perform public.salvar_parceiro(vi, 'Viapol da Prova', 'colecao-viapol-prova', 'Viapol da Prova', false);
   select chave, senha into r from public.parceiro where id = vi;
@@ -392,5 +401,5 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 25. a lista traz o acordo de hoje e os 2 produtos';
 
-  raise exception E'PROVA DA 043 (tudo desfeito):%', txt;
+  raise exception E'PROVA DOS PARCEIROS, 043 a 045 (tudo desfeito):%', txt;
 end $$;

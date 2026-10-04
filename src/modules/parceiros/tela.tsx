@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CaretRight, Plus } from '@phosphor-icons/react'
-import { Botao, Esqueleto, Pagina, Seletor, Vazio } from '@ds'
+import { Botao, Esqueleto, Pagina, Seletor, TituloCartao, Vazio } from '@ds'
 import { nomeDoMes, quandoFoi, ultimosMeses, usarConsulta } from '@shared'
 import {
   carregarParceiros,
+  carregarUltimasCompras,
   carregarVendasDoMes,
   colecoesDaLoja,
   fraseDoAcordo,
@@ -23,9 +24,19 @@ import './parceiros.css'
 /* ==========================================================================
    Parceiros.
 
-   Quem vende peças na loja e quanto recebe por venda. A lista de um lado, com
-   o que cada parceiro vendeu no mês, e a ficha do outro, onde mora o acordo, o
-   link e a senha da página dele.
+   Quem vende peças na loja e quanto recebe por venda. A lista no meio, com o
+   que cada parceiro vendeu no mês, e a ficha do outro lado, onde mora o
+   acordo, o link e a senha da página dele.
+
+   À ESQUERDA, AS ÚLTIMAS COMPRAS: as doze vendas mais novas da loja, de todos
+   os parceiros, com a peça, o dia, de quem é e o valor. É o que acabou de
+   acontecer, e por isso não obedece ao mês escolhido. Pedido do Henrique de
+   03/10/2026, depois do wireframe.
+
+   TRÊS COLUNAS SÓ CABEM EM TELA BEM LARGA. De 1680 para cima ficam as
+   compras, a lista e a ficha lado a lado. De 1280 a 1679 ficam as compras e a
+   lista, e a ficha abre em folha. Abaixo de 1280 as compras descem para
+   depois da lista.
 
    AS VENDAS CHEGAM SOZINHAS. A loja avisa cada pedido ao Supabase, e esta
    página só lê. A linha "último aviso da loja" é o termômetro disso: se ela
@@ -47,6 +58,7 @@ export function TelaParceiros() {
 
   const [parceiros, setParceiros] = useState<Parceiro[]>([])
   const [vendas, setVendas] = useState<VendaDoParceiro[]>([])
+  const [ultimas, setUltimas] = useState<VendaDoParceiro[]>([])
   const [aviso, setAviso] = useState<AvisoDaLoja | null>(null)
   const [colecoes, setColecoes] = useState<Colecao[]>([])
   const [semColecoes, setSemColecoes] = useState('')
@@ -55,14 +67,21 @@ export function TelaParceiros() {
   /* o id do parceiro aberto, NOVO para o cadastro novo, vazio para nada */
   const [aberto, setAberto] = useState('')
 
-  /* a ficha ao lado só cabe na tela larga; na estreita ela vira folha */
-  const larga = usarConsulta('(min-width: 1280px)')
+  /* a ficha ao lado só cabe na tela bem larga, porque a coluna das últimas
+     compras também quer lugar; abaixo disso ela vira folha */
+  const larga = usarConsulta('(min-width: 1680px)')
   const estreita = usarConsulta('(max-width: 767px)')
 
   const ler = useCallback(async () => {
-    const [ps, vs, av] = await Promise.all([carregarParceiros(), carregarVendasDoMes(mes), ultimoAvisoDaLoja()])
+    const [ps, vs, av, us] = await Promise.all([
+      carregarParceiros(),
+      carregarVendasDoMes(mes),
+      ultimoAvisoDaLoja(),
+      carregarUltimasCompras(),
+    ])
     setParceiros(ps)
     setVendas(vs)
+    setUltimas(us)
     setAviso(av)
     setErro('')
   }, [mes])
@@ -96,7 +115,7 @@ export function TelaParceiros() {
     if (!podeEditar) return
     let vivo = true
     colecoesDaLoja()
-      .then((cs) => {
+      .then(cs => {
         if (!vivo) return
         setColecoes(cs)
         setSemColecoes('')
@@ -115,14 +134,16 @@ export function TelaParceiros() {
   const ordenados = useMemo(
     () =>
       [...parceiros].sort(
-        (a, b) => (somas.get(b.id)?.valor ?? 0) - (somas.get(a.id)?.valor ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR'),
+        (a, b) =>
+          (somas.get(b.id)?.valor ?? 0) - (somas.get(a.id)?.valor ?? 0) ||
+          a.nome.localeCompare(b.nome, 'pt-BR'),
       ),
     [parceiros, somas],
   )
 
   /* na tela larga a ficha nunca fica vazia: sem escolha, vale o primeiro */
   const idAberto = aberto || (larga ? (ordenados[0]?.id ?? '') : '')
-  const escolhido = idAberto === NOVO ? null : (parceiros.find((p) => p.id === idAberto) ?? null)
+  const escolhido = idAberto === NOVO ? null : (parceiros.find(p => p.id === idAberto) ?? null)
   const novo = idAberto === NOVO
 
   const ficha = (
@@ -136,12 +157,40 @@ export function TelaParceiros() {
       semColecoes={semColecoes}
       hoje={hoje}
       aoFechar={() => setAberto('')}
-      aoSalvo={async (id) => {
+      aoSalvo={async id => {
         await recarregar()
         setAberto(larga ? id : '')
       }}
       aoMudar={recarregar}
     />
+  )
+
+  const nomeDe = useMemo(() => new Map(parceiros.map(p => [p.id, p.nome])), [parceiros])
+
+  const compras = (
+    <section className="cartao pa-ultimas">
+      <div className="pa-ficha-topo">
+        <TituloCartao>Últimas compras</TituloCartao>
+      </div>
+      {ultimas.length === 0 ? (
+        <p className="pa-ajuda pa-compras-vazio">Nenhuma compra registrada ainda.</p>
+      ) : (
+        <ul className="pa-compras">
+          {ultimas.map(v => (
+            <li key={v.id} className="pa-compra">
+              <span className="pa-nome">
+                <b>{v.produto}</b>
+                <small>
+                  {quandoFoi(v.quando, hoje)} · {nomeDe.get(v.parceiroId) ?? 'Parceiro'}
+                  {v.pecas > 1 ? ` · ${v.pecas} peças` : ''}
+                </small>
+              </span>
+              <span className="pa-compra-valor">{dinheiro(v.valor)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 
   return (
@@ -173,8 +222,8 @@ export function TelaParceiros() {
             campo
             rotulo="Mês"
             valor={mes}
-            opcoes={meses.map((m) => ({ valor: m, rotulo: nomeDoMes(m) }))}
-            aoEscolher={(v) => setMes(v || meses[0])}
+            opcoes={meses.map(m => ({ valor: m, rotulo: nomeDoMes(m) }))}
+            aoEscolher={v => setMes(v || meses[0])}
             vazio={nomeDoMes(meses[0])}
           />
         </span>
@@ -193,92 +242,114 @@ export function TelaParceiros() {
           </div>
         </section>
       ) : (
-        <div className={larga && (escolhido || novo) ? 'pa-duas com-ficha' : 'pa-duas'}>
-          <section className="cartao pa-quadro">
-            {parceiros.length === 0 ? (
-              <Vazio
-                titulo="Nenhum parceiro ainda"
-                texto="Parceiro é quem vende peças na loja e recebe parte de cada venda. Cada um tem a sua coleção, o seu acordo e a sua página."
-                acao={podeEditar ? <Botao onClick={() => setAberto(NOVO)}>Novo parceiro</Botao> : undefined}
-              />
-            ) : estreita ? (
-              <div className="pa-lista">
-                {ordenados.map((p) => {
-                  const s = somas.get(p.id)
-                  return (
-                    <button key={p.id} type="button" className="pa-item" onClick={() => setAberto(p.id)}>
-                      <span className="pa-nome">
-                        <b>{p.nome}</b>
-                        <small>
-                          {fraseDoAcordo(p.acordo)} · {situacaoDaPagina(p, hoje)}
-                        </small>
-                      </span>
-                      <span className="pa-item-fim">
-                        <b>{s && s.semAcordo === s.pecas && s.pecas > 0 ? 'sem acordo' : dinheiro(s?.parte ?? 0)}</b>
-                        <small>{plural(s?.pecas ?? 0, 'peça', 'peças')}</small>
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="tabela-rola">
-                <table className="tabela pa-tabela">
-                  <thead>
-                    <tr>
-                      <th>Parceiro</th>
-                      <th>Acordo</th>
-                      <th className="dir">Peças no mês</th>
-                      <th className="dir pa-some-medio">Vendido no mês</th>
-                      <th className="dir">Parte do parceiro</th>
-                      {larga ? null : <th className="pa-seta" aria-label="Abrir" />}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ordenados.map((p) => {
-                      const s = somas.get(p.id)
-                      return (
-                        <tr
-                          key={p.id}
-                          className={p.id === idAberto ? 'pa-linha marcada' : 'pa-linha'}
-                          onClick={() => setAberto(p.id)}
-                        >
-                          <td>
-                            <span className="pa-nome">
-                              <b>{p.nome}</b>
-                              <small>{situacaoDaPagina(p, hoje)}</small>
-                            </span>
-                          </td>
-                          <td className={p.acordo ? undefined : 'pa-falta'}>{fraseDoAcordo(p.acordo)}</td>
-                          <td className="dir">{s?.pecas ?? 0}</td>
-                          <td className="dir pa-some-medio">{dinheiro(s?.valor ?? 0)}</td>
-                          <td className="dir pa-forte">
-                            {s && s.semAcordo > 0 ? (
-                              <span className="pa-nome pa-direita">
-                                <b>{s.semAcordo === s.pecas ? 'sem acordo' : dinheiro(s.parte)}</b>
-                                {s.semAcordo === s.pecas ? null : (
-                                  <small>{plural(s.semAcordo, 'peça sem acordo', 'peças sem acordo')}</small>
-                                )}
+        <div className="pa-tres">
+          {parceiros.length === 0 ? null : compras}
+          <div className={larga && (escolhido || novo) ? 'pa-duas com-ficha' : 'pa-duas'}>
+            <section className="cartao pa-quadro">
+              {parceiros.length === 0 ? (
+                <Vazio
+                  titulo="Nenhum parceiro ainda"
+                  texto="Parceiro é quem vende peças na loja e recebe parte de cada venda. Cada um tem a sua coleção, o seu acordo e a sua página."
+                  acao={
+                    podeEditar ? (
+                      <Botao onClick={() => setAberto(NOVO)}>Novo parceiro</Botao>
+                    ) : undefined
+                  }
+                />
+              ) : estreita ? (
+                <div className="pa-lista">
+                  {ordenados.map(p => {
+                    const s = somas.get(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="pa-item"
+                        onClick={() => setAberto(p.id)}
+                      >
+                        <span className="pa-nome">
+                          <b>{p.nome}</b>
+                          <small>
+                            {fraseDoAcordo(p.acordo)} · {situacaoDaPagina(p, hoje)}
+                          </small>
+                        </span>
+                        <span className="pa-item-fim">
+                          <b>
+                            {s && s.semAcordo === s.pecas && s.pecas > 0
+                              ? 'sem acordo'
+                              : dinheiro(s?.parte ?? 0)}
+                          </b>
+                          <small>{plural(s?.pecas ?? 0, 'peça', 'peças')}</small>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="tabela-rola">
+                  <table className="tabela pa-tabela">
+                    <thead>
+                      <tr>
+                        <th>Parceiro</th>
+                        <th>Acordo</th>
+                        <th className="dir">Peças no mês</th>
+                        <th className="dir pa-some-medio">Vendido no mês</th>
+                        <th className="dir">Parte do parceiro</th>
+                        {larga ? null : <th className="pa-seta" aria-label="Abrir" />}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordenados.map(p => {
+                        const s = somas.get(p.id)
+                        return (
+                          <tr
+                            key={p.id}
+                            className={p.id === idAberto ? 'pa-linha marcada' : 'pa-linha'}
+                            onClick={() => setAberto(p.id)}
+                          >
+                            <td>
+                              <span className="pa-nome">
+                                <b>{p.nome}</b>
+                                <small>{situacaoDaPagina(p, hoje)}</small>
                               </span>
-                            ) : (
-                              dinheiro(s?.parte ?? 0)
-                            )}
-                          </td>
-                          {larga ? null : (
-                            <td className="pa-seta">
-                              <CaretRight size={16} />
                             </td>
-                          )}
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                            <td className={p.acordo ? undefined : 'pa-falta'}>
+                              {fraseDoAcordo(p.acordo)}
+                            </td>
+                            <td className="dir">{s?.pecas ?? 0}</td>
+                            <td className="dir pa-some-medio">{dinheiro(s?.valor ?? 0)}</td>
+                            <td className="dir pa-forte">
+                              {s && s.semAcordo > 0 ? (
+                                <span className="pa-nome pa-direita">
+                                  <b>
+                                    {s.semAcordo === s.pecas ? 'sem acordo' : dinheiro(s.parte)}
+                                  </b>
+                                  {s.semAcordo === s.pecas ? null : (
+                                    <small>
+                                      {plural(s.semAcordo, 'peça sem acordo', 'peças sem acordo')}
+                                    </small>
+                                  )}
+                                </span>
+                              ) : (
+                                dinheiro(s?.parte ?? 0)
+                              )}
+                            </td>
+                            {larga ? null : (
+                              <td className="pa-seta">
+                                <CaretRight size={16} />
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
 
-          {larga ? ficha : null}
+            {larga ? ficha : null}
+          </div>
         </div>
       )}
 

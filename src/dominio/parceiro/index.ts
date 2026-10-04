@@ -158,14 +158,10 @@ type LinhaDaVenda = {
   conta: boolean
 }
 
-/** As vendas de todos os parceiros num mês ("2026-10"), da mais nova para a mais velha. */
-export async function carregarVendasDoMes(mes: string): Promise<VendaDoParceiro[]> {
-  const { de, ate } = limitesDoMes(mes)
-  const linhas = await tabela<LinhaDaVenda[]>(
-    'venda_do_parceiro?select=item_id,parceiro_id,vendido_em,produto,variante,quantidade,pecas,valor,parte,conta' +
-      `&aparece=is.true&vendido_em=gte.${encodeURIComponent(de)}&vendido_em=lt.${encodeURIComponent(ate)}&order=vendido_em.desc`,
-  )
-  return linhas.map((l) => ({
+const CAMPOS_DA_VENDA = 'item_id,parceiro_id,vendido_em,produto,variante,quantidade,pecas,valor,parte,conta'
+
+function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
+  return {
     id: String(l.item_id),
     parceiroId: l.parceiro_id,
     quando: l.vendido_em,
@@ -176,7 +172,27 @@ export async function carregarVendasDoMes(mes: string): Promise<VendaDoParceiro[
     valor: Number(l.valor) || 0,
     parte: l.parte === null ? null : Number(l.parte) || 0,
     conta: !!l.conta,
-  }))
+  }
+}
+
+/** As vendas de todos os parceiros num mês ("2026-10"), da mais nova para a mais velha. */
+export async function carregarVendasDoMes(mes: string): Promise<VendaDoParceiro[]> {
+  const { de, ate } = limitesDoMes(mes)
+  const linhas = await tabela<LinhaDaVenda[]>(
+    `venda_do_parceiro?select=${CAMPOS_DA_VENDA}` +
+      `&aparece=is.true&vendido_em=gte.${encodeURIComponent(de)}&vendido_em=lt.${encodeURIComponent(ate)}&order=vendido_em.desc`,
+  )
+  return linhas.map(vendaDaLinha)
+}
+
+/** As últimas compras feitas na loja, de todos os parceiros, da mais nova para
+    a mais velha. Só entra a venda que conta: devolvida e cancelada ficam de
+    fora. Não depende do mês escolhido na tela. */
+export async function carregarUltimasCompras(limite = 12): Promise<VendaDoParceiro[]> {
+  const linhas = await tabela<LinhaDaVenda[]>(
+    `venda_do_parceiro?select=${CAMPOS_DA_VENDA}&conta=is.true&order=vendido_em.desc,item_id.asc&limit=${limite}`,
+  )
+  return linhas.map(vendaDaLinha)
 }
 
 /* O último aviso que a loja mandou. A carga das vendas antigas não é aviso da

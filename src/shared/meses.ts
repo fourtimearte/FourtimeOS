@@ -56,7 +56,9 @@ export function quandoFoi(iso: string, hoje = new Date()): string {
   const meio = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
   const dias = Math.round((meio(hoje) - meio(d)) / 86400000)
   const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  const dia = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  /* o ano só aparece quando não é o de hoje: "12/03" de dois anos atrás engana */
+  const ano = d.getFullYear() === hoje.getFullYear() ? '' : `/${d.getFullYear()}`
+  const dia = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}${ano}`
   const quando = dias === 0 ? 'hoje' : dias === 1 ? 'ontem' : dia
   return `${quando} às ${hora}`
 }

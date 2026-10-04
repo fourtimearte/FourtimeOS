@@ -4,6 +4,7 @@
 import { createRequire } from 'node:module'
 import * as D from './materiais-dados.mjs'
 import * as P from './deposito-dados.mjs'
+import * as E from './estoque-dados.mjs'
 const require = createRequire(import.meta.url)
 function pegarPlaywright() {
   for (const onde of ['playwright', '/home/claude/.npm-global/lib/node_modules/playwright']) {
@@ -19,7 +20,11 @@ const json = (r, corpo, status = 200) => r.fulfill({ status, contentType: 'appli
 /* `deposito`: 'cheio' (o do wireframe), 'vazio' (ninguém desenhou ainda) ou
    'erro' (a leitura falha). `recusa`: quantas vezes o salvar_deposito recusa
    por material que ficaria sem lugar, do jeito que a função do banco recusa. */
-export async function abrir(nav, { largura, altura, tema, papel = 'admin', deposito = 'cheio', movimento = false, recusa = 0 }) {
+/* `estoque`: 'cheio' (a hierarquia do catálogo e a fila da separação da página
+   Materiais), 'sem-apoio' (as duas leituras falham, e a página tem de
+   continuar de pé) ou 'grande' (um tecido de trinta cores e um grupo com seis
+   tecidos, para ver que nada estoura). */
+export async function abrir(nav, { largura, altura, tema, papel = 'admin', deposito = 'cheio', movimento = false, recusa = 0, estoque = 'cheio' }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: movimento ? 'no-preference' : 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1 })
   const gravados = []
   let recusas = recusa
@@ -45,13 +50,16 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     }
     let corpo = []
     if (u.includes('meu_perfil')) corpo = D.perfil(papel)
-    else if (u.includes('material_na_prateleira')) corpo = D.materiais
+    else if (u.includes('material_na_prateleira')) corpo = estoque === 'grande' ? [...D.materiais, ...E.coresAMais, ...E.materiaisDosTecidosAMais] : D.materiais
     else if (u.includes('movimento_do_estoque')) corpo = D.movimentos
     else if (u.includes('reserva_em_aberto')) corpo = D.reservas
     else if (u.includes('fornecedor_na_lista')) corpo = D.fornecedores
-    else if (u.includes('material_fornecedor')) corpo = D.ligacoes
+    else if (u.includes('material_fornecedor')) corpo = E.ligacoes
+    else if (u.includes('grupo_de_tecido')) { if (estoque === 'sem-apoio') return json(r, { message: 'permission denied for table grupo_de_tecido' }, 403); corpo = E.gruposDeTecido }
+    else if (u.includes('pedido_na_separacao')) { if (estoque === 'sem-apoio') return json(r, { message: 'permission denied for view pedido_na_separacao' }, 403); corpo = E.fila }
+    else if (u.includes('reserva_do_pedido')) { const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]; corpo = E.reservasDoPedido.filter((x) => x.pedido_id === id) }
     else if (u.includes('tipo_de_fornecedor')) corpo = D.tipos
-    else if (u.includes('/tecido?')) corpo = D.tecidos
+    else if (u.includes('/tecido?')) corpo = estoque === 'grande' ? [...E.tecidos, ...E.tecidosAMais] : E.tecidos
     else if (u.includes('/cor_de_tecido?')) corpo = D.cores
     else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : [] }
     else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : []

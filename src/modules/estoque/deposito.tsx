@@ -47,6 +47,8 @@ export function Deposito({
   lugares,
   materiais,
   busca,
+  marcados,
+  aoLimparMarcados,
   podeEditar,
   estreita,
   celular,
@@ -58,6 +60,10 @@ export function Deposito({
   lugares: LugarDoMaterial[]
   materiais: Material[]
   busca: string
+  /** o que outra tela pediu para ver no mapa: os materiais de um pedido, as
+      cores de um tecido. Vale enquanto a busca está vazia. */
+  marcados?: { ids: string[]; rotulo: string } | null
+  aoLimparMarcados?: () => void
   podeEditar: boolean
   /** abaixo de 1100 px o painel do lugar desce para baixo do desenho */
   estreita: boolean
@@ -99,8 +105,9 @@ export function Deposito({
   /* A BUSCA ACHA PELO QUE A PESSOA LEMBRA: o tecido, a cor, o nome ou o grupo.
      Cada lugar onde algum achado está vira um marcador, o principal primeiro. */
   const termo = semAcento(busca.trim())
+  const pedidos = !termo && marcados ? marcados : null
   const achados = useMemo(() => {
-    if (!termo) return new Set<string>()
+    if (!termo) return new Set<string>(pedidos?.ids ?? [])
     const palavras = termo.split(/\s+/)
     return new Set(
       materiais
@@ -110,7 +117,7 @@ export function Deposito({
         })
         .map(m => m.id),
     )
-  }, [materiais, termo])
+  }, [materiais, termo, pedidos])
   const marcadores = useMemo(() => {
     const chaves: string[] = []
     for (const l of [...lugares].sort((a, b) => Number(b.principal) - Number(a.principal))) {
@@ -125,7 +132,7 @@ export function Deposito({
   const primeiro = marcadores[0] ?? ''
   useEffect(() => {
     if (primeiro) setAberta(primeiro)
-  }, [primeiro, termo])
+  }, [primeiro, termo, pedidos])
   useEffect(() => {
     if (aberta && !celulas.some(c => c.chave === aberta)) setAberta('')
   }, [aberta, celulas])
@@ -217,7 +224,7 @@ export function Deposito({
         />
       </div>
       <div className="dp-pe">
-        {celular && !semMarcador ? null : (
+        {celular && !semMarcador && !pedidos ? null : (
           <p className="dp-nota">
             {semMarcador
               ? achados.size
@@ -225,7 +232,17 @@ export function Deposito({
                   ? `${nomeEmDuas(achadosSemLugar[0]).filter(Boolean).join(' · ')} ainda está sem lugar marcado.`
                   : `Achei ${plural(achados.size, 'material', 'materiais')}, mas nenhum tem lugar marcado ainda.`
                 : 'Nenhum material com esse nome.'
-              : 'Clique num lugar para ver o que tem nele. A busca põe um marcador em cada lugar onde o material está.'}
+              : pedidos
+                ? `Os marcadores mostram onde está ${pedidos.rotulo}.`
+                : 'Clique num lugar para ver o que tem nele. A busca põe um marcador em cada lugar onde o material está.'}
+            {pedidos && aoLimparMarcados ? (
+              <>
+                {' '}
+                <button type="button" className="dp-limpar" onClick={aoLimparMarcados}>
+                  Tirar os marcadores
+                </button>
+              </>
+            ) : null}
           </p>
         )}
         {celular ? <LegendaDoMapa /> : null}
@@ -346,6 +363,7 @@ export function Deposito({
         dentro={porCelula.get(celulaAberta.chave) ?? []}
         daPrateleira={porCelula}
         achados={achados}
+        fraseDoAchado={pedidos ? 'é do que você pediu para ver' : 'é o que você procurou'}
         escolhido={escolhido}
         aoEscolher={id => setEscolhido(id === escolhido ? '' : id)}
         pe={
@@ -490,6 +508,7 @@ function LugarAberto({
   dentro,
   daPrateleira,
   achados,
+  fraseDoAchado,
   escolhido,
   aoEscolher,
   pe,
@@ -499,6 +518,7 @@ function LugarAberto({
   dentro: { m: Material; l: LugarDoMaterial }[]
   daPrateleira: Map<string, { m: Material; l: LugarDoMaterial }[]>
   achados: Set<string>
+  fraseDoAchado: string
   escolhido: string
   aoEscolher: (id: string) => void
   pe: ReactNode
@@ -527,9 +547,7 @@ function LugarAberto({
           {baixo ? (
             <small className={m.categoria === 'tecido' ? 'dp-cor' : ''}>{baixo}</small>
           ) : null}
-          <small>
-            {achado ? 'é o que você procurou' : 'livre ' + quantoNaUnidade(m.livre, m.unidade)}
-          </small>
+          <small>{achado ? fraseDoAchado : 'livre ' + quantoNaUnidade(m.livre, m.unidade)}</small>
         </span>
         <span className={m.livre < m.minimo ? 'dp-valor pouco' : 'dp-valor'}>
           {quantoNaUnidade(m.saldo, m.unidade)}

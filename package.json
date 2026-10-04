@@ -31,7 +31,8 @@
     "transporte": "node testes/transporte.mjs",
     "porteiro": "node --experimental-strip-types testes/porteiro.mjs",
     "parceiros": "node testes/parceiros.mjs",
-    "deposito": "node testes/deposito.mjs"
+    "deposito": "node testes/deposito.mjs",
+    "estoque": "node testes/estoque.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

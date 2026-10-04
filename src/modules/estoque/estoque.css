@@ -1,15 +1,10 @@
 /* ==========================================================================
-   Estoque.
+   Estoque: o que a página inteira divide.
 
-   A tela é feita de caixas. Cada parte tem a sua, e por isso o celular não
-   precisa de desenho próprio: as caixas que no computador ficam lado a lado
-   empilham, e a ordem de cima para baixo é a mesma ordem de leitura.
-
-   O CINZA CLARO SEPARA, E NÃO DESTACA. Três tons, todos do sistema:
-     a caixa branca            --surface      o conteúdo
-     a faixa e a caixa cinza   --surface-2    categoria, fornecedor, número
-     o topo de cada caixa      meio caminho   o título do que vem embaixo
-   Nenhum deles é cor de estado. Estado é ponto, texto ou o vermelho do número.
+   A aba Materiais em quatro colunas mora em materiais.css (prefixo em-) e a
+   aba Depósito em deposito.css (prefixo dp-). Aqui fica o que é de todas: os
+   botões do topo no celular, a barra do editor do depósito, a bolinha e o vão
+   do tecido, as tabelas, a folha de movimento, o material novo e o editar.
 
    A folga ENTRE os blocos é da página (.pagina tem gap), então nada aqui
    escreve margin-bottom entre caixas.
@@ -58,83 +53,9 @@
   gap: var(--re-4);
 }
 
-/* --- as duas colunas ------------------------------------------------------- */
-.es-duas {
-  display: grid;
-  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
-  gap: var(--sp-4);
-  align-items: start;
-}
-.es-lado {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  min-width: 0;
-}
-.es-fila {
-  display: flex;
-  gap: var(--sp-4);
-  min-width: 0;
-}
-.es-fila > * {
-  min-width: 0;
-}
-.es-metades {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-4);
-}
-
 /* --- a caixa ---------------------------------------------------------------
    A caixa é o cartão do sistema. O que esta folha acrescenta é o topo em
    cinza claro e as linhas com divisória. */
-.es-caixa {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-.es-caixa-topo {
-  flex: none;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: 0 var(--re-9);
-  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
-  border-bottom: 1px solid var(--border);
-}
-.es-caixa-nota {
-  font-size: 12.5px;
-  color: var(--text-2);
-  text-align: right;
-  min-width: 0;
-}
-.es-ver-todos {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.es-ver-todos:hover {
-  color: var(--brand-text);
-}
-
-/* a caixa cinza: fornecedor e número */
-.es-cinza {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  min-width: 0;
-}
 
 /* a linha de duas alturas de texto, com divisória */
 .es-linha {
@@ -194,11 +115,6 @@ button.es-linha:hover {
 .es-pouco {
   color: var(--brand-text);
 }
-.es-sem-linhas {
-  padding: var(--sp-6) var(--re-9);
-  font-size: 13.5px;
-  color: var(--text-2);
-}
 
 /* a bolinha da cor. Redonda com fio, para o branco aparecer sobre o branco. */
 .es-bola {
@@ -224,12 +140,6 @@ button.es-linha:hover {
 /* --- a lista ---------------------------------------------------------------
    Uma faixa de cinza claro abre cada categoria, e cada linha tem divisória.
    A linha escolhida fica preta, que é a seleção do sistema. */
-.es-lista {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
 .es-faixa {
   flex: none;
   display: flex;
@@ -247,67 +157,6 @@ button.es-linha:hover {
 .es-faixa span {
   font-weight: 500;
   color: var(--text-3);
-}
-.es-item {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  width: 100%;
-  min-height: var(--row-h);
-  padding: var(--re-2) var(--re-9);
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--t-fast);
-}
-.es-item:last-child {
-  border-bottom: 0;
-}
-.es-item:hover {
-  background: var(--surface-2);
-}
-.es-item .es-falta {
-  color: var(--warn);
-}
-.es-item.escolhido,
-.es-item.escolhido:hover {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-.es-item.escolhido .es-texto small,
-.es-item.escolhido .es-falta {
-  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
-}
-.es-minis {
-  flex: none;
-  display: flex;
-  gap: var(--re-2);
-}
-.es-ponto {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-.es-ponto.apagado {
-  background: none;
-}
-.es-item.escolhido .es-ponto {
-  background: var(--brand-no-ink);
-}
-.es-item.escolhido .es-ponto.apagado {
-  background: none;
-}
-.es-seta {
-  flex: none;
-  color: var(--text-3);
-  display: none;
 }
 
 /* --- o vão da prateleira ---------------------------------------------------
@@ -340,7 +189,8 @@ button.es-linha:hover {
   background: var(--vao-cor, var(--text-3));
   --dente: 10px;
   mask:
-    conic-gradient(from 135deg at 50% 0, var(--preto) 90deg, transparent 0) 50% 0 / var(--dente) calc(var(--dente) / 2) repeat-x,
+    conic-gradient(from 135deg at 50% 0, var(--preto) 90deg, transparent 0) 50% 0 / var(--dente)
+      calc(var(--dente) / 2) repeat-x,
     linear-gradient(var(--preto) 0 0) 0 100% / 100% calc(100% - var(--dente) / 2 + 0.5px) no-repeat;
 }
 .es-vao-risco {
@@ -350,6 +200,21 @@ button.es-linha:hover {
   top: 50%;
   border-top: 1.5px dashed var(--ink);
   opacity: 0.85;
+}
+/* o contorno por cima do tecido: sem ele o tecido branco some no cartão branco,
+   e o preto some no Grafite */
+.es-vao::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 1px solid var(--border-2);
+  border-bottom: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.es-vao.mini::after {
+  content: none;
 }
 /* o vão miúdo da lista: sem picotado e sem risco, só o nível */
 .es-vao.mini {
@@ -363,386 +228,6 @@ button.es-linha:hover {
 .es-vao.mini .es-vao-tecido i {
   mask: none;
   border: 1px solid color-mix(in srgb, var(--vao-cor, var(--text-3)) 72%, var(--ink));
-}
-.es-item.escolhido .es-vao.mini {
-  background: color-mix(in srgb, var(--on-ink) 22%, transparent);
-}
-
-/* --- a visão geral --------------------------------------------------------- */
-.es-heroi {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-5);
-  padding: var(--re-9) var(--re-10);
-  min-width: 0;
-}
-.es-heroi-numero {
-  flex: none;
-  font-size: 56px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-  color: var(--brand-text);
-}
-.es-heroi-numero.em-dia {
-  color: var(--ok);
-}
-.es-sobre {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-3);
-}
-.es-heroi h2 {
-  margin: var(--re-1) 0;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-}
-.es-heroi p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-2);
-}
-.es-numero {
-  flex: none;
-  width: 176px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--re-2);
-  padding: var(--re-8) var(--re-9);
-}
-.es-numero b {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.es-numero span {
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-/* a prateleira: uma tábua por malha, um vão por cor */
-.es-prateleira {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-2) var(--re-10) var(--re-9);
-  overflow-x: auto;
-  min-width: 0;
-}
-.es-tabua {
-  flex: none;
-  min-width: 124px;
-  display: flex;
-  flex-direction: column;
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-.es-tabua-nome {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 46px;
-  padding-bottom: var(--re-4);
-  /* o nome não alarga a tábua: quem dá a largura são os vãos */
-  width: 0;
-  min-width: 100%;
-}
-.es-tabua-nome b {
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-.es-tabua-nome small {
-  font-size: 12px;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-tabua-vaos {
-  display: flex;
-  gap: var(--re-4);
-  border-bottom: 3px solid var(--ink);
-}
-.es-tabua-vaos .es-vao {
-  flex: none;
-  width: 80px;
-  height: 200px;
-}
-.es-tabua-numeros {
-  display: flex;
-  gap: var(--re-4);
-  margin-top: var(--re-3);
-}
-.es-tabua-numeros b {
-  flex: none;
-  width: 80px;
-  font-size: 12.5px;
-  font-weight: 600;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.es-tabua:hover .es-tabua-nome b {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* --- o material escolhido --------------------------------------------------- */
-.es-nome {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-5);
-  padding: var(--re-9) var(--re-10);
-  min-width: 0;
-}
-.es-nome-texto {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-1);
-}
-.es-nome h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-nome p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-2);
-}
-.es-nome-botoes {
-  flex: none;
-  display: flex;
-  gap: var(--gap-btn);
-}
-.es-fornecedor {
-  position: relative;
-  flex: none;
-  width: 420px;
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--re-8) var(--re-9) var(--re-8) var(--sp-12);
-}
-/* o furo da etiqueta: o fornecedor é a etiqueta presa no rolo */
-.es-fornecedor::before {
-  content: '';
-  position: absolute;
-  left: 18px;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  transform: translateY(-50%);
-  border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--border-2);
-}
-.es-fornecedor-texto {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-1);
-}
-.es-fornecedor-texto b {
-  font-size: 16px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-fornecedor-texto small {
-  font-size: 12.5px;
-  color: var(--text-2);
-}
-.es-fornecedor-texto .es-falta {
-  color: var(--warn);
-}
-
-/* as caixas das cores */
-.es-cores {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
-  gap: var(--sp-4);
-}
-.es-cor {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-.es-cor .es-vao {
-  height: 190px;
-  border-radius: 0;
-}
-.es-cor .es-vao-tecido i {
-  --dente: 14px;
-}
-.es-etiqueta-minimo {
-  position: absolute;
-  right: var(--re-5);
-  top: 95px;
-  transform: translateY(calc(-100% - var(--re-2)));
-  padding: var(--re-1) var(--re-4);
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-2);
-  background: var(--surface);
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.es-etiqueta-comprar {
-  position: absolute;
-  left: var(--re-5);
-  top: var(--re-5);
-  padding: var(--re-2) var(--re-5);
-  border-radius: var(--radius-sm);
-  background: var(--brand);
-  color: var(--on-brand);
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-.es-cor-corpo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-2);
-  padding: var(--re-8) var(--re-9) var(--re-9);
-  min-width: 0;
-}
-.es-cor-nome {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-cor-livre {
-  display: flex;
-  align-items: baseline;
-  gap: var(--re-4);
-  font-size: 14px;
-  color: var(--text-2);
-}
-.es-cor-livre b {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.es-cor-livre b.es-pouco {
-  color: var(--brand-text);
-}
-.es-cor-conta {
-  font-size: 12.5px;
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
-.es-alerta {
-  color: var(--warn);
-}
-.es-cor-botao {
-  margin-top: auto;
-  padding-top: var(--re-8);
-}
-.es-cor-nova {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--re-4);
-  min-height: 200px;
-  border: 1px dashed var(--border-2);
-  border-radius: var(--radius-lg);
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-2);
-  cursor: pointer;
-  transition:
-    border-color var(--t-fast),
-    color var(--t-fast);
-}
-.es-cor-nova:hover {
-  border-color: var(--ink);
-  color: var(--text);
-}
-
-/* os movimentos do material escolhido, em colunas */
-.es-mov {
-  display: grid;
-  grid-template-columns: 116px 104px minmax(0, 1.3fr) auto minmax(0, 1fr);
-  align-items: center;
-  column-gap: var(--sp-4);
-  min-height: var(--row-h);
-  padding: 0 var(--re-9);
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
-.es-mov:last-child {
-  border-bottom: 0;
-}
-.es-mov-quando,
-.es-mov-obs {
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-mov-cor {
-  display: flex;
-  align-items: center;
-  gap: var(--re-4);
-  min-width: 0;
-  font-weight: 600;
-}
-.es-mov-cor span:last-child {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.es-mov-quanto {
-  font-weight: 600;
-  text-align: right;
-  white-space: nowrap;
-}
-.es-reservado {
-  flex: none;
-  width: 380px;
-}
-.es-cresce-caixa {
-  flex: 1;
 }
 
 /* --- as tabelas ------------------------------------------------------------- */
@@ -957,47 +442,8 @@ button.es-linha:hover {
    cabeçalho da página.
    ========================================================================== */
 @media (max-width: 1099px) {
-  .es-duas {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .es-duas .es-lado {
-    order: -1;
-  }
-  .es-duas.com-escolhido .es-lista {
-    display: none;
-  }
-  .es-seta {
-    display: block;
-  }
   .es-barra .es-ver {
     display: none;
-  }
-  .es-fila {
-    flex-wrap: wrap;
-  }
-  .es-fornecedor,
-  .es-reservado {
-    width: 100%;
-  }
-  .es-numero {
-    flex: 1 1 0;
-    width: auto;
-  }
-  .es-heroi {
-    flex: 1 1 100%;
-  }
-  .es-so-largo {
-    display: none;
-  }
-  .es-fornecedor-texto b {
-    white-space: normal;
-  }
-  /* o nome do material já está no cabeçalho da página */
-  .es-nome {
-    display: none;
-  }
-  .es-prateleira {
-    justify-content: flex-start;
   }
 }
 
@@ -1022,66 +468,8 @@ button.es-linha:hover {
   .es-chips::-webkit-scrollbar {
     display: none;
   }
-  .es-metades {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .es-heroi {
-    gap: var(--sp-4);
-    padding: var(--re-8) var(--re-9);
-  }
-  .es-heroi-numero {
-    font-size: 44px;
-  }
-  .es-heroi p {
-    display: none;
-  }
-  .es-numero {
-    padding: var(--re-7) var(--re-6);
-  }
-  .es-numero b {
-    font-size: 24px;
-  }
-  .es-numero span {
-    font-size: 12.5px;
-  }
-  .es-prateleira {
-    gap: var(--sp-4);
-    padding-inline: var(--re-9);
-  }
-  .es-tabua-vaos .es-vao {
-    width: 52px;
-    height: 110px;
-  }
-  .es-tabua-numeros b {
-    width: 52px;
-  }
-  .es-cores {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-3);
-  }
-  .es-cor .es-vao {
-    height: 110px;
-  }
-  .es-etiqueta-minimo {
-    top: 55px;
-    right: var(--re-3);
-  }
-  .es-cor-corpo {
-    padding: var(--re-6) var(--re-7) var(--re-7);
-  }
-  .es-cor-livre b {
-    font-size: 24px;
-  }
-  .es-cor-botao {
-    padding-top: var(--re-6);
-  }
-  .es-cor-nova {
-    min-height: 120px;
-  }
   .es-linha,
-  .es-item,
-  .es-faixa,
-  .es-caixa-topo {
+  .es-faixa {
     padding-inline: var(--re-8);
   }
   .es-dois-campos {
@@ -1161,23 +549,7 @@ button.es-linha:hover {
   }
 }
 
-.es-so-estreito {
-  display: none;
-}
-@media (max-width: 1099px) {
-  .es-so-estreito {
-    display: inline;
-  }
-}
-
 /* --- miudezas ---------------------------------------------------------------- */
-.es-lista-bloco {
-  display: flex;
-  flex-direction: column;
-}
-.es-lista-bloco + .es-lista-bloco .es-faixa {
-  border-top: 1px solid var(--border);
-}
 /* a volta do detalhe estreito mora na sobrelinha do cabeçalho da página */
 .es-volta {
   display: inline-flex;

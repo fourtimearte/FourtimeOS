@@ -482,6 +482,210 @@ export async function carregarCatalogoDeTecido(): Promise<{
   return { malhas, cores }
 }
 
+/* ==========================================================================
+   A árvore do Estoque: grupo de tecido, tecido, cor.
+
+   A hierarquia é a do catálogo (Configurações, Banco de dados, Tecidos): o
+   grupo tem um código de três letras (ALG, PIQ), o tecido aponta para o grupo,
+   e a cor é o material. O Estoque não inventa uma arrumação própria: mostra a
+   do catálogo, só com o que tem material cadastrado.
+
+   Este arquivo é só conta. Quem lê o banco é o index.ts.
+   ========================================================================== */
+
+export type GrupoDeTecido = { cod: string; nome: string; ordem: number }
+
+export type TecidoDoCatalogo = {
+  id: string
+  nome: string
+  /** o código do grupo; vazio quando o tecido não tem grupo */
+  grupo: string
+  /** g/m²; 0 quando ninguém cadastrou */
+  gramatura: number
+  /** em metros; 0 quando ninguém cadastrou */
+  largura: number
+  ordem: number
+}
+
+export type Hierarquia = { grupos: GrupoDeTecido[]; tecidos: TecidoDoCatalogo[] }
+
+export const SEM_HIERARQUIA: Hierarquia = { grupos: [], tecidos: [] }
+
+export const NOME_DO_SEM_TIPO = 'Sem tipo'
+
+export type TecidoNaArvore = {
+  /** a mesma chave do grupo do estoque: tecido:<id> */
+  chave: string
+  tecidoId: string
+  nome: string
+  gramatura: number
+  largura: number
+  cores: Material[]
+  livre: number
+  reservado: number
+  /** o que está na prateleira: a soma do saldo das cores */
+  saldo: number
+  paraComprar: number
+  ordem: number
+  /** o grupo do estoque de onde ele veio, para quem edita o cadastro */
+  doEstoque: GrupoDoEstoque
+}
+
+export type GrupoNaArvore = {
+  /** o código do catálogo; vazio no "Sem tipo" */
+  cod: string
+  nome: string
+  tecidos: TecidoNaArvore[]
+  cores: number
+  paraComprar: number
+}
+
+/* Junta os tecidos do estoque debaixo do grupo do catálogo. Tecido que o
+   catálogo não conhece (material antigo, sem a malha escolhida) e tecido sem
+   grupo caem no "Sem tipo", que vai por último: é melhor um grupo que diz que
+   falta o tipo do que um tecido que some da árvore. */
+export function arvoreDeTecidos(grupos: GrupoDoEstoque[], h: Hierarquia): GrupoNaArvore[] {
+  const doCatalogo = new Map(h.tecidos.map(t => [t.id, t]))
+  const nomeDoGrupo = new Map(h.grupos.map(g => [g.cod, g]))
+  const porCod = new Map<string, GrupoNaArvore>()
+
+  for (const g of grupos) {
+    if (g.categoria !== 'tecido') continue
+    const t = doCatalogo.get(g.tecidoId)
+    const cod = t?.grupo ?? ''
+    let alvo = porCod.get(cod)
+    if (!alvo) {
+      alvo = {
+        cod,
+        nome: cod ? (nomeDoGrupo.get(cod)?.nome ?? cod) : NOME_DO_SEM_TIPO,
+        tecidos: [],
+        cores: 0,
+        paraComprar: 0,
+      }
+      porCod.set(cod, alvo)
+    }
+    alvo.tecidos.push({
+      chave: g.chave,
+      tecidoId: g.tecidoId,
+      nome: g.nome,
+      gramatura: t?.gramatura ?? 0,
+      largura: t?.largura ?? 0,
+      cores: g.itens,
+      livre: g.livre,
+      reservado: g.reservado,
+      saldo: g.itens.reduce((s, m) => s + m.saldo, 0),
+      paraComprar: g.paraComprar,
+      ordem: t?.ordem ?? 9999,
+      doEstoque: g,
+    })
+    alvo.cores += g.itens.length
+    alvo.paraComprar += g.paraComprar
+  }
+
+  const ordemDoGrupo = (cod: string) => (cod ? (nomeDoGrupo.get(cod)?.ordem ?? 9998) : 9999)
+  const lista = [...porCod.values()].sort(
+    (a, b) => ordemDoGrupo(a.cod) - ordemDoGrupo(b.cod) || a.nome.localeCompare(b.nome, 'pt-BR'),
+  )
+  for (const g of lista) {
+    g.tecidos.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt-BR'))
+  }
+  return lista
+}
+
+export type GrupoDeItens = {
+  chave: string
+  nome: string
+  itens: Material[]
+  paraComprar: number
+}
+
+export const NOME_DO_SEM_GRUPO = 'Sem grupo'
+
+/* Aviamento e insumo se juntam pelo grupo escrito no cadastro. Os que não têm
+   grupo vão juntos para o "Sem grupo", no fim: na lista antiga cada um virava
+   um grupo de um só, o que numa sanfona seria abrir uma gaveta para achar o
+   mesmo nome dentro dela. */
+export function gruposDeItens(
+  grupos: GrupoDoEstoque[],
+  categoria: 'aviamento' | 'insumo',
+): GrupoDeItens[] {
+  const lista: GrupoDeItens[] = []
+  const soltos: Material[] = []
+  for (const g of grupos) {
+    if (g.categoria !== categoria) continue
+    if (g.chave.startsWith('solto:')) soltos.push(...g.itens)
+    else lista.push({ chave: g.chave, nome: g.nome, itens: g.itens, paraComprar: g.paraComprar })
+  }
+  if (soltos.length) {
+    lista.push({
+      chave: categoria + ':',
+      nome: NOME_DO_SEM_GRUPO,
+      itens: soltos.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+      paraComprar: soltos.filter(m => m.livre < m.minimo).length,
+    })
+  }
+  return lista
+}
+
+/** "190 g/m² · 1,20 m de largura", só com o que foi cadastrado */
+export function medidasDoTecido(t: Pick<TecidoNaArvore, 'gramatura' | 'largura'>): string {
+  const partes: string[] = []
+  if (t.gramatura > 0) partes.push(t.gramatura.toLocaleString('pt-BR') + ' g/m²')
+  if (t.largura > 0) {
+    partes.push(
+      t.largura.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+        ' m de largura',
+    )
+  }
+  return partes.join(' · ')
+}
+
+/* Quem falta mais, em proporção ao próprio mínimo, sobe: 3 kg de um mínimo de
+   20 é mais urgente que 40 un de um mínimo de 60. */
+export function paraComprarPorUrgencia(materiais: Material[]): Material[] {
+  return materiais
+    .filter(m => m.livre < m.minimo)
+    .sort((a, b) => a.livre / (a.minimo || 1) - b.livre / (b.minimo || 1))
+}
+
+/* ---------- a hierarquia do catálogo, para a árvore do Estoque ------------- */
+
+/* O grupo de tecido e o tecido com o grupo, a gramatura e a largura. É apoio da
+   tela: se a leitura falhar, a árvore põe tudo no "Sem tipo" e o Estoque
+   continua respondendo o que é dele, que é tem ou não tem. */
+export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
+  try {
+    const [grupos, tecidos] = await Promise.all([
+      tabela<{ cod: string; nome: string; ordem: number }[]>(
+        'grupo_de_tecido?select=cod,nome,ordem&order=ordem.asc',
+      ),
+      tabela<
+        {
+          id: string
+          nome: string
+          grupo: string | null
+          gramatura: number | string | null
+          largura: number | string | null
+          ordem: number | null
+        }[]
+      >('tecido?select=id,nome,grupo,gramatura,largura,ordem&order=ordem.asc,nome.asc'),
+    ])
+    return {
+      grupos: grupos.filter((g) => g.cod).map((g) => ({ cod: g.cod, nome: g.nome, ordem: Number(g.ordem) || 0 })),
+      tecidos: tecidos.map((t) => ({
+        id: t.id,
+        nome: t.nome,
+        grupo: t.grupo ?? '',
+        gramatura: numero(t.gramatura),
+        largura: numero(t.largura),
+        ordem: Number(t.ordem) || 0,
+      })),
+    }
+  } catch {
+    return SEM_HIERARQUIA
+  }
+}
+
 /* ---------- a reserva em aberto ------------------------------------------ */
 
 /** O que um pedido ainda segura de um material, com a data de entrega. */

@@ -346,7 +346,7 @@ await caso('erro de leitura', async () => {
   conta(await pg.getByRole('button', { name: 'Editar o depósito' }).count() === 0, 'erro: sem o desenho lido, não há o que editar')
   await pg.screenshot({ path: `${PASTA}/erro-1440-light.png`, fullPage: true })
   await pg.getByRole('tab', { name: 'Materiais' }).click(); await pausa(pg, 500)
-  conta(await pg.locator('.es-duas').count() === 1, 'erro: a lista de materiais continua de pé')
+  conta(await pg.locator('[data-arvore]').count() === 1, 'erro: a lista de materiais continua de pé')
   conta(erros.length === 0, `erro: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 })
@@ -366,8 +366,13 @@ for (const [largura, altura] of [[820, 1180], [390, 844]]) {
       const desenho = await pg.locator('[data-mapa] svg.dp-planta').boundingBox()
       const cartao = await pg.locator('[data-mapa]').boundingBox()
       conta(desenho.x >= cartao.x && desenho.x + desenho.width <= cartao.x + cartao.width + 0.5, `${T}: o desenho cabe inteiro no cartão (${Math.round(desenho.width)} de ${Math.round(cartao.width)})`)
-      const aba = await pg.evaluate(() => { const s = document.querySelector('.es-aba'), i = s.querySelector('.ind'), b = s.querySelector('button.ligado'); const a = i.getBoundingClientRect(), c = b.getBoundingClientRect(), d = s.getBoundingClientRect(); return { fora: a.right - d.right, desvio: Math.abs(a.left - c.left) + Math.abs(a.width - c.width) } })
-      conta(aba.fora <= 0.5 && aba.desvio < 1, `${T}: o indicador das abas fica em cima da aba Depósito, dentro da caixa (${aba.fora.toFixed(1)}, ${aba.desvio.toFixed(1)})`)
+      if (largura >= 768) {
+        const aba = await pg.evaluate(() => { const s = document.querySelector('.es-aba'), i = s.querySelector('.ind'), b = s.querySelector('button.ligado'); const a = i.getBoundingClientRect(), c = b.getBoundingClientRect(), d = s.getBoundingClientRect(); return { fora: a.right - d.right, desvio: Math.abs(a.left - c.left) + Math.abs(a.width - c.width) } })
+        conta(aba.fora <= 0.5 && aba.desvio < 1, `${T}: o indicador das abas fica em cima da aba Depósito, dentro da caixa (${aba.fora.toFixed(1)}, ${aba.desvio.toFixed(1)})`)
+      } else {
+        const chip = await pg.locator('.em-secoes .chip.ligado').innerText()
+        conta(chip.trim() === 'Depósito', `${T}: no celular as abas são chips, e o ligado é o Depósito (${chip.trim()})`)
+      }
       const alvos = await pg.locator('[data-mapa] [data-lugar] .dp-alvo').evaluateAll((l) => Math.min(...l.map((e) => Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height))))
       conta(alvos >= 43.5, `${T}: cada lugar do desenho tem alvo de toque de 44 px (${alvos.toFixed(1)})`)
 

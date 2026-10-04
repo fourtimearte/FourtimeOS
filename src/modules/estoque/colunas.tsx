@@ -1,0 +1,385 @@
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+import { MapPin } from '@phosphor-icons/react'
+import { Botao, Esqueleto } from '@ds'
+import {
+  carregarReservasDoPedido,
+  faltaDoMaterial,
+  quantoNaUnidade,
+  type Material,
+  type Movimento,
+  type PedidoNaSeparacao,
+  type ReservaDoPedido,
+} from '@dominio/estoque'
+import {
+  diaEMes,
+  fornecedorDoMaterial,
+  linhaDoMovimento,
+  lugaresDe,
+  plural,
+  quantoMexeu,
+  type Fornecimento,
+  type Guardado,
+} from './apoio'
+import { EtiquetaDoLugar } from './frente'
+import { Bola } from './vao'
+
+/* ==========================================================================
+   As três colunas da direita: para separação, para comprar e últimos
+   movimentos.
+
+   SÃO BAIXAS DE PROPÓSITO (pedido do Henrique, 04/10/2026). Cada uma mostra o
+   começo da lista, rola pela roda do mouse sem barra de rolagem à vista, e
+   termina num "Ver mais" que leva ao lugar onde a lista está inteira. Assim a
+   prateleira de tecidos cabe debaixo das três sem a página virar um rolo.
+
+   No celular cada uma vira uma tela inteira, escolhida nos chips do topo, e
+   aí a caixa tem a altura do que ela guarda.
+   ========================================================================== */
+
+/** o nome do material em duas linhas: o tecido em cima e a cor embaixo */
+function DoisNomes({ m, nome }: { m?: Material; nome: string }) {
+  if (m && m.categoria === 'tecido' && m.tecido) {
+    return (
+      <>
+        <b>{m.tecido}</b>
+        <small className="em-cor">{m.cor}</small>
+      </>
+    )
+  }
+  return <b>{m?.nome ?? nome}</b>
+}
+
+export function Coluna({
+  titulo,
+  direita,
+  verMais,
+  aoVerMais,
+  inteira,
+  nome,
+  children,
+}: {
+  titulo: string
+  direita?: ReactNode
+  /** o texto do pé; sem ele a caixa não tem pé */
+  verMais?: string
+  aoVerMais?: () => void
+  /** a caixa com a altura do conteúdo: é a do celular */
+  inteira?: boolean
+  /** como a caixa se chama para o teste e para o leitor de tela */
+  nome: string
+  children: ReactNode
+}) {
+  return (
+    <section className={inteira ? 'cartao em-col' : 'cartao em-col em-curta'} data-coluna={nome}>
+      <div className="em-topo">
+        <h3 className="cartao-titulo">
+          <span className="marca" />
+          {titulo}
+        </h3>
+        {direita}
+      </div>
+      {/* a caixa que rola recebe o foco do teclado: sem isso, quem não usa o
+          mouse não alcança o que está abaixo da dobra */}
+      <div
+        className="em-rolagem"
+        tabIndex={inteira ? undefined : 0}
+        role="group"
+        aria-label={titulo}
+      >
+        {children}
+      </div>
+      {verMais && aoVerMais ? (
+        <button type="button" className="em-pe" onClick={aoVerMais}>
+          {verMais}
+        </button>
+      ) : null}
+    </section>
+  )
+}
+
+/* --- para separação ---------------------------------------------------------
+   Os pedidos que esperam material, na ordem da entrega. O primeiro vem aberto,
+   com cada material, quanto precisa, quanto tem e onde está guardado. */
+export function ParaSeparacao({
+  fila,
+  materiais,
+  guardado,
+  podeSeparar,
+  inteira,
+  aoSeparar,
+  aoVerNoMapa,
+  aoVerMais,
+}: {
+  fila: PedidoNaSeparacao[]
+  materiais: Material[]
+  guardado: Guardado
+  /** a pessoa enxerga a página Separação */
+  podeSeparar: boolean
+  inteira?: boolean
+  aoSeparar: () => void
+  aoVerNoMapa: (ids: string[], rotulo: string) => void
+  aoVerMais: () => void
+}) {
+  const [aberto, setAberto] = useState('')
+  const [reservas, setReservas] = useState<Record<string, ReservaDoPedido[] | 'erro'>>({})
+
+  /* o primeiro da fila abre sozinho, uma vez */
+  const primeiro = fila[0]?.id ?? ''
+  useEffect(() => {
+    if (primeiro) setAberto(a => a || primeiro)
+  }, [primeiro])
+
+  /* as reservas do pedido só são lidas quando ele abre */
+  useEffect(() => {
+    if (!aberto || reservas[aberto]) return
+    let vivo = true
+    carregarReservasDoPedido(aberto)
+      .then(linhas => {
+        if (vivo) setReservas(r => ({ ...r, [aberto]: linhas }))
+      })
+      .catch(() => {
+        if (vivo) setReservas(r => ({ ...r, [aberto]: 'erro' }))
+      })
+    return () => {
+      vivo = false
+    }
+  }, [aberto, reservas])
+
+  const porId = new Map(materiais.map(m => [m.id, m]))
+
+  return (
+    <Coluna
+      nome="separacao"
+      titulo="Para separação"
+      inteira={inteira}
+      direita={<span className="em-topo-n">{plural(fila.length, 'pedido', 'pedidos')}</span>}
+      verMais={
+        podeSeparar && fila.length
+          ? `Ver mais · ${fila.length === 1 ? 'o pedido' : 'os ' + fila.length} na Separação`
+          : undefined
+      }
+      aoVerMais={aoVerMais}
+    >
+      {fila.length === 0 ? (
+        <p className="em-sem-linhas">Nenhum pedido esperando material.</p>
+      ) : (
+        fila.map(p => {
+          const ab = p.id === aberto
+          const linhas = reservas[p.id]
+          const comLugar =
+            Array.isArray(linhas) && guardado.planta
+              ? linhas.map(r => r.materialId).filter(id => lugaresDe(guardado, id).length > 0)
+              : []
+          return (
+            <div key={p.id} className={ab ? 'em-ped aberto' : 'em-ped'} data-pedido={p.numero}>
+              <button
+                type="button"
+                className="em-lin"
+                aria-expanded={ab}
+                onClick={() => setAberto(ab ? '' : p.id)}
+              >
+                <span className="em-txt">
+                  <b>{p.numero}</b>
+                  <small>{p.cliente || 'sem cliente'}</small>
+                  <small>
+                    {plural(p.pecas, 'pç', 'pçs')} ·{' '}
+                    {p.entregaEm
+                      ? 'entrega ' + diaEMes(p.entregaEm + 'T12:00:00')
+                      : 'sem data de entrega'}
+                  </small>
+                </span>
+                <span className="em-val">
+                  {p.separados} de {p.materiais}
+                  {p.naoCobre > 0 ? (
+                    <small className="pouco">falta tecido</small>
+                  ) : p.tudoSeparado ? (
+                    <small>separado</small>
+                  ) : p.semConsumo > 0 ? (
+                    <small>sem consumo</small>
+                  ) : (
+                    <small>para separar</small>
+                  )}
+                </span>
+              </button>
+              {ab ? (
+                <div className="em-ped-dentro em-dentro">
+                  {linhas === 'erro' ? (
+                    <p className="em-nota">Não consegui ler os materiais deste pedido.</p>
+                  ) : !linhas ? (
+                    <>
+                      <Esqueleto altura={14} />
+                      <Esqueleto altura={14} />
+                    </>
+                  ) : linhas.length === 0 ? (
+                    <p className="em-nota">Este pedido não reserva material nenhum.</p>
+                  ) : (
+                    linhas.map(r => {
+                      const m = porId.get(r.materialId)
+                      const lugar = lugaresDe(guardado, r.materialId)[0]
+                      const falta = !r.baixada && !r.semConsumo && !r.oEstoqueCobre
+                      return (
+                        <div key={r.id} className="em-mat">
+                          <Bola cor={m?.corHex} />
+                          <span className="em-txt">
+                            <DoisNomes m={m} nome={r.material} />
+                            <small className={falta ? 'pouco' : undefined}>
+                              {r.baixada
+                                ? 'separado ' + quantoNaUnidade(r.separado, r.unidade)
+                                : r.semConsumo
+                                  ? 'sem consumo cadastrado · tem ' +
+                                    quantoNaUnidade(r.saldo, r.unidade)
+                                  : `precisa ${quantoNaUnidade(r.quantidade, r.unidade)} · tem ${quantoNaUnidade(r.saldo, r.unidade)}`}
+                            </small>
+                          </span>
+                          {guardado.planta ? (
+                            <EtiquetaDoLugar movel={lugar?.movel} lugar={lugar?.lugar} semIcone />
+                          ) : null}
+                        </div>
+                      )
+                    })
+                  )}
+                  {podeSeparar || comLugar.length ? (
+                    <div className="em-ped-botoes">
+                      {podeSeparar ? (
+                        <Botao tom="forte" tamanho="sm" onClick={aoSeparar}>
+                          Separar
+                        </Botao>
+                      ) : null}
+                      {comLugar.length ? (
+                        <Botao
+                          tamanho="sm"
+                          onClick={() => aoVerNoMapa(comLugar, 'o pedido ' + p.numero)}
+                        >
+                          <MapPin size={15} aria-hidden="true" />
+                          Ver no mapa
+                        </Botao>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          )
+        })
+      )}
+    </Coluna>
+  )
+}
+
+/* --- para comprar ------------------------------------------------------------ */
+export function ParaComprar({
+  comprar,
+  fornecimento,
+  inteira,
+  aoEscolher,
+  aoVerMais,
+}: {
+  /** já na ordem da urgência */
+  comprar: Material[]
+  fornecimento: Fornecimento
+  inteira?: boolean
+  aoEscolher: (m: Material) => void
+  aoVerMais?: () => void
+}) {
+  return (
+    <Coluna
+      nome="comprar"
+      titulo="Para comprar"
+      inteira={inteira}
+      direita={
+        comprar.length ? (
+          <span className="em-topo-n alerta">{comprar.length} abaixo do mínimo</span>
+        ) : undefined
+      }
+      verMais={
+        comprar.length && aoVerMais
+          ? `Ver mais · ${comprar.length === 1 ? 'o material' : 'os ' + comprar.length} para comprar`
+          : undefined
+      }
+      aoVerMais={aoVerMais}
+    >
+      {comprar.length === 0 ? (
+        <p className="em-sem-linhas">Nenhum material abaixo do mínimo.</p>
+      ) : (
+        comprar.map(m => {
+          const f = fornecedorDoMaterial(m, fornecimento)
+          return (
+            <button
+              key={m.id}
+              type="button"
+              className="em-lin"
+              data-material={m.nome}
+              onClick={() => aoEscolher(m)}
+            >
+              <Bola cor={m.corHex} />
+              <span className="em-txt">
+                <DoisNomes m={m} nome={m.nome} />
+                <small>
+                  tem {quantoNaUnidade(m.livre, m.unidade)} · mínimo{' '}
+                  {quantoNaUnidade(m.minimo, m.unidade)}
+                </small>
+                {f ? (
+                  <small>{f.nome}</small>
+                ) : fornecimento.disponivel ? (
+                  <small className="em-falta">falta escolher o fornecedor</small>
+                ) : null}
+              </span>
+              <span className="em-val pouco">
+                {quantoNaUnidade(faltaDoMaterial(m), m.unidade)}
+                <small>{faltaDoMaterial(m) === 1 ? 'falta' : 'faltam'}</small>
+              </span>
+            </button>
+          )
+        })
+      )}
+    </Coluna>
+  )
+}
+
+/* --- últimos movimentos ------------------------------------------------------- */
+const MOVIMENTOS_NA_COLUNA = 20
+
+export function UltimosMovimentos({
+  movimentos,
+  materiais,
+  inteira,
+  aoVerMais,
+}: {
+  movimentos: Movimento[]
+  materiais: Material[]
+  inteira?: boolean
+  aoVerMais: () => void
+}) {
+  const porId = new Map(materiais.map(m => [m.id, m]))
+  return (
+    <Coluna
+      nome="movimentos"
+      titulo="Últimos movimentos"
+      inteira={inteira}
+      verMais={movimentos.length ? 'Ver mais · todas as movimentações' : undefined}
+      aoVerMais={aoVerMais}
+    >
+      {movimentos.length === 0 ? (
+        <p className="em-sem-linhas">Nenhuma entrada, saída ou ajuste registrado ainda.</p>
+      ) : (
+        movimentos.slice(0, MOVIMENTOS_NA_COLUNA).map(v => (
+          <div key={v.id} className="em-lin">
+            <span className="em-txt">
+              {v.categoria === 'tecido' && v.tecido ? (
+                <>
+                  <b>{v.tecido}</b>
+                  <small className="em-cor">{v.cor}</small>
+                </>
+              ) : (
+                <DoisNomes m={porId.get(v.materialId)} nome={v.material} />
+              )}
+              <small>{linhaDoMovimento(v)}</small>
+            </span>
+            <span className={v.quantidade > 0 ? 'em-val entrou' : 'em-val'}>{quantoMexeu(v)}</span>
+          </div>
+        ))
+      )}
+    </Coluna>
+  )
+}

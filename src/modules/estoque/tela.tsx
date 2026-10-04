@@ -1,32 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  CalendarBlank,
-  CaretRight,
-  ListBullets,
-  Plus,
-  Stack,
-  Table,
-} from '@phosphor-icons/react'
+import { ArrowLeft, CalendarBlank, ListBullets, Plus, Stack, Table } from '@phosphor-icons/react'
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
 import {
   CATEGORIAS,
   NOME_DA_CATEGORIA,
   NOME_DO_MOTIVO,
+  SEM_HIERARQUIA,
   abaixoDoMinimo,
+  carregarFilaDaSeparacao,
+  carregarHierarquiaDeTecido,
   carregarMateriais,
   carregarMovimentos,
   carregarReservasEmAberto,
   conferirORazao,
   gruposDoEstoque,
+  nomeNoGrupo,
   refazerAsReservasAbertas,
   type Categoria,
   type GrupoDoEstoque,
+  type Hierarquia,
   type Material,
   type Motivo,
   type Movimento,
+  type PedidoNaSeparacao,
   type ReservaEmAberto,
 } from '@dominio/estoque'
 import {
@@ -37,59 +35,68 @@ import {
 } from '@dominio/deposito'
 import { fornecedoresParaOEstoque } from '@dominio/fornecedor'
 import { pode, useSessao } from '@dominio/sessao'
-import { fornecedorDoGrupo, materialDoMovimento, plural, type Fornecimento } from './apoio'
+import { materialDoMovimento, plural, type Fornecimento } from './apoio'
+import { chaveDoMaterial } from './arvore'
 import { BotaoEditarODeposito, Deposito } from './deposito'
 import { EditarGrupo } from './editar-grupo'
 import { EditorDoDeposito } from './editor-do-deposito'
-import { MaterialEscolhido, resumoDoGrupo, rotuloDeNovoItem } from './escolhido'
 import { FolhaDeMovimento } from './folha-de-movimento'
 import { MarcarLugar } from './marcar-lugar'
-import { VisaoGeral } from './geral'
+import { Materiais } from './materiais'
 import { Movimentacoes, type Agrupar } from './movimentacoes'
 import { NovoMaterial, type InicioDoNovo } from './novo-material'
 import { TabelaDeMateriais } from './tabela'
-import { VaoDoMaterial } from './vao'
 import './estoque.css'
 
 /* ==========================================================================
    Estoque.
 
-   A TELA É LISTA E ESCOLHIDO. À esquerda a lista, agrupada: tecido por malha
-   (as cores entram dentro dela), aviamento e insumo por grupo. À direita o que
-   foi escolhido, e enquanto nada foi escolhido, a visão geral: o que falta
-   comprar, o que andou e a prateleira de tecidos.
+   A PÁGINA TEM TRÊS ABAS: Materiais, Movimentações e Depósito. Materiais é a
+   da frente, em quatro colunas (materiais.tsx): a árvore do catálogo, o que
+   espera separação, o que falta comprar e o que andou, com a prateleira de
+   tecidos embaixo. Escolhido um tecido ou uma cor, o lado direito vira a
+   ficha dele.
+
+   NO CELULAR OS ASSUNTOS VIRAM CHIPS: Materiais, Separação, Comprar,
+   Movimentos e Depósito, uma tela para cada.
 
    O QUE ESTA TELA MOSTRA É O RAZÃO, E NÃO UM SALDO DIGITÁVEL. Não existe
    campo para corrigir o quanto tem. Quem erra a contagem lança um ajuste, e o
    ajuste fica no histórico com nome e hora.
 
-   O FORNECEDOR ESTÁ SEMPRE À VISTA: na linha da lista, na etiqueta do
-   material escolhido, na tabela e no movimento. Ele vem da página de
-   Fornecedores; quando a lista de lá não responde, a tela se cala sobre
-   fornecedor e continua respondendo o que é dela, que é tem ou não tem.
+   O FORNECEDOR ESTÁ SEMPRE À VISTA. Ele vem da página de Fornecedores; quando
+   a lista de lá não responde, a tela se cala sobre fornecedor e continua
+   respondendo o que é dela, que é tem ou não tem.
 
-   O DEPÓSITO É LIDO À PARTE (047). O desenho do depósito e o lugar de cada
-   material têm a sua própria leitura e o seu próprio erro: se ela falhar, a
-   aba Depósito diz isso, e a lista de materiais continua de pé.
+   O DEPÓSITO, A HIERARQUIA DO CATÁLOGO E A FILA DA SEPARAÇÃO SÃO APOIO. Cada
+   um tem a sua leitura: se uma falhar, a lista de materiais continua de pé.
    ========================================================================== */
 
-type Aba = 'materiais' | 'razao' | 'deposito'
+/* separacao e comprar só existem no celular: no computador são colunas da aba Materiais */
+type Aba = 'materiais' | 'separacao' | 'comprar' | 'razao' | 'deposito'
 type Vista = 'lista' | 'tabela'
 type Filtro = '' | Categoria | 'comprar'
 
 const SEM_FORNECIMENTO: Fornecimento = { fornecedores: [], ligacoes: [], disponivel: false }
 const MOTIVOS: Motivo[] = ['entrada', 'saida', 'ajuste', 'separacao', 'devolucao']
 
+function abaDoEndereco(valor: string | null): Aba {
+  return valor === 'razao' ? 'razao' : valor === 'deposito' ? 'deposito' : 'materiais'
+}
+
 export function TelaEstoque() {
   const navegar = useNavigate()
   const { estado } = useSessao()
   const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
   const podeEditar = !!pessoa && pode(pessoa, 'estoque', 'editar')
+  const podeSeparar = !!pessoa && pode(pessoa, 'separacao', 'ver')
 
   const [materiais, setMateriais] = useState<Material[]>([])
   const [movimentos, setMovimentos] = useState<Movimento[]>([])
   const [reservas, setReservas] = useState<ReservaEmAberto[]>([])
   const [fornecimento, setFornecimento] = useState<Fornecimento>(SEM_FORNECIMENTO)
+  const [hierarquia, setHierarquia] = useState<Hierarquia>(SEM_HIERARQUIA)
+  const [fila, setFila] = useState<PedidoNaSeparacao[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
 
@@ -97,18 +104,14 @@ export function TelaEstoque() {
      fornecedor manda para cá com o nome dele na busca, e para as
      movimentações dele com a aba junto. */
   const [endereco] = useSearchParams()
-  const [aba, setAba] = useState<Aba>(
-    endereco.get('aba') === 'razao'
-      ? 'razao'
-      : endereco.get('aba') === 'deposito'
-        ? 'deposito'
-        : 'materiais',
-  )
+  const [aba, setAba] = useState<Aba>(abaDoEndereco(endereco.get('aba')))
   const [vista, setVista] = useState<Vista>('lista')
   const [busca, setBusca] = useState(endereco.get('busca') ?? '')
   const [filtro, setFiltro] = useState<Filtro>('')
   const [motivo, setMotivo] = useState<'' | Motivo>('')
   const [agrupar, setAgrupar] = useState<Agrupar>('dia')
+  const [categoria, setCategoria] = useState<Categoria>('tecido')
+  /* a chave do tecido (tecido:<id>) ou do material (material:<id>) */
   const [escolhido, setEscolhido] = useState('')
 
   const [noMovimento, setNoMovimento] = useState<Material | null>(null)
@@ -122,9 +125,11 @@ export function TelaEstoque() {
   const [lendoDeposito, setLendoDeposito] = useState(true)
   const [erroDoDeposito, setErroDoDeposito] = useState('')
   const [editandoDeposito, setEditandoDeposito] = useState(false)
-  const [marcando, setMarcando] = useState<Material | null>(null)
+  const [marcando, setMarcando] = useState<{ m: Material; outro: boolean } | null>(null)
+  /* o que outra parte da página pediu para ver no mapa */
+  const [marcados, setMarcados] = useState<{ ids: string[]; rotulo: string } | null>(null)
 
-  /* abaixo disto as caixas empilham e o material escolhido vira a tela */
+  /* abaixo disto a tabela some e as movimentações viram lista de duas linhas */
   const estreita = usarConsulta('(max-width: 1099px)')
   const celular = usarConsulta('(max-width: 767px)')
 
@@ -142,17 +147,30 @@ export function TelaEstoque() {
     setErro('')
   }, [])
 
+  /* A fila da separação e a hierarquia do catálogo são apoio: uma falha vira
+     lista vazia, e nunca derruba a página. */
+  const lerApoio = useCallback(async () => {
+    const [h, f] = await Promise.all([
+      carregarHierarquiaDeTecido(),
+      carregarFilaDaSeparacao().catch(() => [] as PedidoNaSeparacao[]),
+    ])
+    setHierarquia(h)
+    setFila(f)
+  }, [])
+
   const recarregar = useCallback(async () => {
     try {
-      await ler()
+      await Promise.all([ler(), lerApoio()])
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui ler o estoque.')
     }
-  }, [ler])
+  }, [ler, lerApoio])
 
   useEffect(() => {
     let vivo = true
-    ler()
+    /* a página só aparece com a hierarquia lida: sem ela a árvore nasceria
+       inteira no "Sem tipo" e se rearrumaria um instante depois */
+    Promise.all([ler(), lerApoio()])
       .catch((e: unknown) => {
         if (vivo) setErro(e instanceof Error ? e.message : 'Não consegui ler o estoque.')
       })
@@ -162,7 +180,7 @@ export function TelaEstoque() {
     return () => {
       vivo = false
     }
-  }, [ler])
+  }, [ler, lerApoio])
 
   const lerDeposito = useCallback(async () => {
     try {
@@ -186,36 +204,54 @@ export function TelaEstoque() {
 
   const baixo = useMemo(() => abaixoDoMinimo(materiais), [materiais])
   const todosOsGrupos = useMemo(() => gruposDoEstoque(materiais), [materiais])
+  const guardado = useMemo(() => ({ planta: deposito, lugares }), [deposito, lugares])
+
+  /* no computador não existem as telas de Separação e de Comprar: são colunas */
+  const abaAVista: Aba = !celular && (aba === 'separacao' || aba === 'comprar') ? 'materiais' : aba
 
   /* A BUSCA ACHA PELO QUE A PESSOA LEMBRA: o nome do material, a malha, a
      cor, o grupo ou o fornecedor. */
+  const termo = semAcento(busca.trim())
   const filtrados = useMemo(() => {
-    const termo = semAcento(busca.trim())
+    if (!termo) return materiais
     return materiais.filter(m => {
-      if (filtro === 'comprar' ? m.livre >= m.minimo : filtro && m.categoria !== filtro)
-        return false
-      if (!termo) return true
       const forn = fornecimento.ligacoes
         .filter(l => l.materialId === m.id)
         .map(l => fornecimento.fornecedores.find(f => f.id === l.fornecedorId)?.nome ?? '')
         .join(' ')
       return semAcento([m.nome, m.tecido, m.cor, m.grupo, forn].join(' ')).includes(termo)
     })
-  }, [materiais, busca, filtro, fornecimento])
-  const grupos = useMemo(() => gruposDoEstoque(filtrados), [filtrados])
-
-  const grupoEscolhido = useMemo(
-    () => todosOsGrupos.find(g => g.chave === escolhido) ?? null,
-    [todosOsGrupos, escolhido],
+  }, [materiais, termo, fornecimento])
+  /* os chips de categoria e o "para comprar" só valem na tabela */
+  const gruposDaTabela = useMemo(
+    () =>
+      gruposDoEstoque(
+        filtrados.filter(m =>
+          filtro === 'comprar' ? m.livre < m.minimo : filtro ? m.categoria === filtro : true,
+        ),
+      ),
+    [filtrados, filtro],
   )
-  /* o grupo que sumiu (o último item foi arquivado, o nome do grupo mudou)
-     não deixa a tela presa num detalhe vazio */
+
+  /* --- o escolhido -----------------------------------------------------------
+     Um tecido inteiro ou um material. O que sumiu (o último item foi
+     arquivado, o tecido ficou sem cor) não deixa a tela presa numa ficha vazia. */
+  const materialEscolhido = useMemo(
+    () => materiais.find(m => chaveDoMaterial(m.id) === escolhido) ?? null,
+    [materiais, escolhido],
+  )
+  const grupoEscolhido = useMemo(
+    () =>
+      materialEscolhido
+        ? (todosOsGrupos.find(g => g.itens.some(i => i.id === materialEscolhido.id)) ?? null)
+        : (todosOsGrupos.find(g => g.chave === escolhido) ?? null),
+    [todosOsGrupos, materialEscolhido, escolhido],
+  )
   useEffect(() => {
     if (escolhido && !carregando && !grupoEscolhido) setEscolhido('')
   }, [escolhido, carregando, grupoEscolhido])
 
   const movimentosFiltrados = useMemo(() => {
-    const termo = semAcento(busca.trim())
     return movimentos.filter(v => {
       if (motivo && v.motivo !== motivo) return false
       if (!termo) return true
@@ -223,7 +259,22 @@ export function TelaEstoque() {
         [materialDoMovimento(v), v.pedido, v.quem, v.fornecedor, v.observacao].join(' '),
       ).includes(termo)
     })
-  }, [movimentos, busca, motivo])
+  }, [movimentos, termo, motivo])
+
+  function trocarAba(a: Aba) {
+    setAba(a)
+    setBusca('')
+    setMarcados(null)
+    if (a !== 'materiais') setEscolhido('')
+  }
+
+  function escolher(chave: string) {
+    setEscolhido(chave)
+    if (chave) {
+      setAba('materiais')
+      setVista('lista')
+    }
+  }
 
   async function refazer(fechar: () => void) {
     fechar()
@@ -267,7 +318,7 @@ export function TelaEstoque() {
       avisar('Cadastre um material antes de movimentar o estoque.', 'info')
       return
     }
-    setNoMovimento(grupoEscolhido?.itens[0] ?? materiais[0])
+    setNoMovimento(materialEscolhido ?? grupoEscolhido?.itens[0] ?? materiais[0])
   }
 
   function abrirNovo(g?: GrupoDoEstoque | null) {
@@ -278,12 +329,19 @@ export function TelaEstoque() {
         grupo: g.categoria === 'tecido' ? undefined : g.itens[0]?.grupo,
       })
     } else {
-      setNovo({ categoria: filtro === 'aviamento' || filtro === 'insumo' ? filtro : 'tecido' })
+      setNovo({ categoria })
     }
   }
 
-  const noDetalhe = estreita && !!grupoEscolhido && aba === 'materiais'
-  const mostraTabela = aba === 'materiais' && vista === 'tabela' && !estreita
+  function verNoDeposito(ids: string[], rotulo: string) {
+    setEscolhido('')
+    setBusca('')
+    setMarcados({ ids, rotulo })
+    setAba('deposito')
+  }
+
+  const naFicha = celular && !!grupoEscolhido && abaAVista === 'materiais'
+  const mostraTabela = abaAVista === 'materiais' && vista === 'tabela' && !estreita
 
   const contagem = (c: Categoria) => materiais.filter(m => m.categoria === c).length
   const contagemDoMotivo = (m: Motivo) => movimentos.filter(v => v.motivo === m).length
@@ -311,10 +369,10 @@ export function TelaEstoque() {
   )
 
   /* --- o cabeçalho ---------------------------------------------------------
-     No detalhe estreito, o cabeçalho da página é o do material: a volta em
-     cima, o nome no título e os botões dele. */
+     No celular, com a ficha aberta, o cabeçalho da página é o do material: a
+     volta em cima e o nome no título. */
   const cabecalho =
-    noDetalhe && grupoEscolhido
+    naFicha && grupoEscolhido
       ? {
           acima: (
             <button type="button" className="es-volta" onClick={() => setEscolhido('')}>
@@ -322,16 +380,13 @@ export function TelaEstoque() {
               Estoque · {NOME_DA_CATEGORIA[grupoEscolhido.categoria]}
             </button>
           ),
-          titulo: grupoEscolhido.nome,
-          sub: resumoDoGrupo(grupoEscolhido),
-          acoes: podeEditar ? (
-            <>
-              <Botao onClick={() => abrirNovo(grupoEscolhido)}>
-                {rotuloDeNovoItem(grupoEscolhido)}
-              </Botao>
-              <Botao onClick={() => setEditando(grupoEscolhido)}>Editar</Botao>
-            </>
-          ) : undefined,
+          titulo: materialEscolhido ? nomeNoGrupo(materialEscolhido) : grupoEscolhido.nome,
+          sub:
+            materialEscolhido && materialEscolhido.categoria === 'tecido'
+              ? grupoEscolhido.nome
+              : materialEscolhido
+                ? materialEscolhido.grupo
+                : plural(grupoEscolhido.itens.length, 'cor', 'cores'),
         }
       : {
           acima: 'Materiais',
@@ -367,9 +422,77 @@ export function TelaEstoque() {
     )
   }
 
+  /* --- a barra ---------------------------------------------------------------
+     A mesma grade das quatro colunas: as abas da página sobre a primeira, a
+     busca sobre a segunda e a terceira, e o que é da aba sobre a quarta. */
+  const fimDaBarra =
+    abaAVista === 'deposito' ? (
+      podeEditar && !celular && !lendoDeposito && !erroDoDeposito && deposito ? (
+        <BotaoEditarODeposito temDeposito aoEditar={() => setEditandoDeposito(true)} />
+      ) : null
+    ) : abaAVista === 'razao' ? (
+      estreita ? null : (
+        <Segmentado
+          valor={agrupar}
+          aoMudar={setAgrupar}
+          opcoes={[
+            {
+              valor: 'dia',
+              rotulo: (
+                <span className="es-rotulo-com-icone">
+                  <CalendarBlank size={16} />
+                  Por dia
+                </span>
+              ),
+            },
+            {
+              valor: 'material',
+              rotulo: (
+                <span className="es-rotulo-com-icone">
+                  <Stack size={16} />
+                  Por material
+                </span>
+              ),
+            },
+          ]}
+        />
+      )
+    ) : abaAVista === 'materiais' && !estreita ? (
+      <Segmentado
+        valor={vista}
+        aoMudar={v => {
+          setVista(v)
+          if (v === 'tabela') setEscolhido('')
+          else setFiltro('')
+        }}
+        opcoes={[
+          {
+            valor: 'lista',
+            rotulo: (
+              <span className="es-rotulo-com-icone">
+                <ListBullets size={16} />
+                Lista
+              </span>
+            ),
+          },
+          {
+            valor: 'tabela',
+            rotulo: (
+              <span className="es-rotulo-com-icone">
+                <Table size={16} />
+                Tabela
+              </span>
+            ),
+          },
+        ]}
+      />
+    ) : null
+
+  const temBusca = abaAVista !== 'separacao' && abaAVista !== 'comprar'
+
   return (
     <Pagina {...cabecalho}>
-      {podeEditar && celular && !noDetalhe ? (
+      {podeEditar && celular && !naFicha ? (
         <div className="es-acoes">
           <Botao tom="primario" className="es-cresce" onClick={abrirMovimento}>
             Registrar movimento
@@ -381,138 +504,107 @@ export function TelaEstoque() {
         </div>
       ) : null}
 
-      {noDetalhe ? null : (
-        <div className="es-barra">
-          <Segmentado
-            className="es-aba"
-            valor={aba}
-            aoMudar={a => {
-              setAba(a)
-              setBusca('')
-            }}
-            opcoes={[
-              { valor: 'materiais', rotulo: 'Materiais' },
-              { valor: 'razao', rotulo: 'Movimentações' },
-              { valor: 'deposito', rotulo: 'Depósito' },
-            ]}
-          />
-          <Busca
-            className={aba === 'deposito' ? 'es-busca dp-busca' : 'es-busca'}
-            value={busca}
-            onChange={e => setBusca(e.currentTarget.value)}
-            placeholder={
-              aba === 'materiais'
-                ? 'Buscar material ou fornecedor'
-                : aba === 'razao'
-                  ? 'Buscar material, pedido ou pessoa'
-                  : 'Onde está? Buscar tecido, cor ou item'
-            }
-            aria-label={aba === 'deposito' ? 'Onde está?' : 'Buscar'}
-          />
-          {aba === 'deposito' ? null : aba === 'materiais' ? (
-            <div className="es-chips">
-              <Chip ligado={filtro === ''} onClick={() => setFiltro('')}>
-                Todos <span className="es-conta">{materiais.length}</span>
-              </Chip>
-              {CATEGORIAS.map(c => (
-                <Chip
-                  key={c}
-                  ligado={filtro === c}
-                  onClick={() => setFiltro(filtro === c ? '' : c)}
-                >
-                  {NOME_DA_CATEGORIA[c]} <span className="es-conta">{contagem(c)}</span>
+      {naFicha ? null : (
+        <div className="em-barra-caixa">
+          <div className="em-barra" data-barra="">
+            {celular ? (
+              <div className="em-secoes" role="tablist" aria-label="Assuntos do estoque">
+                {(
+                  [
+                    ['materiais', 'Materiais', 0],
+                    ['separacao', 'Separação', fila.length],
+                    ['comprar', 'Comprar', baixo.length],
+                    ['razao', 'Movimentos', 0],
+                    ['deposito', 'Depósito', 0],
+                  ] as [Aba, string, number][]
+                ).map(([valor, rotulo, n]) => (
+                  <Chip
+                    key={valor}
+                    role="tab"
+                    aria-selected={abaAVista === valor}
+                    ligado={abaAVista === valor}
+                    onClick={() => trocarAba(valor)}
+                  >
+                    {rotulo}
+                    {n ? <span className="em-chip-n">{n}</span> : null}
+                  </Chip>
+                ))}
+              </div>
+            ) : (
+              <Segmentado
+                className="em-seg es-aba"
+                valor={abaAVista === 'razao' || abaAVista === 'deposito' ? abaAVista : 'materiais'}
+                aoMudar={trocarAba}
+                opcoes={[
+                  { valor: 'materiais', rotulo: 'Materiais' },
+                  { valor: 'razao', rotulo: 'Movimentações' },
+                  { valor: 'deposito', rotulo: 'Depósito' },
+                ]}
+              />
+            )}
+            {temBusca ? (
+              <Busca
+                className="em-busca es-busca"
+                value={busca}
+                onChange={e => {
+                  setBusca(e.currentTarget.value)
+                  setMarcados(null)
+                }}
+                placeholder={
+                  abaAVista === 'materiais'
+                    ? 'Buscar material, cor ou fornecedor'
+                    : abaAVista === 'razao'
+                      ? 'Buscar material, pedido ou pessoa'
+                      : 'Onde está? Buscar tecido, cor ou item'
+                }
+                aria-label={abaAVista === 'deposito' ? 'Onde está?' : 'Buscar'}
+              />
+            ) : null}
+            {fimDaBarra ? <div className="em-barra-fim">{fimDaBarra}</div> : null}
+
+            {mostraTabela ? (
+              <div className="em-barra-linha es-chips">
+                <Chip ligado={filtro === ''} onClick={() => setFiltro('')}>
+                  Todos <span className="es-conta">{materiais.length}</span>
                 </Chip>
-              ))}
-              <Chip
-                cor="var(--brand)"
-                ligado={filtro === 'comprar'}
-                onClick={() => setFiltro(filtro === 'comprar' ? '' : 'comprar')}
-              >
-                Para comprar <span className="es-conta">{baixo.length}</span>
-              </Chip>
-            </div>
-          ) : (
-            <div className="es-chips">
-              <Chip ligado={motivo === ''} onClick={() => setMotivo('')}>
-                Todos <span className="es-conta">{movimentos.length}</span>
-              </Chip>
-              {MOTIVOS.map(m => (
+                {CATEGORIAS.map(c => (
+                  <Chip
+                    key={c}
+                    ligado={filtro === c}
+                    onClick={() => setFiltro(filtro === c ? '' : c)}
+                  >
+                    {NOME_DA_CATEGORIA[c]} <span className="es-conta">{contagem(c)}</span>
+                  </Chip>
+                ))}
                 <Chip
-                  key={m}
-                  ligado={motivo === m}
-                  onClick={() => setMotivo(motivo === m ? '' : m)}
+                  cor="var(--brand)"
+                  ligado={filtro === 'comprar'}
+                  onClick={() => setFiltro(filtro === 'comprar' ? '' : 'comprar')}
                 >
-                  {NOME_DO_MOTIVO[m]} <span className="es-conta">{contagemDoMotivo(m)}</span>
+                  Para comprar <span className="es-conta">{baixo.length}</span>
                 </Chip>
-              ))}
-            </div>
-          )}
-          {aba === 'deposito' ? (
-            podeEditar && !celular && !lendoDeposito && !erroDoDeposito && deposito ? (
-              <span className="dp-na-barra">
-                <BotaoEditarODeposito
-                  temDeposito={!!deposito}
-                  aoEditar={() => setEditandoDeposito(true)}
-                />
-              </span>
-            ) : null
-          ) : aba === 'materiais' ? (
-            <Segmentado
-              className="es-ver"
-              valor={vista}
-              aoMudar={setVista}
-              opcoes={[
-                {
-                  valor: 'lista',
-                  rotulo: (
-                    <span className="es-rotulo-com-icone">
-                      <ListBullets size={16} />
-                      Lista
-                    </span>
-                  ),
-                },
-                {
-                  valor: 'tabela',
-                  rotulo: (
-                    <span className="es-rotulo-com-icone">
-                      <Table size={16} />
-                      Tabela
-                    </span>
-                  ),
-                },
-              ]}
-            />
-          ) : (
-            <Segmentado
-              className="es-ver"
-              valor={agrupar}
-              aoMudar={setAgrupar}
-              opcoes={[
-                {
-                  valor: 'dia',
-                  rotulo: (
-                    <span className="es-rotulo-com-icone">
-                      <CalendarBlank size={16} />
-                      Por dia
-                    </span>
-                  ),
-                },
-                {
-                  valor: 'material',
-                  rotulo: (
-                    <span className="es-rotulo-com-icone">
-                      <Stack size={16} />
-                      Por material
-                    </span>
-                  ),
-                },
-              ]}
-            />
-          )}
+              </div>
+            ) : abaAVista === 'razao' ? (
+              <div className="em-barra-linha es-chips">
+                <Chip ligado={motivo === ''} onClick={() => setMotivo('')}>
+                  Todos <span className="es-conta">{movimentos.length}</span>
+                </Chip>
+                {MOTIVOS.map(m => (
+                  <Chip
+                    key={m}
+                    ligado={motivo === m}
+                    onClick={() => setMotivo(motivo === m ? '' : m)}
+                  >
+                    {NOME_DO_MOTIVO[m]} <span className="es-conta">{contagemDoMotivo(m)}</span>
+                  </Chip>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
 
-      {aba === 'deposito' && erroDoDeposito ? (
+      {abaAVista === 'deposito' && erroDoDeposito ? (
         <section className="cartao es-quadro">
           <Vazio
             titulo="Não consegui ler o depósito"
@@ -524,7 +616,7 @@ export function TelaEstoque() {
         <section className="cartao es-quadro">
           <Vazio titulo="Não consegui ler o estoque" texto={erro} />
         </section>
-      ) : carregando || (aba === 'deposito' && lendoDeposito) ? (
+      ) : carregando || (abaAVista === 'deposito' && lendoDeposito) ? (
         <section className="cartao es-quadro">
           <div className="es-espera">
             <Esqueleto altura={18} />
@@ -535,20 +627,22 @@ export function TelaEstoque() {
             <Esqueleto altura={18} />
           </div>
         </section>
-      ) : aba === 'deposito' ? (
+      ) : abaAVista === 'deposito' ? (
         <Deposito
           planta={deposito}
           lugares={lugares}
           materiais={materiais}
           busca={busca}
+          marcados={marcados}
+          aoLimparMarcados={() => setMarcados(null)}
           podeEditar={podeEditar}
           estreita={estreita}
           celular={celular}
           aoEditar={() => setEditandoDeposito(true)}
-          aoMarcar={setMarcando}
+          aoMarcar={m => setMarcando({ m, outro: false })}
           aoMovimentar={setNoMovimento}
         />
-      ) : aba === 'razao' ? (
+      ) : abaAVista === 'razao' ? (
         <section className="cartao es-quadro">
           <Movimentacoes
             movimentos={movimentosFiltrados}
@@ -560,7 +654,7 @@ export function TelaEstoque() {
       ) : mostraTabela ? (
         <section className="cartao es-quadro">
           <TabelaDeMateriais
-            grupos={grupos}
+            grupos={gruposDaTabela}
             fornecimento={fornecimento}
             haMateriais={materiais.length > 0}
             aoAbrir={m => (podeEditar ? setNoMovimento(m) : undefined)}
@@ -575,58 +669,46 @@ export function TelaEstoque() {
           />
         </section>
       ) : (
-        <div className={grupoEscolhido ? 'es-duas com-escolhido' : 'es-duas'}>
-          <ListaDoEstoque
-            grupos={grupos}
-            escolhido={escolhido}
-            fornecimento={fornecimento}
-            aoEscolher={chave => setEscolhido(chave === escolhido && !estreita ? '' : chave)}
-          />
-          <div className="es-lado">
-            {grupoEscolhido ? (
-              <MaterialEscolhido
-                grupo={grupoEscolhido}
-                fornecedor={fornecedorDoGrupo(grupoEscolhido, fornecimento)}
-                temFornecedores={fornecimento.disponivel}
-                ultimaEntrada={
-                  movimentos.find(
-                    v =>
-                      v.motivo === 'entrada' &&
-                      grupoEscolhido.itens.some(m => m.id === v.materialId),
-                  )?.quando ?? ''
+        <Materiais
+          materiais={materiais}
+          filtrados={filtrados}
+          termo={termo}
+          hierarquia={hierarquia}
+          movimentos={movimentos}
+          reservas={reservas}
+          fornecimento={fornecimento}
+          fila={fila}
+          guardado={guardado}
+          podeEditar={podeEditar}
+          podeSeparar={podeSeparar}
+          celular={celular}
+          secao={abaAVista === 'separacao' || abaAVista === 'comprar' ? abaAVista : 'materiais'}
+          categoria={categoria}
+          aoTrocarCategoria={setCategoria}
+          escolhido={escolhido}
+          aoEscolher={escolher}
+          aoMovimentar={setNoMovimento}
+          aoNovo={abrirNovo}
+          aoEditar={setEditando}
+          aoMarcar={(m, outro) => setMarcando({ m, outro })}
+          aoVerNoDeposito={verNoDeposito}
+          aoVerFornecedor={f => navegar(f ? '/fornecedores?abrir=' + f.id : '/fornecedores')}
+          aoVerMovimentos={nome => {
+            setEscolhido('')
+            setMarcados(null)
+            setBusca(nome ?? '')
+            setAba('razao')
+          }}
+          aoVerComprar={
+            estreita
+              ? undefined
+              : () => {
+                  setFiltro('comprar')
+                  setVista('tabela')
                 }
-                movimentos={movimentos.filter(v =>
-                  grupoEscolhido.itens.some(m => m.id === v.materialId),
-                )}
-                reservas={reservas.filter(r =>
-                  grupoEscolhido.itens.some(m => m.id === r.materialId),
-                )}
-                podeEditar={podeEditar}
-                estreita={estreita}
-                aoMovimentar={setNoMovimento}
-                aoNovoItem={() => abrirNovo(grupoEscolhido)}
-                aoEditar={() => setEditando(grupoEscolhido)}
-                aoVerFornecedor={() => {
-                  const f = fornecedorDoGrupo(grupoEscolhido, fornecimento)
-                  navegar(f ? '/fornecedores?abrir=' + f.id : '/fornecedores')
-                }}
-                aoVerMovimentos={() => {
-                  setBusca(grupoEscolhido.nome)
-                  setAba('razao')
-                }}
-              />
-            ) : (
-              <VisaoGeral
-                materiais={materiais}
-                grupos={todosOsGrupos}
-                movimentos={movimentos}
-                fornecimento={fornecimento}
-                aoEscolher={setEscolhido}
-                aoVerMovimentos={() => setAba('razao')}
-              />
-            )}
-          </div>
-        </div>
+          }
+          aoSeparar={() => navegar('/separacao')}
+        />
       )}
 
       <FolhaDeMovimento
@@ -641,7 +723,8 @@ export function TelaEstoque() {
         aoCriarFornecedor={recarregarFornecedores}
       />
       <MarcarLugar
-        material={marcando}
+        material={marcando?.m ?? null}
+        outroLugar={marcando?.outro}
         planta={deposito}
         lugares={lugares}
         materiais={materiais}
@@ -656,17 +739,16 @@ export function TelaEstoque() {
         materiais={materiais}
         fornecimento={fornecimento}
         aoFechar={() => setNovo(null)}
-        aoCriar={async (_id, categoria, tecidoId, grupo) => {
+        aoCriar={async (id, categoriaNova, tecidoId) => {
           setNovo(null)
           await recarregar()
-          setAba('materiais')
-          setEscolhido(
-            categoria === 'tecido'
-              ? tecidoId
-                ? 'tecido:' + tecidoId
-                : ''
-              : grupo
-                ? categoria + ':' + grupo.toLowerCase()
+          setCategoria(categoriaNova)
+          /* o tecido novo abre a ficha do tecido; o item novo, a dele */
+          escolher(
+            categoriaNova === 'tecido' && tecidoId
+              ? 'tecido:' + tecidoId
+              : id
+                ? chaveDoMaterial(id)
                 : '',
           )
         }}
@@ -676,96 +758,12 @@ export function TelaEstoque() {
         grupo={editando}
         fornecimento={fornecimento}
         aoFechar={() => setEditando(null)}
-        aoSalvar={async grupoNovo => {
-          const antes = editando
+        aoSalvar={async () => {
           setEditando(null)
           await recarregar()
-          if (antes && antes.categoria !== 'tecido' && grupoNovo) {
-            setEscolhido(antes.categoria + ':' + grupoNovo.toLowerCase())
-          }
         }}
         aoCriarFornecedor={recarregarFornecedores}
       />
     </Pagina>
-  )
-}
-
-/* --- a lista ---------------------------------------------------------------
-   Uma faixa por categoria e uma linha por grupo: o nome, o fornecedor, um vão
-   miúdo por item e o ponto vermelho quando algum deles é para comprar. */
-function ListaDoEstoque({
-  grupos,
-  escolhido,
-  fornecimento,
-  aoEscolher,
-}: {
-  grupos: GrupoDoEstoque[]
-  escolhido: string
-  fornecimento: Fornecimento
-  aoEscolher: (chave: string) => void
-}) {
-  if (!grupos.length) {
-    return (
-      <section className="cartao es-lista">
-        <Vazio
-          titulo="Nada neste filtro"
-          texto="Nenhum material combina com o que está escolhido."
-        />
-      </section>
-    )
-  }
-  return (
-    <section className="cartao es-lista">
-      {CATEGORIAS.map(c => {
-        const daCategoria = grupos.filter(g => g.categoria === c)
-        if (!daCategoria.length) return null
-        return (
-          <div key={c} className="es-lista-bloco">
-            <div className="es-faixa">
-              {NOME_DA_CATEGORIA[c]}
-              <span>
-                {c === 'tecido'
-                  ? plural(daCategoria.length, 'malha', 'malhas')
-                  : plural(daCategoria.length, 'grupo', 'grupos')}
-              </span>
-            </div>
-            {daCategoria.map(g => {
-              const f = fornecedorDoGrupo(g, fornecimento)
-              return (
-                <button
-                  type="button"
-                  key={g.chave}
-                  className={g.chave === escolhido ? 'es-item escolhido' : 'es-item'}
-                  aria-pressed={g.chave === escolhido}
-                  onClick={() => aoEscolher(g.chave)}
-                >
-                  <span className="es-texto">
-                    <b>{g.nome}</b>
-                    {f ? (
-                      <small>{f.nome}</small>
-                    ) : fornecimento.disponivel ? (
-                      <small className="es-falta">falta escolher o fornecedor</small>
-                    ) : (
-                      <small>
-                        {c === 'tecido'
-                          ? plural(g.itens.length, 'cor', 'cores')
-                          : plural(g.itens.length, 'material', 'materiais')}
-                      </small>
-                    )}
-                  </span>
-                  <span className="es-minis">
-                    {g.itens.slice(0, 6).map(m => (
-                      <VaoDoMaterial key={m.id} m={m} mini />
-                    ))}
-                  </span>
-                  <span className={g.paraComprar ? 'es-ponto' : 'es-ponto apagado'} />
-                  <CaretRight size={16} className="es-seta" />
-                </button>
-              )
-            })}
-          </div>
-        )
-      })}
-    </section>
   )
 }

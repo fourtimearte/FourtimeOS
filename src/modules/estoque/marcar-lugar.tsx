@@ -46,10 +46,13 @@ export function MarcarLugar({
   planta,
   lugares,
   materiais,
+  outroLugar: comOutroLugar,
   aoFechar,
   aoGravar,
 }: {
   material: Material | null
+  /** abre já pedindo um lugar a mais, além dos que o material tem */
+  outroLugar?: boolean
   planta: Planta | null
   lugares: LugarDoMaterial[]
   materiais: Material[]
@@ -76,8 +79,9 @@ export function MarcarLugar({
   )
   useEffect(() => {
     if (!material) return
-    setLista(deAntes.length ? deAntes : [null])
-    setAtual(0)
+    const comMaisUm = !!comOutroLugar && deAntes.length > 0 && deAntes.length < MAXIMO_DE_LUGARES
+    setLista(deAntes.length ? (comMaisUm ? [...deAntes, null] : deAntes) : [null])
+    setAtual(comMaisUm ? deAntes.length : 0)
     setCodigo('')
     setFalha('')
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,10 +1,14 @@
 /* ==========================================================================
-   ESTOQUE, FORNECEDORES E VERIFICADOR DE BOLETO CONTRA O WIREFRAME DE
-   03/10/2026, MEDIDA POR MEDIDA.
+   FORNECEDORES E VERIFICADOR DE BOLETO CONTRA O WIREFRAME DE 03/10/2026,
+   MEDIDA POR MEDIDA.
 
    O Henrique aprovou o wireframe com a mesma ordem do kanban: ficar IGUAL no
    sistema, conferindo tamanhos, distancias, fontes, margens, recheios, cores,
-   formatos e bordas. Este teste e essa conferencia, nas tres paginas.
+   formatos e bordas. Este teste e essa conferencia, nas duas paginas.
+
+   O ESTOQUE SAIU DAQUI EM 04/10/2026: a pagina foi redesenhada (versao 2) e
+   ganhou os proprios testes, testes/estoque.mjs (a aba Materiais) e
+   testes/deposito.mjs (a aba Deposito).
 
    Cada numero aqui foi copiado da prancha do wireframe. Se o CSS mudar e o
    numero sair, o teste reprova e diz qual.
@@ -12,9 +16,9 @@
    O QUE ELE CONFERE
      1. as medidas em 1920 por 1080, com o menu aberto, nos dois temas
      2. que nada rola para o lado em 1920, 820 e 390
-     3. que as tres paginas fazem o que o wireframe promete: a folha de
-        movimento grava com o fornecedor, a ficha abre, o boleto fica verde,
-        amarelo e vermelho, e o arquivo do boleto nunca sai do navegador
+     3. que as duas paginas fazem o que o wireframe promete: a ficha do
+        fornecedor abre, o boleto fica verde, amarelo e vermelho, e o arquivo
+        do boleto nunca sai do navegador
      4. que nao houve erro de JavaScript
 
    O banco e de mentira (testes/materiais-dados.mjs) e o PDF do boleto e
@@ -231,108 +235,12 @@ for (const tema of ['light', 'dark']) {
   const T = tema === 'light' ? 'gelo' : 'grafite'
   const { ctx, pg, erros, gravados, pedidos } = await abrir(nav, { largura: 1920, altura: 1080, tema })
 
-  /* ------------------------------------------------------------ ESTOQUE */
-  await ir(pg, '/estoque', '.es-duas')
-  const K = await tokens(pg, ['--bg', '--surface', '--surface-2', '--surface-3', '--brand', '--text', '--text-2', '--text-3', '--border', '--ink'])
-  let m = await medir(pg, ['body', '.pagina-topo', '.pagina-topo .acima', '.pagina-topo h1', '.pagina-topo .sub', '.es-barra', '.es-aba', '.es-aba button', '.es-busca', '.es-ver', '.es-duas', '.es-lista', '.es-lado', '.es-faixa', '.es-item', '.es-item .es-vao', '.cartao-titulo', '.cartao-titulo .marca', '.es-heroi-numero', '.es-numero'])
-  conta(m.body.fundo === K['--bg'], `${T} estoque: o fundo da pagina e o token --bg (${m.body.fundo})`)
-  conta(igual(m['.pagina-topo'].x, 280) && igual(m['.pagina-topo'].w, 1598), `${T} estoque: a pagina vai de 280 a 1878 (${m['.pagina-topo'].x}, ${m['.pagina-topo'].w})`)
-  conta(m['.pagina-topo .acima'].letra === '12.5px/600' && m['.pagina-topo .acima'].texto.toLowerCase() === 'materiais' && m['.pagina-topo .acima'].cor === K['--text-3'], `${T} estoque: sobrelinha "Materiais" 12.5/600 em --text-3`)
-  conta(m['.pagina-topo h1'].letra === '24px/600' && m['.pagina-topo h1'].texto === 'Estoque', `${T} estoque: titulo "Estoque" 24/600 (${m['.pagina-topo h1'].letra})`)
-  conta(m['.pagina-topo .sub'].letra === '14px/400' && m['.pagina-topo .sub'].cor === K['--text-2'], `${T} estoque: subtitulo 14/400 em --text-2`)
-  let botoes = await todos(pg, '.pagina-topo .cb, .pagina-topo .btn')
-  conta(botoes.length === 3 && botoes.every((b) => igual(b.h, 40) && b.raio === '10px'), `${T} estoque: tres botoes no topo, 40 de altura e raio 10 (${botoes.map((b) => b.texto.replace(/\s+/g, ' ')).join(', ')})`)
-  conta(folga(botoes).every((f) => igual(f, 10)), `${T} estoque: 10 entre os botoes do topo (${folga(botoes).join(', ')})`)
-  conta(botoes.at(-1).fundo === K['--brand'] && botoes.at(-1).texto === 'Registrar movimento', `${T} estoque: a acao principal e a ultima e e vermelha (${botoes.at(-1).texto})`)
-  conta(igual(m['.es-barra'].y - m['.pagina-topo'].baixo, 24) && igual(m['.es-duas'].y - m['.es-barra'].baixo, 16), `${T} estoque: 24 do topo ate a barra e 16 da barra ate as caixas (${m['.es-barra'].y - m['.pagina-topo'].baixo}, ${m['.es-duas'].y - m['.es-barra'].baixo})`)
-  conta(igual(m['.es-aba'].h, 40) && m['.es-aba'].raio === '10px' && m['.es-aba'].recheio === '4px 4px 4px 4px' && m['.es-aba'].fundo === K['--surface-3'], `${T} estoque: segmentado 40 de altura, raio 10, recheio 4, fundo --surface-3`)
-  conta(igual(m['.es-aba button'].h, 34) && m['.es-aba button'].raio === '7px' && m['.es-aba button'].letra === '13px/600', `${T} estoque: botao do segmentado 34, raio 7, 13/600`)
-  conta(igual(m['.es-busca'].w, 300) && igual(m['.es-busca'].h, 40) && m['.es-busca'].raio === '10px' && m['.es-busca'].borda === '1px' && m['.es-busca'].fundo === K['--surface'], `${T} estoque: busca 300 por 40, raio 10, borda 1, fundo --surface`)
-  let chips = await todos(pg, '.es-chips .chip')
-  conta(chips.length === 5 && chips.every((c) => igual(c.h, 40) && c.raio === '999px' && c.letra === '13px/500'), `${T} estoque: cinco chips em pilula, 40 de altura, 13/500 (${chips.map((c) => c.texto.replace(/\s+/g, ' ')).join(' | ')})`)
-  conta(chips[0].fundo === K['--ink'], `${T} estoque: o chip ligado e preto, token --ink`)
-  conta(igual(m['.es-ver'].dir, m['.es-barra'].dir) && igual(m['.es-ver'].h, 40), `${T} estoque: Lista e Tabela encostam na margem direita (${m['.es-ver'].dir})`)
-  conta(igual(m['.es-lista'].w, 400) && m['.es-lista'].raio === '14px' && m['.es-lista'].borda === '1px' && m['.es-lista'].fundo === K['--surface'], `${T} estoque: caixa da lista 400 de largura, raio 14, borda 1 (${m['.es-lista'].w})`)
-  conta(igual(m['.es-lado'].x - m['.es-lista'].dir, 16) && igual(m['.es-lado'].dir, 1878), `${T} estoque: 16 entre a lista e o lado, e o lado vai ate a margem (${m['.es-lado'].x - m['.es-lista'].dir})`)
-  conta(igual(m['.es-faixa'].h, 36) && m['.es-faixa'].letra === '12.5px/600' && m['.es-faixa'].fundo === K['--surface-2'] && m['.es-faixa'].cor === K['--text-2'], `${T} estoque: faixa de categoria 36, 12.5/600, cinza --surface-2`)
-  conta(igual(m['.es-item'].h, 48) && m['.es-item'].recheio === '4px 20px 4px 20px', `${T} estoque: linha da lista 48 de altura, recheio lateral 20 (${m['.es-item'].h})`)
-  conta(igual(m['.es-item .es-vao'].w, 14) && igual(m['.es-item .es-vao'].h, 26) && m['.es-item .es-vao'].raio === '5px', `${T} estoque: vao pequeno da lista 14 por 26, raio 5`)
-  const faixas = await todos(pg, '.es-faixa'); const itens = await todos(pg, '.es-item')
-  conta(faixas.length === 3 && itens.length === 15, `${T} estoque: 3 categorias e 15 grupos na lista (${faixas.length}, ${itens.length})`)
-  const comFornecedor = itens.filter((i) => /Exemplo/.test(i.texto)).length
-  const semFornecedor = itens.filter((i) => /falta escolher o fornecedor/.test(i.texto)).length
-  conta(comFornecedor === 13 && semFornecedor === 2, `${T} estoque: toda linha da lista diz o fornecedor, ou que falta escolher (${comFornecedor} com, ${semFornecedor} sem)`)
-  conta(m['.es-heroi-numero'].letra === '56px/600', `${T} estoque: numero do que comprar 56/600 (${m['.es-heroi-numero'].letra})`)
-  conta(m['.cartao-titulo'].letra === '15px/600' && igual(m['.cartao-titulo .marca'].w, 6) && igual(m['.cartao-titulo .marca'].h, 6) && m['.cartao-titulo .marca'].fundo === K['--brand'], `${T} estoque: titulo de cartao 15/600 com o quadradinho vermelho de 6`)
-  conta(m['.es-numero'].raio === '14px' && m['.es-numero'].borda === '1px' && m['.es-numero'].recheio === '16px 20px 16px 20px' && m['.es-numero'].fundo === K['--surface-2'], `${T} estoque: caixa de numero raio 14, borda 1, recheio 16 e 20, cinza --surface-2`)
-  conta((await todos(pg, '.es-tabua')).length === 6, `${T} estoque: a prateleira tem as 6 malhas`)
-  conta(await sobra(pg) <= 0, `${T} estoque: nada rola para o lado`)
-  await foto(pg, `estoque-geral-${T}`)
-
-  /* o tecido escolhido */
-  await pg.locator('.es-item', { hasText: 'DRYFIT' }).click(); await pausa(pg)
-  m = await medir(pg, ['.es-nome', '.es-nome-botoes .btn', '.es-cor', '.es-cor .es-vao', '.es-cor .btn', '.es-cor-nome', '.es-etiqueta-comprar', '.es-etiqueta-minimo', '.es-caixa', '.es-caixa-topo', '.es-reservado', '.es-linha', '.es-mov', '.es-fornecedor'])
-  conta(m['.es-nome'].raio === '14px' && m['.es-nome'].recheio === '20px 24px 20px 24px' && m['.es-nome'].borda === '1px', `${T} estoque: caixa do nome raio 14, recheio 20 e 24`)
-  conta(/Malharia Exemplo/.test((await todos(pg, '.es-nome'))[0].texto) || m['.es-fornecedor'] !== null, `${T} estoque: o fornecedor aparece no tecido escolhido`)
-  const cores = await todos(pg, '.es-cor')
-  conta(cores.length === 4 && cores.every((c) => c.raio === '14px' && igual(c.w, cores[0].w)), `${T} estoque: quatro cores, todas da mesma largura (${cores.map((c) => Math.round(c.w)).join(', ')})`)
-  conta(folga(cores.slice(0, 4)).every((f) => igual(f, 16)), `${T} estoque: 16 entre as caixas de cor (${folga(cores.slice(0, 4)).join(', ')})`)
-  conta(igual(m['.es-cor .es-vao'].h, 190), `${T} estoque: vao da cor com 190 de altura (${m['.es-cor .es-vao'].h})`)
-  conta(igual(m['.es-cor .btn'].h, 40) && igual(m['.es-cor .btn'].w, m['.es-cor'].w - 42), `${T} estoque: Movimentar ocupa a largura da caixa, 20 de cada lado (${m['.es-cor .btn'].w})`)
-  conta(m['.es-etiqueta-comprar'].letra === '11.5px/700' && m['.es-etiqueta-comprar'].fundo === K['--brand'] && m['.es-etiqueta-comprar'].raio === '7px', `${T} estoque: etiqueta COMPRAR vermelha, 11.5/700, raio 7`)
-  conta(m['.es-etiqueta-minimo'].letra === '11.5px/600' && m['.es-etiqueta-minimo'].raio === '5px' && m['.es-etiqueta-minimo'].borda === '1px', `${T} estoque: etiqueta do minimo 11.5/600, raio 5, borda 1`)
-  conta(igual(m['.es-caixa-topo'].h, 44) && m['.es-caixa'].raio === '14px', `${T} estoque: topo das caixas de baixo com 44`)
-  conta(igual(m['.es-linha'].h, 56) && igual(m['.es-mov'].h, 48), `${T} estoque: linha de reserva 56 e linha de movimento 48 (${m['.es-linha'].h}, ${m['.es-mov'].h})`)
-  conta(igual(m['.es-reservado'].dir, 1878) && igual(m['.es-reservado'].x - m['.es-caixa'].dir, 16), `${T} estoque: movimentos e reservas lado a lado, 16 entre eles`)
-  conta(await sobra(pg) <= 0, `${T} estoque, tecido: nada rola para o lado`)
-  await foto(pg, `estoque-tecido-${T}`)
-
-  /* a folha de movimento */
-  await pg.locator('.es-cor', { hasText: 'Preto' }).getByRole('button', { name: 'Movimentar' }).click(); await pausa(pg, 500)
-  await pg.locator('dialog[open] input[inputmode=decimal]').fill('40'); await pausa(pg, 300)
-  m = await medir(pg, ['dialog[open] .caixa', 'dialog[open] .sobre-topo .t', 'dialog[open] .sobre-corpo', 'dialog[open] .sobre-pe', 'dialog[open] .seg', 'dialog[open] input[inputmode=decimal]', 'dialog[open] .fn-gatilho', 'dialog[open] .es-antes-depois'])
-  conta(igual(m['dialog[open] .caixa'].w, 440) && igual(m['dialog[open] .caixa'].h, 1080) && igual(m['dialog[open] .caixa'].dir, 1910), `${T} folha: gaveta de 440 na direita, de cima a baixo (${m['dialog[open] .caixa'].w})`)
-  conta(m['dialog[open] .sobre-topo .t'].letra === '16px/700' && m['dialog[open] .sobre-corpo'].recheio === '24px 24px 24px 24px', `${T} folha: titulo 16/700 e corpo com recheio 24`)
-  conta(igual(m['dialog[open] .sobre-pe'].h, 73) && m['dialog[open] .sobre-pe'].fundo === K['--surface-2'], `${T} folha: pe de 73 em --surface-2`)
-  botoes = await todos(pg, 'dialog[open] .sobre-pe .btn')
-  conta(botoes.length === 2 && botoes.every((b) => igual(b.h, 40)) && igual(folga(botoes)[0], 10) && botoes[1].fundo === K['--brand'], `${T} folha: Cancelar e a acao vermelha, 40 de altura, 10 entre eles`)
-  conta(igual(m['dialog[open] .seg'].h, 40) && igual(m['dialog[open] input[inputmode=decimal]'].h, 40) && m['dialog[open] input[inputmode=decimal]'].raio === '10px', `${T} folha: segmentado e campo na mesma altura, 40`)
-  conta(m['dialog[open] .es-antes-depois'].raio === '10px' && m['dialog[open] .es-antes-depois'].fundo === K['--surface-2'] && /de 3 kg para 43 kg/.test(m['dialog[open] .es-antes-depois'].texto.replace(/\s+/g, ' ')), `${T} folha: o antes e depois mostra 3 kg livres virando 43 (${m['dialog[open] .es-antes-depois'].texto.replace(/\s+/g, ' ')})`)
-  conta(m['dialog[open] .fn-gatilho'].raio === '10px' && m['dialog[open] .fn-gatilho'].borda === '1px', `${T} folha: campo do fornecedor raio 10, borda 1`)
-  await foto(pg, `estoque-folha-${T}`, false)
-  await pg.locator('dialog[open] .fn-gatilho').click(); await pausa(pg)
-  const menu = await pg.locator('.mn.flutua').innerText()
-  conta(!/Correios|Jadlog|Braspress/.test(menu), `${T} folha: transportadora nao aparece como fornecedor de material`)
-  conta(/já fornecem este tecido/i.test(menu) && /Malharia Exemplo Ltda/.test(menu) && /outros de tecido/i.test(menu), `${T} folha: o menu de fornecedor abre com quem ja fornece a malha`)
-  await pg.locator('.mn.flutua').getByText('Malharia Exemplo Ltda', { exact: false }).first().click(); await pausa(pg)
-  await botoesDaFolha(pg).last().click(); await pausa(pg, 600)
-  const mov = gravados.find((g) => String(g.u).includes('rpc/mexer_no_estoque'))
-  conta(mov && mov.corpo.p_quantidade === 40 && mov.corpo.p_motivo === 'entrada' && mov.corpo.p_fornecedor === malharia.id, `${T} folha: a entrada grava 40 kg com o fornecedor escolhido (${mov ? JSON.stringify(mov.corpo) : 'nada gravado'})`)
-  if (await pg.locator('dialog[open]').count()) { await pg.keyboard.press('Escape'); await pausa(pg) }
-
-  /* novo material, tabela e movimentacoes */
-  await pg.getByRole('button', { name: 'Novo material', exact: true }).first().click(); await pausa(pg, 600)
-  m = await medir(pg, ['dialog[open] .caixa', 'dialog[open] .sobre-topo .t'])
-  conta(igual(m['dialog[open] .caixa'].w, 560) && m['dialog[open] .caixa'].raio === '18px' && m['dialog[open] .caixa'].borda === '1px', `${T} novo material: modal de 560, raio 18 (${m['dialog[open] .caixa'].w})`)
-  await foto(pg, `estoque-novo-${T}`, false)
-  await pg.keyboard.press('Escape'); await pausa(pg)
-  await pg.locator('.es-ver button', { hasText: 'Tabela' }).click(); await pausa(pg)
-  m = await medir(pg, ['table.tabela thead th', 'table.tabela tr.grupo td', 'table.tabela tbody tr:not(.grupo)', '.es-quadro'])
-  conta(igual(m['table.tabela thead th'].h, 44) && m['table.tabela thead th'].letra === '13px/600' && m['table.tabela thead th'].cor === K['--text-2'], `${T} tabela: cabecalho 44, 13/600, --text-2`)
-  conta(igual(m['table.tabela tr.grupo td'].h, 36) && m['table.tabela tr.grupo td'].fundo === K['--surface-2'] && m['table.tabela tr.grupo td'].letra === '12.5px/600', `${T} tabela: linha de grupo 36 em --surface-2, 12.5/600`)
-  conta(igual(m['table.tabela tbody tr:not(.grupo)'].h, 48), `${T} tabela: linha de material 48 (${m['table.tabela tbody tr:not(.grupo)'].h})`)
-  conta((await todos(pg, 'table.tabela tbody tr.es-folha')).length === 26 && await sobra(pg) <= 0, `${T} tabela: os 26 materiais, sem rolar para o lado (${(await todos(pg, 'table.tabela tbody tr.es-folha')).length})`)
-  await foto(pg, `estoque-tabela-${T}`)
-  await pg.locator('.es-aba button', { hasText: 'Movimentações' }).click(); await pausa(pg)
-  m = await medir(pg, ['.es-quadro', 'table.tabela tr.grupo td', 'table.tabela tbody tr:not(.grupo)'])
-  conta(m['.es-quadro'].raio === '14px' && m['.es-quadro'].borda === '1px' && igual(m['.es-quadro'].w, 1598), `${T} movimentacoes: um quadro so, raio 14, na largura inteira`)
-  conta((await todos(pg, 'table.tabela tbody tr:not(.grupo)')).length === 17 && igual(m['table.tabela tbody tr:not(.grupo)'].h, 48) && igual(m['table.tabela tr.grupo td'].h, 36), `${T} movimentacoes: 17 movimentos em linhas de 48, com o dia em faixa de 36`)
-  conta(await sobra(pg) <= 0, `${T} movimentacoes: nada rola para o lado`)
-  await foto(pg, `estoque-movimentacoes-${T}`)
-
   /* -------------------------------------------------------- FORNECEDORES */
   await ir(pg, '/fornecedores', '.fo-linha')
-  m = await medir(pg, ['.pagina-topo .acima', '.pagina-topo h1', '.fo-barra', '.pagina-topo', '.fo-busca', '.fo-vista', '.fo-quadro', '.fo-grupo', '.fo-linha', '.fn-situacao'])
+  const K = await tokens(pg, ['--bg', '--surface', '--surface-2', '--surface-3', '--brand', '--text', '--text-2', '--text-3', '--border', '--ink'])
+  let botoes
+  let chips
+  let m = await medir(pg, ['.pagina-topo .acima', '.pagina-topo h1', '.fo-barra', '.pagina-topo', '.fo-busca', '.fo-vista', '.fo-quadro', '.fo-grupo', '.fo-linha', '.fn-situacao'])
   conta(m['.pagina-topo h1'].letra === '24px/600' && m['.pagina-topo h1'].texto === 'Fornecedores' && m['.pagina-topo .acima'].letra === '12.5px/600', `${T} fornecedores: titulo 24/600 com a sobrelinha 12.5/600`)
   botoes = await todos(pg, '.pagina-topo .btn')
   conta(botoes.every((b) => igual(b.h, 40) && b.raio === '10px') && folga(botoes).every((f) => igual(f, 10)) && botoes.at(-1).fundo === K['--brand'], `${T} fornecedores: botoes do topo 40, 10 entre eles, a ultima vermelha (${botoes.map((b) => b.texto).join(', ')})`)
@@ -447,34 +355,9 @@ for (const [largura, altura, nome] of [[820, 1180, 'tablet'], [390, 844, 'celula
     const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema })
     const estreito = largura < 800
 
-    await ir(pg, '/estoque', '.es-duas')
-    conta(await sobra(pg) <= 0, `${T} estoque: nada rola para o lado`)
-    let m = await medir(pg, ['.pagina-topo h1', '.es-busca', '.es-aba', '.es-item', '.es-lista'])
-    conta(m['.pagina-topo h1'].letra === '24px/600' && igual(m['.es-busca'].h, 40) && igual(m['.es-aba'].h, 40), `${T} estoque: titulo 24/600 e controles de 40`)
-    conta(m['.es-item'].h >= (estreito ? 50 : 48), `${T} estoque: linha da lista com ${m['.es-item'].h} de altura para o dedo`)
-    if (estreito) conta(igual(m['.es-lista'].x, 20) && igual(m['.es-lista'].w, 340), `${T} estoque: a lista ocupa a largura, com 20 de margem (${m['.es-lista'].x}, ${m['.es-lista'].w})`)
-    await foto(pg, `estoque-geral-${nome}-${tema}`)
-    await pg.locator('.es-item', { hasText: 'DRYFIT' }).click(); await pausa(pg, 500)
-    conta(await sobra(pg) <= 0, `${T} estoque, tecido: nada rola para o lado`)
-    conta(await pg.locator('.es-volta').count() === 1, `${T} estoque: o tecido aberto ocupa a tela e tem o botao de voltar`)
-    if (estreito) {
-      const cores = await todos(pg, '.es-cor')
-      conta(cores.length === 4 && igual(cores[0].w, 164) && igual(cores[1].x - cores[0].dir, 12), `${T} estoque: as cores em duas colunas de 164, 12 entre elas (${cores[0].w}, ${cores[1].x - cores[0].dir})`)
-    }
-    await pg.evaluate(() => scrollTo(0, 0)); await foto(pg, `estoque-tecido-${nome}-${tema}`)
-    await pg.locator('.es-cor', { hasText: 'Preto' }).getByRole('button', { name: 'Movimentar' }).click(); await pausa(pg, 600)
-    m = await medir(pg, ['dialog[open] .caixa', 'dialog[open] .sobre-pe .btn'])
-    conta(m['dialog[open] .caixa'].dir <= largura && m['dialog[open] .caixa'].baixo <= altura + 1 && igual(m['dialog[open] .sobre-pe .btn'].h, 40), `${T} folha: cabe na tela (${Math.round(m['dialog[open] .caixa'].w)} por ${Math.round(m['dialog[open] .caixa'].h)})`)
-    await foto(pg, `estoque-folha-${nome}-${tema}`, false)
-    await pg.keyboard.press('Escape'); await pausa(pg)
-    if (await pg.locator('.es-volta').count()) { await pg.locator('.es-volta').click(); await pausa(pg, 300) }
-    await pg.locator('.es-aba button', { hasText: 'Movimentações' }).click(); await pausa(pg)
-    conta(await sobra(pg) <= 0, `${T} movimentacoes: nada rola para o lado`)
-    await foto(pg, `estoque-movimentacoes-${nome}-${tema}`)
-
     await ir(pg, '/fornecedores', '.fo-linha')
     conta(await sobra(pg) <= 0, `${T} fornecedores: nada rola para o lado`)
-    m = await medir(pg, ['.fo-linha', '.fo-busca'])
+    let m = await medir(pg, ['.fo-linha', '.fo-busca'])
     conta(m['.fo-linha'].h >= 48 && igual(m['.fo-busca'].h, 40), `${T} fornecedores: linha de ${m['.fo-linha'].h} e busca de 40`)
     await foto(pg, `fornecedores-tipo-${nome}-${tema}`)
     await pg.locator('.fo-linha', { hasText: 'Malharia Exemplo Ltda' }).first().click(); await pausa(pg, 600)

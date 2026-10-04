@@ -7,6 +7,7 @@ import {
   type Movimento,
 } from '@dominio/estoque'
 import type { Fornecedor, Ligacao } from '@dominio/fornecedor'
+import type { LugarDoMaterial, Movel, Planta } from '@dominio/deposito'
 
 /* ==========================================================================
    O que mais de uma caixa do estoque precisa saber, num lugar só.
@@ -119,4 +120,36 @@ export function linhaDoMovimento(v: Movimento): string {
 
 export function plural(n: number, um: string, varios: string): string {
   return n === 1 ? `1 ${um}` : `${n} ${varios}`
+}
+
+/* ---------- onde está ----------------------------------------------------- */
+
+/** O depósito do jeito que as caixas do Estoque precisam: o desenho e os
+    lugares marcados. `planta` nula é o depósito que ainda não foi desenhado. */
+export type Guardado = { planta: Planta | null; lugares: LugarDoMaterial[] }
+
+export type LugarComMovel = { lugar: LugarDoMaterial; movel: Movel }
+
+/** Os lugares de um material que ainda existem no desenho, o principal primeiro. */
+export function lugaresDe(g: Guardado, materialId: string): LugarComMovel[] {
+  if (!g.planta) return []
+  const lista: LugarComMovel[] = []
+  for (const l of g.lugares) {
+    if (l.materialId !== materialId) continue
+    const movel = g.planta.moveis.find((m) => m.id === l.movelId)
+    if (movel) lista.push({ lugar: l, movel })
+  }
+  return lista.sort((a, b) => Number(b.lugar.principal) - Number(a.lugar.principal))
+}
+
+/* O FORNECEDOR DA COR SÓ APARECE QUANDO É OUTRO. A linha da cor fica calada
+   quando ela vem do mesmo fornecedor do tecido, que é o caso de quase todas. */
+export function fornecedorProprio(
+  m: Material,
+  doTecido: Fornecedor | null,
+  f: Fornecimento,
+): Fornecedor | null {
+  const dele = fornecedorDoMaterial(m, f)
+  if (!dele || dele.id === doTecido?.id) return null
+  return dele
 }

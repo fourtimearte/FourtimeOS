@@ -1,44 +1,39 @@
 /* ==========================================================================
    Parceiros.
 
-   A mesma gramática de Transporte, Estoque e Fornecedores: barra de controle
-   em cima, caixas brancas de borda fina sobre o fundo do sistema, a lista de
-   um lado e o escolhido do outro. Na tela estreita a ficha vira folha.
+   A mesma gramática de Transporte, Estoque e Fornecedores: os botões no topo
+   da página, caixas brancas de borda fina sobre o fundo do sistema, a lista de
+   um lado e o escolhido do outro. Na tela que não cabe as duas colunas, a
+   lista entra na página e o escolhido vira a página.
 
    Estado é texto: "Página ativa", "Página desligada", "sem acordo". Nenhuma
-   cor nova.
+   cor nova: a barra do gráfico e o item escolhido são a tinta do sistema.
+
+   O miolo é um contêiner: os números, os gráficos e os dois cartões do acordo
+   se arrumam pela largura DELE, e não pela da tela, porque a mesma peça mora
+   ao lado da lista no computador e sozinha no tablet.
    ========================================================================== */
 
-/* --- a barra de controle --------------------------------------------------- */
-.pa-barra {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--gap-btn);
-  min-width: 0;
-}
-.pa-aviso {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--text-2);
-}
+/* --- o subtítulo da página: o último aviso da loja -------------------------- */
 .pa-aviso b {
   font-weight: 600;
   color: var(--text);
 }
-.pa-fim {
-  margin-left: auto;
-}
 
-/* --- as duas colunas: a lista e a ficha ------------------------------------ */
+/* --- as duas colunas: a lista e o escolhido --------------------------------- */
 .pa-duas {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   gap: var(--sp-6);
   align-items: start;
 }
-.pa-duas.com-ficha {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+.pa-miolo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  min-width: 0;
+  container-type: inline-size;
+  container-name: pa-miolo;
 }
 .pa-quadro {
   overflow: hidden;
@@ -51,14 +46,62 @@
   padding: var(--pad-cartao);
 }
 
-/* --- a tabela -------------------------------------------------------------- */
-.pa-tabela tr.pa-linha {
-  cursor: pointer;
+/* --- a lista de parceiros ---------------------------------------------------- */
+.pa-lado,
+.pa-lista {
+  display: flex;
+  flex-direction: column;
 }
-/* a linha tem duas linhas de texto no nome, e por isso é mais alta que a da
-   tabela comum. Três nomes na regra, para passar por cima da do Design System. */
-.pa-tabela tr.pa-linha td {
-  height: 56px;
+.pa-lado-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--re-6) var(--re-8);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.pa-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--re-5) var(--re-8);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pa-item:last-child {
+  border-bottom: 0;
+}
+.pa-item:hover {
+  background: var(--surface-2);
+}
+/* o escolhido é preto, como toda seleção do sistema. A tinta clareia no tema
+   escuro, então o texto em cima dela nasce de --on-ink, nunca de um branco */
+.pa-item.ligado,
+.pa-item.ligado:hover {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.pa-item.ligado small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.pa-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pa-item.ligado:focus-visible {
+  outline-color: var(--on-ink);
 }
 .pa-nome {
   display: flex;
@@ -80,8 +123,279 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pa-direita {
+.pa-item-fim {
+  flex: none;
+  display: flex;
+  flex-direction: column;
   align-items: flex-end;
+  gap: var(--gap-colado);
+  font-variant-numeric: tabular-nums;
+}
+.pa-item-fim b {
+  font-weight: 600;
+}
+.pa-item-fim small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* --- o cabeçalho do que está aberto: o nome de um lado, as abas do outro ---- */
+.pa-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.pa-cabeca-texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.pa-cabeca h1,
+.pa-cabeca h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.pa-cabeca h1 {
+  font-size: 22px;
+}
+.pa-cabeca p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* --- a volta, na tela em que o parceiro é a página --------------------------- */
+.pa-volta-fileira {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.pa-volta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.pa-volta:hover {
+  color: var(--text);
+}
+
+/* --- os quatro números: quatro numa fileira ou dois e dois, nunca três e um -- */
+.pa-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+@container pa-miolo (min-width: 760px) {
+  .pa-numeros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* --- os gráficos ------------------------------------------------------------- */
+.pa-graficos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-6);
+}
+@container pa-miolo (min-width: 640px) {
+  .pa-graficos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pa-grafico {
+  --pa-alt: 160px;
+  --pa-barra: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  container-type: inline-size;
+  container-name: pa-grafico;
+}
+.pa-grafico-cabeca {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pa-grafico-numero {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+/* o respiro em cima é do número da barra mais alta, que sobe além da linha */
+.pa-grafico-area {
+  display: grid;
+  grid-template-columns: minmax(40px, auto) minmax(0, 1fr);
+  column-gap: var(--re-4);
+  margin-top: var(--re-4);
+}
+.pa-grafico-eixo {
+  height: var(--pa-alt);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* as três linhas de degrau são recessivas; a de baixo, que é o zero, é a firme */
+.pa-grafico-barras {
+  height: var(--pa-alt);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: var(--re-2);
+  background-image:
+    linear-gradient(var(--surface-3), var(--surface-3)),
+    linear-gradient(var(--surface-3), var(--surface-3)),
+    linear-gradient(var(--surface-3), var(--surface-3)),
+    linear-gradient(var(--border-2), var(--border-2));
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position:
+    0 0,
+    0 33.333%,
+    0 66.667%,
+    0 100%;
+}
+.pa-coluna {
+  flex: 0 1 var(--pa-barra);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-3);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+.pa-coluna:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* o número de uma barra apontada pode cair em cima da vizinha mais alta: o
+   fundo do cartão atrás dele mantém a leitura */
+.pa-coluna-valor {
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--re-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  visibility: hidden;
+}
+/* o número fica à mostra nas últimas barras; nas outras, aparece ao apontar a
+   barra ou ao chegar nela pelo teclado. Com uma barra apontada, os números
+   fixos das vizinhas saem, para um não cair em cima do outro. */
+.pa-coluna.fixa .pa-coluna-valor,
+.pa-coluna:hover .pa-coluna-valor,
+.pa-coluna:focus .pa-coluna-valor {
+  visibility: visible;
+}
+.pa-grafico-barras:has(.pa-coluna:hover) .pa-coluna.fixa:not(:hover) .pa-coluna-valor,
+.pa-grafico-barras:has(.pa-coluna:focus) .pa-coluna.fixa:not(:focus) .pa-coluna-valor {
+  visibility: hidden;
+}
+.pa-coluna-valor .curto {
+  display: none;
+}
+/* span não tem altura: a barra precisa do display declarado para existir */
+.pa-coluna-barra {
+  display: block;
+  width: 100%;
+  height: calc(var(--pa-alt) * var(--v, 0));
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--ink);
+}
+.pa-coluna.andamento .pa-coluna-barra {
+  opacity: 0.45;
+}
+.pa-grafico-meses {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-around;
+  gap: var(--re-2);
+  padding-top: var(--re-4);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pa-grafico-meses span {
+  flex: 0 1 var(--pa-barra);
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  white-space: nowrap;
+}
+/* mais de seis meses: as barras ficam perto demais para o número comprido */
+.pa-grafico.muitos .pa-coluna-valor .longo {
+  display: none;
+}
+.pa-grafico.muitos .pa-coluna-valor .curto {
+  display: inline;
+}
+/* cartão de gráfico estreito: o número vai na forma curta. Com mais de seis
+   meses nem o curto cabe sem cair na vizinha: só a barra apontada mostra. */
+@container pa-grafico (max-width: 460px) {
+  .pa-coluna-valor .longo {
+    display: none;
+  }
+  .pa-coluna-valor .curto {
+    display: inline;
+  }
+  .pa-grafico.muitos .pa-coluna.fixa:not(:hover):not(:focus) .pa-coluna-valor {
+    visibility: hidden;
+  }
+  .pa-grafico.muitos .pa-grafico-meses {
+    font-size: 11px;
+  }
+}
+
+/* --- um bloco com título fora da caixa --------------------------------------- */
+.pa-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.pa-bloco-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-2) var(--sp-3);
+}
+.pa-bloco-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .pa-forte {
   font-weight: 600;
@@ -89,32 +403,86 @@
 .pa-falta {
   color: var(--text-3);
 }
-.pa-seta {
-  width: 1px;
-  color: var(--text-3);
-}
 
-/* --- a sanfona das últimas compras -------------------------------------------
-   Abre embaixo da linha do parceiro clicado. O fundo é o cinza de dentro, para
-   ler como parte da linha de cima, e não como outra linha da tabela. */
-.pa-tabela tr.pa-sanfona td {
+/* --- os meses em sanfona, em tabela -------------------------------------------
+   Duas tabelas, uma dentro da outra, com as três colunas de número na mesma
+   largura: Qtd. cai embaixo de Peças, Valor embaixo de Total vendido e Parte
+   embaixo de Parte do parceiro. A classe da tabela vai na frente de toda regra
+   de coluna, para ela não valer na tabela vizinha. */
+table.tabela.pa-meses,
+table.tabela.pa-vendas {
+  table-layout: fixed;
+}
+table.tabela.pa-meses {
+  min-width: 700px;
+}
+.pa-col-data {
+  width: 136px;
+}
+.pa-col-tamanho {
+  width: 76px;
+}
+.pa-col-pecas {
+  width: 80px;
+}
+.pa-col-valor {
+  width: 130px;
+}
+.pa-col-parte {
+  width: 150px;
+}
+table.tabela.pa-meses tr.pa-mes {
+  cursor: pointer;
+}
+table.tabela.pa-meses tr.pa-mes.aberto > td {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+table.tabela.pa-meses tr.pa-mes > td:first-child,
+table.tabela.pa-meses > tbody > tr.total > td:first-child {
+  padding-left: var(--re-6);
+}
+/* o nome do mês com a seta na frente. É botão na linha que abre, para o
+   teclado chegar nela, e texto simples na linha do total e no celular. */
+.pa-mes-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: inherit;
+}
+.pa-mes-nome small {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+/* o quadro da seta existe vazio no total e no cabeçalho, para o texto alinhar */
+.pa-chev {
+  flex: none;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: var(--text-2);
+}
+/* o que abre embaixo do mês: o fundo é o cinza de dentro, para ler como parte
+   da linha de cima, e não como outra linha da tabela */
+table.tabela.pa-meses tr.pa-mes-dentro > td {
   height: auto;
   padding: 0;
   background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: normal;
   cursor: default;
 }
-div.pa-sanfona {
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-}
-div.pa-sanfona:last-child {
-  border-bottom: 0;
-}
-.pa-sanfona-caixa {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-dentro);
-  padding: var(--re-8) var(--re-10) var(--re-8);
+/* quem entra animado é a caixa de dentro, e não a célula: célula de tabela
+   animada com transform treme e, em alguns navegadores, fica meio apagada */
+.pa-mes-caixa {
   animation: pa-abre var(--t-base) var(--ease-out);
 }
 @keyframes pa-abre {
@@ -123,14 +491,168 @@ div.pa-sanfona:last-child {
     transform: translateY(-4px);
   }
 }
-.pa-sanfona-titulo {
-  margin: 0;
-  font-size: 12px;
+table.tabela.pa-vendas th {
+  padding-block: var(--re-4);
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+table.tabela.pa-vendas td {
+  height: 56px;
+}
+table.tabela.pa-vendas th:first-child,
+table.tabela.pa-vendas td:first-child {
+  padding-left: var(--sp-10);
+}
+table.tabela.pa-vendas td.pa-quebra {
+  padding-block: var(--re-3);
+  white-space: normal;
+}
+table.tabela.pa-vendas tr.pa-mais td {
+  height: 44px;
+}
+.pa-hora {
+  color: var(--text-2);
+}
+.pa-peca {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.pa-peca-nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--re-4);
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+/* a venda devolvida ou cancelada: apagada e riscada, porque não conta */
+.pa-fora {
+  color: var(--text-2);
+}
+.pa-riscado {
+  text-decoration: line-through;
+}
+.pa-ver-mais {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.pa-ver-mais:hover {
+  color: var(--text);
+}
+.pa-mes-vazio {
+  padding: var(--re-8) var(--re-9) var(--re-8) var(--sp-10);
+}
+
+/* --- os meses em sanfona, no celular ------------------------------------------
+   A tabela perde coluna em vez de ganhar rolagem: o mês vai curto, o dinheiro
+   vai sem o R$, e cada venda vira um cartão. */
+.pa-meses-cel {
+  display: flex;
+  flex-direction: column;
+}
+.pa-mes-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 36px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--re-4);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--re-8) 0 var(--re-5);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+button.pa-mes-linha {
+  cursor: pointer;
+}
+.pa-mes-linha.cabeca {
+  min-height: 40px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-2);
 }
-.pa-sanfona-espera {
-  padding: 0;
+.pa-mes-linha.aberto {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.pa-mes-linha b {
+  font-weight: 600;
+}
+.pa-mes-linha.total {
+  border-bottom: 0;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+div.pa-mes-dentro {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  animation: pa-abre var(--t-base) var(--ease-out);
+}
+div.pa-mes-dentro .pa-ver-mais {
+  width: 100%;
+  padding: 0 var(--re-8);
+}
+div.pa-mes-dentro .pa-mes-vazio {
+  padding: var(--re-8);
+}
+.pa-venda {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--re-6) var(--re-8);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.pa-venda:last-child {
+  border-bottom: 0;
+}
+.pa-venda-texto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.pa-venda-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-4);
+  font-variant-numeric: tabular-nums;
+}
+.pa-venda-topo {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pa-venda-peca {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* --- as últimas compras -------------------------------------------------------- */
+.pa-ultimas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
 }
 .pa-compras {
   display: flex;
@@ -186,92 +708,49 @@ div.pa-sanfona:last-child {
   height: 100%;
   object-fit: cover;
 }
-@media (prefers-reduced-motion: reduce) {
-  .pa-sanfona-caixa {
-    animation: none;
-  }
-}
 
-/* --- a lista do celular ----------------------------------------------------- */
-.pa-lista {
+/* --- a aba Acordo e página: dois cartões e o pé -------------------------------- */
+.pa-acordo {
   display: flex;
   flex-direction: column;
-}
-.pa-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  min-height: 64px;
-  padding: var(--re-5) var(--re-8);
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  background: none;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--t-fast);
-}
-.pa-item:last-child {
-  border-bottom: 0;
-}
-.pa-item:hover {
-  background: var(--surface-2);
-}
-.pa-item-fim {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--gap-colado);
-  font-variant-numeric: tabular-nums;
-}
-.pa-item-fim b {
-  font-weight: 600;
-}
-.pa-item-fim small {
-  font-size: 12.5px;
-  color: var(--text-2);
-}
-
-/* --- a ficha ---------------------------------------------------------------- */
-.pa-ficha {
-  display: flex;
-  flex-direction: column;
+  gap: var(--sp-6);
   min-width: 0;
 }
-.pa-ficha-topo {
-  padding: var(--re-10) var(--re-10) 0;
+.pa-acordo[hidden] {
+  display: none;
 }
-.pa-ficha-corpo {
+.pa-cartoes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: start;
+}
+@container pa-miolo (min-width: 720px) {
+  .pa-cartoes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pa-cartao {
   display: flex;
   flex-direction: column;
   gap: var(--sp-5);
-  padding: var(--sp-5) var(--re-10) var(--re-10);
   min-width: 0;
 }
-/* dentro da folha o recheio já é da folha */
-.pa-na-folha .pa-ficha-corpo {
-  padding: 0;
-}
-.pa-ficha-pe {
+.pa-pe {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--gap-btn);
-  padding: var(--re-8) var(--re-10);
-  border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 .pa-grupo {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
   min-width: 0;
+}
+.pa-grupo.pa-notas {
+  gap: var(--re-2);
 }
 .pa-seg-cheio {
   width: 100%;
@@ -333,7 +812,7 @@ div.pa-sanfona:last-child {
   min-width: 0;
 }
 .pa-com-botoes input {
-  flex: 1 1 140px;
+  flex: 1 1 110px;
   width: auto;
   min-width: 0;
 }
@@ -349,17 +828,40 @@ div.pa-sanfona:last-child {
   color: var(--text-2);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .pa-mes-caixa,
+  div.pa-mes-dentro {
+    animation: none;
+  }
+}
+
 /* ==========================================================================
    A TELA ESTREITA
    ========================================================================== */
-@media (max-width: 1023px) {
-  .pa-some-medio {
-    display: none;
-  }
-}
 @media (max-width: 767px) {
-  .pa-fim {
-    margin-left: 0;
+  .pa-miolo {
+    gap: var(--sp-5);
+  }
+  .pa-numeros {
+    gap: var(--sp-3);
+  }
+  .pa-graficos {
+    gap: var(--sp-5);
+  }
+  .pa-grafico {
+    --pa-alt: 140px;
+    --pa-barra: 22px;
+  }
+  /* as abas ocupam a fileira inteira, as duas do mesmo tamanho. Dois nomes na
+     regra, para passar por cima da altura que o Design System dá ao segmentado */
+  .pa-cabeca .pa-abas {
+    width: 100%;
+    height: 44px;
+  }
+  .pa-cabeca .pa-abas button {
+    flex: 1;
+    height: 38px;
+    padding-inline: var(--re-4);
   }
 }
 @media (max-width: 420px) {

@@ -4,8 +4,18 @@
    do servidor: quem pede o intervalo ao banco usa os limites em hora local. */
 
 export const MES_LONGO = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ]
 
 export const chaveDoMes = (ano: number, mes: number) => `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -29,6 +39,21 @@ export function ultimosMeses(hoje = new Date(), quantos = 6): string[] {
   let mes = hoje.getMonth()
   for (let i = 0; i < quantos; i++) {
     lista.push(chaveDoMes(ano, mes))
+    if (mes === 0) {
+      ano -= 1
+      mes = 11
+    } else mes -= 1
+  }
+  return lista
+}
+
+/** Os meses que terminam em `fim`, do mais velho para o mais novo.
+    mesesAte("2026-10", 3) devolve ["2026-08", "2026-09", "2026-10"]. */
+export function mesesAte(fim: string, quantos: number): string[] {
+  let { ano, mes } = lerMes(fim)
+  const lista: string[] = []
+  for (let i = 0; i < quantos; i++) {
+    lista.unshift(chaveDoMes(ano, mes))
     if (mes === 0) {
       ano -= 1
       mes = 11

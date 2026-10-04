@@ -5,7 +5,6 @@ import {
   Campo,
   CampoDeData,
   Entrada,
-  Gaveta,
   Interruptor,
   Modal,
   Segmentado,
@@ -13,7 +12,7 @@ import {
   TituloCartao,
   avisar,
 } from '@ds'
-import { hojeEmData } from '@shared'
+import { hojeEmData, quandoFoi } from '@shared'
 import {
   NOME_DA_BASE,
   NOME_DO_TIPO,
@@ -35,7 +34,7 @@ import {
 import { plural } from './apoio'
 
 /* ==========================================================================
-   A ficha do parceiro: o cadastro, o acordo e a página dele.
+   A aba "Acordo e página" de um parceiro: o cadastro, o acordo e a página dele.
 
    É onde o Henrique diz quanto cada parceiro recebe. O acordo tem data: o que
    foi vendido antes dela continua com o acordo anterior.
@@ -44,34 +43,40 @@ import { plural } from './apoio'
    vez. A tela só mostra, copia e pede outro. Trocar qualquer um dos dois vale
    na hora, e por isso pergunta antes.
 
-   ELA MORA EM DOIS LUGARES: ao lado da lista, na tela larga, e numa folha, na
-   estreita. O conteúdo é o mesmo; só a moldura muda.
+   DOIS CARTÕES E UM PÉ. "Acordo" de um lado, "Página do parceiro" do outro, e
+   embaixo dos dois "Abrir a página" e "Salvar". Copiar o link e abrir a página
+   moram só aqui: saíram do cabeçalho do parceiro na versão 2 do wireframe, de
+   04/10/2026, para a tela ter duas fileiras de controle em vez de quatro. O
+   parceiro novo usa os mesmos dois cartões, sem as abas em cima.
    ========================================================================== */
 
-type Pergunta = { tipo: 'senha' } | { tipo: 'link' } | { tipo: 'acordo'; texto: string; acordo: Acordo; id: string } | null
+type Pergunta =
+  | { tipo: 'senha' }
+  | { tipo: 'link' }
+  | { tipo: 'acordo'; texto: string; acordo: Acordo; id: string }
+  | null
 
 export function FichaDoParceiro({
   parceiro,
   novo,
-  moldura,
   podeEditar,
   colecoes,
   semColecoes,
   hoje,
-  aoFechar,
+  aoDesistir,
   aoSalvo,
   aoMudar,
 }: {
-  /** o parceiro aberto; nulo quando é um cadastro novo, ou quando não há nada aberto */
+  /** o parceiro aberto; nulo quando é um cadastro novo */
   parceiro: Parceiro | null
   novo: boolean
-  moldura: 'cartao' | 'folha'
   podeEditar: boolean
   colecoes: Colecao[]
   /** o porteiro não devolveu as coleções da loja: a ficha diz, e não cai */
   semColecoes: string
   hoje: Date
-  aoFechar: () => void
+  /** desistir do cadastro novo: volta para a visão geral */
+  aoDesistir: () => void
   /** salvou: a lista é relida e a ficha passa a ser a do id devolvido */
   aoSalvo: (id: string) => Promise<void>
   /** a senha ou o link mudou: só reler */
@@ -82,7 +87,9 @@ export function FichaDoParceiro({
   const [nome, setNome] = useState(parceiro?.nome ?? '')
   const [colecao, setColecao] = useState(parceiro?.colecao ?? '')
   const [tipo, setTipo] = useState<TipoDeAcordo>(acordoDeAgora?.tipo ?? 'percentual')
-  const [valor, setValor] = useState(acordoDeAgora ? numeroNoCampo(acordoDeAgora.valor, acordoDeAgora.tipo) : '')
+  const [valor, setValor] = useState(
+    acordoDeAgora ? numeroNoCampo(acordoDeAgora.valor, acordoDeAgora.tipo) : '',
+  )
   const [base, setBase] = useState<BaseDoAcordo>(acordoDeAgora?.base ?? 'valor_pago')
   const [desde, setDesde] = useState(acordoDeAgora?.desde ?? hojeEmData(hoje))
   const [ativo, setAtivo] = useState(parceiro ? parceiro.ativo : false)
@@ -91,22 +98,25 @@ export function FichaDoParceiro({
   const [pergunta, setPergunta] = useState<Pergunta>(null)
   const [respondendo, setRespondendo] = useState(false)
 
-  const aberto = novo || !!parceiro
-
   /* A loja devolve só o endereço e o nome de cada coleção. A contagem que
      aparece é a dos produtos que o sistema já leu da coleção DESTE parceiro,
      e por isso só a coleção dele traz número. Ela aparece na lista mesmo
      quando a loja não respondeu, ou quando a coleção saiu de lá. */
-  const comContagem = (nome: string) => `${nome} (${plural(parceiro?.produtos ?? 0, 'produto', 'produtos')})`
-  const opcoes = colecoes.map((c) => ({
+  const comContagem = (nome: string) =>
+    `${nome} (${plural(parceiro?.produtos ?? 0, 'produto', 'produtos')})`
+  const opcoes = colecoes.map(c => ({
     valor: c.colecao,
     rotulo: c.colecao === parceiro?.colecao ? comContagem(c.nome) : c.nome,
   }))
-  if (parceiro?.colecao && !opcoes.some((o) => o.valor === parceiro.colecao)) {
-    opcoes.unshift({ valor: parceiro.colecao, rotulo: comContagem(parceiro.colecaoNome || parceiro.colecao) })
+  if (parceiro?.colecao && !opcoes.some(o => o.valor === parceiro.colecao)) {
+    opcoes.unshift({
+      valor: parceiro.colecao,
+      rotulo: comContagem(parceiro.colecaoNome || parceiro.colecao),
+    })
   }
   const nomeDaColecao =
-    colecoes.find((c) => c.colecao === colecao)?.nome ?? (colecao === parceiro?.colecao ? parceiro.colecaoNome : '')
+    colecoes.find(c => c.colecao === colecao)?.nome ??
+    (colecao === parceiro?.colecao ? parceiro.colecaoNome : '')
 
   const numero = lerNumero(valor)
   const semValor = valor.trim() === ''
@@ -125,7 +135,13 @@ export function FichaDoParceiro({
     if (!valido || gravando) return
     setGravando(true)
     try {
-      const id = await salvarParceiro({ id: parceiro?.id, nome, colecao, colecaoNome: nomeDaColecao, ativo })
+      const id = await salvarParceiro({
+        id: parceiro?.id,
+        nome,
+        colecao,
+        colecaoNome: nomeDaColecao,
+        ativo,
+      })
 
       if (acordoNovo && !mesmoAcordo(acordoNovo, acordoDeAgora)) {
         const r = await salvarAcordo(id, acordoNovo)
@@ -152,7 +168,11 @@ export function FichaDoParceiro({
         const n = await relerProdutos(id)
         recado += ` ${plural(n, 'produto', 'produtos')} na coleção.`
       } catch {
-        avisar('Salvei o parceiro, mas não consegui ler os produtos da coleção na loja agora. Salve de novo mais tarde.', 'warn', 8)
+        avisar(
+          'Salvei o parceiro, mas não consegui ler os produtos da coleção na loja agora. Salve de novo mais tarde.',
+          'warn',
+          8,
+        )
       }
     }
     avisar(recado, 'ok')
@@ -214,15 +234,16 @@ export function FichaDoParceiro({
         ? 'Sobre o preço cheio de cada peça, antes de cupom e desconto, sem o frete.'
         : 'Sobre o valor que o cliente pagou em cada peça, já com cupom e desconto, sem o frete.'
 
-  const corpo = (
-    <div className="pa-ficha-corpo">
+  const acordo = (
+    <section className="cartao cartao-pad pa-cartao">
+      <TituloCartao>Acordo</TituloCartao>
       <Campo rotulo="Nome do parceiro">
         <Entrada
           value={nome}
-          onChange={(e) => setNome(e.currentTarget.value)}
+          onChange={e => setNome(e.currentTarget.value)}
           placeholder="Como o parceiro é chamado"
           disabled={!podeEditar}
-          data-foco-inicial={novo ? true : undefined}
+          autoFocus={novo}
         />
       </Campo>
 
@@ -235,7 +256,14 @@ export function FichaDoParceiro({
         }
       >
         {podeEditar ? (
-          <Seletor campo bloco valor={colecao} opcoes={opcoes} aoEscolher={setColecao} vazio="Escolher a coleção" />
+          <Seletor
+            campo
+            bloco
+            valor={colecao}
+            opcoes={opcoes}
+            aoEscolher={setColecao}
+            vazio="Escolher a coleção"
+          />
         ) : (
           <Entrada value={nomeDaColecao || 'Sem coleção'} readOnly />
         )}
@@ -246,7 +274,7 @@ export function FichaDoParceiro({
           <Segmentado
             className="pa-seg-cheio"
             valor={tipo}
-            aoMudar={(t) => {
+            aoMudar={t => {
               if (!podeEditar) return
               setTipo(t)
               setValor('')
@@ -275,7 +303,7 @@ export function FichaDoParceiro({
               <Entrada
                 inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.currentTarget.value)}
+                onChange={e => setValor(e.currentTarget.value)}
                 placeholder={tipo === 'percentual' ? '10' : '25,00'}
                 disabled={!podeEditar}
                 aria-label={tipo === 'percentual' ? 'Percentual por peça' : 'Valor por peça'}
@@ -296,7 +324,7 @@ export function FichaDoParceiro({
             <Segmentado
               className="pa-seg-cheio"
               valor={base}
-              aoMudar={(b) => {
+              aoMudar={b => {
                 if (podeEditar) setBase(b)
               }}
               opcoes={[
@@ -313,19 +341,28 @@ export function FichaDoParceiro({
             : 'Mudar o acordo não mexe nas vendas já registradas.'}
         </p>
       </div>
+    </section>
+  )
 
-      <div className="pa-risco" />
-
+  const pagina = (
+    <section className="cartao cartao-pad pa-cartao">
+      <TituloCartao>Página do parceiro</TituloCartao>
       {parceiro ? (
         <>
           <Campo rotulo="Link da página do parceiro">
             <div className="pa-com-botoes">
-              <Entrada value={link.replace(/^https:\/\//, '')} readOnly aria-label="Link da página do parceiro" />
+              <Entrada
+                value={link.replace(/^https:\/\//, '')}
+                readOnly
+                aria-label="Link da página do parceiro"
+              />
               <Botao onClick={() => void copiar(link, 'Link copiado.')}>
                 <Copy size={16} />
                 Copiar
               </Botao>
-              {podeEditar ? <Botao onClick={() => setPergunta({ tipo: 'link' })}>Trocar</Botao> : null}
+              {podeEditar ? (
+                <Botao onClick={() => setPergunta({ tipo: 'link' })}>Trocar</Botao>
+              ) : null}
             </div>
           </Campo>
 
@@ -341,14 +378,20 @@ export function FichaDoParceiro({
                 autoComplete="off"
                 aria-label="Senha da página"
               />
-              <Botao onClick={() => setMostrando((m) => !m)}>{mostrando ? 'Esconder' : 'Mostrar'}</Botao>
-              {podeEditar ? <Botao onClick={() => setPergunta({ tipo: 'senha' })}>Gerar outra</Botao> : null}
+              <Botao onClick={() => setMostrando(m => !m)}>
+                {mostrando ? 'Esconder' : 'Mostrar'}
+              </Botao>
+              {podeEditar ? (
+                <Botao onClick={() => setPergunta({ tipo: 'senha' })}>Gerar outra</Botao>
+              ) : null}
             </div>
           </Campo>
         </>
       ) : (
         <p className="pa-ajuda">O link e a senha da página nascem quando você salvar.</p>
       )}
+
+      <div className="pa-risco" />
 
       <div className="pa-chave">
         <div className="pa-nome">
@@ -357,17 +400,29 @@ export function FichaDoParceiro({
         </div>
         <Interruptor
           ligado={ativo}
-          aoMudar={(v) => {
+          aoMudar={v => {
             if (podeEditar) setAtivo(v)
           }}
         />
       </div>
-    </div>
+
+      {parceiro ? (
+        <div className="pa-grupo pa-notas">
+          <p className="pa-ajuda">
+            {parceiro.abertaEm
+              ? `Aberta pelo parceiro pela última vez: ${quandoFoi(parceiro.abertaEm, hoje)}.`
+              : 'O parceiro ainda não abriu a página.'}
+          </p>
+          <p className="pa-ajuda">O parceiro vê na página dele as mesmas vendas da aba Vendas.</p>
+        </div>
+      ) : null}
+    </section>
   )
 
   const pe =
     parceiro || podeEditar ? (
       <>
+        {novo ? <Botao onClick={aoDesistir}>Cancelar</Botao> : null}
         {parceiro ? (
           <Botao onClick={() => window.open(link, '_blank', 'noopener')}>
             <ArrowSquareOut size={16} />
@@ -375,14 +430,17 @@ export function FichaDoParceiro({
           </Botao>
         ) : null}
         {podeEditar ? (
-          <Botao tom="primario" onClick={() => void gravar()} disabled={!valido || gravando} carregando={gravando}>
+          <Botao
+            tom="primario"
+            onClick={() => void gravar()}
+            disabled={!valido || gravando}
+            carregando={gravando}
+          >
             {gravando ? 'Salvando' : 'Salvar'}
           </Botao>
         ) : null}
       </>
     ) : null
-
-  const titulo = parceiro ? parceiro.nome : 'Novo parceiro'
 
   const perguntas = (
     <Modal
@@ -400,8 +458,17 @@ export function FichaDoParceiro({
           <Botao onClick={desistir} disabled={respondendo}>
             Cancelar
           </Botao>
-          <Botao tom="forte" onClick={() => void responder()} disabled={respondendo} carregando={respondendo}>
-            {pergunta?.tipo === 'senha' ? 'Gerar outra' : pergunta?.tipo === 'link' ? 'Trocar o link' : 'Confirmar e refazer'}
+          <Botao
+            tom="forte"
+            onClick={() => void responder()}
+            disabled={respondendo}
+            carregando={respondendo}
+          >
+            {pergunta?.tipo === 'senha'
+              ? 'Gerar outra'
+              : pergunta?.tipo === 'link'
+                ? 'Trocar o link'
+                : 'Confirmar e refazer'}
           </Botao>
         </>
       }
@@ -418,26 +485,14 @@ export function FichaDoParceiro({
     </Modal>
   )
 
-  if (moldura === 'folha') {
-    return (
-      <>
-        <Gaveta aberto={aberto} aoFechar={aoFechar} titulo={titulo} pe={pe ?? undefined}>
-          {aberto ? <div className="pa-na-folha">{corpo}</div> : null}
-        </Gaveta>
-        {perguntas}
-      </>
-    )
-  }
-
-  if (!aberto) return null
   return (
-    <section className="cartao pa-ficha">
-      <div className="pa-ficha-topo">
-        <TituloCartao>{titulo}</TituloCartao>
+    <>
+      <div className="pa-cartoes">
+        {acordo}
+        {pagina}
       </div>
-      {corpo}
-      {pe ? <div className="pa-ficha-pe">{pe}</div> : null}
+      {pe ? <div className="pa-pe">{pe}</div> : null}
       {perguntas}
-    </section>
+    </>
   )
 }

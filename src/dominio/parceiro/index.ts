@@ -1,5 +1,5 @@
 import { chamar, funcao, tabela } from '@shared/supabase'
-import { formatarDinheiroExato, limitesDoMes } from '@shared'
+import { formatarDinheiroExato } from '@shared'
 
 /* ==========================================================================
    Os parceiros da loja.
@@ -19,6 +19,12 @@ import { formatarDinheiroExato, limitesDoMes } from '@shared'
    O ACORDO TEM DATA. "Vale a partir de" é o que deixa trocar o acordo sem
    mexer no que já foi vendido. Data no passado muda venda já registrada, e o
    banco só aceita com confirmação.
+
+   O MÊS É O DA LOJA. Cada venda já sai do banco com o mês dela, contado no
+   horário de Brasília (coluna `mes` da view). É o mesmo mês que a página do
+   parceiro, na loja, usa: os números das duas telas só batem porque as duas
+   contam o mês do mesmo jeito. Por isso nada aqui usa o relógio de quem olha
+   para decidir de que mês é uma venda.
    ========================================================================== */
 
 export type TipoDeAcordo = 'percentual' | 'valor_por_peca'
@@ -81,6 +87,13 @@ export type VendaDoParceiro = {
   conta: boolean
   /** o endereço da foto principal do produto na loja; vazio quando não há */
   imagem: string
+  /** "2026-10": o mês da venda no horário da loja */
+  mes: string
+  /** por que a venda não conta; nulo na que conta */
+  motivo: 'cancelada' | 'devolvida' | null
+  /** o que foi pago antes da devolução, só na venda que não conta; nulo quando
+      não foi lido */
+  vendido: number | null
 }
 
 export type Colecao = { colecao: string; nome: string }
@@ -159,10 +172,12 @@ type LinhaDaVenda = {
   parte: number | string | null
   conta: boolean
   imagem?: string | null
+  mes?: string | null
+  motivo?: string | null
 }
 
 const CAMPOS_DA_VENDA =
-  'item_id,parceiro_id,vendido_em,produto,variante,quantidade,pecas,valor,parte,conta'
+  'item_id,parceiro_id,vendido_em,mes,produto,variante,quantidade,pecas,valor,parte,conta,motivo,imagem'
 
 function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
   return {
@@ -177,31 +192,104 @@ function vendaDaLinha(l: LinhaDaVenda): VendaDoParceiro {
     parte: l.parte === null ? null : Number(l.parte) || 0,
     conta: !!l.conta,
     imagem: l.imagem ?? '',
+    mes: l.mes ?? mesDaLoja(new Date(l.vendido_em)),
+    motivo: l.conta ? null : l.motivo === 'cancelada' ? 'cancelada' : 'devolvida',
+    vendido: null,
   }
 }
 
-/** As vendas de todos os parceiros num mês ("2026-10"), da mais nova para a mais velha. */
-export async function carregarVendasDoMes(mes: string): Promise<VendaDoParceiro[]> {
-  const { de, ate } = limitesDoMes(mes)
-  const linhas = await tabela<LinhaDaVenda[]>(
-    `venda_do_parceiro?select=${CAMPOS_DA_VENDA}` +
-      `&aparece=is.true&vendido_em=gte.${encodeURIComponent(de)}&vendido_em=lt.${encodeURIComponent(ate)}&order=vendido_em.desc`,
-  )
-  return linhas.map(vendaDaLinha)
+/* O banco devolve no máximo mil linhas por pedido. Doze meses de todos os
+   parceiros um dia passam disso, e a tela somaria só as mil mais novas sem
+   avisar ninguém: por isso a leitura vai de página em página até acabar. */
+const PAGINA = 1000
+
+/** Todas as vendas dos parceiros de um mês em diante ("2026-05"), da mais nova
+    para a mais velha, com a foto do produto. Entra o que aparece para o
+    parceiro: a venda paga e também a devolvida e a cancelada, que vêm marcadas
+    e não somam. */
+export async function carregarVendasDesde(mes: string): Promise<VendaDoParceiro[]> {
+  const vendas: VendaDoParceiro[] = []
+  for (let pulo = 0; ; pulo += PAGINA) {
+    const linhas = await tabela<LinhaDaVenda[]>(
+      `venda_do_parceiro?select=${CAMPOS_DA_VENDA}&aparece=is.true&mes=gte.${encodeURIComponent(mes)}` +
+        `&order=vendido_em.desc,item_id.asc&limit=${PAGINA}&offset=${pulo}`,
+    )
+    vendas.push(...linhas.map(vendaDaLinha))
+    if (linhas.length < PAGINA) break
+  }
+  await lerOValorDasQueNaoContam(vendas)
+  return vendas
 }
 
-/** As últimas compras das peças de um parceiro, da mais nova para a mais
-    velha, com a foto do produto. Só entra a venda que conta: devolvida e
-    cancelada ficam de fora. Não depende do mês escolhido na tela. */
-export async function carregarUltimasCompras(
-  parceiroId: string,
-  limite = 8,
-): Promise<VendaDoParceiro[]> {
-  const linhas = await tabela<LinhaDaVenda[]>(
-    `venda_do_parceiro?select=${CAMPOS_DA_VENDA},imagem&parceiro_id=eq.${encodeURIComponent(parceiroId)}` +
-      `&conta=is.true&order=vendido_em.desc,item_id.asc&limit=${limite}`,
-  )
-  return linhas.map(vendaDaLinha)
+/* A venda devolvida ou cancelada sai da view com valor zero, que é o que ela
+   soma. Para mostrar riscado o que tinha sido pago, como a página do parceiro
+   mostra, o valor vem da linha do pedido. É apoio: se não vier, a linha fica
+   sem o valor riscado e a página não cai por isso. */
+async function lerOValorDasQueNaoContam(vendas: VendaDoParceiro[]): Promise<void> {
+  const fora = vendas.filter(v => !v.conta)
+  for (let i = 0; i < fora.length; i += 100) {
+    const lote = fora.slice(i, i + 100)
+    try {
+      const linhas = await tabela<
+        {
+          item_id: number | string
+          quantidade: number | string
+          preco: number | string
+          desconto: number | string
+        }[]
+      >(
+        `venda_da_loja?select=item_id,quantidade,preco,desconto&item_id=in.(${lote.map(v => v.id).join(',')})`,
+      )
+      const pago = new Map(
+        linhas.map(l => [
+          String(l.item_id),
+          Math.round(
+            ((Number(l.quantidade) || 0) * (Number(l.preco) || 0) - (Number(l.desconto) || 0)) *
+              100,
+          ) / 100,
+        ]),
+      )
+      for (const v of lote) v.vendido = pago.get(v.id) ?? null
+    } catch {
+      return
+    }
+  }
+}
+
+/* ---------- o relógio da loja ---------------------------------------------- */
+
+const FUSO_DA_LOJA = 'America/Sao_Paulo'
+
+function pedacosNaLoja(d: Date): Record<string, string> {
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: FUSO_DA_LOJA,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(d)
+  const o: Record<string, string> = {}
+  for (const p of partes) o[p.type] = p.value
+  return o
+}
+
+/** "2026-10": o mês que a loja está vivendo agora. */
+export function mesDaLoja(agora = new Date()): string {
+  const p = pedacosNaLoja(agora)
+  return `${p.year}-${p.month}`
+}
+
+/** "03": o dia do mês na loja, para dizer até onde o mês em andamento foi. */
+export function diaDaLoja(agora = new Date()): string {
+  return pedacosNaLoja(agora).day
+}
+
+/** O dia e a hora de uma venda, no horário da loja: "03/10" e "14:32". */
+export function quandoNaLoja(iso: string): { dia: string; hora: string } {
+  const p = pedacosNaLoja(new Date(iso))
+  return { dia: `${p.day}/${p.month}`, hora: `${p.hour}:${p.minute}` }
 }
 
 /** A foto do produto no tamanho de miniatura. O endereço é o da loja (cdn da
@@ -334,19 +422,28 @@ export function situacaoDaPagina(p: Parceiro, agora = new Date()): string {
   return 'Página ativa'
 }
 
+/** Uma soma de vendas. `semAcordo` são as peças vendidas num dia em que o
+    parceiro não tinha acordo: elas contam em peças e em valor, e não em parte. */
 export type SomaDoParceiro = { pecas: number; valor: number; parte: number; semAcordo: number }
 
-/** A soma do mês de cada parceiro. Só entra o que conta. */
-export function somarPorParceiro(vendas: VendaDoParceiro[]): Map<string, SomaDoParceiro> {
+export const SOMA_VAZIA: SomaDoParceiro = { pecas: 0, valor: 0, parte: 0, semAcordo: 0 }
+
+/* Soma as vendas em grupos, pela chave que cada uma devolve. Só entra o que
+   conta. */
+function somarPor(
+  vendas: VendaDoParceiro[],
+  chave: (v: VendaDoParceiro) => string,
+): Map<string, SomaDoParceiro> {
   const mapa = new Map<string, SomaDoParceiro>()
   for (const v of vendas) {
     if (!v.conta) continue
-    const ja = mapa.get(v.parceiroId) ?? { pecas: 0, valor: 0, parte: 0, semAcordo: 0 }
+    const k = chave(v)
+    const ja = mapa.get(k) ?? { ...SOMA_VAZIA }
     ja.pecas += v.pecas
     ja.valor += v.valor
     if (v.parte === null) ja.semAcordo += v.pecas
     else ja.parte += v.parte
-    mapa.set(v.parceiroId, ja)
+    mapa.set(k, ja)
   }
   /* soma de dinheiro em ponto flutuante junta poeira: arredonda no fim */
   for (const s of mapa.values()) {
@@ -354,6 +451,42 @@ export function somarPorParceiro(vendas: VendaDoParceiro[]): Map<string, SomaDoP
     s.parte = Math.round(s.parte * 100) / 100
   }
   return mapa
+}
+
+/** A soma de cada parceiro. */
+export function somarPorParceiro(vendas: VendaDoParceiro[]): Map<string, SomaDoParceiro> {
+  return somarPor(vendas, v => v.parceiroId)
+}
+
+/** A soma de cada mês da lista, na ordem dela. Mês sem venda vem zerado. */
+export function somarPorMes(vendas: VendaDoParceiro[], meses: string[]): SomaDoParceiro[] {
+  const mapa = somarPor(vendas, v => v.mes)
+  return meses.map(m => mapa.get(m) ?? { ...SOMA_VAZIA })
+}
+
+/** A soma de tudo. */
+export function somar(vendas: VendaDoParceiro[]): SomaDoParceiro {
+  return somarPor(vendas, () => 'tudo').get('tudo') ?? { ...SOMA_VAZIA }
+}
+
+/** O tamanho da peça vendida. A loja chama de "Default Title" a variante do
+    produto que não tem tamanho, e isso não é nome que se mostre. */
+export function tamanhoDaVenda(v: VendaDoParceiro): string {
+  const t = v.variante.trim()
+  return t === 'Default Title' ? '' : t
+}
+
+/** O selo da venda que tem história: "Cancelada", "Devolvida", "Parte
+    devolvida". Vazio na venda comum. */
+export function seloDaVenda(v: VendaDoParceiro): string {
+  if (!v.conta) return v.motivo === 'cancelada' ? 'Cancelada' : 'Devolvida'
+  return v.quantidade > v.pecas ? 'Parte devolvida' : ''
+}
+
+/** "10% por peça, sobre o valor pago", "R$ 25,00 por peça", "Sem acordo". */
+export function fraseCompletaDoAcordo(a: Acordo | null): string {
+  if (!a || a.tipo !== 'percentual') return fraseDoAcordo(a)
+  return `${fraseDoAcordo(a)}, sobre o ${a.base === 'preco_cheio' ? 'preço cheio' : 'valor pago'}`
 }
 
 /** "10", "12,5", "25,00": o número que a pessoa digitou, ou nulo. */

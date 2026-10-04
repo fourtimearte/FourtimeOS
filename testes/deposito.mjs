@@ -319,6 +319,8 @@ for (const tema of ['light', 'dark']) {
     await pg.locator('.dp-quadro').getByRole('button', { name: 'Desenhar o depósito' }).click(); await pausa(pg, 600)
     const tela = await pg.locator('.vista').innerText()
     conta(/O chão está vazio/.test(tela) && /Como montar/.test(tela), `${T} sem depósito: o editor abre no chão vazio, com o passo a passo`)
+    const passos = await pg.locator('.dp-passo-linha .dp-passo').evaluateAll((l) => l.map((e) => e.className.replace('dp-passo ', '')))
+    conta(passos.join(' ') === 'feito falta falta falta', `${T} sem depósito: no "Como montar", o chão já vem feito e os outros três passos esperam em cinza (${passos.join(' ')})`)
     await pg.screenshot({ path: `${PASTA}/editor-zero-1440-${tema}.png`, fullPage: true })
     await pg.locator('input[aria-label="Largura"]').fill('12,5'); await pg.locator('input[aria-label="Largura"]').blur(); await pausa(pg, 200)
     await pg.getByRole('button', { name: 'Grade de paletes' }).click(); await pausa(pg, 400)

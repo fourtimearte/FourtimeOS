@@ -581,6 +581,12 @@
 .dp-passo.feito {
   background: var(--ok);
 }
+/* o passo que falta é cinza: vermelho é o marcador da busca, e três bolinhas
+   vermelhas no "Como montar" pareciam três erros */
+.dp-passo.falta {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
 
 /* o painel entra de leve cada vez que outro lugar é aberto */
 .dp-painel {

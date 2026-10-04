@@ -928,7 +928,7 @@ function PainelDoChao({
       <Caixa titulo="Como montar">
         {passos.map(([nome, texto, feito], i) => (
           <div key={nome} className="dp-passo-linha">
-            <span className={feito ? 'dp-passo feito' : 'dp-passo'}>{i + 1}</span>
+            <span className={feito ? 'dp-passo feito' : 'dp-passo falta'}>{i + 1}</span>
             <span className="dp-texto">
               <b>{nome}</b>
               <small>{texto}</small>

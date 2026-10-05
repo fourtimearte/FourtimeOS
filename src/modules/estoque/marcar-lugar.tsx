@@ -47,12 +47,15 @@ export function MarcarLugar({
   lugares,
   materiais,
   outroLugar: comOutroLugar,
+  tambem,
   aoFechar,
   aoGravar,
 }: {
   material: Material | null
   /** abre já pedindo um lugar a mais, além dos que o material tem */
   outroLugar?: boolean
+  /** o lote da tabela: os outros materiais que vão para o mesmo lugar */
+  tambem?: Material[]
   planta: Planta | null
   lugares: LugarDoMaterial[]
   materiais: Material[]
@@ -66,16 +69,21 @@ export function MarcarLugar({
   const [gravando, setGravando] = useState(false)
   const [falha, setFalha] = useState('')
 
+  /* NO LOTE a caixa abre vazia: cada material tem hoje o seu lugar, e o que
+     for marcado aqui passa a ser o lugar de todos. */
+  const todos = useMemo(() => (material ? [material, ...(tambem ?? [])] : []), [material, tambem])
+  const emLote = todos.length > 1
+  const chave = todos.map(m => m.id).join(',')
   const deAntes = useMemo(
     () =>
-      material
+      material && !emLote
         ? lugaresDoMaterial(lugares, material.id).map(l => ({
             movelId: l.movelId,
             vao: l.vao,
             nivel: l.nivel,
           }))
         : [],
-    [material, lugares],
+    [material, lugares, emLote],
   )
   useEffect(() => {
     if (!material) return
@@ -85,7 +93,7 @@ export function MarcarLugar({
     setCodigo('')
     setFalha('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [material?.id])
+  }, [chave])
 
   const moveis = useMemo(() => new Map((planta?.moveis ?? []).map(m => [m.id, m])), [planta])
   const celulas = useMemo(() => (planta ? celulasDaPlanta(planta) : []), [planta])
@@ -95,8 +103,9 @@ export function MarcarLugar({
   const { ocupacao, porCasa } = useMemo(() => {
     const o: Ocupacao = new Map()
     const casas = new Map<string, Material[]>()
+    const destes = new Set(todos.map(m => m.id))
     for (const l of lugares) {
-      if (l.materialId === material?.id) continue
+      if (destes.has(l.materialId)) continue
       const m = porId.get(l.materialId)
       if (!m) continue
       const chave = chaveDaCelula(l.movelId, l.vao)
@@ -109,13 +118,15 @@ export function MarcarLugar({
       casas.set(casa, [...(casas.get(casa) ?? []), m])
     }
     return { ocupacao: o, porCasa: casas }
-  }, [lugares, material, porId])
+  }, [lugares, todos, porId])
 
   const lugarAtual = lista[atual] ?? null
   const movelAtual = lugarAtual ? (moveis.get(lugarAtual.movelId) ?? null) : null
   const validos = lista.filter((l): l is Lugar => !!l && moveis.has(l.movelId))
-  const mudou =
-    validos.length !== deAntes.length || validos.some((l, i) => !mesmoLugar(l, deAntes[i] ?? null))
+  const mudou = emLote
+    ? validos.length > 0
+    : validos.length !== deAntes.length ||
+      validos.some((l, i) => !mesmoLugar(l, deAntes[i] ?? null))
 
   /* o campo do código acompanha o lugar apontado */
   useEffect(() => {
@@ -181,8 +192,18 @@ export function MarcarLugar({
     setGravando(true)
     setFalha('')
     try {
-      await definirLugares([material.id], validos)
-      avisar(validos.length ? 'Lugar marcado.' : 'O material ficou sem lugar marcado.', 'ok')
+      await definirLugares(
+        todos.map(m => m.id),
+        validos,
+      )
+      avisar(
+        emLote
+          ? `Lugar marcado em ${todos.length} materiais.`
+          : validos.length
+            ? 'Lugar marcado.'
+            : 'O material ficou sem lugar marcado.',
+        'ok',
+      )
       await aoGravar()
     } catch (e) {
       setFalha(e instanceof Error ? e.message : 'Não consegui marcar o lugar.')
@@ -209,11 +230,13 @@ export function MarcarLugar({
   }, [lista, moveis])
 
   const [em, baixo] = material ? nomeEmDuas(material) : ['', '']
-  const titulo = material
-    ? 'Onde está ' +
-      [em, material.categoria === 'tecido' ? baixo : ''].filter(Boolean).join(' · ') +
-      '?'
-    : ''
+  const titulo = emLote
+    ? `Onde estão os ${todos.length} materiais?`
+    : material
+      ? 'Onde está ' +
+        [em, material.categoria === 'tecido' ? baixo : ''].filter(Boolean).join(' · ') +
+        '?'
+      : ''
 
   /* o que mais está guardado na casa apontada */
   const vizinhos =
@@ -271,6 +294,12 @@ export function MarcarLugar({
         <div className="dp-marcar-caixa">
           <div className="dp-marcar-corpo">
             <div className="dp-pilha">
+              {emLote ? (
+                <p className="dp-nota" data-lote-de-lugar="">
+                  O lugar marcado aqui passa a ser o de todos os {todos.length}, no lugar do que
+                  cada um tem hoje.
+                </p>
+              ) : null}
               <p className="dp-nota">
                 Clique na prateleira ou no palete. Na prateleira, escolha depois o vão e o nível. O
                 palete não tem nível.
@@ -322,8 +351,10 @@ export function MarcarLugar({
               <Grupo
                 rotulo={
                   validos.length > 1
-                    ? `Os ${validos.length} lugares deste material`
-                    : 'Lugar deste material'
+                    ? `Os ${validos.length} lugares ${emLote ? 'destes materiais' : 'deste material'}`
+                    : emLote
+                      ? 'Lugar destes materiais'
+                      : 'Lugar deste material'
                 }
               >
                 <div className="dp-lugares">

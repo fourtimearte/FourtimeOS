@@ -52,7 +52,22 @@ export type Material = {
   /** prateleira, armário ou caixa: onde a pessoa acha na fábrica */
   ondeFica: string
   criadoEm: string
+  /* A FICHA TÉCNICA DESTA COR (048). É do material, e não do tecido do
+     catálogo: a mesma malha, em duas cores, pode vir de fornecedores
+     diferentes, com gramatura e cuidado diferentes. */
+  /** as fibras e a porcentagem de cada uma; vazia enquanto ninguém escreveu */
+  composicao: Fibra[]
+  /** g/m²; 0 enquanto a cor não tem a sua */
+  gramatura: number
+  /** em metros; 0 enquanto a cor não tem a sua */
+  largura: number
+  /** frases curtas: "Proteção UV 50+" */
+  detalhes: string[]
+  /** os códigos dos símbolos de cuidado, um por grupo, na ordem da etiqueta */
+  cuidados: string[]
 }
+
+export type Fibra = { fibra: string; pct: number }
 
 /* Os cinco motivos que o banco aceita. A tela só oferece três: separação nasce
    da separação de material e devolução nasce do que voltou dela, e nenhuma das
@@ -113,6 +128,11 @@ type LinhaDoMaterial = {
   grupo?: string | null
   onde_fica?: string | null
   criado_em?: string | null
+  composicao?: { fibra?: string; pct?: number | string }[] | null
+  gramatura?: number | string | null
+  largura?: number | string | null
+  detalhes?: string[] | null
+  cuidados?: string[] | null
 }
 
 /* A LEITURA PEDE TODAS AS COLUNAS DA VIEW, e não uma lista escrita aqui. As
@@ -151,6 +171,13 @@ function deLinha(l: LinhaDoMaterial): Material {
     grupo: l.grupo ?? '',
     ondeFica: l.onde_fica ?? '',
     criadoEm: l.criado_em ?? '',
+    composicao: (Array.isArray(l.composicao) ? l.composicao : [])
+      .map((f) => ({ fibra: String(f.fibra ?? ''), pct: numero(f.pct ?? 0) }))
+      .filter((f) => f.fibra),
+    gramatura: numero(l.gramatura ?? 0),
+    largura: numero(l.largura ?? 0),
+    detalhes: Array.isArray(l.detalhes) ? l.detalhes : [],
+    cuidados: Array.isArray(l.cuidados) ? l.cuidados : [],
   }
 }
 
@@ -186,7 +213,9 @@ type LinhaDoMovimento = {
 
 export async function carregarMovimentos(limite = 200): Promise<Movimento[]> {
   const linhas = await tabela<LinhaDoMovimento[]>(
-    `movimento_do_estoque?select=*&order=quando.desc&limit=${limite}`,
+    /* só os movimentos de material que ainda está no estoque (049): o do
+       material arquivado continua no razão, e não na lista de quem trabalha */
+    `movimento_do_estoque?select=*&material_ativo=is.true&order=quando.desc&limit=${limite}`,
   )
   return linhas.map((l) => ({
     id: l.id,
@@ -273,6 +302,31 @@ export async function cadastrarMaterial(m: MaterialNovo): Promise<string> {
   return linhas[0]?.id ?? ''
 }
 
+/* O ARQUIVADO VOLTA, EM VEZ DE NASCER DE NOVO. O banco não aceita dois
+   materiais do mesmo tecido na mesma cor, nem dois com o mesmo nome, e o
+   arquivado continua lá ocupando a vaga. Sem isto, cadastrar de novo uma cor
+   arquivada parava em "Já existe um cadastro com esse nome", sem o material
+   aparecer em tela nenhuma para a pessoa entender.
+
+   Ele volta com o saldo, o razão e as reservas que tinha: arquivar nunca
+   apagou nada. Devolve o id, ou vazio quando não há arquivado. */
+export async function reativarMaterialArquivado(m: MaterialNovo): Promise<string> {
+  const filtro =
+    m.categoria === 'tecido' && m.tecidoId && m.corId
+      ? `tecido_id=eq.${m.tecidoId}&cor_id=eq.${m.corId}`
+      : `nome=eq.${encodeURIComponent(m.nome)}`
+  const achados = await tabela<{ id: string }[]>(
+    `material?select=id&ativo=is.false&${filtro}&limit=1`,
+  )
+  const id = achados[0]?.id ?? ''
+  if (!id) return ''
+  await tabela<void>(`material?id=eq.${id}`, {
+    metodo: 'PATCH',
+    corpo: { ativo: true, minimo: m.minimo, atualizado_em: new Date().toISOString() },
+  })
+  return id
+}
+
 /* O saldo NÃO está aqui de propósito. Mudar o quanto tem é movimento, e
    movimento passa por mexerNoEstoque. O que esta função edita é o cadastro:
    o nome, a unidade e o mínimo. */
@@ -291,6 +345,98 @@ export async function salvarCadastroDoMaterial(
       atualizado_em: new Date().toISOString(),
     },
   })
+}
+
+/* ---------- o cadastro em lote, e a ficha técnica (048) --------------------- */
+
+/** O que muda no cadastro. Só o que vem aqui muda; o resto fica como está em
+    cada material. `fornecedor` nulo deixa sem fornecedor. */
+export type MudancaDoCadastro = {
+  minimo?: number
+  composicao?: Fibra[]
+  /** nulo apaga a da cor, e a tela volta a mostrar a do catálogo */
+  gramatura?: number | null
+  largura?: number | null
+  detalhes?: string[]
+  cuidados?: string[]
+  fornecedor?: string | null
+  /** o fornecedor só entra em quem não tem nenhum */
+  soSemFornecedor?: boolean
+}
+
+/* Muda o cadastro de um ou de vários materiais numa chamada só: ou muda
+   todos, ou não muda nenhum. Quem pode é quem tem "editar" no Estoque, e quem
+   pergunta isso é o banco. Devolve quantos materiais foram mudados. */
+export async function definirCadastro(ids: string[], m: MudancaDoCadastro): Promise<number> {
+  const mudanca: Record<string, unknown> = {}
+  if (m.minimo !== undefined) mudanca.minimo = m.minimo
+  if (m.composicao !== undefined) mudanca.composicao = m.composicao
+  if (m.gramatura !== undefined) mudanca.gramatura = m.gramatura
+  if (m.largura !== undefined) mudanca.largura = m.largura
+  if (m.detalhes !== undefined) mudanca.detalhes = m.detalhes
+  if (m.cuidados !== undefined) mudanca.cuidados = m.cuidados
+  if (m.fornecedor !== undefined) {
+    mudanca.fornecedor = m.fornecedor
+    if (m.soSemFornecedor) mudanca.so_sem_fornecedor = true
+  }
+  const n = await chamar<number>('definir_cadastro', { p_materiais: ids, p_mudanca: mudanca })
+  return Number(n) || 0
+}
+
+/** Quantos metros um quilo deste tecido dá: 1000 g divididos pelo peso de um
+    metro corrido (gramatura vezes largura). Zero quando falta uma das duas. */
+export function rendimento(gramatura: number, largura: number): number {
+  if (!(gramatura > 0) || !(largura > 0)) return 0
+  return 1000 / (gramatura * largura)
+}
+
+/** "96% Poliéster · 4% Elastano" */
+export function composicaoPorExtenso(c: Fibra[]): string {
+  return c.map((f) => `${String(f.pct).replace('.', ',')}% ${f.fibra}`).join(' · ')
+}
+
+/* ---------- o uso do estoque (049) ----------------------------------------- */
+
+/** O que a fábrica usou de um material: separação e saída, menos devolução. */
+export type UsoDoMaterial = {
+  materialId: string
+  /** nos últimos 30, 90 e 180 dias */
+  d30: number
+  d90: number
+  d180: number
+  /** mês a mês, nos últimos seis meses de calendário: "2026-05" */
+  meses: Record<string, number>
+}
+
+export type Periodo = 'd30' | 'd90' | 'd180'
+
+export const DIAS_DO_PERIODO: Record<Periodo, number> = { d30: 30, d90: 90, d180: 180 }
+
+export async function carregarUsoDoEstoque(): Promise<UsoDoMaterial[]> {
+  const linhas = await chamar<
+    {
+      material_id: string
+      d30: number | string
+      d90: number | string
+      d180: number | string
+      meses: Record<string, number | string> | null
+    }[]
+  >('uso_do_estoque', {})
+  return (Array.isArray(linhas) ? linhas : []).map((l) => ({
+    materialId: l.material_id,
+    d30: numero(l.d30),
+    d90: numero(l.d90),
+    d180: numero(l.d180),
+    meses: Object.fromEntries(Object.entries(l.meses ?? {}).map(([k, v]) => [k, numero(v)])),
+  }))
+}
+
+/** Por quantos dias o livre dá, no ritmo do período. Infinity quando não houve
+    uso; 0 quando o livre já acabou. */
+export function diasDeCobertura(livre: number, usado: number, periodo: Periodo): number {
+  if (!(usado > 0)) return Infinity
+  if (!(livre > 0)) return 0
+  return livre / (usado / DIAS_DO_PERIODO[periodo])
 }
 
 /* A prova de que o cache não virou segunda verdade: devolve as linhas em que o
@@ -901,3 +1047,136 @@ export async function refazerAsReservasAbertas(): Promise<number> {
 
 export { concluirASeparacao, comecarASeparacao, carregarFilaDaSeparacao, desfazerASeparacao, separarMaterial } from './separacao'
 export type { PedidoNaSeparacao } from './separacao'
+
+/* ---------- as estatísticas: o que saiu, por tecido e por cor -------------- */
+
+/* A PRIORIDADE DE COMPRA NÃO É QUEM TEM MENOS, É QUEM ACABA ANTES. Dez quilos
+   de uma cor que sai três por mês duram mais que quarenta de uma que sai
+   trinta. Por isso a conta é a cobertura: o livre dividido pelo que sai por
+   dia no período escolhido. Pedido do Henrique em 05/10/2026: "como saber a
+   prioridade de compra de tecido". */
+
+export const NOME_DO_PERIODO: Record<Periodo, string> = {
+  d30: 'Mês',
+  d90: '3 meses',
+  d180: 'Semestre',
+}
+
+export const PERIODO_POR_EXTENSO: Record<Periodo, string> = {
+  d30: 'nos últimos 30 dias',
+  d90: 'nos últimos 90 dias',
+  d180: 'nos últimos 180 dias',
+}
+
+export type UsoDaCor = {
+  m: Material
+  usado: number
+  /** dias que o livre dura no ritmo do período; Infinity sem saída */
+  cobertura: number
+}
+
+export type UsoDoTecido = {
+  chave: string
+  tecidoId: string
+  nome: string
+  /** o código do grupo de tecido no catálogo; vazio quando não tem */
+  cod: string
+  usado: number
+  livre: number
+  cobertura: number
+  /** a que mais sai primeiro */
+  cores: UsoDaCor[]
+}
+
+/** O uso de cada tecido e de cada cor dele no período, o que mais sai
+    primeiro. Entra todo tecido do estoque, inclusive o que não saiu: quem está
+    parado também é resposta. */
+export function usoPorTecido(
+  materiais: Material[],
+  usos: UsoDoMaterial[],
+  periodo: Periodo,
+  h: Hierarquia,
+): UsoDoTecido[] {
+  const usadoDe = new Map(usos.map(u => [u.materialId, u[periodo]]))
+  const grupoDoTecido = new Map(h.tecidos.map(t => [t.id, t.grupo]))
+  const porNome = (a: string, b: string) => a.localeCompare(b, 'pt-BR')
+  return gruposDoEstoque(materiais.filter(m => m.categoria === 'tecido'))
+    .map(g => {
+      const cores = g.itens
+        .map(m => {
+          const usado = usadoDe.get(m.id) ?? 0
+          return { m, usado, cobertura: diasDeCobertura(m.livre, usado, periodo) }
+        })
+        .sort((a, b) => b.usado - a.usado || porNome(nomeNoGrupo(a.m), nomeNoGrupo(b.m)))
+      const usado = cores.reduce((s, c) => s + c.usado, 0)
+      return {
+        chave: g.chave,
+        tecidoId: g.tecidoId,
+        nome: g.nome,
+        cod: grupoDoTecido.get(g.tecidoId) ?? '',
+        usado,
+        livre: g.livre,
+        cobertura: diasDeCobertura(g.livre, usado, periodo),
+        cores,
+      }
+    })
+    .sort((a, b) => b.usado - a.usado || porNome(a.nome, b.nome))
+}
+
+/** As cores que saíram no período, a que acaba antes primeiro. Cor sem saída
+    não entra: sem ritmo não há previsão, e ela já aparece em "Para comprar"
+    se estiver abaixo do mínimo. */
+export function prioridadeDeCompra(tecidos: UsoDoTecido[]): UsoDaCor[] {
+  return tecidos
+    .flatMap(t => t.cores)
+    .filter(c => c.usado > 0)
+    .sort((a, b) => a.cobertura - b.cobertura || b.usado - a.usado)
+}
+
+/** "9 dias", "3 meses", "sem estoque livre". Acima de dois meses a conta vira
+    mês: ninguém planeja compra em "137 dias". */
+export function coberturaPorExtenso(dias: number): string {
+  if (!Number.isFinite(dias)) return 'sem saída no período'
+  if (dias <= 0) return 'sem estoque livre'
+  if (dias < 1) return 'menos de 1 dia'
+  if (dias < 60) {
+    const n = Math.round(dias)
+    return n === 1 ? '1 dia' : n + ' dias'
+  }
+  const meses = Math.round(dias / 30)
+  return meses >= 24 ? 'mais de 2 anos' : meses + ' meses'
+}
+
+/** Quanto sai por mês, no ritmo do período. */
+export function usoPorMes(usado: number, periodo: Periodo): number {
+  return (usado / DIAS_DO_PERIODO[periodo]) * 30
+}
+
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+/** O tecido que saiu em cada um dos últimos seis meses de calendário, o mais
+    antigo primeiro. O último é o mês corrente, ainda pela metade. */
+export function usoMesAMes(
+  materiais: Material[],
+  usos: UsoDoMaterial[],
+  hoje: Date = new Date(),
+): { mes: string; rotulo: string; usado: number; corrente: boolean }[] {
+  const tecidos = new Set(materiais.filter(m => m.categoria === 'tecido').map(m => m.id))
+  const total = new Map<string, number>()
+  for (const u of usos) {
+    if (!tecidos.has(u.materialId)) continue
+    for (const [mes, v] of Object.entries(u.meses)) total.set(mes, (total.get(mes) ?? 0) + v)
+  }
+  const lista = []
+  for (let atras = 5; atras >= 0; atras--) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - atras, 1)
+    const mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+    lista.push({
+      mes,
+      rotulo: MESES_CURTOS[d.getMonth()],
+      usado: total.get(mes) ?? 0,
+      corrente: atras === 0,
+    })
+  }
+  return lista
+}

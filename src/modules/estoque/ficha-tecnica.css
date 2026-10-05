@@ -1,0 +1,276 @@
+/* ==========================================================================
+   A ficha técnica da cor: o cartão e o editor. Prefixo ft-.
+
+   O editor tem duas colunas dentro do modal: o cadastro à esquerda e os
+   símbolos de cuidado à direita. Ele mede a própria largura (não a da
+   janela): abaixo de 720 px as duas viram uma, com os símbolos embaixo.
+   ========================================================================== */
+
+/* --- o cartão ---------------------------------------------------------------- */
+.ft-linhas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  margin: 0;
+}
+.ft-linhas > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--re-6);
+  align-items: baseline;
+}
+.ft-linhas dt {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ft-linhas dd {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--re-2) var(--re-4);
+  font-size: 13.5px;
+}
+.ft-linhas dd b {
+  font-weight: 600;
+}
+.ft-linhas dd small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ft-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.ft-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  min-height: 24px;
+  padding: 0 var(--re-5);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.ft-tag button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: calc(var(--re-2) * -1);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.ft-tag button:hover {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+/* --- a etiqueta: os símbolos numa fileira e a frase de cada um embaixo -------- */
+.ft-etiqueta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.ft-etiqueta-simbolos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.ft-simbolo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+/* no cartão da ficha os seis símbolos cabem numa fileira só */
+.ft-linhas .ft-simbolo {
+  width: 36px;
+  height: 36px;
+}
+.ft-etiqueta-frases {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--re-2) var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* --- o editor ------------------------------------------------------------------ */
+.ft-editor {
+  container: ft-editor / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: start;
+}
+.ft-editor.dois {
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+}
+@media (max-width: 899px) {
+  .ft-editor.dois {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ft-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+/* as cores do lote, para a pessoa ver em quem vai mexer */
+.ft-lote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.ft-lote-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  min-height: 24px;
+  padding: 0 var(--re-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ft-fibra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px var(--btn-h);
+  gap: var(--re-4);
+  align-items: center;
+}
+.ft-dois {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+.ft-ruim {
+  color: var(--brand-text);
+}
+.ft-rendimento {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--re-2) var(--re-5);
+  min-height: var(--btn-h);
+  padding: var(--re-5) var(--re-7);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+.ft-rendimento span {
+  flex: 1 0 100%;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ft-rendimento b {
+  font-weight: 600;
+}
+.ft-rendimento small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* --- os símbolos de cuidado ------------------------------------------------------ */
+.ft-titulo-da-coluna {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.ft-grupo {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--re-5);
+  align-items: start;
+}
+.ft-grupo-nome {
+  padding-top: var(--re-6);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ft-simbolos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+/* o botão de um símbolo: 40 de lado, e a tinta do sistema quando marcado */
+.ft-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.ft-botao:hover {
+  background-color: var(--surface-2);
+}
+.ft-botao.ligado,
+.ft-botao.ligado:hover {
+  border-color: var(--ink);
+  background-color: var(--ink);
+  color: var(--on-ink);
+}
+.ft-botao:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.ft-previa {
+  padding: var(--re-7);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.ft-previa .ft-simbolo {
+  border: 0;
+  background: none;
+  width: 32px;
+  height: 32px;
+}
+@container ft-editor (max-width: 719px) {
+  .ft-grupo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--re-2);
+  }
+  .ft-grupo-nome {
+    padding-top: 0;
+  }
+}
+
+/* --- o pé do editor: o que vai mudar, antes dos botões ---------------------------- */
+.ft-pe-nota {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+}

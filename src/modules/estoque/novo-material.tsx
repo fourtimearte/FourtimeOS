@@ -17,6 +17,7 @@ import {
   NOME_DA_CATEGORIA,
   cadastrarMaterial,
   carregarCatalogoDeTecido,
+  reativarMaterialArquivado,
   type Categoria,
   type CorDoCatalogo,
   type MalhaDoCatalogo,
@@ -179,7 +180,7 @@ export function NovoMaterial({
     setGravando(true)
     setFalha('')
     try {
-      const id = await cadastrarMaterial({
+      const novo = {
         categoria,
         nome: nomeFinal,
         unidade: ehTecido ? 'kg' : unidade,
@@ -188,10 +189,18 @@ export function NovoMaterial({
         corId: ehTecido ? corId : undefined,
         grupo: ehTecido ? undefined : grupo.trim(),
         ondeFica,
-      })
+      }
+      /* o que estava arquivado volta, em vez de bater na trava do nome repetido */
+      const voltou = await reativarMaterialArquivado(novo)
+      const id = voltou || (await cadastrarMaterial(novo))
       if (!id) throw new Error('O banco não confirmou a gravação do material.')
       if (fornecedorId) await ligarMaterialAoFornecedor(id, fornecedorId)
-      avisar(`${nomeFinal} entrou no estoque, com saldo zero.`, 'ok')
+      avisar(
+        voltou
+          ? `${nomeFinal} estava arquivado e voltou para o estoque, com o saldo que tinha.`
+          : `${nomeFinal} entrou no estoque, com saldo zero.`,
+        'ok',
+      )
       await aoCriar(id, categoria, ehTecido ? malhaId : '', ehTecido ? '' : grupo.trim())
     } catch (e) {
       setFalha(e instanceof Error ? e.message : 'Não consegui criar o material.')

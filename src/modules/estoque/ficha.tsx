@@ -6,6 +6,7 @@ import { chaveDaCelula, lugarPorExtenso, type Lugar, type Movel } from '@dominio
 import {
   NOME_DA_CATEGORIA,
   NOME_DO_MOTIVO,
+  composicaoPorExtenso,
   faltaDoMaterial,
   medidasDoTecido,
   nomeNoGrupo,
@@ -32,6 +33,7 @@ import {
   type Guardado,
 } from './apoio'
 import { Codigo, chaveDoMaterial } from './arvore'
+import { CartaoDaFichaTecnica, EtiquetaDeCuidados, temFicha } from './ficha-tecnica'
 import { EtiquetaDoLugar } from './frente'
 import { PlantaDoDeposito, type EstadoDoLugar } from './planta'
 import { Bola, VaoDoMaterial } from './vao'
@@ -132,6 +134,97 @@ function Topo({
         </div>
       ) : null}
     </div>
+  )
+}
+
+/* A FICHA TÉCNICA VISTA DO TECIDO. A ficha é de cada cor (048), então a ficha
+   do tecido não tem uma: ela conta quantas cores já têm a sua, mostra a que
+   todas têm em comum quando é a mesma, e abre o editor nas cores todas. */
+function FichasDasCores({
+  cores,
+  podeEditar,
+  aoEditar,
+}: {
+  cores: Material[]
+  podeEditar: boolean
+  aoEditar: () => void
+}) {
+  const com = cores.filter(temFicha)
+  const sem = cores.filter(m => !temFicha(m))
+  const daFicha = (m: Material) =>
+    JSON.stringify([m.composicao, m.gramatura, m.largura, m.detalhes, m.cuidados])
+  const igual = com.length === cores.length && cores.every(m => daFicha(m) === daFicha(cores[0]))
+  const uma = cores[0]
+  return (
+    <section className="cartao em-col" data-fichas-das-cores="">
+      <div className="em-topo">
+        <h3 className="cartao-titulo">
+          <span className="marca" />
+          Ficha técnica das cores
+        </h3>
+        {podeEditar ? (
+          <Botao tamanho="sm" onClick={aoEditar}>
+            <PencilSimple size={15} aria-hidden="true" />
+            {cores.length === 1 ? 'Editar a ficha' : `Editar as ${cores.length}`}
+          </Botao>
+        ) : (
+          <span className="em-topo-n">
+            {com.length} de {cores.length}
+          </span>
+        )}
+      </div>
+      <div className="em-corpo">
+        <p className="em-nota">
+          {com.length === 0
+            ? 'Nenhuma cor deste tecido tem ficha técnica ainda.'
+            : igual
+              ? cores.length === 1
+                ? 'A ficha da única cor deste tecido.'
+                : `As ${cores.length} cores têm a mesma ficha.`
+              : sem.length
+                ? `${plural(com.length, 'cor tem', 'cores têm')} ficha técnica. ${sem.length === 1 ? 'Falta' : 'Faltam'}: ${sem
+                    .slice(0, 6)
+                    .map(nomeNoGrupo)
+                    .join(', ')}${sem.length > 6 ? ' e mais ' + (sem.length - 6) : ''}.`
+                : 'Todas as cores têm ficha, e elas não são iguais: a de cada uma está na ficha da cor.'}{' '}
+          {podeEditar && cores.length > 1
+            ? 'A ficha é de cada cor. Editar abre todas de uma vez, e só o que você mexer muda.'
+            : ''}
+        </p>
+        {igual && uma ? (
+          <dl className="ft-linhas">
+            {uma.composicao.length ? (
+              <div>
+                <dt>Composição</dt>
+                <dd>
+                  <b>{composicaoPorExtenso(uma.composicao)}</b>
+                </dd>
+              </div>
+            ) : null}
+            {uma.detalhes.length ? (
+              <div>
+                <dt>Detalhes</dt>
+                <dd className="ft-tags">
+                  {uma.detalhes.map(d => (
+                    <span key={d} className="ft-tag">
+                      {d}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            ) : null}
+            {uma.cuidados.length ? (
+              <div>
+                <dt>Cuidados</dt>
+                <dd>
+                  <EtiquetaDeCuidados cuidados={uma.cuidados} />
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -465,6 +558,8 @@ export function FichaDoTecido({
             </div>
           </section>
 
+          <FichasDasCores cores={tecido.cores} podeEditar={podeEditar} aoEditar={aoEditar} />
+
           <OQueAndou
             movimentos={movimentos}
             rotulo={v => {
@@ -686,7 +781,15 @@ export function FichaDoMaterial({
         }
         sub={
           tecido
-            ? [tecido.nome, medidasDoTecido(tecido)].filter(Boolean).join(' · ')
+            ? [
+                tecido.nome,
+                medidasDoTecido({
+                  gramatura: m.gramatura || tecido.gramatura,
+                  largura: m.largura || tecido.largura,
+                }),
+              ]
+                .filter(Boolean)
+                .join(' · ')
             : m.ondeFica
               ? 'anotado no cadastro: ' + m.ondeFica
               : ''
@@ -728,6 +831,15 @@ export function FichaDoMaterial({
               ) : null}
             </div>
           </section>
+
+          {m.categoria === 'tecido' ? (
+            <CartaoDaFichaTecnica
+              m={m}
+              doCatalogo={{ gramatura: tecido?.gramatura ?? 0, largura: tecido?.largura ?? 0 }}
+              podeEditar={podeEditar}
+              aoEditar={aoEditar}
+            />
+          ) : null}
 
           <Caixa
             titulo="Reservas em aberto"
@@ -853,15 +965,18 @@ export function FichaDoMaterial({
                   ) : (
                     <b className="em-falta">Falta escolher</b>
                   )}
-                  {dele ? (
-                    <Botao tamanho="sm" onClick={() => aoVerFornecedor(dele)}>
-                      Ver fornecedor
-                    </Botao>
-                  ) : podeEditar ? (
-                    <Botao tamanho="sm" onClick={aoEditar}>
-                      Escolher
-                    </Botao>
-                  ) : null}
+                  <span className="fileira colada">
+                    {dele ? (
+                      <Botao tamanho="sm" onClick={() => aoVerFornecedor(dele)}>
+                        Ver fornecedor
+                      </Botao>
+                    ) : null}
+                    {podeEditar ? (
+                      <Botao tamanho="sm" onClick={aoEditar}>
+                        {dele ? 'Trocar' : 'Escolher'}
+                      </Botao>
+                    ) : null}
+                  </span>
                 </div>
               </div>
               <p className="em-nota">

@@ -265,8 +265,203 @@ button.es-linha:hover {
 .es-tabela tr.es-folha {
   cursor: pointer;
 }
-.es-tabela td.es-recuo {
-  padding-left: var(--sp-12);
+/* --- a tabela de materiais: as abas e os filtros em cima, a caixa de marcar
+   na frente de cada linha e a faixa do lote quando alguma está marcada ------- */
+.es-tb-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn) var(--sp-4);
+  padding: var(--re-6) var(--re-9);
+  border-bottom: 1px solid var(--border);
+}
+.es-tb-topo > .em-seg {
+  display: flex;
+  flex: 0 1 420px;
+  min-width: 0;
+}
+/* A TABELA MEDE A PRÓPRIA CAIXA, e perde coluna em vez de rolar de lado: sai
+   primeiro o que a ficha repete (na prateleira e reservado), depois o lugar.
+   O nome, o livre, o mínimo e a situação ficam sempre: são a resposta.
+
+   AS COLUNAS TÊM LARGURA MARCADA e o nome fica com o que sobra. Largura pelo
+   conteúdo fazia a tabela passar da caixa em 1366 e em 1440, e a última
+   coluna, com a seta da ficha, ficava escondida atrás da rolagem. */
+.es-tb-caixa {
+  container: es-tb / inline-size;
+  min-width: 0;
+}
+table.es-tb {
+  table-layout: fixed;
+}
+/* a classe dobrada é de propósito: a regra de recheio da tabela do Design
+   System tem o mesmo peso de uma classe só, e ganhava pela ordem */
+.es-tb.es-tb th,
+.es-tb.es-tb td {
+  padding-inline: var(--re-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-tb.es-tb th.es-ck,
+.es-tb.es-tb td.es-ck {
+  width: 44px;
+  padding-right: 0;
+}
+.es-tb th.es-c-forn {
+  width: 172px;
+}
+.es-tb th.es-c-onde {
+  width: 88px;
+}
+.es-tb th.es-c-num {
+  width: 76px;
+}
+.es-tb th.es-c-prat {
+  width: 104px;
+}
+.es-tb th.es-c-res {
+  width: 88px;
+}
+.es-tb th.es-c-sit {
+  width: 188px;
+}
+@container es-tb (min-width: 1300px) {
+  .es-tb th.es-c-forn {
+    width: 260px;
+  }
+}
+@container es-tb (max-width: 1099px) {
+  .es-tb .es-some-1 {
+    display: none;
+  }
+}
+@container es-tb (max-width: 859px) {
+  .es-tb .es-some-2 {
+    display: none;
+  }
+  .es-tb th.es-c-forn {
+    width: 150px;
+  }
+}
+.es-tb td.es-ck {
+  cursor: default;
+}
+.es-tb .es-ck .ck {
+  min-height: 0;
+  vertical-align: middle;
+}
+.es-tb.es-tb td.es-degrau-1 {
+  padding-left: var(--sp-8);
+}
+.es-tb.es-tb td.es-degrau-2 {
+  padding-left: calc(var(--sp-8) + var(--sp-6));
+}
+/* o nome comprido quebra em duas linhas, com a seta e a conta no lugar */
+.es-tb td .es-celula {
+  white-space: normal;
+}
+.es-tb td .es-celula b {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.es-tb td .es-celula small {
+  flex: none;
+  white-space: nowrap;
+}
+/* na linha do grupo quem cede é a conta ("2 tecidos · 2 cores"), não o nome */
+.es-tb tr.es-do-grupo .es-celula b {
+  flex: none;
+}
+.es-tb tr.es-do-grupo .es-celula small {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-falta {
+  color: var(--warn);
+}
+.es-forn {
+  font-weight: 600;
+}
+.es-forn-e-mais {
+  display: flex;
+  align-items: baseline;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.es-forn-e-mais b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.es-forn-e-mais small {
+  flex: none;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.es-fim-da-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-4);
+}
+.es-abrir {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-h-sm);
+  height: var(--btn-h-sm);
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.es-abrir:hover {
+  background-color: var(--surface-3);
+  color: var(--text);
+}
+.es-abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* a faixa do lote: a tinta do sistema, para ninguém passar por ela sem ver */
+.es-lote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn) var(--sp-4);
+  padding: var(--re-5) var(--re-9);
+  background: var(--ink);
+  color: var(--on-ink);
+  animation: es-lote-entra var(--t-base) var(--ease-out);
+}
+@keyframes es-lote-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.es-lote-conta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.es-lote-conta b {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.es-lote-conta small {
+  font-size: 12.5px;
+  opacity: 0.72;
 }
 .es-celula {
   display: flex;
@@ -347,16 +542,8 @@ button.es-linha:hover {
 .es-situacao.comprar {
   color: var(--brand-text);
 }
-.es-direita {
-  display: flex;
-  justify-content: flex-end;
-}
 .es-entrou {
   color: var(--ok);
-}
-.es-chevron {
-  color: var(--text-3);
-  display: block;
 }
 
 /* --- a folha de movimento --------------------------------------------------- */

@@ -4,9 +4,9 @@ import { ArrowLeft, CalendarBlank, ListBullets, Plus, Stack, Table } from '@phos
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
 import {
-  CATEGORIAS,
   NOME_DA_CATEGORIA,
   NOME_DO_MOTIVO,
+  NOME_DO_PERIODO,
   SEM_HIERARQUIA,
   abaixoDoMinimo,
   carregarFilaDaSeparacao,
@@ -14,6 +14,7 @@ import {
   carregarMateriais,
   carregarMovimentos,
   carregarReservasEmAberto,
+  carregarUsoDoEstoque,
   chaveDoTecido,
   conferirORazao,
   grupoSemEstoque,
@@ -27,7 +28,9 @@ import {
   type Motivo,
   type Movimento,
   type PedidoNaSeparacao,
+  type Periodo,
   type ReservaEmAberto,
+  type UsoDoMaterial,
 } from '@dominio/estoque'
 import {
   carregarDeposito,
@@ -46,8 +49,10 @@ import { FolhaDeMovimento } from './folha-de-movimento'
 import { MarcarLugar } from './marcar-lugar'
 import { Materiais } from './materiais'
 import { Movimentacoes, type Agrupar } from './movimentacoes'
+import { EditarFicha, temFicha } from './ficha-tecnica'
 import { NovoMaterial, type InicioDoNovo } from './novo-material'
-import { TabelaDeMateriais } from './tabela'
+import { Estatisticas } from './estatisticas'
+import { TabelaDeMateriais, type FiltroDaTabela } from './tabela'
 import './estoque.css'
 
 /* ==========================================================================
@@ -75,15 +80,14 @@ import './estoque.css'
    ========================================================================== */
 
 /* separacao e comprar só existem no celular: no computador são colunas da aba Materiais */
-type Aba = 'materiais' | 'separacao' | 'comprar' | 'razao' | 'deposito'
+type Aba = 'materiais' | 'separacao' | 'comprar' | 'razao' | 'deposito' | 'uso'
 type Vista = 'lista' | 'tabela'
-type Filtro = '' | Categoria | 'comprar'
 
 const SEM_FORNECIMENTO: Fornecimento = { fornecedores: [], ligacoes: [], disponivel: false }
 const MOTIVOS: Motivo[] = ['entrada', 'saida', 'ajuste', 'separacao', 'devolucao']
 
 function abaDoEndereco(valor: string | null): Aba {
-  return valor === 'razao' ? 'razao' : valor === 'deposito' ? 'deposito' : 'materiais'
+  return valor === 'razao' || valor === 'deposito' || valor === 'uso' ? valor : 'materiais'
 }
 
 export function TelaEstoque() {
@@ -109,7 +113,7 @@ export function TelaEstoque() {
   const [aba, setAba] = useState<Aba>(abaDoEndereco(endereco.get('aba')))
   const [vista, setVista] = useState<Vista>('lista')
   const [busca, setBusca] = useState(endereco.get('busca') ?? '')
-  const [filtro, setFiltro] = useState<Filtro>('')
+  const [filtro, setFiltro] = useState<FiltroDaTabela>('')
   const [motivo, setMotivo] = useState<'' | Motivo>('')
   const [agrupar, setAgrupar] = useState<Agrupar>('dia')
   const [categoria, setCategoria] = useState<Categoria>('tecido')
@@ -119,7 +123,17 @@ export function TelaEstoque() {
   const [noMovimento, setNoMovimento] = useState<Material | null>(null)
   const [novo, setNovo] = useState<InicioDoNovo | null>(null)
   const [editando, setEditando] = useState<GrupoDoEstoque | null>(null)
+  /* a ficha técnica aberta: de uma cor, ou de várias de uma vez */
+  const [ficha, setFicha] = useState<{
+    materiais: Material[]
+    titulo?: string
+    so?: 'fornecedor' | 'minimo'
+  } | null>(null)
   const [refazendo, setRefazendo] = useState(false)
+  /* as estatísticas: lidas quando a aba abre, e de novo a cada vez que abre */
+  const [usos, setUsos] = useState<UsoDoMaterial[] | null>(null)
+  const [erroDoUso, setErroDoUso] = useState('')
+  const [periodo, setPeriodo] = useState<Periodo>('d30')
 
   /* o depósito: o desenho, o lugar de cada material, e o que está aberto por cima */
   const [deposito, setDeposito] = useState<Planta | null>(null)
@@ -127,7 +141,11 @@ export function TelaEstoque() {
   const [lendoDeposito, setLendoDeposito] = useState(true)
   const [erroDoDeposito, setErroDoDeposito] = useState('')
   const [editandoDeposito, setEditandoDeposito] = useState(false)
-  const [marcando, setMarcando] = useState<{ m: Material; outro: boolean } | null>(null)
+  const [marcando, setMarcando] = useState<{
+    m: Material
+    outro?: boolean
+    tambem?: Material[]
+  } | null>(null)
   /* o que outra parte da página pediu para ver no mapa */
   const [marcados, setMarcados] = useState<{ ids: string[]; rotulo: string } | null>(null)
 
@@ -159,6 +177,21 @@ export function TelaEstoque() {
     setHierarquia(h)
     setFila(f)
   }, [])
+
+  /* O USO SÓ É LIDO QUANDO A ABA ABRE. É uma conta em cima do razão inteiro, e
+     quem veio registrar uma entrada não precisa esperar por ela. */
+  const lerUso = useCallback(async () => {
+    setErroDoUso('')
+    try {
+      setUsos(await carregarUsoDoEstoque())
+    } catch (e) {
+      setUsos(null)
+      setErroDoUso(e instanceof Error ? e.message : 'Não consegui ler o uso do estoque.')
+    }
+  }, [])
+  useEffect(() => {
+    if (aba === 'uso') void lerUso()
+  }, [aba, lerUso])
 
   const recarregar = useCallback(async () => {
     try {
@@ -204,6 +237,25 @@ export function TelaEstoque() {
     setFornecimento(await fornecedoresParaOEstoque())
   }, [])
 
+  /* o que a ficha aberta precisa saber de fora dela: a gramatura e a largura
+     do catálogo (quando todas as cores são do mesmo tecido) e as outras cores
+     do tecido que já têm ficha, para copiar de uma */
+  const tecidoDaFicha = useMemo(() => {
+    const ids = new Set((ficha?.materiais ?? []).map(m => m.tecidoId))
+    return ids.size === 1 ? [...ids][0] : ''
+  }, [ficha])
+  const catalogoDaFicha = useMemo(() => {
+    const t = hierarquia.tecidos.find(x => x.id === tecidoDaFicha)
+    return t ? { gramatura: t.gramatura, largura: t.largura } : undefined
+  }, [hierarquia, tecidoDaFicha])
+  const irmasDaFicha = useMemo(
+    () =>
+      tecidoDaFicha && ficha?.materiais.length === 1
+        ? materiais.filter(m => m.tecidoId === tecidoDaFicha && temFicha(m))
+        : [],
+    [materiais, tecidoDaFicha, ficha],
+  )
+
   const baixo = useMemo(() => abaixoDoMinimo(materiais), [materiais])
   const todosOsGrupos = useMemo(() => gruposDoEstoque(materiais), [materiais])
   const guardado = useMemo(() => ({ planta: deposito, lugares }), [deposito, lugares])
@@ -235,16 +287,6 @@ export function TelaEstoque() {
       )
     })
   }, [materiais, termo, fornecimento, grupoDoTecido])
-  /* os chips de categoria e o "para comprar" só valem na tabela */
-  const gruposDaTabela = useMemo(
-    () =>
-      gruposDoEstoque(
-        filtrados.filter(m =>
-          filtro === 'comprar' ? m.livre < m.minimo : filtro ? m.categoria === filtro : true,
-        ),
-      ),
-    [filtrados, filtro],
-  )
 
   /* --- o escolhido -----------------------------------------------------------
      Um tecido inteiro ou um material. O que sumiu (o último item foi
@@ -361,7 +403,6 @@ export function TelaEstoque() {
   const naFicha = celular && !!grupoEscolhido && abaAVista === 'materiais'
   const mostraTabela = abaAVista === 'materiais' && vista === 'tabela' && !estreita
 
-  const contagem = (c: Categoria) => materiais.filter(m => m.categoria === c).length
   const contagemDoMotivo = (m: Motivo) => movimentos.filter(v => v.motivo === m).length
 
   const maisAcoes = podeEditar ? (
@@ -450,6 +491,18 @@ export function TelaEstoque() {
       podeEditar && !celular && !lendoDeposito && !erroDoDeposito && deposito ? (
         <BotaoEditarODeposito temDeposito aoEditar={() => setEditandoDeposito(true)} />
       ) : null
+    ) : abaAVista === 'uso' ? (
+      estreita ? null : (
+        <Segmentado
+          className="eu-periodo-barra"
+          valor={periodo}
+          aoMudar={setPeriodo}
+          opcoes={(['d30', 'd90', 'd180'] as Periodo[]).map(p => ({
+            valor: p,
+            rotulo: NOME_DO_PERIODO[p],
+          }))}
+        />
+      )
     ) : abaAVista === 'razao' ? (
       estreita ? null : (
         <Segmentado
@@ -536,6 +589,7 @@ export function TelaEstoque() {
                     ['comprar', 'Comprar', baixo.length],
                     ['razao', 'Movimentos', 0],
                     ['deposito', 'Depósito', 0],
+                    ['uso', 'Estatísticas', 0],
                   ] as [Aba, string, number][]
                 ).map(([valor, rotulo, n]) => (
                   <Chip
@@ -553,12 +607,17 @@ export function TelaEstoque() {
             ) : (
               <Segmentado
                 className="em-seg es-aba"
-                valor={abaAVista === 'razao' || abaAVista === 'deposito' ? abaAVista : 'materiais'}
+                valor={
+                  abaAVista === 'razao' || abaAVista === 'deposito' || abaAVista === 'uso'
+                    ? abaAVista
+                    : 'materiais'
+                }
                 aoMudar={trocarAba}
                 opcoes={[
                   { valor: 'materiais', rotulo: 'Materiais' },
-                  { valor: 'razao', rotulo: 'Movimentações' },
+                  { valor: 'razao', rotulo: 'Movimentos' },
                   { valor: 'deposito', rotulo: 'Depósito' },
+                  { valor: 'uso', rotulo: 'Estatísticas' },
                 ]}
               />
             )}
@@ -573,7 +632,9 @@ export function TelaEstoque() {
                 placeholder={
                   abaAVista === 'materiais'
                     ? 'Buscar material, cor ou fornecedor'
-                    : abaAVista === 'razao'
+                    : abaAVista === 'uso'
+                      ? 'Buscar tecido, cor ou fornecedor'
+                      : abaAVista === 'razao'
                       ? 'Buscar material, pedido ou pessoa'
                       : 'Onde está? Buscar tecido, cor ou item'
                 }
@@ -582,29 +643,7 @@ export function TelaEstoque() {
             ) : null}
             {fimDaBarra ? <div className="em-barra-fim">{fimDaBarra}</div> : null}
 
-            {mostraTabela ? (
-              <div className="em-barra-linha es-chips">
-                <Chip ligado={filtro === ''} onClick={() => setFiltro('')}>
-                  Todos <span className="es-conta">{materiais.length}</span>
-                </Chip>
-                {CATEGORIAS.map(c => (
-                  <Chip
-                    key={c}
-                    ligado={filtro === c}
-                    onClick={() => setFiltro(filtro === c ? '' : c)}
-                  >
-                    {NOME_DA_CATEGORIA[c]} <span className="es-conta">{contagem(c)}</span>
-                  </Chip>
-                ))}
-                <Chip
-                  cor="var(--brand)"
-                  ligado={filtro === 'comprar'}
-                  onClick={() => setFiltro(filtro === 'comprar' ? '' : 'comprar')}
-                >
-                  Para comprar <span className="es-conta">{baixo.length}</span>
-                </Chip>
-              </div>
-            ) : abaAVista === 'razao' ? (
+            {abaAVista === 'razao' ? (
               <div className="em-barra-linha es-chips">
                 <Chip ligado={motivo === ''} onClick={() => setMotivo('')}>
                   Todos <span className="es-conta">{movimentos.length}</span>
@@ -647,6 +686,40 @@ export function TelaEstoque() {
             <Esqueleto altura={18} />
           </div>
         </section>
+      ) : abaAVista === 'uso' ? (
+        erroDoUso ? (
+          <section className="cartao es-quadro">
+            <Vazio
+              titulo="Não consegui ler as estatísticas"
+              texto={erroDoUso}
+              acao={<Botao onClick={() => void lerUso()}>Tentar de novo</Botao>}
+            />
+          </section>
+        ) : usos === null ? (
+          <section className="cartao es-quadro">
+            <div className="es-espera">
+              <Esqueleto altura={18} />
+              <Esqueleto altura={18} />
+              <Esqueleto altura={18} />
+              <Esqueleto altura={18} />
+            </div>
+          </section>
+        ) : (
+          <Estatisticas
+            materiais={materiais}
+            filtrados={filtrados}
+            termo={termo}
+            usos={usos}
+            hierarquia={hierarquia}
+            periodo={periodo}
+            aoTrocarPeriodo={setPeriodo}
+            comPeriodo={estreita}
+            aoAbrir={m => {
+              setCategoria(m.categoria)
+              escolher(chaveDoMaterial(m.id))
+            }}
+          />
+        )
       ) : abaAVista === 'deposito' ? (
         <Deposito
           planta={deposito}
@@ -677,11 +750,34 @@ export function TelaEstoque() {
       ) : mostraTabela ? (
         <section className="cartao es-quadro">
           <TabelaDeMateriais
-            grupos={gruposDaTabela}
-            fornecimento={fornecimento}
+            filtrados={filtrados}
             haMateriais={materiais.length > 0}
-            filtrando={!!termo || !!filtro}
-            aoAbrir={m => (podeEditar ? setNoMovimento(m) : undefined)}
+            termo={termo}
+            hierarquia={hierarquia}
+            fornecimento={fornecimento}
+            guardado={guardado}
+            categoria={categoria}
+            aoTrocarCategoria={setCategoria}
+            filtro={filtro}
+            aoFiltrar={setFiltro}
+            podeEditar={podeEditar}
+            aoAbrir={m => {
+              setCategoria(m.categoria)
+              escolher(chaveDoMaterial(m.id))
+              setVista('lista')
+            }}
+            aoLote={(acao, lista) => {
+              if (acao === 'lugar') setMarcando({ m: lista[0], tambem: lista.slice(1) })
+              else
+                setFicha({
+                  materiais: lista,
+                  so: acao === 'ficha' ? undefined : acao,
+                  titulo:
+                    acao === 'ficha'
+                      ? 'Ficha de ' + lista.length + ' cores marcadas na tabela'
+                      : undefined,
+                })
+            }}
           />
         </section>
       ) : materiais.length === 0 ? (
@@ -714,6 +810,7 @@ export function TelaEstoque() {
           aoMovimentar={setNoMovimento}
           aoNovo={abrirNovo}
           aoEditar={setEditando}
+          aoEditarFicha={(lista, titulo) => setFicha({ materiais: lista, titulo })}
           aoMarcar={(m, outro) => setMarcando({ m, outro })}
           aoVerNoDeposito={verNoDeposito}
           aoVerFornecedor={f => navegar(f ? '/fornecedores?abrir=' + f.id : '/fornecedores')}
@@ -743,12 +840,14 @@ export function TelaEstoque() {
         aoGravar={async () => {
           setNoMovimento(null)
           await recarregar()
+          if (aba === 'uso') void lerUso()
         }}
         aoCriarFornecedor={recarregarFornecedores}
       />
       <MarcarLugar
         material={marcando?.m ?? null}
         outroLugar={marcando?.outro}
+        tambem={marcando?.tambem}
         planta={deposito}
         lugares={lugares}
         materiais={materiais}
@@ -775,6 +874,20 @@ export function TelaEstoque() {
                 ? chaveDoMaterial(id)
                 : '',
           )
+        }}
+        aoCriarFornecedor={recarregarFornecedores}
+      />
+      <EditarFicha
+        materiais={ficha?.materiais ?? null}
+        titulo={ficha?.titulo}
+        so={ficha?.so}
+        fornecimento={fornecimento}
+        doCatalogo={catalogoDaFicha}
+        irmas={irmasDaFicha}
+        aoFechar={() => setFicha(null)}
+        aoSalvar={async () => {
+          setFicha(null)
+          await Promise.all([recarregar(), recarregarFornecedores()])
         }}
         aoCriarFornecedor={recarregarFornecedores}
       />

@@ -113,7 +113,13 @@ export function NovoFornecedorAoLado({
             ele escolhido.
           </small>
         </div>
-        <Botao tom="limpo" tamanho="sm" aria-label="Fechar o novo fornecedor" onClick={aoFechar}>
+        <Botao
+          tom="limpo"
+          tamanho="sm"
+          icone
+          aria-label="Fechar o novo fornecedor"
+          onClick={aoFechar}
+        >
           <X size={16} aria-hidden="true" />
         </Botao>
       </header>

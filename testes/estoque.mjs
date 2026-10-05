@@ -22,6 +22,13 @@
      8. o tablet e o celular, sem rolar para o lado
      9. AS ANIMAÇÕES, e o "reduzir movimento" desligando todas
     10. que não houve erro de JavaScript
+    11. A FICHA TÉCNICA DA COR: o cartão, o editor de uma cor e de várias, um
+        símbolo de cuidado por grupo, só o que foi mexido indo para o banco, e
+        a recusa do banco deixando a ficha aberta
+    12. A TABELA COM A SELEÇÃO E O LOTE: fornecedor, mínimo, ficha técnica e
+        lugar para todos os marcados de uma vez
+    13. AS ESTATÍSTICAS: o uso por tecido e por cor nos três períodos, a
+        prioridade de compra pela cobertura e o mês a mês
 
    O banco é de mentira (testes/materiais-dados.mjs, estoque-dados.mjs e
    deposito-dados.mjs).
@@ -91,7 +98,7 @@ for (const tema of ['light', 'dark']) {
     const deDentro = await caixa(pg, '.em-abas .em-seg')
 
     conta(igual(abas.x, arvore.x) && igual(abas.w, arvore.w), `${T}: as abas da página têm a largura da primeira coluna (${Math.round(abas.w)} e ${Math.round(arvore.w)})`)
-    conta(igual(abas.x + abas.w / 2, deDentro.x + deDentro.w / 2, 1), `${T}: Materiais, Movimentações e Depósito ficam pareadas com Tecido, Aviamentos e Insumo`)
+    conta(igual(abas.x + abas.w / 2, deDentro.x + deDentro.w / 2, 1), `${T}: Materiais, Movimentos, Depósito e Estatísticas ficam pareadas com Tecido, Aviamentos e Insumo`)
     conta(igual(busca.x, sep.x) && igual(busca.dir, comp.dir), `${T}: a busca ocupa a segunda e a terceira coluna (${Math.round(busca.w)})`)
     conta(igual(vista.dir, mov.dir) && vista.x >= mov.x - 0.6, `${T}: Lista e Tabela ficam sobre a quarta coluna, encostadas na margem`)
     conta(igual(abas.h, 40) && igual(busca.h, 40), `${T}: abas e busca com 40 de altura`)
@@ -194,14 +201,14 @@ for (const tema of ['light', 'dark']) {
     conta(/tem 3 kg · mínimo 20 kg/.test(um) && /Malharia Exemplo Ltda/.test(um) && /17 kg faltam/.test(um), `${T} comprar: a linha diz o que tem, o mínimo, o fornecedor e quanto falta (${um})`)
     conta(/Para comprar 4 materiais$/.test(await texto(pg, '[data-coluna="comprar"] .em-topo')) && await pg.locator('[data-coluna="comprar"] .em-topo-n').getAttribute('title') === '4 abaixo do mínimo', `${T} comprar: o topo diz quantos estão abaixo do mínimo, na escrita breve da caixa estreita e com a inteira na dica (${await texto(pg, '[data-coluna="comprar"] .em-topo')})`)
     await pg.locator('[data-coluna="comprar"] .em-pe').click(); await pausa(pg, 400)
-    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 4 && /ligado/.test(await pg.locator('.es-chips .chip', { hasText: 'Para comprar' }).getAttribute('class')), `${T} comprar: "Ver mais" abre a tabela só com os 4 para comprar`)
+    conta(await pg.locator('table.es-tb tbody tr.es-folha').count() === 2 && /Tecido 2 Aviamentos 1 Insumo 1/.test(await texto(pg, '[data-tabela-topo] .em-seg')) && /ligado/.test(await pg.locator('[data-tabela-topo] .chip', { hasText: 'Para comprar' }).getAttribute('class')), `${T} comprar: "Ver mais" abre a tabela só com os 4 para comprar (2 tecidos à vista e já abertos, 1 aviamento e 1 insumo nas outras abas)`)
     await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Lista' }).click(); await pausa(pg, 300)
 
     /* últimos movimentos */
     const mv = await texto(pg, '[data-coluna="movimentos"] .em-lin')
     conta(/DRYFIT POLIESTER 100% Preto hoje, 14:10 · Separação · pedido PD-0412 -4 kg/.test(mv), `${T} movimentos: a linha diz o material, quando, o motivo, o pedido e quanto (${mv})`)
     await pg.locator('[data-coluna="movimentos"] .em-pe').click(); await pausa(pg, 400)
-    conta(/ligado/.test(await pg.locator('[data-barra] > .em-seg button', { hasText: 'Movimentações' }).getAttribute('class')) && await pg.locator('table.tabela tbody tr:not(.grupo)').count() === 17, `${T} movimentos: "Ver mais" leva à aba Movimentações, com os 17`)
+    conta(/ligado/.test(await pg.locator('[data-barra] > .em-seg button', { hasText: 'Movimentos' }).getAttribute('class')) && await pg.locator('table.tabela tbody tr:not(.grupo)').count() === 17, `${T} movimentos: "Ver mais" leva à aba Movimentações, com os 17`)
     await foto('movimentacoes')
     /* a coluna "Por quê", e o pedido que abre a Separação */
     const cab = (await pg.locator('table.es-tabela thead th').allInnerTexts()).join(' | ')
@@ -338,6 +345,96 @@ for (const tema of ['light', 'dark']) {
     await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
   })
 
+  /* A FICHA TÉCNICA É DE CADA COR (pedido do Henrique, 05/10/2026): a
+     composição, a gramatura, a largura, os detalhes e os símbolos de cuidado
+     moram na cor, e "Editar" abre essa ficha, não a tabela de quantidades. */
+  await caso(`${T} ficha técnica`, async () => {
+    const PRETO = 'DRYFIT POLIESTER 100% · Preto'
+    const ultimo = () => gravados.filter((g) => g.u === 'rpc/definir_cadastro').at(-1)
+    const ligados = () => pg.locator('dialog[open] .ft-botao.ligado').evaluateAll((l) => l.map((e) => e.dataset.cod))
+    gravados.length = 0
+    await pg.locator('.em-abas').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 200)
+    await abrirGrupo(pg)
+    if (await pg.locator(cor(PRETO)).count() === 0) { await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 250) }
+    await pg.locator(cor(PRETO)).click(); await pausa(pg, 500)
+
+    /* o cartão */
+    const cartao = await texto(pg, '[data-ficha-tecnica]')
+    conta(/Composição 96% Poliéster · 4% Elastano/.test(cartao) && /Gramatura 190 g\/m²/.test(cartao) && /Largura 1,20 m/.test(cartao) && /Rendimento 4,4 m por kg calculado/.test(cartao) && /Proteção UV 50\+ Secagem rápida/.test(cartao), `${T} ficha técnica: a ficha da cor mostra a composição, a gramatura, a largura, o rendimento e os detalhes dela (${cartao.slice(0, 150)})`)
+    const simbolos = await pg.locator('[data-ficha-tecnica] .ft-simbolo').evaluateAll((l) => ({ n: l.length, fileiras: new Set(l.map((e) => Math.round(e.getBoundingClientRect().top))).size, desenho: l.every((e) => e.querySelector('svg')) }))
+    conta(simbolos.n === 6 && simbolos.fileiras === 1 && simbolos.desenho && /Lavar a 40 °C, ciclo suave/.test(cartao) && /Não limpar a seco/.test(cartao), `${T} ficha técnica: os 6 símbolos de cuidado numa fileira só, desenhados, com a frase de cada um (${simbolos.n} em ${simbolos.fileiras} fileira)`)
+    await foto('ficha-tecnica')
+
+    /* Editar abre A FICHA, e não a tabela de quantidades */
+    await pg.locator('[data-ficha] .em-ficha-topo').getByRole('button', { name: 'Editar', exact: true }).click(); await pausa(pg, 600)
+    const editor = await caixa(pg, 'dialog[open] .caixa')
+    conta(await pg.locator('dialog[open] [data-editar-ficha]').count() === 1 && await pg.locator('dialog[open] table').count() === 0 && /^Ficha de DRYFIT POLIESTER 100% · Preto/.test(await texto(pg, 'dialog[open] .sobre-topo')) && igual(editor.w, 980), `${T} ficha técnica: "Editar" na cor abre a ficha dela, no modal de 980, e não a tabela de cores (${await texto(pg, 'dialog[open] .sobre-topo')})`)
+    const esquerda = await texto(pg, 'dialog[open] [data-editar-ficha] .ft-coluna')
+    conta(/Vale só para esta cor/.test(esquerda) && /Fornecedor desta cor Malharia Exemplo Ltda/.test(esquerda) && /Mínimo no estoque, em kg/.test(esquerda) && /Composição soma 100%/.test(esquerda) && /Rendimento 4,4 m por kg/.test(esquerda) && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '190' && await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').inputValue() === '20', `${T} ficha técnica: o editor abre com o fornecedor, o mínimo, a composição e a gramatura que a cor tem hoje`)
+    conta(await pg.locator('dialog[open] .ft-botao').count() === 38 && await pg.locator('dialog[open] [data-cuidados] .ft-grupo').count() === 6 && (await ligados()).join(' ') === 'lavar-40-suave nao-alvejar nao-tambor varal-sombra passar-1 nao-seco', `${T} ficha técnica: os 38 símbolos em 6 grupos, com os 6 da cor marcados (${(await ligados()).join(' ')})`)
+    const pe = pg.locator('dialog[open] .sobre-pe')
+    conta(/Nada mudou ainda/.test(await pe.innerText()) && await pe.getByRole('button', { name: 'Salvar a ficha' }).isDisabled(), `${T} ficha técnica: sem mexer em nada, não há o que salvar`)
+    await foto('editar-ficha', false)
+
+    /* um símbolo por grupo */
+    await pg.locator('dialog[open] .ft-botao[data-cod="lavar-30"]').click(); await pausa(pg, 200)
+    let l = await ligados()
+    conta(l.includes('lavar-30') && !l.includes('lavar-40-suave') && l.length === 6 && /30/.test(await texto(pg, 'dialog[open] .ft-previa')), `${T} ficha técnica: marcar outra lavagem troca a que estava, um símbolo por grupo, e a etiqueta acompanha (${l.join(' ')})`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="nao-seco"]').click(); await pausa(pg, 200)
+    conta((await ligados()).length === 5, `${T} ficha técnica: clicar de novo num símbolo marcado tira ele`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="nao-seco"]').click(); await pausa(pg, 200)
+
+    /* a conta do rendimento e a trava da composição */
+    await pg.locator('dialog[open] input[aria-label="Gramatura"]').fill('200'); await pausa(pg, 200)
+    conta(/4,2 m por kg/.test(await texto(pg, 'dialog[open] [data-rendimento]')), `${T} ficha técnica: mudar a gramatura refaz o rendimento na hora (${await texto(pg, 'dialog[open] [data-rendimento]')})`)
+    await pg.locator('dialog[open] input[aria-label^="Porcentagem de"]').first().fill('90'); await pausa(pg, 200)
+    conta(/A composição tem de somar 100%/.test(await texto(pg, 'dialog[open] [data-composicao]')) && await pe.getByRole('button', { name: 'Salvar a ficha' }).isDisabled(), `${T} ficha técnica: composição que não soma 100 trava o salvar e diz o motivo`)
+    await pg.locator('dialog[open] input[aria-label^="Porcentagem de"]').first().fill('96'); await pausa(pg, 200)
+    await pe.getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
+    let g = ultimo()
+    conta(g && JSON.stringify(g.corpo.p_materiais) === JSON.stringify([id(PRETO)]) && Object.keys(g.corpo.p_mudanca).sort().join(',') === 'composicao,cuidados,gramatura' && g.corpo.p_mudanca.gramatura === 200 && g.corpo.p_mudanca.cuidados.includes('lavar-30') && g.corpo.p_mudanca.cuidados.length === 6, `${T} ficha técnica: só o que foi mexido vai para o banco, e só para esta cor (${g ? JSON.stringify(g.corpo).slice(0, 200) : 'nada gravado'})`)
+    conta(await pg.locator('dialog[open]').count() === 0, `${T} ficha técnica: salva, a ficha fecha`)
+
+    /* a cor sem ficha, e copiar de outra */
+    await pg.locator(cor('DRYFIT POLIESTER 100% · Azul Marinho')).click(); await pausa(pg, 500)
+    const vazia = await texto(pg, '[data-ficha-tecnica]')
+    conta(/ainda não tem ficha técnica/.test(vazia) && /Gramatura 160 g\/m² do catálogo de tecidos/.test(vazia) && await pg.locator('[data-ficha-tecnica] .ft-simbolo').count() === 0, `${T} ficha técnica: a cor sem ficha diz que não tem, e mostra a gramatura do catálogo dizendo de onde vem (${vazia.slice(0, 130)})`)
+    await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+    conta((await ligados()).length === 0 && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '', `${T} ficha técnica: a ficha da cor que não tem nada abre vazia`)
+    await pg.locator('dialog[open] [data-copiar] .sel-gatilho, dialog[open] [data-copiar] button').first().click(); await pausa(pg, 300)
+    await pg.locator('.mn.flutua').getByText('Preto', { exact: true }).click(); await pausa(pg, 300)
+    conta((await ligados()).length === 6 && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '190' && await pg.locator('dialog[open] .ft-fibra').count() === 2, `${T} ficha técnica: "Copiar a ficha de outra cor" traz a composição, a gramatura e os cuidados da outra`)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
+    g = ultimo()
+    conta(g && JSON.stringify(g.corpo.p_materiais) === JSON.stringify([id('DRYFIT POLIESTER 100% · Azul Marinho')]) && Object.keys(g.corpo.p_mudanca).sort().join(',') === 'composicao,cuidados,detalhes,gramatura,largura', `${T} ficha técnica: a ficha copiada grava na cor que estava aberta, e não na de origem (${g ? Object.keys(g.corpo.p_mudanca).sort().join(',') : 'nada gravado'})`)
+
+    /* o fornecedor é da cor, e o fornecedor novo abre ao lado */
+    await pg.locator('[data-ficha] .em-col:has(.em-fornecedor)').getByRole('button', { name: 'Trocar' }).click(); await pausa(pg, 600)
+    conta(await pg.locator('dialog[open] [data-editar-ficha]').count() === 1 && await pg.locator('dialog[open] [data-cuidados]').count() === 1, `${T} ficha técnica: "Trocar" no fornecedor da cor abre a mesma ficha`)
+    await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).click(); await pausa(pg, 400)
+    conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 1 && await pg.locator('dialog[open] [data-cuidados]').count() === 0 && await pg.locator('dialog[open]').count() === 1, `${T} ficha técnica: "Novo fornecedor" abre a coluna ao lado, no lugar dos cuidados, sem sair da ficha`)
+    await foto('editar-ficha-fornecedor', false)
+    await pg.locator('dialog[open]').getByRole('button', { name: 'Fechar o novo fornecedor' }).click(); await pausa(pg, 300)
+    conta(await pg.locator('dialog[open] [data-cuidados]').count() === 1, `${T} ficha técnica: fechada a coluna, os cuidados voltam`)
+    await pg.keyboard.press('Escape'); await pausa(pg, 300)
+
+    /* o tecido inteiro: várias cores de uma vez, e só muda o que for mexido */
+    await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 500)
+    const resumo = await texto(pg, '[data-fichas-das-cores]')
+    conta(/2 cores têm ficha técnica/.test(resumo) && /Faltam: Azul Marinho, Vermelho Fourtime/.test(resumo), `${T} ficha técnica: a ficha do tecido diz quantas cores têm ficha e quais faltam (${resumo.slice(0, 110)})`)
+    await pg.locator('[data-ficha] .em-ficha-topo').getByRole('button', { name: 'Editar', exact: true }).click(); await pausa(pg, 600)
+    conta(/^Ficha das 4 cores de DRYFIT POLIESTER 100%/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] [data-lote] .ft-lote-item').count() === 4 && await pg.locator('dialog[open] table').count() === 0, `${T} ficha técnica: "Editar" no tecido abre a ficha das 4 cores de uma vez (${await texto(pg, 'dialog[open] .sobre-topo')})`)
+    const varia = await pg.locator('dialog[open] .es-campo-topo small', { hasText: 'varia' }).count()
+    conta(varia >= 3 && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '' && await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').inputValue() === '', `${T} ficha técnica: onde as cores diferem o campo vem vazio e diz "varia" (${varia} campos)`)
+    await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').fill('30'); await pausa(pg, 200)
+    conta(/Vai mudar o mínimo em 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-pe')), `${T} ficha técnica: o pé diz o que vai mudar, e em quantos (${await texto(pg, 'dialog[open] .sobre-pe')})`)
+    await foto('editar-ficha-lote', false)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Aplicar em 4' }).click(); await pausa(pg, 800)
+    g = ultimo()
+    conta(g && g.corpo.p_materiais.length === 4 && JSON.stringify(g.corpo.p_mudanca) === '{"minimo":30}', `${T} ficha técnica: o mínimo vai para as 4 cores, e a gramatura e os cuidados de cada uma ficam como estavam (${g ? JSON.stringify(g.corpo.p_mudanca) : 'nada gravado'})`)
+    await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+  })
+
   await caso(`${T} movimento, novo e tabela`, async () => {
     gravados.length = 0
     await pg.locator('.em-abas').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 200)
@@ -390,23 +487,119 @@ for (const tema of ['light', 'dark']) {
     conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 0 && igual(depois.w, 560) && /Malharia de Prova/.test(await texto(pg, 'dialog[open] .fn-gatilho')), `${T} novo material: salvo, a coluna fecha, a caixa volta a 560 e o fornecedor novo já está escolhido (${await texto(pg, 'dialog[open] .fn-gatilho')})`)
     conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25', `${T} novo material: o cadastro da cor continua de onde parou`)
     await pg.keyboard.press('Escape'); await pausa(pg)
+  })
 
-    /* A TABELA NASCE FECHADA */
+  await caso(`${T} tabela e lote`, async () => {
+    /* A TABELA (prancha 41): as três abas, nada aberto, e a caixa de marcar */
+    const TB = 'table.es-tb'
+    const PRETO = 'DRYFIT POLIESTER 100% · Preto'
+    const folhas = () => pg.locator(`${TB} tbody tr.es-folha`).count()
+    const lote = () => pg.locator('[data-lote-da-tabela]')
+    const meio = (seletor) => pg.locator(seletor).first().evaluate((e) => (e.indeterminate ? 'meio' : e.checked ? 'cheia' : 'vazia'))
+    const cadastro = () => gravados.filter((g) => g.u === 'rpc/definir_cadastro').at(-1)
+    gravados.length = 0
     await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
-    const faixas = await pg.locator('table.tabela tr[data-faixa]').evaluateAll((l) => l.map((e) => e.dataset.faixa + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
-    conta(faixas.join(' | ') === 'Tecido | Aviamento | Insumo' && await pg.locator('table.tabela tbody tr.es-folha').count() === 0 && await pg.locator('table.tabela tr.es-malha').count() === 0, `${T} tabela: abre com as três faixas fechadas, sem malha nem material à vista (${faixas.join(' | ')})`)
-    conta(await pg.locator('.es-chips .chip').count() === 5 && (await sobra(pg)) <= 0, `${T} tabela: os chips de filtro só aparecem na tabela`)
+    const faixas = await pg.locator(`${TB} tr[data-faixa]`).evaluateAll((l) => l.map((e) => e.dataset.faixa + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
+    conta(faixas.join(' | ') === 'ALGODÃO | DRY FIT | PIQUE | MOLETOM | Sem tipo' && await folhas() === 0 && await pg.locator(`${TB} tr.es-malha`).count() === 0, `${T} tabela: abre na aba Tecido com os grupos fechados, sem tecido nem cor à vista (${faixas.join(' | ')})`)
+    const abas = await texto(pg, '[data-tabela-topo] .em-seg')
+    const chips = (await pg.locator('[data-tabela-topo] .chip').allInnerTexts()).map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')
+    conta(/Tecido 10 Aviamentos 7 Insumo 9/.test(abas) && chips === 'Para comprar 2 | Sem fornecedor 1 | Sem lugar marcado 1 | Sem ficha técnica 8' && await pg.locator('[data-barra] .es-chips').count() === 0, `${T} tabela: as três abas com a conta, e os filtros dentro do cartão da tabela (${abas}; ${chips})`)
+    const cab = (await pg.locator(`${TB} thead th`).allInnerTexts()).map((c) => c.trim()).join(' | ')
+    conta(cab === ' | Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Reservado | Mínimo | Situação' && (await sobra(pg)) <= 0, `${T} tabela: a caixa de marcar na frente, e as oito colunas da prancha (${cab})`)
     await foto('tabela')
-    await pg.locator('table.tabela tr[data-faixa="Tecido"]').click(); await pausa(pg, 300)
-    conta(await pg.locator('table.tabela tr.es-malha').count() === 2 && await pg.locator('table.tabela tbody tr.es-folha').count() === 4, `${T} tabela: abrir Tecido mostra as malhas ainda fechadas (e as de uma cor só, que são uma linha) (${await pg.locator('table.tabela tr.es-malha').count()} malhas, ${await pg.locator('table.tabela tbody tr.es-folha').count()} linhas)`)
-    await pg.locator('table.tabela tr.es-malha').first().click(); await pausa(pg, 300)
-    conta(await pg.locator('table.tabela tbody tr.es-folha').count() > 4, `${T} tabela: abrir a malha mostra as cores dela`)
+    await pg.locator(`${TB} tr[data-faixa="DRY FIT"]`).click(); await pausa(pg, 300)
+    conta(await pg.locator(`${TB} tr.es-malha`).count() === 1 && await folhas() === 0, `${T} tabela: abrir o grupo mostra o tecido, ainda fechado`)
+    await pg.locator(`${TB} tr.es-malha`).click(); await pausa(pg, 300)
+    const linha = await texto(pg, `${TB} tr.es-folha[data-material="${PRETO}"]`)
+    conta(await folhas() === 4 && /^Preto Malharia Exemplo Ltda .*3 kg 9 kg 6 kg 20 kg comprar$/.test(linha), `${T} tabela: abrir o tecido mostra as 4 cores, cada uma com o fornecedor, o lugar, o livre, a prateleira, o reservado, o mínimo e a situação (${linha})`)
+
+    /* marcar o tecido marca as cores dele */
+    await pg.locator(`${TB} tr.es-malha td.es-ck .ck`).click(); await pausa(pg, 400)
+    const K = await tokens(pg, ['--ink'])
+    const faixa = await lote().evaluate((e) => ({ fundo: getComputedStyle(e).backgroundColor, t: e.innerText.replace(/\s+/g, ' ').trim() }))
+    conta(await pg.locator(`${TB} tr.es-folha.marcada`).count() === 4 && faixa.fundo === K['--ink'] && /^4 selecionados 4 cores de DRYFIT POLIESTER 100% Definir fornecedor Definir mínimo Ficha técnica Definir onde está Limpar a seleção$/.test(faixa.t), `${T} lote: marcar o tecido marca as 4 cores, e a faixa na tinta do sistema diz quantas e oferece as ações (${faixa.t})`)
+    conta(await meio(`${TB} tr.es-malha td.es-ck input`) === 'cheia' && await meio(`${TB} tr[data-faixa="DRY FIT"].grupo td.es-ck input`) === 'cheia' && await meio(`${TB} thead th.es-ck input`) === 'meio' && await pg.locator(`${TB} tr.es-malha`).getAttribute('aria-expanded') === 'true', `${T} lote: a caixa do tecido e a do grupo ficam cheias, a do cabeçalho pela metade, e marcar não fecha a sanfona`)
+    await pg.locator(`${TB} tr.es-folha[data-material="${PRETO}"]`).click(); await pausa(pg, 300)
+    conta(/^3 selecionados/.test(await lote().innerText()) && await meio(`${TB} tr.es-malha td.es-ck input`) === 'meio', `${T} lote: clicar na linha da cor desmarca só ela, e a caixa do tecido fica pela metade`)
+    await pg.locator(`${TB} tr.es-folha[data-material="${PRETO}"] td.es-ck .ck`).click(); await pausa(pg, 300)
+    conta(/^4 selecionados/.test(await lote().innerText()), `${T} lote: a caixa da cor marca de volta, uma vez só`)
+    await foto('tabela-lote')
+
+    /* definir o mínimo: só esse campo, nas 4 de uma vez */
+    await lote().getByRole('button', { name: 'Definir mínimo' }).click(); await pausa(pg, 600)
+    let cx = await caixa(pg, 'dialog[open] .caixa')
+    conta(/^Mínimo de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && igual(cx.w, 560) && await pg.locator('dialog[open] [data-editar-ficha] input').count() === 1 && await pg.locator('dialog[open] [data-cuidados]').count() === 0 && await pg.locator('dialog[open] .fn-gatilho').count() === 0, `${T} lote: "Definir mínimo" abre uma caixa de 560 só com o campo do mínimo (${await texto(pg, 'dialog[open] .sobre-topo')})`)
+    await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').fill('25'); await pausa(pg, 200)
+    await foto('lote-minimo', false)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Aplicar em 4' }).click(); await pausa(pg, 800)
+    let g = cadastro()
+    conta(g && g.corpo.p_materiais.length === 4 && g.corpo.p_materiais.includes(id(PRETO)) && JSON.stringify(g.corpo.p_mudanca) === '{"minimo":25}' && /^4 selecionados/.test(await lote().innerText()), `${T} lote: o mínimo vai para as 4 cores e mais nada muda, e a seleção continua (${g ? JSON.stringify(g.corpo.p_mudanca) : 'nada gravado'})`)
+
+    /* definir o fornecedor, poupando quem já tem */
+    await lote().getByRole('button', { name: 'Definir fornecedor' }).click(); await pausa(pg, 600)
+    conta(/^Fornecedor de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] .fn-gatilho').count() === 1 && await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').count() === 0, `${T} lote: "Definir fornecedor" abre só o campo do fornecedor, com o "Novo fornecedor" ao lado`)
+    await pg.locator('dialog[open] .fn-gatilho').click(); await pausa(pg)
+    await pg.locator('.mn.flutua').getByText('Tecidos Exemplo S.A.', { exact: false }).first().click(); await pausa(pg)
+    const trocar = pg.locator('dialog[open] .ck', { hasText: 'Trocar também' })
+    conta(/nos 4 que já têm fornecedor/.test(await trocar.innerText()), `${T} lote: como as 4 já têm fornecedor, a caixa pergunta se troca também nelas (${(await trocar.innerText()).trim()})`)
+    await trocar.click(); await pausa(pg, 200)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Aplicar em 4' }).click(); await pausa(pg, 800)
+    g = cadastro()
+    conta(g && Object.keys(g.corpo.p_mudanca).sort().join(',') === 'fornecedor,so_sem_fornecedor' && g.corpo.p_mudanca.so_sem_fornecedor === true && g.corpo.p_materiais.length === 4, `${T} lote: desmarcada a caixa, o fornecedor só entra em quem não tinha (${g ? JSON.stringify(g.corpo.p_mudanca) : 'nada gravado'})`)
+
+    /* a ficha técnica em lote, que é o que o Henrique pediu pela tabela */
+    await lote().getByRole('button', { name: 'Ficha técnica' }).click(); await pausa(pg, 600)
+    cx = await caixa(pg, 'dialog[open] .caixa')
+    conta(/^Ficha de 4 cores marcadas na tabela/.test(await texto(pg, 'dialog[open] .sobre-topo')) && igual(cx.w, 980) && await pg.locator('dialog[open] .ft-botao').count() === 38 && await pg.locator('dialog[open] [data-lote] .ft-lote-item').count() === 4, `${T} lote: "Ficha técnica" abre a ficha inteira para as 4 cores, com os 38 símbolos`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="nao-alvejar"]').click(); await pausa(pg, 150)
+    await pg.locator('dialog[open] .ft-botao[data-cod="lavar-30"]').click(); await pausa(pg, 150)
+    await pg.locator('dialog[open] input[aria-label="Gramatura"]').fill('165'); await pausa(pg, 150)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Aplicar em 4' }).click(); await pausa(pg, 800)
+    g = cadastro()
+    conta(g && g.corpo.p_materiais.length === 4 && Object.keys(g.corpo.p_mudanca).sort().join(',') === 'cuidados,gramatura' && g.corpo.p_mudanca.gramatura === 165 && g.corpo.p_mudanca.cuidados.join(' ') === 'lavar-30 nao-alvejar', `${T} lote: a gramatura e os cuidados vão para as 4 de uma vez, e a composição de cada uma fica como estava (${g ? JSON.stringify(g.corpo.p_mudanca) : 'nada gravado'})`)
+
+    /* o lugar no depósito, para todos os marcados */
+    await lote().getByRole('button', { name: 'Definir onde está' }).click(); await pausa(pg, 600)
+    conta(/^Onde estão os 4 materiais\?/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] [data-lote-de-lugar]').count() === 1 && await pg.locator('dialog[open]').getByRole('button', { name: 'Marcar aqui' }).isDisabled(), `${T} lote: "Definir onde está" abre o desenho do depósito para os 4, e não marca sem lugar apontado`)
+    await pg.locator('dialog[open] [data-lugar="P07"]').click(); await pausa(pg, 300)
+    await pg.locator('dialog[open]').getByRole('button', { name: 'Marcar aqui' }).click(); await pausa(pg, 700)
+    const lg = gravados.filter((x) => x.u === 'rpc/definir_lugares').at(-1)
+    conta(lg && lg.corpo.p_materiais.length === 4 && lg.corpo.p_lugares.length === 1 && lg.corpo.p_lugares[0].movel === 'pal-07', `${T} lote: o palete apontado vira o lugar das 4 cores (${lg ? JSON.stringify(lg.corpo.p_lugares) : 'nada gravado'})`)
+
+    /* a seleção não sobrevive ao que sai da vista */
+    await pg.locator('[data-tabela-topo] .em-seg').getByRole('tab', { name: /Aviamentos/ }).click(); await pausa(pg, 400)
+    const cabAv = (await pg.locator(`${TB} thead th`).allInnerTexts())[1].trim()
+    conta(await lote().count() === 0 && cabAv === 'Grupo e item' && await pg.locator(`${TB} tr[data-faixa]`).count() > 0 && await folhas() === 0, `${T} lote: trocar de aba solta a seleção, e a aba de aviamentos abre fechada (${cabAv})`)
+    await pg.locator('[data-tabela-topo] .em-seg').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 400)
+    conta(await lote().count() === 0 && await pg.locator(`${TB} tr.marcada`).count() === 0 && await meio(`${TB} thead th.es-ck input`) === 'vazia', `${T} lote: voltar para a aba Tecido não traz de volta as 4 cores que estavam marcadas antes`)
+    await pg.locator('[data-tabela-topo] .em-seg').getByRole('tab', { name: /Aviamentos/ }).click(); await pausa(pg, 400)
+    await pg.locator(`${TB} tr[data-faixa]`).first().click(); await pausa(pg, 300)
+    await pg.locator(`${TB} tr.es-folha td.es-ck .ck`).first().click(); await pausa(pg, 300)
+    const botoes = (await lote().getByRole('button').allInnerTexts()).map((b) => b.trim()).join(' | ')
+    conta(botoes === 'Definir fornecedor | Definir mínimo | Definir onde está | Limpar a seleção' && /^1 selecionado 1 item de /.test((await lote().innerText()).replace(/\s+/g, ' ')), `${T} lote: no aviamento a faixa não oferece a ficha técnica, que é do tecido (${botoes})`)
+    await lote().getByRole('button', { name: 'Limpar a seleção' }).click(); await pausa(pg, 300)
+    conta(await lote().count() === 0 && await pg.locator(`${TB} tr.marcada`).count() === 0, `${T} lote: "Limpar a seleção" tira a faixa e desmarca tudo`)
+    await pg.locator('[data-tabela-topo] .em-seg').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 400)
+    await pg.locator(`${TB} thead th.es-ck .ck`).click(); await pausa(pg, 300)
+    conta(/^10 selecionados/.test(await lote().innerText()), `${T} lote: a caixa do cabeçalho marca tudo o que está na aba (${(await lote().innerText()).replace(/\s+/g, ' ').slice(0, 60)})`)
+    await pg.locator(`${TB} thead th.es-ck .ck`).click(); await pausa(pg, 300)
+
+    /* os filtros e a busca abrem o que sobrou */
+    await pg.locator('[data-tabela-topo] .chip', { hasText: 'Sem ficha técnica' }).click(); await pausa(pg, 400)
+    conta(await folhas() === 8 && await pg.locator(`${TB} tr[data-faixa][aria-expanded="false"]`).count() === 0 && /Tecido 8 /.test(await texto(pg, '[data-tabela-topo] .em-seg')), `${T} tabela: "Sem ficha técnica" deixa as 8 cores que faltam, já abertas`)
+    await pg.locator('[data-tabela-topo] .chip', { hasText: 'Sem ficha técnica' }).click(); await pausa(pg, 400)
     await pg.fill('[data-barra] .em-busca input', 'dryfit'); await pausa(pg, 500)
-    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 4 && await pg.locator('table.tabela tr[data-faixa][aria-expanded="true"]').count() === 1, `${T} tabela: com busca, o que sobrou já vem aberto (4 cores do dry fit)`)
+    conta(await folhas() === 4 && await pg.locator(`${TB} tr[data-faixa][aria-expanded="true"]`).count() === 2, `${T} tabela: com busca, o que sobrou já vem aberto (as 4 cores do dry fit)`)
     await pg.fill('[data-barra] .em-busca input', ''); await pausa(pg, 400)
-    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 0, `${T} tabela: tirada a busca, a tabela volta fechada`)
-    await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Lista' }).click(); await pausa(pg, 300)
-    conta(await pg.locator('.es-chips').count() === 0 && await pg.locator('[data-coluna]').count() === 3, `${T} tabela: de volta à lista, os chips somem e as colunas voltam`)
+    conta(await folhas() === 0, `${T} tabela: tirada a busca, a tabela volta fechada`)
+
+    /* a seta da linha leva à ficha da cor, na Lista */
+    await pg.locator(`${TB} tr[data-faixa="DRY FIT"]`).click(); await pausa(pg, 250)
+    await pg.locator(`${TB} tr.es-malha`).click(); await pausa(pg, 250)
+    await pg.locator(`${TB} tr.es-folha[data-material="${PRETO}"] .es-abrir`).click(); await pausa(pg, 500)
+    conta(await pg.locator('[data-tabela-topo]').count() === 0 && /› cor/.test(await texto(pg, '[data-ficha] .em-trilha')) && await pg.locator('[data-ficha-tecnica]').count() === 1 && await lote().count() === 0, `${T} tabela: a seta da linha abre a ficha da cor na Lista, com a ficha técnica dela, sem marcar a linha`)
+    await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+    conta(await pg.locator('[data-coluna]').count() === 3, `${T} tabela: fechada a ficha, as colunas voltam`)
   })
 
   conta(erros.length === 0, `${T}: nenhum erro de JavaScript em 1440 (${erros.join(' | ') || 'limpo'})`)
@@ -427,6 +620,14 @@ await caso('quem só lê', async () => {
   await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).click(); await pausa(pg, 400)
   conta(await pg.locator('[data-ficha]').getByRole('button', { name: 'Mudar o lugar' }).count() === 0 && await pg.locator('[data-ficha]').getByRole('button', { name: 'Ver no depósito' }).count() === 1, 'quem só lê: vê onde a cor está, sem o botão de mudar o lugar')
   await pg.screenshot({ path: `${PASTA}/so-le-1440-light.png`, fullPage: true })
+  conta(await pg.locator('[data-ficha-tecnica]').count() === 1 && await pg.locator('[data-ficha-tecnica]').getByRole('button').count() === 0 && await pg.locator('[data-ficha] .em-col:has(.em-fornecedor)').getByRole('button', { name: 'Trocar' }).count() === 0, 'quem só lê: vê a ficha técnica da cor, sem o botão de editar nem o de trocar o fornecedor')
+  await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+  await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
+  await pg.locator('table.es-tb tr[data-faixa="DRY FIT"]').click(); await pausa(pg, 250)
+  await pg.locator('table.es-tb tr.es-malha').click(); await pausa(pg, 250)
+  conta(await pg.locator('table.es-tb .es-ck').count() === 0 && await pg.locator('table.es-tb thead th').count() === 8 && await pg.locator('table.es-tb tbody tr.es-folha').count() === 4, 'quem só lê: a tabela não tem caixa de marcar, e continua com as oito colunas')
+  await pg.locator('table.es-tb tr.es-folha[data-material="DRYFIT POLIESTER 100% · Preto"]').click(); await pausa(pg, 500)
+  conta(await pg.locator('[data-lote-da-tabela]').count() === 0 && /› cor/.test(await texto(pg, '[data-ficha] .em-trilha')), 'quem só lê: clicar na linha da tabela abre a ficha da cor, e nenhuma faixa de lote aparece')
   conta(erros.length === 0, `quem só lê: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 })
@@ -686,7 +887,7 @@ for (const tema of ['light', 'dark']) {
     await foto('geral')
     conta((await sobra(pg)) <= 0, `${T}: nada rola para o lado`)
     const chips = await pg.locator('.em-secoes .chip').allInnerTexts()
-    conta(chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ') === 'Materiais | Separação 7 | Comprar 4 | Movimentos | Depósito', `${T}: os cinco assuntos viram chips, com a conta (${chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')})`)
+    conta(chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ') === 'Materiais | Separação 7 | Comprar 4 | Movimentos | Depósito | Estatísticas', `${T}: os seis assuntos viram chips, com a conta (${chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')})`)
     conta(await pg.locator('[data-coluna]').count() === 0 && await pg.locator('[data-trilho]').count() === 1, `${T}: em Materiais ficam a sanfona e o trilho; as colunas viram telas`)
     const tr = await pg.locator('[data-trilho] .em-trilho-faixa').evaluate((e) => ({ rola: e.scrollWidth > e.clientWidth, dentro: e.getBoundingClientRect().right <= innerWidth }))
     conta(tr.rola && tr.dentro && (await sobra(pg)) <= 0, `${T}: no celular o trilho anda de lado dentro da caixa, e a página não`)
@@ -792,6 +993,210 @@ for (const movimento of [true, false]) {
       conta([seta, ...linhas, pe].every((t) => t && parseFloat(t.quanto) < 0.001), `movimento reduzido: as transições também zeram (${[seta, ...linhas, pe].map((t) => t?.quanto).join(', ')})`)
     }
     conta(erros.length === 0, `${movimento ? 'animação' : 'movimento reduzido'}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+/* A TABELA NÃO ROLA DE LADO: ela perde coluna. Em 1440 cabem as oito; em 1366
+   saem "Na prateleira" e "Reservado"; em 1100 sai também "Onde está". O nome,
+   o livre, o mínimo, a situação e a seta da ficha ficam sempre à vista. */
+for (const [largura, esperadas] of [[1440, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Reservado | Mínimo | Situação'], [1366, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Mínimo | Situação'], [1100, 'Grupo, tecido e cor | Fornecedor | Livre | Mínimo | Situação']]) {
+  await caso(`tabela ${largura}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura, altura: 800, tema: 'light', estoque: 'grande' })
+    await ir(pg, '/estoque', '[data-barra]')
+    await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
+    await pg.fill('[data-barra] .em-busca input', 'e'); await pausa(pg, 600)
+    const m = await pg.locator('.tabela-rola').evaluate((e) => {
+      const caixa = e.getBoundingClientRect()
+      const setas = [...e.querySelectorAll('.es-abrir')]
+      return {
+        sobra: e.scrollWidth - e.clientWidth,
+        colunas: [...e.querySelectorAll('thead th')].filter((t) => t.offsetWidth > 0 && t.textContent.trim()).map((t) => t.textContent.trim()).join(' | '),
+        cortadas: [...e.querySelectorAll('thead th')].filter((t) => t.offsetWidth > 0 && t.scrollWidth > t.clientWidth + 1).map((t) => t.textContent.trim()),
+        setas: setas.length, setasFora: setas.filter((s) => s.getBoundingClientRect().right > caixa.right + 0.5).length,
+      }
+    })
+    conta(m.sobra <= 0 && m.colunas === esperadas && m.cortadas.length === 0, `tabela ${largura}: a tabela cabe na caixa sem rolar de lado, com as colunas certas e nenhum título cortado (sobra ${m.sobra}; ${m.colunas}; cortadas: ${m.cortadas.join(', ') || 'nenhuma'})`)
+    conta(m.setas > 20 && m.setasFora === 0 && (await sobra(pg)) <= 0, `tabela ${largura}: a seta que abre a ficha fica à vista em todas as ${m.setas} linhas`)
+    await pg.locator('table.es-tb tr.es-malha td.es-ck .ck').first().click(); await pausa(pg, 300)
+    const lote = await pg.locator('[data-lote-da-tabela]').evaluate((e) => ({ sobra: e.scrollWidth - e.clientWidth, botoes: [...e.querySelectorAll('.btn')].filter((b) => b.getBoundingClientRect().right > e.getBoundingClientRect().right).length }))
+    conta(lote.sobra <= 0 && lote.botoes === 0, `tabela ${largura}: a faixa do lote quebra em duas linhas em vez de estourar`)
+    await pg.screenshot({ path: `${PASTA}/tabela-${largura}-light.png`, fullPage: false })
+    conta(erros.length === 0, `tabela ${largura}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+/* A COR ARQUIVADA VOLTA: cadastrar de novo uma cor que foi arquivada reativa a
+   que já existe, em vez de bater na trava do nome repetido. */
+for (const arquivada of [true, false]) {
+  await caso(arquivada ? 'cor arquivada volta' : 'cor nova nasce', async () => {
+    const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', arquivada })
+    await ir(pg, '/estoque', '[data-arvore]')
+    await abrirGrupo(pg)
+    await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
+    await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+    await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').fill('25'); await pausa(pg, 150)
+    await pg.locator('dialog[open] .sobre-pe .btn').last().click(); await pausa(pg, 900)
+    const criou = gravados.filter((g) => /^material\?select=id$/.test(String(g.u)))
+    const reativou = gravados.filter((g) => /^material\?id=eq\.arquivado-1/.test(String(g.u)))
+    const aviso = await pg.locator('.toast, [role="status"]').allInnerTexts().then((t) => t.join(' ').replace(/\s+/g, ' '))
+    if (arquivada) conta(criou.length === 0 && reativou.length === 1 && reativou[0].corpo.ativo === true && reativou[0].corpo.minimo === 25 && /estava arquivado e voltou/.test(aviso), `cor arquivada volta: o cadastro reativa a cor que já existia, com o mínimo novo, e não cria outra (${JSON.stringify(reativou[0]?.corpo ?? null)}; ${aviso.slice(0, 90)})`)
+    else conta(criou.length === 1 && reativou.length === 0 && criou[0].corpo.minimo === 25 && /entrou no estoque, com saldo zero/.test(aviso), `cor nova nasce: sem arquivada igual, o cadastro cria o material como sempre (${aviso.slice(0, 80)})`)
+    conta(erros.length === 0, `${arquivada ? 'cor arquivada volta' : 'cor nova nasce'}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+/* O BANCO É QUEM TRAVA A FICHA: se ele recusa, a ficha fica aberta com o
+   motivo, e o que a pessoa escreveu não se perde. */
+await caso('ficha recusada', async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', recusa: 1 })
+  await ir(pg, '/estoque', '[data-arvore]')
+  await abrirGrupo(pg)
+  await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 250)
+  await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).click(); await pausa(pg, 500)
+  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+  await pg.locator('dialog[open] input[aria-label="Gramatura"]').fill('205'); await pausa(pg, 150)
+  await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
+  conta(await pg.locator('dialog[open] [data-editar-ficha]').count() === 1 && /A composição soma 90%, e tem de somar 100/.test(await texto(pg, 'dialog[open] [data-editar-ficha]')) && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '205', `ficha recusada: quando o banco recusa, a ficha continua aberta, mostra o motivo e guarda o que foi escrito`)
+  await pg.screenshot({ path: `${PASTA}/ficha-recusada-1440-light.png`, fullPage: false })
+  await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
+  conta(await pg.locator('dialog[open]').count() === 0 && gravados.filter((g) => g.u === 'rpc/definir_cadastro').length === 2, 'ficha recusada: salvar de novo passa, e a ficha fecha')
+  conta(erros.length === 0, `ficha recusada: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+/* A FICHA NO CELULAR: as duas colunas viram uma, e nada estoura */
+await caso('ficha técnica 390', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema: 'dark' })
+  await ir(pg, '/estoque', '[data-arvore]')
+  await abrirGrupo(pg)
+  await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 250)
+  await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).click(); await pausa(pg, 500)
+  conta(await pg.locator('[data-ficha-tecnica] .ft-simbolo').count() === 6 && (await sobra(pg)) <= 0, 'ficha técnica 390: o cartão da ficha cabe no celular, com os 6 símbolos')
+  await pg.screenshot({ path: `${PASTA}/ficha-tecnica-390-dark.png`, fullPage: true })
+  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+  const ed = await pg.locator('dialog[open] [data-editar-ficha]').evaluate((e) => ({ colunas: getComputedStyle(e).gridTemplateColumns.split(' ').length, sobra: e.scrollWidth - e.clientWidth, botao: Math.round(e.querySelector('.ft-botao').getBoundingClientRect().width) }))
+  conta(ed.colunas === 1 && ed.sobra <= 0 && ed.botao >= 40 && await pg.locator('dialog[open] .ft-botao').count() === 38, `ficha técnica 390: no celular o editor fica em uma coluna, os 38 símbolos com 40 px de toque, sem rolar para o lado (${JSON.stringify(ed)})`)
+  await pg.screenshot({ path: `${PASTA}/editar-ficha-390-dark.png`, fullPage: false })
+  conta(erros.length === 0, `ficha técnica 390: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+/* ESTATÍSTICAS (pedido do Henrique, 05/10/2026): quanto tecido saiu por tecido
+   e por cor, no mês, em 3 meses e no semestre, para saber o que comprar. */
+for (const tema of ['light', 'dark']) {
+  const T = tema === 'light' ? 'gelo' : 'grafite'
+  await caso(`estatísticas ${T}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema })
+    const K = await (async () => { await ir(pg, '/estoque', '[data-arvore]'); return tokens(pg, ['--ink', '--brand-text', '--text-3']) })()
+    const abas = (await pg.locator('[data-barra] > .em-seg button').allInnerTexts()).map((b) => b.trim()).join(' | ')
+    const seg = await pg.locator('[data-barra] > .em-seg').evaluate((e) => ({ cabe: e.scrollWidth <= e.clientWidth + 1, cortado: [...e.querySelectorAll('button')].some((b) => b.scrollWidth > b.clientWidth + 1) }))
+    conta(abas === 'Materiais | Movimentos | Depósito | Estatísticas' && seg.cabe && !seg.cortado, `${T} estatísticas: a barra tem as quatro abas, e nenhuma fica cortada (${abas})`)
+    await pg.locator('[data-barra] > .em-seg').getByRole('tab', { name: 'Estatísticas' }).click(); await pg.waitForSelector('[data-estatisticas]'); await pausa(pg, 500)
+    const periodo = (await pg.locator('[data-barra] .em-barra-fim button').allInnerTexts()).map((b) => b.trim()).join(' | ')
+    conta(periodo === 'Mês | 3 meses | Semestre' && /ligado/.test(await pg.locator('[data-barra] .em-barra-fim button', { hasText: 'Mês' }).getAttribute('class')), `${T} estatísticas: o período fica no fim da barra, e abre no mês (${periodo})`)
+    const numeros = (await pg.locator('[data-numeros] .kpi').allInnerTexts()).map((k) => k.replace(/\s+/g, ' ').trim())
+    conta(/^Tecido usado 60 ?kg nos últimos 30 dias$/.test(numeros[0]) && /^O tecido que mais sai 42 ?kg DRYFIT POLIESTER 100% · 70% do total$/.test(numeros[1]) && /^Acabam em menos de 30 dias 1 ?cor/.test(numeros[2]) && /^Paradas 6 ?cores/.test(numeros[3]), `${T} estatísticas: os quatro números do período (${numeros.join(' | ')})`)
+    conta(/aviso/.test(await pg.locator('[data-numeros] .kpi').nth(2).getAttribute('class')), `${T} estatísticas: o número das cores que acabam em menos de 30 dias vem em aviso`)
+
+    /* por tecido, o que mais sai primeiro, fechado */
+    const tecidos = await pg.locator('[data-uso-por-tecido] .eu-linha[data-tecido]').evaluateAll((l) => l.map((e) => e.dataset.tecido + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
+    conta(tecidos.join(' | ') === 'DRYFIT POLIESTER 100% | MOLETOM | PIQUET 100% | ALGODAO 100% | ALGODAO MESCLA SEM ELASTANO | HELANCA COLEGIAL' && await pg.locator('[data-uso-por-tecido] .eu-cor').count() === 0, `${T} estatísticas: os tecidos em ordem do que mais saiu, com as sanfonas fechadas (${tecidos.join(' | ')})`)
+    const dry = await texto(pg, '.eu-linha[data-tecido="DRYFIT POLIESTER 100%"]')
+    conta(/DRYFIT POLIESTER 100% 4 cores 42 kg 70% livre 81 kg dá para 58 dias$/.test(dry), `${T} estatísticas: a linha do tecido diz o usado, a parte do total, o livre e quanto dura (${dry})`)
+    const barras = await pg.locator('[data-uso-por-tecido] .eu-linha[data-tecido] .eu-barra').evaluateAll((l) => l.map((e) => Math.round(e.firstElementChild.getBoundingClientRect().width / e.getBoundingClientRect().width * 100)))
+    const tinta = await pg.locator('[data-uso-por-tecido] .eu-linha[data-tecido] .eu-barra i').first().evaluate((e) => getComputedStyle(e).backgroundColor)
+    conta(barras[0] === 100 && Math.abs(barras[1] - 36) <= 1 && Math.abs(barras[2] - 7) <= 1 && barras[3] === 0 && tinta === K['--ink'], `${T} estatísticas: a barra é proporcional ao tecido que mais saiu, na tinta do sistema (${barras.join(' ')})`)
+
+    /* abre nas cores */
+    await pg.locator('.eu-linha[data-tecido="DRYFIT POLIESTER 100%"]').click(); await pausa(pg, 300)
+    const cores = await pg.locator('[data-uso-por-tecido] .eu-cor').evaluateAll((l) => l.map((e) => e.innerText.replace(/\s+/g, ' ').trim()))
+    conta(cores.length === 4 && /^Preto comprar 30 kg 71% livre 3 kg dá para 3 dias$/.test(cores[0]) && /^Branco 12 kg 29% livre 42 kg dá para 4 meses$/.test(cores[1]) && /^Azul Marinho 0 kg livre 24 kg sem saída no período$/.test(cores[2]), `${T} estatísticas: o tecido abre nas cores, a que mais sai primeiro, cada uma com a parte dela dentro do tecido (${cores.join(' | ')})`)
+    const curta = await pg.locator('.eu-cor[data-material="DRYFIT POLIESTER 100% · Preto"] .eu-dias').evaluate((e) => getComputedStyle(e).color)
+    const corBarra = await pg.locator('.eu-cor[data-material="DRYFIT POLIESTER 100% · Preto"] .eu-barra').evaluate((e) => Math.round(e.firstElementChild.getBoundingClientRect().width / e.getBoundingClientRect().width * 100))
+    conta(curta === K['--brand-text'] && Math.abs(corBarra - 71) <= 1, `${T} estatísticas: a cor que acaba em 3 dias vem em vermelho, e a barra dela usa a mesma régua do tecido (${corBarra}%)`)
+
+    /* a prioridade de compra */
+    const pri = await pg.locator('[data-prioridade] .eu-pri').evaluateAll((l) => l.map((e) => e.innerText.replace(/\s+/g, ' ').trim()))
+    conta(pri.length === 4 && /^DRYFIT POLIESTER 100% · Preto livre 3 kg · saem 30 kg por mês · abaixo do mínimo 3 dias$/.test(pri[0]) && /^MOLETOM · Preto .* 32 dias$/.test(pri[1]) && /2 meses$/.test(pri[2]) && /4 meses$/.test(pri[3]), `${T} estatísticas: a prioridade de compra põe na frente a cor que acaba antes, e não a que tem menos (${pri.join(' | ')})`)
+
+    /* o mês a mês */
+    const meses = await pg.locator('[data-mes-a-mes] .eu-mes').evaluateAll((l) => l.map((e) => ({ v: e.querySelector('.eu-mes-valor').textContent.trim(), alto: Math.round(e.querySelector('i').getBoundingClientRect().height), corrente: e.classList.contains('corrente') })))
+    conta(meses.length === 6 && meses.map((m) => m.v).join(' ') === '40 41 36 43 41 60' && meses[5].corrente && meses[5].alto > meses[3].alto && meses[3].alto > meses[2].alto && /média de 40,2 kg por mês/.test(await texto(pg, '[data-mes-a-mes] .eu-topo')), `${T} estatísticas: os seis meses com o valor em cima de cada coluna, o corrente marcado, e a média dos cinco fechados (${meses.map((m) => m.v + ':' + m.alto).join(' ')})`)
+    await pg.screenshot({ path: `${PASTA}/estatisticas-1440-${tema}.png`, fullPage: true })
+    conta((await sobra(pg)) <= 0, `${T} estatísticas: nada rola para o lado`)
+
+    /* trocar o período refaz tudo */
+    await pg.locator('[data-barra] .em-barra-fim button', { hasText: '3 meses' }).click(); await pausa(pg, 400)
+    const tres = (await pg.locator('[data-numeros] .kpi').first().innerText()).replace(/\s+/g, ' ').trim()
+    const pri3 = await texto(pg, '[data-prioridade] .eu-pri')
+    conta(/^Tecido usado 144 ?kg nos últimos 90 dias$/.test(tres) && /DRYFIT POLIESTER 100% · Preto livre 3 kg · saem 28 kg por mês · abaixo do mínimo 3 dias$/.test(pri3) && await pg.locator('[data-uso-por-tecido] .eu-cor').count() === 4, `${T} estatísticas: em 3 meses o total passa a 144 kg, o ritmo por mês é recalculado e o tecido aberto continua aberto (${tres}; ${pri3})`)
+    await pg.locator('[data-barra] .em-barra-fim button', { hasText: 'Semestre' }).click(); await pausa(pg, 400)
+    conta(/^Tecido usado 261 ?kg nos últimos 180 dias$/.test((await pg.locator('[data-numeros] .kpi').first().innerText()).replace(/\s+/g, ' ').trim()), `${T} estatísticas: no semestre, 261 kg`)
+
+    /* a busca filtra a lista, e abre o que sobrou */
+    await pg.fill('[data-barra] .em-busca input', 'moletom'); await pausa(pg, 500)
+    conta(await pg.locator('[data-uso-por-tecido] .eu-linha[data-tecido]').count() === 1 && await pg.locator('[data-uso-por-tecido] .eu-cor').count() === 1 && await pg.locator('[data-prioridade] .eu-pri').count() === 1 && /^Tecido usado 261/.test((await pg.locator('[data-numeros] .kpi').first().innerText()).replace(/\s+/g, ' ').trim()), `${T} estatísticas: a busca deixa só o moletom na lista e na prioridade, já aberto, e os números do alto continuam sendo do estoque inteiro`)
+    await pg.fill('[data-barra] .em-busca input', ''); await pausa(pg, 400)
+
+    /* clicar na cor abre a ficha dela */
+    await pg.locator('[data-prioridade] .eu-pri').first().click(); await pausa(pg, 600)
+    conta(/› cor/.test(await texto(pg, '[data-ficha] .em-trilha')) && /Preto/.test(await texto(pg, '[data-ficha] .em-ficha-topo')), `${T} estatísticas: clicar numa cor da prioridade abre a ficha dela em Materiais`)
+    conta(erros.length === 0, `${T} estatísticas: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+await caso('estatísticas, estoque grande', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1366, altura: 800, tema: 'light', estoque: 'grande' })
+  await ir(pg, '/estoque?aba=uso', '[data-estatisticas]')
+  conta(/ligado/.test(await pg.locator('[data-barra] > .em-seg button', { hasText: 'Estatísticas' }).getAttribute('class')), 'estatísticas grande: o endereço ?aba=uso abre direto nas estatísticas')
+  const barra = await pg.locator('[data-barra]').evaluate((e) => ({ cabe: [...e.children].every((c) => c.scrollWidth <= c.clientWidth + 1), cortado: [...e.querySelectorAll('.seg button')].filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent.trim()) }))
+  conta(barra.cabe && barra.cortado.length === 0, `estatísticas grande: em 1366 as quatro abas e os três períodos cabem na barra sem corte (${barra.cortado.join(', ') || 'nenhum cortado'})`)
+  await pg.locator('.eu-linha[data-tecido="DRYFIT POLIESTER 100%"]').click(); await pausa(pg, 300)
+  conta(await pg.locator('[data-uso-por-tecido] .eu-cor').count() === 2 && /Ver as 28 cores sem saída no período/.test(await texto(pg, '[data-paradas="DRYFIT POLIESTER 100%"]')), 'estatísticas grande: num tecido de 30 cores, abrem as 2 que saíram, e as 28 paradas ficam atrás de um botão')
+  await pg.screenshot({ path: `${PASTA}/estatisticas-grande-1366-light.png`, fullPage: true })
+  await pg.locator('[data-paradas="DRYFIT POLIESTER 100%"]').click(); await pausa(pg, 300)
+  conta(await pg.locator('[data-uso-por-tecido] .eu-cor').count() === 30 && await pg.locator('[data-paradas]').count() === 0 && (await sobra(pg)) <= 0, 'estatísticas grande: o botão mostra as 30, e nada rola para o lado')
+  conta(erros.length === 0, `estatísticas grande: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+for (const [nome, uso, espera] of [['sem uso', 'vazio', /Nada saiu neste período/], ['com erro', 'erro', /Não consegui ler as estatísticas/]]) {
+  await caso(`estatísticas ${nome}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', uso })
+    await ir(pg, '/estoque?aba=uso', '[data-barra]'); await pausa(pg, 600)
+    const corpo = await texto(pg, '.pagina')
+    conta(espera.test(corpo), `estatísticas ${nome}: a tela diz o que houve (${(corpo.match(espera) ?? ['nada'])[0]})`)
+    if (uso === 'vazio') conta(/^Tecido usado 0 ?kg/.test((await pg.locator('[data-numeros] .kpi').first().innerText()).replace(/\s+/g, ' ').trim()) && /Sem previsão/.test(await texto(pg, '[data-prioridade]')) && await pg.locator('[data-mes-a-mes] .eu-mes').count() === 6, 'estatísticas sem uso: os números zeram, a prioridade diz que não há previsão e o mês a mês continua com os seis meses')
+    else conta(await pg.getByRole('button', { name: 'Tentar de novo' }).count() === 1 && await pg.locator('[data-estatisticas]').count() === 0 && await pg.locator('[data-barra] > .em-seg').count() === 1, 'estatísticas com erro: sobra o botão de tentar de novo, e o resto da página continua de pé')
+    await pg.screenshot({ path: `${PASTA}/estatisticas-${uso}-1440-light.png`, fullPage: true })
+    conta(erros.length === 0, `estatísticas ${nome}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+for (const [largura, altura, tema] of [[820, 1100, 'light'], [390, 844, 'dark']]) {
+  await caso(`estatísticas ${largura}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema })
+    await ir(pg, '/estoque?aba=uso', '[data-estatisticas]')
+    const periodo = await pg.locator('.eu-periodo button').count()
+    const colunas = await pg.locator('.eu-dois').evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+    const kpis = await pg.locator('[data-numeros]').evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+    conta(periodo === 3 && colunas === 1 && kpis === (largura < 600 ? 2 : 4) && (await sobra(pg)) <= 0, `estatísticas ${largura}: o período desce para a página, os cartões ficam em uma coluna, os números em ${largura < 600 ? 'dois a dois' : 'uma fileira'}, e nada rola para o lado (${periodo} períodos, ${colunas} coluna, ${kpis} números por fileira)`)
+    await pg.locator('.eu-linha[data-tecido]').first().click(); await pausa(pg, 300)
+    if (largura < 600) {
+      const linha = await pg.locator('.eu-cor').first().evaluate((e) => { const n = e.querySelector('.eu-nome').getBoundingClientRect(); const b = e.querySelector('.eu-barra').getBoundingClientRect(); return { embaixo: b.top >= n.bottom - 1, cabeca: getComputedStyle(document.querySelector('.eu-cabeca')).display } })
+      conta(linha.embaixo && linha.cabeca === 'none', `estatísticas ${largura}: no celular a barra desce para baixo do nome, e o cabeçalho de colunas some`)
+      const alvos = await pg.locator('.eu-linha, .eu-pri, .eu-resto').evaluateAll((l) => l.filter((e) => e.getBoundingClientRect().height < 40).length)
+      conta(alvos === 0, `estatísticas ${largura}: toda linha tem altura de toque (${alvos} abaixo de 40 px)`)
+    }
+    await pg.locator('.eu-periodo button', { hasText: 'Semestre' }).click(); await pausa(pg, 400)
+    conta(/261/.test(await pg.locator('[data-numeros] .kpi').first().innerText()), `estatísticas ${largura}: o período da página troca os números`)
+    await pg.screenshot({ path: `${PASTA}/estatisticas-${largura}-${tema}.png`, fullPage: true })
+    conta(erros.length === 0, `estatísticas ${largura}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
     await ctx.close()
   })
 }

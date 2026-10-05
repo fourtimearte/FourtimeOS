@@ -71,6 +71,7 @@ export function Materiais({
   aoMovimentar,
   aoNovo,
   aoEditar,
+  aoEditarFicha,
   aoMarcar,
   aoVerNoDeposito,
   aoVerFornecedor,
@@ -100,7 +101,10 @@ export function Materiais({
   aoEscolher: (chave: string) => void
   aoMovimentar: (m: Material) => void
   aoNovo: (g: GrupoDoEstoque) => void
+  /** o cadastro do grupo de aviamento ou de insumo */
   aoEditar: (g: GrupoDoEstoque) => void
+  /** a ficha da cor, ou das cores de um tecido de uma vez (com o título do lote) */
+  aoEditarFicha: (materiais: Material[], titulo?: string) => void
   aoMarcar: (m: Material, outroLugar: boolean) => void
   aoVerNoDeposito: (ids: string[], rotulo: string) => void
   aoVerFornecedor: (f: Fornecedor | null) => void
@@ -233,6 +237,12 @@ export function Materiais({
       podeEditar={podeEditar}
       noCelular={celular}
       aoEditar={() => {
+        /* o Editar da cor abre a ficha DELA; aviamento e insumo continuam no
+           cadastro do grupo, que é nome, mínimo e fornecedor */
+        if (material.categoria === 'tecido') {
+          aoEditarFicha([material])
+          return
+        }
         const g = todosOsGrupos.find(x => x.itens.some(i => i.id === material.id))
         if (g) aoEditar(g)
       }}
@@ -255,7 +265,14 @@ export function Materiais({
       guardado={guardado}
       podeEditar={podeEditar}
       noCelular={celular}
-      aoEditar={() => aoEditar(doTecido.tecido.doEstoque)}
+      aoEditar={() =>
+        aoEditarFicha(
+          doTecido.tecido.cores,
+          doTecido.tecido.cores.length === 1
+            ? undefined
+            : `Ficha das ${doTecido.tecido.cores.length} cores de ${doTecido.tecido.nome}`,
+        )
+      }
       aoMovimentar={aoMovimentar}
       aoFechar={() => aoEscolher('')}
       aoEscolher={escolher}

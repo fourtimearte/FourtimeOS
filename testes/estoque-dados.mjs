@@ -104,3 +104,32 @@ export const materiaisDosTecidosAMais = tecidosAMais.flatMap((t, i) => Array.fro
   ...base, id: `my${i}-${k}`, nome: `${t.nome} · Cor ${k + 1}`, tecido_id: t.id, tecido: t.nome, cor_id: `cy${i}-${k}`, cor: `Cor ${k + 1}`, cor_hex: matiz(i * 6 + k + 3),
   minimo: 10, saldo: 6 + k * 5, reservado: 0, livre: 6 + k * 5, abaixo_do_minimo: 6 + k * 5 < 10,
 })))
+
+/* A FICHA TÉCNICA (048): o dry fit preto tem a ficha inteira, o branco tem a
+   mesma composição e outra gramatura, e as outras cores não têm nenhuma. */
+export const fichas = {
+  'DRYFIT POLIESTER 100% · Preto': {
+    composicao: [{ fibra: 'Poliéster', pct: 96 }, { fibra: 'Elastano', pct: 4 }], gramatura: '190.00', largura: '1.200',
+    detalhes: ['Proteção UV 50+', 'Secagem rápida'], cuidados: ['lavar-40-suave', 'nao-alvejar', 'nao-tambor', 'varal-sombra', 'passar-1', 'nao-seco'],
+  },
+  'DRYFIT POLIESTER 100% · Branco': {
+    composicao: [{ fibra: 'Poliéster', pct: 96 }, { fibra: 'Elastano', pct: 4 }], gramatura: '170.00', largura: null, detalhes: [], cuidados: ['lavar-30'],
+  },
+}
+const SEM_FICHA = { composicao: [], gramatura: null, largura: null, detalhes: [], cuidados: [] }
+/** os materiais com as colunas da ficha, como a view devolve depois da 048 */
+export const comFicha = (materiais) => materiais.map((m) => ({ ...SEM_FICHA, ...m, ...(fichas[m.nome] ?? {}) }))
+
+/* O USO (049): o que saiu de cada material em 30, 90 e 180 dias, e mês a mês.
+   O dry fit preto é o que mais sai; o piquet branco quase não sai. */
+const mesDe = (n) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') }
+const uso = (nome, d30, d90, d180, meses) => ({ material_id: M(nome).id, d30, d90, d180, meses: Object.fromEntries(meses.map((v, i) => [mesDe(meses.length - 1 - i), v]).filter(([, v]) => v > 0)) })
+export const usos = [
+  uso('DRYFIT POLIESTER 100% · Preto', 30, 84, 150, [20, 22, 24, 26, 28, 30]),
+  uso('DRYFIT POLIESTER 100% · Branco', 12, 30, 66, [14, 10, 12, 8, 10, 12]),
+  uso('DRYFIT POLIESTER 100% · Azul Marinho', 0, 6, 18, [6, 6, 0, 6, 0, 0]),
+  uso('PIQUET 100% · Branco', 3, 9, 12, [0, 3, 0, 3, 3, 3]),
+  uso('MOLETOM · Preto', 15, 15, 15, [0, 0, 0, 0, 0, 15]),
+  uso('Linha poliéster 120 branca', 4, 10, 22, [4, 4, 4, 3, 3, 4]),
+  uso('Tinta sublimática magenta', 0.4, 1.1, 2.3, [0.4, 0.4, 0.4, 0.4, 0.3, 0.4]),
+]

@@ -24,7 +24,8 @@ const json = (r, corpo, status = 200) => r.fulfill({ status, contentType: 'appli
    Materiais), 'sem-apoio' (as duas leituras falham, e a página tem de
    continuar de pé) ou 'grande' (um tecido de trinta cores e um grupo com seis
    tecidos, para ver que nada estoura). */
-export async function abrir(nav, { largura, altura, tema, papel = 'admin', deposito = 'cheio', movimento = false, recusa = 0, estoque = 'cheio' }) {
+/* `arquivada`: o cadastro de material novo encontra um arquivado igual. */
+export async function abrir(nav, { largura, altura, tema, papel = 'admin', deposito = 'cheio', movimento = false, recusa = 0, estoque = 'cheio', uso = 'cheio', arquivada = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: movimento ? 'no-preference' : 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1 })
   const gravados = []
   /* o fornecedor criado no teste aparece na lista seguinte, como no banco */
@@ -38,6 +39,16 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
       gravados.push({ u: 'rpc/salvar_deposito', corpo: a })
       if (recusas > 0 && !a.p_soltar) { recusas--; return json(r, { code: 'P0001', message: 'Há 2 materiais em lugares que deixam de existir neste desenho. Confirme para deixá-los sem lugar.' }, 400) }
       return json(r, P.DEPOSITO.id)
+    }
+    if (u.includes('rpc/uso_do_estoque')) {
+      if (uso === 'erro') return json(r, { message: 'permission denied for function uso_do_estoque' }, 403)
+      return json(r, uso === 'vazio' ? [] : E.usos)
+    }
+    if (u.includes('rpc/definir_cadastro')) {
+      const a = JSON.parse(req.postData())
+      gravados.push({ u: 'rpc/definir_cadastro', corpo: a })
+      if (recusas > 0) { recusas--; return json(r, { code: '23514', message: 'A composição soma 90%, e tem de somar 100.' }, 400) }
+      return json(r, a.p_materiais.length)
     }
     if (u.includes('rpc/definir_lugares')) {
       const a = JSON.parse(req.postData())
@@ -54,7 +65,9 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     }
     let corpo = []
     if (u.includes('meu_perfil')) corpo = D.perfil(papel)
-    else if (u.includes('material_na_prateleira')) corpo = estoque === 'grande' ? [...D.materiais, ...E.coresAMais, ...E.materiaisDosTecidosAMais] : estoque === 'folgado' ? D.materiais.map((x) => ({ ...x, saldo: Number(x.minimo) * 3 + 5, reservado: 0, livre: Number(x.minimo) * 3 + 5, abaixo_do_minimo: false })) : estoque === 'sem-minimo' ? D.materiais.map((x) => ({ ...x, minimo: 0, saldo: 5, reservado: 0, livre: 5, abaixo_do_minimo: false })) : D.materiais
+    /* o material arquivado que o cadastro procura antes de criar um novo */
+    else if (/\/material\?select=id&ativo=is\.false/.test(u)) corpo = arquivada ? [{ id: 'arquivado-1' }] : []
+    else if (u.includes('material_na_prateleira')) corpo = E.comFicha(estoque === 'grande' ? [...D.materiais, ...E.coresAMais, ...E.materiaisDosTecidosAMais] : estoque === 'folgado' ? D.materiais.map((x) => ({ ...x, saldo: Number(x.minimo) * 3 + 5, reservado: 0, livre: Number(x.minimo) * 3 + 5, abaixo_do_minimo: false })) : estoque === 'sem-minimo' ? D.materiais.map((x) => ({ ...x, minimo: 0, saldo: 5, reservado: 0, livre: 5, abaixo_do_minimo: false })) : D.materiais)
     else if (u.includes('movimento_do_estoque')) corpo = D.movimentos
     else if (u.includes('reserva_em_aberto')) corpo = D.reservas
     else if (u.includes('fornecedor_na_lista')) corpo = [...D.fornecedores, ...criados]

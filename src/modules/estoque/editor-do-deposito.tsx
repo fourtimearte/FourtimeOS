@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as EventoDePonteiro, ReactNode } from 'react'
-import { ArrowClockwise, Copy, Plus, Trash } from '@phosphor-icons/react'
+import {
+  ArrowClockwise,
+  ArrowUUpLeft,
+  ArrowUUpRight,
+  Copy,
+  Plus,
+  Trash,
+} from '@phosphor-icons/react'
 import {
   Aviso,
   Botao,
@@ -87,6 +94,9 @@ import {
 
 const CHAO_NOVO: Planta = { id: '', nome: 'Depósito', largura: 15, fundo: 10, moveis: [] }
 const MENOR_PECA = 0.3
+/** mudanças com menos disto de intervalo são o mesmo passo do desfazer, em ms */
+const JUNTA_DO_DESFAZER = 800
+const PASSOS_DO_DESFAZER = 200
 /** o maior vão que a grade aceita entre um palete e o vizinho, em metros */
 const MAIOR_VAO_DA_GRADE = 10
 const USOS = ['Tecido', 'Aviamentos', 'Insumo', 'Aviamentos e insumos', 'Retalhos', 'Outros']
@@ -119,16 +129,76 @@ export function EditorDoDeposito({
   lugares: LugarDoMaterial[]
   materiais: Material[]
   /** sai do editor; `aba` é para onde a pessoa pediu para ir */
-  aoSair: (aba: 'materiais' | 'razao' | 'deposito') => void
+  aoSair: (aba: 'materiais' | 'razao' | 'deposito' | 'uso') => void
   aoSalvar: () => Promise<void>
 }) {
   const original = useMemo(() => plantaInicial ?? CHAO_NOVO, [plantaInicial])
-  const [p, setP] = useState<Planta>(original)
+  const [p, porPlanta] = useState<Planta>(original)
   const [escolhido, setEscolhido] = useState('')
+
+  /* DESFAZER E REFAZER (pedido do Henrique, 05/10/2026: "quero capacidade de dar
+     Ctrl+Z na edição do depósito"). Toda mudança do desenho passa por `setP`,
+     que guarda como ele estava antes.
+
+     UM GESTO É UM PASSO. Arrastar uma peça escreve o desenho dezenas de vezes
+     e escrever "12,5" num campo escreve quatro: desfazer devolve o desenho de
+     antes do arrasto, ou de antes da pessoa começar a escrever, e não um
+     pedaço do caminho. O arrasto inteiro é um passo; fora dele, o que vem com
+     menos de 800 ms de intervalo se junta ao passo anterior.
+
+     O que já foi salvo não volta: a história é desta sessão do editor. */
+  const atual = useRef(original)
+  const historia = useRef({
+    passado: [] as Planta[],
+    futuro: [] as Planta[],
+    quando: 0,
+    arrasto: null as Arrasto | null,
+  })
+  const [passos, setPassos] = useState({ atras: 0, adiante: 0 })
+  function setP(acao: Planta | ((antes: Planta) => Planta)) {
+    const antes = atual.current
+    const novo = typeof acao === 'function' ? acao(antes) : acao
+    if (novo === antes || plantasIguais(novo, antes)) {
+      /* mudança que não muda o desenho não vira passo */
+      if (novo !== antes) {
+        atual.current = novo
+        porPlanta(novo)
+      }
+      return
+    }
+    const h = historia.current
+    const agora = Date.now()
+    const noMesmoArrasto = arrasto.current !== null && h.arrasto === arrasto.current
+    if (!noMesmoArrasto && (arrasto.current !== null || agora - h.quando > JUNTA_DO_DESFAZER)) {
+      h.passado.push(antes)
+      if (h.passado.length > PASSOS_DO_DESFAZER) h.passado.shift()
+    }
+    h.arrasto = arrasto.current
+    h.quando = agora
+    h.futuro = []
+    atual.current = novo
+    porPlanta(novo)
+    setPassos({ atras: h.passado.length, adiante: h.futuro.length })
+  }
+  function andarNaHistoria(para: 'atras' | 'adiante') {
+    const h = historia.current
+    const destino = para === 'atras' ? h.passado.pop() : h.futuro.pop()
+    if (!destino) return
+    ;(para === 'atras' ? h.futuro : h.passado).push(atual.current)
+    /* o próximo gesto é um passo novo, e o campo com foco relê o desenho */
+    h.quando = 0
+    h.arrasto = null
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    atual.current = destino
+    porPlanta(destino)
+    setEscolhido(id => (destino.moveis.some(m => m.id === id) ? id : ''))
+    setFalha('')
+    setPassos({ atras: h.passado.length, adiante: h.futuro.length })
+  }
   const [gravando, setGravando] = useState(false)
   const [falha, setFalha] = useState('')
   /* as duas perguntas: descartar o que mudou, e soltar quem perderia o lugar */
-  const [saindoPara, setSaindoPara] = useState<'' | 'materiais' | 'razao' | 'deposito'>('')
+  const [saindoPara, setSaindoPara] = useState<'' | 'materiais' | 'razao' | 'deposito' | 'uso'>('')
   const [confirmarPerda, setConfirmarPerda] = useState<string[] | null>(null)
   const arrasto = useRef<Arrasto | null>(null)
   const [arrastando, setArrastando] = useState(false)
@@ -426,6 +496,9 @@ export function EditorDoDeposito({
     if (e.currentTarget.hasPointerCapture(e.pointerId))
       e.currentTarget.releasePointerCapture(e.pointerId)
     arrasto.current = null
+    /* o arrasto acabou: o que vier depois é outro passo do desfazer */
+    historia.current.quando = 0
+    historia.current.arrasto = null
     setArrastando(false)
   }
 
@@ -505,7 +578,7 @@ export function EditorDoDeposito({
     void gravar(false)
   }
 
-  function sair(aba: 'materiais' | 'razao' | 'deposito') {
+  function sair(aba: 'materiais' | 'razao' | 'deposito' | 'uso') {
     if (mudou) setSaindoPara(aba)
     else aoSair(aba)
   }
@@ -516,6 +589,15 @@ export function EditorDoDeposito({
   useEffect(() => {
     const ouvir = (e: globalThis.KeyboardEvent) => {
       if (saindoPara || confirmarPerda) return
+      /* Ctrl+Z desfaz e Ctrl+Shift+Z (ou Ctrl+Y) refaz, com o foco em qualquer
+         lugar: dentro de um campo também, porque o campo escreve no desenho */
+      const comCtrl = (e.ctrlKey || e.metaKey) && !e.altKey
+      const tecla = e.key.toLowerCase()
+      if (comCtrl && (tecla === 'z' || tecla === 'y')) {
+        e.preventDefault()
+        andarNaHistoria(tecla === 'z' && !e.shiftKey ? 'atras' : 'adiante')
+        return
+      }
       if (e.key === 'Escape') setEscolhido('')
       if (e.key === 'Delete' && escolhido && !e.defaultPrevented) {
         const alvo = e.target instanceof HTMLElement ? e.target : null
@@ -584,11 +666,12 @@ export function EditorDoDeposito({
         <Segmentado
           className="es-aba"
           valor="deposito"
-          aoMudar={(a: 'materiais' | 'razao' | 'deposito') => sair(a)}
+          aoMudar={(a: 'materiais' | 'razao' | 'deposito' | 'uso') => sair(a)}
           opcoes={[
             { valor: 'materiais', rotulo: 'Materiais' },
-            { valor: 'razao', rotulo: 'Movimentações' },
+            { valor: 'razao', rotulo: 'Movimentos' },
             { valor: 'deposito', rotulo: 'Depósito' },
+            { valor: 'uso', rotulo: 'Estatísticas' },
           ]}
         />
         <span className="dp-selo-editando es-ver">editando o depósito</span>
@@ -606,6 +689,28 @@ export function EditorDoDeposito({
                 {metros(p.largura)} × {metros(p.fundo)} m
               </small>
             </h3>
+            <span className="dp-desfazer">
+              <Botao
+                tamanho="sm"
+                icone
+                aria-label="Desfazer"
+                title="Desfazer (Ctrl+Z)"
+                disabled={passos.atras === 0}
+                onClick={() => andarNaHistoria('atras')}
+              >
+                <ArrowUUpLeft size={16} aria-hidden="true" />
+              </Botao>
+              <Botao
+                tamanho="sm"
+                icone
+                aria-label="Refazer"
+                title="Refazer (Ctrl+Shift+Z)"
+                disabled={passos.adiante === 0}
+                onClick={() => andarNaHistoria('adiante')}
+              >
+                <ArrowUUpRight size={16} aria-hidden="true" />
+              </Botao>
+            </span>
             <div className="dp-ferramentas">
               <Botao tamanho="sm" onClick={() => por(novaPrateleira(p, novoId()))}>
                 <Plus size={15} aria-hidden="true" />

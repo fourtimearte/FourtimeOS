@@ -604,6 +604,79 @@ await caso('grade nova', async () => {
   await ctx.close()
 })
 
+/* DESFAZER E REFAZER no editor do depósito (pedido do Henrique, 05/10/2026:
+   "quero capacidade de dar Ctrl+Z na edição do depósito"). */
+await caso('desfazer', async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light' })
+  await ir(pg, '/estoque?aba=deposito', '[data-mapa]')
+  await pg.getByRole('button', { name: 'Editar o depósito' }).click(); await pausa(pg, 600)
+  const desfazer = pg.getByRole('button', { name: 'Desfazer', exact: true })
+  const refazer = pg.getByRole('button', { name: 'Refazer', exact: true })
+  const salvar = pg.getByRole('button', { name: 'Salvar o depósito' })
+  const pecas = () => pg.locator('[data-mapa] [data-movel]').count()
+  const lugarDe = (nome) => pg.locator(`[data-movel="${nome}"]`).boundingBox().then((b) => (b ? Math.round(b.x) + ',' + Math.round(b.y) : 'sumiu'))
+  const de = await pecas()
+  conta(await desfazer.isDisabled() && await refazer.isDisabled() && await salvar.isDisabled(), 'desfazer: o editor abre sem nada para desfazer nem refazer')
+
+  /* pôr uma peça e desfazer */
+  await pg.getByRole('button', { name: 'Palete', exact: true }).click(); await pausa(pg, 1000)
+  conta(await pecas() === de + 1 && !(await desfazer.isDisabled()), 'desfazer: pôr um palete acende o botão de desfazer')
+  await pg.keyboard.press('Control+z'); await pausa(pg, 300)
+  conta(await pecas() === de && await pg.locator('[data-movel="P22"]').count() === 0 && await desfazer.isDisabled() && !(await refazer.isDisabled()) && await salvar.isDisabled(), 'desfazer: Ctrl+Z tira o palete que acabou de entrar, o desenho volta ao salvo e o Salvar apaga')
+  await pg.keyboard.press('Control+Shift+z'); await pausa(pg, 300)
+  conta(await pecas() === de + 1 && await pg.locator('[data-movel="P22"]').count() === 1 && await refazer.isDisabled(), 'desfazer: Ctrl+Shift+Z põe o palete de volta')
+  await pg.keyboard.press('Control+z'); await pausa(pg, 300)
+  await pg.keyboard.press('Control+y'); await pausa(pg, 300)
+  conta(await pecas() === de + 1, 'desfazer: Ctrl+Y também refaz')
+  await desfazer.click(); await pausa(pg, 1000)
+  conta(await pecas() === de, 'desfazer: o botão faz o mesmo que o atalho')
+
+  /* um arrasto inteiro é um passo só */
+  const antes = await lugarDe('A')
+  const a = await pg.locator('[data-movel="A"]').boundingBox()
+  await pg.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await pg.mouse.down()
+  for (let i = 1; i <= 8; i++) { await pg.mouse.move(a.x + a.width / 2 + i * 12, a.y + a.height / 2 + i * 9); await pausa(pg, 40) }
+  await pg.mouse.up(); await pausa(pg, 1000)
+  const arrastada = await lugarDe('A')
+  await pg.keyboard.press('Control+z'); await pausa(pg, 300)
+  conta(arrastada !== antes && await lugarDe('A') === antes && await desfazer.isDisabled(), `desfazer: o arrasto inteiro da prateleira A volta num Ctrl+Z só (de ${antes} para ${arrastada} e de volta)`)
+
+  /* as setas em sequência também */
+  await pg.locator('[data-movel="A"]').focus(); await pausa(pg, 200)
+  for (let i = 0; i < 5; i++) { await pg.keyboard.press('ArrowRight'); await pausa(pg, 60) }
+  await pausa(pg, 1000)
+  const andou = await lugarDe('A')
+  await pg.keyboard.press('Control+z'); await pausa(pg, 300)
+  conta(andou !== antes && await lugarDe('A') === antes, 'desfazer: cinco toques de seta seguidos são um passo só')
+
+  /* dentro de um campo: o desenho volta e o campo relê */
+  await pg.locator('[data-movel="P08"]').click(); await pausa(pg, 1000)
+  const fileiras = pg.locator('input[aria-label="Fileiras"]')
+  const tinha = await fileiras.inputValue()
+  await fileiras.click(); await fileiras.press('Control+a'); await pg.keyboard.type('2'); await pausa(pg, 300)
+  const com2 = await pecas()
+  await pg.keyboard.press('Control+z'); await pausa(pg, 400)
+  conta(com2 < de && await pecas() === de && await fileiras.inputValue() === tinha, `desfazer: com o foco no campo Fileiras, Ctrl+Z devolve a grade e o campo volta a mostrar ${tinha} (${com2} peças com 2 fileiras, ${await pecas()} depois)`)
+
+  /* dois passos separados voltam um de cada vez, e mexer de novo apaga o refazer */
+  await pg.getByRole('button', { name: 'Palete', exact: true }).click(); await pausa(pg, 1000)
+  await pg.getByRole('button', { name: 'Prateleira', exact: true }).click(); await pausa(pg, 1000)
+  await pg.keyboard.press('Control+z'); await pausa(pg, 300)
+  conta(await pecas() === de + 1 && await pg.locator('[data-movel="P22"]').count() === 1, 'desfazer: duas peças postas uma depois da outra voltam uma de cada vez')
+  await pg.getByRole('button', { name: 'Palete', exact: true }).click(); await pausa(pg, 400)
+  const comOSegundo = await pecas()
+  await pg.keyboard.press('Control+y'); await pausa(pg, 300)
+  conta(await refazer.isDisabled() && await pecas() === comOSegundo && await pg.locator('[data-movel="B"]').count() === 0, 'desfazer: mexer no desenho depois de desfazer apaga o que havia para refazer (a prateleira desfeita não volta com Ctrl+Y)')
+  await pg.screenshot({ path: `${PASTA}/editor-desfazer-1440-light.png`, fullPage: false })
+
+  /* o que vai para o banco é o desenho que está na tela */
+  await salvar.click(); await pausa(pg, 900)
+  const pl = gravados.find((x) => x.u === 'rpc/salvar_deposito')?.corpo.p_planta
+  conta(pl && pl.moveis.length === de + 2 && pl.moveis.filter((m) => m.nome === 'P22' || m.nome === 'P23').length === 2, `desfazer: o Salvar manda o desenho que ficou na tela, com os dois paletes novos (${pl?.moveis.length} peças)`)
+  conta(erros.length === 0, `desfazer: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
 await nav.close()
 const ruins = achados.filter((a) => !a.certo)
 console.log(`\n${achados.length - ruins.length} de ${achados.length} conferências passaram.`)

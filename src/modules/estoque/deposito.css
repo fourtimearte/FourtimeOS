@@ -900,6 +900,15 @@ button.dp-casa:active {
   gap: var(--re-3);
   white-space: nowrap;
 }
+/* desfazer e refazer ficam na linha do título, à direita; as ferramentas de
+   pôr peça ocupam a linha de baixo inteira, em qualquer largura */
+.dp-desfazer {
+  display: inline-flex;
+  gap: var(--re-2);
+}
+.dp-topo.ferramentas > .dp-ferramentas {
+  flex: 1 1 100%;
+}
 .dp-formulario {
   gap: var(--re-6);
 }

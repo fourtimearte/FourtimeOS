@@ -3,9 +3,12 @@ import { X } from '@phosphor-icons/react'
 import { Aviso, Botao, Campo, Entrada, Modal, avisar } from '@ds'
 import {
   NOME_DA_CATEGORIA,
+  minimoRecomendado,
   nomeNoGrupo,
+  quantoNaUnidade,
   salvarCadastroDoMaterial,
   type GrupoDoEstoque,
+  type UsoDoMaterial,
 } from '@dominio/estoque'
 import {
   criarFornecedor,
@@ -34,12 +37,15 @@ type Linha = { id: string; nome: string; minimo: string; ondeFica: string }
 
 export function EditarGrupo({
   grupo,
+  usos,
   fornecimento,
   aoFechar,
   aoSalvar,
   aoCriarFornecedor,
 }: {
   grupo: GrupoDoEstoque | null
+  /** o que saiu de cada material, para o mínimo recomendado; nulo enquanto não leu */
+  usos?: UsoDoMaterial[] | null
   fornecimento: Fornecimento
   aoFechar: () => void
   aoSalvar: (grupoNovo: string) => Promise<void>
@@ -170,6 +176,15 @@ export function EditarGrupo({
               const m = grupo.itens.find((x) => x.id === l.id)
               if (!m) return null
               const n = lerNumero(l.minimo)
+              /* o mínimo recomendado pela saída: aparece debaixo do campo, e um
+                 clique põe o número lá */
+              const recomendado = usos
+                ? minimoRecomendado(
+                    usos.find((u) => u.materialId === m.id),
+                    m.unidade,
+                  )
+                : 0
+              const emTexto = String(recomendado).replace('.', ',')
               return (
                 <div key={l.id} className="es-editar-linha">
                   {ehTecido ? (
@@ -184,14 +199,28 @@ export function EditarGrupo({
                       aria-label="Nome do material"
                     />
                   )}
-                  <Campo erro={n !== null && (Number.isNaN(n) || n < 0)}>
-                    <Entrada
-                      inputMode="decimal"
-                      value={l.minimo}
-                      onChange={(e) => mudar(l.id, 'minimo', e.currentTarget.value)}
-                      aria-label={'Mínimo, em ' + m.unidade}
-                    />
-                  </Campo>
+                  <div className="pilha colada">
+                    <Campo erro={n !== null && (Number.isNaN(n) || n < 0)}>
+                      <Entrada
+                        inputMode="decimal"
+                        value={l.minimo}
+                        onChange={(e) => mudar(l.id, 'minimo', e.currentTarget.value)}
+                        aria-label={'Mínimo, em ' + m.unidade}
+                      />
+                    </Campo>
+                    {recomendado > 0 ? (
+                      <button
+                        type="button"
+                        className="es-recomendado-miudo"
+                        data-recomendado={m.nome}
+                        title={'Usar ' + quantoNaUnidade(recomendado, m.unidade) + ', a média do que saiu no último mês e nos últimos três'}
+                        disabled={l.minimo.trim() === emTexto}
+                        onClick={() => mudar(l.id, 'minimo', emTexto)}
+                      >
+                        recomendado {emTexto}
+                      </button>
+                    ) : null}
+                  </div>
                   <Entrada
                     value={l.ondeFica}
                     onChange={(e) => mudar(l.id, 'ondeFica', e.currentTarget.value)}

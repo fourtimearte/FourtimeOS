@@ -48,6 +48,7 @@ export function MarcarLugar({
   materiais,
   outroLugar: comOutroLugar,
   tambem,
+  novo,
   aoFechar,
   aoGravar,
 }: {
@@ -56,6 +57,10 @@ export function MarcarLugar({
   outroLugar?: boolean
   /** o lote da tabela: os outros materiais que vão para o mesmo lugar */
   tambem?: Material[]
+  /** O MATERIAL QUE AINDA NÃO EXISTE (o cadastro de cor nova): a caixa só
+      escolhe o lugar e devolve; quem grava é o cadastro, depois de criar o
+      material. Nada vai para o banco daqui. */
+  novo?: { nome: string; lugares: Lugar[]; aoEscolher: (lugares: Lugar[]) => void } | null
   planta: Planta | null
   lugares: LugarDoMaterial[]
   materiais: Material[]
@@ -73,20 +78,23 @@ export function MarcarLugar({
      for marcado aqui passa a ser o lugar de todos. */
   const todos = useMemo(() => (material ? [material, ...(tambem ?? [])] : []), [material, tambem])
   const emLote = todos.length > 1
-  const chave = todos.map(m => m.id).join(',')
+  const chave = novo ? 'novo:' + JSON.stringify(novo.lugares) : todos.map(m => m.id).join(',')
   const deAntes = useMemo(
     () =>
-      material && !emLote
-        ? lugaresDoMaterial(lugares, material.id).map(l => ({
-            movelId: l.movelId,
-            vao: l.vao,
-            nivel: l.nivel,
-          }))
-        : [],
-    [material, lugares, emLote],
+      novo
+        ? novo.lugares
+        : material && !emLote
+          ? lugaresDoMaterial(lugares, material.id).map(l => ({
+              movelId: l.movelId,
+              vao: l.vao,
+              nivel: l.nivel,
+            }))
+          : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [material, lugares, emLote, chave],
   )
   useEffect(() => {
-    if (!material) return
+    if (!material && !novo) return
     const comMaisUm = !!comOutroLugar && deAntes.length > 0 && deAntes.length < MAXIMO_DE_LUGARES
     setLista(deAntes.length ? (comMaisUm ? [...deAntes, null] : deAntes) : [null])
     setAtual(comMaisUm ? deAntes.length : 0)
@@ -188,6 +196,11 @@ export function MarcarLugar({
   }
 
   async function gravar() {
+    if (novo) {
+      /* o material ainda não existe: devolve a escolha, sem gravar nada */
+      if (mudou) novo.aoEscolher(validos)
+      return
+    }
     if (!material || gravando || !mudou) return
     setGravando(true)
     setFalha('')
@@ -230,13 +243,15 @@ export function MarcarLugar({
   }, [lista, moveis])
 
   const [em, baixo] = material ? nomeEmDuas(material) : ['', '']
-  const titulo = emLote
-    ? `Onde estão os ${todos.length} materiais?`
-    : material
-      ? 'Onde está ' +
-        [em, material.categoria === 'tecido' ? baixo : ''].filter(Boolean).join(' · ') +
-        '?'
-      : ''
+  const titulo = novo
+    ? `Onde vai ficar ${novo.nome}?`
+    : emLote
+      ? `Onde estão os ${todos.length} materiais?`
+      : material
+        ? 'Onde está ' +
+          [em, material.categoria === 'tecido' ? baixo : ''].filter(Boolean).join(' · ') +
+          '?'
+        : ''
 
   /* o que mais está guardado na casa apontada */
   const vizinhos =
@@ -267,7 +282,7 @@ export function MarcarLugar({
 
   return (
     <Modal
-      aberto={!!material}
+      aberto={!!material || !!novo}
       aoFechar={aoFechar}
       largo
       titulo={titulo}
@@ -284,13 +299,15 @@ export function MarcarLugar({
             {gravando
               ? 'Marcando'
               : validos.length || !deAntes.length
-                ? 'Marcar aqui'
+                ? novo
+                  ? 'Usar este lugar'
+                  : 'Marcar aqui'
                 : 'Deixar sem lugar'}
           </Botao>
         </>
       }
     >
-      {material && planta ? (
+      {(material || novo) && planta ? (
         <div className="dp-marcar-caixa">
           <div className="dp-marcar-corpo">
             <div className="dp-pilha">

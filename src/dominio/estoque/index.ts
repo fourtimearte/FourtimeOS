@@ -1081,6 +1081,9 @@ export type UsoDoTecido = {
   nome: string
   /** o código do grupo de tecido no catálogo; vazio quando não tem */
   cod: string
+  /** a unidade do grupo; vazia quando os itens dele usam unidades diferentes,
+      e aí `usado`, `livre` e `cobertura` do grupo não querem dizer nada */
+  unidade: string
   usado: number
   livre: number
   cobertura: number
@@ -1114,6 +1117,7 @@ export function usoPorTecido(
         tecidoId: g.tecidoId,
         nome: g.nome,
         cod: grupoDoTecido.get(g.tecidoId) ?? '',
+        unidade: g.unidade || 'kg',
         usado,
         livre: g.livre,
         cobertura: diasDeCobertura(g.livre, usado, periodo),
@@ -1121,6 +1125,78 @@ export function usoPorTecido(
       }
     })
     .sort((a, b) => b.usado - a.usado || porNome(a.nome, b.nome))
+}
+
+/* AVIAMENTO E INSUMO NÃO SE SOMAM ENTRE SI. Botão é unidade, linha é cone,
+   tinta é litro: "o que mais sai" não tem resposta entre unidades diferentes.
+   Por isso o grupo só tem total quando todos os itens dele usam a mesma
+   unidade, os grupos vêm na ordem da árvore (primeiro os que tiveram saída) e
+   quem ordena a compra é a cobertura, que não depende de unidade. Pedido do
+   Henrique em 05/10/2026: "sim, quero estatísticas de insumo e aviamentos". */
+export function usoPorGrupoDeItens(
+  materiais: Material[],
+  usos: UsoDoMaterial[],
+  periodo: Periodo,
+  categoria: 'aviamento' | 'insumo',
+): UsoDoTecido[] {
+  const usadoDe = new Map(usos.map(u => [u.materialId, u[periodo]]))
+  const grupos = gruposDeItens(
+    gruposDoEstoque(materiais.filter(m => m.categoria === categoria)),
+    categoria,
+  )
+  const lista = grupos.map(g => {
+    const cores = g.itens
+      .map(m => {
+        const usado = usadoDe.get(m.id) ?? 0
+        return { m, usado, cobertura: diasDeCobertura(m.livre, usado, periodo) }
+      })
+      .sort((a, b) => b.usado - a.usado || a.m.nome.localeCompare(b.m.nome, 'pt-BR'))
+    const unidades = new Set(g.itens.map(m => m.unidade))
+    const unidade = unidades.size === 1 ? [...unidades][0] : ''
+    const usado = unidade ? cores.reduce((s, c) => s + c.usado, 0) : 0
+    const livre = unidade ? g.itens.reduce((s, m) => s + m.livre, 0) : 0
+    return {
+      chave: g.chave,
+      tecidoId: '',
+      nome: g.nome,
+      cod: '',
+      unidade,
+      usado,
+      livre,
+      cobertura: unidade ? diasDeCobertura(livre, usado, periodo) : Infinity,
+      cores,
+    }
+  })
+  const saiu = (t: UsoDoTecido) => t.cores.some(c => c.usado > 0)
+  /* a ordem da árvore fica; só sobem os grupos em que alguma coisa saiu */
+  return [...lista.filter(saiu), ...lista.filter(t => !saiu(t))]
+}
+
+/** O uso da categoria inteira: por tecido e cor, ou por grupo e item. */
+export function usoDaCategoria(
+  materiais: Material[],
+  usos: UsoDoMaterial[],
+  periodo: Periodo,
+  categoria: Categoria,
+  h: Hierarquia,
+): UsoDoTecido[] {
+  return categoria === 'tecido'
+    ? usoPorTecido(materiais, usos, periodo, h)
+    : usoPorGrupoDeItens(materiais, usos, periodo, categoria)
+}
+
+/** O MÍNIMO RECOMENDADO PELA SAÍDA: a média entre o que saiu no último mês e o
+    mês médio dos últimos três. É o consumo de um mês, com o mês recente
+    pesando metade. Zero quando o material não saiu em 90 dias: sem saída não
+    há o que recomendar. Arredonda para cima, que é o lado seguro do mínimo.
+    Pedido do Henrique em 05/10/2026: "use os dados estatísticos de 1 mês e 3
+    meses para fazer média de quantidade mínima, e do lado do campo já deixe
+    escrito o recomendado". */
+export function minimoRecomendado(uso: UsoDoMaterial | undefined, unidade: string): number {
+  if (!uso || !(uso.d90 > 0)) return 0
+  const media = (uso.d30 + uso.d90 / 3) / 2
+  const inteiro = casasDaUnidade(unidade) === 0 || media >= 10
+  return inteiro ? Math.ceil(media - 1e-9) : Math.ceil(media * 10 - 1e-9) / 10
 }
 
 /** As cores que saíram no período, a que acaba antes primeiro. Cor sem saída
@@ -1154,29 +1230,54 @@ export function usoPorMes(usado: number, periodo: Periodo): number {
 
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
-/** O tecido que saiu em cada um dos últimos seis meses de calendário, o mais
-    antigo primeiro. O último é o mês corrente, ainda pela metade. */
+export type MesDeUso = { mes: string; rotulo: string; usado: number; corrente: boolean }
+
+/** O que saiu em cada um dos últimos seis meses de calendário, o mais antigo
+    primeiro, UMA SÉRIE POR UNIDADE (quilo não se soma com cone). O último mês
+    é o corrente, ainda pela metade. A série com mais itens vem primeiro. Sem
+    saída nenhuma, devolve uma série zerada na unidade mais comum da categoria,
+    para a tela mostrar os seis meses vazios em vez de sumir. */
 export function usoMesAMes(
   materiais: Material[],
   usos: UsoDoMaterial[],
+  categoria: Categoria = 'tecido',
   hoje: Date = new Date(),
-): { mes: string; rotulo: string; usado: number; corrente: boolean }[] {
-  const tecidos = new Set(materiais.filter(m => m.categoria === 'tecido').map(m => m.id))
-  const total = new Map<string, number>()
+): { unidade: string; itens: number; meses: MesDeUso[] }[] {
+  const daCategoria = materiais.filter(m => m.categoria === categoria)
+  const unidadeDe = new Map(daCategoria.map(m => [m.id, m.unidade]))
+  const porUnidade = new Map<string, { itens: number; total: Map<string, number> }>()
   for (const u of usos) {
-    if (!tecidos.has(u.materialId)) continue
-    for (const [mes, v] of Object.entries(u.meses)) total.set(mes, (total.get(mes) ?? 0) + v)
+    const unidade = unidadeDe.get(u.materialId)
+    if (unidade === undefined || !(u.d180 > 0)) continue
+    let serie = porUnidade.get(unidade)
+    if (!serie) porUnidade.set(unidade, (serie = { itens: 0, total: new Map() }))
+    serie.itens += 1
+    for (const [mes, v] of Object.entries(u.meses))
+      serie.total.set(mes, (serie.total.get(mes) ?? 0) + v)
   }
-  const lista = []
+  if (!porUnidade.size) {
+    const conta = new Map<string, number>()
+    for (const m of daCategoria) conta.set(m.unidade, (conta.get(m.unidade) ?? 0) + 1)
+    const maisComum = [...conta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+    porUnidade.set(maisComum ?? (categoria === 'tecido' ? 'kg' : 'un'), {
+      itens: 0,
+      total: new Map(),
+    })
+  }
+  const calendario: { mes: string; rotulo: string; corrente: boolean }[] = []
   for (let atras = 5; atras >= 0; atras--) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - atras, 1)
-    const mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
-    lista.push({
-      mes,
+    calendario.push({
+      mes: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
       rotulo: MESES_CURTOS[d.getMonth()],
-      usado: total.get(mes) ?? 0,
       corrente: atras === 0,
     })
   }
-  return lista
+  return [...porUnidade.entries()]
+    .sort((a, b) => b[1].itens - a[1].itens || a[0].localeCompare(b[0], 'pt-BR'))
+    .map(([unidade, serie]) => ({
+      unidade,
+      itens: serie.itens,
+      meses: calendario.map(c => ({ ...c, usado: serie.total.get(c.mes) ?? 0 })),
+    }))
 }

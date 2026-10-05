@@ -4,6 +4,7 @@ import { Aviso, Botao, Campo, Entrada, Marcacao, Modal, Seletor, avisar } from '
 import {
   composicaoPorExtenso,
   definirCadastro,
+  minimoRecomendado,
   nomeInteiro,
   nomeNoGrupo,
   quantoNaUnidade,
@@ -11,6 +12,7 @@ import {
   type Fibra,
   type Material,
   type MudancaDoCadastro,
+  type UsoDoMaterial,
 } from '@dominio/estoque'
 import {
   CUIDADOS,
@@ -225,6 +227,7 @@ export function EditarFicha({
   doCatalogo,
   irmas,
   so,
+  usos,
   aoFechar,
   aoSalvar,
   aoCriarFornecedor,
@@ -240,6 +243,8 @@ export function EditarFicha({
   irmas?: Material[]
   /** o lote da tabela que só quer uma coisa: mostra esse campo e mais nada */
   so?: 'fornecedor' | 'minimo'
+  /** o que saiu de cada material, para o mínimo recomendado; nulo enquanto não leu */
+  usos?: UsoDoMaterial[] | null
   aoFechar: () => void
   aoSalvar: (quantos: number) => Promise<void>
   aoCriarFornecedor: () => Promise<void>
@@ -311,6 +316,24 @@ export function EditarFicha({
   useEffect(() => {
     if (!materiais) aberta.current = ''
   }, [materiais])
+
+  /* --- o mínimo recomendado pela saída ---
+     Um por material. Com vários, a faixa de menor a maior; o botão de usar só
+     existe quando o número é um só, porque o lote grava o mesmo valor em todos. */
+  const recomendados = useMemo(() => {
+    if (!usos) return null
+    const doMaterial = new Map(usos.map(u => [u.materialId, u]))
+    return lista.map(m => ({
+      uso: doMaterial.get(m.id),
+      valor: minimoRecomendado(doMaterial.get(m.id), m.unidade),
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usos, chave])
+  const comRecomendado = (recomendados ?? []).filter(r => r.valor > 0)
+  const menorRecomendado = Math.min(...comRecomendado.map(r => r.valor))
+  const maiorRecomendado = Math.max(...comRecomendado.map(r => r.valor))
+  const recomendadoUnico = comRecomendado.length > 0 && menorRecomendado === maiorRecomendado
+  const usoDoUnico = um ? recomendados?.[0]?.uso : undefined
 
   /* --- as contas --- */
   const min = lerNumero(minimo)
@@ -536,6 +559,42 @@ export function EditarFicha({
                   aria-label="Mínimo no estoque"
                 />
               </Campo>
+            )}
+            {so === 'fornecedor' || !recomendados ? null : comRecomendado.length ? (
+              <div className="es-recomendado" data-recomendado="">
+                <span>
+                  Recomendado:{' '}
+                  <b>
+                    {recomendadoUnico
+                      ? quantoNaUnidade(menorRecomendado, unidade)
+                      : `de ${emTexto(menorRecomendado)} a ${quantoNaUnidade(maiorRecomendado, unidade)}`}
+                  </b>
+                </span>
+                {recomendadoUnico && emTexto(menorRecomendado) !== minimo.trim() ? (
+                  <Botao
+                    tamanho="sm"
+                    onClick={() => {
+                      setMinimo(emTexto(menorRecomendado))
+                      tocar('minimo')
+                    }}
+                  >
+                    Usar
+                  </Botao>
+                ) : null}
+                <small>
+                  {um && usoDoUnico
+                    ? `É a média entre o que saiu no último mês (${quantoNaUnidade(usoDoUnico.d30, unidade)}) e o mês médio dos últimos três (${quantoNaUnidade(usoDoUnico.d90 / 3, unidade)}).`
+                    : `Cada um tem o seu, pela média do último mês e dos últimos três. ${comRecomendado.length} de ${lista.length} tiveram saída. O lote grava o mesmo mínimo em todos: para usar o de cada um, abra a ficha de cada um.`}
+                </small>
+              </div>
+            ) : (
+              <p className="es-recomendado" data-recomendado="">
+                <small>
+                  Ainda sem mínimo recomendado:{' '}
+                  {um ? 'este material não teve saída' : 'nenhum deles teve saída'} nos últimos 3
+                  meses. A recomendação aparece quando a Separação começar a baixar.
+                </small>
+              </p>
             )}
 
             {soTecido ? (

@@ -7,9 +7,25 @@
    por tecido mede a dela: abaixo de 560 px cada linha vira duas, com a barra
    embaixo do nome, em vez de espremer cinco colunas.
    ========================================================================== */
+/* o alto da aba: Tecido, Aviamentos e Insumo, como na árvore e na tabela; na
+   tela estreita o período desce da barra da página e fica ao lado, ou embaixo */
+.eu-alto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn) var(--sp-4);
+  min-width: 0;
+}
+.eu-categoria {
+  display: flex;
+  flex: 0 1 420px;
+  min-width: 0;
+}
 .eu-periodo {
   display: flex;
-  width: 100%;
+  flex: 1 1 240px;
+  max-width: 420px;
 }
 .eu-periodo button {
   flex: 1;
@@ -179,6 +195,22 @@
   font-size: 12.5px;
   color: var(--text-2);
 }
+/* o grupo de unidades misturadas: sem barra e sem soma, só a frase */
+.eu-misto {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--re-1) var(--re-4);
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.eu-misto small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
 .eu-num {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -261,7 +293,8 @@ b.eu-num.eu-zero {
     padding-block: var(--re-5);
   }
   .eu-linha > .eu-barra,
-  .eu-linha > .eu-cobertura {
+  .eu-linha > .eu-cobertura,
+  .eu-linha > .eu-misto {
     grid-column: 1 / -1;
   }
   .eu-linha > .eu-barra {
@@ -346,6 +379,25 @@ b.eu-num.eu-zero {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--re-4);
   padding: var(--re-7) var(--re-7) 0;
+}
+/* com mais de uma unidade, cada gráfico diz a dele */
+.eu-serie {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-4);
+  margin: 0;
+  padding: var(--re-6) var(--re-7) 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.eu-serie small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.eu-serie + .eu-meses {
+  padding-top: var(--re-4);
 }
 .eu-mes {
   display: flex;

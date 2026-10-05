@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { CaretRight, MapPin, X } from '@phosphor-icons/react'
+import { CaretRight, MapPin, Plus, X } from '@phosphor-icons/react'
 import { Botao, Chip, Marcacao, Segmentado, Vazio } from '@ds'
 import {
   CATEGORIAS,
@@ -14,6 +14,7 @@ import {
   situacaoDoMaterial,
   type Categoria,
   type Hierarquia,
+  type GrupoDoEstoque,
   type Material,
 } from '@dominio/estoque'
 import {
@@ -25,6 +26,7 @@ import {
   type Fornecimento,
   type Guardado,
 } from './apoio'
+import { semAcento } from '@shared'
 import { Codigo, NOME_DA_ABA } from './arvore'
 import { temFicha } from './ficha-tecnica'
 import { EtiquetaDoLugar } from './frente'
@@ -45,8 +47,10 @@ import { Bola } from './vao'
    AS FAIXAS NASCEM FECHADAS (pedido dele no mesmo dia). Com busca ou filtro
    ligado, o que sobrou vem aberto, porque aí o que sobrou é a resposta.
 
-   A TABELA É DO QUE HÁ NO ESTOQUE. O tecido do catálogo que ainda não tem cor
-   nenhuma aparece na árvore da Lista, que é onde se cadastra a primeira.
+   OS GRUPOS E OS TECIDOS SÃO OS MESMOS DA LISTA: o catálogo inteiro, com o
+   tecido que ainda não tem cor nenhuma apagado e o atalho "Nova cor". Antes a
+   tabela só mostrava o que havia no estoque, e o Henrique estranhou ver 5
+   grupos aqui e 11 na lista (05/10/2026).
    ========================================================================== */
 
 export type FiltroDaTabela = '' | 'comprar' | 'sem-fornecedor' | 'sem-lugar' | 'sem-ficha'
@@ -97,8 +101,9 @@ type Faixa = {
   /** o código do grupo de tecido; ausente no grupo de aviamento e de insumo */
   cod?: string
   nome: string
-  /** os tecidos do grupo; vazio quando a faixa é de itens */
-  filhas: { chave: string; nome: string; itens: Material[] }[]
+  /** os tecidos do grupo; vazio quando a faixa é de itens. O tecido do
+      catálogo que ainda não tem cor nenhuma vem com `itens` vazio. */
+  filhas: { chave: string; nome: string; itens: Material[]; doEstoque: GrupoDoEstoque }[]
   itens: Material[]
 }
 
@@ -116,6 +121,7 @@ export function TabelaDeMateriais({
   podeEditar,
   aoAbrir,
   aoLote,
+  aoNovaCor,
 }: {
   /** os materiais que combinam com a busca */
   filtrados: Material[]
@@ -133,6 +139,8 @@ export function TabelaDeMateriais({
   /** abre a ficha do material, na Lista */
   aoAbrir: (m: Material) => void
   aoLote: (acao: AcaoDoLote, materiais: Material[]) => void
+  /** abre o cadastro de cor já naquele tecido */
+  aoNovaCor: (g: GrupoDoEstoque) => void
 }) {
   const passa = useMemo(() => {
     const semFornecedor = (m: Material) =>
@@ -171,11 +179,26 @@ export function TabelaDeMateriais({
   const faixas = useMemo<Faixa[]>(() => {
     const grupos = gruposDoEstoque(linhas)
     if (categoria === 'tecido') {
-      return arvoreDeTecidos(grupos, hierarquia).map(g => ({
+      /* OS MESMOS GRUPOS E TECIDOS DA LISTA (pedido do Henrique, 05/10/2026: "no
+         modo tabela os grupos de tecidos e tecidos estão diferentes do lista,
+         isso deveria ser igual"). O catálogo entra inteiro, pela mesma conta da
+         árvore: o tecido sem cor nenhuma aparece apagado, com "sem estoque" e o
+         atalho "Nova cor". Com um filtro ligado só fica o que passa nele, e o
+         tecido vazio não passa em filtro nenhum. */
+      const vazioEntra = filtro
+        ? undefined
+        : (t: { nome: string; grupo: string }, nomeDoGrupo: string) =>
+            termo ? semAcento([t.nome, t.grupo, nomeDoGrupo].join(' ')).includes(termo) : true
+      return arvoreDeTecidos(grupos, hierarquia, vazioEntra).map(g => ({
         chave: 'g:' + g.cod,
         cod: g.cod,
         nome: g.nome,
-        filhas: g.tecidos.map(t => ({ chave: 't:' + t.chave, nome: t.nome, itens: t.cores })),
+        filhas: g.tecidos.map(t => ({
+          chave: 't:' + t.chave,
+          nome: t.nome,
+          itens: t.cores,
+          doEstoque: t.doEstoque,
+        })),
         itens: g.tecidos.flatMap(t => t.cores),
       }))
     }
@@ -185,7 +208,7 @@ export function TabelaDeMateriais({
       filhas: [],
       itens: g.itens,
     }))
-  }, [linhas, categoria, hierarquia])
+  }, [linhas, categoria, hierarquia, filtro, termo])
 
   /* --- abrir e fechar ---------------------------------------------------------
      Sem busca nem filtro, valem as faixas que a pessoa abriu. Com um dos dois,
@@ -230,6 +253,8 @@ export function TabelaDeMateriais({
      sobe para a linha, que abre a faixa (ou marca a cor de novo, e desfaz). */
   const caixa = (itens: Material[], rotulo: string, cabeca = false) => {
     if (!podeEditar) return null
+    /* o grupo e o tecido sem cor nenhuma não têm o que marcar */
+    if (!itens.length && !cabeca) return <td className="es-ck" />
     const n = quantos(itens)
     const marcacao = (
       <Marcacao
@@ -420,6 +445,41 @@ export function TabelaDeMateriais({
     )
   }
 
+  /* O TECIDO DO CATÁLOGO SEM COR NENHUMA: a mesma linha apagada da árvore, com
+     "sem estoque" e, para quem edita, o atalho "Nova cor". Tem as mesmas
+     células das outras linhas, para as colunas não saírem do lugar. */
+  const linhaDoTecidoVazio = (t: Faixa['filhas'][number]) => (
+    <tr key={t.chave} className="es-malha es-vazia" data-sem-estoque={t.nome}>
+      {podeEditar ? <td className="es-ck" /> : null}
+      <td className="es-degrau-1">
+        <span className="es-celula">
+          <span className="es-sem-seta" aria-hidden="true" />
+          <b>{t.nome}</b>
+          <small>sem estoque</small>
+        </span>
+      </td>
+      <td />
+      {guardado.planta ? <td className="es-some-2" /> : null}
+      <td />
+      <td className="es-some-1" />
+      <td className="es-some-1" />
+      <td />
+      <td>
+        {podeEditar ? (
+          <Botao
+            tamanho="sm"
+            className="es-nova-cor"
+            aria-label={'Nova cor de ' + t.nome}
+            onClick={() => aoNovaCor(t.doEstoque)}
+          >
+            <Plus size={14} weight="bold" aria-hidden="true" />
+            Nova cor
+          </Botao>
+        ) : null}
+      </td>
+    </tr>
+  )
+
   return (
     <div className="es-tb-caixa">
       <div className="es-tb-topo" data-tabela-topo="">
@@ -540,13 +600,14 @@ export function TabelaDeMateriais({
                     </>,
                     g.itens,
                     g.filhas.length
-                      ? `${plural(g.filhas.length, 'tecido', 'tecidos')} · ${plural(g.itens.length, 'cor', 'cores')}`
+                      ? `${plural(g.filhas.length, 'tecido', 'tecidos')} · ${g.itens.length ? plural(g.itens.length, 'cor', 'cores') : 'sem estoque'}`
                       : plural(g.itens.length, 'item', 'itens'),
                   )}
                   {!aberta(g.chave)
                     ? null
                     : g.filhas.length
                       ? g.filhas.map(t => {
+                          if (!t.itens.length) return linhaDoTecidoVazio(t)
                           const doTecido =
                             fornecedorDoGrupo({ itens: t.itens }, fornecimento)?.id ?? ''
                           return (

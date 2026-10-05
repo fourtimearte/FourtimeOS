@@ -379,6 +379,24 @@ table.es-tb {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* o tecido do catálogo sem cor nenhuma: apagado, sem seta e sem clique */
+.es-tabela tr.es-vazia td,
+.es-tabela tr.es-vazia:hover td {
+  background: var(--surface);
+  font-weight: 400;
+}
+.es-tb tr.es-vazia .es-celula b {
+  font-weight: 500;
+  color: var(--text-2);
+}
+.es-sem-seta {
+  flex: none;
+  width: 14px;
+}
+.es-nova-cor {
+  gap: var(--re-3);
+  white-space: nowrap;
+}
 .es-falta {
   color: var(--warn);
 }
@@ -677,6 +695,24 @@ table.es-tb {
   grid-template-columns: 96px 176px minmax(0, 1fr);
   gap: var(--sp-3);
 }
+/* com o depósito desenhado o "onde fica" sai daqui e vira uma linha própria */
+.es-novo-tres.es-novo-dois {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+/* o lugar no depósito, no cadastro: as etiquetas do que foi apontado e o botão */
+.es-onde {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.es-onde .btn {
+  gap: var(--re-3);
+}
+.es-onde-vazio {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
 .es-ja-tem {
   opacity: 0.45;
 }
@@ -739,6 +775,54 @@ table.es-tb {
 }
 
 /* --- editar o grupo ---------------------------------------------------------- */
+/* --- o mínimo recomendado pela saída, debaixo do campo do mínimo ------------- */
+.es-recomendado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--re-5);
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.es-recomendado b {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.es-recomendado small {
+  flex: 1 0 100%;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+/* no editor do grupo ele é um botão miúdo debaixo de cada campo */
+.es-recomendado-miudo {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.es-recomendado-miudo:hover {
+  color: var(--text);
+}
+.es-recomendado-miudo:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+.es-recomendado-miudo:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .es-editar {
   display: flex;
   flex-direction: column;

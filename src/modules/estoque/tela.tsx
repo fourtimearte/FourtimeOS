@@ -192,6 +192,12 @@ export function TelaEstoque() {
   useEffect(() => {
     if (aba === 'uso') void lerUso()
   }, [aba, lerUso])
+  /* quem abre a ficha ou o editor do grupo vê o mínimo recomendado, que sai
+     da mesma conta: lê de novo a cada abertura, para o número ser o de hoje */
+  const editorAberto = !!ficha || !!editando
+  useEffect(() => {
+    if (editorAberto) void lerUso()
+  }, [editorAberto, lerUso])
 
   const recarregar = useCallback(async () => {
     try {
@@ -630,10 +636,8 @@ export function TelaEstoque() {
                   setMarcados(null)
                 }}
                 placeholder={
-                  abaAVista === 'materiais'
+                  abaAVista === 'materiais' || abaAVista === 'uso'
                     ? 'Buscar material, cor ou fornecedor'
-                    : abaAVista === 'uso'
-                      ? 'Buscar tecido, cor ou fornecedor'
                       : abaAVista === 'razao'
                       ? 'Buscar material, pedido ou pessoa'
                       : 'Onde está? Buscar tecido, cor ou item'
@@ -711,6 +715,8 @@ export function TelaEstoque() {
             termo={termo}
             usos={usos}
             hierarquia={hierarquia}
+            categoria={categoria}
+            aoTrocarCategoria={setCategoria}
             periodo={periodo}
             aoTrocarPeriodo={setPeriodo}
             comPeriodo={estreita}
@@ -766,6 +772,7 @@ export function TelaEstoque() {
               escolher(chaveDoMaterial(m.id))
               setVista('lista')
             }}
+            aoNovaCor={abrirNovo}
             aoLote={(acao, lista) => {
               if (acao === 'lugar') setMarcando({ m: lista[0], tambem: lista.slice(1) })
               else
@@ -861,10 +868,11 @@ export function TelaEstoque() {
         inicio={novo}
         materiais={materiais}
         fornecimento={fornecimento}
+        guardado={guardado}
         aoFechar={() => setNovo(null)}
         aoCriar={async (id, categoriaNova, tecidoId) => {
           setNovo(null)
-          await recarregar()
+          await Promise.all([recarregar(), lerDeposito()])
           setCategoria(categoriaNova)
           /* o tecido novo abre a ficha do tecido; o item novo, a dele */
           escolher(
@@ -881,6 +889,7 @@ export function TelaEstoque() {
         materiais={ficha?.materiais ?? null}
         titulo={ficha?.titulo}
         so={ficha?.so}
+        usos={usos}
         fornecimento={fornecimento}
         doCatalogo={catalogoDaFicha}
         irmas={irmasDaFicha}
@@ -893,6 +902,7 @@ export function TelaEstoque() {
       />
       <EditarGrupo
         grupo={editando}
+        usos={usos}
         fornecimento={fornecimento}
         aoFechar={() => setEditando(null)}
         aoSalvar={async () => {

@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { CaretDown, CaretRight } from '@phosphor-icons/react'
 import { Vazio } from '@ds'
@@ -25,7 +25,11 @@ import { Bola } from './vao'
    em cima de uma linha só é um título explicando o óbvio.
 
    CLICAR NUMA LINHA DE MATERIAL ABRE O MOVIMENTO, que é o que se faz com um
-   material numa tabela. Clicar numa faixa recolhe o que está embaixo dela.
+   material numa tabela. Clicar numa faixa abre ou recolhe o que está embaixo.
+
+   AS FAIXAS NASCEM FECHADAS (pedido do Henrique, 05/10/2026): a tabela abre
+   com as três categorias, e quem abre é a pessoa. Com busca ou filtro ligado
+   tudo o que sobrou vem aberto, porque aí o que sobrou é a resposta.
    ========================================================================== */
 
 const COR_DA_SITUACAO = { comprar: 'var(--brand)', perto: 'var(--warn)', 'em-dia': '' } as const
@@ -63,17 +67,24 @@ export function TabelaDeMateriais({
   grupos,
   fornecimento,
   haMateriais,
+  filtrando,
   aoAbrir,
 }: {
   grupos: GrupoDoEstoque[]
   fornecimento: Fornecimento
   /** existe material no estoque, mesmo que o filtro não mostre nenhum */
   haMateriais: boolean
+  /** há busca ou filtro ligado: aí as faixas vêm abertas */
+  filtrando: boolean
   aoAbrir: (m: Material) => void
 }) {
-  const [fechados, setFechados] = useState<Set<string>>(new Set())
+  /* o que a pessoa virou: sem filtro são as faixas que ela abriu, com filtro
+     são as que ela fechou. Trocar de um para o outro começa do zero. */
+  const [viradas, setViradas] = useState<Set<string>>(new Set())
+  useEffect(() => setViradas(new Set()), [filtrando])
+  const estaAberta = (chave: string) => viradas.has(chave) !== filtrando
   const virar = (chave: string) =>
-    setFechados((antes) => {
+    setViradas((antes) => {
       const novo = new Set(antes)
       if (novo.has(chave)) novo.delete(chave)
       else novo.add(chave)
@@ -137,10 +148,15 @@ export function TabelaDeMateriais({
             const itens = daCategoria.reduce((s, g) => s + g.itens.length, 0)
             const comprar = daCategoria.reduce((s, g) => s + g.paraComprar, 0)
             const chave = 'cat:' + categoria
-            const fechada = fechados.has(chave)
+            const fechada = !estaAberta(chave)
             return (
               <Fragment key={categoria}>
-                <tr className="grupo es-recolhe" onClick={() => virar(chave)}>
+                <tr
+                  className="grupo es-recolhe"
+                  data-faixa={NOME_DA_CATEGORIA[categoria]}
+                  aria-expanded={!fechada}
+                  onClick={() => virar(chave)}
+                >
                   <td colSpan={4}>
                     <span className="es-grupo-nome">
                       {fechada ? <CaretRight size={14} /> : <CaretDown size={14} />}
@@ -163,7 +179,7 @@ export function TabelaDeMateriais({
                         const m = g.itens[0]
                         return linhaDoMaterial(m, false, fornecedorDoMaterial(m, fornecimento)?.nome ?? '')
                       }
-                      const aberta = !fechados.has(g.chave)
+                      const aberta = estaAberta(g.chave)
                       return (
                         <Fragment key={g.chave}>
                           <tr className="es-malha es-recolhe" onClick={() => virar(g.chave)}>

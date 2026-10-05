@@ -126,7 +126,7 @@
 .em-quatro.com-ficha > .em-largo {
   grid-row: 1 / span 2;
 }
-.em-quatro > .em-estante,
+.em-quatro > .em-trilho,
 .em-quatro > .em-largo {
   grid-column: 2 / -1;
   min-width: 0;
@@ -141,7 +141,7 @@
   .em-quatro > .em-arvore {
     grid-row: 1 / span 3;
   }
-  .em-quatro > .em-estante {
+  .em-quatro > .em-trilho {
     grid-column: 1 / -1;
   }
   /* com a ficha aberta são só duas peças lado a lado: sem fileira declarada,
@@ -672,28 +672,7 @@ button.em-lin:hover {
   background: var(--brand-no-ink);
 }
 
-/* --- para separação: o pedido aberto ------------------------------------------- */
-.em-ped {
-  display: flex;
-  flex-direction: column;
-  border-bottom: 1px solid var(--border);
-}
-.em-ped:last-child {
-  border-bottom: 0;
-}
-.em-ped > .em-lin {
-  border-bottom: 0;
-}
-.em-ped.aberto > .em-lin {
-  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
-}
-.em-ped-dentro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-  padding: var(--re-4) var(--re-7) var(--re-6);
-  background: color-mix(in srgb, var(--surface-2) 70%, var(--surface));
-}
+/* --- para separação e as linhas de material das fichas -------------------------- */
 .em-mat {
   display: flex;
   align-items: center;
@@ -712,117 +691,159 @@ button.em-lin:hover {
 .em-mat .em-txt small.em-cor {
   font-size: 12.5px;
 }
-.em-ped-botoes {
-  display: flex;
-  gap: var(--re-4);
-  padding-top: var(--re-2);
-}
-.em-ped-botoes .btn {
-  flex: 1;
-  gap: var(--re-3);
-}
-
-/* --- a prateleira de tecidos, por grupo ------------------------------------------ */
-.em-estante .em-g > b {
-  flex: none;
-  width: 104px;
-}
-.em-minis {
-  flex: 0 1 auto;
-  display: flex;
-  align-items: flex-end;
-  gap: var(--re-1);
-  min-width: 0;
-  overflow: hidden;
-  margin-left: var(--re-6);
-}
-.em-tabuas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--sp-5) var(--sp-8);
-  padding: var(--re-6) var(--re-9) var(--re-8);
+/* --- o trilho do que está acabando --------------------------------------------------
+   Uma fileira só, que anda de lado dentro da caixa. Cada parada é um vão com o
+   número da ordem, o livre, o nome e o quanto falta. A tábua é o risco preto
+   embaixo dos vãos, contínuo de ponta a ponta, que é o que faz a fileira
+   parecer um trilho e não uma grade de cartões. */
+.em-trilho-corpo {
+  position: relative;
   min-width: 0;
 }
-.em-tabua {
-  flex: 0 1 auto;
-  min-width: 104px;
-  max-width: 100%;
+.em-trilho-faixa {
   display: flex;
-  flex-direction: column;
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
+  align-items: flex-start;
+  min-width: 0;
+  padding: var(--re-8) var(--re-7) var(--re-7);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--re-7);
+  scrollbar-width: none;
 }
-.em-tabua-nome {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 48px;
-  padding-bottom: var(--re-4);
-  /* o nome não alarga a tábua: quem dá a largura são os vãos */
-  width: 0;
-  min-width: 100%;
+.em-trilho-faixa::-webkit-scrollbar {
+  display: none;
 }
-.em-tabua-nome b {
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
+.em-trilho-faixa:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
 }
-.em-tabua-nome small {
-  font-size: 12px;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.em-tabua-nome small.em-falta {
-  color: var(--warn);
-}
-.em-tabua:hover .em-tabua-nome b {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-/* as cores quebram de linha dentro do tecido; a tábua é o risco preto embaixo
-   de cada vão, e os riscos se encostam para formar uma tábua só */
-.em-tabua-vaos {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: var(--re-6);
-}
-.em-vao-col {
+.em-parada {
+  position: relative;
   flex: none;
+  width: 92px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--re-3);
+  gap: var(--re-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: start;
 }
-.em-vao-pe {
-  display: block;
-  padding: 0 var(--re-2);
-  border-bottom: 3px solid var(--ink);
+/* o número da ordem, em cima do vão: 1 é o mais urgente */
+.em-parada-n {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
-.em-vao-pe .es-vao {
-  width: 46px;
+.em-parada.comprar .em-parada-n {
+  color: var(--brand-text);
+}
+.em-parada .es-vao {
+  width: 52px;
   height: 116px;
 }
-.em-vao-col b {
-  font-size: 11.5px;
+/* o resto do trilho: o risco continua até a borda da caixa depois da última
+   parada, para a fileira ler como um trilho e não como seis colunas soltas.
+   A altura de cima é a do número mais a do vão. */
+.em-trilho-resto {
+  flex: 1 0 var(--re-7);
+  align-self: flex-start;
+  height: 3px;
+  margin-top: calc(11px + var(--re-2) + 116px + var(--re-2) + var(--re-2));
+  background: var(--ink);
+}
+/* a tábua: o risco embaixo do vão tem a largura inteira da parada, e os riscos
+   vizinhos se encostam num trilho só */
+.em-parada-q {
+  width: 100%;
+  margin-top: var(--re-2);
+  padding: var(--re-3) var(--re-2) 0;
+  border-top: 3px solid var(--ink);
+  font-size: 12.5px;
   font-weight: 600;
-  text-align: center;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.em-vao-col b.pouco {
+.em-parada-q.pouco {
   color: var(--brand-text);
 }
+.em-parada-nome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  width: 100%;
+  padding-inline: var(--re-2);
+  min-height: 44px;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.em-parada-nome small {
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.em-parada-nome span {
+  font-weight: 600;
+}
+.em-parada-falta {
+  font-size: 11.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.em-parada.comprar .em-parada-falta {
+  color: var(--brand-text);
+}
+.em-parada:hover .em-parada-nome span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.em-parada:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* as setas das pontas: só existem quando há trilho escondido daquele lado */
+.em-trilho-seta {
+  position: absolute;
+  top: 78px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.em-trilho-seta:hover {
+  background-color: var(--surface-2);
+}
+.em-trilho-seta.antes {
+  left: var(--re-4);
+}
+.em-trilho-seta.depois {
+  right: var(--re-4);
+}
 /* o tecido sobe dentro do vão quando a gaveta abre */
-.em-tabua-vaos .es-vao-tecido,
+.em-parada .es-vao-tecido,
 .em-grade-cores .es-vao-tecido,
 .em-heroi .es-vao-tecido {
   animation: em-enche var(--t-slow) var(--ease-out) both;
@@ -1162,15 +1183,5 @@ button.em-lin:hover {
   }
   .em-lin {
     padding-inline: var(--re-8);
-  }
-  .em-estante .em-conta {
-    display: none;
-  }
-  .em-estante .em-alerta {
-    margin-left: auto;
-  }
-  .em-estante .em-g > b {
-    width: auto;
-    max-width: 104px;
   }
 }

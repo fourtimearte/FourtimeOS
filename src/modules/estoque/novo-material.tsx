@@ -1,5 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Aviso, Botao, Campo, Chip, Entrada, Esqueleto, Modal, Segmentado, Seletor, avisar } from '@ds'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus } from '@phosphor-icons/react'
+import {
+  Aviso,
+  Botao,
+  Campo,
+  Chip,
+  Entrada,
+  Esqueleto,
+  Modal,
+  Segmentado,
+  Seletor,
+  avisar,
+} from '@ds'
 import {
   CATEGORIAS,
   NOME_DA_CATEGORIA,
@@ -11,6 +23,7 @@ import {
   type Material,
 } from '@dominio/estoque'
 import { criarFornecedor, ligarMaterialAoFornecedor } from '@dominio/fornecedor'
+import { NovoFornecedorAoLado } from '@dominio/fornecedor/ao-lado'
 import { EscolherFornecedor } from '@dominio/fornecedor/escolher'
 import { lerNumero } from '@dominio/ferramentas'
 import { idsDosFornecedores, type Fornecimento } from './apoio'
@@ -31,6 +44,14 @@ import { Bola } from './vao'
 
    AVIAMENTO E INSUMO TÊM GRUPO, que é o que junta "Linha 120 branca" e
    "Linha 120 preta" numa linha só da lista.
+
+   O FORNECEDOR QUE AINDA NÃO EXISTE NASCE AQUI DO LADO (pedido do Henrique,
+   05/10/2026). "Novo fornecedor" abre uma coluna na mesma tela, com o CNPJ, o
+   nome e o contato; salvo, a coluna fecha e o cadastro continua com ele já
+   escolhido. Nada do que a pessoa escreveu da cor se perde no caminho.
+
+   O MÍNIMO É O NÍVEL DO AVISO: quando o livre cai abaixo dele, o material
+   entra em Para comprar e no trilho do que está acabando.
    ========================================================================== */
 
 export type InicioDoNovo = { categoria: Categoria; tecidoId?: string; grupo?: string }
@@ -66,6 +87,10 @@ export function NovoMaterial({
   const [fornecedorId, setFornecedorId] = useState('')
   const [gravando, setGravando] = useState(false)
   const [falha, setFalha] = useState('')
+  /* a coluna do fornecedor novo, aberta ao lado do cadastro */
+  const [aoLado, setAoLado] = useState(false)
+  /* o fornecedor que a pessoa escolheu ou criou não é trocado pelo palpite */
+  const naMao = useRef(false)
 
   const [malhas, setMalhas] = useState<MalhaDoCatalogo[] | null>(null)
   const [cores, setCores] = useState<CorDoCatalogo[]>([])
@@ -83,6 +108,8 @@ export function NovoMaterial({
     setMinimo('')
     setOndeFica('')
     setFalha('')
+    setAoLado(false)
+    naMao.current = false
   }, [inicio])
 
   /* o catálogo só é pedido quando alguém abre o modal em tecido */
@@ -91,7 +118,7 @@ export function NovoMaterial({
     if (!precisaDoCatalogo) return
     let vivo = true
     carregarCatalogoDeTecido()
-      .then((c) => {
+      .then(c => {
         if (!vivo) return
         setMalhas(c.malhas)
         setCores(c.cores)
@@ -99,7 +126,9 @@ export function NovoMaterial({
       .catch((e: unknown) => {
         if (!vivo) return
         setMalhas([])
-        setFalhaDoCatalogo(e instanceof Error ? e.message : 'Não consegui ler o catálogo de tecidos.')
+        setFalhaDoCatalogo(
+          e instanceof Error ? e.message : 'Não consegui ler o catálogo de tecidos.',
+        )
       })
     return () => {
       vivo = false
@@ -108,36 +137,38 @@ export function NovoMaterial({
 
   const ehTecido = categoria === 'tecido'
   const jaNoEstoque = useMemo(
-    () => new Set(materiais.filter((m) => m.tecidoId === malhaId).map((m) => m.corId)),
+    () => new Set(materiais.filter(m => m.tecidoId === malhaId).map(m => m.corId)),
     [materiais, malhaId],
   )
   const grupos = useMemo(
     () =>
-      [...new Set(materiais.filter((m) => m.categoria === categoria && m.grupo).map((m) => m.grupo))].sort((a, b) =>
-        a.localeCompare(b, 'pt-BR'),
-      ),
+      [
+        ...new Set(materiais.filter(m => m.categoria === categoria && m.grupo).map(m => m.grupo)),
+      ].sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [materiais, categoria],
   )
 
   /* quem já entrega a mesma malha, ou o mesmo grupo, é o palpite do fornecedor */
   const vizinhos = useMemo(
     () =>
-      materiais.filter((m) =>
-        ehTecido ? !!malhaId && m.tecidoId === malhaId : !!grupo && m.categoria === categoria && m.grupo === grupo,
+      materiais.filter(m =>
+        ehTecido
+          ? !!malhaId && m.tecidoId === malhaId
+          : !!grupo && m.categoria === categoria && m.grupo === grupo,
       ),
     [materiais, ehTecido, malhaId, grupo, categoria],
   )
   const jaFornecem = useMemo(
-    () => [...new Set(vizinhos.flatMap((m) => idsDosFornecedores(fornecimento.ligacoes, m.id)))],
+    () => [...new Set(vizinhos.flatMap(m => idsDosFornecedores(fornecimento.ligacoes, m.id)))],
     [vizinhos, fornecimento.ligacoes],
   )
   const palpite = jaFornecem[0] ?? ''
   useEffect(() => {
-    setFornecedorId(palpite)
+    if (!naMao.current) setFornecedorId(palpite)
   }, [palpite, inicio])
 
-  const malha = malhas?.find((m) => m.id === malhaId)
-  const cor = cores.find((c) => c.id === corId)
+  const malha = malhas?.find(m => m.id === malhaId)
+  const cor = cores.find(c => c.id === corId)
   const min = lerNumero(minimo)
   const minimoValido = min === null || (!Number.isNaN(min) && min >= 0)
   const nomeFinal = ehTecido ? (malha && cor ? `${malha.nome} · ${cor.nome}` : '') : nome.trim()
@@ -173,194 +204,247 @@ export function NovoMaterial({
     <Modal
       aberto={!!inicio}
       aoFechar={aoFechar}
+      largo={aoLado}
       titulo="Novo material"
       pe={
         <>
           <Botao onClick={aoFechar}>Cancelar</Botao>
-          <Botao tom="primario" onClick={criar} disabled={!pronto || gravando} carregando={gravando}>
+          <Botao
+            tom="primario"
+            onClick={criar}
+            disabled={!pronto || gravando}
+            carregando={gravando}
+          >
             {gravando ? 'Criando' : 'Criar material'}
           </Botao>
         </>
       }
     >
-      <div className="es-novo">
-        <p className="es-ajuda">Ele entra com saldo zero. O saldo só muda por movimento.</p>
+      <div className={aoLado ? 'es-novo-lados aberto' : 'es-novo-lados'}>
+        <div className="es-novo">
+          <p className="es-ajuda">Ele entra com saldo zero. O saldo só muda por movimento.</p>
 
-        <Campo rotulo="Categoria">
-          <Segmentado
-            className="es-largo"
-            valor={categoria}
-            aoMudar={(c) => {
-              setCategoria(c)
-              setUnidade(c === 'tecido' ? 'kg' : 'un')
-              setGrupo('')
-              setGrupoNovo(false)
-            }}
-            opcoes={CATEGORIAS.map((c) => ({ valor: c, rotulo: NOME_DA_CATEGORIA[c] }))}
-          />
-        </Campo>
+          <Campo rotulo="Categoria">
+            <Segmentado
+              className="es-largo"
+              valor={categoria}
+              aoMudar={c => {
+                setCategoria(c)
+                setUnidade(c === 'tecido' ? 'kg' : 'un')
+                setGrupo('')
+                setGrupoNovo(false)
+              }}
+              opcoes={CATEGORIAS.map(c => ({ valor: c, rotulo: NOME_DA_CATEGORIA[c] }))}
+            />
+          </Campo>
 
-        {ehTecido ? (
-          malhas === null ? (
-            <div className="pilha">
-              <Esqueleto altura={40} />
-              <Esqueleto altura={40} />
-            </div>
-          ) : falhaDoCatalogo ? (
-            <Aviso tom="brand" titulo="Não consegui ler o catálogo de tecidos">
-              {falhaDoCatalogo}
-            </Aviso>
+          {ehTecido ? (
+            malhas === null ? (
+              <div className="pilha">
+                <Esqueleto altura={40} />
+                <Esqueleto altura={40} />
+              </div>
+            ) : falhaDoCatalogo ? (
+              <Aviso tom="brand" titulo="Não consegui ler o catálogo de tecidos">
+                {falhaDoCatalogo}
+              </Aviso>
+            ) : (
+              <>
+                <div className="campo">
+                  <span className="es-campo-topo">
+                    Malha <small>vem do catálogo de tecidos, e é ela que agrupa as cores</small>
+                  </span>
+                  <Seletor
+                    campo
+                    bloco
+                    comBusca
+                    valor={malhaId}
+                    opcoes={malhas.map(m => ({ valor: m.id, rotulo: m.nome }))}
+                    aoEscolher={v => {
+                      setMalhaId(v)
+                      setCorId('')
+                    }}
+                    vazio="Escolha a malha"
+                  />
+                </div>
+                <div className="campo">
+                  <span className="es-campo-topo">
+                    Cor{' '}
+                    {malhaId && jaNoEstoque.size ? (
+                      <small>as apagadas já estão no estoque</small>
+                    ) : null}
+                  </span>
+                  <div className="es-novo-chips">
+                    {cores.map(c => {
+                      const ja = jaNoEstoque.has(c.id)
+                      return (
+                        <Chip
+                          key={c.id}
+                          ligado={corId === c.id}
+                          disabled={ja}
+                          className={ja ? 'es-ja-tem' : ''}
+                          onClick={() => setCorId(c.id)}
+                        >
+                          <Bola cor={c.hex} pequena />
+                          {c.nome}
+                        </Chip>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )
           ) : (
             <>
               <div className="campo">
                 <span className="es-campo-topo">
-                  Malha <small>vem do catálogo de tecidos, e é ela que agrupa as cores</small>
+                  Grupo <small>é o que junta os parecidos numa linha só da lista</small>
                 </span>
+                <div className="es-novo-chips">
+                  {grupos.map(g => (
+                    <Chip
+                      key={g}
+                      ligado={!grupoNovo && grupo === g}
+                      onClick={() => {
+                        setGrupo(g)
+                        setGrupoNovo(false)
+                      }}
+                    >
+                      {g}
+                    </Chip>
+                  ))}
+                  <Chip
+                    ligado={grupoNovo}
+                    onClick={() => {
+                      setGrupoNovo(true)
+                      setGrupo('')
+                    }}
+                  >
+                    Novo grupo
+                  </Chip>
+                </div>
+                {grupoNovo ? (
+                  <Entrada
+                    value={grupo}
+                    onChange={e => setGrupo(e.currentTarget.value)}
+                    placeholder="Linha, Botão, DTF, Embalagem"
+                    aria-label="Nome do grupo novo"
+                  />
+                ) : null}
+              </div>
+              <Campo rotulo="Nome do material">
+                <Entrada
+                  value={nome}
+                  onChange={e => setNome(e.currentTarget.value)}
+                  placeholder={
+                    categoria === 'aviamento' ? 'Linha poliéster 120 branca' : 'Filme DTF 60 cm'
+                  }
+                />
+              </Campo>
+            </>
+          )}
+
+          <div className="es-novo-tres">
+            {ehTecido ? (
+              <Campo rotulo="Unidade">
+                <Entrada value="kg" readOnly aria-label="Unidade, fixa em quilo para tecido" />
+              </Campo>
+            ) : (
+              <Campo rotulo="Unidade">
                 <Seletor
                   campo
                   bloco
-                  comBusca
-                  valor={malhaId}
-                  opcoes={malhas.map((m) => ({ valor: m.id, rotulo: m.nome }))}
-                  aoEscolher={(v) => {
-                    setMalhaId(v)
-                    setCorId('')
-                  }}
-                  vazio="Escolha a malha"
+                  valor={unidade}
+                  opcoes={UNIDADES.map(u => ({ valor: u, rotulo: u }))}
+                  aoEscolher={v => v && setUnidade(v)}
+                  vazio="Escolha"
                 />
-              </div>
-              <div className="campo">
-                <span className="es-campo-topo">
-                  Cor {malhaId && jaNoEstoque.size ? <small>as apagadas já estão no estoque</small> : null}
-                </span>
-                <div className="es-novo-chips">
-                  {cores.map((c) => {
-                    const ja = jaNoEstoque.has(c.id)
-                    return (
-                      <Chip
-                        key={c.id}
-                        ligado={corId === c.id}
-                        disabled={ja}
-                        className={ja ? 'es-ja-tem' : ''}
-                        onClick={() => setCorId(c.id)}
-                      >
-                        <Bola cor={c.hex} pequena />
-                        {c.nome}
-                      </Chip>
-                    )
-                  })}
-                </div>
-              </div>
-            </>
-          )
-        ) : (
-          <>
+              </Campo>
+            )}
+            <Campo
+              rotulo={'Mínimo no estoque, em ' + (ehTecido ? 'kg' : unidade)}
+              erro={!minimoValido}
+            >
+              <Entrada
+                inputMode="decimal"
+                value={minimo}
+                onChange={e => setMinimo(e.currentTarget.value)}
+                placeholder="0"
+              />
+            </Campo>
+            <Campo rotulo="Onde fica na fábrica">
+              <Entrada
+                value={ondeFica}
+                onChange={e => setOndeFica(e.currentTarget.value)}
+                placeholder="Prateleira, armário ou caixa"
+              />
+            </Campo>
+          </div>
+
+          <p className="es-ajuda">
+            O mínimo é quanto tem de ficar no estoque. Quando o livre cai abaixo dele, o material
+            aparece em Para comprar e no trilho do que está acabando.
+          </p>
+
+          {fornecimento.disponivel ? (
             <div className="campo">
               <span className="es-campo-topo">
-                Grupo <small>é o que junta os parecidos numa linha só da lista</small>
+                Fornecedor{' '}
+                {fornecedorId && fornecedorId === palpite ? (
+                  <small>sugerido porque já fornece {ehTecido ? 'esta malha' : 'este grupo'}</small>
+                ) : null}
               </span>
-              <div className="es-novo-chips">
-                {grupos.map((g) => (
-                  <Chip
-                    key={g}
-                    ligado={!grupoNovo && grupo === g}
-                    onClick={() => {
-                      setGrupo(g)
-                      setGrupoNovo(false)
-                    }}
-                  >
-                    {g}
-                  </Chip>
-                ))}
-                <Chip
-                  ligado={grupoNovo}
-                  onClick={() => {
-                    setGrupoNovo(true)
-                    setGrupo('')
+              <div className="es-fornecedor-e-novo">
+                <EscolherFornecedor
+                  valor={fornecedorId}
+                  aoEscolher={id => {
+                    naMao.current = true
+                    setFornecedorId(id)
                   }}
-                >
-                  Novo grupo
-                </Chip>
-              </div>
-              {grupoNovo ? (
-                <Entrada
-                  value={grupo}
-                  onChange={(e) => setGrupo(e.currentTarget.value)}
-                  placeholder="Linha, Botão, DTF, Embalagem"
-                  aria-label="Nome do grupo novo"
+                  fornecedores={fornecimento.fornecedores}
+                  jaFornecem={jaFornecem}
+                  tipo={categoria}
+                  nomeDoTipo={NOME_DA_CATEGORIA[categoria]}
+                  oQue={ehTecido ? 'esta malha' : 'este grupo'}
+                  aoCriar={async n => {
+                    const id = await criarFornecedor({
+                      nome: n,
+                      entrouPor: 'estoque',
+                      tipos: [categoria],
+                    })
+                    await aoCriarFornecedor()
+                    return id
+                  }}
                 />
-              ) : null}
+                <Botao
+                  className="es-novo-fornecedor"
+                  aria-expanded={aoLado}
+                  disabled={aoLado}
+                  onClick={() => setAoLado(true)}
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  Novo fornecedor
+                </Botao>
+              </div>
             </div>
-            <Campo rotulo="Nome do material">
-              <Entrada
-                value={nome}
-                onChange={(e) => setNome(e.currentTarget.value)}
-                placeholder={categoria === 'aviamento' ? 'Linha poliéster 120 branca' : 'Filme DTF 60 cm'}
-              />
-            </Campo>
-          </>
-        )}
+          ) : null}
 
-        <div className="es-novo-tres">
-          {ehTecido ? (
-            <Campo rotulo="Unidade">
-              <Entrada value="kg" readOnly aria-label="Unidade, fixa em quilo para tecido" />
-            </Campo>
-          ) : (
-            <Campo rotulo="Unidade">
-              <Seletor
-                campo
-                bloco
-                valor={unidade}
-                opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
-                aoEscolher={(v) => v && setUnidade(v)}
-                vazio="Escolha"
-              />
-            </Campo>
-          )}
-          <Campo rotulo={'Mínimo, em ' + (ehTecido ? 'kg' : unidade)} erro={!minimoValido}>
-            <Entrada
-              inputMode="decimal"
-              value={minimo}
-              onChange={(e) => setMinimo(e.currentTarget.value)}
-              placeholder="0"
-            />
-          </Campo>
-          <Campo rotulo="Onde fica na fábrica">
-            <Entrada
-              value={ondeFica}
-              onChange={(e) => setOndeFica(e.currentTarget.value)}
-              placeholder="Prateleira, armário ou caixa"
-            />
-          </Campo>
+          {falha ? <Aviso tom="brand">{falha}</Aviso> : null}
         </div>
-
-        {fornecimento.disponivel ? (
-          <div className="campo">
-            <span className="es-campo-topo">
-              Fornecedor{' '}
-              {fornecedorId && fornecedorId === palpite ? (
-                <small>sugerido porque já fornece {ehTecido ? 'esta malha' : 'este grupo'}</small>
-              ) : null}
-            </span>
-            <EscolherFornecedor
-              valor={fornecedorId}
-              aoEscolher={setFornecedorId}
-              fornecedores={fornecimento.fornecedores}
-              jaFornecem={jaFornecem}
-              tipo={categoria}
-              nomeDoTipo={NOME_DA_CATEGORIA[categoria]}
-              oQue={ehTecido ? 'esta malha' : 'este grupo'}
-              aoCriar={async (n) => {
-                const id = await criarFornecedor({ nome: n, entrouPor: 'estoque', tipos: [categoria] })
-                await aoCriarFornecedor()
-                return id
-              }}
-            />
-          </div>
+        {aoLado ? (
+          <NovoFornecedorAoLado
+            tipo={categoria}
+            nomeDoTipo={NOME_DA_CATEGORIA[categoria]}
+            aoFechar={() => setAoLado(false)}
+            aoCriar={async (id, nomeDele) => {
+              await aoCriarFornecedor()
+              naMao.current = true
+              setFornecedorId(id)
+              setAoLado(false)
+              avisar(`${nomeDele} entrou em Fornecedores e já está escolhido aqui.`, 'ok')
+            }}
+          />
         ) : null}
-
-        {falha ? <Aviso tom="brand">{falha}</Aviso> : null}
       </div>
     </Modal>
   )

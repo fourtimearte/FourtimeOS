@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Botao,
   Entrada,
@@ -47,6 +48,12 @@ import './separacao.css'
    dia em que faltasse meio quilo de malha: o pedido ficaria preso aqui e
    ninguém decidiria nada. Quem decide se o pedido desce assim é o PCP, e para
    decidir ele precisa que o pedido chegue lá com a falta escrita.
+
+   A PÁGINA ABRE NUM PEDIDO quando o endereço traz `?pedido=<id>`: é por aí
+   que o Estoque chega aqui, da coluna Para separação e da coluna "Por quê"
+   das movimentações (05/10/2026). Pedido que está na fila vem escolhido. O
+   que já saiu da fila (a separação dele foi concluída) não some: aparece em
+   cima, só para ler, com o que saiu da prateleira para ele.
    ========================================================================== */
 
 function dataCurta(iso: string): string {
@@ -55,7 +62,17 @@ function dataCurta(iso: string): string {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
+/* o id vai para dentro de um endereço de consulta: só passa o que tem cara de uuid */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** o pedido que o endereço pediu e que não está mais na fila */
+type Passado = { id: string; linhas: ReservaDoPedido[] | null; erro: string }
+
 export function TelaSeparacao() {
+  const [parametros, setParametros] = useSearchParams()
+  const pedido = parametros.get('pedido') ?? ''
+  const pedidoPedido = UUID.test(pedido) ? pedido : ''
+  const [passado, setPassado] = useState<Passado | null>(null)
   const [fila, setFila] = useState<PedidoNaSeparacao[]>([])
   const [escolhido, setEscolhido] = useState<PedidoNaSeparacao | null>(null)
   const [linhas, setLinhas] = useState<ReservaDoPedido[]>([])
@@ -134,6 +151,41 @@ export function TelaSeparacao() {
   useEffect(() => {
     void abrir(escolhido)
   }, [escolhido, abrir])
+
+  /* O PEDIDO QUE O ENDEREÇO PEDIU. Na fila, ele vira o escolhido. Fora dela, a
+     página lê o que foi reservado e baixado para ele e mostra em cima. */
+  useEffect(() => {
+    if (carregando || erro) return
+    if (!pedidoPedido) {
+      setPassado(null)
+      return
+    }
+    const naFila = fila.find((p) => p.id === pedidoPedido)
+    if (naFila) {
+      setPassado(null)
+      setEscolhido(naFila)
+      return
+    }
+    let vivo = true
+    setPassado({ id: pedidoPedido, linhas: null, erro: '' })
+    carregarReservasDoPedido(pedidoPedido)
+      .then((linhas) => {
+        if (vivo) setPassado({ id: pedidoPedido, linhas, erro: '' })
+      })
+      .catch((e: unknown) => {
+        if (vivo)
+          setPassado({
+            id: pedidoPedido,
+            linhas: [],
+            erro: e instanceof Error ? e.message : 'Não consegui ler o material deste pedido.',
+          })
+      })
+    return () => {
+      vivo = false
+    }
+    // a fila muda a cada separação; o que importa aqui é o pedido do endereço
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedidoPedido, carregando, erro])
 
   const conta = useMemo(
     () => ({
@@ -305,6 +357,42 @@ export function TelaSeparacao() {
 
   const separados = linhas.filter((l) => l.baixada).length
 
+  const colunasDoPassado: Coluna<ReservaDoPedido>[] = [
+    {
+      chave: 'material',
+      titulo: 'Material',
+      celula: (l) => (
+        <span className="pilha colada">
+          <b className="sp-nome">{l.material}</b>
+          <small className="sp-apoio sp-nome">{l.categoria}</small>
+        </span>
+      ),
+    },
+    {
+      chave: 'precisava',
+      titulo: 'Precisava',
+      numero: true,
+      celula: (l) =>
+        l.semConsumo ? (
+          <span className="sp-apoio">sem consumo</span>
+        ) : (
+          numeroNaUnidade(l.quantidade, l.unidade)
+        ),
+    },
+    {
+      chave: 'saiu',
+      titulo: 'Saiu',
+      numero: true,
+      celula: (l) =>
+        l.baixada ? (
+          <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b>
+        ) : (
+          <span className="sp-pouco">não saiu</span>
+        ),
+    },
+  ]
+  const numeroDoPassado = passado?.linhas?.[0]?.pedido ?? ''
+
   return (
     <Pagina
       acima="Produção · materiais"
@@ -333,6 +421,42 @@ export function TelaSeparacao() {
           aviso={conta.semConsumo > 0}
         />
       </div>
+
+      {passado ? (
+        <section className="cartao sp-passado" data-passado="">
+          <header className="sp-topo">
+            <div className="pilha colada">
+              <b>
+                {numeroDoPassado
+                  ? `O pedido ${numeroDoPassado} não está mais na fila da Separação`
+                  : 'Este pedido não está na fila da Separação'}
+              </b>
+              <small className="sp-apoio">
+                {passado.linhas === null
+                  ? 'Lendo o material dele.'
+                  : passado.erro
+                    ? passado.erro
+                    : passado.linhas.length
+                      ? 'A separação dele foi concluída e o pedido seguiu para o PCP. Abaixo, o que saiu da prateleira para ele.'
+                      : 'Não há material reservado para ele: ou o pedido seguiu sem reserva, ou ainda não foi aprovado.'}
+              </small>
+            </div>
+            <Botao onClick={() => setParametros({}, { replace: true })}>Fechar</Botao>
+          </header>
+          {passado.linhas === null ? (
+            <div className="sp-espera">
+              <Esqueleto altura={18} />
+              <Esqueleto altura={18} />
+            </div>
+          ) : passado.linhas.length ? (
+            <Tabela
+              colunas={colunasDoPassado}
+              linhas={passado.linhas}
+              chaveDaLinha={(l) => l.id}
+            />
+          ) : null}
+        </section>
+      ) : null}
 
       {erro ? (
         <Vazio titulo="Não consegui ler a fila" texto={erro} />

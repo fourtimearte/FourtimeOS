@@ -10,8 +10,8 @@
         da primeira coluna, a busca sobre a segunda e a terceira, Lista e
         Tabela sobre a quarta
      2. as quatro colunas, as três baixas com 368 de altura, rolando sem barra
-        à vista e terminando no "Ver mais", e a prateleira de tecidos debaixo
-        das três
+        à vista e terminando no "Ver mais", e o trilho do que está acabando
+        debaixo das três
      3. a sanfona: grupo, tecido e cor; abrir não é escolher; as três abas;
         a busca que troca de aba sozinha; o fornecedor da cor só quando é outro
      4. para separação, para comprar e últimos movimentos, e para onde cada
@@ -59,6 +59,11 @@ const tokens = (pg, nomes) => pg.evaluate((nomes) => {
 const texto = async (pg, seletor) => (await pg.locator(seletor).first().innerText()).replace(/\s+/g, ' ').trim()
 const id = (nome) => D.materiais.find((m) => m.nome === nome).id
 const DRY = '[data-tecido="DRYFIT POLIESTER 100%"]'
+/* nada vem aberto (05/10/2026): quem precisa de um grupo aberto, abre */
+const abrirGrupo = async (pg, nome = 'DRY FIT') => {
+  const g = pg.locator(`[data-arvore] .em-g[data-grupo="${nome}"]`)
+  if (await g.getAttribute('aria-expanded') !== 'true') { await g.click(); await pausa(pg, 250) }
+}
 const cor = (nome) => `.em-c[data-material="${nome}"]`
 
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }).catch(() => chromium.launch())
@@ -79,7 +84,7 @@ for (const tema of ['light', 'dark']) {
     const sep = await caixa(pg, '[data-coluna="separacao"]')
     const comp = await caixa(pg, '[data-coluna="comprar"]')
     const mov = await caixa(pg, '[data-coluna="movimentos"]')
-    const est = await caixa(pg, '[data-estante]')
+    const est = await caixa(pg, '[data-trilho]')
     const abas = await caixa(pg, '[data-barra] > .em-seg')
     const busca = await caixa(pg, '[data-barra] > .em-busca')
     const vista = await caixa(pg, '[data-barra] .em-barra-fim')
@@ -95,7 +100,7 @@ for (const tema of ['light', 'dark']) {
     conta(igual(sep.x - arvore.dir, 16) && igual(comp.x - sep.dir, 16) && igual(mov.x - comp.dir, 16), `${T}: 16 entre as colunas (${[sep.x - arvore.dir, comp.x - sep.dir, mov.x - comp.dir].map((n) => Math.round(n * 10) / 10).join(', ')})`)
     conta(igual(sep.w, comp.w) && igual(comp.w, mov.w) && igual(arvore.w, sep.w * 1.5, 1), `${T}: três colunas iguais, e a primeira uma vez e meia mais larga (${Math.round(arvore.w)} e ${Math.round(sep.w)})`)
     conta([sep, comp, mov].every((c) => igual(c.h, 368)), `${T}: as três colunas da direita são baixas, 368 de altura (${[sep, comp, mov].map((c) => Math.round(c.h)).join(', ')})`)
-    conta(igual(est.x, sep.x) && igual(est.dir, mov.dir) && igual(est.y - sep.baixo, 16), `${T}: a prateleira de tecidos fica debaixo das três, na largura das três, a 16 delas`)
+    conta(igual(est.x, sep.x) && igual(est.dir, mov.dir) && igual(est.y - sep.baixo, 16), `${T}: o trilho do que está acabando fica debaixo das três, na largura das três, a 16 delas`)
 
     /* rolam sem barra à vista, e terminam no Ver mais */
     const rolagens = await pg.locator('.em-curta .em-rolagem').evaluateAll((l) => l.map((e) => ({
@@ -119,11 +124,13 @@ for (const tema of ['light', 'dark']) {
     const abas = await texto(pg, '.em-abas')
     conta(/Tecido 10/.test(abas) && /Aviamentos 7/.test(abas) && /Insumo 9/.test(abas), `${T} sanfona: três abas com a conta de cada uma (${abas})`)
     const grupos = await pg.locator('[data-arvore] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
-    conta(grupos.join(' | ') === 'ALGODÃO | DRY FIT* | PIQUE | MOLETOM | SUPLEX | VISCOSE | Sem tipo', `${T} sanfona: os grupos na ordem do catálogo, com os dois que não têm estoque, o Sem tipo por último, e o que tem mais para comprar já aberto (${grupos.join(' | ')})`)
+    conta(grupos.join(' | ') === 'ALGODÃO | DRY FIT | PIQUE | MOLETOM | SUPLEX | VISCOSE | Sem tipo', `${T} sanfona: os grupos na ordem do catálogo, com os dois que não têm estoque e o Sem tipo por último, e NENHUM aberto ao entrar (${grupos.join(' | ')})`)
+    conta(await pg.locator('[data-arvore] .em-t').count() === 0 && await pg.locator('[data-arvore] .em-c').count() === 0 && await pg.locator('[data-arvore] [aria-expanded="true"]').count() === 0, `${T} sanfona: ao abrir a página, nenhum tecido e nenhuma cor à vista`)
     const alg = await texto(pg, '[data-arvore] .em-g[data-grupo="ALGODÃO"]')
     conta(/ALG/.test(alg) && /2 tecidos · 2 cores/.test(alg), `${T} sanfona: o grupo diz o código, quantos tecidos e quantas cores (${alg})`)
     const st = await texto(pg, '[data-arvore] .em-g[data-grupo="Sem tipo"]')
     conta(/S\/T/.test(st), `${T} sanfona: tecido sem grupo no catálogo cai no Sem tipo, com S/T no lugar do código`)
+    await abrirGrupo(pg)
     const dry = await texto(pg, DRY)
     conta(/Malharia Exemplo Ltda · 1 cor de outro/.test(dry) && /81 kg/.test(dry) && /4 cores/.test(dry), `${T} sanfona: o tecido diz o fornecedor, que uma cor vem de outro, o livre e as cores (${dry})`)
 
@@ -144,8 +151,8 @@ for (const tema of ['light', 'dark']) {
 
     /* as outras abas */
     await pg.locator('.em-abas').getByRole('tab', { name: /Aviamentos/ }).click(); await pausa(pg)
-    const av = await pg.locator('[data-arvore] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo))
-    conta(av.join(' | ') === 'Botão | Elástico e cadarço | Etiqueta | Gola | Linha', `${T} sanfona: Aviamentos tem os grupos do cadastro (${av.join(' | ')})`)
+    const av = await pg.locator('[data-arvore] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
+    conta(av.join(' | ') === 'Botão | Elástico e cadarço | Etiqueta | Gola | Linha', `${T} sanfona: Aviamentos tem os grupos do cadastro, todos fechados (${av.join(' | ')})`)
     await pg.locator('[data-arvore] .em-g[data-grupo="Gola"]').click(); await pausa(pg)
     const gola = await texto(pg, cor('Gola retilínea piquet marinho'))
     conta(/Malharia Exemplo Ltda/.test(gola) && /40 un/.test(gola) && /A2/.test(gola), `${T} sanfona: o item diz o fornecedor, o lugar e o livre (${gola})`)
@@ -166,26 +173,19 @@ for (const tema of ['light', 'dark']) {
 
   await caso(`${T} colunas`, async () => {
     const sep = pg.locator('[data-coluna="separacao"]')
-    conta(/7 pedidos/.test(await texto(pg, '[data-coluna="separacao"] .em-topo')) && await sep.locator('.em-ped').count() === 7, `${T} separação: os 7 pedidos que esperam material`)
+    conta(/7 pedidos/.test(await texto(pg, '[data-coluna="separacao"] .em-topo')) && await sep.locator('[data-pedido]').count() === 7, `${T} separação: os 7 pedidos que esperam material`)
     const primeiro = await texto(pg, '[data-pedido="PD-0412"]')
-    conta(/Atlético Exemplo/.test(primeiro) && /329 pçs · entrega/.test(primeiro) && /0 de 3/.test(primeiro) && /falta tecido/.test(primeiro), `${T} separação: o primeiro vem aberto, com cliente, peças, entrega e "0 de 3 · falta tecido"`)
-    const mats = await sep.locator('[data-pedido="PD-0412"] .em-mat').allInnerTexts()
-    conta(mats.length === 3 && /precisa 23,6 kg · tem 9 kg/.test(mats[0]) && /D2/.test(mats[0]), `${T} separação: cada material diz quanto precisa, quanto tem e onde está (${mats[0]?.replace(/\s+/g, ' ')})`)
-    const vermelho = await sep.locator('[data-pedido="PD-0412"] .em-mat small.pouco').count()
-    conta(vermelho === 1, `${T} separação: só o material que a prateleira não cobre fica vermelho (${vermelho})`)
-    await sep.locator('[data-pedido="PD-0415"] > .em-lin').click(); await pausa(pg, 500)
-    const outro = await texto(pg, '[data-pedido="PD-0415"]')
-    conta(/separado 4 kg/.test(outro) && await sep.locator('[data-pedido="PD-0412"] .em-mat').count() === 0, `${T} separação: abrir outro pedido fecha o primeiro e mostra o que já foi separado`)
-    await sep.locator('[data-pedido="PD-0412"] > .em-lin').click(); await pausa(pg, 400)
-
-    /* ver no mapa */
-    await sep.locator('[data-pedido="PD-0412"]').getByRole('button', { name: 'Ver no mapa' }).click(); await pausa(pg, 600)
-    const pe = await texto(pg, '[data-mapa] .dp-pe')
-    conta(await pg.locator('.dp-marcador').count() === 4 && /Os marcadores mostram onde está o pedido PD-0412/.test(pe), `${T} separação: "Ver no mapa" abre o depósito com um marcador em cada lugar dos materiais do pedido (${await pg.locator('.dp-marcador').count()})`)
-    await foto('ver-no-mapa')
-    await pg.getByRole('button', { name: 'Tirar os marcadores' }).click(); await pausa(pg, 300)
-    conta(await pg.locator('.dp-marcador').count() === 0, `${T} separação: "Tirar os marcadores" limpa o mapa`)
-    await pg.locator('[data-barra]').getByRole('tab', { name: 'Materiais' }).click(); await pausa(pg, 400)
+    conta(/Atlético Exemplo/.test(primeiro) && /329 pçs · entrega/.test(primeiro) && /0 de 3/.test(primeiro) && /falta tecido/.test(primeiro), `${T} separação: a linha diz o cliente, as peças, a entrega e "0 de 3 · falta tecido" (${primeiro})`)
+    conta(await sep.locator('[aria-expanded]').count() === 0 && await sep.locator('.em-mat').count() === 0 && await sep.getByRole('button', { name: 'Ver no mapa' }).count() === 0, `${T} separação: nenhuma linha abre para baixo, e não há material nem botão dentro da coluna`)
+    const linhaAlta = await sep.locator('[data-pedido]').evaluateAll((l) => l.map((e) => ({ h: Math.round(e.getBoundingClientRect().height), tag: e.tagName })))
+    conta(linhaAlta.every((x) => x.h >= 56 && x.tag === 'BUTTON'), `${T} separação: cada pedido é um botão da largura da coluna, com pelo menos 56 de altura (${[...new Set(linhaAlta.map((x) => x.h))].join(', ')})`)
+    await sep.locator('[data-pedido="PD-0418"]').click(); await pg.waitForSelector('.sp-kpis'); await pausa(pg, 700)
+    conta(new URL(pg.url()).pathname === '/separacao' && new URL(pg.url()).searchParams.get('pedido') === D.idDoPedido('PD-0418'), `${T} separação: o clique leva à página Separação com o pedido no endereço (${pg.url().split('/').pop()})`)
+    const escolhido = await texto(pg, '.sp-item.escolhido')
+    const quadro = await texto(pg, '.sp-quadro .sp-topo')
+    conta(/PD-0418/.test(escolhido) && /PD-0418 · Escola Exemplo/.test(quadro) && await pg.locator('[data-passado]').count() === 0, `${T} separação: a Separação abre naquele pedido, e não no primeiro da fila (${escolhido.slice(0, 40)})`)
+    await foto('separacao-no-pedido', false)
+    await ir(pg, '/estoque', '[data-arvore]')
 
     /* para comprar */
     const linhas = await pg.locator('[data-coluna="comprar"] .em-lin').evaluateAll((l) => l.map((e) => e.dataset.material))
@@ -203,23 +203,56 @@ for (const tema of ['light', 'dark']) {
     await pg.locator('[data-coluna="movimentos"] .em-pe').click(); await pausa(pg, 400)
     conta(/ligado/.test(await pg.locator('[data-barra] > .em-seg button', { hasText: 'Movimentações' }).getAttribute('class')) && await pg.locator('table.tabela tbody tr:not(.grupo)').count() === 17, `${T} movimentos: "Ver mais" leva à aba Movimentações, com os 17`)
     await foto('movimentacoes')
-    await pg.locator('[data-barra]').getByRole('tab', { name: 'Materiais' }).click(); await pausa(pg, 400)
+    /* a coluna "Por quê", e o pedido que abre a Separação */
+    const cab = (await pg.locator('table.es-tabela thead th').allInnerTexts()).join(' | ')
+    conta(cab === 'Hora | Motivo | Material | Quanto | Por quê | Fornecedor | Quem', `${T} movimentos: a tabela tem a coluna "Por quê" no lugar de Pedido e Observação (${cab})`)
+    const porques = await pg.locator('table.es-tabela [data-porque]').evaluateAll((l) => l.map((e) => e.innerText.replace(/\s+/g, ' ').trim()))
+    conta(porques[0] === 'pedido PD-0412' && porques.includes('NF 4512') && porques.some((x) => /^pedido PD-0398 sobra do corte$/.test(x)), `${T} movimentos: o "Por quê" diz o pedido, a nota ou o que a pessoa escreveu (${porques.slice(0, 6).join(' ; ')})`)
+    conta(porques.every((x) => x !== ''), `${T} movimentos: nenhuma linha fica sem o porquê (${porques.filter((x) => x === '').length} vazias)`)
+    const botao = await pg.locator('table.es-tabela .es-pedido').first().evaluate((e) => ({ tag: e.tagName, alto: e.getBoundingClientRect().height, linha: e.closest('tr').getBoundingClientRect().height }))
+    conta(botao.tag === 'BUTTON' && botao.alto >= 28 && botao.linha <= 50, `${T} movimentos: o pedido é um botão, e a linha continua com uma altura só (botão ${Math.round(botao.alto)}, linha ${Math.round(botao.linha)})`)
+    /* o PD-0410 já saiu da fila: a Separação mostra o registro dele */
+    await pg.locator('table.es-tabela .es-pedido', { hasText: 'PD-0410' }).click(); await pg.waitForSelector('[data-passado]'); await pausa(pg, 600)
+    const passado = await texto(pg, '[data-passado]')
+    conta(new URL(pg.url()).searchParams.get('pedido') === D.idDoPedido('PD-0410') && /O pedido PD-0410 não está mais na fila da Separação/.test(passado) && /PIQUET 100% · Branco/.test(passado) && /9,0 kg/.test(passado), `${T} movimentos: o pedido que já saiu da fila abre a Separação com o registro do que saiu para ele (${passado.slice(0, 110)})`)
+    conta(await pg.locator('.sp-item').count() === 7 && await pg.locator('[data-passado] input').count() === 0, `${T} movimentos: o registro é só para ler, e a fila continua embaixo`)
+    await foto('separacao-pedido-passado', false)
+    await pg.locator('[data-passado]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+    conta(await pg.locator('[data-passado]').count() === 0 && !pg.url().includes('pedido='), `${T} movimentos: Fechar tira o registro e limpa o endereço`)
+    /* o que está na fila abre escolhido */
+    await ir(pg, '/estoque?aba=razao', 'table.es-tabela')
+    await pg.locator('table.es-tabela .es-pedido', { hasText: 'PD-0412' }).first().click(); await pg.waitForSelector('.sp-item.escolhido'); await pausa(pg, 500)
+    conta(/PD-0412/.test(await texto(pg, '.sp-item.escolhido')) && await pg.locator('[data-passado]').count() === 0, `${T} movimentos: o pedido que ainda está na fila abre escolhido nela`)
+    await ir(pg, '/estoque', '[data-arvore]')
   })
 
-  await caso(`${T} prateleira`, async () => {
-    const abertos = await pg.locator('[data-estante] .em-g').evaluateAll((l) => l.filter((e) => e.getAttribute('aria-expanded') === 'true').map((e) => e.dataset.grupo))
-    conta(abertos.join(' | ') === 'DRY FIT | PIQUE', `${T} prateleira: abre nos dois grupos que têm o que comprar (${abertos.join(' | ')})`)
-    conta(await pg.locator('[data-estante] .em-g[data-grupo="ALGODÃO"] .em-minis .es-vao.mini').count() === 2, `${T} prateleira: grupo fechado mostra um vão miúdo por cor`)
-    const vaos = await pg.locator('[data-tabua="DRYFIT POLIESTER 100%"] .es-vao').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }))
-    conta(vaos.length === 4 && vaos.every(([w, h]) => w === 46 && h === 116), `${T} prateleira: grupo aberto mostra um vão alto por cor, 46 por 116 (${vaos.length})`)
-    const branco = await pg.locator('[data-tabua="DRYFIT POLIESTER 100%"] .es-vao').first().evaluate((e) => getComputedStyle(e, '::after').borderTopWidth)
-    conta(branco === '1px', `${T} prateleira: o vão tem contorno, para o tecido branco não sumir no cartão`)
-    const nums = await pg.locator('[data-tabua="DRYFIT POLIESTER 100%"] .em-vao-col b').evaluateAll((l) => l.map((e) => e.textContent + (e.className.includes('pouco') ? '!' : '')))
-    conta(nums.join(' ') === '42 kg 3 kg! 24 kg 12 kg', `${T} prateleira: o livre embaixo de cada vão, vermelho no que falta (${nums.join(' ')})`)
-    await pg.locator('[data-estante] .em-g[data-grupo="PIQUE"]').click(); await pausa(pg, 300)
-    conta(await pg.locator('[data-tabua="PIQUET 100%"]').count() === 0, `${T} prateleira: o grupo fecha e abre no clique`)
-    await pg.locator('[data-tabua="DRYFIT POLIESTER 100%"]').click(); await pausa(pg, 500)
-    conta(await pg.locator('[data-ficha="tecido"]').count() === 1, `${T} prateleira: o clique num tecido abre a ficha dele`)
+  await caso(`${T} trilho`, async () => {
+    const K = await tokens(pg, ['--ink', '--brand-text'])
+    conta(await pg.locator('[data-estante]').count() === 0 && await pg.locator('[data-trilho] [aria-expanded]').count() === 0, `${T} trilho: a prateleira em sanfona saiu, e o trilho não tem gaveta nenhuma`)
+    const topo = await texto(pg, '[data-trilho] .em-topo')
+    conta(/O que está acabando 4 abaixo do mínimo · 2 perto dele · o mais urgente primeiro/.test(topo), `${T} trilho: o topo diz quantos caíram abaixo do mínimo e quantos estão perto (${topo})`)
+    const paradas = await pg.locator('[data-trilho] .em-parada').evaluateAll((l) => l.map((e) => ({ nome: e.dataset.parada, comprar: e.classList.contains('comprar'), n: e.querySelector('.em-parada-n').textContent, texto: e.innerText.replace(/\s+/g, ' ').trim(), x: e.getBoundingClientRect().left, y: e.getBoundingClientRect().top })))
+    conta(paradas.map((x) => x.nome).join(' | ') === 'DRYFIT POLIESTER 100% · Preto | PIQUET 100% · Branco | Tinta sublimática magenta | Gola retilínea piquet marinho | DRYFIT POLIESTER 100% · Vermelho Fourtime | Tinta DTF branca', `${T} trilho: tecidos e materiais juntos, o que falta mais em proporção ao mínimo primeiro, e depois os que estão perto (${paradas.map((x) => x.nome).join(' | ')})`)
+    conta(paradas.map((x) => x.n).join('') === '123456' && paradas.slice(0, 4).every((x) => x.comprar) && paradas.slice(4).every((x) => !x.comprar), `${T} trilho: cada parada tem o número da ordem, e só as 4 abaixo do mínimo ficam em vermelho`)
+    conta(paradas.every((x, i) => i === 0 || (x.x > paradas[i - 1].x && igual(x.y, paradas[0].y))), `${T} trilho: uma fileira só, da esquerda para a direita`)
+    conta(/^1 3 kg DRYFIT POLIESTER 100% Preto faltam 17 kg$/.test(paradas[0].texto) && /^5 12 kg DRYFIT POLIESTER 100% Vermelho Fourtime mínimo 10 kg$/.test(paradas[4].texto), `${T} trilho: a parada diz o livre, o tecido, a cor e quanto falta; a que está perto diz o mínimo (${paradas[0].texto} ; ${paradas[4].texto})`)
+    const vaos = await pg.locator('[data-trilho] .em-parada .es-vao').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), getComputedStyle(e, '::after').borderTopWidth].join('x') }))
+    conta(vaos.length === 6 && vaos.every((v) => v === '52x116x1px'), `${T} trilho: um vão de 52 por 116 em cada parada, com o contorno para o tecido branco não sumir (${[...new Set(vaos)].join(', ')})`)
+    const risco = await pg.locator('[data-trilho]').evaluate((c) => {
+      const qs = [...c.querySelectorAll('.em-parada-q')].map((e) => e.getBoundingClientRect())
+      const resto = c.querySelector('.em-trilho-resto').getBoundingClientRect()
+      const faixa = c.querySelector('.em-trilho-faixa').getBoundingClientRect()
+      return { emenda: qs.every((q, i) => i === 0 || Math.abs(q.left - qs[i - 1].right) < 0.6), nivel: Math.abs(resto.top - qs[0].top) < 0.6, grosso: [getComputedStyle(c.querySelector('.em-parada-q')).borderTopWidth, resto.height], ate: Math.round(faixa.right - resto.right), cor: getComputedStyle(c.querySelector('.em-parada-q')).borderTopColor }
+    })
+    conta(risco.emenda && risco.nivel && risco.grosso[0] === '3px' && risco.grosso[1] === 3 && risco.ate <= 14 && risco.cor === K['--ink'], `${T} trilho: o risco de 3 px passa por baixo de todos os vãos sem emenda e continua até a borda da caixa (sobram ${risco.ate} px, ${risco.grosso.join(' e ')})`)
+    conta(await pg.locator('[data-trilho] .em-trilho-seta').count() === 0 && (await sobra(pg)) <= 0, `${T} trilho: com 6 paradas não há seta nas pontas, e a página não rola para o lado`)
+    await pg.locator('[data-trilho] .em-parada').nth(1).click(); await pausa(pg, 500)
+    conta(/PIQUE › PIQUET 100% › cor/.test(await texto(pg, '[data-ficha] .em-trilha')) && await pg.locator(cor('PIQUET 100% · Branco') + '.em-sel').count() === 1, `${T} trilho: o clique numa parada abre a ficha daquela cor, e a árvore abre até ela`)
+    await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
+    await pg.locator('[data-arvore] .em-g[data-grupo="PIQUE"]').click(); await pausa(pg, 200)
+    await abrirGrupo(pg)
+    await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 500)
+    conta(await pg.locator('[data-ficha="tecido"]').count() === 1, `${T} trilho: de volta à árvore, o nome do tecido abre a ficha dele`)
   })
 
   await caso(`${T} ficha do tecido`, async () => {
@@ -247,7 +280,11 @@ for (const tema of ['light', 'dark']) {
 
     await pg.locator('[data-ficha]').getByRole('button', { name: 'Ver no depósito' }).click(); await pausa(pg, 600)
     conta(await pg.locator('.dp-marcador').count() === 2 && /onde está DRYFIT POLIESTER 100%/.test(await texto(pg, '[data-mapa] .dp-pe')), `${T} tecido: "Ver no depósito" marca os lugares do tecido no mapa`)
+    await foto('ver-no-mapa')
+    await pg.getByRole('button', { name: 'Tirar os marcadores' }).click(); await pausa(pg, 300)
+    conta(await pg.locator('.dp-marcador').count() === 0, `${T} tecido: "Tirar os marcadores" limpa o mapa`)
     await pg.locator('[data-barra]').getByRole('tab', { name: 'Materiais' }).click(); await pausa(pg, 400)
+    await abrirGrupo(pg)
     await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 400)
     await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 400)
     conta(await pg.locator('[data-ficha]').count() === 0 && await pg.locator('[data-coluna]').count() === 3 && await pg.locator('[data-arvore] .em-c').count() === 4, `${T} tecido: Fechar volta para as colunas e deixa a gaveta aberta`)
@@ -294,7 +331,6 @@ for (const tema of ['light', 'dark']) {
     conta(await pg.locator('[data-ficha]').count() === 0 && await pg.locator('[data-coluna]').count() === 3, `${T} cor: clicar de novo na cor escolhida solta e volta para as colunas`)
 
     /* escolher pela coluna Para comprar revela na árvore */
-    await pg.locator('[data-arvore] .em-g[data-grupo="DRY FIT"]').click(); await pausa(pg, 200)
     await pg.locator('[data-coluna="comprar"] .em-lin[data-material="Tinta sublimática magenta"]').click(); await pausa(pg, 500)
     const aba = await texto(pg, '.em-abas button.ligado')
     conta(/Insumo/.test(aba) && await pg.locator(cor('Tinta sublimática magenta') + '.em-sel').count() === 1 && /Insumo › Sublimação › item/.test(await texto(pg, '[data-ficha] .em-trilha')), `${T} cor: escolher pela coluna Para comprar troca a aba, abre o grupo e marca o item na árvore`)
@@ -322,14 +358,53 @@ for (const tema of ['light', 'dark']) {
     conta(mov && mov.corpo.p_material === id('DRYFIT POLIESTER 100% · Preto') && mov.corpo.p_quantidade === 40 && mov.corpo.p_motivo === 'entrada', `${T} folha: a entrada grava 40 kg na cor escolhida (${mov ? JSON.stringify(mov.corpo) : 'nada gravado'})`)
     if (await pg.locator('dialog[open]').count()) { await pg.keyboard.press('Escape'); await pausa(pg) }
 
-    await pg.getByRole('button', { name: 'Novo material', exact: true }).first().click(); await pausa(pg, 600)
+    /* O MATERIAL NOVO, COM O FORNECEDOR CRIADO AO LADO */
+    gravados.length = 0
+    await pg.getByRole('button', { name: 'Novo material', exact: true }).first().click(); await pausa(pg, 700)
     const novo = await caixa(pg, 'dialog[open] .caixa')
     conta(igual(novo.w, 560), `${T} novo material: o modal de 560 abre (${Math.round(novo.w)})`)
+    const campos = await texto(pg, 'dialog[open] .es-novo-tres')
+    conta(/Unidade/.test(campos) && /Mínimo no estoque, em kg/.test(campos) && /quando o livre cai abaixo dele/i.test(await texto(pg, 'dialog[open] .es-novo')), `${T} novo material: o cadastro do tecido tem o campo do mínimo no estoque, e diz para que ele serve (${campos})`)
+    await pg.keyboard.press('Escape'); await pausa(pg, 300)
+    /* pela "Nova cor" de um tecido do catálogo, que já abre na malha */
+    await pg.locator('.em-abas').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 200)
+    await abrirGrupo(pg)
+    await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
+    await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+    await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').fill('25'); await pausa(pg, 150)
+    await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).click(); await pausa(pg, 500)
+    const largo = await caixa(pg, 'dialog[open] .caixa')
+    const lados = await pg.locator('dialog[open] .es-novo-lados').evaluate((e) => [...e.children].map((c) => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)] }))
+    conta(igual(largo.w, 980) && lados.length === 2 && lados[1][0] > lados[0][1] && await pg.locator('dialog[open]').count() === 1, `${T} novo material: "Novo fornecedor" abre uma coluna ao lado, na mesma caixa, que alarga para 980 (${Math.round(largo.w)}; colunas ${JSON.stringify(lados)})`)
+    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25' && await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).isDisabled(), `${T} novo material: a cor e o mínimo que a pessoa já tinha escolhido continuam lá, com a coluna aberta`)
+    const lado = pg.locator('dialog[open] [data-novo-fornecedor]')
+    conta(/Entra como fornecedor de tecido/.test(await lado.innerText()) && await lado.getByRole('button', { name: 'Salvar fornecedor' }).isDisabled(), `${T} novo material: a coluna diz que ele entra como fornecedor de tecido, e não salva sem nome e sem CNPJ`)
+    await foto('novo-fornecedor-ao-lado', false)
+    await lado.getByRole('button', { name: /Ele não tem CNPJ/ }).click(); await pausa(pg, 150)
+    await lado.getByPlaceholder('Como a fábrica chama este fornecedor').fill('Malharia de Prova'); await pausa(pg, 150)
+    await lado.getByPlaceholder('Nome de quem atende e o número').fill('Vendas'); await pausa(pg, 150)
+    await lado.getByRole('button', { name: 'Salvar fornecedor' }).click(); await pausa(pg, 900)
+    const criado = gravados.find((g) => /^fornecedor\?/.test(String(g.u)))
+    conta(criado && criado.corpo.nome === 'Malharia de Prova' && criado.corpo.entrou_por === 'estoque' && criado.corpo.cnpj === null && gravados.some((g) => String(g.u).startsWith('fornecedor_tipo') && JSON.stringify(g.corpo).includes('"tipo":"tecido"')), `${T} novo material: o fornecedor vai para o banco como "entrou pelo estoque", do tipo tecido (${criado ? JSON.stringify(criado.corpo).slice(0, 110) : 'nada gravado'})`)
+    const depois = await caixa(pg, 'dialog[open] .caixa')
+    conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 0 && igual(depois.w, 560) && /Malharia de Prova/.test(await texto(pg, 'dialog[open] .fn-gatilho')), `${T} novo material: salvo, a coluna fecha, a caixa volta a 560 e o fornecedor novo já está escolhido (${await texto(pg, 'dialog[open] .fn-gatilho')})`)
+    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25', `${T} novo material: o cadastro da cor continua de onde parou`)
     await pg.keyboard.press('Escape'); await pausa(pg)
 
+    /* A TABELA NASCE FECHADA */
     await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
-    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 26 && await pg.locator('.es-chips .chip').count() === 5 && (await sobra(pg)) <= 0, `${T} tabela: os 26 materiais e os chips de filtro, que só aparecem na tabela`)
+    const faixas = await pg.locator('table.tabela tr[data-faixa]').evaluateAll((l) => l.map((e) => e.dataset.faixa + (e.getAttribute('aria-expanded') === 'true' ? '*' : '')))
+    conta(faixas.join(' | ') === 'Tecido | Aviamento | Insumo' && await pg.locator('table.tabela tbody tr.es-folha').count() === 0 && await pg.locator('table.tabela tr.es-malha').count() === 0, `${T} tabela: abre com as três faixas fechadas, sem malha nem material à vista (${faixas.join(' | ')})`)
+    conta(await pg.locator('.es-chips .chip').count() === 5 && (await sobra(pg)) <= 0, `${T} tabela: os chips de filtro só aparecem na tabela`)
     await foto('tabela')
+    await pg.locator('table.tabela tr[data-faixa="Tecido"]').click(); await pausa(pg, 300)
+    conta(await pg.locator('table.tabela tr.es-malha').count() === 2 && await pg.locator('table.tabela tbody tr.es-folha').count() === 4, `${T} tabela: abrir Tecido mostra as malhas ainda fechadas (e as de uma cor só, que são uma linha) (${await pg.locator('table.tabela tr.es-malha').count()} malhas, ${await pg.locator('table.tabela tbody tr.es-folha').count()} linhas)`)
+    await pg.locator('table.tabela tr.es-malha').first().click(); await pausa(pg, 300)
+    conta(await pg.locator('table.tabela tbody tr.es-folha').count() > 4, `${T} tabela: abrir a malha mostra as cores dela`)
+    await pg.fill('[data-barra] .em-busca input', 'dryfit'); await pausa(pg, 500)
+    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 4 && await pg.locator('table.tabela tr[data-faixa][aria-expanded="true"]').count() === 1, `${T} tabela: com busca, o que sobrou já vem aberto (4 cores do dry fit)`)
+    await pg.fill('[data-barra] .em-busca input', ''); await pausa(pg, 400)
+    conta(await pg.locator('table.tabela tbody tr.es-folha').count() === 0, `${T} tabela: tirada a busca, a tabela volta fechada`)
     await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Lista' }).click(); await pausa(pg, 300)
     conta(await pg.locator('.es-chips').count() === 0 && await pg.locator('[data-coluna]').count() === 3, `${T} tabela: de volta à lista, os chips somem e as colunas voltam`)
   })
@@ -345,6 +420,7 @@ await caso('quem só lê', async () => {
   const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', papel: 'vendedor' })
   await ir(pg, '/estoque', '[data-arvore]')
   conta(await pg.getByRole('button', { name: 'Registrar movimento' }).count() === 0 && await pg.getByRole('button', { name: 'Novo material' }).count() === 0, 'quem só lê: não vê Registrar movimento nem Novo material no topo')
+  await abrirGrupo(pg)
   await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 400)
   const botoes = await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()
   conta(botoes.map((b) => b.trim()).join('|') === 'Fechar' && await pg.locator('[data-ficha] .em-cor-nova').count() === 0, `quem só lê: a ficha do tecido só tem Fechar (${botoes.map((b) => b.trim()).join('|')})`)
@@ -382,6 +458,7 @@ await caso('catálogo inteiro', async () => {
   const dry = await texto(pg, '[data-arvore] .em-g[data-grupo="DRY FIT"]')
   conta(/VIS VISCOSE 2 tecidos · sem estoque/.test(vis) && /DRY DRY FIT 2 tecidos · 4 cores/.test(dry), `${T}: o grupo sem estoque diz "sem estoque", e o que tem conta também o tecido vazio (${vis} | ${dry})`)
   conta(/Tecido 10/.test(await texto(pg, '.em-abas')), `${T}: a conta da aba continua sendo a dos materiais (${(await texto(pg, '.em-abas')).slice(0, 30)})`)
+  await abrirGrupo(pg)
   const doDry = await pg.locator('[data-arvore] .em-gaveta:has(.em-g[data-grupo="DRY FIT"]) .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
   conta(doDry.join(' | ') === 'DRYFIT POLIESTER 100% | DRYFIT JAKAR 100%', `${T}: dentro do grupo vem primeiro o tecido que tem estoque, e depois o vazio, mesmo ele sendo o primeiro do catálogo (${doDry.join(' | ')})`)
   const linha = await pg.locator(SEM('DRYFIT JAKAR 100%')).evaluate((e) => {
@@ -396,10 +473,8 @@ await caso('catálogo inteiro', async () => {
   const doAlg = await pg.locator('[data-arvore] .em-gaveta:has(.em-g[data-grupo="ALGODÃO"]) .em-t').evaluateAll((l) => l.map((e) => e.dataset.tecido))
   conta(doAlg.length === 2 && !doAlg.includes('ALGODAO DESLIGADO') && await pg.getByText('ALGODAO DESLIGADO').count() === 0, `${T}: o tecido desligado no catálogo não aparece no grupo aberto (${doAlg.join(' | ')})`)
 
-  /* a prateleira é só o que há */
-  await pg.locator('[data-estante] .em-g[data-grupo="DRY FIT"][aria-expanded="false"]').click().catch(() => {}); await pausa(pg, 300)
-  const estante = await pg.locator('[data-estante] .em-g').evaluateAll((l) => l.map((e) => e.dataset.grupo))
-  conta(estante.join(' | ') === 'ALGODÃO | DRY FIT | PIQUE | MOLETOM | Sem tipo' && await pg.locator('[data-estante] [data-tabua="DRYFIT JAKAR 100%"]').count() === 0 && await pg.locator('[data-estante] [data-tabua="DRYFIT POLIESTER 100%"]').count() === 1, `${T}: a prateleira continua só com o que tem estoque, sem grupo nem tecido vazio (${estante.join(' | ')})`)
+  /* o trilho é só do que tem estoque: tecido vazio não tem o que acabar */
+  conta(await pg.locator('[data-trilho] .em-parada').count() === 6 && await pg.locator('[data-trilho] [data-parada*="JAKAR"]').count() === 0, `${T}: o tecido sem estoque não entra no trilho do que está acabando`)
 
   /* a ficha do tecido vazio */
   await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 500)
@@ -453,6 +528,7 @@ await caso('catálogo inteiro, quem só lê', async () => {
   const { ctx, pg } = await abrir(nav, { largura: 1440, altura: 900, tema: 'dark', papel: 'vendedor' })
   await ir(pg, '/estoque', '[data-arvore]')
   const T = 'catálogo inteiro, quem só lê'
+  await abrirGrupo(pg)
   conta(await pg.locator(SEM('DRYFIT JAKAR 100%')).count() === 1 && await pg.locator('[data-arvore] .em-t-nova').count() === 0, `${T}: vê o tecido vazio, sem o atalho Nova cor`)
   await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 500)
   const botoes = (await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()).map((b) => b.trim()).join('|')
@@ -487,6 +563,20 @@ for (const [largura, altura] of [[820, 1180], [390, 844]]) {
   })
 }
 
+/* o trilho quando não há o que avisar: diz por quê, e não fica uma caixa vazia */
+for (const [estoque, frase, nome] of [['folgado', /Nada abaixo do mínimo nem perto dele\./, 'tudo acima do mínimo'], ['sem-minimo', /Nenhum material tem a quantidade mínima marcada/, 'nenhum mínimo marcado']]) {
+  await caso(`trilho vazio, ${nome}`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', estoque })
+    await ir(pg, '/estoque', '[data-arvore]')
+    const t = await texto(pg, '[data-trilho]')
+    conta(frase.test(t) && await pg.locator('[data-trilho] .em-parada').count() === 0 && await pg.locator('[data-trilho] .em-trilho-seta').count() === 0, `trilho vazio, ${nome}: a caixa explica em vez de ficar vazia (${t})`)
+    conta(/Para comprar/.test(await texto(pg, '[data-coluna="comprar"]')) && await pg.locator('[data-coluna="comprar"] .em-lin').count() === 0, `trilho vazio, ${nome}: a coluna Para comprar também fica sem linhas`)
+    await pg.screenshot({ path: `${PASTA}/trilho-vazio-${estoque}-1440-light.png`, fullPage: true })
+    conta(erros.length === 0, `trilho vazio, ${nome}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
 /* um tecido de trinta cores e um grupo com seis tecidos: nada estoura */
 for (const [largura, altura] of [[1440, 900], [390, 844]]) {
   await caso(`estoque grande ${largura}`, async () => {
@@ -494,10 +584,20 @@ for (const [largura, altura] of [[1440, 900], [390, 844]]) {
     await ir(pg, '/estoque', '[data-arvore]')
     const T = `estoque grande em ${largura}`
     conta(/Tecido 66/.test(await texto(pg, '.em-abas')), `${T}: 66 tecidos na aba (${(await texto(pg, '.em-abas')).slice(0, 40)})`)
-    const est = await caixa(pg, '[data-estante]')
-    const tabuas = await pg.locator('[data-estante] .em-gaveta:has(.em-g[data-grupo="DRY FIT"]) .em-tabua').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return { dir: r.right, esq: r.left, alto: r.height } }))
-    conta(tabuas.length === 6 && tabuas.every((t) => t.dir <= est.dir + 0.5 && t.esq >= est.x - 0.5), `${T}: os 6 tecidos do grupo cabem na largura da prateleira, quebrando de linha (${tabuas.length})`)
-    conta(tabuas[0].alto > 250, `${T}: as 30 cores do dry fit quebram em mais de uma fileira dentro do tecido (${Math.round(tabuas[0].alto)} de altura)`)
+    /* o trilho com 26 paradas: anda de lado dentro da caixa, e a página não */
+    const faixa = pg.locator('[data-trilho] .em-trilho-faixa')
+    const antes = await faixa.evaluate((e) => ({ n: e.querySelectorAll('.em-parada').length, cabe: e.scrollWidth <= e.clientWidth, x: e.scrollLeft, foco: e.tabIndex, barra: getComputedStyle(e).scrollbarWidth, sobra: e.offsetHeight - e.clientHeight }))
+    conta(antes.n === 26 && !antes.cabe && antes.x === 0 && antes.foco === 0 && antes.barra === 'none' && antes.sobra === 0, `${T}: as 26 paradas não cabem, e o trilho rola por dentro, sem barra à vista e alcançável pelo teclado (${antes.n} paradas)`)
+    conta(await pg.locator('[data-trilho] .em-trilho-seta.depois').count() === 1 && await pg.locator('[data-trilho] .em-trilho-seta.antes').count() === 0, `${T}: no começo só existe a seta de avançar`)
+    await pg.locator('[data-trilho] .em-trilho-seta.depois').click(); await pausa(pg, 700)
+    const andou = await faixa.evaluate((e) => e.scrollLeft)
+    conta(andou > 100 && await pg.locator('[data-trilho] .em-trilho-seta.antes').count() === 1 && await pg.evaluate(() => scrollX) === 0, `${T}: a seta anda o trilho (${Math.round(andou)} px), a de voltar aparece, e a página não sai do lugar`)
+    await faixa.evaluate((e) => { e.scrollLeft = e.scrollWidth }); await pausa(pg, 400)
+    conta(await pg.locator('[data-trilho] .em-trilho-seta.depois').count() === 0, `${T}: no fim do trilho a seta de avançar some`)
+    await faixa.evaluate((e) => { e.scrollLeft = 0 }); await pausa(pg, 300)
+    await abrirGrupo(pg)
+    const doGrupo = await pg.locator('[data-arvore] .em-gaveta:has(.em-g[data-grupo="DRY FIT"]) .em-t').count()
+    conta(doGrupo === 7, `${T}: o grupo aberto mostra os 6 tecidos com estoque e o do catálogo (${doGrupo})`)
     conta((await sobra(pg)) <= 0, `${T}: nada rola para o lado`)
     await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 500)
     const ficha = await caixa(pg, '[data-ficha]')
@@ -529,23 +629,22 @@ for (const [largura, espera] of [[1366, /^16 materiais$/], [1440, /^16 materiais
 }
 
 /* a árvore aberta fica mais comprida que as caixas do lado: a sobra de altura
-   desce para a última fileira, e não abre um buraco entre as caixas baixas e a
-   prateleira. Achado no dia 04/10/2026 com o estoque de verdade (34 cores de
+   desce para a última fileira, e não abre um buraco entre as caixas baixas e o
+   trilho. Achado no dia 04/10/2026 com o estoque de verdade (34 cores de
    dry fit abertas na árvore empurravam a prateleira 160 px para baixo) */
 for (const [largura, altura] of [[1440, 900], [820, 1180]]) {
   await caso(`árvore comprida ${largura}`, async () => {
     const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema: 'light', estoque: 'grande' })
     await ir(pg, '/estoque', '[data-arvore]')
     const T = `árvore comprida em ${largura}`
-    for (let i = await pg.locator('[data-estante] .em-g.aberto').count(); i > 0; i--) { await pg.locator('[data-estante] .em-g.aberto').first().click(); await pausa(pg, 150) }
     if (await pg.locator(DRY).count() === 0) { await pg.locator('[data-arvore] .em-g[data-grupo="DRY FIT"]').click(); await pausa(pg, 250) }
     if (await pg.locator('[data-arvore] .em-c').count() === 0) { await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 350) }
     const arvore = await caixa(pg, '[data-arvore]')
     const baixas = await pg.locator('.em-quatro > .em-curta').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return { y: r.top, baixo: r.bottom } }))
-    const est = await caixa(pg, '[data-estante]')
+    const est = await caixa(pg, '[data-trilho]')
     conta(await pg.locator('[data-arvore] .em-c').count() === 30 && arvore.h > 1300, `${T}: a árvore está aberta nas 30 cores e é a peça mais comprida da página (${Math.round(arvore.h)} de altura)`)
     if (largura >= 1440) {
-      conta(igual(est.y - baixas[0].baixo, 16, 1), `${T}: a prateleira fica 16 px abaixo das três caixas, sem buraco (${Math.round(est.y - baixas[0].baixo)})`)
+      conta(igual(est.y - baixas[0].baixo, 16, 1), `${T}: o trilho fica 16 px abaixo das três caixas, sem buraco (${Math.round(est.y - baixas[0].baixo)})`)
     } else {
       const vaos = [baixas[1].y - baixas[0].baixo, baixas[2].y - baixas[1].baixo]
       conta(vaos.every((v) => igual(v, 16, 1)), `${T}: as três caixas empilhadas ficam a 16 px uma da outra, sem buraco (${vaos.map(Math.round).join(' e ')})`)
@@ -566,10 +665,11 @@ for (const tema of ['light', 'dark']) {
     await ir(pg, '/estoque', '[data-arvore]')
     await pg.screenshot({ path: `${PASTA}/geral-820-${tema}.png`, fullPage: true })
     conta((await sobra(pg)) <= 0, `${T}: nada rola para o lado`)
-    const arvore = await caixa(pg, '[data-arvore]'); const sep = await caixa(pg, '[data-coluna="separacao"]'); const comp = await caixa(pg, '[data-coluna="comprar"]'); const est = await caixa(pg, '[data-estante]')
+    const arvore = await caixa(pg, '[data-arvore]'); const sep = await caixa(pg, '[data-coluna="separacao"]'); const comp = await caixa(pg, '[data-coluna="comprar"]'); const est = await caixa(pg, '[data-trilho]')
     conta(igual(sep.y, arvore.y) && sep.x > arvore.dir && igual(comp.x, sep.x) && comp.y > sep.baixo, `${T}: a árvore de um lado e as três caixas empilhadas do outro`)
-    conta(igual(est.x, arvore.x) && igual(est.dir, sep.dir) && est.y > arvore.baixo, `${T}: a prateleira embaixo, na largura inteira`)
+    conta(igual(est.x, arvore.x) && igual(est.dir, sep.dir) && est.y > arvore.baixo, `${T}: o trilho embaixo, na largura inteira`)
     conta(await pg.locator('[data-barra] > .em-seg').count() === 1 && await pg.locator('[data-barra] .em-barra-fim').count() === 0, `${T}: as três abas continuam, e a tabela não é oferecida`)
+    await abrirGrupo(pg)
     await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 500)
     const ficha = await caixa(pg, '[data-ficha]')
     conta(ficha.x > arvore.dir && (await sobra(pg)) <= 0 && await pg.locator('.es-volta').count() === 0, `${T}: a ficha abre ao lado da árvore, sem rolar para o lado`)
@@ -587,7 +687,10 @@ for (const tema of ['light', 'dark']) {
     conta((await sobra(pg)) <= 0, `${T}: nada rola para o lado`)
     const chips = await pg.locator('.em-secoes .chip').allInnerTexts()
     conta(chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ') === 'Materiais | Separação 7 | Comprar 4 | Movimentos | Depósito', `${T}: os cinco assuntos viram chips, com a conta (${chips.map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')})`)
-    conta(await pg.locator('[data-coluna]').count() === 0 && await pg.locator('[data-estante]').count() === 1, `${T}: em Materiais ficam a sanfona e a prateleira; as colunas viram telas`)
+    conta(await pg.locator('[data-coluna]').count() === 0 && await pg.locator('[data-trilho]').count() === 1, `${T}: em Materiais ficam a sanfona e o trilho; as colunas viram telas`)
+    const tr = await pg.locator('[data-trilho] .em-trilho-faixa').evaluate((e) => ({ rola: e.scrollWidth > e.clientWidth, dentro: e.getBoundingClientRect().right <= innerWidth }))
+    conta(tr.rola && tr.dentro && (await sobra(pg)) <= 0, `${T}: no celular o trilho anda de lado dentro da caixa, e a página não`)
+    await abrirGrupo(pg)
     const alturas = await pg.locator('[data-arvore] .em-g, [data-arvore] .em-t').evaluateAll((l) => Math.min(...l.map((e) => e.getBoundingClientRect().height)))
     conta(alturas >= 48, `${T}: linha da sanfona com ${alturas} de altura para o dedo`)
     await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 300)
@@ -597,9 +700,9 @@ for (const tema of ['light', 'dark']) {
     await foto('sanfona')
 
     await pg.locator('.em-secoes .chip', { hasText: 'Separação' }).click(); await pausa(pg, 500)
-    conta(await pg.locator('[data-coluna="separacao"] .em-ped').count() === 7 && await pg.locator('[data-coluna="separacao"].em-curta').count() === 0 && await pg.locator('[data-barra] .em-busca').count() === 0, `${T}: Separação é uma tela, com a lista inteira e sem a busca`)
-    const botoes = await pg.locator('[data-pedido="PD-0412"] .em-ped-botoes .btn').allInnerTexts()
-    conta(botoes.map((b) => b.trim()).join(' | ') === 'Separar | Ver no mapa', `${T}: o pedido aberto tem Separar e Ver no mapa (${botoes.map((b) => b.trim()).join(' | ')})`)
+    conta(await pg.locator('[data-coluna="separacao"] [data-pedido]').count() === 7 && await pg.locator('[data-coluna="separacao"].em-curta').count() === 0 && await pg.locator('[data-barra] .em-busca').count() === 0, `${T}: Separação é uma tela, com a lista inteira e sem a busca`)
+    const toque = await pg.locator('[data-coluna="separacao"] [data-pedido]').first().evaluate((e) => ({ tag: e.tagName, alto: e.getBoundingClientRect().height }))
+    conta(toque.tag === 'BUTTON' && toque.alto >= 56 && await pg.locator('[data-coluna="separacao"] [aria-expanded]').count() === 0, `${T}: cada pedido é uma linha inteira para o dedo, sem abrir para baixo (${Math.round(toque.alto)} de altura)`)
     await foto('separacao')
     await pg.locator('.em-secoes .chip', { hasText: 'Comprar' }).click(); await pausa(pg, 400)
     conta(await pg.locator('[data-coluna="comprar"] .em-lin').count() === 4 && await pg.locator('[data-coluna="comprar"] .em-pe').count() === 0, `${T}: Comprar é uma tela, com os 4, sem "Ver mais"`)
@@ -647,17 +750,16 @@ for (const movimento of [true, false]) {
     const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', movimento })
     await ir(pg, '/estoque', '[data-arvore]')
     /* a gaveta do tecido */
+    await abrirGrupo(pg); await pausa(pg, 300)
     await pg.locator(`${DRY} .em-t-seta`).click()
     const gaveta = await lerAnimacao(pg, '[data-arvore] .em-cores.em-dentro')
     const seta = await lerTransicao(pg, `${DRY} .em-seta`)
     await pausa(pg, 400)
     const giro = await pg.locator(`${DRY} .em-seta`).evaluate((e) => getComputedStyle(e).transform)
-    /* o tecido subindo no vão, na gaveta da prateleira */
-    await pg.locator('[data-estante] .em-g[data-grupo="ALGODÃO"]').click()
-    const vao = await lerAnimacao(pg, '[data-tabua="ALGODAO 100%"] .es-vao-tecido')
-    /* a ficha */
+    /* a ficha, e o tecido subindo no vão das cores dela */
     await pg.locator(`${DRY} .em-t-nome`).click()
     const ficha = await lerAnimacao(pg, '[data-ficha]')
+    const vao = await lerAnimacao(pg, '[data-ficha] .em-grade-cores .es-vao-tecido')
     const linhas = [await lerTransicao(pg, '[data-arvore] .em-g'), await lerTransicao(pg, '[data-arvore] .em-c'), await lerTransicao(pg, `${DRY}`)]
     await pg.locator('[data-ficha]').getByRole('button', { name: 'Fechar' }).click(); await pausa(pg, 300)
     const pe = await lerTransicao(pg, '.em-pe')

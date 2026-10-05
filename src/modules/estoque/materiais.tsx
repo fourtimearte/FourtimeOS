@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  acabando,
   arvoreDeTecidos,
   chaveDoGrupo,
   gruposDeItens,
@@ -18,8 +19,8 @@ import { semAcento } from '@shared'
 import type { Fornecimento, Guardado } from './apoio'
 import { Arvore, chaveDoMaterial } from './arvore'
 import { ParaComprar, ParaSeparacao, UltimosMovimentos } from './colunas'
-import { PrateleiraDeTecidos } from './estante'
 import { FichaDoMaterial, FichaDoTecido } from './ficha'
+import { Trilho } from './trilho'
 import './materiais.css'
 
 /* ==========================================================================
@@ -27,10 +28,14 @@ import './materiais.css'
 
    (1) as três abas com a sanfona; (2) para separação; (3) para comprar;
    (4) últimos movimentos. As três da direita são baixas, e debaixo delas, na
-   largura das três, fica a prateleira de tecidos. A primeira coluna desce ao
-   lado, na altura das duas fileiras.
+   largura das três, fica o trilho do que está acabando. A primeira coluna
+   desce ao lado, na altura das duas fileiras.
 
-   Quando um tecido ou uma cor é escolhido, as três colunas e a prateleira dão
+   NADA VEM ABERTO (pedido do Henrique, 05/10/2026): a página abre com todas
+   as sanfonas fechadas, e quem abre é a pessoa. A busca e a escolha de um
+   material ainda abrem a gaveta de quem foi achado ou escolhido.
+
+   Quando um tecido ou uma cor é escolhido, as três colunas e o trilho dão
    lugar à ficha dele, e a árvore continua à esquerda.
 
    No celular os assuntos viram telas (os chips do topo escolhem), e a ficha
@@ -102,7 +107,8 @@ export function Materiais({
   aoVerMovimentos: (busca?: string) => void
   /** leva à lista inteira do que há para comprar; ausente onde ela não existe */
   aoVerComprar?: () => void
-  aoSeparar: () => void
+  /** abre a página Separação, no pedido quando ele vem */
+  aoSeparar: (pedido?: PedidoNaSeparacao) => void
 }) {
   const buscando = termo.length > 0
 
@@ -123,15 +129,9 @@ export function Materiais({
       ),
     [gruposFiltrados, hierarquia, termo],
   )
-  /* a prateleira é o que HÁ: só os tecidos com cor no estoque, e só os grupos
-     que têm algum */
-  const naPrateleira = useMemo(
-    () =>
-      arvoreInteira
-        .map(g => ({ ...g, tecidos: g.tecidos.filter(t => t.cores.length > 0) }))
-        .filter(g => g.tecidos.length > 0),
-    [arvoreInteira],
-  )
+  /* o trilho: o que caiu abaixo do mínimo ou está perto dele, de qualquer aba */
+  const noTrilho = useMemo(() => acabando(materiais), [materiais])
+  const temMinimo = useMemo(() => materiais.some(m => m.minimo > 0), [materiais])
   const itens = useMemo(
     () => (categoria === 'tecido' ? [] : gruposDeItens(gruposFiltrados, categoria)),
     [gruposFiltrados, categoria],
@@ -183,27 +183,6 @@ export function Materiais({
     else setAbertos(troca)
   }
 
-  /* a prateleira tem as próprias gavetas, pelo código do grupo */
-  const [estante, setEstante] = useState<Set<string>>(new Set())
-
-  /* NA PRIMEIRA VEZ, A PÁGINA ABRE ONDE HÁ O QUE COMPRAR: o grupo com mais
-     cores abaixo do mínimo vem aberto na árvore, e os dois primeiros na
-     prateleira. Depois disso quem manda é a pessoa. */
-  const jaAbriu = useRef(false)
-  useEffect(() => {
-    if (jaAbriu.current || !arvoreInteira.length) return
-    jaAbriu.current = true
-    /* quem tem o que comprar primeiro; no empate, quem tem estoque antes do
-       grupo que só veio do catálogo */
-    const porUrgencia = [...arvoreInteira].sort(
-      (a, b) => b.paraComprar - a.paraComprar || (b.cores ? 1 : 0) - (a.cores ? 1 : 0),
-    )
-    const comFalta = porUrgencia.filter(g => g.paraComprar > 0)
-    const naEstante = (comFalta.length ? comFalta : porUrgencia).slice(0, 2).map(g => g.cod)
-    setEstante(new Set(naEstante))
-    setAbertos(antes => (antes.size ? antes : new Set(['g:' + porUrgencia[0].cod])))
-  }, [arvoreInteira])
-
   /* --- o escolhido ----------------------------------------------------------- */
   const tecidoDe = (chave: string) => {
     for (const g of arvoreInteira) {
@@ -220,7 +199,7 @@ export function Materiais({
   const doTecido = !material && escolhido ? tecidoDe(escolhido) : null
 
   /* QUEM É ESCOLHIDO APARECE NA ÁRVORE: a aba troca e as gavetas dele abrem.
-     Vale para o clique na coluna "Para comprar" e na prateleira, que escolhem
+     Vale para o clique na coluna "Para comprar" e no trilho, que escolhem
      sem passar pela sanfona. */
   useEffect(() => {
     if (!escolhido) return
@@ -308,13 +287,10 @@ export function Materiais({
   const separacao = (
     <ParaSeparacao
       fila={fila}
-      materiais={materiais}
-      guardado={guardado}
       podeSeparar={podeSeparar}
       inteira={celular}
-      aoSeparar={aoSeparar}
-      aoVerNoMapa={aoVerNoDeposito}
-      aoVerMais={aoSeparar}
+      aoAbrir={p => aoSeparar(p)}
+      aoVerMais={() => aoSeparar()}
     />
   )
   const paraComprar = (
@@ -326,21 +302,11 @@ export function Materiais({
       aoVerMais={celular ? undefined : aoVerComprar}
     />
   )
-  const prateleira = (
-    <PrateleiraDeTecidos
-      grupos={naPrateleira}
-      fornecimento={fornecimento}
-      abertos={estante}
-      aoAbrir={cod =>
-        setEstante(antes => {
-          const novo = new Set(antes)
-          if (novo.has(cod)) novo.delete(cod)
-          else novo.add(cod)
-          return novo
-        })
-      }
-      aoEscolher={escolher}
-      celular={celular}
+  const trilho = (
+    <Trilho
+      acabando={noTrilho}
+      temMinimo={temMinimo}
+      aoEscolher={m => aoEscolher(chaveDoMaterial(m.id))}
     />
   )
 
@@ -353,7 +319,7 @@ export function Materiais({
       <div className="em-palco">
         <div className="pilha larga">
           {arvoreDaTela}
-          {prateleira}
+          {trilho}
         </div>
       </div>
     )
@@ -374,7 +340,7 @@ export function Materiais({
               materiais={materiais}
               aoVerMais={() => aoVerMovimentos()}
             />
-            {prateleira}
+            {trilho}
           </>
         )}
       </div>

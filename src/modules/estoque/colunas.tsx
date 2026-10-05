@@ -1,27 +1,19 @@
-import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { MapPin } from '@phosphor-icons/react'
-import { Botao, Esqueleto } from '@ds'
 import {
-  carregarReservasDoPedido,
   faltaDoMaterial,
   quantoNaUnidade,
   type Material,
   type Movimento,
   type PedidoNaSeparacao,
-  type ReservaDoPedido,
 } from '@dominio/estoque'
 import {
   diaEMes,
   fornecedorDoMaterial,
   linhaDoMovimento,
-  lugaresDe,
   plural,
   quantoMexeu,
   type Fornecimento,
-  type Guardado,
 } from './apoio'
-import { EtiquetaDoLugar } from './frente'
 import { Bola } from './vao'
 
 /* ==========================================================================
@@ -99,55 +91,23 @@ export function Coluna({
 }
 
 /* --- para separação ---------------------------------------------------------
-   Os pedidos que esperam material, na ordem da entrega. O primeiro vem aberto,
-   com cada material, quanto precisa, quanto tem e onde está guardado. */
+   Os pedidos que esperam material, na ordem da entrega. A linha não abre para
+   baixo (pedido do Henrique, 05/10/2026): o clique leva à página Separação, já
+   naquele pedido, que é onde o material dele se vê e se separa. */
 export function ParaSeparacao({
   fila,
-  materiais,
-  guardado,
   podeSeparar,
   inteira,
-  aoSeparar,
-  aoVerNoMapa,
+  aoAbrir,
   aoVerMais,
 }: {
   fila: PedidoNaSeparacao[]
-  materiais: Material[]
-  guardado: Guardado
   /** a pessoa enxerga a página Separação */
   podeSeparar: boolean
   inteira?: boolean
-  aoSeparar: () => void
-  aoVerNoMapa: (ids: string[], rotulo: string) => void
+  aoAbrir: (p: PedidoNaSeparacao) => void
   aoVerMais: () => void
 }) {
-  const [aberto, setAberto] = useState('')
-  const [reservas, setReservas] = useState<Record<string, ReservaDoPedido[] | 'erro'>>({})
-
-  /* o primeiro da fila abre sozinho, uma vez */
-  const primeiro = fila[0]?.id ?? ''
-  useEffect(() => {
-    if (primeiro) setAberto(a => a || primeiro)
-  }, [primeiro])
-
-  /* as reservas do pedido só são lidas quando ele abre */
-  useEffect(() => {
-    if (!aberto || reservas[aberto]) return
-    let vivo = true
-    carregarReservasDoPedido(aberto)
-      .then(linhas => {
-        if (vivo) setReservas(r => ({ ...r, [aberto]: linhas }))
-      })
-      .catch(() => {
-        if (vivo) setReservas(r => ({ ...r, [aberto]: 'erro' }))
-      })
-    return () => {
-      vivo = false
-    }
-  }, [aberto, reservas])
-
-  const porId = new Map(materiais.map(m => [m.id, m]))
-
   return (
     <Coluna
       nome="separacao"
@@ -165,100 +125,48 @@ export function ParaSeparacao({
         <p className="em-sem-linhas">Nenhum pedido esperando material.</p>
       ) : (
         fila.map(p => {
-          const ab = p.id === aberto
-          const linhas = reservas[p.id]
-          const comLugar =
-            Array.isArray(linhas) && guardado.planta
-              ? linhas.map(r => r.materialId).filter(id => lugaresDe(guardado, id).length > 0)
-              : []
-          return (
-            <div key={p.id} className={ab ? 'em-ped aberto' : 'em-ped'} data-pedido={p.numero}>
-              <button
-                type="button"
-                className="em-lin"
-                aria-expanded={ab}
-                onClick={() => setAberto(ab ? '' : p.id)}
-              >
-                <span className="em-txt">
-                  <b>{p.numero}</b>
-                  <small>{p.cliente || 'sem cliente'}</small>
-                  <small>
-                    {plural(p.pecas, 'pç', 'pçs')} ·{' '}
-                    {p.entregaEm
-                      ? 'entrega ' + diaEMes(p.entregaEm + 'T12:00:00')
-                      : 'sem data de entrega'}
-                  </small>
-                </span>
-                <span className="em-val">
-                  {p.separados} de {p.materiais}
-                  {p.naoCobre > 0 ? (
-                    <small className="pouco">falta tecido</small>
-                  ) : p.tudoSeparado ? (
-                    <small>separado</small>
-                  ) : p.semConsumo > 0 ? (
-                    <small>sem consumo</small>
-                  ) : (
-                    <small>para separar</small>
-                  )}
-                </span>
-              </button>
-              {ab ? (
-                <div className="em-ped-dentro em-dentro">
-                  {linhas === 'erro' ? (
-                    <p className="em-nota">Não consegui ler os materiais deste pedido.</p>
-                  ) : !linhas ? (
-                    <>
-                      <Esqueleto altura={14} />
-                      <Esqueleto altura={14} />
-                    </>
-                  ) : linhas.length === 0 ? (
-                    <p className="em-nota">Este pedido não reserva material nenhum.</p>
-                  ) : (
-                    linhas.map(r => {
-                      const m = porId.get(r.materialId)
-                      const lugar = lugaresDe(guardado, r.materialId)[0]
-                      const falta = !r.baixada && !r.semConsumo && !r.oEstoqueCobre
-                      return (
-                        <div key={r.id} className="em-mat">
-                          <Bola cor={m?.corHex} />
-                          <span className="em-txt">
-                            <DoisNomes m={m} nome={r.material} />
-                            <small className={falta ? 'pouco' : undefined}>
-                              {r.baixada
-                                ? 'separado ' + quantoNaUnidade(r.separado, r.unidade)
-                                : r.semConsumo
-                                  ? 'sem consumo cadastrado · tem ' +
-                                    quantoNaUnidade(r.saldo, r.unidade)
-                                  : `precisa ${quantoNaUnidade(r.quantidade, r.unidade)} · tem ${quantoNaUnidade(r.saldo, r.unidade)}`}
-                            </small>
-                          </span>
-                          {guardado.planta ? (
-                            <EtiquetaDoLugar movel={lugar?.movel} lugar={lugar?.lugar} semIcone />
-                          ) : null}
-                        </div>
-                      )
-                    })
-                  )}
-                  {podeSeparar || comLugar.length ? (
-                    <div className="em-ped-botoes">
-                      {podeSeparar ? (
-                        <Botao tom="forte" tamanho="sm" onClick={aoSeparar}>
-                          Separar
-                        </Botao>
-                      ) : null}
-                      {comLugar.length ? (
-                        <Botao
-                          tamanho="sm"
-                          onClick={() => aoVerNoMapa(comLugar, 'o pedido ' + p.numero)}
-                        >
-                          <MapPin size={15} aria-hidden="true" />
-                          Ver no mapa
-                        </Botao>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+          const dentro = (
+            <>
+              <span className="em-txt">
+                <b>{p.numero}</b>
+                <small>{p.cliente || 'sem cliente'}</small>
+                <small>
+                  {plural(p.pecas, 'pç', 'pçs')} ·{' '}
+                  {p.entregaEm
+                    ? 'entrega ' + diaEMes(p.entregaEm + 'T12:00:00')
+                    : 'sem data de entrega'}
+                </small>
+              </span>
+              <span className="em-val">
+                {p.separados} de {p.materiais}
+                {p.naoCobre > 0 ? (
+                  <small className="pouco">falta tecido</small>
+                ) : p.tudoSeparado ? (
+                  <small>separado</small>
+                ) : p.semConsumo > 0 ? (
+                  <small>sem consumo</small>
+                ) : (
+                  <small>para separar</small>
+                )}
+              </span>
+            </>
+          )
+          /* quem não enxerga a Separação vê a fila, sem o clique que daria numa
+             página fechada para ele */
+          return podeSeparar ? (
+            <button
+              type="button"
+              key={p.id}
+              className="em-lin"
+              data-pedido={p.numero}
+              title={'Abrir o pedido ' + p.numero + ' na Separação'}
+              onClick={() => aoAbrir(p)}
+            >
+              {dentro}
+            </button>
+          ) : (
+            <div key={p.id} className="em-lin" data-pedido={p.numero}>
+              {dentro}
             </div>
           )
         })

@@ -122,3 +122,107 @@
   border-radius: 50%;
   background: var(--c, var(--text-3));
 }
+
+/* --- o fornecedor novo, ao lado ---------------------------------------------
+   A coluna que abre dentro do cadastro de um material. Ela é um painel cinza
+   encostado no formulário, e não um modal por cima do modal: quem cadastra a
+   cor continua vendo a cor enquanto escreve o fornecedor. */
+.fn-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  padding: var(--pad-cartao);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  animation: fn-lado-surge var(--t-base) var(--ease-out);
+}
+@keyframes fn-lado-surge {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+.fn-lado-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.fn-lado-topo b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.fn-lado-topo small {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.fn-lado-cnpj {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.fn-lado-cnpj .fn-lado-cresce {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.fn-lado-link {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.fn-lado-link:hover {
+  color: var(--text);
+}
+.fn-lado-receita {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--re-6) var(--re-8);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.fn-lado-receita svg {
+  flex: none;
+  color: var(--ok);
+}
+.fn-lado-receita.ruim svg {
+  color: var(--warn);
+}
+.fn-lado-receita div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.fn-lado-receita b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.fn-lado-receita small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fn-lado-dois {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.fn-lado-pe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--gap-btn);
+}

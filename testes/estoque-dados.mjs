@@ -52,7 +52,7 @@ export const ligacoes = D.ligacoes
 
 const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10) }
 const pedido = (numero, cliente, pecas, entrega, materiais, separados, nao_cobre, sem_consumo = 0) => ({
-  id: 'p-' + numero, numero, cliente_id: 'cl-' + numero, cliente, estado: separados ? 'separacao' : 'aprovado', aviso: '', pecas, entrega_em: entrega === null ? null : dia(entrega),
+  id: D.idDoPedido(numero), numero, cliente_id: 'cl-' + numero, cliente, estado: separados ? 'separacao' : 'aprovado', aviso: '', pecas, entrega_em: entrega === null ? null : dia(entrega),
   departamento: 'Comercial', criado_em: '2026-10-01T12:00:00Z', materiais, separados, sem_consumo, nao_cobre, tudo_separado: materiais > 0 && separados === materiais,
 })
 export const fila = [
@@ -68,7 +68,7 @@ let r = 0
 const reserva = (numero, nome, quantidade, extra = {}) => {
   const m = M(nome)
   return {
-    id: 'rp' + (++r), pedido_id: 'p-' + numero, pedido: numero, material_id: m.id, material: m.nome, categoria: m.categoria,
+    id: 'rp' + (++r), pedido_id: D.idDoPedido(numero), pedido: numero, material_id: m.id, material: m.nome, categoria: m.categoria,
     quantidade, unidade: m.unidade, pecas: extra.pecas ?? 100, sem_consumo: !!extra.semConsumo, baixada: !!extra.baixada,
     separado: extra.baixada ? quantidade : null, saldo: m.saldo, o_estoque_cobre: m.saldo >= quantidade,
   }
@@ -85,6 +85,9 @@ export const reservasDoPedido = [
   reserva('PD-0421', 'DRYFIT POLIESTER 100% · Vermelho Fourtime', 5),
   reserva('PD-0422', 'MOLETOM · Preto', 3),
   reserva('PD-0423', 'ALGODAO 100% · Preto', 9),
+  /* o PD-0410 já saiu da fila: a separação dele foi concluída. Ele só existe
+     nas movimentações, e é por ele que a Separação mostra "não está mais na fila" */
+  reserva('PD-0410', 'PIQUET 100% · Branco', 9, { baixada: true }),
 ]
 
 /* O ESTOQUE GRANDE: o dry fit com mais 26 cores, e mais 5 tecidos no grupo

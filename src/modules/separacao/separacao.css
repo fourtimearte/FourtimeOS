@@ -232,3 +232,10 @@
     width: 68px;
   }
 }
+
+/* --- o pedido que o endereço pediu e que já saiu da fila -----------------
+   Fica em cima da fila, só para ler: o que saiu da prateleira para ele. */
+.sp-passado {
+  overflow: hidden;
+  min-width: 0;
+}

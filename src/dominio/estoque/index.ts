@@ -717,6 +717,20 @@ export function paraComprarPorUrgencia(materiais: Material[]): Material[] {
     .sort((a, b) => a.livre / (a.minimo || 1) - b.livre / (b.minimo || 1))
 }
 
+/* O QUE ESTÁ ACABANDO: o que já caiu abaixo do mínimo e o que está perto dele
+   (até 30% acima), na mesma ordem da urgência. É a fila do trilho do Estoque.
+   Quem não tem mínimo marcado só entra se o livre ficou negativo: sem nível
+   de aviso não há do que avisar. */
+export function acabando(materiais: Material[]): Material[] {
+  return materiais
+    .filter(m => situacaoDoMaterial(m) !== 'em-dia')
+    .sort(
+      (a, b) =>
+        a.livre / (a.minimo || 1) - b.livre / (b.minimo || 1) ||
+        nomeInteiro(a).localeCompare(nomeInteiro(b), 'pt-BR'),
+    )
+}
+
 /* ---------- a hierarquia do catálogo, para a árvore do Estoque ------------- */
 
 /* O grupo de tecido e o tecido com o grupo, a gramatura e a largura. É apoio da

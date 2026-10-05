@@ -102,10 +102,13 @@ export const ligacoes = [
 fornecedores.forEach((x) => { x.materiais = ligacoes.filter((l) => l.fornecedor_id === x.id).length })
 
 let v = 0
+/* o id do pedido tem cara de uuid, porque a Separação só aceita no endereço o
+   que tem essa cara: PD-0412 vira 00000000-0000-4000-8000-000000000412 */
+export const idDoPedido = (numero) => '00000000-0000-4000-8000-00000000' + numero.slice(-4)
 const mov = (dias, h, mi, motivo, nome, quantidade, extra = {}) => {
   const m = M(nome)
   return { id: 'v' + (++v), material_id: m.id, material: m.nome, unidade: m.unidade, categoria: m.categoria, quantidade, motivo,
-    observacao: extra.obs ?? '', pedido_id: extra.pedido ? 'p-' + extra.pedido : null, pedido: extra.pedido ?? null, quem: '1',
+    observacao: extra.obs ?? '', pedido_id: extra.pedido ? idDoPedido(extra.pedido) : null, pedido: extra.pedido ?? null, quem: '1',
     quem_nome: extra.quem ?? 'Estoque', quem_na_equipe: extra.quem ?? 'Estoque', quando: em(dias, h, mi),
     fornecedor_id: extra.forn ? F(extra.forn).id : null, fornecedor: extra.forn ?? null, tecido_id: m.tecido_id, grupo: m.grupo,
     tecido: m.tecido, cor: m.cor, cor_hex: m.cor_hex }
@@ -130,9 +133,9 @@ export const movimentos = [
   mov(8, 15, 30, 'entrada', 'DRYFIT POLIESTER 100% · Branco', 30, { forn: 'Malharia Exemplo Ltda', obs: 'NF 1907' }),
 ]
 export const reservas = [
-  { id: 'r1', pedido_id: 'p-PD-0412', pedido: 'PD-0412', entrega: dia(6), material_id: M('DRYFIT POLIESTER 100% · Preto').id, quantidade: 4, unidade: 'kg', pecas: 20, sem_consumo: false },
-  { id: 'r2', pedido_id: 'p-PD-0418', pedido: 'PD-0418', entrega: dia(12), material_id: M('DRYFIT POLIESTER 100% · Preto').id, quantidade: 2, unidade: 'kg', pecas: 10, sem_consumo: false },
-  { id: 'r3', pedido_id: 'p-PD-0415', pedido: 'PD-0415', entrega: dia(8), material_id: M('DRYFIT POLIESTER 100% · Azul Marinho').id, quantidade: 4, unidade: 'kg', pecas: 22, sem_consumo: false },
+  { id: 'r1', pedido_id: idDoPedido('PD-0412'), pedido: 'PD-0412', entrega: dia(6), material_id: M('DRYFIT POLIESTER 100% · Preto').id, quantidade: 4, unidade: 'kg', pecas: 20, sem_consumo: false },
+  { id: 'r2', pedido_id: idDoPedido('PD-0418'), pedido: 'PD-0418', entrega: dia(12), material_id: M('DRYFIT POLIESTER 100% · Preto').id, quantidade: 2, unidade: 'kg', pecas: 10, sem_consumo: false },
+  { id: 'r3', pedido_id: idDoPedido('PD-0415'), pedido: 'PD-0415', entrega: dia(8), material_id: M('DRYFIT POLIESTER 100% · Azul Marinho').id, quantidade: 4, unidade: 'kg', pecas: 22, sem_consumo: false },
 ]
 export const tipos = [
   { chave: 'tecido', nome: 'Tecido', ordem: 10, fixo: true }, { chave: 'aviamento', nome: 'Aviamento', ordem: 20, fixo: true },

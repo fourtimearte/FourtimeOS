@@ -285,6 +285,46 @@ button.es-linha:hover {
 .es-apoio {
   color: var(--text-2);
 }
+/* a coluna "Por quê" das movimentações: o que explica o movimento, e o pedido
+   como botão que abre a Separação nele */
+.es-porque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--re-4);
+  min-width: 0;
+}
+.es-pedido {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  min-height: 28px;
+  padding: 0 var(--re-5);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.es-pedido:hover {
+  background-color: var(--surface-2);
+}
+.es-pedido svg {
+  color: var(--text-2);
+}
+.es-pedido-nome {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.es-texto > .es-pedido {
+  align-self: flex-start;
+  margin-top: var(--re-2);
+}
 .es-situacao {
   display: inline-flex;
   align-items: center;
@@ -412,6 +452,34 @@ button.es-linha:hover {
   flex-direction: column;
   gap: var(--sp-5);
 }
+/* o cadastro e, quando aberta, a coluna do fornecedor novo ao lado */
+.es-novo-lados {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+.es-novo-lados.aberto {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+@media (max-width: 899px) {
+  .es-novo-lados.aberto {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.es-fornecedor-e-novo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--gap-btn);
+}
+.es-fornecedor-e-novo > .fn-escolher {
+  flex: 1 1 240px;
+  width: auto;
+}
+.es-novo-fornecedor {
+  flex: none;
+}
 .es-novo-chips {
   display: flex;
   flex-wrap: wrap;
@@ -419,7 +487,7 @@ button.es-linha:hover {
 }
 .es-novo-tres {
   display: grid;
-  grid-template-columns: 110px 130px minmax(0, 1fr);
+  grid-template-columns: 96px 176px minmax(0, 1fr);
   gap: var(--sp-3);
 }
 .es-ja-tem {

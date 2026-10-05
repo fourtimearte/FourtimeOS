@@ -27,6 +27,8 @@ const json = (r, corpo, status = 200) => r.fulfill({ status, contentType: 'appli
 export async function abrir(nav, { largura, altura, tema, papel = 'admin', deposito = 'cheio', movimento = false, recusa = 0, estoque = 'cheio' }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: movimento ? 'no-preference' : 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1 })
   const gravados = []
+  /* o fornecedor criado no teste aparece na lista seguinte, como no banco */
+  const criados = []
   let recusas = recusa
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
@@ -46,14 +48,16 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
       let corpo = null
       try { corpo = JSON.parse(req.postData() ?? 'null') } catch { /* corpo que não é JSON */ }
       gravados.push({ u: u.split('/rest/v1/')[1] ?? u, corpo })
-      return json(r, u.includes('rpc/') ? {} : [{ id: 'novo-' + gravados.length }])
+      const novoId = 'novo-' + gravados.length
+      if (m === 'POST' && /\/fornecedor\?/.test(u) && corpo && !Array.isArray(corpo)) criados.push({ ...D.fornecedores[0], id: novoId, nome: corpo.nome, cnpj: corpo.cnpj ?? null, situacao: 'novo', gravada: 'novo', tipos: [] })
+      return json(r, u.includes('rpc/') ? {} : [{ id: novoId }])
     }
     let corpo = []
     if (u.includes('meu_perfil')) corpo = D.perfil(papel)
-    else if (u.includes('material_na_prateleira')) corpo = estoque === 'grande' ? [...D.materiais, ...E.coresAMais, ...E.materiaisDosTecidosAMais] : D.materiais
+    else if (u.includes('material_na_prateleira')) corpo = estoque === 'grande' ? [...D.materiais, ...E.coresAMais, ...E.materiaisDosTecidosAMais] : estoque === 'folgado' ? D.materiais.map((x) => ({ ...x, saldo: Number(x.minimo) * 3 + 5, reservado: 0, livre: Number(x.minimo) * 3 + 5, abaixo_do_minimo: false })) : estoque === 'sem-minimo' ? D.materiais.map((x) => ({ ...x, minimo: 0, saldo: 5, reservado: 0, livre: 5, abaixo_do_minimo: false })) : D.materiais
     else if (u.includes('movimento_do_estoque')) corpo = D.movimentos
     else if (u.includes('reserva_em_aberto')) corpo = D.reservas
-    else if (u.includes('fornecedor_na_lista')) corpo = D.fornecedores
+    else if (u.includes('fornecedor_na_lista')) corpo = [...D.fornecedores, ...criados]
     else if (u.includes('material_fornecedor')) corpo = E.ligacoes
     else if (u.includes('grupo_de_tecido')) { if (estoque === 'sem-apoio') return json(r, { message: 'permission denied for table grupo_de_tecido' }, 403); corpo = E.gruposDeTecido }
     else if (u.includes('pedido_na_separacao')) { if (estoque === 'sem-apoio') return json(r, { message: 'permission denied for view pedido_na_separacao' }, 403); corpo = E.fila }
@@ -71,6 +75,9 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     localStorage.setItem('ft.empresa', JSON.stringify({ nome: 'Fourtime', razaoSocial: 'Fourtime Confecções Ltda', cnpj: '45.723.174/0001-10', cidade: 'Goiânia', uf: 'GO' }))
   } catch { /* sem armazenamento, segue */ } }, [{ acesso: 't', renovacao: 't', venceEm: Date.now() + 86400000, usuario: 't', email: 't@f' }, tema])
   const pg = await ctx.newPage()
+  /* o que não aparece em 8 segundos não vai aparecer: sem isto, um seletor que
+     mudou de nome segura o caso por 30 segundos, e o teste inteiro por minutos */
+  pg.setDefaultTimeout(8000)
   const erros = []
   /* fonte e imagem que o ambiente do teste bloqueia não são erro da página */
   const ruido = (t) => /Failed to load resource|ERR_|fonts\.g|net::/i.test(t)

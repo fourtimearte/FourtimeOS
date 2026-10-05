@@ -669,6 +669,9 @@ export function TelaEstoque() {
             agrupar={agrupar}
             estreita={estreita}
             haMovimentos={movimentos.length > 0}
+            aoAbrirPedido={
+              podeSeparar ? pedidoId => navegar('/separacao?pedido=' + pedidoId) : undefined
+            }
           />
         </section>
       ) : mostraTabela ? (
@@ -677,6 +680,7 @@ export function TelaEstoque() {
             grupos={gruposDaTabela}
             fornecimento={fornecimento}
             haMateriais={materiais.length > 0}
+            filtrando={!!termo || !!filtro}
             aoAbrir={m => (podeEditar ? setNoMovimento(m) : undefined)}
           />
         </section>
@@ -727,7 +731,7 @@ export function TelaEstoque() {
                   setVista('tabela')
                 }
           }
-          aoSeparar={() => navegar('/separacao')}
+          aoSeparar={p => navegar(p ? '/separacao?pedido=' + p.id : '/separacao')}
         />
       )}
 

@@ -34,6 +34,9 @@
         que não tem estoque apagado e a "Nova cor" ao lado
     15. O LUGAR NO CADASTRO: a cor nova aponta o lugar no desenho do depósito
     16. O MÍNIMO RECOMENDADO, pela média do último mês e dos últimos três
+    17. A COR PELA FAMÍLIA no cadastro de material: a fileira das famílias, as
+        pílulas só da família aberta, a cor nova na família e a edição da que
+        existe, para quem pode mexer no catálogo
 
    O banco é de mentira (testes/materiais-dados.mjs, estoque-dados.mjs e
    deposito-dados.mjs).
@@ -77,6 +80,12 @@ const abrirGrupo = async (pg, nome = 'DRY FIT') => {
   if (await g.getAttribute('aria-expanded') !== 'true') { await g.click(); await pausa(pg, 250) }
 }
 const cor = (nome) => `.em-c[data-material="${nome}"]`
+/* a cor do cadastro se escolhe pela família (05/10/2026): abre a família, clica na cor */
+const escolherCor = async (pg, familia, nome) => {
+  const f = pg.locator(`dialog[open] .es-familia[data-familia="${familia}"]`)
+  if (await f.getAttribute('aria-pressed') !== 'true') { await f.click(); await pausa(pg, 200) }
+  await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: new RegExp('^' + nome + '$') }).click(); await pausa(pg, 200)
+}
 
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }).catch(() => chromium.launch())
 
@@ -472,13 +481,13 @@ for (const tema of ['light', 'dark']) {
     await pg.locator('.em-abas').getByRole('tab', { name: /Tecido/ }).click(); await pausa(pg, 200)
     await abrirGrupo(pg)
     await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
-    await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+    await escolherCor(pg, 'LR', 'Laranja')
     await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').fill('25'); await pausa(pg, 150)
     await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).click(); await pausa(pg, 500)
     const largo = await caixa(pg, 'dialog[open] .caixa')
     const lados = await pg.locator('dialog[open] .es-novo-lados').evaluate((e) => [...e.children].map((c) => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)] }))
     conta(igual(largo.w, 980) && lados.length === 2 && lados[1][0] > lados[0][1] && await pg.locator('dialog[open]').count() === 1, `${T} novo material: "Novo fornecedor" abre uma coluna ao lado, na mesma caixa, que alarga para 980 (${Math.round(largo.w)}; colunas ${JSON.stringify(lados)})`)
-    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25' && await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).isDisabled(), `${T} novo material: a cor e o mínimo que a pessoa já tinha escolhido continuam lá, com a coluna aberta`)
+    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: /^Laranja$/ }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25' && await pg.locator('dialog[open]').getByRole('button', { name: 'Novo fornecedor', exact: true }).isDisabled(), `${T} novo material: a cor e o mínimo que a pessoa já tinha escolhido continuam lá, com a coluna aberta`)
     const lado = pg.locator('dialog[open] [data-novo-fornecedor]')
     conta(/Entra como fornecedor de tecido/.test(await lado.innerText()) && await lado.getByRole('button', { name: 'Salvar fornecedor' }).isDisabled(), `${T} novo material: a coluna diz que ele entra como fornecedor de tecido, e não salva sem nome e sem CNPJ`)
     await foto('novo-fornecedor-ao-lado', false)
@@ -490,7 +499,7 @@ for (const tema of ['light', 'dark']) {
     conta(criado && criado.corpo.nome === 'Malharia de Prova' && criado.corpo.entrou_por === 'estoque' && criado.corpo.cnpj === null && gravados.some((g) => String(g.u).startsWith('fornecedor_tipo') && JSON.stringify(g.corpo).includes('"tipo":"tecido"')), `${T} novo material: o fornecedor vai para o banco como "entrou pelo estoque", do tipo tecido (${criado ? JSON.stringify(criado.corpo).slice(0, 110) : 'nada gravado'})`)
     const depois = await caixa(pg, 'dialog[open] .caixa')
     conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 0 && igual(depois.w, 560) && /Malharia de Prova/.test(await texto(pg, 'dialog[open] .fn-gatilho')), `${T} novo material: salvo, a coluna fecha, a caixa volta a 560 e o fornecedor novo já está escolhido (${await texto(pg, 'dialog[open] .fn-gatilho')})`)
-    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25', `${T} novo material: o cadastro da cor continua de onde parou`)
+    conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: /^Laranja$/ }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25', `${T} novo material: o cadastro da cor continua de onde parou`)
     await pg.keyboard.press('Escape'); await pausa(pg)
   })
 
@@ -704,6 +713,7 @@ await caso('catálogo inteiro', async () => {
   await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nova`).click(); await pausa(pg, 700)
   const modal = await texto(pg, 'dialog[open] .caixa')
   conta(/Malha[^]*DRYFIT JAKAR 100%/.test(modal) && await pg.locator('dialog[open] .es-ja-tem').count() === 0, `${T}: Nova cor abre o cadastro com a malha já escolhida e nenhuma cor apagada (${modal.slice(0, 80)})`)
+  await pg.locator('dialog[open] .es-familia[data-familia="BR"]').click(); await pausa(pg, 200)
   await pg.locator('dialog[open] .es-novo-chips .chip').first().click(); await pausa(pg, 200)
   await pg.locator('dialog[open] .btn-primario').click(); await pausa(pg, 800)
   const criado = gravados.find((x) => /^material(\?|$)/.test(x.u))
@@ -1040,7 +1050,7 @@ for (const arquivada of [true, false]) {
     await ir(pg, '/estoque', '[data-arvore]')
     await abrirGrupo(pg)
     await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
-    await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+    await escolherCor(pg, 'LR', 'Laranja')
     await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').fill('25'); await pausa(pg, 150)
     await pg.locator('dialog[open] .sobre-pe .btn').last().click(); await pausa(pg, 900)
     const criou = gravados.filter((g) => /^material\?select=id$/.test(String(g.u)))
@@ -1261,7 +1271,7 @@ await caso('tabela igual à lista', async () => {
   /* "Nova cor" abre o cadastro já naquele tecido */
   await pg.locator(`${TB} tr[data-faixa="DRY FIT"]`).click(); await pausa(pg, 300)
   await pg.locator(`${TB} tr[data-sem-estoque="DRYFIT JAKAR 100%"] .es-nova-cor`).click(); await pausa(pg, 700)
-  conta(/DRYFIT JAKAR 100%/.test(await texto(pg, 'dialog[open] .es-novo')) && await pg.locator('dialog[open] .es-novo-chips .chip').count() > 3, 'tabela igual à lista: "Nova cor" abre o cadastro já na malha daquele tecido')
+  conta(/DRYFIT JAKAR 100%/.test(await texto(pg, 'dialog[open] .es-novo')) && await pg.locator('dialog[open] .es-familia').count() === 13, 'tabela igual à lista: "Nova cor" abre o cadastro já na malha daquele tecido, com as famílias de cor')
   await pg.keyboard.press('Escape'); await pausa(pg, 300)
   conta(erros.length === 0, `tabela igual à lista: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
@@ -1276,7 +1286,7 @@ await caso('cor nova com lugar', async () => {
   await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
   const onde = pg.locator('dialog[open] [data-onde-fica]')
   conta(await onde.count() === 1 && /ainda sem lugar/.test(await onde.innerText()) && await onde.getByRole('button', { name: 'Marcar no depósito' }).isDisabled() && await pg.locator('dialog[open] input[placeholder="Prateleira, armário ou caixa"]').count() === 0, 'cor nova com lugar: com o depósito desenhado, o cadastro troca o texto livre pelo botão de marcar, que espera a cor ser escolhida')
-  await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+  await escolherCor(pg, 'LR', 'Laranja')
   await onde.getByRole('button', { name: 'Marcar no depósito' }).click(); await pausa(pg, 600)
   const caixaDeMarcar = pg.locator('dialog[open]').last()
   conta(await pg.locator('dialog[open]').count() === 2 && /^Onde vai ficar DRYFIT JAKAR 100% · Laranja\?/.test((await caixaDeMarcar.locator('.sobre-topo').innerText()).trim()) && await caixaDeMarcar.locator('[data-lugar]').count() > 20 && await caixaDeMarcar.getByRole('button', { name: 'Usar este lugar' }).isDisabled(), 'cor nova com lugar: o botão abre o desenho do depósito por cima do cadastro, com o nome da cor, e não deixa confirmar sem lugar apontado')
@@ -1284,7 +1294,7 @@ await caso('cor nova com lugar', async () => {
   await caixaDeMarcar.locator('[data-lugar="P07"]').click(); await pausa(pg, 300)
   await caixaDeMarcar.getByRole('button', { name: 'Usar este lugar' }).click(); await pausa(pg, 500)
   conta(await pg.locator('dialog[open]').count() === 1 && /Palete P07/.test(await onde.innerText()) && await onde.getByRole('button', { name: 'Mudar o lugar' }).count() === 1 && !gravados.some((g) => g.u === 'rpc/definir_lugares'), `cor nova com lugar: escolhido o lugar, a caixa fecha, o cadastro mostra onde vai ficar e nada foi para o banco ainda (${(await onde.innerText()).replace(/\s+/g, ' ').trim().slice(0, 110)})`)
-  conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: 'Laranja' }).count() === 1, 'cor nova com lugar: a cor escolhida continua lá depois de marcar o lugar')
+  conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: /^Laranja$/ }).count() === 1, 'cor nova com lugar: a cor escolhida continua lá depois de marcar o lugar')
   await pg.screenshot({ path: `${PASTA}/cor-nova-com-lugar-1440-light.png`, fullPage: false })
   await pg.locator('dialog[open] .sobre-pe .btn').last().click(); await pausa(pg, 900)
   const criou = gravados.findIndex((g) => /^material\?select=id$/.test(String(g.u)))
@@ -1301,7 +1311,7 @@ await caso('cor nova sem depósito', async () => {
   await abrirGrupo(pg)
   await pg.locator('[data-arvore] .em-t[data-tecido="DRYFIT JAKAR 100%"] .em-t-nova').click(); await pausa(pg, 700)
   conta(await pg.locator('dialog[open] [data-onde-fica]').count() === 0 && await pg.locator('dialog[open] input[placeholder="Prateleira, armário ou caixa"]').count() === 1, 'cor nova sem depósito: sem depósito desenhado, o cadastro continua com o texto livre de onde fica')
-  await pg.locator('dialog[open] .es-novo-chips .chip', { hasText: 'Laranja' }).click(); await pausa(pg, 200)
+  await escolherCor(pg, 'LR', 'Laranja')
   await pg.locator('dialog[open] .sobre-pe .btn').last().click(); await pausa(pg, 900)
   conta(gravados.some((g) => /^material\?select=id$/.test(String(g.u))) && !gravados.some((g) => g.u === 'rpc/definir_lugares'), 'cor nova sem depósito: o material nasce e nenhum lugar é gravado')
   conta(erros.length === 0, `cor nova sem depósito: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
@@ -1408,6 +1418,150 @@ await caso('mínimo recomendado', async () => {
   conta(await pg.locator('dialog[open] input[aria-label="Mínimo, em cone"]').first().inputValue() === '4', 'mínimo recomendado: clicar no recomendado põe o número no campo do item')
   await pg.screenshot({ path: `${PASTA}/minimo-recomendado-grupo-1440-light.png`, fullPage: false })
   conta(erros.length === 0, `mínimo recomendado: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+/* A COR PELA FAMÍLIA (prancha 55, escolhida pelo Henrique em 05/10/2026), com
+   a cor nova na família e a edição da que existe (pedido dele na escolha). */
+const abrirNovaCor = async (pg, malha) => {
+  await pg.locator('.pagina-topo').getByRole('button', { name: 'Novo material', exact: true }).click(); await pausa(pg, 700)
+  await pg.locator('dialog[open] .es-novo button.cb').first().click(); await pausa(pg, 300)
+  await pg.locator('dialog[open] .mn.flutua .mn-item', { hasText: malha }).click(); await pausa(pg, 400)
+}
+const COR_DO_CADASTRO = 'dialog[open] [data-escolher-cor]'
+for (const tema of ['light', 'dark']) {
+  const T = tema === 'light' ? 'gelo' : 'grafite'
+  await caso(`cor pela família, ${T}`, async () => {
+    const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 1000, tema })
+    await ir(pg, '/estoque', '[data-arvore]')
+    await abrirNovaCor(pg, 'DRYFIT POLIESTER 100%')
+    const cor = pg.locator(COR_DO_CADASTRO)
+    const chips = () => cor.locator('.es-novo-chips .chip').evaluateAll((l) => l.map((e) => e.innerText.trim() + (e.disabled ? ' (apagada)' : '') + (e.classList.contains('ligado') ? ' (ligada)' : '')))
+    const criar = pg.locator('dialog[open] .sobre-pe .btn').last()
+
+    /* em repouso: só a fileira das famílias */
+    const familias = await cor.locator('.es-familia').evaluateAll((l) => l.map((e) => e.getAttribute('aria-label')))
+    const repouso = await cor.evaluate((e) => Math.round(e.getBoundingClientRect().height))
+    conta(familias.join(' | ') === 'Branco e Cru | Preto e Cinza | Vermelho | Rosa | Laranja | Amarelo | Verde | Azul | Roxo e Lilás | Marrom e Terra | Bege e Nude | Metálicos e Especiais | Outras' && await cor.locator('.chip').count() === 0, `${T} cor: em repouso aparece a fileira das 13 famílias, na ordem do catálogo, e nenhuma pílula (${familias.length} famílias)`)
+    conta(repouso < 90 && /Clique numa família para ver as cores dela\. São 13 famílias e 122 cores\./.test(await cor.innerText()) && await sobra(pg) <= 0, `${T} cor: o bloco da cor ocupa ${repouso} px em repouso (eram 1.696 com as 122 pílulas), e diz o que fazer`)
+    const rostos = await cor.locator('.es-familia .es-rosto').evaluateAll((l) => l.map((e) => e.classList.contains('varias') ? 'arco' : getComputedStyle(e).backgroundColor))
+    conta(rostos[0] === 'rgb(255, 255, 255)' && rostos[7] === 'rgb(30, 70, 180)' && rostos[12] === 'arco' && new Set(rostos).size === 13, `${T} cor: cada família tem o rosto da cor que leva o nome dela, e "Outras" tem o arco (${rostos[7]})`)
+    await pg.screenshot({ path: `${PASTA}/cor-familias-1440-${tema}.png` })
+
+    /* a família aberta: só as cores dela, com a que já está no estoque apagada */
+    await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+    let lista = await chips()
+    const titulo = (await cor.locator('.es-familia-titulo').innerText()).replace(/\s+/g, ' ').trim()
+    conta(lista.join(' | ') === 'Azul Royal | Azul Marinho (apagada) | Azul Celeste | Azul Turquesa | Azul Petróleo | Azul Bebê | Ciano | Azul Piscina | Azul Cobalto | Azul Jeans | Nova cor' && /^Azul 10 cores · 1 já está no estoque Editar cores$/.test(titulo), `${T} cor: aberta a família Azul, só as 10 cores dela, a que o tecido já tem apagada, e a pílula "Nova cor" no fim (${titulo})`)
+    conta(await criar.isDisabled(), `${T} cor: sem cor escolhida o material não é criado`)
+    await cor.locator('.chip', { hasText: /^Azul Royal$/ }).click(); await pausa(pg, 300)
+    conta((await chips())[0] === 'Azul Royal (ligada)' && await criar.isEnabled() && await cor.locator('.es-familia[data-familia="AZ"]').getAttribute('aria-pressed') === 'true', `${T} cor: clicar na pílula escolhe a cor, e o material já pode ser criado`)
+    const aberta = await cor.evaluate((e) => Math.round(e.getBoundingClientRect().height))
+    conta(aberta < 300, `${T} cor: com a família aberta o bloco ocupa ${aberta} px`)
+    await pg.screenshot({ path: `${PASTA}/cor-familia-aberta-1440-${tema}.png` })
+    /* fechar a família guarda a escolha à vista */
+    await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+    conta(await cor.locator('.chip').count() === 0 && /^Azul Royal é a cor escolhida$/.test((await cor.locator('[data-cor-escolhida]').innerText()).replace(/\s+/g, ' ').trim()) && await criar.isEnabled(), `${T} cor: fechada a família, a cor escolhida continua escrita`)
+    /* outra família não desfaz a escolha, e a escolha nova troca */
+    await cor.locator('.es-familia[data-familia="VM"]').click(); await pausa(pg, 300)
+    lista = await chips()
+    conta(lista.includes('Vermelho Fourtime (apagada)') && lista.length === 11 && !lista.some((c) => / \(ligada\)/.test(c)) && await criar.isEnabled(), `${T} cor: abrir outra família mostra as dela, sem perder a cor já escolhida`)
+
+    /* COR NOVA NA FAMÍLIA */
+    await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+    gravados.length = 0
+    await cor.locator('.chip', { hasText: 'Nova cor' }).click(); await pausa(pg, 300)
+    const ficha = cor.locator('[data-ficha-da-cor]')
+    const gravarCor = ficha.locator('.btn-forte')
+    conta(await ficha.getAttribute('data-ficha-da-cor') === 'nova' && /^Nova cor em Azul/.test((await ficha.innerText()).trim()) && await gravarCor.isDisabled() && /Adicionar a cor/.test(await gravarCor.innerText()) && /^Azul$/.test((await ficha.locator('.sel .v').innerText()).trim()), `${T} cor nova: "Nova cor" abre a ficha debaixo das pílulas, já na família Azul, e não grava vazia`)
+    await ficha.getByPlaceholder('Azul Bic').fill('azul royal'); await ficha.getByPlaceholder('#1E46B4').fill('#1E46B4'); await pausa(pg, 200)
+    conta(await gravarCor.isDisabled() && /Já existe uma cor com esse nome no catálogo\./.test(await ficha.innerText()), `${T} cor nova: nome que já existe, mesmo escrito de outro jeito, é recusado na hora`)
+    await ficha.getByPlaceholder('Azul Bic').fill('Azul Bic'); await ficha.getByPlaceholder('#1E46B4').fill('12zz'); await pausa(pg, 200)
+    conta(await gravarCor.isDisabled() && /O hexadecimal é # e seis dígitos/.test(await ficha.innerText()), `${T} cor nova: hexadecimal que não é cor é recusado, e a ficha diz como é`)
+    await ficha.getByPlaceholder('#1E46B4').fill('2a52be'); await pausa(pg, 200)
+    const amostra = await ficha.locator('.es-amostra').evaluate((e) => getComputedStyle(e).backgroundColor)
+    conta(amostra === 'rgb(42, 82, 190)' && await gravarCor.isEnabled(), `${T} cor nova: o hexadecimal sem o "#" vale, e a amostra mostra a cor (${amostra})`)
+    conta(await criar.isDisabled() && await pg.locator('dialog[open] .btn-primario').count() === 1, `${T} cor nova: com a ficha da cor aberta, "Criar material" espera, e o único botão vermelho da caixa é ele`)
+    await pg.screenshot({ path: `${PASTA}/cor-nova-na-familia-1440-${tema}.png` })
+    await gravarCor.click(); await pausa(pg, 900)
+    const criou = gravados.find((g) => /^cor_de_tecido(\?|$)/.test(String(g.u)) && Array.isArray(g.corpo))
+    conta(criou && JSON.stringify(criou.corpo) === '[{"nome":"Azul Bic","hex":"#2A52BE","grupo":"AZ"}]', `${T} cor nova: vai para o catálogo com o nome, o hexadecimal em maiúscula e a família (${criou ? JSON.stringify(criou.corpo) : 'nada gravado'})`)
+    lista = await chips()
+    conta(lista.includes('Azul Bic (ligada)') && lista.length === 12 && await cor.locator('[data-ficha-da-cor]').count() === 0 && /^Azul 11 cores/.test((await cor.locator('.es-familia-titulo').innerText()).replace(/\s+/g, ' ').trim()) && await criar.isEnabled(), `${T} cor nova: nasce na família, já escolhida, e a ficha fecha (${lista.filter((c) => /Bic/.test(c)).join('')})`)
+    conta(await pg.locator('dialog[open] [data-onde-fica] .btn').isEnabled(), `${T} cor nova: com a cor nova escolhida o cadastro segue, e o lugar já pode ser marcado`)
+
+    /* EDITAR A COR QUE EXISTE */
+    gravados.length = 0
+    await cor.getByRole('button', { name: 'Editar cores' }).click(); await pausa(pg, 300)
+    lista = await chips()
+    conta(/Clique na cor que você quer editar\./.test(await cor.innerText()) && !lista.includes('Nova cor') && !lista.some((c) => /apagada/.test(c)) && await cor.locator('.es-chip-editar svg').count() === 11 && await cor.getByRole('button', { name: 'Pronto' }).count() === 1, `${T} editar cor: "Editar cores" troca o clique: toda cor da família fica clicável, com o lápis, inclusive a que já está no estoque`)
+    await cor.locator('.chip', { hasText: /^Azul Celeste$/ }).click(); await pausa(pg, 300)
+    conta(await ficha.getAttribute('data-ficha-da-cor') === 'editar' && /^Editar Azul Celeste/.test((await ficha.innerText()).trim()) && await ficha.getByPlaceholder('Azul Bic').inputValue() === 'Azul Celeste' && /^#[0-9A-F]{6}$/.test(await ficha.getByPlaceholder('#1E46B4').inputValue()) && /mesmo catálogo de Configurações/.test(await ficha.innerText()), `${T} editar cor: clicar na cor abre a ficha dela com o nome, o hexadecimal e a família`)
+    conta((await chips()).filter((c) => / \(ligada\)/.test(c)).join('') === 'Azul Celeste (ligada)', `${T} editar cor: a cor em edição fica marcada, e a escolhida do material não muda de lugar`)
+    await ficha.getByPlaceholder('Azul Bic').fill('Azul Céu'); await pausa(pg, 200)
+    conta(/O nome antigo continua escrito nos pedidos e nos materiais que já existem\./.test(await ficha.innerText()), `${T} editar cor: trocar o nome avisa que o nome antigo continua nos pedidos e materiais já escritos`)
+    await ficha.locator('.sel button.cb').click(); await pausa(pg, 300)
+    await pg.locator('dialog[open] .mn.flutua .mn-item', { hasText: /^Verde/ }).click(); await pausa(pg, 300)
+    await pg.screenshot({ path: `${PASTA}/cor-editar-1440-${tema}.png` })
+    await ficha.locator('.btn-forte').click(); await pausa(pg, 900)
+    const mudou = gravados.find((g) => /^cor_de_tecido\?id=eq\./.test(String(g.u)))
+    conta(mudou && /id=eq\.k\d+$/.test(mudou.u) && JSON.stringify(mudou.corpo) === JSON.stringify({ nome: 'Azul Céu', hex: mudou.corpo.hex, grupo: 'VD' }), `${T} editar cor: salva o nome, o hexadecimal e a família nova naquela cor (${mudou ? JSON.stringify(mudou.corpo) : 'nada gravado'})`)
+    lista = await chips()
+    conta(/^Verde 11 cores/.test((await cor.locator('.es-familia-titulo').innerText()).replace(/\s+/g, ' ').trim()) && lista.some((c) => c.startsWith('Azul Céu')) && await cor.locator('[data-ficha-da-cor]').count() === 0, `${T} editar cor: a cor muda de família na hora, e a família nova abre com ela`)
+    await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+    conta((await chips()).includes('Azul Bic (ligada)') && await criar.isEnabled(), `${T} editar cor: a cor escolhida para o material continua escolhida`)
+    await cor.locator('.es-familia[data-familia="VD"]').click(); await pausa(pg, 300)
+    conta((await chips()).includes('Nova cor') && await cor.locator('.es-chip-editar').count() === 0, `${T} editar cor: trocar de família sai do modo de editar, para o clique voltar a escolher`)
+    /* cancelar não grava */
+    await cor.getByRole('button', { name: 'Editar cores' }).click(); await pausa(pg, 200)
+    gravados.length = 0
+    await cor.locator('.chip', { hasText: /^Verde Musgo$/ }).click(); await pausa(pg, 200)
+    await ficha.getByPlaceholder('Azul Bic').fill('Outro nome'); await ficha.getByRole('button', { name: 'Cancelar' }).click(); await pausa(pg, 300)
+    conta(await cor.locator('[data-ficha-da-cor]').count() === 0 && !gravados.some((g) => /cor_de_tecido/.test(String(g.u))) && (await chips()).some((c) => c.startsWith('Verde Musgo')), `${T} editar cor: Cancelar fecha a ficha sem gravar`)
+    await cor.getByRole('button', { name: 'Pronto' }).click(); await pausa(pg, 200)
+    conta((await chips()).includes('Nova cor') && await cor.locator('.es-chip-editar').count() === 0, `${T} editar cor: "Pronto" devolve o clique que escolhe`)
+    /* a sublimação não é cor de malha: aparece em Outras e não se edita */
+    await cor.locator('.es-familia[data-familia="outras"]').click(); await pausa(pg, 300)
+    await cor.getByRole('button', { name: 'Editar cores' }).click(); await pausa(pg, 200)
+    const outras = await cor.locator('.es-novo-chips .chip').evaluateAll((l) => l.map((e) => e.innerText.trim() + (e.disabled ? ' (fixa)' : '')))
+    conta(outras.join(' | ') === 'SUBLIMAÇÃO (fixa) | AMARELO MANTEIGA', `${T} editar cor: em "Outras" a sublimação não se edita, e a cor sem família sim (${outras.join(' | ')})`)
+    conta(erros.length === 0, `cor pela família, ${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
+/* QUEM NÃO É ADMINISTRADOR NEM GERENTE escolhe a cor, e não mexe no catálogo */
+await caso('cor pela família, sem mexer no catálogo', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 1000, tema: 'light', papel: 'producao' })
+  await ir(pg, '/estoque', '[data-arvore]')
+  await abrirNovaCor(pg, 'DRYFIT POLIESTER 100%')
+  const cor = pg.locator(COR_DO_CADASTRO)
+  await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+  const lista = await cor.locator('.es-novo-chips .chip').allInnerTexts()
+  conta(lista.length === 10 && !lista.some((c) => /Nova cor/.test(c)) && await cor.getByRole('button', { name: 'Editar cores' }).count() === 0, `cor sem catálogo: quem não é administrador nem gerente não vê "Nova cor" nem "Editar cores" (${lista.length} pílulas)`)
+  await cor.locator('.chip', { hasText: /^Azul Royal$/ }).click(); await pausa(pg, 300)
+  conta(await pg.locator('dialog[open] .sobre-pe .btn').last().isEnabled(), 'cor sem catálogo: escolher a cor e criar o material continua valendo')
+  conta(erros.length === 0, `cor sem catálogo: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+/* O CELULAR: a fileira das famílias enrola, e cada família cabe no dedo */
+await caso('cor pela família, celular', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema: 'light' })
+  await ir(pg, '/estoque', '.pagina')
+  await pg.getByRole('button', { name: /Novo material|Novo/ }).first().click(); await pausa(pg, 800)
+  if (!(await pg.locator('dialog[open] .es-novo').count())) { await pg.locator('.mn.flutua .mn-item, [role="menuitem"]', { hasText: 'Novo material' }).first().click(); await pausa(pg, 800) }
+  await pg.locator('dialog[open] .es-novo button.cb').first().click(); await pausa(pg, 300)
+  await pg.locator('.mn.flutua .mn-item', { hasText: 'DRYFIT POLIESTER 100%' }).click(); await pausa(pg, 400)
+  const cor = pg.locator(COR_DO_CADASTRO)
+  const alvos = await cor.locator('.es-familia').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), Math.round(r.top)] }))
+  conta(alvos.length === 13 && alvos.every(([w, h]) => w >= 44 && h >= 44) && new Set(alvos.map((a) => a[2])).size === 2 && await sobra(pg) <= 0, `cor no celular: as 13 famílias em duas fileiras, cada uma com 44 px ou mais, sem rolar de lado (${alvos[0][0]} x ${alvos[0][1]})`)
+  await cor.locator('.es-familia[data-familia="AZ"]').click(); await pausa(pg, 300)
+  await cor.locator('.chip', { hasText: 'Nova cor' }).click(); await pausa(pg, 300)
+  const campos = await cor.locator('.es-cor-ficha-campos > *').evaluateAll((l) => l.map((e) => Math.round(e.getBoundingClientRect().top)))
+  conta(await sobra(pg) <= 0 && campos.length === 3 && campos[2] > campos[1] + 20, 'cor no celular: a ficha da cor cabe, com o hexadecimal debaixo do nome')
+  await pg.screenshot({ path: `${PASTA}/cor-familia-390-light.png` })
+  conta(erros.length === 0, `cor no celular: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 })
 

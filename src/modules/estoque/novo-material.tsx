@@ -20,6 +20,7 @@ import {
   reativarMaterialArquivado,
   type Categoria,
   type CorDoCatalogo,
+  type FamiliaDeCor,
   type MalhaDoCatalogo,
   type Material,
 } from '@dominio/estoque'
@@ -30,8 +31,8 @@ import { lerNumero } from '@dominio/ferramentas'
 import { definirLugares, type Lugar } from '@dominio/deposito'
 import { idsDosFornecedores, type Fornecimento, type Guardado } from './apoio'
 import { EtiquetaDoLugar } from './frente'
+import { EscolherCor } from './escolher-cor'
 import { MarcarLugar } from './marcar-lugar'
-import { Bola } from './vao'
 
 /* ==========================================================================
    O material novo.
@@ -45,6 +46,10 @@ import { Bola } from './vao'
    editor, porque é por elas que a separação acha o tecido de um layout.
    Escrever "Dry fit preto" à mão criaria um material que nenhum pedido
    reserva. As cores que já estão no estoque daquela malha aparecem apagadas.
+
+   A COR SE ESCOLHE PELA FAMÍLIA (`escolher-cor.tsx`): o catálogo tem mais de
+   cem cores, e administrador e gerente põem cor nova e editam a que existe
+   sem sair daqui.
 
    AVIAMENTO E INSUMO TÊM GRUPO, que é o que junta "Linha 120 branca" e
    "Linha 120 preta" numa linha só da lista.
@@ -61,15 +66,18 @@ import { Bola } from './vao'
 export type InicioDoNovo = { categoria: Categoria; tecidoId?: string; grupo?: string }
 
 const UNIDADES = ['un', 'm', 'kg', 'L', 'cone', 'rolo', 'cx', 'par']
+const SEM_NENHUMA = new Set<string>()
 
 export function NovoMaterial({
   inicio,
   materiais,
   fornecimento,
   guardado,
+  podeMexerNasCores,
   aoFechar,
   aoCriar,
   aoCriarFornecedor,
+  aoMudarCores,
 }: {
   /** com o que o modal abre; nulo fecha */
   inicio: InicioDoNovo | null
@@ -77,10 +85,14 @@ export function NovoMaterial({
   fornecimento: Fornecimento
   /** o depósito desenhado e o lugar de cada material; sem desenho, `planta` é nula */
   guardado: Guardado
+  /** administrador e gerente: põem cor no catálogo e editam a que existe */
+  podeMexerNasCores: boolean
   aoFechar: () => void
   /** recebe o material criado, já com o id */
   aoCriar: (id: string, categoria: Categoria, tecidoId: string, grupo: string) => Promise<void>
   aoCriarFornecedor: () => Promise<void>
+  /** uma cor do catálogo mudou de nome ou de cor: quem mostra material relê */
+  aoMudarCores: () => Promise<void>
 }) {
   const [categoria, setCategoria] = useState<Categoria>('tecido')
   const [malhaId, setMalhaId] = useState('')
@@ -104,6 +116,10 @@ export function NovoMaterial({
 
   const [malhas, setMalhas] = useState<MalhaDoCatalogo[] | null>(null)
   const [cores, setCores] = useState<CorDoCatalogo[]>([])
+  const [familias, setFamilias] = useState<FamiliaDeCor[]>([])
+  /* com a ficha de uma cor aberta, "Criar material" espera: senão a pessoa
+     escreve a cor nova, clica no botão vermelho e perde o que escreveu */
+  const [naFichaDaCor, setNaFichaDaCor] = useState(false)
   const [falhaDoCatalogo, setFalhaDoCatalogo] = useState('')
 
   useEffect(() => {
@@ -121,6 +137,7 @@ export function NovoMaterial({
     setMarcando(false)
     setFalha('')
     setAoLado(false)
+    setNaFichaDaCor(false)
     naMao.current = false
   }, [inicio])
 
@@ -134,6 +151,7 @@ export function NovoMaterial({
         if (!vivo) return
         setMalhas(c.malhas)
         setCores(c.cores)
+        setFamilias(c.familias)
       })
       .catch((e: unknown) => {
         if (!vivo) return
@@ -146,6 +164,16 @@ export function NovoMaterial({
       vivo = false
     }
   }, [precisaDoCatalogo])
+
+  /* depois de uma cor nascer ou mudar no catálogo, o cadastro e a página
+     releem: a cor nova já aparece na família, e a bolinha da árvore muda */
+  async function relerAsCores() {
+    const c = await carregarCatalogoDeTecido()
+    setMalhas(c.malhas)
+    setCores(c.cores)
+    setFamilias(c.familias)
+    await aoMudarCores().catch(() => undefined)
+  }
 
   const ehTecido = categoria === 'tecido'
   const jaNoEstoque = useMemo(
@@ -251,7 +279,10 @@ export function NovoMaterial({
             <Botao
               tom="primario"
               onClick={criar}
-              disabled={!pronto || gravando}
+              disabled={!pronto || gravando || (ehTecido && naFichaDaCor)}
+              title={
+                ehTecido && naFichaDaCor ? 'Salve ou cancele a cor que está aberta' : undefined
+              }
               carregando={gravando}
             >
               {gravando ? 'Criando' : 'Criar material'}
@@ -309,27 +340,22 @@ export function NovoMaterial({
                   <div className="campo">
                     <span className="es-campo-topo">
                       Cor{' '}
-                      {malhaId && jaNoEstoque.size ? (
-                        <small>as apagadas já estão no estoque</small>
-                      ) : null}
+                      <small>
+                        {malhaId && jaNoEstoque.size
+                          ? 'as apagadas já estão no estoque'
+                          : 'primeiro a família, depois a cor'}
+                      </small>
                     </span>
-                    <div className="es-novo-chips">
-                      {cores.map(c => {
-                        const ja = jaNoEstoque.has(c.id)
-                        return (
-                          <Chip
-                            key={c.id}
-                            ligado={corId === c.id}
-                            disabled={ja}
-                            className={ja ? 'es-ja-tem' : ''}
-                            onClick={() => setCorId(c.id)}
-                          >
-                            <Bola cor={c.hex} pequena />
-                            {c.nome}
-                          </Chip>
-                        )
-                      })}
-                    </div>
+                    <EscolherCor
+                      cores={cores}
+                      familias={familias}
+                      valor={corId}
+                      jaTem={malhaId ? jaNoEstoque : SEM_NENHUMA}
+                      aoEscolher={setCorId}
+                      podeMexer={podeMexerNasCores}
+                      aoMudarCatalogo={relerAsCores}
+                      aoAbrirFicha={setNaFichaDaCor}
+                    />
                   </div>
                 </>
               )

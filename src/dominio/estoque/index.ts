@@ -1,4 +1,5 @@
 import { chamar, tabela } from '@shared/supabase'
+import { semAcento } from '@shared/formatar'
 
 /* ==========================================================================
    O estoque.
@@ -172,8 +173,8 @@ function deLinha(l: LinhaDoMaterial): Material {
     ondeFica: l.onde_fica ?? '',
     criadoEm: l.criado_em ?? '',
     composicao: (Array.isArray(l.composicao) ? l.composicao : [])
-      .map((f) => ({ fibra: String(f.fibra ?? ''), pct: numero(f.pct ?? 0) }))
-      .filter((f) => f.fibra),
+      .map(f => ({ fibra: String(f.fibra ?? ''), pct: numero(f.pct ?? 0) }))
+      .filter(f => f.fibra),
     gramatura: numero(l.gramatura ?? 0),
     largura: numero(l.largura ?? 0),
     detalhes: Array.isArray(l.detalhes) ? l.detalhes : [],
@@ -217,7 +218,7 @@ export async function carregarMovimentos(limite = 200): Promise<Movimento[]> {
        material arquivado continua no razão, e não na lista de quem trabalha */
     `movimento_do_estoque?select=*&material_ativo=is.true&order=quando.desc&limit=${limite}`,
   )
-  return linhas.map((l) => ({
+  return linhas.map(l => ({
     id: l.id,
     materialId: l.material_id,
     material: l.material,
@@ -392,7 +393,7 @@ export function rendimento(gramatura: number, largura: number): number {
 
 /** "96% Poliéster · 4% Elastano" */
 export function composicaoPorExtenso(c: Fibra[]): string {
-  return c.map((f) => `${String(f.pct).replace('.', ',')}% ${f.fibra}`).join(' · ')
+  return c.map(f => `${String(f.pct).replace('.', ',')}% ${f.fibra}`).join(' · ')
 }
 
 /* ---------- o uso do estoque (049) ----------------------------------------- */
@@ -422,7 +423,7 @@ export async function carregarUsoDoEstoque(): Promise<UsoDoMaterial[]> {
       meses: Record<string, number | string> | null
     }[]
   >('uso_do_estoque', {})
-  return (Array.isArray(linhas) ? linhas : []).map((l) => ({
+  return (Array.isArray(linhas) ? linhas : []).map(l => ({
     materialId: l.material_id,
     d30: numero(l.d30),
     d90: numero(l.d90),
@@ -454,7 +455,7 @@ export async function conferirORazao(): Promise<
    pedido aprovado; a pergunta de compra é sobre o que sobra, e é ela que o
    cartão do início precisa responder. */
 export function abaixoDoMinimo(lista: Material[]): Material[] {
-  return lista.filter((m) => m.livre < m.minimo)
+  return lista.filter(m => m.livre < m.minimo)
 }
 
 /** Quanto da barra encher: o mínimo fica na metade, para o olho comparar. */
@@ -558,7 +559,9 @@ export type GrupoDoEstoque = {
   unidade: string
 }
 
-export function chaveDoGrupo(m: Pick<Material, 'categoria' | 'tecidoId' | 'tecido' | 'grupo' | 'id'>): string {
+export function chaveDoGrupo(
+  m: Pick<Material, 'categoria' | 'tecidoId' | 'tecido' | 'grupo' | 'id'>,
+): string {
   if (m.categoria === 'tecido') {
     if (m.tecidoId) return 'tecido:' + m.tecidoId
     return m.tecido ? 'tecido:' + m.tecido.toLowerCase() : 'solto:' + m.id
@@ -612,20 +615,94 @@ export function nomeInteiro(m: Pick<Material, 'categoria' | 'tecido' | 'cor' | '
 /* ---------- o catálogo de tecido, para o material novo --------------------- */
 
 export type MalhaDoCatalogo = { id: string; nome: string }
-export type CorDoCatalogo = { id: string; nome: string; hex: string }
+export type CorDoCatalogo = { id: string; nome: string; hex: string; grupo: string | null }
+/** A família de cor do catálogo (Configurações, Banco de dados, Cores de tecido). */
+export type FamiliaDeCor = { cod: string; nome: string }
 
 /* Só o que o cadastro de material precisa do banco de dados do editor: o nome
-   da malha e a cor com o hex. O catálogo inteiro (referências, consumo,
-   listas) é de outra tela e pesa dez vezes mais. */
+   da malha, a cor com o hex e a família dela. O catálogo inteiro (referências,
+   consumo, listas) é de outra tela e pesa dez vezes mais. */
 export async function carregarCatalogoDeTecido(): Promise<{
   malhas: MalhaDoCatalogo[]
   cores: CorDoCatalogo[]
+  familias: FamiliaDeCor[]
 }> {
-  const [malhas, cores] = await Promise.all([
+  const [malhas, cores, familias] = await Promise.all([
     tabela<MalhaDoCatalogo[]>('tecido?select=id,nome&ativo=is.true&order=nome.asc'),
-    tabela<CorDoCatalogo[]>('cor_de_tecido?select=id,nome,hex&ativo=is.true&order=ordem.asc,nome.asc'),
+    tabela<CorDoCatalogo[]>(
+      'cor_de_tecido?select=id,nome,hex,grupo&ativo=is.true&order=ordem.asc,nome.asc',
+    ),
+    /* a família é enfeite de arrumação: se a leitura dela falhar, as cores
+       aparecem todas juntas em "Outras", e o cadastro continua de pé */
+    tabela<FamiliaDeCor[]>('grupo_de_cor?select=cod,nome&order=ordem.asc').catch(
+      () => [] as FamiliaDeCor[],
+    ),
   ])
-  return { malhas, cores }
+  return { malhas, cores, familias }
+}
+
+/* --------------------------------------------------------------------------
+   AS CORES POR FAMÍLIA (pedido do Henrique, 05/10/2026: no cadastro de
+   material, "primeiro a família, depois a cor"). O catálogo tem mais de cem
+   cores, e todas em pílulas ocupavam três telas de altura.
+
+   A família é o `grupo` da cor (Branco e Cru, Azul, Metálicos...). O que não
+   tem família, ou está no grupo da sublimação, que não é cor de malha, vai
+   para "Outras", no fim. A família vazia só aparece para quem pode pôr cor
+   nela.
+   -------------------------------------------------------------------------- */
+
+/** o código da família de quem não tem família */
+export const FAMILIA_OUTRAS = ''
+/** o grupo da sublimação: a cor vem da arte, e não se edita por aqui */
+export const GRUPO_DA_SUBLIMACAO = 'SUB'
+
+export type CoresDaFamilia = {
+  cod: string
+  nome: string
+  cores: CorDoCatalogo[]
+  /** a cor que representa a família na fileira; nula em "Outras" */
+  rosto: string | null
+}
+
+/** A família em que a cor aparece: a dela, ou "Outras". */
+export function familiaDaCor(cor: CorDoCatalogo, familias: FamiliaDeCor[]): string {
+  if (!cor.grupo || cor.grupo === GRUPO_DA_SUBLIMACAO) return FAMILIA_OUTRAS
+  return familias.some(f => f.cod === cor.grupo) ? cor.grupo : FAMILIA_OUTRAS
+}
+
+/* O rosto da família é a cor que tem o nome dela ("Azul", "Vermelho"); sem
+   uma assim, a primeira que começa com o nome ("Verde Bandeira"); sem essa, a
+   primeira da família. */
+function rostoDaFamilia(nome: string, cores: CorDoCatalogo[]): string | null {
+  const primeira = semAcento(nome).split(' ')[0] ?? ''
+  const igual = cores.find(c => semAcento(c.nome) === primeira)
+  const comeca = cores.find(c => semAcento(c.nome).startsWith(primeira + ' '))
+  return (igual ?? comeca ?? cores[0])?.hex ?? null
+}
+
+export function coresPorFamilia(
+  cores: CorDoCatalogo[],
+  familias: FamiliaDeCor[],
+  comVazias = false,
+): CoresDaFamilia[] {
+  const lista: CoresDaFamilia[] = familias
+    .filter(f => f.cod !== GRUPO_DA_SUBLIMACAO && f.cod !== FAMILIA_OUTRAS)
+    .map(f => {
+      const dela = cores.filter(c => familiaDaCor(c, familias) === f.cod)
+      return { cod: f.cod, nome: f.nome, cores: dela, rosto: rostoDaFamilia(f.nome, dela) }
+    })
+    .filter(f => comVazias || f.cores.length > 0)
+  const outras = cores.filter(c => familiaDaCor(c, familias) === FAMILIA_OUTRAS)
+  if (outras.length || comVazias)
+    lista.push({ cod: FAMILIA_OUTRAS, nome: 'Outras', cores: outras, rosto: null })
+  return lista
+}
+
+/** `#1e46b4`, `1E46B4` e ` #1E46B4 ` viram `#1E46B4`; o que não é cor devolve vazio. */
+export function hexDaCor(texto: string): string {
+  const t = texto.trim().toUpperCase().replace(/^#?/, '#')
+  return /^#[0-9A-F]{6}$/.test(t) ? t : ''
 }
 
 /* ==========================================================================
@@ -901,8 +978,10 @@ export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
       >('tecido?select=id,nome,grupo,gramatura,largura,ordem,ativo&order=ordem.asc,nome.asc'),
     ])
     return {
-      grupos: grupos.filter((g) => g.cod).map((g) => ({ cod: g.cod, nome: g.nome, ordem: Number(g.ordem) || 0 })),
-      tecidos: tecidos.map((t) => ({
+      grupos: grupos
+        .filter(g => g.cod)
+        .map(g => ({ cod: g.cod, nome: g.nome, ordem: Number(g.ordem) || 0 })),
+      tecidos: tecidos.map(t => ({
         id: t.id,
         nome: t.nome,
         grupo: t.grupo ?? '',
@@ -948,7 +1027,7 @@ export async function carregarReservasEmAberto(): Promise<ReservaEmAberto[]> {
         sem_consumo: boolean
       }[]
     >('reserva_em_aberto?select=*&order=entrega.asc.nullslast')
-    return linhas.map((l) => ({
+    return linhas.map(l => ({
       id: l.id,
       pedidoId: l.pedido_id,
       pedido: l.pedido ?? '',
@@ -1011,7 +1090,7 @@ export async function carregarReservasDoPedido(pedidoId: string): Promise<Reserv
     `reserva_do_pedido?select=${COLUNAS_DA_RESERVA}&pedido_id=eq.${pedidoId}` +
       '&order=categoria.asc,material.asc',
   )
-  return linhas.map((l) => ({
+  return linhas.map(l => ({
     id: l.id,
     pedidoId: l.pedido_id,
     pedido: l.pedido ?? '',
@@ -1045,7 +1124,13 @@ export async function refazerAsReservasAbertas(): Promise<number> {
   return chamar<number>('refazer_as_reservas_abertas', {})
 }
 
-export { concluirASeparacao, comecarASeparacao, carregarFilaDaSeparacao, desfazerASeparacao, separarMaterial } from './separacao'
+export {
+  concluirASeparacao,
+  comecarASeparacao,
+  carregarFilaDaSeparacao,
+  desfazerASeparacao,
+  separarMaterial,
+} from './separacao'
 export type { PedidoNaSeparacao } from './separacao'
 
 /* ---------- as estatísticas: o que saiu, por tecido e por cor -------------- */
@@ -1228,7 +1313,20 @@ export function usoPorMes(usado: number, periodo: Periodo): number {
   return (usado / DIAS_DO_PERIODO[periodo]) * 30
 }
 
-const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const MESES_CURTOS = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+]
 
 export type MesDeUso = { mes: string; rotulo: string; usado: number; corrente: boolean }
 

@@ -31,6 +31,8 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
   const gravados = []
   /* o fornecedor criado no teste aparece na lista seguinte, como no banco */
   const criados = []
+  const coresCriadas = []
+  const coresMudadas = {}
   let recusas = recusa
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
@@ -61,6 +63,9 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
       try { corpo = JSON.parse(req.postData() ?? 'null') } catch { /* corpo que não é JSON */ }
       gravados.push({ u: u.split('/rest/v1/')[1] ?? u, corpo })
       const novoId = 'novo-' + gravados.length
+      /* a cor criada ou mudada no cadastro aparece na leitura seguinte, como no banco */
+      if (m === 'POST' && /\/cor_de_tecido(\?|$)/.test(u) && Array.isArray(corpo)) coresCriadas.push({ id: novoId, ordem: 999, ativo: true, ...corpo[0] })
+      if (m === 'PATCH' && /\/cor_de_tecido\?id=eq\./.test(u) && corpo) { const qual = u.match(/id=eq\.([^&]+)/)[1]; coresMudadas[qual] = { ...(coresMudadas[qual] ?? {}), ...corpo }; return json(r, [{ id: qual, ...corpo }]) }
       if (m === 'POST' && /\/fornecedor\?/.test(u) && corpo && !Array.isArray(corpo)) criados.push({ ...D.fornecedores[0], id: novoId, nome: corpo.nome, cnpj: corpo.cnpj ?? null, situacao: 'novo', gravada: 'novo', tipos: [] })
       return json(r, u.includes('rpc/') ? {} : [{ id: novoId }])
     }
@@ -78,7 +83,8 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     else if (u.includes('reserva_do_pedido')) { const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]; corpo = E.reservasDoPedido.filter((x) => x.pedido_id === id) }
     else if (u.includes('tipo_de_fornecedor')) corpo = D.tipos
     else if (u.includes('/tecido?')) corpo = (estoque === 'grande' ? [...E.tecidos, ...E.tecidosAMais] : E.tecidos).filter((t) => !u.includes('ativo=is.true') || t.ativo)
-    else if (u.includes('/cor_de_tecido?')) corpo = D.cores
+    else if (u.includes('/cor_de_tecido?')) corpo = [...E.coresDoCatalogo.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) })), ...coresCriadas.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) }))]
+    else if (u.includes('grupo_de_cor')) corpo = E.gruposDeCor
     else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : [] }
     else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : deposito === 'esticado' ? P.moveisEsticados : []
     else if (u.includes('/deposito?')) { if (deposito === 'erro') return json(r, { message: 'permission denied for table deposito' }, 403); corpo = deposito === 'cheio' || deposito === 'esticado' ? [P.DEPOSITO] : [] }

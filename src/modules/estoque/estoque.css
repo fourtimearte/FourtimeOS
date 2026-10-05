@@ -904,3 +904,144 @@ table.es-tb {
 .es-volta:hover {
   color: var(--text);
 }
+
+/* ==========================================================================
+   A COR PELA FAMÍLIA (escolher-cor.tsx; prancha 55 do wireframe, 05/10/2026)
+   Uma fileira com as famílias; aberta uma, as pílulas só dela. A fileira
+   enrola sozinha quando a caixa estreita, e no toque cada família tem 44 px.
+   ========================================================================== */
+.es-cor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-width: 0;
+}
+.es-familias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: var(--re-2);
+}
+.es-familia {
+  display: grid;
+  place-items: center;
+  height: var(--btn-h);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.es-familia:hover {
+  background: var(--surface-2);
+}
+.es-familia.ligada {
+  background: var(--ink-soft);
+  border-color: var(--ink);
+}
+.es-bola.es-rosto {
+  width: 24px;
+  height: 24px;
+}
+/* "Outras" junta o que não tem família: o rosto dela é um arco de cores, e as
+   cores do arco são as de estado do sistema, para não inventar cor nova */
+.es-bola.es-rosto.varias {
+  background: conic-gradient(var(--warn), var(--ok), var(--info), var(--brand), var(--warn));
+}
+.es-cor-dica {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.es-cor-escolhida {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.es-cor-escolhida b {
+  color: var(--text);
+  font-weight: 700;
+}
+.es-familia-titulo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--re-2) var(--re-4);
+  min-height: var(--btn-h-sm);
+  font-size: 14.5px;
+}
+.es-familia-titulo > span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.es-editar-cores.es-editar-cores {
+  margin-left: auto;
+}
+/* a pílula de pôr cor na família: tracejada, para não parecer uma cor */
+.es-chip-nova.es-chip-nova {
+  border-style: dashed;
+  color: var(--text-2);
+}
+.es-chip-nova.es-chip-nova.ligado {
+  border-style: solid;
+  color: var(--on-ink);
+}
+.es-chip-editar > svg {
+  color: var(--text-3);
+}
+.es-chip-editar.ligado > svg {
+  color: var(--on-ink);
+}
+
+/* a ficha da cor, aberta debaixo das pílulas */
+.es-cor-ficha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  padding: var(--re-7);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  container: es-cor-ficha / inline-size;
+}
+.es-cor-ficha-titulo {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.es-cor-ficha-campos {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 156px);
+  align-items: end;
+  gap: var(--re-5);
+}
+.es-bola.es-amostra {
+  width: var(--btn-h);
+  height: var(--btn-h);
+}
+.es-cor-ficha-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.es-cor-ficha-nota.erro {
+  color: var(--brand-text);
+}
+@container es-cor-ficha (max-width: 380px) {
+  .es-cor-ficha-campos {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .es-cor-ficha-campos > .campo:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (pointer: coarse) {
+  .es-familias {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  }
+  .es-familia {
+    height: 44px;
+  }
+}

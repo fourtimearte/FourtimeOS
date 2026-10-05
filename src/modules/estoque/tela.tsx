@@ -96,6 +96,10 @@ export function TelaEstoque() {
   const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
   const podeEditar = !!pessoa && pode(pessoa, 'estoque', 'editar')
   const podeSeparar = !!pessoa && pode(pessoa, 'separacao', 'ver')
+  /* o catálogo de cores é do Banco de dados, e lá só administrador e gerente
+     mexem (a regra é do banco, migração 008): é a mesma aqui */
+  const podeMexerNasCores =
+    podeEditar && !!pessoa && (pessoa.papel === 'admin' || pessoa.papel === 'gerente')
 
   const [materiais, setMateriais] = useState<Material[]>([])
   const [movimentos, setMovimentos] = useState<Movimento[]>([])
@@ -638,7 +642,7 @@ export function TelaEstoque() {
                 placeholder={
                   abaAVista === 'materiais' || abaAVista === 'uso'
                     ? 'Buscar material, cor ou fornecedor'
-                      : abaAVista === 'razao'
+                    : abaAVista === 'razao'
                       ? 'Buscar material, pedido ou pessoa'
                       : 'Onde está? Buscar tecido, cor ou item'
                 }
@@ -869,6 +873,8 @@ export function TelaEstoque() {
         materiais={materiais}
         fornecimento={fornecimento}
         guardado={guardado}
+        podeMexerNasCores={podeMexerNasCores}
+        aoMudarCores={recarregar}
         aoFechar={() => setNovo(null)}
         aoCriar={async (id, categoriaNova, tecidoId) => {
           setNovo(null)

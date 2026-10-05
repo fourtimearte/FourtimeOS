@@ -16,6 +16,7 @@ import {
 import {
   ENCAIXE,
   MAIOR_LADO_DO_CHAO,
+  ESPACO_DA_GRADE,
   MAXIMO_DA_GRADE,
   MAXIMO_DE_NIVEIS,
   MAXIMO_DE_VAOS,
@@ -29,7 +30,9 @@ import {
   gradeDosPaletes,
   guardaMaterial,
   metros,
+  maiorVaoDaGrade,
   montarGrade,
+  mudarContagemDaGrade,
   nomeDoVao,
   novaEscada,
   novaPorta,
@@ -84,6 +87,8 @@ import {
 
 const CHAO_NOVO: Planta = { id: '', nome: 'Depósito', largura: 15, fundo: 10, moveis: [] }
 const MENOR_PECA = 0.3
+/** o maior vão que a grade aceita entre um palete e o vizinho, em metros */
+const MAIOR_VAO_DA_GRADE = 10
 const USOS = ['Tecido', 'Aviamentos', 'Insumo', 'Aviamentos e insumos', 'Retalhos', 'Outros']
 
 function novoId(): string {
@@ -167,7 +172,8 @@ export function EditorDoDeposito({
       colunas: 3,
       largura: 1.2,
       fundo: 1.2,
-      espaco: 0.8,
+      espacoX: ESPACO_DA_GRADE,
+      espacoY: ESPACO_DA_GRADE,
     }
     /* a grade nasce onde couber: desce de meio em meio metro até não pisar em ninguém */
     const contorno = contornoDaGrade(g)
@@ -217,10 +223,63 @@ export function EditorDoDeposito({
     por(copia)
   }
 
+  /* MAIS OU MENOS FILEIRAS E COLUNAS. Quando o chão não dá para estender, a
+     grade reparte os paletes no espaço que já ocupa; e o que não coube é dito,
+     em vez de o campo voltar ao número de antes sem explicação. */
+  function contarGrade(g: Grade, eixo: 'fileiras' | 'colunas', quantos: number) {
+    const m = mudarContagemDaGrade(p, g, eixo, quantos)
+    const nome = eixo === 'fileiras' ? 'fileiras' : 'colunas'
+    const lado = metros(eixo === 'fileiras' ? g.fundo : g.largura)
+    if (m.como === 'nao-cabe') {
+      avisar(
+        `Não cabem ${quantos} ${nome} de ${lado} m daqui até a parede, nem com os paletes encostados. Arraste a grade para mais longe da parede ou diminua o palete.`,
+        'warn',
+        7,
+      )
+      return
+    }
+    if (m.como === 'repartiu' || m.como === 'ate-a-parede') {
+      avisar(
+        m.como === 'repartiu'
+          ? `Não havia chão para estender: as ${quantos} ${nome} foram repartidas no espaço que a grade já ocupava. O vão entre elas passou de ${metros(m.antes)} para ${metros(m.depois)} m.`
+          : `Não havia chão para estender: as ${quantos} ${nome} foram até a parede, e o vão entre elas passou de ${metros(m.antes)} para ${metros(m.depois)} m.`,
+        'info',
+        7,
+      )
+    }
+    refazerGrade(m.grade)
+  }
+
+  /* O VÃO QUE NÃO CABE vira o maior que cabe, e a tela diz. Antes, um vão
+     grande demais empurrava a última coluna para fora do chão e ela sumia. */
+  function espacarGrade(g: Grade, eixo: 'espacoX' | 'espacoY', vao: number) {
+    const maior = maiorVaoDaGrade(p, g, eixo)
+    if (vao > maior + 0.001) {
+      const n = eixo === 'espacoX' ? g.colunas : g.fileiras
+      avisar(
+        `Com ${n} ${eixo === 'espacoX' ? 'colunas' : 'fileiras'}, o maior vão que cabe daqui até a parede é ${metros(maior)} m.`,
+        'info',
+        7,
+      )
+    }
+    refazerGrade({ ...g, [eixo]: Math.min(vao, maior) })
+  }
+
   function refazerGrade(
     g: Grade,
     opcoes: { renomear?: boolean; prefixo?: string; comecaEm?: number; ordem?: OrdemDosNomes } = {},
   ) {
+    /* o que cairia fora do chão ou em cima de outra peça não nasce. Quando uma
+       fileira ou uma coluna inteira fica de fora, a conta do painel volta para
+       o que existe: dizer isso, em vez de o número mudar calado. */
+    const ficou = gradeDosPaletes({ ...p, moveis: montarGrade(p, g, { novoId, ...opcoes }) }, g.id)
+    if (ficou && (ficou.fileiras < g.fileiras || ficou.colunas < g.colunas)) {
+      avisar(
+        `Nem tudo coube: a grade ficou com ${ficou.fileiras} por ${ficou.colunas}. O que cairia fora do chão ou inteiro em cima de outra peça não foi criado.`,
+        'warn',
+        7,
+      )
+    }
     setP(antes => {
       const moveis = montarGrade(antes, g, { novoId, ...opcoes })
       /* o palete escolhido pode ter saído da grade: escolhe outro dela */
@@ -351,9 +410,10 @@ export function EditorDoDeposito({
     const fundoNovo = c.fundo + (a.alca.hy === 1 ? dy : -dy)
     const porX = g.colunas > 1 ? (larguraNova - g.colunas * g.largura) / (g.colunas - 1) : null
     const porY = g.fileiras > 1 ? (fundoNovo - g.fileiras * g.fundo) / (g.fileiras - 1) : null
-    const bruto = porX !== null && porY !== null ? Math.max(porX, porY) : (porX ?? porY ?? g.espaco)
-    const espaco = Math.min(Math.max(0, encaixar(bruto)), 10)
-    const novo: Grade = { ...g, espaco }
+    /* cada eixo com o seu vão: esticar para o lado não afasta as fileiras */
+    const vao = (bruto: number | null, deHoje: number) =>
+      bruto === null ? deHoje : Math.min(Math.max(0, encaixar(bruto)), MAIOR_VAO_DA_GRADE)
+    const novo: Grade = { ...g, espacoX: vao(porX, g.espacoX), espacoY: vao(porY, g.espacoY) }
     const cn = contornoDaGrade(novo)
     if (a.alca.hx === -1) novo.x = duasCasas(c.x + c.largura - cn.largura)
     if (a.alca.hy === -1) novo.y = duasCasas(c.y + c.fundo - cn.fundo)
@@ -650,6 +710,8 @@ export function EditorDoDeposito({
                 grade={grade}
                 membros={p.moveis.filter(m => m.grade === grade.id)}
                 aoMudar={refazerGrade}
+                aoContar={(eixo, quantos) => contarGrade(grade, eixo, quantos)}
+                aoEspacar={(eixo, vao) => espacarGrade(grade, eixo, vao)}
                 aoDesmanchar={() =>
                   setP(antes => ({
                     ...antes,
@@ -1163,6 +1225,8 @@ function PainelDaGrade({
   grade,
   membros,
   aoMudar,
+  aoContar,
+  aoEspacar,
   aoDesmanchar,
   aoApagar,
 }: {
@@ -1172,6 +1236,10 @@ function PainelDaGrade({
     g: Grade,
     opcoes?: { renomear?: boolean; prefixo?: string; comecaEm?: number; ordem?: OrdemDosNomes },
   ) => void
+  /** fileiras e colunas passam pela conta de caber no chão */
+  aoContar: (eixo: 'fileiras' | 'colunas', quantos: number) => void
+  /** o vão também: o que não cabe até a parede vira o maior que cabe */
+  aoEspacar: (eixo: 'espacoX' | 'espacoY', vao: number) => void
   aoDesmanchar: () => void
   aoApagar: () => void
 }) {
@@ -1200,7 +1268,7 @@ function PainelDaGrade({
           valor={grade.fileiras}
           minimo={1}
           maximo={MAXIMO_DA_GRADE}
-          aoMudar={v => aoMudar({ ...grade, fileiras: v })}
+          aoMudar={v => aoContar('fileiras', v)}
         />
         <CampoDeNumero
           rotulo="Colunas"
@@ -1208,38 +1276,46 @@ function PainelDaGrade({
           valor={grade.colunas}
           minimo={1}
           maximo={MAXIMO_DA_GRADE}
-          aoMudar={v => aoMudar({ ...grade, colunas: v })}
+          aoMudar={v => aoContar('colunas', v)}
         />
       </div>
+      <Campo
+        rotulo="Tamanho do palete"
+        erro={tamanhoRuim}
+        dica={tamanhoRuim ? 'Largura × fundo, em metros.' : undefined}
+      >
+        <span className="dp-com-sufixo">
+          <Entrada
+            value={tamanho}
+            aria-label="Tamanho do palete"
+            aria-invalid={tamanhoRuim}
+            onFocus={() => setFocado(true)}
+            onBlur={() => setFocado(false)}
+            onChange={e => {
+              setTamanho(e.currentTarget.value)
+              const t = lerTamanho(e.currentTarget.value)
+              if (t) aoMudar({ ...grade, ...t })
+            }}
+          />
+          <i>m</i>
+        </span>
+      </Campo>
       <div className="dp-dois">
-        <Campo
-          rotulo="Tamanho do palete"
-          erro={tamanhoRuim}
-          dica={tamanhoRuim ? 'Largura × fundo, em metros.' : undefined}
-        >
-          <span className="dp-com-sufixo">
-            <Entrada
-              value={tamanho}
-              aria-label="Tamanho do palete"
-              aria-invalid={tamanhoRuim}
-              onFocus={() => setFocado(true)}
-              onBlur={() => setFocado(false)}
-              onChange={e => {
-                setTamanho(e.currentTarget.value)
-                const t = lerTamanho(e.currentTarget.value)
-                if (t) aoMudar({ ...grade, ...t })
-              }}
-            />
-            <i>m</i>
-          </span>
-        </Campo>
         <CampoDeNumero
-          rotulo="Espaço entre eles"
+          rotulo="Espaço entre colunas"
           sufixo="m"
-          valor={grade.espaco}
+          valor={grade.espacoX}
           minimo={0}
-          maximo={10}
-          aoMudar={v => aoMudar({ ...grade, espaco: v })}
+          maximo={MAIOR_VAO_DA_GRADE}
+          aoMudar={v => aoEspacar('espacoX', v)}
+        />
+        <CampoDeNumero
+          rotulo="Espaço entre fileiras"
+          sufixo="m"
+          valor={grade.espacoY}
+          minimo={0}
+          maximo={MAIOR_VAO_DA_GRADE}
+          aoMudar={v => aoEspacar('espacoY', v)}
         />
       </div>
       <div className="dp-dois">

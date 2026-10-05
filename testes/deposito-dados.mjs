@@ -31,6 +31,17 @@ export const moveis = [
   ...paletes,
 ]
 
+/* O DEPÓSITO ESTICADO: é o que o Henrique tinha salvo em 05/10/2026 quando achou
+   o defeito da grade. Uma grade de 2 fileiras por 3 colunas puxada pelo canto
+   até ocupar o chão (4,3 m entre os paletes), a escada embaixo e uma prateleira
+   na parede esquerda. Com o vão de 4,3 m não há chão para uma terceira fileira
+   nem para uma quarta coluna. */
+export const moveisEsticados = [
+  base('escada', 'escada', 'Escada', 0, 8.6, 4, 1.2),
+  base('prat-a', 'prateleira', 'A', 0.1, 3.8, 0.7, 4, { emPe: true, vaos: 4, niveis: 4, nomes: ['A1', 'A2', 'A3', 'A4'] }),
+  ...[[2, 1.1], [7.5, 1.1], [13, 1.1], [2, 6.6], [7.5, 6.6], [13, 6.6]].map(([x, y], i) => base('pe-' + (i + 1), 'palete', 'P0' + (i + 1), x, y, 1.2, 1.2, { grade: 'grade-e' })),
+]
+
 const M = (nome) => D.materiais.find((m) => m.nome === nome)
 let n = 0
 const lugar = (nome, movelId, vao, nivel, principal = true) => {

@@ -594,7 +594,15 @@ export function SelecaoDaGrade({
   const y = m.cima + c.y * S
   const w = c.largura * S
   const h = c.fundo * S
-  const texto = `${g.fileiras} ${g.fileiras === 1 ? 'fileira' : 'fileiras'} por ${g.colunas} ${g.colunas === 1 ? 'coluna' : 'colunas'}, a cada ${metros(g.largura + g.espaco)} m`
+  const passoX = metros(g.largura + g.espacoX)
+  const passoY = metros(g.fundo + g.espacoY)
+  const aCada =
+    passoX === passoY || g.fileiras === 1
+      ? `a cada ${passoX} m`
+      : g.colunas === 1
+        ? `a cada ${passoY} m`
+        : `colunas a cada ${passoX} m, fileiras a cada ${passoY} m`
+  const texto = `${g.fileiras} ${g.fileiras === 1 ? 'fileira' : 'fileiras'} por ${g.colunas} ${g.colunas === 1 ? 'coluna' : 'colunas'}, ${aCada}`
   const cantos: Alca[] = [
     { hx: -1, hy: -1 },
     { hx: 1, hy: -1 },

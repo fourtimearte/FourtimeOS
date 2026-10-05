@@ -435,9 +435,14 @@ export type Grade = {
   /** o lado do palete */
   largura: number
   fundo: number
-  /** o vão entre um palete e o vizinho */
-  espaco: number
+  /** o vão entre um palete e o vizinho do lado (entre colunas) */
+  espacoX: number
+  /** o vão entre um palete e o de baixo (entre fileiras) */
+  espacoY: number
 }
+
+/** o vão de uma grade que acabou de nascer */
+export const ESPACO_DA_GRADE = 0.8
 
 export type OrdemDosNomes = 'fileira' | 'coluna'
 
@@ -465,18 +470,22 @@ export function gradeDosPaletes(planta: Planta, gradeId: string): Grade | null {
   }
   const passoX = menorPasso(xs, largura)
   const passoY = menorPasso(ys, fundo)
-  const espaco = duasCasas(
-    Math.max(0, xs.length > 1 ? passoX - largura : ys.length > 1 ? passoY - fundo : 0),
-  )
+  /* CADA EIXO TEM O SEU VÃO. O eixo com um palete só não tem vão para medir:
+     copia o do outro, e a grade de um palete só nasce com o de sempre. */
+  const medidoX = xs.length > 1 ? duasCasas(Math.max(0, passoX - largura)) : null
+  const medidoY = ys.length > 1 ? duasCasas(Math.max(0, passoY - fundo)) : null
+  const espacoX = medidoX ?? medidoY ?? ESPACO_DA_GRADE
+  const espacoY = medidoY ?? medidoX ?? ESPACO_DA_GRADE
   return {
     id: gradeId,
     x: xs[0],
     y: ys[0],
-    colunas: Math.round((xs[xs.length - 1] - xs[0]) / (largura + espaco)) + 1,
-    fileiras: Math.round((ys[ys.length - 1] - ys[0]) / (fundo + espaco)) + 1,
+    colunas: Math.round((xs[xs.length - 1] - xs[0]) / (largura + espacoX)) + 1,
+    fileiras: Math.round((ys[ys.length - 1] - ys[0]) / (fundo + espacoY)) + 1,
     largura,
     fundo,
-    espaco,
+    espacoX,
+    espacoY,
   }
 }
 
@@ -485,9 +494,91 @@ export function contornoDaGrade(g: Grade): Retangulo {
   return {
     x: g.x,
     y: g.y,
-    largura: duasCasas(g.colunas * g.largura + (g.colunas - 1) * g.espaco),
-    fundo: duasCasas(g.fileiras * g.fundo + (g.fileiras - 1) * g.espaco),
+    largura: duasCasas(g.colunas * g.largura + (g.colunas - 1) * g.espacoX),
+    fundo: duasCasas(g.fileiras * g.fundo + (g.fileiras - 1) * g.espacoY),
   }
+}
+
+/* MUDAR QUANTAS FILEIRAS OU COLUNAS A GRADE TEM.
+
+   O defeito de 05/10/2026: o Henrique esticou a grade pelo canto até ela
+   ocupar o chão (2 fileiras por 3 colunas, com 4,3 m entre os paletes) e
+   depois quis mais fileiras e colunas. A conta antiga só sabia ESTENDER a
+   grade com o mesmo vão: a fileira nova caía fora do chão, não era criada, e o
+   campo voltava para 2 e 3 sem dizer por quê.
+
+   A regra agora, na ordem:
+     1. menos do que tem: tira as últimas, e o vão fica;
+     2. mais, e cabe no chão com o vão de hoje: estende, como sempre;
+     3. não cabe: reparte no MESMO espaço que a grade já ocupa, diminuindo o
+        vão. É o caso de quem esticou a grade e agora quer encher o lugar: a
+        borda que a pessoa escolheu fica onde está;
+     4. se no mesmo espaço os paletes ficariam espremidos (menos de meio metro
+        entre eles), usa o chão até a parede, que dá mais vão. É o caso da
+        grade que acabou de nascer e ainda é pequena;
+     5. nem encostados cabem até a parede: não muda nada, e diz isso.
+
+   Só mexe no eixo pedido: mudar as fileiras não tira as colunas do lugar. */
+export type MudancaDaGrade = {
+  grade: Grade
+  como: 'tirou' | 'estendeu' | 'repartiu' | 'ate-a-parede' | 'nao-cabe'
+  /** o vão do eixo, antes e depois */
+  antes: number
+  depois: number
+}
+
+export function mudarContagemDaGrade(
+  planta: Pick<Planta, 'largura' | 'fundo'>,
+  g: Grade,
+  eixo: 'fileiras' | 'colunas',
+  quantos: number,
+): MudancaDaGrade {
+  const emY = eixo === 'fileiras'
+  const lado = emY ? g.fundo : g.largura
+  const origem = emY ? g.y : g.x
+  const parede = emY ? planta.fundo : planta.largura
+  const vao = emY ? g.espacoY : g.espacoX
+  const atual = emY ? g.fileiras : g.colunas
+  const n = Math.max(1, Math.min(MAXIMO_DA_GRADE, Math.round(quantos)))
+  const com = (como: MudancaDaGrade['como'], vaoNovo: number): MudancaDaGrade => ({
+    como,
+    antes: vao,
+    depois: vaoNovo,
+    grade: {
+      ...g,
+      ...(emY ? { fileiras: n, espacoY: vaoNovo } : { colunas: n, espacoX: vaoNovo }),
+    },
+  })
+  if (n <= atual) return com('tirou', vao)
+  const folga = 0.001
+  if (origem + n * lado + (n - 1) * vao <= parede + folga) return com('estendeu', vao)
+  /* arredonda para baixo, ao centímetro: para cima o último palete passaria da conta */
+  const emCentimetro = (v: number) => Math.floor(v * 100 + folga) / 100
+  const ocupado = atual * lado + (atual - 1) * vao
+  const noMesmoEspaco = (ocupado - n * lado) / (n - 1)
+  if (atual > 1 && noMesmoEspaco >= VAO_QUE_DA_PARA_PASSAR - folga)
+    return com('repartiu', emCentimetro(noMesmoEspaco))
+  const ateAParede = (parede - origem - n * lado) / (n - 1)
+  if (ateAParede >= -folga) return com('ate-a-parede', Math.max(0, emCentimetro(ateAParede)))
+  return { como: 'nao-cabe', antes: vao, depois: vao, grade: g }
+}
+
+/** abaixo disto entre dois paletes ninguém passa: a grade prefere ir até a parede */
+export const VAO_QUE_DA_PARA_PASSAR = 0.5
+
+/** O maior vão que ainda deixa a grade inteira dentro do chão, no eixo pedido.
+    Infinito quando o eixo tem um palete só. */
+export function maiorVaoDaGrade(
+  planta: Pick<Planta, 'largura' | 'fundo'>,
+  g: Grade,
+  eixo: 'espacoX' | 'espacoY',
+): number {
+  const emY = eixo === 'espacoY'
+  const n = emY ? g.fileiras : g.colunas
+  if (n < 2) return Infinity
+  const sobra =
+    (emY ? planta.fundo - g.y - n * g.fundo : planta.largura - g.x - n * g.largura) / (n - 1)
+  return Math.max(0, Math.floor(sobra * 100 + 0.001) / 100)
 }
 
 /* MONTAR A GRADE: devolve os móveis da planta com os paletes da grade no
@@ -511,8 +602,8 @@ export function montarGrade(
   const antiga = gradeDosPaletes(planta, g.id)
   const antigos = planta.moveis.filter(m => m.tipo === 'palete' && m.grade === g.id)
   const outros = planta.moveis.filter(m => !(m.tipo === 'palete' && m.grade === g.id))
-  const passoAntigoX = antiga ? antiga.largura + antiga.espaco : 0
-  const passoAntigoY = antiga ? antiga.fundo + antiga.espaco : 0
+  const passoAntigoX = antiga ? antiga.largura + antiga.espacoX : 0
+  const passoAntigoY = antiga ? antiga.fundo + antiga.espacoY : 0
   const naCasa = (f: number, c: number): Movel | undefined =>
     antiga
       ? antigos.find(
@@ -527,8 +618,8 @@ export function montarGrade(
   for (let f = 0; f < g.fileiras; f++) {
     for (let c = 0; c < g.colunas; c++) {
       const r = {
-        x: duasCasas(g.x + c * (g.largura + g.espaco)),
-        y: duasCasas(g.y + f * (g.fundo + g.espaco)),
+        x: duasCasas(g.x + c * (g.largura + g.espacoX)),
+        y: duasCasas(g.y + f * (g.fundo + g.espacoY)),
         largura: g.largura,
         fundo: g.fundo,
       }

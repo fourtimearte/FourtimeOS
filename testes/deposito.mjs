@@ -525,6 +525,85 @@ await caso('arrasto', async () => {
   await ctx.close()
 })
 
+/* A GRADE ESTICADA (defeito achado pelo Henrique em 05/10/2026): a grade que foi
+   puxada pelo canto até ocupar o chão não deixava mudar as fileiras e as
+   colunas. O campo voltava para 2 e 3, porque a conta só sabia estender, e a
+   fileira nova caía fora do chão. O depósito do teste é o que ele tinha salvo. */
+await caso('grade esticada', async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 864, tema: 'light', deposito: 'esticado' })
+  await ir(pg, '/estoque?aba=deposito', '[data-mapa]')
+  await pg.getByRole('button', { name: 'Editar o depósito' }).click(); await pausa(pg, 600)
+  await pg.locator('[data-movel="P05"]').click(); await pausa(pg, 300)
+  const campo = (rotulo) => pg.locator(`input[aria-label="${rotulo}"]`)
+  const escrever = async (rotulo, valor) => { const c = campo(rotulo); await c.click(); await c.press('Control+a'); await pg.keyboard.type(valor); await pausa(pg, 300); await c.blur(); await pausa(pg, 300) }
+  const estado = async () => ({ f: await campo('Fileiras').inputValue(), c: await campo('Colunas').inputValue(), ex: await campo('Espaço entre colunas').inputValue(), ey: await campo('Espaço entre fileiras').inputValue(), n: await pg.locator('[data-movel^="P"]').count() })
+  const recado = async () => (await pg.locator('.pilha-recados').innerText()).replace(/\s+/g, ' ').trim()
+  let e = await estado()
+  conta(e.f === '2' && e.c === '3' && e.ex === '4,3' && e.ey === '4,3' && e.n === 6, `grade esticada: o painel lê a grade de 2 por 3, com 4,3 m entre os paletes nos dois sentidos (${JSON.stringify(e)})`)
+
+  /* mais uma fileira, sem chão para estender: reparte no mesmo espaço */
+  await escrever('Fileiras', '3')
+  e = await estado()
+  conta(e.f === '3' && e.c === '3' && e.n === 9 && e.ey === '1,55' && e.ex === '4,3', `grade esticada: pedir 3 fileiras cria as 3, repartidas no espaço que a grade já ocupava, e as colunas não saem do lugar (${JSON.stringify(e)})`)
+  conta(/as 3 fileiras foram repartidas no espaço que a grade já ocupava.*de 4,3 para 1,55 m/.test(await recado()), `grade esticada: a tela diz o que fez com o vão (${(await recado()).slice(0, 150)})`)
+  await pg.screenshot({ path: `${PASTA}/grade-esticada-3-fileiras-1536-light.png`, fullPage: false })
+
+  /* mais uma coluna: o mesmo, no outro sentido */
+  await escrever('Colunas', '4')
+  e = await estado()
+  conta(e.f === '3' && e.c === '4' && e.n === 12 && e.ex === '2,46' && e.ey === '1,55', `grade esticada: pedir 4 colunas cria as 4 no mesmo espaço, sem mexer nas fileiras (${JSON.stringify(e)})`)
+
+  /* menos: tira as últimas e o vão fica */
+  await escrever('Fileiras', '2')
+  e = await estado()
+  conta(e.f === '2' && e.n === 8 && e.ey === '1,55', `grade esticada: voltar para 2 fileiras tira a última e não mexe no vão (${JSON.stringify(e)})`)
+
+  /* o que não cabe nem encostado é dito, e nada muda */
+  await escrever('Fileiras', '9')
+  e = await estado()
+  conta(e.f === '2' && e.n === 8 && /Não cabem 9 fileiras de 1,2 m daqui até a parede/.test(await recado()), `grade esticada: 9 fileiras de 1,2 m não cabem em 10 m de chão; nada muda e a tela diz por quê (${(await recado()).slice(-150)})`)
+
+  /* o vão de cada sentido se escreve à parte */
+  await escrever('Espaço entre fileiras', '3')
+  e = await estado()
+  conta(e.ey === '3' && e.ex === '2,46' && e.n === 8, `grade esticada: o espaço entre fileiras muda sem mexer no espaço entre colunas (${JSON.stringify(e)})`)
+
+  /* o que foi desenhado é o que vai para o banco */
+  await pg.getByRole('button', { name: 'Salvar o depósito' }).click(); await pausa(pg, 900)
+  const pl = gravados.find((x) => x.u === 'rpc/salvar_deposito')?.corpo.p_planta
+  const pal = (pl?.moveis ?? []).filter((m) => m.tipo === 'palete')
+  const xs = [...new Set(pal.map((m) => m.x))].sort((a, b) => a - b).join(' ')
+  const ys = [...new Set(pal.map((m) => m.y))].sort((a, b) => a - b).join(' ')
+  const nomes = pal.map((m) => m.nome).sort().join(' ')
+  conta(pal.length === 8 && xs === '2 5.66 9.32 12.98' && ys === '1.1 5.3' && new Set(pal.map((m) => m.nome)).size === 8, `grade esticada: o Salvar manda os 8 paletes nos lugares novos, cada um com um nome (x ${xs}; y ${ys}; ${nomes})`)
+  conta(['pe-1', 'pe-2', 'pe-3'].every((id) => pal.some((m) => m.id === id)), 'grade esticada: os paletes que já existiam continuam sendo os mesmos (guardam o que estiver marcado neles)')
+  conta(erros.length === 0, `grade esticada: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
+/* A GRADE NOVA continua estendendo, que é o que se espera de quem acabou de pôr */
+await caso('grade nova', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', deposito: 'vazio' })
+  await ir(pg, '/estoque?aba=deposito', '.dp-quadro')
+  await pg.locator('.dp-quadro').getByRole('button', { name: 'Desenhar o depósito' }).click(); await pausa(pg, 600)
+  await pg.getByRole('button', { name: 'Grade de paletes' }).click(); await pausa(pg, 400)
+  const campo = (rotulo) => pg.locator(`input[aria-label="${rotulo}"]`)
+  const escrever = async (rotulo, valor) => { const c = campo(rotulo); await c.click(); await c.press('Control+a'); await pg.keyboard.type(valor); await pausa(pg, 300); await c.blur(); await pausa(pg, 300) }
+  await escrever('Fileiras', '4'); await escrever('Colunas', '6')
+  const e = { f: await campo('Fileiras').inputValue(), c: await campo('Colunas').inputValue(), ex: await campo('Espaço entre colunas').inputValue(), ey: await campo('Espaço entre fileiras').inputValue(), n: await pg.locator('[data-mapa] [data-movel]').count() }
+  conta(e.f === '4' && e.c === '6' && e.n === 24 && e.ex === '0,8' && e.ey === '0,8' && await pg.locator('.pilha-recados .recado').count() === 0, `grade nova: com chão de sobra, 4 fileiras por 6 colunas estendem a grade com o mesmo vão de 0,8 m, sem recado (${JSON.stringify(e)})`)
+  /* a nona coluna de 1,2 m com 0,8 m de vão não cabe em 15 m: vai até a parede */
+  await escrever('Colunas', '8')
+  const ex = await campo('Espaço entre colunas').inputValue()
+  conta(await campo('Colunas').inputValue() === '8' && ex === '0,7' && /foram até a parede/.test((await pg.locator('.pilha-recados').innerText())), `grade nova: 8 colunas não cabem estendendo; a grade vai até a parede e o vão cai para ${ex} m, dito na tela`)
+  /* o vão grande demais vira o maior que cabe, em vez de a última coluna sumir */
+  await escrever('Espaço entre colunas', '2')
+  const depois = { c: await campo('Colunas').inputValue(), ex: await campo('Espaço entre colunas').inputValue(), n: await pg.locator('[data-mapa] [data-movel]').count() }
+  conta(depois.c === '8' && depois.ex === '0,7' && depois.n === 32 && /o maior vão que cabe daqui até a parede é 0,7 m/.test(await pg.locator('.pilha-recados').innerText()), `grade nova: pedir 2 m entre 8 colunas não cabe; o vão fica no maior que cabe e as 8 colunas continuam lá (${JSON.stringify(depois)})`)
+  conta(erros.length === 0, `grade nova: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
 await nav.close()
 const ruins = achados.filter((a) => !a.certo)
 console.log(`\n${achados.length - ruins.length} de ${achados.length} conferências passaram.`)

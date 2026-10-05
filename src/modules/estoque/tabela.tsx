@@ -314,9 +314,11 @@ export function TabelaDeMateriais({
             <span className="es-falta">falta escolher</span>
           )}
         </td>
-        <td className="es-some-2">
-          {guardado.planta ? <EtiquetaDoLugar movel={lugar?.movel} lugar={lugar?.lugar} /> : ''}
-        </td>
+        {guardado.planta ? (
+          <td className="es-some-2">
+            <EtiquetaDoLugar movel={lugar?.movel} lugar={lugar?.lugar} />
+          </td>
+        ) : null}
         <td className="dir">
           <b className={pouco ? 'es-pouco' : ''}>{quantoNaUnidade(m.livre, m.unidade)}</b>
         </td>
@@ -397,10 +399,12 @@ export function TabelaDeMateriais({
             <span className="es-falta">falta escolher</span>
           )}
         </td>
-        <td className="es-apoio es-some-2">
-          {lugares.slice(0, 3).join(', ')}
-          {lugares.length > 3 ? ' +' + (lugares.length - 3) : ''}
-        </td>
+        {guardado.planta ? (
+          <td className="es-apoio es-some-2">
+            {lugares.slice(0, 3).join(', ')}
+            {lugares.length > 3 ? ' +' + (lugares.length - 3) : ''}
+          </td>
+        ) : null}
         <td className="dir">
           <b>{soma(itens, m => m.livre)}</b>
         </td>
@@ -514,7 +518,8 @@ export function TabelaDeMateriais({
                 {caixa(linhas, 'Marcar tudo o que está à vista', true)}
                 <th>{categoria === 'tecido' ? 'Grupo, tecido e cor' : 'Grupo e item'}</th>
                 <th className="es-c-forn">Fornecedor</th>
-                <th className="es-c-onde es-some-2">Onde está</th>
+                {/* sem depósito desenhado não há lugar para mostrar: a coluna não nasce vazia */}
+                {guardado.planta ? <th className="es-c-onde es-some-2">Onde está</th> : null}
                 <th className="dir es-c-num">Livre</th>
                 <th className="dir es-c-prat es-some-1">Na prateleira</th>
                 <th className="dir es-c-res es-some-1">Reservado</th>

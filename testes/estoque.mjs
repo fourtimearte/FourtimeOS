@@ -1048,6 +1048,25 @@ for (const arquivada of [true, false]) {
   })
 }
 
+/* SEM DEPÓSITO DESENHADO (é o estado da produção em 05/10/2026) a Tabela não
+   mostra a coluna "Onde está" vazia, nem oferece "Definir onde está". */
+await caso('tabela sem depósito', async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', deposito: 'vazio' })
+  await ir(pg, '/estoque', '[data-barra]')
+  await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
+  await pg.locator('table.es-tb tr[data-faixa="DRY FIT"]').click(); await pausa(pg, 250)
+  await pg.locator('table.es-tb tr.es-malha').click(); await pausa(pg, 250)
+  const cab = (await pg.locator('table.es-tb thead th').allInnerTexts()).map((c) => c.trim()).join(' | ')
+  const celulas = await pg.locator('table.es-tb tbody tr').evaluateAll((l) => [...new Set(l.map((tr) => tr.children.length))].join(','))
+  const chips = (await pg.locator('[data-tabela-topo] .chip').allInnerTexts()).map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')
+  conta(cab === ' | Grupo, tecido e cor | Fornecedor | Livre | Na prateleira | Reservado | Mínimo | Situação' && celulas === '8' && !/Sem lugar/.test(chips), `tabela sem depósito: a coluna "Onde está" e o filtro "Sem lugar marcado" não aparecem, e toda linha tem as mesmas 8 células (${cab}; ${celulas} células; ${chips})`)
+  await pg.locator('table.es-tb tr.es-malha td.es-ck .ck').click(); await pausa(pg, 300)
+  const botoes = (await pg.locator('[data-lote-da-tabela]').getByRole('button').allInnerTexts()).map((b) => b.trim()).join(' | ')
+  conta(botoes === 'Definir fornecedor | Definir mínimo | Ficha técnica | Limpar a seleção', `tabela sem depósito: o lote não oferece "Definir onde está" (${botoes})`)
+  conta(erros.length === 0, `tabela sem depósito: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+})
+
 /* O BANCO É QUEM TRAVA A FICHA: se ele recusa, a ficha fica aberta com o
    motivo, e o que a pessoa escreveu não se perde. */
 await caso('ficha recusada', async () => {

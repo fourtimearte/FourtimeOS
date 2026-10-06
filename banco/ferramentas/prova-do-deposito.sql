@@ -1,5 +1,6 @@
 -- ===========================================================================
--- A PROVA DA 047 E DA 054: o deposito, e a prateleira de ate nove niveis.
+-- A PROVA DA 047, DA 054 E DA 055: o deposito, a prateleira de ate nove niveis
+-- e o palete com referencia e nome.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. O relatorio sai dentro da
@@ -155,6 +156,46 @@ begin
   perform public.definir_lugares(array[m2], '[]'::jsonb);
   perform public.salvar_deposito(planta);
 
+  -- 9f. o palete tem referencia e nome (055): o nome e gravado, e a referencia continua na coluna nome
+  perform public.salvar_deposito(jsonb_set(jsonb_set(planta, '{moveis,2,apelido}', '"  ALGODÃO  "'), '{moveis,3,apelido}', '"ALGODÃO"'));
+  select string_agg(nome || '=' || apelido, ' ' order by nome) into r from public.movel_do_deposito where tipo = 'palete';
+  txt := txt || E'\n' || case when r.string_agg = 'P01=ALGODÃO P02=ALGODÃO' then 'ok  ' else 'RUIM' end
+             || ' 9f. o palete guarda o nome sem os espacos das pontas, e dois paletes podem ter o mesmo nome (' || coalesce(r.string_agg, 'nada') || ')';
+
+  -- 9g. o desenho que vem SEM o campo (a tela antiga) nao apaga o nome guardado
+  perform public.salvar_deposito(jsonb_set(planta, '{moveis,2,x}', '2.2'));
+  select string_agg(nome || '=' || apelido, ' ' order by nome) into r from public.movel_do_deposito where tipo = 'palete';
+  txt := txt || E'\n' || case when r.string_agg = 'P01=ALGODÃO P02=ALGODÃO' then 'ok  ' else 'RUIM' end
+             || ' 9g. salvar sem o campo nome nao apaga o nome do palete (' || coalesce(r.string_agg, 'nada') || ')';
+
+  -- 9h. o campo vazio apaga, e so o do palete que veio vazio
+  perform public.salvar_deposito(jsonb_set(planta, '{moveis,2,apelido}', '""'));
+  select string_agg(nome || '=' || apelido, ' ' order by nome) into r from public.movel_do_deposito where tipo = 'palete';
+  txt := txt || E'\n' || case when r.string_agg = 'P01= P02=ALGODÃO' then 'ok  ' else 'RUIM' end
+             || ' 9h. o nome vazio apaga o nome daquele palete, e so o dele (' || coalesce(r.string_agg, 'nada') || ')';
+
+  -- 9i. prateleira nao tem nome de palete: o que vier e ignorado
+  perform public.salvar_deposito(jsonb_set(planta, '{moveis,0,apelido}', '"Tecidos"'));
+  select count(*) into n from public.movel_do_deposito where tipo <> 'palete' and apelido <> '';
+  txt := txt || E'\n' || case when n = 0 then 'ok  ' else 'RUIM' end || ' 9i. so palete guarda o nome: na prateleira ele e ignorado (' || n || ')';
+
+  -- 9j. nome de palete com mais de 60 letras e recusado, e a tabela tambem recusa
+  begin
+    perform public.salvar_deposito(jsonb_set(planta, '{moveis,2,apelido}', to_jsonb(repeat('A', 61))));
+    txt := txt || E'\nRUIM 9j. aceitou nome de palete com 61 letras';
+  exception when check_violation then
+    txt := txt || E'\n' || case when sqlerrm like '%passa de 60 letras%' then 'ok  ' else 'RUIM' end
+               || ' 9j. nome de palete com 61 letras e recusado, e a frase diz o limite';
+  end;
+  begin
+    update public.movel_do_deposito set apelido = 'Tecidos' where id = pd;
+    txt := txt || E'\nRUIM 9k. a tabela aceitou nome de palete numa prateleira';
+  exception when check_violation then
+    txt := txt || E'\nok   9k. a tabela recusa nome de palete em quem nao e palete';
+  end;
+  /* volta ao desenho da prova, sem nome em nenhum palete */
+  perform public.salvar_deposito(jsonb_set(jsonb_set(planta, '{moveis,2,apelido}', '""'), '{moveis,3,apelido}', '""'));
+
   -- 10. marcar o lugar: dois lugares, o primeiro e o principal
   n := public.definir_lugares(array[m1], jsonb_build_array(
          jsonb_build_object('movel', pd, 'vao', 2, 'nivel', 3),
@@ -278,5 +319,5 @@ begin
   select count(*) into n from public.lugar_do_material where material_id = m1;
   txt := txt || E'\n' || case when n = 0 then 'ok  ' else 'RUIM' end || ' 22. lista vazia tira o lugar';
 
-  raise exception E'PROVA DA 047 E DA 054 (tudo desfeito):%', txt;
+  raise exception E'PROVA DA 047, DA 054 E DA 055 (tudo desfeito):%', txt;
 end $$;

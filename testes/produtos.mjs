@@ -15,6 +15,9 @@
      4. o que não deixa salvar, o banco recusando, e sair com mudança sem salvar
      5. nova referência, duplicar e excluir
      6. quem edita sem ser chefia, quem só lê e quem não tem a página
+     6c. o molde em tela cheia (prancha 67): as partes medidas no SVG, a
+        escala acertada à mão, o molde de cada tamanho, o zoom e o arrasto
+     6d. a ficha impressa de uma referência e de um kit (pranchas 70 e 71)
      6b. os kits (pranchas 60 e 61): a lista, a ficha de fabricação, o editor
         em três colunas com mais de um tecido por peça, o kit novo com o
         código que nasce das peças, o que não deixa salvar, excluir
@@ -98,7 +101,15 @@ const br = (v, casas) => v.toLocaleString('pt-BR', { minimumFractionDigits: casa
    prova espera e um clique ficar esperando para sempre, a seção acusa e a
    prova segue para a próxima, em vez de morrer ali e esconder o resto. */
 const abertos = new Set()
+/* SO=31,32 roda só as partes 31 e 32, na ordem em que aparecem no arquivo. Serve
+   para ver uma parte falhar de propósito sem esperar as outras; a prova que
+   vale é a inteira, sem SO. */
+const SO = (process.env.SO ?? '').split(',').filter(Boolean).map(Number)
+let parteN = 0
 async function secao(parte) {
+  parteN++
+  if (SO.length && !SO.includes(parteN)) return
+  if (SO.length) console.log('--- parte ' + parteN)
   try { await parte() } catch (e) {
     conta(false, 'A PROVA PAROU NO MEIO DE UMA PARTE: ' + String(e?.message ?? e).split('\n').slice(0, 3).join(' ').slice(0, 220))
     for (const ctx of abertos) await ctx.close().catch(() => {})
@@ -148,7 +159,7 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   conta(new URL(pg.url()).searchParams.get('ref') === 'FT-010-000M', `${G} ficha: o endereço guarda a peça aberta`)
   conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'CAMISETA MASC TRAD' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'FT-010-000M · masculino · grade adulta, PP a G4', `${G} ficha: o nome, o código, o gênero e a grade`)
   conta((await textos(pg, '.pd-trilha'))[0] === '010 Camisetas e polos › referência', `${G} ficha: a trilha com o grupo`)
-  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar', 'Duplicar', 'Fechar']), `${G} ficha: Editar, Duplicar e Fechar`)
+  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar', 'Imprimir', 'Duplicar', 'Fechar']), `${G} ficha: Editar, Imprimir, Duplicar e Fechar`)
   const sel = (await caixas(pg, '.pd-t.pd-sel'))[0]
   conta(sel && sel.fundo === await token(pg, '--ink') && sel.cor === await token(pg, '--on-ink'), `${G} árvore: a peça aberta fica na tinta`)
 
@@ -159,7 +170,7 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   const img = await pg.evaluate(() => { const i = document.querySelector('.pd-molde'); return { src: i.src.slice(0, 34), largura: i.naturalWidth, alt: i.alt } })
   conta(papel.fundo === 'rgb(255, 255, 255)', `${G} molde: o papel é branco neste tema (${papel.fundo})`)
   conta(img.src.startsWith('data:image/svg+xml') && img.largura > 0 && img.alt === 'Molde de CAMISETA MASC TRAD', `${G} molde: o SVG é mostrado como imagem, e carregou`)
-  conta(await pg.evaluate(() => !document.querySelector('.pd-molde-caixa svg')), `${G} molde: o SVG não é colado dentro da página`)
+  conta(await pg.evaluate(() => [...document.querySelectorAll('.pd-molde-caixa svg')].every((x) => x.closest('.pd-molde-lupa')) && document.querySelector('.pd-molde-caixa img').src.startsWith('data:image/svg+xml')), `${G} molde: o SVG não é colado dentro da página (é uma imagem; o único SVG da caixa é o ícone do convite)`)
   conta(mesma(await textos(pg, '.pd-partes .pd-tag'), ['Frente 1x', 'Costas 1x', 'Mangas 2x', 'Ribana da gola 1x']), `${G} molde: as partes e quantas vezes cada uma é cortada`)
 
   const detalhes = await textos(pg, '.pd-linhas > div')
@@ -562,7 +573,7 @@ await secao(async () => {
 await secao(async () => {
   const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'edita' })
   await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
-  conta(await pg.getByRole('button', { name: 'Nova referência' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar', 'Fechar']), `quem edita sem ser chefia: muda a ficha, mas não cria nem duplica referência`)
+  conta(await pg.getByRole('button', { name: 'Nova referência' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar', 'Imprimir', 'Fechar']), `quem edita sem ser chefia: muda a ficha, mas não cria nem duplica referência`)
   await editar(pg)
   conta(await pg.locator('[data-cartao="excluir"]').count() === 0 && await pg.getByRole('button', { name: 'Salvar referência' }).count() === 1, `quem edita sem ser chefia: salva, e não vê o Excluir`)
   const ultimaFileira = await caixas(pg, '[data-ficha="editar"] > .pd-dois:last-of-type > section')
@@ -572,7 +583,7 @@ await secao(async () => {
 await secao(async () => {
   const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'le' })
   await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
-  conta(await pg.getByRole('button', { name: 'Nova referência' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Fechar']), `quem só lê: sem Nova referência, sem Editar e sem Duplicar`)
+  conta(await pg.getByRole('button', { name: 'Nova referência' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Imprimir', 'Fechar']), `quem só lê: sem Nova referência, sem Editar e sem Duplicar; imprimir pode`)
   conta(await pg.getByRole('button', { name: 'Trocar o SVG' }).count() === 0 && await pg.locator('[data-arquivo-do-molde]').count() === 0 && await pg.locator('[data-modulo] button', { hasText: 'Adicionar medida' }).count() === 0, `quem só lê: sem Trocar o SVG e sem Adicionar medida`)
   conta((await tabela(pg, '[data-modulo] table.pd-grade')).length === 4 && gravados.length === 0, `quem só lê: vê a ficha inteira e não grava nada`)
   await escolherRef(pg, '010-001M')
@@ -641,7 +652,7 @@ await secao(async () => {
   await abrirKit(pg, 'KIT-020-000M-090-000M')
   conta(new URL(pg.url()).searchParams.get('kit') === 'FT-KIT-020-000M-090-000M', `kit: o endereço guarda o kit aberto`)
   conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'KIT-020-000M-090-000M · masculino · grade adulta, PP a G4' && (await textos(pg, '.pd-trilha'))[0] === 'KIT Kits › 2 peças', `kit: o nome, o código sem o FT, o gênero e a grade que as peças têm em comum`)
-  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Fechar']), `kit: Editar a ficha e Fechar`)
+  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Imprimir', 'Fechar']), `kit: Editar a ficha, Imprimir e Fechar`)
   const titulosDoKit = await pg.evaluate(() => [...document.querySelectorAll('[data-ficha="kit"] .pd-topo .cartao-titulo')].map((h) => [h.textContent.trim(), !!h.querySelector('.cartao-icone svg')]))
   conta(mesma(titulosDoKit.map((t) => t[0]), ['Desenho do kit', 'Peças do kit', 'Ficha de fabricação', 'Tecido de um kit, em cada tamanho', 'Aviamentos e insumos de um kit']) && titulosDoKit.every((t) => t[1]), `kit: os cinco cartões, cada título com o ícone`)
   conta(mesma(await textos(pg, '[data-cartao="pecas"] .pd-lin'), ['PARTE DE CIMA RAGLAN MASC SEM PUNHO 020-000M · masculino Abrir', 'PARTE DE BAIXO CALÇAO MASC SEM BOLSO 090-000M · masculino Abrir']), `kit: as duas peças, cada uma com o papel dela e o Abrir`)
@@ -849,7 +860,7 @@ await secao(async () => {
 await secao(async () => {
   const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'edita' })
   await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
-  conta(await pg.getByRole('button', { name: 'Novo kit' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Fechar']), `quem edita sem ser chefia: edita a ficha do kit, mas não cria kit`)
+  conta(await pg.getByRole('button', { name: 'Novo kit' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Imprimir', 'Fechar']), `quem edita sem ser chefia: edita a ficha do kit, mas não cria kit`)
   await editarKit(pg)
   conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Voltar', 'Salvar o kit']), `quem edita sem ser chefia: salva o kit, e não vê o Excluir`)
   await ctx.close()
@@ -857,7 +868,7 @@ await secao(async () => {
 await secao(async () => {
   const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'le' })
   await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
-  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Fechar']) && await pg.locator('[data-ficha="kit"] [data-arquivo-do-molde]').count() === 0 && (await textos(pg, '[data-cartao="molde"] .pd-solta'))[0] === 'Este kit ainda não tem desenho.' && gravados.length === 0, `quem só lê: vê a ficha do kit, sem Editar a ficha e sem enviar desenho`)
+  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Imprimir', 'Fechar']) && await pg.locator('[data-ficha="kit"] [data-arquivo-do-molde]').count() === 0 && (await textos(pg, '[data-cartao="molde"] .pd-solta'))[0] === 'Este kit ainda não tem desenho.' && gravados.length === 0, `quem só lê: vê a ficha do kit, sem Editar a ficha e sem enviar desenho`)
   await ctx.close()
 })
 await secao(async () => {
@@ -867,6 +878,325 @@ await secao(async () => {
   await pg.locator('[data-arvore] .pd-abas button', { hasText: 'Kits' }).click(); await pausa(pg)
   conta((await textos(pg, '[data-arvore] .vazio h3'))[0] === 'Nenhum kit cadastrado', `sem kits: a aba diz que não tem nenhum, e aponta o Novo kit`)
   conta(erros.length === 0, `sem a lista de kits: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ==========================================================================
+   7c. O MOLDE EM TELA CHEIA
+
+   As medidas esperadas vêm do desenho do molde de camadas (ver o comentário em
+   produtos-dados.mjs), escritas aqui à mão: Frente 220 x 294, Costas 220 x 300,
+   Manga 176 x 98 duas vezes, Gola 192 x 18, Botão 18 x 18. A 0,25 cm por
+   unidade: 55,0 x 73,5 e daí em diante.
+   ========================================================================== */
+const abrirVisor = async (pg) => { await pg.locator('[data-ampliar-o-molde]').click(); await pg.waitForSelector('dialog.modal.cheio[open] [data-visor]'); await pausa(pg, 700) }
+const partesDoVisor = (pg) => textos(pg, '.pd-visor-parte')
+const trocarMoldeNaFicha = async (pg, svg) => { await pg.setInputFiles('[data-ficha="referencia"] [data-arquivo-do-molde]', { name: 'm.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(svg) }); await pausa(pg, 700) }
+/* onde o desenho está na tela: o canto e a escala, lidos da própria imagem */
+const desenho = (pg) => pg.evaluate(() => { const i = document.querySelector('.pd-visor-desenho'); const p = document.querySelector('.pd-visor-palco').getBoundingClientRect(); const r = i.getBoundingClientRect(); return { x: r.left - p.left, y: r.top - p.top, z: r.width / i.offsetWidth, px: p.left, py: p.top, pw: p.width, ph: p.height } })
+/* a linha da largura de uma cota: de onde até onde, em pixel do palco */
+const cotaDe = (pg, chave, qual = 0) => pg.evaluate(([c, n]) => { const g = document.querySelectorAll(`[data-cota="${c}"]`)[n]; if (!g) return null; const m = g.querySelector('path').getAttribute('d').match(/^M([\d.-]+),([\d.-]+) L([\d.-]+),/); return { x0: Number(m[1]), y: Number(m[2]), x1: Number(m[3]), largura: g.querySelector('[data-cota-largura]').textContent, altura: g.querySelector('[data-cota-altura]').textContent, sel: g.classList.contains('pd-cota-sel'), cor: getComputedStyle(g.querySelector('path')).stroke } }, [chave, qual])
+const quase = (a, b, folga = 0.6) => Math.abs(a - b) <= folga
+const SEM_ESCALA = ['Frente cortada 1 vez largura 220,0 altura 294,0', 'Costas cortada 1 vez largura 220,0 altura 300,0', 'Manga cortada 2 vezes largura 176,0 altura 98,0', 'Gola cortada 1 vez largura 192,0 altura 18,0', 'Botao cortada 1 vez largura 18,0 altura 18,0']
+const EM_CM = ['Frente cortada 1 vez largura 55,0 altura 73,5', 'Costas cortada 1 vez largura 55,0 altura 75,0', 'Manga cortada 2 vezes largura 44,0 altura 24,5', 'Gola cortada 1 vez largura 48,0 altura 4,5', 'Botao cortada 1 vez largura 4,5 altura 4,5']
+
+for (const tema of ['light', 'dark']) await secao(async () => {
+  const G = 'molde em tela cheia, ' + (tema === 'light' ? 'gelo' : 'grafite') + ':'
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900, tema })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  conta(await pg.locator('[data-ampliar-o-molde]').getAttribute('aria-label') === 'Abrir o molde de CAMISETA MASC TRAD em tela cheia, com as medidas' && (await textos(pg, '[data-cartao="molde"] .pd-nota'))[0].includes('Toque nele para abrir em tela cheia'), `${G} o desenho na ficha é um botão, e a nota diz o que ele abre`)
+
+  /* o molde simples do cadastro: quatro traços sem nome, num grupo só */
+  await abrirVisor(pg)
+  conta((await textos(pg, '.pd-visor-nome b'))[0] === 'Molde · CAMISETA MASC TRAD' && (await textos(pg, '.pd-visor-nome small'))[0] === 'FT-010-000M · 4 partes · molde geral', `${G} abre com o nome da peça, o código, quantas partes e de que molde é o desenho`)
+  conta(mesma(await textos(pg, '.pd-visor-tam button'), F.ADULTA) && (await textos(pg, '.pd-visor-tam button.ligado'))[0] === 'M', `${G} os tamanhos da peça em cima, com o M escolhido`)
+  conta(mesma(await partesDoVisor(pg), ['Parte 1 cortada 1 vez largura 96,0 altura 184,0', 'Parte 2 cortada 1 vez largura 96,0 altura 184,0', 'Parte 3 cortada 1 vez largura 84,0 altura 60,0', 'Parte 4 cortada 1 vez largura 84,0 altura 60,0']), `${G} traço sem nome vira Parte 1, 2, 3 e 4, cada uma com a caixa dela (a curva da manga é medida pela curva, e não pelo ponto de controle)`)
+  conta((await textos(pg, '[data-visor-lado] .pd-topo-n'))[0] === 'molde geral · sem escala' && (await textos(pg, '[data-escala]'))[0] === 'falta acertar' && (await textos(pg, '[data-visor-lado] .aviso'))[0]?.includes('Estas medidas ainda não são centímetros'), `${G} arquivo em pixel não vira centímetro: a tela diz que falta acertar a escala`)
+  const dl = await pg.evaluate(() => { const o = {}; document.querySelectorAll('.pd-visor-dl dt').forEach((dt) => { o[dt.textContent.trim()] = dt.nextElementSibling.textContent.trim() }); return o })
+  conta(dl['Tecido do M'] === br(F.BRUTA[2], 2) + ' m²' && dl['Em metros, com 1,60 m'] === br(F.BRUTA[2] / 1.6, 2) + ' m', `${G} o tecido do tamanho escolhido, em m² e em metros pelo tecido de conta (${dl['Tecido do M']} e ${dl['Em metros, com 1,60 m']})`)
+  conta(await pg.locator('.pd-visor-regua').count() === 0, `${G} sem escala não há régua`)
+  await pg.keyboard.press('Escape'); await pausa(pg)
+  conta(await pg.locator('dialog.modal.cheio[open]').count() === 0 && await pg.locator('[data-ficha="referencia"]').count() === 1, `${G} Esc fecha e devolve a ficha`)
+
+  /* o molde como o Affinity exporta */
+  await trocarMoldeNaFicha(pg, F.MOLDE_DE_CAMADAS)
+  await abrirVisor(pg)
+  conta(mesma(await partesDoVisor(pg), SEM_ESCALA), `${G} molde do Affinity: o fundo e a prancheta não contam, o bolso dentro da frente não é parte, COSTAS vira Costas, as duas mangas são uma duas vezes, o botão girado mede 18 (e não 25,5), e o pique solto fica de fora`)
+  conta(await pg.locator('.pd-medidor').count() === 0 && await pg.evaluate(() => !document.getElementById('Frente') && !document.querySelector('[data-visor] [serif\\:id]')), `${G} o SVG não é colado na página: o quadro de medir some depois de medir, e nenhuma camada do arquivo está no documento`)
+  const d0 = await desenho(pg)
+  const cf = await cotaDe(pg, 'frente')
+  conta(cf && quase(cf.x1 - cf.x0, 220 * d0.z) && quase(cf.x0, d0.x + 40 * d0.z) && quase(cf.y, d0.y + 334 * d0.z + 18) && cf.largura === '220,0' && cf.altura === '294,0', `${G} a cota da frente cai em cima da frente: 220 unidades de largura na escala do desenho, a partir do canto dela`)
+  const cm2 = await cotaDe(pg, 'manga', 1)
+  conta(await pg.locator('[data-cota]').count() === 6 && cm2 && quase(cm2.x0, d0.x + 560 * d0.z) && quase(cm2.y, d0.y + 278 * d0.z + 18), `${G} seis cotas (a manga tem duas), e a da segunda manga está na segunda manga`)
+  conta(quase(d0.x + 500 * d0.z, d0.pw / 2, 1) && quase(d0.y + 300 * d0.z, d0.ph / 2, 1) && d0.x > 60 && d0.y > 60, `${G} o desenho inteiro cabe no palco, no meio, com folga para as cotas`)
+  const papel = (await caixas(pg, '.pd-visor-papel'))[0]
+  const foraDoPapel = await pg.evaluate(() => { const p = document.querySelector('.pd-visor-papel').getBoundingClientRect(); return [...document.querySelectorAll('.pd-visor-cotas text')].filter((t) => { const r = t.getBoundingClientRect(); return r.left < p.left || r.right > p.right || r.top < p.top || r.bottom > p.bottom }).length })
+  conta(papel.fundo === 'rgb(255, 255, 255)' && foraDoPapel === 0 && cf.cor === 'rgb(107, 114, 128)', `${G} o desenho e todas as cotas ficam sobre papel branco, com a tinta do papel, nos dois temas`)
+
+  /* escolher a parte: pela lista e pelo desenho */
+  await pg.locator('[data-parte="frente"]').click(); await pausa(pg, 200)
+  const sel = await cotaDe(pg, 'frente')
+  conta(await pg.locator('.pd-visor-parte.on').count() === 1 && sel.sel && sel.cor === 'rgb(198, 22, 27)' && !(await cotaDe(pg, 'costas')).sel, `${G} tocar na parte da lista destaca as cotas dela em vermelho, e só as dela`)
+  await pg.mouse.click(d0.px + d0.x + 410 * d0.z, d0.py + d0.y + 190 * d0.z); await pausa(pg, 200)
+  conta((await textos(pg, '.pd-visor-parte.on b'))[0] === 'Costas' && (await cotaDe(pg, 'costas')).sel, `${G} tocar numa parte do desenho escolhe a parte que está embaixo`)
+  await pg.mouse.click(d0.px + d0.x + 65 * d0.z + 0, d0.py + d0.y + 57 * d0.z); await pausa(pg, 200)
+  conta((await textos(pg, '.pd-visor-parte.on b'))[0] === 'Frente', `${G} tocar no bolso escolhe a frente, que é a parte de que ele faz parte`)
+  await pg.mouse.click(d0.px + d0.x + 880 * d0.z, d0.py + d0.y + 480 * d0.z); await pausa(pg, 200)
+  conta(await pg.locator('.pd-visor-parte.on').count() === 0, `${G} tocar fora de qualquer parte tira o destaque`)
+
+  /* o zoom, o arrasto e o teclado */
+  conta((await textos(pg, '[data-zoom]'))[0] === '100%' && await pg.getByRole('button', { name: 'Ajustar à tela' }).isDisabled(), `${G} abre em 100%, e Ajustar à tela não tem o que ajustar`)
+  await pg.getByRole('button', { name: 'Aproximar' }).click(); await pausa(pg, 200)
+  const d1 = await desenho(pg)
+  conta((await textos(pg, '[data-zoom]'))[0] === '125%' && quase(d1.z, d0.z * 1.25, 0.002) && quase(d1.x + ((d0.pw / 2 - d0.x) / d0.z) * d1.z, d0.pw / 2, 1), `${G} Aproximar: 125%, em volta do meio do palco`)
+  const antesDaCota = await cotaDe(pg, 'frente')
+  conta(quase(antesDaCota.x1 - antesDaCota.x0, 220 * d1.z) && await pg.evaluate(() => getComputedStyle(document.querySelector('.pd-visor-cotas text')).fontSize) === '12.5px', `${G} com o zoom a cota acompanha a parte, e a letra não cresce`)
+  const cursor = { x: d1.px + 300, y: d1.py + 260 }
+  const antes = { ux: (300 - d1.x) / d1.z, uy: (260 - d1.y) / d1.z }
+  await pg.mouse.move(cursor.x, cursor.y); await pg.mouse.wheel(0, -120); await pausa(pg, 250)
+  const d2 = await desenho(pg)
+  conta(d2.z > d1.z && quase(d2.x + antes.ux * d2.z, 300, 1) && quase(d2.y + antes.uy * d2.z, 260, 1) && await sobra(pg) <= 0, `${G} a roda aproxima em volta do cursor: o ponto debaixo dele não sai do lugar, e a página não rola junto`)
+  await pg.mouse.move(d2.px + 400, d2.py + 300); await pg.mouse.down(); await pg.mouse.move(d2.px + 430, d2.py + 320, { steps: 4 }); await pg.mouse.move(d2.px + 460, d2.py + 340, { steps: 4 }); await pg.mouse.up(); await pausa(pg, 200)
+  const d3 = await desenho(pg)
+  conta(quase(d3.x - d2.x, 60, 1) && quase(d3.y - d2.y, 40, 1) && quase(d3.z, d2.z, 0.001) && await pg.locator('.pd-visor-parte.on').count() === 0, `${G} arrastar move o desenho (60 por 40) e não escolhe parte nenhuma`)
+  await pg.locator('.pd-visor-palco').focus(); await pg.keyboard.press('ArrowLeft'); await pausa(pg, 150)
+  const dSeta = await desenho(pg)
+  conta(quase(dSeta.x - d3.x, 48, 1) && quase(dSeta.y, d3.y, 1), `${G} a seta do teclado move o desenho (andou ${Math.round(dSeta.x - d3.x)} por ${Math.round(dSeta.y - d3.y)})`)
+  await pg.getByRole('button', { name: 'Ajustar à tela' }).click(); await pausa(pg, 200)
+  const d4 = await desenho(pg)
+  conta((await textos(pg, '[data-zoom]'))[0] === '100%' && quase(d4.x, d0.x, 0.5) && quase(d4.z, d0.z, 0.001), `${G} Ajustar à tela devolve o desenho inteiro`)
+  for (let i = 0; i < 12; i++) await pg.getByRole('button', { name: 'Aproximar' }).click()
+  await pausa(pg, 200)
+  conta((await textos(pg, '[data-zoom]'))[0] === '800%', `${G} o zoom para em 800%`)
+  await pg.locator('.pd-visor-palco').focus(); await pg.keyboard.press('0'); await pausa(pg, 150)
+  await pg.locator('[data-visor-topo] .chip', { hasText: 'Medidas' }).click(); await pausa(pg, 150)
+  conta(await pg.locator('.pd-visor-cotas').count() === 0 && await pg.locator('.pd-visor-desenho').count() === 1, `${G} a pílula Medidas esconde as cotas e deixa o desenho`)
+  await pg.locator('[data-visor-topo] .chip', { hasText: 'Medidas' }).click(); await pausa(pg, 150)
+
+  /* acertar a escala */
+  await pg.locator('[data-parte="costas"]').click()
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  const acerto = pg.locator('dialog.modal[open]:not(.cheio)').filter({ has: pg.locator('[data-acertar-escala]') })
+  conta((await acerto.locator('h2').innerText()) === 'Acertar a escala do molde' && (await acerto.locator('.sel .v').innerText()) === 'Costas' && (await textos(pg, '[data-acertar-escala] .pd-campo-topo small'))[0] === 'no desenho ela mede 220,0', `${G} acertar a escala: começa na parte que estava escolhida, e diz quanto ela mede no desenho`)
+  await acerto.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 200)
+  conta((await textos(pg, '[data-acertar-escala] [role=alert]'))[0]?.startsWith('Digite quanto a parte mede') && !gravados.some((g) => g.u === 'rpc/acertar_escala_do_molde'), `${G} acertar a escala sem número: não manda nada, e diz o que falta`)
+  await acerto.locator('input').fill('cinquenta'); await acerto.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 200)
+  conta((await textos(pg, '[data-acertar-escala] [role=alert]')).length === 1 && !gravados.some((g) => g.u === 'rpc/acertar_escala_do_molde'), `${G} acertar a escala com letra: recusa`)
+  await acerto.locator('input').fill('55,0'); await pausa(pg, 150)
+  conta((await textos(pg, '[data-previa]'))[0] === 'Com isso, Costas fica com 55,0 cm de largura e 75,0 cm de altura.' && (await textos(pg, '[data-acertar-escala] [role=alert]')).length === 0, `${G} acertar a escala: antes de guardar, mostra como a parte fica`)
+  await acerto.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 600)
+  conta(mesma(ultimo(gravados, 'rpc/acertar_escala_do_molde')?.corpo, { p_referencia: 'r000', p_cm_por_unidade: 0.25, p_tamanho: '' }) && await pg.locator('[data-acertar-escala]').count() === 0, `${G} guardar a escala: 55 cm para 220 unidades dá 0,25 cm por unidade, no molde geral`)
+  conta(mesma(await partesDoVisor(pg), EM_CM) && (await textos(pg, '[data-visor-lado] .pd-topo-n'))[0] === 'molde geral · em cm' && (await textos(pg, '[data-escala]'))[0] === 'acertada à mão' && await pg.locator('[data-visor-lado] .aviso').count() === 0, `${G} com a escala, todas as partes viram centímetro e o aviso some`)
+  const comCm = await cotaDe(pg, 'frente')
+  const d5 = await desenho(pg)
+  const regua = await pg.evaluate(() => { const r = document.querySelector('[data-regua]'); return r ? { texto: r.textContent.trim(), barra: r.querySelector('i').getBoundingClientRect().width } : null })
+  conta(comCm.largura === '55,0 cm' && comCm.altura === '73,5 cm' && regua?.texto === '20 cm' && quase(regua.barra, (20 / 0.25) * d5.z, 1.5), `${G} as cotas passam a dizer cm, e aparece a régua: 20 cm, com a barra do tamanho de 20 cm no desenho`)
+  await foto(pg, 'molde-em-tela-cheia' + (tema === 'dark' ? '-grafite' : ''))
+
+  /* a escala fica guardada, e cai quando o desenho é trocado */
+  await pg.keyboard.press('Escape'); await pausa(pg)
+  await abrirVisor(pg)
+  conta(mesma(await partesDoVisor(pg), EM_CM), `${G} fechar e abrir: a escala acertada continua lá`)
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  conta(await acerto.locator('input').inputValue() === '55,0', `${G} acertar de novo: o campo já vem com a medida que vale`)
+  await acerto.getByRole('button', { name: 'Tirar a escala acertada' }).click(); await pausa(pg, 500)
+  conta(ultimo(gravados, 'rpc/acertar_escala_do_molde')?.corpo.p_cm_por_unidade === null && mesma(await partesDoVisor(pg), SEM_ESCALA), `${G} tirar a escala acertada: volta ao número do desenho`)
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  await acerto.locator('input').fill('55'); await acerto.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 500)
+  await pg.keyboard.press('Escape'); await pausa(pg)
+  await trocarMoldeNaFicha(pg, F.MOLDE_EM_MM)
+  await abrirVisor(pg)
+  conta(mesma(await partesDoVisor(pg), ['Frente cortada 1 vez largura 11,0 altura 14,7', 'Costas cortada 1 vez largura 11,0 altura 15,0', 'Manga cortada 2 vezes largura 8,8 altura 4,9', 'Gola cortada 1 vez largura 9,6 altura 0,9', 'Botao cortada 1 vez largura 0,9 altura 0,9']) && (await textos(pg, '[data-escala]'))[0] === 'a que o arquivo diz', `${G} desenho trocado: a escala acertada cai, e o arquivo que diz o tamanho em milímetro já sai em centímetro (500 mm para 1000 unidades)`)
+
+  /* o molde de um tamanho */
+  await pg.locator('.pd-visor-tam button', { hasText: /^G$/ }).click(); await pausa(pg, 400)
+  conta((await textos(pg, '[data-molde-geral]'))[0] === 'O G ainda não tem molde próprio: o desenho e as medidas são do molde geral da peça.' && (await textos(pg, '.pd-visor-nome small'))[0].endsWith('molde geral') && (await textos(pg, '.pd-visor-dl dt'))[0] === 'Tecido do G', `${G} tamanho sem molde próprio mostra o geral, e a tela diz que é o geral`)
+  await pg.setInputFiles('[data-visor-lado] [data-arquivo-do-molde]', { name: 'g.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(F.MOLDE) }); await pausa(pg, 800)
+  const doG = ultimo(gravados, 'rpc/salvar_molde_da_referencia')?.corpo
+  conta(doG?.p_referencia === 'r000' && doG.p_tamanho === 'G' && doG.p_svg === F.MOLDE && (await recado(pg)).includes('Molde do G guardado'), `${G} enviar o molde do G: vai para o G, e não para o molde geral`)
+  conta((await textos(pg, '.pd-visor-nome small'))[0] === 'FT-010-000M · 4 partes · tamanho G' && (await partesDoVisor(pg))[0] === 'Parte 1 cortada 1 vez largura 96,0 altura 184,0' && await pg.locator('[data-molde-geral]').count() === 0 && await pg.locator('.pd-visor-tam button.ligado .pd-visor-tem').count() === 1, `${G} o G passa a mostrar o molde dele, com as medidas dele, e ganha o ponto de quem tem molde próprio`)
+  await pg.locator('.pd-visor-tam button', { hasText: /^M$/ }).click(); await pausa(pg, 400)
+  conta((await partesDoVisor(pg))[0].startsWith('Frente cortada 1 vez largura 11,0') && (await textos(pg, '.pd-visor-nome small'))[0].endsWith('molde geral'), `${G} voltar para o M: volta o molde geral`)
+  await pg.locator('.pd-visor-tam button', { hasText: /^G$/ }).click(); await pausa(pg, 400)
+  conta(mesma(await textos(pg, '[data-visor-lado] .fileira .btn'), ['Acertar a escala', 'Trocar o molde do G', 'Tirar']), `${G} tamanho com molde próprio: acertar a escala dele, trocar e tirar`)
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  await acerto.locator('input').fill('24'); await acerto.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 500)
+  conta(mesma(ultimo(gravados, 'rpc/acertar_escala_do_molde')?.corpo, { p_referencia: 'r000', p_cm_por_unidade: 0.25, p_tamanho: 'G' }) && (await textos(pg, '[data-visor-lado] .pd-topo-n'))[0] === 'tamanho G · em cm', `${G} a escala do molde do G é do G (24 cm para 96 unidades)`)
+  await pg.locator('[data-visor-lado]').getByRole('button', { name: 'Tirar', exact: true }).click(); await pausa(pg)
+  const tirar = pg.locator('dialog.modal[open]:not(.cheio)').filter({ hasText: 'Tirar o molde do G?' })
+  conta(await tirar.count() === 1, `${G} tirar o molde do G pergunta antes`)
+  await tirar.getByRole('button', { name: 'Tirar', exact: true }).click(); await pausa(pg, 600)
+  const tirado = ultimo(gravados, 'rpc/salvar_molde_da_referencia')?.corpo
+  conta(tirado?.p_tamanho === 'G' && tirado.p_svg === '' && await pg.locator('[data-molde-geral]').count() === 1 && await pg.locator('.pd-visor-tam .pd-visor-tem').count() === 0, `${G} tirado o molde do G, ele volta a mostrar o geral`)
+
+  /* baixar */
+  const [baixado] = await Promise.all([pg.waitForEvent('download'), pg.getByRole('button', { name: 'Baixar o SVG' }).click()])
+  conta(baixado.suggestedFilename() === 'molde-FT-010-000M.svg', `${G} Baixar o SVG entrega o arquivo com o código da peça no nome`)
+  conta(erros.length === 0, `${G} nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* o banco recusando a escala, e quem só lê */
+await secao(async () => {
+  const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, recusa: 1 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await abrirVisor(pg)
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  await pg.locator('[data-acertar-escala] input').fill('24'); await pg.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 500)
+  conta((await textos(pg, '[data-acertar-escala] [role=alert]'))[0] === 'Essa medida não fecha com o desenho. Confira o número digitado.' && (await textos(pg, '[data-escala]'))[0] === 'falta acertar', `o banco recusa a escala: a frase dele aparece, a caixa fica aberta e a tela continua sem centímetro`)
+  await pg.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 500)
+  conta(gravados.filter((g) => g.u === 'rpc/acertar_escala_do_molde').length === 2 && (await partesDoVisor(pg))[0] === 'Parte 1 cortada 1 vez largura 24,0 altura 46,0', `guardar de novo: passa, e as medidas saem (24 cm para 96 unidades: a altura de 184 dá 46,0)`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'le' })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await abrirVisor(pg)
+  conta((await partesDoVisor(pg)).length === 4 && await pg.locator('[data-visor-lado] .btn').count() === 0 && await pg.locator('[data-visor-lado] [data-arquivo-do-molde]').count() === 0 && (await textos(pg, '[data-visor-lado] .aviso'))[0]?.includes('Quem edita a ficha acerta a escala.') && gravados.length === 0, `quem só lê: abre a tela cheia e vê as medidas, sem acertar a escala e sem enviar molde`)
+  await ctx.close()
+})
+/* peça sem molde não tem o que abrir */
+await secao(async () => {
+  const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos?ref=FT-070-000M', '[data-ficha="referencia"]')
+  conta(await pg.locator('[data-ampliar-o-molde]').count() === 0, `peça sem molde: não há desenho para abrir em tela cheia`)
+  await ctx.close()
+})
+
+/* ==========================================================================
+   7d. A FICHA IMPRESSA
+   ========================================================================== */
+const celulas = (pg, n = 0) => pg.evaluate((i) => { const f = document.querySelectorAll('.fl')[i]; const o = {}; f?.querySelectorAll('.fl-cel').forEach((c) => { o[c.querySelector('.fl-rot').textContent.trim()] = c.querySelector('.fl-val').textContent.trim() }); return o }, n)
+const secoesDaFolha = (pg, n = 0) => pg.evaluate((i) => [...document.querySelectorAll('.fl')[i].querySelectorAll('.fl-corpo .fl-h')].map((h) => h.childNodes[0].textContent.trim()), n)
+const imprimirFicha = async (pg, qual) => { await pg.locator('.pd-ficha-topo button', { hasText: 'Imprimir' }).click(); await pg.waitForSelector(`[data-impressa="${qual}"] .fl`); await pausa(pg, 1200) }
+/* a tabela do papel: o cabeçalho sai em maiúscula por estilo, então ele é lido como foi escrito */
+const tabelaDoPapel = (pg, seletor) => pg.evaluate((s) => { const t = document.querySelector(s); return t ? [...t.querySelectorAll('tr')].map((tr) => [...tr.children].map((c) => (c.matches('th') ? c.textContent : c.innerText || '').trim().replace(/\s+/g, ' '))) : null }, seletor)
+const cabeDentro = (pg) => pg.evaluate(() => [...document.querySelectorAll('.fl-corpo')].every((c) => c.scrollHeight <= c.clientHeight + 1))
+
+for (const tema of ['light', 'dark']) await secao(async () => {
+  const G = 'ficha impressa, ' + (tema === 'light' ? 'gelo' : 'grafite') + ':'
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1536, altura: 900, tema })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await imprimirFicha(pg, 'referencia')
+  conta((await textos(pg, '.pagina-topo h1'))[0] === 'Ficha técnica impressa FT-010-000M' && (await textos(pg, '.pagina-topo .acima'))[0] === 'Voltar à referência' && (await textos(pg, '.pagina-topo .sub'))[0] === 'A ficha desta referência, do jeito que sai na impressora. 1 página.', `${G} a folha toma a página, com o Voltar em cima e a conta de páginas`)
+  conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Editar', 'Imprimir ou salvar em PDF']) && await pg.locator('[data-arvore], .pd-barra').count() === 0, `${G} Editar e Imprimir ou salvar em PDF; a árvore e a barra saem`)
+  conta(mesma(await textos(pg, '[data-sai-na-folha] .chip'), ['Molde com as medidas', 'Detalhes da peça', 'Tabela de medidas', 'Tecido por peça', 'Aviamentos', 'Observação']) && await pg.locator('[data-sai-na-folha] .chip.ligado').count() === 6, `${G} as seis seções que saem na folha, todas ligadas`)
+  const folhaA4 = (await caixas(pg, '.fl'))[0]
+  conta(await pg.locator('.fl').count() === 1 && Math.round(folhaA4.w) === 794 && Math.round(folhaA4.h) === 1123 && folhaA4.fundo === 'rgb(255, 255, 255)' && await cabeDentro(pg), `${G} uma folha A4, branca nos dois temas, e nada do corpo fica cortado`)
+  const cab = await celulas(pg)
+  conta(mesma(Object.keys(cab), ['Referência', 'Peça', 'Grupo', 'Gênero', 'Grade', 'Tamanhos', 'Partes do molde', 'Atualizada em', 'Impressa em', 'Por']) && cab['Referência'] === 'FT-010-000M' && cab['Peça'] === 'CAMISETA MASC TRAD' && cab['Grupo'] === '010 · Camisetas e polos' && cab['Gênero'] === 'Masculino' && cab['Grade'] === 'Adulta, PP a G4' && cab['Tamanhos'] === '10', `${G} cabeçalho: a referência, a peça, o grupo, o gênero, a grade e quantos tamanhos`)
+  conta(cab['Partes do molde'] === '3, em 4 cortes' && cab['Atualizada em'] === '05/10/2026' && /^\d\d\/\d\d\/\d{4}, \d\d:\d\d$/.test(cab['Impressa em']) && cab['Por'] === F.perfil('chefe')[0].nome && (await textos(pg, '.fl-marca-sub'))[0] === 'Ficha técnica da referência', `${G} cabeçalho: três partes de pano em quatro cortes (a ribana é fita), quando foi atualizada, quando e por quem foi impressa`)
+  conta(mesma(await secoesDaFolha(pg), ['Molde', 'Detalhes da peça', 'Tabela de medidas', 'Tecido por peça', 'Aviamentos e insumos por peça', 'Observação para a costura']), `${G} as seis seções, na ordem do wireframe`)
+  conta(await pg.locator('.fl [data-secao="molde"] img').count() === 1 && await pg.locator('.fl [data-molde-com-medidas]').count() === 0 && (await textos(pg, '.fl [data-secao="molde"] .pd-p-apoio'))[0] === 'sem as medidas: falta acertar a escala do desenho', `${G} molde sem escala: sai só o desenho, e a folha diz por quê (centímetro inventado não vai para o papel)`)
+  conta(mesma(await pg.evaluate(() => [...document.querySelectorAll('.fl [data-secao="detalhes"] dt')].map((dt) => dt.textContent + ': ' + dt.nextElementSibling.textContent)), ['Gola: Redonda, ribana 1x1 de 2 cm', 'Manga: Curta, com bainha', 'Punho: Sem punho', 'Barra: Bainha de 2 cm', 'Costura: Overloque de 4 fios e galoneira']), `${G} os detalhes da peça`)
+  const med = await tabelaDoPapel(pg, '.fl [data-secao="medidas"] table')
+  conta(mesma(med[0], ['Medida', ...F.ADULTA]) && mesma(med[1], ['Comprimento do ombro à barra', '66,0', '68,0', '70,0', '72,0', '74,0', '76,0', '78,0', '80,0', '82,0', '84,0']) && med[3][0] === 'Manga do ombro à bainha' && med[3][10] === '28,5' && med.length === 4, `${G} a tabela de medidas, com o como medir ao lado do nome`)
+  const tec = await tabelaDoPapel(pg, '.fl [data-secao="tecido"] table')
+  conta(mesma(tec.map((l) => l[0]), ['Parte do molde', 'Frente cortada 1 vez', 'Costas cortada 1 vez', 'Mangas cortada 2 vezes', 'A peça inteira em m²', 'Em metros com 1,60 m de largura', 'Em gramas com malha de 180 g/m²', 'Ribana da gola em metros']), `${G} o tecido: as partes, a soma, o metro e o grama pelo tecido de conta, e a fita`)
+  /* a peça inteira é a soma das três partes de pano, cada uma já arredondada como a ficha guarda */
+  const q4 = (v) => Math.round(v * 10000) / 10000
+  const inteira = F.BRUTA.map((a) => q4(a * 0.36) + q4(a * 0.37) + q4(a * 0.27))
+  conta(mesma(tec[4].slice(1), inteira.map((a) => br(a, 3))) && mesma(tec[5].slice(1), inteira.map((a) => br(a / 1.6, 2))) && mesma(tec[6].slice(1), inteira.map((a) => br(a * 180, 0))) && mesma(tec[7].slice(9), ['·', '·']) && tec[7][1] === '0,44', `${G} o tecido: a peça inteira é a soma das partes (PP ${tec[4][1]}), o metro é a área pela largura, o grama pela gramatura, e tamanho sem número leva um ponto`)
+  conta(await pg.evaluate(() => { const s = getComputedStyle(document.querySelector('.fl [data-secao="tecido"] tr.pd-p-soma td')); const f = getComputedStyle(document.querySelector('.fl [data-secao="tecido"] tr.pd-p-fraco td')); return s.fontWeight === '700' && f.color === 'rgb(107, 114, 128)' }), `${G} a linha da peça inteira em negrito, e as de conta em cinza`)
+  conta(mesma(await tabelaDoPapel(pg, '.fl [data-secao="aviamentos"] table'), [['Material', 'Tipo', 'Por peça'], ['Linha poliéster 120', 'Aviamento · Linha', '0,02 cone'], ['Fio texturizado, na cor do tecido', 'pelo nome', '0,03 cone'], ['Saco de embalagem 30x40', 'Insumo · Embalagem', '1 un']]) && (await textos(pg, '.fl [data-secao="observacao"] .pd-p-obs'))[0] === 'Reforço de ombro a ombro. Bainha da manga com 2 cm.', `${G} os aviamentos com o tipo, e a observação para a costura`)
+  conta((await textos(pg, '.fl-pe'))[0] === 'Fourtime · ficha técnica de uso interno · os números valem na data da impressão FT-010-000M página 1 de 1', `${G} o rodapé diz de que peça é a folha`)
+  await foto(pg, 'ficha-impressa' + (tema === 'dark' ? '-grafite' : ''))
+
+  /* ligar e desligar o que sai */
+  await pg.locator('[data-sai-na-folha] .chip', { hasText: 'Tecido por peça' }).click(); await pg.locator('[data-sai-na-folha] .chip', { hasText: 'Detalhes da peça' }).click(); await pausa(pg, 500)
+  conta(mesma(await secoesDaFolha(pg), ['Molde', 'Tabela de medidas', 'Aviamentos e insumos por peça', 'Observação para a costura']) && await pg.locator('[data-sai-na-folha] .chip.ligado').count() === 4, `${G} desligar o tecido e os detalhes tira os dois da folha, e o molde fica com a largura toda`)
+  await pg.locator('[data-sai-na-folha] .chip', { hasText: 'Tecido por peça' }).click(); await pg.locator('[data-sai-na-folha] .chip', { hasText: 'Detalhes da peça' }).click(); await pausa(pg, 500)
+  conta((await secoesDaFolha(pg)).length === 6, `${G} ligar de novo devolve`)
+
+  /* imprimir */
+  await pg.evaluate(() => { window.__imprimiu = 0; window.print = () => { window.__imprimiu += 1; window.__comClasse = document.body.classList.contains('imprimindo') } })
+  await pg.getByRole('button', { name: 'Imprimir ou salvar em PDF' }).click(); await pausa(pg, 200)
+  conta(await pg.evaluate(() => window.__imprimiu === 1 && window.__comClasse === true), `${G} Imprimir ou salvar em PDF chama a impressão do navegador, com a página já arrumada para o papel`)
+  await pg.evaluate(() => document.body.classList.add('imprimindo')); await pg.emulateMedia({ media: 'print' }); await pausa(pg, 200)
+  const noPapel = await pg.evaluate(() => { const some = (s) => [...document.querySelectorAll(s)].every((e) => getComputedStyle(e).display === 'none'); const f = document.querySelector('.fl'); return { topo: some('.pagina-topo'), pilulas: some('[data-sai-na-folha]'), menu: some('.casca > *:not(.vista)'), medidor: some('.fl-medidor'), folha: getComputedStyle(f).display !== 'none', escala: getComputedStyle(document.querySelector('.fl-pilha')).transform } })
+  conta(noPapel.topo && noPapel.pilulas && noPapel.menu && noPapel.medidor && noPapel.folha && noPapel.escala === 'none', `${G} no papel só a folha sai: o topo da página, as pílulas, o menu e a área de medição somem`)
+  await pg.emulateMedia({ media: 'screen' }); await pg.evaluate(() => document.body.classList.remove('imprimindo'))
+
+  /* voltar e editar */
+  await pg.locator('.pd-volta').click(); await pg.waitForSelector('[data-ficha="referencia"]'); await pausa(pg, 400)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'CAMISETA MASC TRAD' && new URL(pg.url()).searchParams.get('ref') === 'FT-010-000M', `${G} Voltar à referência devolve a ficha da mesma peça`)
+
+  /* com a escala acertada, o molde sai com as medidas */
+  await trocarMoldeNaFicha(pg, F.MOLDE_DE_CAMADAS)
+  await abrirVisor(pg)
+  await pg.getByRole('button', { name: 'Acertar a escala' }).click(); await pausa(pg)
+  await pg.locator('[data-acertar-escala] input').fill('55'); await pg.getByRole('button', { name: 'Guardar a escala' }).click(); await pausa(pg, 500)
+  await pg.keyboard.press('Escape'); await pausa(pg)
+  await imprimirFicha(pg, 'referencia')
+  const noMolde = await pg.evaluate(() => { const s = document.querySelector('.fl [data-molde-com-medidas]'); if (!s) return null; const caixa = s.getBoundingClientRect(); const im = s.querySelector('image').getBoundingClientRect(); return { larguras: [...s.querySelectorAll('[data-cota-largura]')].map((t) => t.textContent), alturas: [...s.querySelectorAll('[data-cota-altura]')].map((t) => t.textContent), dentro: [...s.querySelectorAll('text')].every((t) => { const r = t.getBoundingClientRect(); return r.left >= caixa.left - 1 && r.right <= caixa.right + 1 && r.top >= caixa.top - 1 && r.bottom <= caixa.bottom + 1 }), imagem: im.width > 0 } })
+  conta(noMolde && mesma(noMolde.larguras, ['55,0', '55,0', '44,0', '44,0', '48,0', '4,5']) && mesma(noMolde.alturas, ['73,5', '75,0', '24,5', '24,5', '4,5', '4,5']) && noMolde.dentro && noMolde.imagem && (await textos(pg, '.fl [data-secao="molde"] .pd-p-apoio'))[0] === 'largura e altura de cada parte, em cm', `${G} com a escala acertada, o molde sai com a largura e a altura de cada parte, e nenhuma cota cai fora da caixa`)
+  conta(await pg.locator('.fl').count() === 1 && await cabeDentro(pg), `${G} com o molde medido a ficha continua numa folha só`)
+  await foto(pg, 'ficha-impressa-com-medidas' + (tema === 'dark' ? '-grafite' : ''))
+  await pg.locator('.pagina-topo button', { hasText: 'Editar' }).click(); await pg.waitForSelector('[data-ficha="editar"]'); await pausa(pg)
+  conta(await pg.locator('[data-impressa]').count() === 0, `${G} Editar, na folha, abre o editor da referência`)
+  conta(erros.length === 0, `${G} nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ficha comprida: passa para a segunda folha, sem cortar bloco */
+await secao(async () => {
+  const { ctx, pg, banco } = await abrir(nav, { largura: 1536, altura: 900 })
+  const valores = Object.fromEntries(F.ADULTA.map((t, i) => [t, 40 + i]))
+  for (let i = 1; i <= 12; i++) banco.fichas.r000.medidas.push({ nome: 'Medida extra ' + i, como_medir: '', valores })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await imprimirFicha(pg, 'referencia')
+  const folhas = await pg.evaluate(() => [...document.querySelectorAll('.fl')].map((f) => ({ cab: !!f.querySelector('.fl-cab'), secoes: [...f.querySelectorAll('.fl-corpo .fl-h')].map((h) => h.childNodes[0].textContent.trim()), pe: f.querySelector('.fl-num').textContent.trim() })))
+  conta(folhas.length === 2 && folhas[0].cab && !folhas[1].cab && mesma(folhas.flatMap((f) => f.secoes), ['Molde', 'Detalhes da peça', 'Tabela de medidas', 'Tecido por peça', 'Aviamentos e insumos por peça', 'Observação para a costura']) && folhas[1].secoes.length >= 1 && mesma(folhas.map((f) => f.pe), ['página 1 de 2', 'página 2 de 2']), `ficha comprida (15 medidas): passa para a segunda folha, o cabeçalho é só da primeira, e nenhuma seção se perde (${folhas.map((f) => f.secoes.length).join(' + ')})`)
+  conta(await cabeDentro(pg) && (await textos(pg, '.pagina-topo .sub'))[0].endsWith('2 páginas.'), `ficha comprida: nada cortado em nenhuma das duas folhas, e o subtítulo conta duas páginas`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'le' })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await imprimirFicha(pg, 'referencia')
+  conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Imprimir ou salvar em PDF']), `quem só lê: imprime a ficha, sem o Editar`)
+  await ctx.close()
+})
+/* peça em branco: a folha sai, dizendo o que falta */
+await secao(async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos?ref=FT-020-000M', '[data-ficha="referencia"]')
+  await imprimirFicha(pg, 'referencia')
+  const cab = await celulas(pg)
+  conta(cab['Partes do molde'] === '-' && cab['Atualizada em'] === '-' && (await textos(pg, '.fl [data-secao="molde"] .pd-p-vazio'))[0] === 'Esta peça ainda não tem o desenho do molde.' && (await textos(pg, '.fl [data-secao="medidas"] .pd-p-nota'))[0].includes('ainda não tem a tabela de medidas') && (await textos(pg, '.fl [data-secao="tecido"] .pd-p-nota'))[0].includes('ainda não tem o tecido medido') && erros.length === 0, `peça com a ficha em branco: a folha sai inteira, e cada seção diz o que ainda não tem`)
+  await ctx.close()
+})
+
+/* ---- a ficha impressa do kit ---- */
+await secao(async () => {
+  const { ctx, pg, erros, banco } = await abrir(nav, { largura: 1536, altura: 900 })
+  /* o kit do catálogo já com a ficha de fabricação da parte de cima */
+  Object.assign(banco.pecasDosKits.rkit[0], { tecidos: [{ parte: 'A peça inteira', tecido_id: 't1', tecido: 'DRYFIT POLIESTER 100%' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: '' }], etiqueta: 'silk', etiqueta_onde: 'no decote, por dentro', observacao: 'Patch depois da costura.' })
+  Object.assign(banco.pecasDosKits.rkit[1], { etiqueta: 'sem' })
+  await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
+  await imprimirFicha(pg, 'kit')
+  conta((await textos(pg, '.pagina-topo h1'))[0] === 'Ficha técnica impressa do kit' && (await textos(pg, '.pagina-topo .acima'))[0] === 'Voltar ao kit' && (await textos(pg, '.pagina-topo .sub'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO, do jeito que sai na impressora. 1 página.', `kit impresso: a folha toma a página, com o nome do kit e a conta de páginas`)
+  conta(mesma(await textos(pg, '[data-sai-na-folha] .chip'), ['Desenho do kit', 'Peças do kit', 'Ficha de fabricação', 'Tecido por tamanho', 'Aviamentos', 'Observação', 'Juntar a ficha de cada peça · mais 2 folhas']) && await pg.locator('[data-sai-na-folha] .chip.ligado').count() === 6, `kit impresso: as seis seções ligadas, e a de juntar a ficha de cada peça desligada`)
+  const cab = await celulas(pg)
+  conta(mesma(cab, { Kit: 'KIT-020-000M-090-000M', 'Peças': '2', Grade: 'Adulta, PP a G4', 'Gênero': 'Masculino', Tecidos: '1', Etiqueta: 'Silk e Sem etiqueta', 'Design impresso': 'Sublimação e patch', 'Atualizada em': '-', 'Impressa em': cab['Impressa em'], Por: F.perfil('chefe')[0].nome }) && (await textos(pg, '.fl-marca-sub'))[0] === 'Ficha técnica do kit' && (await textos(pg, '.fl .pd-p-titulo'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO', `kit impresso: o cabeçalho com o código, as peças, a grade em comum, os tecidos, a etiqueta e o design`)
+  conta(mesma(await secoesDaFolha(pg), ['Desenho do kit', 'Peças do kit', 'Ficha de fabricação', 'Tecido de um kit, em cada tamanho', 'Aviamentos e insumos de um kit', 'Observação para a fábrica']) && await pg.locator('.fl').count() === 1 && await cabeDentro(pg), `kit impresso: as seis seções numa folha, sem corte`)
+  conta(mesma(await tabelaDoPapel(pg, '.fl [data-secao="pecas"] table'), [['Papel', 'Referência', 'Peça'], ['Parte de cima', 'FT-020-000M', 'RAGLAN MASC SEM PUNHO'], ['Parte de baixo', 'FT-090-000M', 'CALÇAO MASC SEM BOLSO']]), `kit impresso: as peças, com o papel e o código de cada uma`)
+  const fab = await tabelaDoPapel(pg, '.fl [data-secao="fabricacao"] table')
+  conta(mesma(fab[0], ['Característica', 'Parte de cima · RAGLAN MASC SEM PUNHO', 'Parte de baixo · CALÇAO MASC SEM BOLSO']) && mesma(fab.slice(1).map((l) => l[0]), ['Tecidos', 'Gola', 'Manga', 'Punho', 'Barra', 'Costura', 'Design impresso', 'Etiqueta']) && mesma(fab[1].slice(1), ['DRYFIT POLIESTER 100% (a peça inteira)', 'não escolhido']) && mesma(fab[7].slice(1), ['Sublimação: peça inteira Patch', 'nenhum']) && mesma(fab[8].slice(1), ['Silk, no decote, por dentro', 'Sem etiqueta']), `kit impresso: a ficha de fabricação, uma coluna por peça, com o tecido e a parte, a técnica e o lugar, e a etiqueta`)
+  conta((await textos(pg, '.fl [data-secao="observacao"] .pd-p-obs'))[0] === 'Parte de cima: Patch depois da costura.' && (await textos(pg, '.fl [data-secao="tecido"] .pd-p-nota'))[0].includes('falta medir o tecido') && (await textos(pg, '.fl-pe'))[0].includes('KIT-020-000M-090-000M página 1 de 1'), `kit impresso: a observação diz de que peça é, o tecido sem medida diz o que falta, e o rodapé leva o código do kit`)
+  await foto(pg, 'kit-impresso')
+
+  /* juntar a ficha de cada peça */
+  await pg.locator('[data-juntar]').click(); await pg.waitForFunction(() => document.querySelectorAll('.fl').length === 3); await pausa(pg, 800)
+  conta((await textos(pg, '.pagina-topo .sub'))[0].endsWith('3 páginas.') && (await celulas(pg, 1))['Referência'] === 'FT-020-000M' && (await celulas(pg, 2))['Referência'] === 'FT-090-000M' && mesma(await textos(pg, '.fl-num'), ['página 1 de 1', 'página 1 de 1', 'página 1 de 1']) && await cabeDentro(pg), `kit impresso, juntando as peças: mais uma folha para cada referência, cada uma com o cabeçalho e a conta de páginas dela`)
+  await pg.locator('[data-juntar]').click(); await pausa(pg, 500)
+  conta(await pg.locator('.fl').count() === 1 && (await textos(pg, '.pagina-topo .sub'))[0].endsWith('1 página.'), `kit impresso: desligar o juntar volta para a folha do kit só`)
+  await pg.locator('.pd-volta').click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 400)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0].startsWith('KIT RAGLAN'), `kit impresso: Voltar ao kit devolve a ficha do kit`)
+  await imprimirFicha(pg, 'kit')
+  await pg.locator('.pagina-topo button', { hasText: 'Editar' }).click(); await pg.waitForSelector('[data-editor-do-kit="existe"]'); await pausa(pg)
+  conta((await textos(pg, '.pagina-topo h1'))[0] === 'Editor da ficha do kit', `kit impresso: Editar abre o editor do kit`)
+  conta(erros.length === 0, `kit impresso: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()
 })
 
@@ -886,7 +1216,7 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   conta(alvos.every((a) => a.h >= 43.5), `${G}: toda linha da árvore tem pelo menos 44 px de altura (a menor tem ${Math.min(...alvos.map((a) => Math.round(a.h)))})`)
   await foto(pg, `celular-lista-${tema}`)
   await escolherRef(pg, '010-000M')
-  conta(await pg.locator('[data-arvore]').count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Voltar', 'Editar']), `${G} ficha: toma o lugar da lista, com Voltar e Editar`)
+  conta(await pg.locator('[data-arvore]').count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Voltar', 'Editar', 'Imprimir']), `${G} ficha: toma o lugar da lista, com Voltar, Editar e Imprimir`)
   conta(await sobra(pg) <= 0, `${G} ficha: nada rola para o lado`)
   const emPe = await tabela(pg, '[data-modulo] table.pd-grade')
   conta(await pg.locator('[data-modulo] .pd-grade.pd-em-pe').count() === 1 && mesma(emPe[0], ['Tamanho', 'Comprimento', 'Largura', 'Manga']) && emPe.length === 11 && mesma(emPe[1], ['PP', '66,0', '47,0', '19,0']) && mesma(emPe[10], ['G4', '84,0', '74,0', '28,5']), `${G} medidas: a tabela fica em pé, um tamanho por linha e uma coluna por medida`)
@@ -925,7 +1255,7 @@ await secao(async () => {
   const G = 'celular gelo'
   const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
   await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
-  conta(await sobra(pg) <= 0 && await pg.locator('[data-arvore]').count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Voltar', 'Editar a ficha']), `${G} kit: a ficha toma a tela, com Voltar e Editar a ficha, e nada rola para o lado`)
+  conta(await sobra(pg) <= 0 && await pg.locator('[data-arvore]').count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Voltar', 'Editar a ficha', 'Imprimir']), `${G} kit: a ficha toma a tela, com Voltar, Editar a ficha e Imprimir, e nada rola para o lado`)
   const rolaFab = await pg.evaluate(() => { const r = document.querySelector('[data-cartao="fabricacao"] .pd-grade-rola'); return r.scrollWidth > r.clientWidth })
   conta(rolaFab, `${G} kit: a ficha de fabricação, com uma coluna por peça, rola dentro da própria caixa`)
   await editarKit(pg)
@@ -938,6 +1268,22 @@ await secao(async () => {
   await pg.locator('.pd-ficha-topo button', { hasText: 'Voltar' }).click(); await pausa(pg)
   conta(await pg.locator('[data-arvore] .pd-kits .pd-t').count() === 1 && await pg.locator('[data-ficha]').count() === 0, `${G} kit: Voltar devolve a lista, na aba Kits`)
   conta(erros.length === 0, `${G} kit: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+await secao(async () => {
+  const G = 'celular gelo'
+  const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await pg.locator('[data-ampliar-o-molde]').click(); await pg.waitForSelector('dialog.modal.cheio[open] [data-visor]'); await pausa(pg, 700)
+  const toque = await caixas(pg, '.pd-visor-parte')
+  const palco = (await caixas(pg, '.pd-visor-palco'))[0]; const lado = (await caixas(pg, '[data-visor-lado]'))[0]
+  conta(toque.length === 4 && toque.every((t) => t.h >= 43.5) && lado.y >= palco.y + palco.h - 1 && palco.h >= 259 && await sobra(pg) <= 0, `${G} molde em tela cheia: o desenho em cima, as medidas embaixo, cada parte é alvo de dedo, e nada rola para o lado`)
+  await foto(pg, 'celular-molde')
+  await pg.keyboard.press('Escape'); await pausa(pg)
+  await pg.locator('.pd-ficha-topo button', { hasText: 'Imprimir' }).click(); await pg.waitForSelector('[data-impressa="referencia"] .fl'); await pausa(pg, 1200)
+  const escala = await pg.evaluate(() => { const m = getComputedStyle(document.querySelector('.fl-pilha')).transform.match(/matrix\(([\d.]+)/); return m ? Number(m[1]) : 1 })
+  conta(await sobra(pg) <= 0 && escala < 0.5 && escala > 0.4 && await pg.locator('.fl').count() === 1, `${G} ficha impressa: a folha encolhe para caber na tela (${Math.round(escala * 100)}%), continua uma folha só, e nada rola para o lado`)
+  conta(erros.length === 0, `${G} molde e folha: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()
 })
 await secao(async () => {

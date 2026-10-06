@@ -10,5 +10,5 @@
     "outDir": "./compilado-produto",
     "rootDir": ".."
   },
-  "files": ["../src/dominio/produto/contas.ts", "../src/dominio/produto/kit.ts"]
+  "files": ["../src/dominio/produto/contas.ts", "../src/dominio/produto/kit.ts", "../src/dominio/produto/molde.ts"]
 }

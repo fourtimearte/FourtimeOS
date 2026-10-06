@@ -20,6 +20,7 @@ export { colarBloco, copiarBloco, temCopia } from './copia'
 export { compactarFolha, compactarPalco, NIVEIS_DA_TABELA } from './compactar'
 export {
   ALTURA_DA_FOLHA,
+  CabecalhoDaFolha,
   Folha,
   LARGURA_DA_FOLHA,
   Medidor,
@@ -27,4 +28,5 @@ export {
   imprimir,
   usarPaginacao,
   type BlocoDaFolha,
+  type CelulaDaFolha,
 } from './folha'

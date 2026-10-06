@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Aviso, Botao, Esqueleto, LogoFourtime, Pagina, Segmentado, Vazio } from '@ds'
+import { Aviso, Botao, Esqueleto, Pagina, Segmentado, Vazio } from '@ds'
 import { EMPRESA, empresaAConferir } from '@dominio/empresa'
 import {
+  CabecalhoDaFolha,
   CaixaDeImagem,
   Folha,
   Medidor,
@@ -359,41 +360,26 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
 function Cabecalho({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
   const c = cotacao
   return (
-    <div className="dc-cab">
-      <div className="dc-logo">
-        {/* A LOGO DE VERDADE, e não mais a palavra FOURTIME escrita à mão. O
-            "TIME" herda a cor do texto da folha, que é quase preto: no papel
-            a marca sai nas duas cores certas sem variante nenhuma. */}
-        <LogoFourtime altura="5.2mm" titulo="Fourtime" />
-        <span className="dc-marca-sub">{EMPRESA.descricao}</span>
-      </div>
-      <Celula rotulo="Cliente" valor={c.cliente.nome} />
-      <Celula rotulo="CPF ou CNPJ" valor={c.cliente.documento} />
-      <Celula rotulo="Cotação nº" valor={c.numero} />
-      <Celula rotulo="Vendedor" valor={c.vendedor} />
-      <Celula rotulo="Contato" valor={c.cliente.contato} />
-      <Celula rotulo="Vale até" valor={data(c.validaAte)} />
-      <Celula rotulo="Situação" valor={NOME_DO_ESTADO_DA_COTACAO[c.estado]} />
-      <Celula rotulo="Prazo" valor={c.informe.prazo} />
-      <Celula rotulo="Pagamento" valor={c.informe.pagamento} />
-      {/* a ultima celula da grade nao pode sumir: as tres fileiras tem altura
-          fixa e e nela que a conta da quebra de pagina se apoia. Sem valor ela
-          troca de conteudo, e passa a dizer o numero que a fabrica confere */}
-      {comValor ? (
-        <Celula rotulo="Total" valor={dinheiro(totalDaCotacao(c))} forte />
-      ) : (
-        <Celula rotulo="Peças" valor={String(pecasDaCotacao(c))} forte />
-      )}
-    </div>
-  )
-}
-
-function Celula({ rotulo, valor, forte }: { rotulo: string; valor: string; forte?: boolean }) {
-  return (
-    <div className={forte ? 'dc-cel forte' : 'dc-cel'}>
-      <span className="dc-rot">{rotulo}</span>
-      <span className="dc-val">{valor || '-'}</span>
-    </div>
+    <CabecalhoDaFolha
+      sub={EMPRESA.descricao}
+      celulas={[
+        { rotulo: 'Cliente', valor: c.cliente.nome },
+        { rotulo: 'CPF ou CNPJ', valor: c.cliente.documento },
+        { rotulo: 'Cotação nº', valor: c.numero },
+        { rotulo: 'Vendedor', valor: c.vendedor },
+        { rotulo: 'Contato', valor: c.cliente.contato },
+        { rotulo: 'Vale até', valor: data(c.validaAte) },
+        { rotulo: 'Situação', valor: NOME_DO_ESTADO_DA_COTACAO[c.estado] },
+        { rotulo: 'Prazo', valor: c.informe.prazo },
+        { rotulo: 'Pagamento', valor: c.informe.pagamento },
+        /* a ultima celula da grade nao pode sumir: as tres fileiras tem altura
+           fixa e e nela que a conta da quebra de pagina se apoia. Sem valor ela
+           troca de conteudo, e passa a dizer o numero que a fabrica confere */
+        comValor
+          ? { rotulo: 'Total', valor: dinheiro(totalDaCotacao(c)), forte: true }
+          : { rotulo: 'Peças', valor: String(pecasDaCotacao(c)), forte: true },
+      ]}
+    />
   )
 }
 
@@ -407,7 +393,7 @@ function RodapeDaEmpresa({
   comValor: boolean
 }) {
   return (
-    <div className="dc-pe">
+    <div className="fl-rodape">
       <span>
         <b>{EMPRESA.nome}</b> · {EMPRESA.endereco} · {EMPRESA.cidade}, {EMPRESA.uf} · CNPJ{' '}
         {EMPRESA.cnpj}
@@ -415,7 +401,7 @@ function RodapeDaEmpresa({
       {/* o total em reais so na primeira folha: nas seguintes ele apareceria
           solto, sem o que o explica, e ja houve confusao com isso */}
       {primeira ? (
-        <span className="dc-pe-total">
+        <span className="fl-rodape-total">
           {pecasDaCotacao(cotacao)} peças
           {comValor ? <> · {dinheiro(totalDaCotacao(cotacao))}</> : null}
         </span>
@@ -490,7 +476,7 @@ function ResumoDoPedido({ cotacao, comValor }: { cotacao: Cotacao; comValor: boo
   const base = subtotal(c)
   return (
     <section className="dc-resumo">
-      <h3 className="dc-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
+      <h3 className="fl-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
 
       {/* UMA FILEIRA POR LAYOUT, e o numero do layout na frente. Ele e a
           unica coisa que amarra esta tabela as folhas de tras: quem le
@@ -498,7 +484,7 @@ function ResumoDoPedido({ cotacao, comValor }: { cotacao: Cotacao; comValor: boo
           da linha: ela esta desenhada inteira, tamanho por tamanho, na folha
           do proprio layout, e repetida aqui em texto corrido so gastava a
           largura que o nome do produto precisava. */}
-      <table className="dc-tab">
+      <table className="fl-tab dc-tab">
         <thead>
           <tr>
             <th className="dc-col-l">Layout</th>
@@ -556,7 +542,7 @@ function Condicoes({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean 
   const informes = c.informes.filter((x) => x.noDocumento)
   return (
     <section className="dc-resumo">
-      <dl className="dc-informe">
+      <dl className="fl-informe">
         <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
         {comValor ? <Par rotulo="Pagamento" valor={c.informe.pagamento} /> : null}
         <Par rotulo="Envio" valor={c.informe.entrega} />

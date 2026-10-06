@@ -1,0 +1,163 @@
+/* ==========================================================================
+   A FICHA TÉCNICA NO PAPEL (pranchas 70 e 71).
+
+   A folha em si, o cabeçalho de quatro colunas, o título de seção e a tabela
+   moram em dominio/layout/folha.css: são as mesmas peças da cotação. Aqui é
+   só o recheio que é da ficha técnica, com o prefixo pd-p-.
+
+   Tudo em milímetro e nas cores próprias da folha (--fl-*): o papel é branco
+   nos dois temas, e a tinta dele não vira com o tema. Por isso este arquivo
+   tem licença na conferência de tokens, junto com a folha e o documento da
+   cotação.
+
+   OS BLOCOS RESPIRAM POR DENTRO, com padding, e nunca com margem: a
+   paginação mede a altura de cada bloco, e margem não entra na medida.
+   ========================================================================== */
+
+/* o respiro entre o cabeçalho e o primeiro bloco */
+.pd-p-cab {
+  padding-bottom: 4mm;
+}
+.pd-p {
+  padding-bottom: 3.5mm;
+}
+.pd-p-dois {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 5mm;
+  align-items: start;
+}
+.pd-p-dois.molde {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+/* a tabela de aviamentos precisa de mais largura que a caixa da observação */
+.pd-p-dois.lista {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+}
+/* a explicação miúda ao lado do título da seção */
+.pd-p-apoio {
+  margin-left: 2mm;
+  font-size: 7.5pt;
+  font-weight: 400;
+  color: var(--fl-fraco);
+}
+.pd-p-titulo {
+  margin: 0;
+  padding: 1mm 0 3.5mm;
+  font-size: 13pt;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* o molde no papel: o desenho e as cotas, num desenho só */
+.pd-p-molde {
+  display: grid;
+  place-items: center;
+  min-height: 24mm;
+  padding: 2mm;
+  border: 1px solid var(--fl-borda);
+  border-radius: 2mm;
+}
+.pd-p-molde svg,
+.pd-p-molde img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 44mm;
+}
+.pd-p-molde .pd-cota text {
+  font-size: 15px;
+}
+.pd-p-molde .pd-cota path {
+  stroke-width: 1.2;
+}
+.pd-p-vazio {
+  font-size: 8.5pt;
+  color: var(--fl-fraco);
+  text-align: center;
+}
+.pd-p-nota {
+  margin: 0;
+  padding-top: 1.5mm;
+  font-size: 7.5pt;
+  line-height: 1.35;
+  color: var(--fl-fraco);
+}
+
+/* a lista de rótulo e valor dos detalhes: mais estreita que a da cotação */
+.pd-p .pd-p-detalhes {
+  grid-template-columns: 17mm minmax(0, 1fr);
+  gap: 2mm 3mm;
+  margin-bottom: 0;
+}
+.pd-p-detalhes dd {
+  font-weight: 500;
+}
+.pd-p-detalhes .pd-p-sem {
+  font-weight: 400;
+  color: var(--fl-fraco);
+}
+
+/* a tabela por tamanho: o nome à esquerda e um número por tamanho */
+.pd-p .pd-p-tab {
+  margin-bottom: 0;
+}
+.pd-p .pd-p-grade th:not(:first-child),
+.pd-p .pd-p-grade td:not(:first-child) {
+  padding-left: 0.6mm;
+  padding-right: 1.2mm;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.pd-p-grade td:first-child {
+  font-weight: 600;
+}
+.pd-p-grade small,
+.pd-p-fab small {
+  margin-left: 0.8mm;
+  font-size: 7pt;
+  font-weight: 400;
+  color: var(--fl-fraco);
+}
+.pd-p .pd-p-grade tr.pd-p-soma td {
+  font-weight: 700;
+  background: var(--fl-fundo-2);
+}
+.pd-p .pd-p-grade tr.pd-p-fraco td {
+  font-weight: 400;
+  color: var(--fl-fraco);
+}
+
+/* a ficha de fabricação do kit: uma coluna por peça */
+.pd-p .pd-p-fab td:first-child {
+  width: 27mm;
+  font-weight: 700;
+  color: var(--fl-fraco);
+}
+.pd-p-fab td {
+  overflow-wrap: anywhere;
+}
+.pd-p-fab .pd-p-linha {
+  display: block;
+}
+.pd-p-cod {
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-p-obs {
+  margin: 0;
+  min-height: 12mm;
+  padding: 2.5mm;
+  border: 1px solid var(--fl-borda);
+  border-radius: 2mm;
+  font-size: 9pt;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pd-p-obs b {
+  font-weight: 700;
+}

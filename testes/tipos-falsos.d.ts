@@ -118,6 +118,7 @@ declare module 'react/jsx-dev-runtime' {
 declare module 'react-dom' {
   const x: any
   export default x
+  export const createPortal: any
 }
 declare module 'react-dom/client' {
   export const createRoot: any

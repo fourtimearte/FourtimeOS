@@ -27,6 +27,7 @@ import {
    na conferência (sh testes/produto.sh). Aqui fica o que fala com o banco. */
 export * from './contas'
 export * from './kit'
+export * from './molde'
 
 /* --- a busca ----------------------------------------------------------------- */
 
@@ -171,17 +172,51 @@ export function salvarFicha(referenciaId: string, f: Ficha): Promise<string> {
   })
 }
 
-/** O molde da referência, em SVG. Nulo: ainda não tem. */
-export async function carregarMolde(referenciaId: string): Promise<string | null> {
+/** O molde da referência, em SVG. Nulo: ainda não tem.
+    Sem tamanho é o molde geral da peça; com tamanho, o molde daquele tamanho. */
+export async function carregarMolde(referenciaId: string, tamanho = ''): Promise<string | null> {
   const linhas = await tabela<{ svg: string }[]>(
-    `molde_da_referencia?select=svg&referencia_id=eq.${referenciaId}&tamanho=eq.`,
+    `molde_da_referencia?select=svg&referencia_id=eq.${referenciaId}&tamanho=eq.${encodeURIComponent(tamanho)}`,
   )
   return linhas.length ? linhas[0].svg : null
 }
 
-/** Troca o molde. Texto vazio tira o molde. Devolve se a referência ficou com molde. */
-export function salvarMolde(referenciaId: string, svg: string): Promise<boolean> {
-  return chamar<boolean>('salvar_molde_da_referencia', { p_referencia: referenciaId, p_svg: svg })
+/** Troca o molde. Texto vazio tira o molde. Devolve se a referência ficou com molde.
+    Trocar o desenho derruba a escala acertada: ela era do arquivo antigo. */
+export function salvarMolde(referenciaId: string, svg: string, tamanho = ''): Promise<boolean> {
+  return chamar<boolean>('salvar_molde_da_referencia', {
+    p_referencia: referenciaId,
+    p_svg: svg,
+    /* o molde geral vai sem o tamanho, como sempre foi */
+    ...(tamanho ? { p_tamanho: tamanho } : {}),
+  })
+}
+
+/** Que moldes a referência tem (o geral é o de tamanho vazio) e a escala acertada de cada um.
+    Sem o desenho: é a lista leve que a tela cheia lê antes de buscar o SVG de um tamanho. */
+export async function carregarEscalasDoMolde(
+  referenciaId: string,
+): Promise<{ tamanho: string; cmPorUnidade: number | null }[]> {
+  const linhas = await tabela<{ tamanho: string; cm_por_unidade: number | string | null }[]>(
+    `molde_da_referencia?select=tamanho,cm_por_unidade&referencia_id=eq.${referenciaId}`,
+  )
+  return linhas.map(l => ({
+    tamanho: l.tamanho,
+    cmPorUnidade: l.cm_por_unidade === null || l.cm_por_unidade === '' ? null : Number(l.cm_por_unidade),
+  }))
+}
+
+/** Guarda quantos centímetros vale uma unidade do desenho. Nulo tira a escala acertada. */
+export function acertarEscalaDoMolde(
+  referenciaId: string,
+  cmPorUnidade: number | null,
+  tamanho = '',
+): Promise<number | null> {
+  return chamar<number | null>('acertar_escala_do_molde', {
+    p_referencia: referenciaId,
+    p_cm_por_unidade: cmPorUnidade,
+    p_tamanho: tamanho,
+  })
 }
 
 /** Os tecidos do catálogo, com a largura e a gramatura, para a conta de metro e de grama. */

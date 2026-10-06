@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
+import { LogoFourtime } from '@ds'
 import './folha.css'
 
 /* ==========================================================================
@@ -163,6 +164,38 @@ export function Folha({
         </span>
       </footer>
     </section>
+  )
+}
+
+/* --- o cabeçalho: quatro colunas por três fileiras -------------------------
+   A logo ocupa a coluna 1 nas duas primeiras fileiras, e sobram dez células.
+   O rótulo fica EM CIMA do valor, e não ao lado: com o rótulo ao lado, Cliente,
+   CNPJ e Pagamento cortavam com reticência. As três fileiras têm a mesma
+   altura, então a altura do cabeçalho não depende do conteúdo e a conta da
+   quebra de página continua sendo uma conta fixa.
+
+   Nasceu na cotação e subiu para cá quando a ficha técnica impressa precisou
+   do mesmo cabeçalho: quem usa passa as dez células, e a última nunca falta,
+   porque é nela que a grade fecha. */
+export type CelulaDaFolha = { rotulo: string; valor: string; forte?: boolean }
+
+export function CabecalhoDaFolha({ sub, celulas }: { sub: string; celulas: CelulaDaFolha[] }) {
+  return (
+    <div className="fl-cab">
+      <div className="fl-logo">
+        {/* A LOGO DE VERDADE, e não a palavra FOURTIME escrita à mão. O "TIME"
+            herda a cor do texto da folha, que é quase preto: no papel a marca
+            sai nas duas cores certas sem variante nenhuma. */}
+        <LogoFourtime altura="5.2mm" titulo="Fourtime" />
+        <span className="fl-marca-sub">{sub}</span>
+      </div>
+      {celulas.map(c => (
+        <div className={c.forte ? 'fl-cel forte' : 'fl-cel'} key={c.rotulo}>
+          <span className="fl-rot">{c.rotulo}</span>
+          <span className="fl-val">{c.valor || '-'}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 

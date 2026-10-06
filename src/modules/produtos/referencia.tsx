@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Copy, Needle, PencilSimple, TShirt, TreeStructure, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, Copy, Needle, PencilSimple, Printer, TShirt, TreeStructure, X } from '@phosphor-icons/react'
 import { Botao, Esqueleto, TituloCartao, Vazio, avisar } from '@ds'
 import {
   DETALHES,
@@ -21,6 +21,7 @@ import { Editor } from './editor'
 import { MedidasETecido, type AbaDoModulo } from './medidas'
 import { CartaoDoMolde } from './molde'
 import { SEM_ETIQUETA, Trilha, apoioDoMaterial } from './pecas'
+import { VisorDoMolde } from './visor'
 
 /* ==========================================================================
    A ficha de uma referência: o lado direito da página.
@@ -52,9 +53,13 @@ function Vista({
   aoFechar,
   kits,
   aoAbrirKit,
+  aoAmpliarMolde,
+  aoImprimir,
 }: {
   kits: KitDaReferencia[]
   aoAbrirKit: (id: string) => void
+  aoAmpliarMolde: () => void
+  aoImprimir: () => void
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
   ficha: Ficha
@@ -97,6 +102,10 @@ function Vista({
               Editar
             </Botao>
           ) : null}
+          <Botao onClick={aoImprimir}>
+            <Printer size={16} aria-hidden="true" />
+            Imprimir
+          </Botao>
           {podeCriar && !celular ? (
             <Botao onClick={aoDuplicar}>
               <Copy size={16} aria-hidden="true" />
@@ -120,6 +129,8 @@ function Vista({
           podeEditar={podeEditar}
           enviando={enviandoMolde}
           aoTrocar={aoTrocarMolde}
+          aoAmpliar={aoAmpliarMolde}
+          nota="O desenho é um SVG tirado do molde no Affinity. Toque nele para abrir em tela cheia, com a largura e a altura de cada parte."
         />
         <section className="cartao pd-col" data-cartao="detalhes">
           <div className="pd-topo">
@@ -241,6 +252,7 @@ export function FichaDaReferencia({
   aoDuplicar,
   aoFechar,
   aoAbrirKit,
+  aoImprimir,
 }: {
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
@@ -267,6 +279,8 @@ export function FichaDaReferencia({
   aoDuplicar: () => void
   aoFechar: () => void
   aoAbrirKit: (id: string) => void
+  /** a folha impressa toma a página: a ficha entrega o que já leu, para ninguém ler de novo */
+  aoImprimir: (lido: { ficha: Ficha; molde: string | null }) => void
 }) {
   /* em que kits a peça entra: apoio, que pode falhar sem derrubar a ficha */
   const [kits, setKits] = useState<KitDaReferencia[]>([])
@@ -275,6 +289,7 @@ export function FichaDaReferencia({
   const [erro, setErro] = useState('')
   const [aba, setAba] = useState<AbaDoModulo>(abaInicial ?? 'medidas')
   const [enviandoMolde, setEnviandoMolde] = useState(false)
+  const [visor, setVisor] = useState(false)
 
   const ler = useCallback(async () => {
     setErro('')
@@ -373,6 +388,7 @@ export function FichaDaReferencia({
   }
 
   return (
+    <>
     <Vista
       r={r}
       grupo={grupo}
@@ -395,6 +411,20 @@ export function FichaDaReferencia({
       aoFechar={aoFechar}
       kits={kits}
       aoAbrirKit={aoAbrirKit}
+      aoAmpliarMolde={() => setVisor(true)}
+      aoImprimir={() => aoImprimir({ ficha, molde })}
     />
+    {visor ? (
+      <VisorDoMolde
+        aberto
+        aoFechar={() => setVisor(false)}
+        r={r}
+        ficha={ficha}
+        geral={molde}
+        tecidos={tecidos}
+        podeEditar={podeEditar}
+      />
+    ) : null}
+    </>
   )
 }

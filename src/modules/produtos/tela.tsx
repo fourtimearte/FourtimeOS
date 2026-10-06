@@ -11,6 +11,7 @@ import {
   carregarTecidosDeConta,
   casaComABusca,
   oQueFalta,
+  type Ficha,
   type GrupoDeReferencia,
   type KitNaLista,
   type MaterialDoEstoque,
@@ -21,7 +22,8 @@ import {
 import { plural } from './apoio'
 import { Arvore, type Lista } from './arvore'
 import { EditorDoKit } from './editor-do-kit'
-import { FichaDoKit } from './kit'
+import { ImpressaoDaReferencia, ImpressaoDoKit } from './impressa'
+import { FichaDoKit, type KitCarregado } from './kit'
 import { NovaReferencia } from './nova'
 import { FichaDaReferencia } from './referencia'
 import './produtos.css'
@@ -119,6 +121,13 @@ export function TelaProdutos() {
     pecas: PecaDoKit[]
     desenho: string | null
   } | null>(null)
+
+  /* a folha impressa, que toma a página: de uma referência ou de um kit, com o que a ficha já leu */
+  const [folha, setFolha] = useState<
+    | { de: 'referencia'; r: ReferenciaNaFicha; ficha: Ficha; molde: string | null }
+    | { de: 'kit'; kit: KitNaLista; dado: KitCarregado }
+    | null
+  >(null)
 
   const celular = usarConsulta('(max-width: 767px)')
 
@@ -329,6 +338,46 @@ export function TelaProdutos() {
       />
     )
   }
+  /* A FOLHA IMPRESSA TAMBÉM TOMA A PÁGINA, e devolve no Voltar. */
+  if (folha?.de === 'referencia') {
+    const r = dePeca.find(x => x.id === folha.r.id) ?? folha.r
+    return (
+      <ImpressaoDaReferencia
+        r={r}
+        grupo={grupos.find(g => g.cod === r.grupo) ?? null}
+        ficha={folha.ficha}
+        molde={folha.molde}
+        tecidos={tecidos}
+        doEstoque={doEstoque}
+        quem={pessoa?.nome ?? ''}
+        podeEditar={podeEditar}
+        aoVoltar={() => setFolha(null)}
+        aoEditar={() => {
+          setFolha(null)
+          setEditando(true)
+        }}
+      />
+    )
+  }
+  if (folha?.de === 'kit') {
+    return (
+      <ImpressaoDoKit
+        kit={folha.kit}
+        dado={folha.dado}
+        referencias={dePeca}
+        grupos={grupos}
+        tecidos={tecidos}
+        doEstoque={doEstoque}
+        quem={pessoa?.nome ?? ''}
+        podeEditar={podeEditar}
+        aoVoltar={() => setFolha(null)}
+        aoEditar={() => {
+          setFolha(null)
+          setEditorDoKit({ kit: folha.kit, pecas: folha.dado.pecas, desenho: folha.dado.desenho })
+        }}
+      />
+    )
+  }
   const semDados = (
     <section className="cartao pd-quadro">
       <div className="pd-espera">
@@ -447,6 +496,7 @@ export function TelaProdutos() {
                   celular={celular}
                   podeEditar={podeEditar}
                   aoEditar={dado => setEditorDoKit({ kit: kitAberto, pecas: dado.pecas, desenho: dado.desenho })}
+                  aoImprimir={dado => setFolha({ de: 'kit', kit: kitAberto, dado })}
                   aoAbrirReferencia={escolher}
                   aoMudou={async () => {
                     setKits(await carregarKits())
@@ -484,6 +534,7 @@ export function TelaProdutos() {
                   aoDuplicar={() => setNova({ de: aberta })}
                   aoFechar={() => escolher('')}
                   aoAbrirKit={escolherKit}
+                  aoImprimir={lido => setFolha({ de: 'referencia', r: aberta, ...lido })}
                 />
               </div>
             ) : celular ? null : (

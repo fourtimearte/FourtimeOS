@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, ClipboardText, Image, Needle, PencilSimple, Scroll, TShirt, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, ClipboardText, Image, Needle, PencilSimple, Printer, Scroll, TShirt, X } from '@phosphor-icons/react'
 import { Botao, ChipTecnica, Esqueleto, TituloCartao, Vazio, avisar } from '@ds'
 import {
   DETALHES,
@@ -136,6 +136,7 @@ export function FichaDoKit({
   celular,
   podeEditar,
   aoEditar,
+  aoImprimir,
   aoAbrirReferencia,
   aoMudou,
   aoFechar,
@@ -145,6 +146,8 @@ export function FichaDoKit({
   celular: boolean
   podeEditar: boolean
   aoEditar: (carregado: KitCarregado) => void
+  /** a folha impressa toma a página, com o que a ficha já leu */
+  aoImprimir: (carregado: KitCarregado) => void
   aoAbrirReferencia: (id: string) => void
   /** o desenho mudou no banco: a lista precisa reler a linha deste kit */
   aoMudou: () => Promise<void>
@@ -241,6 +244,12 @@ export function FichaDoKit({
             <Botao onClick={() => aoEditar(dado)}>
               <PencilSimple size={16} aria-hidden="true" />
               Editar a ficha
+            </Botao>
+          ) : null}
+          {pecas.length ? (
+            <Botao onClick={() => aoImprimir(dado)}>
+              <Printer size={16} aria-hidden="true" />
+              Imprimir
             </Botao>
           ) : null}
           {celular ? null : (

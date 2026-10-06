@@ -8,87 +8,6 @@
    Tudo em cores próprias: a folha é clara nos dois temas.
    ========================================================================== */
 
-/* --- cabeçalho: 4 colunas x 3 fileiras ---------------------------------- */
-.dc-cab {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  border: 1px solid var(--fl-borda);
-  border-radius: 2mm;
-  overflow: hidden;
-}
-.dc-logo {
-  grid-row: span 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1mm;
-  padding: 2.5mm 3mm;
-  border-right: 1px solid var(--fl-borda);
-  border-bottom: 1px solid var(--fl-borda);
-  background: var(--fl-fundo-2);
-}
-/* a palavra FOURTIME escrita à mão saiu daqui: a logo de verdade entrou no
-   lugar dela, e ela traz as próprias cores */
-.dc-marca-sub {
-  font-size: 7pt;
-  color: var(--fl-fraco);
-  line-height: 1.25;
-}
-.dc-cel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.6mm;
-  padding: 2mm 3mm;
-  min-width: 0;
-  border-right: 1px solid var(--fl-borda);
-  border-bottom: 1px solid var(--fl-borda);
-}
-.dc-cel:nth-child(4n + 1),
-.dc-cab > *:last-child {
-  border-right: 0;
-}
-.dc-cab > .dc-cel:nth-last-child(-n + 4) {
-  border-bottom: 0;
-}
-.dc-rot {
-  font-size: 6.5pt;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--fl-fraco);
-}
-.dc-val {
-  font-size: 9pt;
-  font-weight: 500;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
-.dc-cel.forte .dc-val {
-  font-size: 11pt;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- rodapé -------------------------------------------------------------- */
-.dc-pe {
-  display: flex;
-  flex: 1;
-  gap: 6mm;
-  justify-content: space-between;
-  min-width: 0;
-}
-.dc-pe b {
-  color: var(--fl-texto);
-}
-.dc-pe-total {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  color: var(--fl-texto);
-  font-weight: 600;
-}
-
 /* --- um produto na folha --------------------------------------------------
    O bloco compacto que morava aqui saiu inteiro. No lugar dele entrou o
    proprio modulo de layout em leitura, e o que resta aqui e a roupa de papel
@@ -105,37 +24,6 @@
 /* --- o resumo ------------------------------------------------------------ */
 .dc-resumo {
   padding-top: 2mm;
-}
-.dc-h {
-  margin: 0 0 3mm;
-  font-size: 11pt;
-  font-weight: 700;
-}
-.dc-tab {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9pt;
-  margin-bottom: 5mm;
-}
-.dc-tab th,
-.dc-tab td {
-  padding: 1.6mm 2mm;
-  text-align: left;
-  border-bottom: 1px solid var(--fl-borda);
-  vertical-align: top;
-}
-.dc-tab th {
-  font-size: 7pt;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--fl-fraco);
-  background: var(--fl-fundo-2);
-}
-.dc-tab .num {
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 /* a coluna do L-NN: estreita, e o numero nunca quebra em duas linhas */
 .dc-col-l {
@@ -155,20 +43,6 @@
   border-bottom: 0;
 }
 
-.dc-informe {
-  display: grid;
-  grid-template-columns: 32mm minmax(0, 1fr);
-  gap: 1mm 4mm;
-  margin-bottom: 6mm;
-  font-size: 9pt;
-}
-.dc-informe dt {
-  font-weight: 700;
-  color: var(--fl-fraco);
-}
-.dc-informe dd {
-  margin: 0;
-}
 
 .dc-aceite p {
   margin: 0 0 8mm;

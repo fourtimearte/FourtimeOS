@@ -39,6 +39,10 @@ const LIVRES = [
   'src/ds/tokens.css',
   'src/dominio/layout/folha.css',
   'src/modules/cotacao/documento.css',
+  /* A FICHA TECNICA IMPRESSA e a mesma folha: milimetro, e as cores proprias
+     do papel (--fl-*), que nao viram com o tema. So o recheio do papel mora
+     ali; o que fica em volta dele na tela esta em produtos.css, com token. */
+  'src/modules/produtos/papel.css',
   /* A TELA DE ENTRADA e escura nos DOIS temas, de proposito: ela e uma foto
      com um veu por cima, e ainda nao existe tema para escolher porque ninguem
      entrou. Cor de tema ali seria cor que muda sozinha atras do login. */

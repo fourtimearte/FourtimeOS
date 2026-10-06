@@ -1199,3 +1199,375 @@ button.pd-lin:hover {
     height: 28px;
   }
 }
+
+/* ==========================================================================
+   O MOLDE EM TELA CHEIA (prancha 67)
+   ========================================================================== */
+
+/* o quadro de medir: fora da vista, mas com tamanho de verdade, porque o que
+   não é desenhado não tem o que medir. Nada dentro dele roda (ver medir.ts) */
+.pd-medidor {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 1000px;
+  height: 1000px;
+  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* o desenho na ficha é um botão: tocar abre a tela cheia */
+.pd-molde-botao {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: zoom-in;
+}
+.pd-molde-botao:focus-visible {
+  outline: 2px solid var(--papel-tinta);
+  outline-offset: 2px;
+}
+.pd-molde-lupa {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-height: 26px;
+  padding: var(--pad-selo);
+  border-radius: var(--radius-pill);
+  background: var(--papel-tinta);
+  color: var(--branco);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+.pd-molde-botao:hover .pd-molde-lupa,
+.pd-molde-botao:focus-visible .pd-molde-lupa {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  /* no toque não existe passar por cima: o convite fica à vista */
+  .pd-molde-lupa {
+    opacity: 1;
+  }
+}
+
+/* o topo do visor: o nome, os tamanhos e os controles */
+.pd-visor-topo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn) var(--sp-4);
+}
+.pd-visor-nome {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pd-visor-nome b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pd-visor-nome small {
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pd-visor-tam {
+  max-width: 100%;
+  overflow-x: auto;
+}
+/* o tamanho que tem molde próprio leva um ponto */
+.pd-visor-tem {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: var(--re-2);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  vertical-align: middle;
+}
+.pd-visor-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.pd-visor-zoom b {
+  min-width: 48px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* o corpo: o palco e, ao lado, as medidas */
+.pd-visor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  height: 100%;
+  min-height: 0;
+}
+.pd-visor-palco {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--surface-2);
+  background-image: radial-gradient(var(--border-2) 1px, transparent 1px);
+  background-size: 22px 22px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.pd-visor-palco:active {
+  cursor: grabbing;
+}
+.pd-visor-palco:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-visor-palco > .vazio,
+.pd-visor-palco > .pd-espera {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+}
+/* o papel: branco nos dois temas, maior que o desenho para as cotas caberem nele */
+/* O PAPEL E O DESENHO NUNCA TRANSICIONAM. As cotas são redesenhadas a cada
+   movimento, sem transição; se o desenho tivesse uma, ele chegaria depois
+   delas e a cota ficaria um instante medindo o vazio. Vale dizer isso por
+   escrito porque o modo de movimento reduzido põe uma transição mínima em
+   tudo (base.css), e mínima não é nenhuma. */
+.pd-visor-papel {
+  position: absolute;
+  border-radius: var(--radius-lg);
+  background: var(--branco);
+  box-shadow: var(--shadow-card);
+  transition: none;
+}
+.pd-visor-desenho {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition: none;
+}
+.pd-visor-cotas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+/* a cota: sempre em cima do papel, então a tinta é a do papel, e não a do tema */
+.pd-cota path {
+  fill: none;
+  stroke: var(--papel-tinta-2);
+  stroke-width: 1;
+}
+.pd-cota text {
+  fill: var(--papel-tinta);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pd-cota-sel path {
+  stroke: var(--papel-marca);
+  stroke-width: 1.5;
+}
+.pd-cota-sel text {
+  fill: var(--papel-marca);
+}
+.pd-visor-dica,
+.pd-visor-regua {
+  position: absolute;
+  bottom: var(--sp-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 26px;
+  padding: var(--pad-selo);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 12px;
+  pointer-events: none;
+}
+.pd-visor-dica {
+  left: var(--sp-3);
+  color: var(--text-2);
+}
+.pd-visor-regua {
+  right: var(--sp-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* a barra da régua: o traço e os dois pés */
+.pd-visor-regua i {
+  display: block;
+  height: 8px;
+  border: 1px solid var(--text);
+  border-top: 0;
+}
+
+.pd-visor-lado {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+.pd-visor-parte {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-6);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-visor-parte:hover:not(.on) {
+  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-visor-parte:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-visor-parte.on {
+  background-color: var(--ink);
+  color: var(--on-ink);
+}
+.pd-visor-parte-nome {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pd-visor-parte-nome b {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pd-visor-parte small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-visor-parte.on small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.pd-visor-parte-med {
+  flex: none;
+  display: flex;
+  gap: var(--re-7);
+  text-align: right;
+}
+.pd-visor-parte-med > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pd-visor-parte-med b {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pd-visor-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--re-4) var(--re-6);
+  margin: 0;
+  font-size: 13.5px;
+}
+.pd-visor-dl dt {
+  color: var(--text-2);
+}
+.pd-visor-dl dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* tela estreita: as medidas descem para baixo do palco */
+@media (max-width: 1023px) {
+  .pd-visor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(260px, 1fr) minmax(0, 1fr);
+  }
+  .pd-visor-lado {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .pd-visor-dica {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .pd-visor-parte {
+    min-height: 68px;
+  }
+}
+
+/* ==========================================================================
+   A FOLHA IMPRESSA NA TELA (pranchas 70 e 71): o que fica em volta do papel.
+   O que vai dentro do papel mora em papel.css.
+   ========================================================================== */
+.pd-volta {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-2);
+}
+.pd-volta:hover {
+  text-decoration-color: currentColor;
+}
+/* a fileira do que sai na folha: cada pílula liga e desliga uma seção */
+.pd-sai {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.pd-sai-rot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+/* onde a área de medição da folha é pendurada: não ocupa lugar na página */
+.pd-mede-aqui {
+  position: relative;
+  height: 0;
+}

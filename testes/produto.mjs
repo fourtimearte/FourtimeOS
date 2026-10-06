@@ -16,6 +16,7 @@
 
 import * as p from './compilado-produto/src/dominio/produto/contas.js'
 import * as k from './compilado-produto/src/dominio/produto/kit.js'
+import * as o from './compilado-produto/src/dominio/produto/molde.js'
 
 let ruins = 0
 const conta = (certo, frase) => {
@@ -256,6 +257,60 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(banco.nome === 'KIT' && igual(Object.keys(banco.pecas[0]).sort(), ['design', 'etiqueta', 'etiqueta_onde', 'observacao', 'papel', 'referencia_id', 'tecidos']) && igual(banco.pecas[0].tecidos[0], { parte: 'Frente e costas', tecido_id: 't1' }) && banco.pecas[0].papel === 'Parte de cima' && banco.pecas[0].observacao === 'x' && banco.pecas[0].design[1].onde === '', 'kit para o banco: só o que é do kit vai, com o texto aparado e o tecido pelo id')
   const nova = k.pecaNova({ id: 'z', cod: 'FT-1', nome: 'N', genero: 'M', detalhes: { gola: 'V' }, tamanhos: ['P'] }, 0)
   conta(nova.papel === 'Parte de cima' && k.pecaNova({ id: 'z', cod: '', nome: '', genero: '', detalhes: {}, tamanhos: [] }, 1).papel === 'Parte de baixo' && k.papelDaPosicao(5) === 'Acessório' && nova.etiqueta === '' && nova.tecidos.length === 0, 'peça nova: a primeira é a parte de cima, a segunda a de baixo, as outras acessório, com a ficha em branco')
+}
+
+/* ==========================================================================
+   O MOLDE MEDIDO: as partes, a escala e o zoom
+   ========================================================================== */
+{
+  console.log('')
+  console.log('O molde medido')
+  conta(igual(['Frente', 'FRENTE', 'costas', 'Manga_2', 'Manga1', 'Manga 3', 'gola-ribana', 'Bolso_x28_esq_x29_', 'Frente e Costas'].map(o.nomeDaParteNoMolde), ['Frente', 'Frente', 'Costas', 'Manga', 'Manga', 'Manga', 'Gola ribana', 'Bolso(esq)', 'Frente e Costas']), 'nome da parte: a camada do Affinity vira nome, sem o número que o programa põe e sem gritar em maiúscula')
+  conta(igual(['', 'path12', 'g3', 'Layer_1', 'Camada 2', 'rect', 'Curve', 'Artboard1', '  '].map(o.nomeDaParteNoMolde), ['', '', '', '', '', '', '', '', '']), 'nome da parte: o nome que o programa inventa sozinho não é nome')
+
+  /* um molde de camiseta num quadro de 1000 por 600: fundo, frente com um bolso e o nome escrito dentro, costas, duas mangas, uma parte sem nome e um pique */
+  const quadro = { x: 0, y: 0, w: 1000, h: 600 }
+  const caixas = [
+    { id: '', x: 0, y: 0, w: 1000, h: 600, retangulo: true },
+    { id: 'Frente', x: 40, y: 40, w: 220, h: 294, retangulo: false },
+    { id: 'Bolso', x: 100, y: 90, w: 50, h: 50, retangulo: true },
+    { id: 'path77', x: 110, y: 200, w: 80, h: 14, retangulo: false },
+    { id: 'COSTAS', x: 300, y: 40, w: 220, h: 300, retangulo: false },
+    { id: 'Manga', x: 560, y: 40, w: 176, h: 98, retangulo: false },
+    { id: 'Manga1', x: 560, y: 180, w: 178, h: 96, retangulo: false },
+    { id: '', x: 780, y: 40, w: 192, h: 18, retangulo: true },
+    { id: 'pique', x: 40, y: 500, w: 30, h: 0.5, retangulo: false },
+  ]
+  const molde = { quadro, largura: '', altura: '', caixas }
+  const partes = o.partesNoMolde(molde)
+  conta(igual(partes.map((x) => [x.nome, x.vezes, x.largura, x.altura]), [['Frente', 1, 220, 294], ['Costas', 1, 220, 300], ['Manga', 2, 178, 98], ['Parte 1', 1, 192, 18]]), 'partes do molde: o fundo da prancha, o bolso e o nome dentro da frente e o pique solto não são partes; as duas mangas são uma, duas vezes, com a maior largura e a maior altura')
+  conta(partes[2].caixas.length === 2 && partes[2].chave === 'manga' && partes[3].chave === 'sem-nome-1', 'partes do molde: a manga guarda as duas caixas dela, e a parte sem nome ganha um número')
+  conta(o.partesNoMolde({ quadro, largura: '', altura: '', caixas: [{ id: 'Fundo', x: 0, y: 0, w: 1000, h: 600, retangulo: true }, { id: 'Bolso', x: 100, y: 90, w: 50, h: 50, retangulo: true }] }).map((x) => x.nome).join() === 'Fundo', 'partes do molde: um retângulo COM nome do tamanho do quadro é parte (uma faixa, um pano inteiro), e o que está dentro dele é detalhe')
+  conta(o.partesNoMolde({ quadro, largura: '', altura: '', caixas: [] }).length === 0, 'partes do molde: desenho sem nada medido não tem parte')
+  conta(o.partesNoMolde({ quadro, largura: '', altura: '', caixas: [{ id: 'A', x: 0, y: 0, w: 100, h: 100, retangulo: false }, { id: 'B', x: 60, y: 60, w: 100, h: 100, retangulo: false }] }).length === 2, 'partes do molde: duas caixas que só se cruzam são duas partes')
+
+  conta(igual(o.partesNoMolde({ quadro, largura: '', altura: '', caixas: [{ id: 'Manga', x: 10, y: 10, w: 100, h: 60, retangulo: false }, { id: 'Manga1', x: 10, y: 10, w: 100, h: 60, retangulo: false }] }).map((x) => [x.nome, x.vezes]), [['Manga', 2]]), 'partes do molde: duas partes iguais, uma em cima da outra no arquivo, não somem uma dentro da outra')
+  const daFicha = [{ nome: 'Frente', vezes: 1, unidade: 'm2', quantidades: {} }, { nome: 'Mangas', vezes: 4, unidade: 'm2', quantidades: {} }, { nome: 'Costas', vezes: 3, unidade: 'm', quantidades: {} }]
+  conta(o.vezesDaParte(partes[2], daFicha) === 4 && o.vezesDaParte(partes[2], []) === 2 && o.vezesDaParte(partes[1], daFicha) === 1, 'vezes da parte: vale a ficha ("Manga" do desenho é "Mangas" da ficha), sem ficha vale o desenho, e a fita com o mesmo nome não conta')
+
+  /* a escala */
+  conta(perto(o.escalaDoArquivo({ quadro, largura: '500mm', altura: '300mm', caixas: [] }), 0.05) && perto(o.escalaDoArquivo({ quadro, largura: '25cm', altura: '', caixas: [] }), 0.025) && perto(o.escalaDoArquivo({ quadro, largura: '10in', altura: '', caixas: [] }), 0.0254) && perto(o.escalaDoArquivo({ quadro, largura: '720pt', altura: '', caixas: [] }), 0.0254) && perto(o.escalaDoArquivo({ quadro, largura: '', altura: '60 cm', caixas: [] }), 0.1), 'escala do arquivo: milímetro, centímetro, polegada e ponto dizem o tamanho, e sem a largura vale a altura')
+  conta([['1000px', '600px'], ['100%', '100%'], ['1000', '600'], ['', ''], ['0mm', '']].every(([l, a]) => o.escalaDoArquivo({ quadro, largura: l, altura: a, caixas: [] }) === null), 'escala do arquivo: pixel, porcento, número solto e zero não dizem tamanho nenhum')
+  conta(igual(o.escalaDoMolde(0.25, { quadro, largura: '500mm', altura: '', caixas: [] }), { cmPorUnidade: 0.25, origem: 'acertada' }) && o.escalaDoMolde(null, { quadro, largura: '500mm', altura: '', caixas: [] }).origem === 'arquivo' && igual(o.escalaDoMolde(null, molde), { cmPorUnidade: null, origem: '' }) && o.escalaDoMolde(0, molde).origem === '', 'escala que vale: a acertada à mão ganha da do arquivo, e sem nenhuma não há centímetro')
+  conta(perto(o.escalaPelaMedida(220, 55), 0.25) && o.escalaPelaMedida(0, 55) === null && o.escalaPelaMedida(220, 0) === null && o.escalaPelaMedida(220, NaN) === null && o.escalaPelaMedida(220, Infinity) === null, 'acertar a escala: 220 unidades que medem 55 cm dão 0,25 cm por unidade; zero e número torto não acertam nada')
+  conta(o.medidaDoMolde(220, 0.25) === '55,0' && o.medidaDoMolde(294, 0.25) === '73,5' && o.medidaDoMolde(178, 0.2471) === '44,0' && o.medidaDoMolde(220, null) === '220,0' && o.medidaDoMolde(4800, 0.25) === '1.200,0', 'a medida na tela: uma casa, com vírgula; sem escala é o número do desenho')
+  conta(igual(o.reguaDoMolde(0.25, 1000), { cm: 20, unidades: 80 }) && igual(o.reguaDoMolde(0.05, 1000), { cm: 5, unidades: 100 }) && o.reguaDoMolde(null, 1000) === null && o.reguaDoMolde(0.0001, 1000) === null, 'a régua do canto: o maior comprimento redondo que cabe num sexto do desenho (250 cm de largura dá 20 cm), e sem escala não há régua')
+
+  /* a vista */
+  const v = o.encaixar(quadro, { w: 1128, h: 700 }, 64)
+  conta(perto(v.z, 0.9533333333, 1e-6) && perto(v.x + 500 * v.z, 564, 1e-6) && perto(v.y + 300 * v.z, 350, 1e-6), 'encaixar: o desenho inteiro cabe com a folga, e o meio dele cai no meio do palco (a altura é que manda aqui)')
+  const deslocado = o.encaixar({ x: 100, y: 50, w: 200, h: 100 }, { w: 528, h: 328 }, 64)
+  conta(perto(deslocado.z, 2) && perto(deslocado.x + 100 * deslocado.z, 64) && perto(deslocado.y + 50 * deslocado.z, 64), 'encaixar: quadro que não começa no zero também fica no lugar')
+  const perto2 = o.aproximar(v, 2, { x: 300, y: 200 }, v.z)
+  const antes = { ux: (300 - v.x) / v.z, uy: (200 - v.y) / v.z }
+  conta(perto(perto2.z, v.z * 2) && perto(perto2.x + antes.ux * perto2.z, 300, 1e-6) && perto(perto2.y + antes.uy * perto2.z, 200, 1e-6) && o.zoomEmPorcento(perto2, v.z) === 200, 'aproximar: dobra o zoom e o ponto debaixo do cursor não sai do lugar')
+  conta(perto(o.aproximar(v, 100, { x: 0, y: 0 }, v.z).z, v.z * 8) && perto(o.aproximar(v, 0.001, { x: 0, y: 0 }, v.z).z, v.z * 0.25) && o.zoomEmPorcento(v, v.z) === 100, 'aproximar: para em 8 vezes e em um quarto do encaixe')
+  conta(o.parteNoPonto(partes, 60, 60) === 'frente' && o.parteNoPonto(partes, 600, 200) === 'manga' && o.parteNoPonto(partes, 900, 400) === null && o.parteNoPonto([{ chave: 'a', nome: 'A', vezes: 1, largura: 0, altura: 0, caixas: [{ x: 0, y: 0, w: 100, h: 100 }] }, { chave: 'b', nome: 'B', vezes: 1, largura: 0, altura: 0, caixas: [{ x: 60, y: 60, w: 20, h: 20 }] }], 70, 70) === 'b', 'parte no ponto: a que está debaixo do clique, e entre duas sobrepostas a menor')
 }
 
 console.log('')

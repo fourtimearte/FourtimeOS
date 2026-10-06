@@ -69,6 +69,140 @@
   white-space: nowrap;
 }
 
+/* --- as peças do papel que mais de um documento usa ------------------------
+   O cabeçalho de quatro colunas por três fileiras, o título de seção, a tabela
+   e a lista de rótulo e valor nasceram na cotação (modules/cotacao), com o
+   prefixo dc-. A ficha técnica impressa precisou das mesmas peças, e peça que
+   dois módulos usam não fica dentro de um deles: subiu para cá, com o prefixo
+   da folha. O desenho é o mesmo, regra por regra. */
+
+/* o cabeçalho: 4 colunas x 3 fileiras */
+.fl-cab {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  border: 1px solid var(--fl-borda);
+  border-radius: 2mm;
+  overflow: hidden;
+}
+.fl-logo {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1mm;
+  padding: 2.5mm 3mm;
+  border-right: 1px solid var(--fl-borda);
+  border-bottom: 1px solid var(--fl-borda);
+  background: var(--fl-fundo-2);
+}
+/* a palavra FOURTIME escrita à mão saiu daqui: a logo de verdade entrou no
+   lugar dela, e ela traz as próprias cores */
+.fl-marca-sub {
+  font-size: 7pt;
+  color: var(--fl-fraco);
+  line-height: 1.25;
+}
+.fl-cel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6mm;
+  padding: 2mm 3mm;
+  min-width: 0;
+  border-right: 1px solid var(--fl-borda);
+  border-bottom: 1px solid var(--fl-borda);
+}
+.fl-cel:nth-child(4n + 1),
+.fl-cab > *:last-child {
+  border-right: 0;
+}
+.fl-cab > .fl-cel:nth-last-child(-n + 4) {
+  border-bottom: 0;
+}
+.fl-rot {
+  font-size: 6.5pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fl-fraco);
+}
+.fl-val {
+  font-size: 9pt;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.fl-cel.forte .fl-val {
+  font-size: 11pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* o rodapé */
+.fl-rodape {
+  display: flex;
+  flex: 1;
+  gap: 6mm;
+  justify-content: space-between;
+  min-width: 0;
+}
+.fl-rodape b {
+  color: var(--fl-texto);
+}
+.fl-rodape-total {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--fl-texto);
+  font-weight: 600;
+}
+
+.fl-h {
+  margin: 0 0 3mm;
+  font-size: 11pt;
+  font-weight: 700;
+}
+.fl-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 5mm;
+}
+.fl-tab th,
+.fl-tab td {
+  padding: 1.6mm 2mm;
+  text-align: left;
+  border-bottom: 1px solid var(--fl-borda);
+  vertical-align: top;
+}
+.fl-tab th {
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fl-fraco);
+  background: var(--fl-fundo-2);
+}
+.fl-tab .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.fl-informe {
+  display: grid;
+  grid-template-columns: 32mm minmax(0, 1fr);
+  gap: 1mm 4mm;
+  margin-bottom: 6mm;
+  font-size: 9pt;
+}
+.fl-informe dt {
+  font-weight: 700;
+  color: var(--fl-fraco);
+}
+.fl-informe dd {
+  margin: 0;
+}
+
 /* A área de medição: desenha de verdade, com a largura de verdade, mas fora
    da vista. display:none não serve, porque o que não é desenhado não tem
    altura para medir.

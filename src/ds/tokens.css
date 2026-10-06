@@ -416,6 +416,15 @@
   --branco: #ffffff;
   --preto: #000000;
 
+  /* O PAPEL. O molde vem do Affinity com traço preto, e por isso ele fica
+     sobre papel branco nos dois temas. O que se escreve em cima desse papel
+     (a cota, o nome da parte, a régua) também não pode virar com o tema:
+     tinta que clareia no Grafite some no branco. */
+  --papel-tinta: #161a20;
+  --papel-tinta-2: #6b7280;
+  --papel-linha: #c9ced6;
+  --papel-marca: #c6161b;
+
   /* o raio do circulo que o ponteiro revela e o tamanho do ponto */
   --luz-raio: 220px;
   --luz-ponto-passo: 7px;

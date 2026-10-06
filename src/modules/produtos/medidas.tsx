@@ -97,13 +97,26 @@ export function TopoDoModulo({
 }
 
 /** O tecido de conta: o primeiro que converte, até a pessoa escolher outro. */
+/* A escolha vale para a página inteira enquanto ela está aberta: a tela cheia
+   do molde e a folha impressa convertem com o mesmo tecido que a pessoa
+   escolheu na ficha, e não com outro que ela não viu. */
+let escolhaDeConta: string | null = null
+
 export function usarTecidoDeConta(tecidos: TecidoDeConta[]) {
   const servem = useMemo(() => tecidosQueConvertem(tecidos), [tecidos])
   /* nulo: ninguém escolheu ainda. Vazio: a pessoa pediu para não converter. */
-  const [escolhido, setEscolhido] = useState<string | null>(null)
+  const [escolhido, setEscolhido] = useState<string | null>(escolhaDeConta)
   const id = escolhido ?? servem[0]?.id ?? ''
   const tecido = servem.find(t => t.id === id) ?? null
-  return { servem, tecido, id: tecido ? id : '', setId: setEscolhido }
+  return {
+    servem,
+    tecido,
+    id: tecido ? id : '',
+    setId: (novo: string) => {
+      escolhaDeConta = novo
+      setEscolhido(novo)
+    },
+  }
 }
 
 /** A escolha do tecido de conta, embaixo da tabela de tecido. */

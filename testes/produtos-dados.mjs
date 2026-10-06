@@ -31,6 +31,28 @@ const parte = (fatia) => porTamanho(ADULTA, BRUTA.map((a) => quatro(a * fatia)))
 export const MOLDE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220"><g fill="none" stroke="#000" stroke-width="2"><path d="M36,12 Q60,44 84,12 L108,24 Q92,50 106,80 L106,196 L14,196 L14,80 Q28,50 12,24 Z"/><path transform="translate(130 0)" d="M36,12 Q60,24 84,12 L108,24 Q92,50 106,80 L106,196 L14,196 L14,80 Q28,50 12,24 Z"/><path transform="translate(270 10)" d="M6,62 Q48,2 90,62 L82,92 L14,92 Z"/><path transform="translate(270 110)" d="M6,62 Q48,2 90,62 L82,92 L14,92 Z"/></g></svg>'
 export const OUTRO_MOLDE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120"><rect x="10" y="10" width="180" height="100" fill="none" stroke="#000" stroke-width="2"/></svg>'
 
+/* UM MOLDE COMO O AFFINITY EXPORTA: sem tamanho de verdade (100%), com o fundo
+   da prancha, a prancheta embrulhando tudo, uma camada por parte (o nome vem em
+   serif:id), matriz em cima de matriz, um bolso desenhado dentro da frente, um
+   botão girado e um pique solto. As caixas, na unidade do desenho:
+     Frente 220 x 294 · Costas 220 x 300 · Manga 176 x 98, duas vezes ·
+     Gola 192 x 18 · Botão 18 x 18 (girado 45 graus: a caixa da caixa daria 25,5)
+   A 0,25 cm por unidade: 55,0 x 73,5 · 55,0 x 75,0 · 44,0 x 24,5 · 48,0 x 4,5. */
+const MIOLO_DO_MOLDE = '<rect x="0" y="0" width="1000" height="600" style="fill:white;"/>'
+  + '<g id="Artboard1" serif:id="Artboard1"><g transform="matrix(1,0,0,1,0,0)">'
+  + '<g id="Frente" serif:id="Frente" transform="matrix(2,0,0,2,0,0)"><path d="M20,20L130,20L130,167L20,167Z" style="fill:white;stroke:black;stroke-width:1px;"/><rect id="Bolso" x="50" y="45" width="25" height="25" style="fill:none;stroke:black;stroke-width:0.5px;"/></g>'
+  + '<g id="Costas" serif:id="COSTAS" transform="matrix(1,0,0,1,300,40)"><path d="M0,0L220,0L220,300L0,300Z" style="fill:white;stroke:black;stroke-width:2px;"/></g>'
+  + '<g id="Manga" serif:id="Manga"><path d="M0,98Q88,-98 176,98Z" transform="matrix(1,0,0,1,560,40)" style="fill:white;stroke:black;stroke-width:2px;"/></g>'
+  + '<g id="Manga1" serif:id="Manga"><path d="M0,98Q88,-98 176,98Z" transform="matrix(1,0,0,1,560,180)" style="fill:white;stroke:black;stroke-width:2px;"/></g>'
+  + '<path id="Gola" d="M780,40h192v18h-192Z" style="fill:white;stroke:black;stroke-width:2px;"/>'
+  + '<circle id="Botao" cx="0" cy="0" r="9" transform="translate(880,300) rotate(45)" style="fill:white;stroke:black;stroke-width:2px;"/>'
+  + '<path d="M40,560L70,560" style="fill:none;stroke:black;stroke-width:1px;"/>'
+  + '</g></g>'
+const CASCA_DO_MOLDE = (tamanho) => `<?xml version="1.0" encoding="UTF-8" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg ${tamanho} viewBox="0 0 1000 600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">${MIOLO_DO_MOLDE}</svg>`
+export const MOLDE_DE_CAMADAS = CASCA_DO_MOLDE('width="100%" height="100%"')
+/* o mesmo desenho, dizendo o tamanho: 500 mm de largura para 1000 unidades, 0,05 cm por unidade */
+export const MOLDE_EM_MM = CASCA_DO_MOLDE('width="500mm" height="300mm"')
+
 /* as fichas, por id da referência: o que as tabelas filhas guardam */
 const FICHAS = {
   r000: {
@@ -137,6 +159,9 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
   let recusas = recusa
   let novos = 0
   const fichaDe = (id) => (fichas[id] ??= { medidas: [], partes: [], materiais: [], molde: null })
+  /* o molde de cada tamanho e a escala acertada de cada molde ('' é o geral) */
+  const moldesDe = (id) => (fichaDe(id).moldes ??= {})
+  const escalasDe = (id) => (fichaDe(id).escalas ??= {})
   const comNumero = (lista, campo) => lista.filter((x) => Object.keys(x[campo] ?? {}).length).length
   /* a linha como a view referencia_na_ficha devolve */
   const naLista = (r) => {
@@ -190,8 +215,23 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
     }
     if (u.includes('rpc/salvar_molde_da_referencia')) {
       gravados.push({ u: 'rpc/salvar_molde_da_referencia', corpo })
-      fichaDe(corpo.p_referencia).molde = corpo.p_svg || null
+      const tam = corpo.p_tamanho ?? ''
+      const antes = tam ? moldesDe(corpo.p_referencia)[tam] : fichaDe(corpo.p_referencia).molde
+      /* como a 052: desenho diferente derruba a escala acertada */
+      if (antes !== corpo.p_svg) delete escalasDe(corpo.p_referencia)[tam]
+      if (tam) { if (corpo.p_svg) moldesDe(corpo.p_referencia)[tam] = corpo.p_svg; else delete moldesDe(corpo.p_referencia)[tam] }
+      else fichaDe(corpo.p_referencia).molde = corpo.p_svg || null
       return { status: 200, corpo: !!corpo.p_svg }
+    }
+    if (u.includes('rpc/acertar_escala_do_molde')) {
+      gravados.push({ u: 'rpc/acertar_escala_do_molde', corpo })
+      if (recusas > 0) { recusas--; return { status: 400, corpo: { code: '23514', message: 'Essa medida não fecha com o desenho. Confira o número digitado.' } } }
+      const tam = corpo.p_tamanho ?? ''
+      const tem = tam ? moldesDe(corpo.p_referencia)[tam] : fichaDe(corpo.p_referencia).molde
+      if (!tem) return { status: 404, corpo: { code: 'P0002', message: 'Este molde ainda não tem desenho para acertar a escala.' } }
+      if (corpo.p_cm_por_unidade === null) delete escalasDe(corpo.p_referencia)[tam]
+      else escalasDe(corpo.p_referencia)[tam] = corpo.p_cm_por_unidade
+      return { status: 200, corpo: corpo.p_cm_por_unidade }
     }
     if (/\/referencia(\?|$)/.test(u) && metodo === 'POST') {
       gravados.push({ u: 'referencia', corpo })
@@ -224,7 +264,17 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
     if (u.includes('medida_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).medidas }
     if (u.includes('parte_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).partes }
     if (u.includes('material_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).materiais }
-    if (u.includes('molde_da_referencia')) { const m = fichaDe(idDe(u, 'referencia_id')).molde; return { status: 200, corpo: m ? [{ svg: m }] : [] } }
+    if (u.includes('molde_da_referencia')) {
+      const id = idDe(u, 'referencia_id'); const geral = fichaDe(id).molde
+      /* a lista leve: que moldes existem e a escala de cada um, sem o desenho */
+      if (u.includes('select=tamanho,cm_por_unidade')) {
+        const linha = (tamanho) => ({ tamanho, cm_por_unidade: escalasDe(id)[tamanho] ?? null })
+        return { status: 200, corpo: [...(geral ? [linha('')] : []), ...Object.keys(moldesDe(id)).map(linha)] }
+      }
+      const tam = (u.match(/tamanho=eq\.([^&]*)/) ?? [])[1] ?? ''
+      const m = tam ? moldesDe(id)[tam] : geral
+      return { status: 200, corpo: m ? [{ svg: m }] : [] }
+    }
     if (u.includes('/tecido?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table tecido' } } : { status: 200, corpo: tecidos }
     if (u.includes('/material?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table material' } } : { status: 200, corpo: doEstoque }
     return null

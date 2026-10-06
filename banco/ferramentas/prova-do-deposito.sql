@@ -1,5 +1,5 @@
 -- ===========================================================================
--- A PROVA DA 047: o deposito.
+-- A PROVA DA 047 E DA 054: o deposito, e a prateleira de ate nove niveis.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. O relatorio sai dentro da
@@ -121,13 +121,39 @@ begin
     txt := txt || E'\nok   8. chao de 1 metro e recusado';
   end;
 
-  -- 9. sete niveis e recusado
+  -- 9. dez niveis e recusado, e a frase diz o limite de nove (054)
   begin
-    perform public.salvar_deposito(jsonb_set(planta, '{moveis,0,niveis}', '7'));
-    txt := txt || E'\nRUIM 9. aceitou prateleira de 7 niveis';
+    perform public.salvar_deposito(jsonb_set(planta, '{moveis,0,niveis}', '10'));
+    txt := txt || E'\nRUIM 9. aceitou prateleira de 10 niveis';
   exception when check_violation then
-    txt := txt || E'\nok   9. prateleira de 7 niveis e recusada';
+    txt := txt || E'\n' || case when sqlerrm like '%de 1 a 9 níveis%' then 'ok  ' else 'RUIM' end
+               || ' 9. prateleira de 10 niveis e recusada, e a frase diz de 1 a 9';
   end;
+
+  -- 9b. nove niveis e aceito, o nivel 9 recebe material e o 10 nao existe (054)
+  perform public.salvar_deposito(jsonb_set(planta, '{moveis,0,niveis}', '9'));
+  select niveis into n from public.movel_do_deposito where id = pd;
+  txt := txt || E'\n' || case when n = 9 then 'ok  ' else 'RUIM' end || ' 9b. prateleira de 9 niveis e aceita (' || n || ')';
+  perform public.definir_lugares(array[m2], jsonb_build_array(jsonb_build_object('movel', pd, 'vao', 1, 'nivel', 9)));
+  select string_agg(codigo, ' ') into r from public.lugar_do_material_na_lista where material_id = m2;
+  txt := txt || E'\n' || case when r.string_agg = 'D1-9' then 'ok  ' else 'RUIM' end
+             || ' 9c. o nivel 9 recebe material (' || coalesce(r.string_agg, 'nada') || ')';
+  begin
+    perform public.definir_lugares(array[m2], jsonb_build_array(jsonb_build_object('movel', pd, 'vao', 1, 'nivel', 10)));
+    txt := txt || E'\nRUIM 9d. aceitou o nivel 10 de uma prateleira de 9';
+  exception when check_violation then
+    txt := txt || E'\nok   9d. o nivel 10 de uma prateleira de 9 e recusado';
+  end;
+  /* direto na tabela, sem passar pela funcao: a restricao tambem recusa */
+  begin
+    update public.movel_do_deposito set niveis = 10 where id = pd;
+    txt := txt || E'\nRUIM 9e. a tabela aceitou 10 niveis';
+  exception when check_violation then
+    txt := txt || E'\nok   9e. a tabela recusa 10 niveis, mesmo sem a funcao';
+  end;
+  /* volta ao desenho da prova: quatro niveis, e o material dois sem lugar */
+  perform public.definir_lugares(array[m2], '[]'::jsonb);
+  perform public.salvar_deposito(planta);
 
   -- 10. marcar o lugar: dois lugares, o primeiro e o principal
   n := public.definir_lugares(array[m1], jsonb_build_array(
@@ -252,5 +278,5 @@ begin
   select count(*) into n from public.lugar_do_material where material_id = m1;
   txt := txt || E'\n' || case when n = 0 then 'ok  ' else 'RUIM' end || ' 22. lista vazia tira o lugar';
 
-  raise exception E'PROVA DA 047 (tudo desfeito):%', txt;
+  raise exception E'PROVA DA 047 E DA 054 (tudo desfeito):%', txt;
 end $$;

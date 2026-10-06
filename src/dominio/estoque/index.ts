@@ -505,6 +505,20 @@ export function quantoNaUnidade(valor: number, unidade: string): string {
   )
 }
 
+/* A SOMA DE UM TECIDO, POR UNIDADE. Tecido pode ser guardado em quilo ou em
+   metro (pedido do Henrique de 06/10/2026), e quilo não se soma com metro: com
+   as cores de um tecido em unidades diferentes, o total diz um de cada,
+   "12,0 kg + 30,0 m", em vez de um número que não existe. */
+export function somaPorUnidade(
+  itens: Pick<Material, 'unidade' | 'livre' | 'saldo' | 'reservado'>[],
+  campo: 'livre' | 'saldo' | 'reservado',
+): string {
+  const por = new Map<string, number>()
+  for (const m of itens) por.set(m.unidade, (por.get(m.unidade) ?? 0) + m[campo])
+  if (!por.size) return quantoNaUnidade(0, 'kg')
+  return [...por].map(([u, v]) => quantoNaUnidade(v, u)).join(' + ')
+}
+
 export function soONumero(valor: number, unidade: string): string {
   return valor.toLocaleString('pt-BR', {
     minimumFractionDigits: 0,

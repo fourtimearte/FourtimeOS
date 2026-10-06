@@ -17,7 +17,9 @@ import {
 } from '@dominio/fornecedor'
 import { EscolherFornecedor } from '@dominio/fornecedor/escolher'
 import { lerNumero } from '@dominio/ferramentas'
-import { idsDosFornecedores, type Fornecimento } from './apoio'
+import type { Material } from '@dominio/estoque'
+import { idsDosFornecedores, type Fornecimento, type Guardado } from './apoio'
+import { LugarNoCadastro } from './frente'
 import { Bola } from './vao'
 
 /* ==========================================================================
@@ -39,11 +41,16 @@ export function EditarGrupo({
   grupo,
   usos,
   fornecimento,
+  guardado,
+  aoMarcar,
   aoFechar,
   aoSalvar,
   aoCriarFornecedor,
 }: {
   grupo: GrupoDoEstoque | null
+  /** o depósito desenhado: com ele, o lugar se aponta no desenho, e não num texto */
+  guardado?: Guardado
+  aoMarcar?: (m: Material) => void
   /** o que saiu de cada material, para o mínimo recomendado; nulo enquanto não leu */
   usos?: UsoDoMaterial[] | null
   fornecimento: Fornecimento
@@ -86,6 +93,7 @@ export function EditarGrupo({
   }, [grupo?.chave, deAntes.join(',')])
 
   const ehTecido = grupo?.categoria === 'tecido'
+  const noDesenho = !!guardado?.planta && !!aoMarcar
   const mudar = (id: string, campo: keyof Linha, valor: string) =>
     setLinhas((antes) => antes.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)))
 
@@ -158,6 +166,7 @@ export function EditarGrupo({
         <div className="es-novo">
           <p className="es-ajuda">
             Aqui muda o cadastro: mínimo, lugar e fornecedor. O quanto tem só muda por movimento.
+            {noDesenho ? ' O lugar no depósito é gravado na hora, sem esperar o Salvar.' : ''}
           </p>
 
           {!ehTecido ? (
@@ -170,7 +179,7 @@ export function EditarGrupo({
             <div className="es-editar-topo">
               <span>{ehTecido ? 'Cor' : 'Material'}</span>
               <span>Mínimo</span>
-              <span>Onde fica na fábrica</span>
+              <span>{noDesenho ? 'Onde fica no depósito' : 'Onde fica na fábrica'}</span>
             </div>
             {linhas.map((l) => {
               const m = grupo.itens.find((x) => x.id === l.id)
@@ -221,12 +230,21 @@ export function EditarGrupo({
                       </button>
                     ) : null}
                   </div>
-                  <Entrada
-                    value={l.ondeFica}
-                    onChange={(e) => mudar(l.id, 'ondeFica', e.currentTarget.value)}
-                    placeholder="Prateleira, armário ou caixa"
-                    aria-label="Onde fica na fábrica"
-                  />
+                  {noDesenho && guardado && aoMarcar ? (
+                    <LugarNoCadastro
+                      guardado={guardado}
+                      materiais={[m]}
+                      aoMarcar={() => aoMarcar(m)}
+                      curto
+                    />
+                  ) : (
+                    <Entrada
+                      value={l.ondeFica}
+                      onChange={(e) => mudar(l.id, 'ondeFica', e.currentTarget.value)}
+                      placeholder="Prateleira, armário ou caixa"
+                      aria-label="Onde fica na fábrica"
+                    />
+                  )}
                 </div>
               )
             })}

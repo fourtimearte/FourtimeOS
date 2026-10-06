@@ -258,6 +258,15 @@ export function TelaEstoque() {
     const t = hierarquia.tecidos.find(x => x.id === tecidoDaFicha)
     return t ? { gramatura: t.gramatura, largura: t.largura } : undefined
   }, [hierarquia, tecidoDaFicha])
+  /* o nome do tecido se edita na ficha quando ela é de cores de um tecido só */
+  const tecidoQueSeRenomeia = useMemo(() => {
+    const t = hierarquia.tecidos.find(x => x.id === tecidoDaFicha)
+    return t && !ficha?.so ? { id: t.id, nome: t.nome } : undefined
+  }, [hierarquia, tecidoDaFicha, ficha])
+  const coresDoTecidoDaFicha = useMemo(
+    () => (tecidoDaFicha ? materiais.filter(m => m.tecidoId === tecidoDaFicha) : []),
+    [materiais, tecidoDaFicha],
+  )
   const irmasDaFicha = useMemo(
     () =>
       tecidoDaFicha && ficha?.materiais.length === 1
@@ -899,6 +908,10 @@ export function TelaEstoque() {
         fornecimento={fornecimento}
         doCatalogo={catalogoDaFicha}
         irmas={irmasDaFicha}
+        tecido={podeMexerNasCores ? tecidoQueSeRenomeia : undefined}
+        coresDoTecido={coresDoTecidoDaFicha}
+        guardado={guardado}
+        aoMarcar={lista => setMarcando({ m: lista[0], tambem: lista.slice(1) })}
         aoFechar={() => setFicha(null)}
         aoSalvar={async () => {
           setFicha(null)
@@ -910,6 +923,8 @@ export function TelaEstoque() {
         grupo={editando}
         usos={usos}
         fornecimento={fornecimento}
+        guardado={guardado}
+        aoMarcar={m => setMarcando({ m, outro: false })}
         aoFechar={() => setEditando(null)}
         aoSalvar={async () => {
           setEditando(null)

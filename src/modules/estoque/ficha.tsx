@@ -21,6 +21,7 @@ import {
   medidasDoTecido,
   nomeNoGrupo,
   quantoNaUnidade,
+  somaPorUnidade,
   type GrupoNaArvore,
   type Material,
   type Movimento,
@@ -349,7 +350,6 @@ export function FichaDoTecido({
   aoVerMovimentos: () => void
 }) {
   const porId = new Map(tecido.cores.map(m => [m.id, m]))
-  const unidade = tecido.doEstoque.unidade || 'kg'
   const pedidos = new Set(reservas.map(r => r.pedidoId)).size
   const comprar = tecido.cores
     .filter(m => m.livre < m.minimo)
@@ -488,18 +488,18 @@ export function FichaDoTecido({
       <div className="em-nums">
         <div className="cartao em-num">
           <span>Livre</span>
-          <b>{quantoNaUnidade(tecido.livre, unidade)}</b>
+          <b>{somaPorUnidade(tecido.cores, 'livre')}</b>
           <small>
             {tecido.cores.length === 1 ? 'em 1 cor' : 'nas ' + tecido.cores.length + ' cores'}
           </small>
         </div>
         <div className="cartao em-num">
           <span>Na prateleira</span>
-          <b>{quantoNaUnidade(tecido.saldo, unidade)}</b>
+          <b>{somaPorUnidade(tecido.cores, 'saldo')}</b>
         </div>
         <div className="cartao em-num">
           <span>Reservado</span>
-          <b>{quantoNaUnidade(tecido.reservado, unidade)}</b>
+          <b>{somaPorUnidade(tecido.cores, 'reservado')}</b>
           <small>
             {pedidos ? 'para ' + plural(pedidos, 'pedido', 'pedidos') : 'nenhum pedido reservando'}
           </small>

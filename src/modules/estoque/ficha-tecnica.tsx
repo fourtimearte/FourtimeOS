@@ -9,6 +9,7 @@ import {
   nomeNoGrupo,
   quantoNaUnidade,
   rendimento,
+  salvarCadastroDoMaterial,
   type Fibra,
   type Material,
   type MudancaDoCadastro,
@@ -27,7 +28,9 @@ import { NovoFornecedorAoLado } from '@dominio/fornecedor/ao-lado'
 import { EscolherFornecedor } from '@dominio/fornecedor/escolher'
 import { criarFornecedor } from '@dominio/fornecedor'
 import { lerNumero } from '@dominio/ferramentas'
-import { idsDosFornecedores, plural, type Fornecimento } from './apoio'
+import { renomearTecido } from '@dominio/banco'
+import { idsDosFornecedores, plural, type Fornecimento, type Guardado } from './apoio'
+import { LugarNoCadastro } from './frente'
 import { Bola } from './vao'
 import './ficha-tecnica.css'
 
@@ -220,6 +223,10 @@ const emTexto = (n: number) => (n > 0 ? String(n).replace('.', ',') : '')
 export function EditarFicha({
   materiais,
   titulo: tituloDoLote,
+  tecido,
+  coresDoTecido,
+  guardado,
+  aoMarcar,
   fornecimento,
   doCatalogo,
   irmas,
@@ -240,6 +247,15 @@ export function EditarFicha({
   irmas?: Material[]
   /** o lote da tabela que só quer uma coisa: mostra esse campo e mais nada */
   so?: 'fornecedor' | 'minimo'
+  /** O TECIDO destas cores, quando são todas do mesmo e a pessoa pode mexer no
+     catálogo (administrador e gerente): o nome dele se edita aqui */
+  tecido?: { id: string; nome: string }
+  /** todas as cores desse tecido que estão no estoque: o nome guardado em cada
+     uma ("PIQUET · Preto") acompanha o nome novo do tecido */
+  coresDoTecido?: Material[]
+  /** o depósito desenhado e quem abre a caixa de marcar o lugar */
+  guardado?: Guardado
+  aoMarcar?: (materiais: Material[]) => void
   /** o que saiu de cada material, para o mínimo recomendado; nulo enquanto não leu */
   usos?: UsoDoMaterial[] | null
   aoFechar: () => void
@@ -258,6 +274,7 @@ export function EditarFicha({
   const [fornecedorId, setFornecedorId] = useState('')
   const [trocarOsQueTem, setTrocarOsQueTem] = useState(true)
   const [minimo, setMinimo] = useState('')
+  const [nomeDoTecido, setNomeDoTecido] = useState('')
   const [fibras, setFibras] = useState<LinhaDeFibra[]>([])
   const [gramatura, setGramatura] = useState('')
   const [largura, setLargura] = useState('')
@@ -297,6 +314,7 @@ export function EditarFicha({
     setFornecedorId(emComum(lista, fornecedorDe) ?? '')
     setTrocarOsQueTem(true)
     setMinimo(emTexto(emComum(lista, m => m.minimo) ?? 0) || (varios ? '' : '0'))
+    setNomeDoTecido(tecido?.nome ?? '')
     setFibras(
       (emComum(lista, m => m.composicao) ?? []).map(f => ({ fibra: f.fibra, pct: emTexto(f.pct) })),
     )
@@ -352,7 +370,10 @@ export function EditarFicha({
     mexeu.has('gramatura') && g !== null && (Number.isNaN(g) || g < 20 || g > 1500)
   const l = lerNumero(largura)
   const larguraRuim = mexeu.has('largura') && l !== null && (Number.isNaN(l) || l < 0.2 || l > 5)
-  const valido = !minimoRuim && !composicaoRuim && !gramaturaRuim && !larguraRuim
+  const tecidoNovo = nomeDoTecido.trim().replace(/\s+/g, ' ')
+  const mudouOTecido = !!tecido && mexeu.has('tecido') && tecidoNovo !== tecido.nome
+  const tecidoRuim = !!tecido && mexeu.has('tecido') && !tecidoNovo
+  const valido = !minimoRuim && !composicaoRuim && !gramaturaRuim && !larguraRuim && !tecidoRuim
   const gramaturaDaConta = (g && !Number.isNaN(g) ? g : 0) || doCatalogo?.gramatura || 0
   const larguraDaConta = (l && !Number.isNaN(l) ? l : 0) || doCatalogo?.largura || 0
 
@@ -398,12 +419,45 @@ export function EditarFicha({
     setGravando(true)
     setFalha('')
     try {
-      const n = await definirCadastro(
-        lista.map(x => x.id),
-        m,
-      )
+      /* O NOME DO TECIDO vai primeiro, e é do catálogo: vale para todas as
+         cores, aqui e em Configurações. Depois dele, o nome guardado em cada
+         material ("PIQUET · Preto"), que é o que os movimentos e a separação
+         mostram, acompanha. */
+      if (tecido && mudouOTecido) {
+        try {
+          await renomearTecido(tecido.id, tecidoNovo)
+        } catch (e) {
+          const texto = e instanceof Error ? e.message : ''
+          throw new Error(
+            /duplicate|unique|23505/i.test(texto)
+              ? `Já existe um tecido chamado ${tecidoNovo}.`
+              : texto || 'Não consegui mudar o nome do tecido.',
+          )
+        }
+        for (const c of coresDoTecido ?? []) {
+          if (!c.cor) continue
+          await salvarCadastroDoMaterial(c.id, {
+            nome: `${tecidoNovo} · ${c.cor}`,
+            unidade: c.unidade,
+            minimo: c.minimo,
+          })
+        }
+      }
+      const soOTecido = [...mexeu].every(c => c === 'tecido')
+      const n = soOTecido
+        ? lista.length
+        : await definirCadastro(
+            lista.map(x => x.id),
+            m,
+          )
       avisar(
-        n === 1 ? 'Ficha salva.' : `Ficha salva em ${plural(n, 'material', 'materiais')}.`,
+        soOTecido
+          ? mudouOTecido
+            ? `O tecido agora se chama ${tecidoNovo}.`
+            : 'Nada mudou.'
+          : n === 1
+            ? 'Ficha salva.'
+            : `Ficha salva em ${plural(n, 'material', 'materiais')}.`,
         'ok',
       )
       await aoSalvar(n)
@@ -481,6 +535,29 @@ export function EditarFicha({
                   <span className="ft-lote-item">e mais {lista.length - 14}</span>
                 ) : null}
               </div>
+            ) : null}
+
+            {/* O NOME DO TECIDO (pedido do Henrique de 06/10/2026: no Estoque não
+              havia como mudar). É do catálogo, então vale para todas as cores. */}
+            {tecido && !so ? (
+              <Campo
+                rotulo="Nome do tecido"
+                erro={tecidoRuim}
+                dica={
+                  mudouOTecido
+                    ? `Muda em todas as cores de ${tecido.nome}, aqui e no catálogo de tecidos.`
+                    : 'Vale para todas as cores deste tecido.'
+                }
+              >
+                <Entrada
+                  value={nomeDoTecido}
+                  onChange={e => {
+                    setNomeDoTecido(e.currentTarget.value)
+                    tocar('tecido')
+                  }}
+                  aria-label="Nome do tecido"
+                />
+              </Campo>
             ) : null}
 
             {fornecimento.disponivel && so !== 'minimo' ? (
@@ -593,6 +670,21 @@ export function EditarFicha({
                 </small>
               </p>
             )}
+
+            {/* O LUGAR NO DEPÓSITO (pedido do Henrique de 06/10/2026): abre o
+              desenho por cima desta caixa, e grava na hora. */}
+            {!so && guardado?.planta && aoMarcar ? (
+              <div className="campo" data-onde-fica="">
+                <span className="es-campo-topo">
+                  Onde fica no depósito <small>grava na hora</small>
+                </span>
+                <LugarNoCadastro
+                  guardado={guardado}
+                  materiais={lista}
+                  aoMarcar={() => aoMarcar(lista)}
+                />
+              </div>
+            ) : null}
 
             {soTecido ? (
               <>
@@ -876,6 +968,7 @@ export function EditarFicha({
 }
 
 const NOME_DO_CAMPO: Record<string, string> = {
+  tecido: 'o nome do tecido',
   fornecedor: 'o fornecedor',
   minimo: 'o mínimo',
   composicao: 'a composição',

@@ -692,12 +692,13 @@ table.es-tb {
 }
 .es-novo-tres {
   display: grid;
-  grid-template-columns: 96px 176px minmax(0, 1fr);
+  /* a unidade do tecido se escolhe ("kg · peso", "m · metro"): a coluna dela precisa caber o nome inteiro */
+  grid-template-columns: 132px 176px minmax(0, 1fr);
   gap: var(--sp-3);
 }
 /* com o depósito desenhado o "onde fica" sai daqui e vira uma linha própria */
 .es-novo-tres.es-novo-dois {
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 132px minmax(0, 1fr);
 }
 /* o lugar no depósito, no cadastro: as etiquetas do que foi apontado e o botão */
 .es-onde {

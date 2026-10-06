@@ -38,6 +38,7 @@
     "deposito": "node testes/deposito.mjs",
     "deposito-nomes": "node testes/deposito-nomes.mjs",
     "estoque": "node testes/estoque.mjs",
+    "estoque-cadastro": "node testes/estoque-cadastro.mjs",
     "produtos": "node testes/produtos.mjs"
   },
   "dependencies": {

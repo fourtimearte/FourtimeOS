@@ -6,6 +6,7 @@ import {
   nivel,
   nomeNoGrupo,
   quantoNaUnidade,
+  somaPorUnidade,
   type Categoria,
   type GrupoDeItens,
   type GrupoNaArvore,
@@ -351,7 +352,6 @@ function Tecido({
   const doTecido = fornecedorDoGrupo(t.doEstoque, fornecimento)
   const deOutro = t.cores.filter(m => fornecedorProprio(m, doTecido, fornecimento)).length
   const eu = escolhido === t.chave
-  const unidade = t.doEstoque.unidade || 'kg'
   return (
     <>
       <div className={eu ? 'em-t em-sel' : 'em-t'} data-tecido={t.nome}>
@@ -382,7 +382,7 @@ function Tecido({
             ) : null}
           </span>
           <span className="em-fim">
-            <b>{quantoNaUnidade(t.livre, unidade)}</b>
+            <b>{somaPorUnidade(t.cores, 'livre')}</b>
             <small>{plural(t.cores.length, 'cor', 'cores')}</small>
           </span>
           <Alerta n={t.paraComprar} />

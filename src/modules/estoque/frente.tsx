@@ -8,6 +8,8 @@ import {
   type Movel,
 } from '@dominio/deposito'
 import type { Material } from '@dominio/estoque'
+import { Botao } from '@ds'
+import { lugaresDe, type Guardado } from './apoio'
 
 /* ==========================================================================
    O nível, o lugar e a prateleira vista de frente.
@@ -183,5 +185,61 @@ function Fileira({ nivel, children }: { nivel: number; children: ReactNode }) {
       </span>
       {children}
     </>
+  )
+}
+
+/* O LUGAR DENTRO DE UM CADASTRO (pedido do Henrique de 06/10/2026: no Editar
+   da lista não havia como escolher o lugar no depósito). Mostra onde o
+   material está hoje e o botão que abre o desenho. O lugar é gravado pela
+   própria caixa de marcar, na hora, e não pelo Salvar do cadastro. */
+export function LugarNoCadastro({
+  guardado,
+  materiais,
+  aoMarcar,
+  curto,
+}: {
+  guardado: Guardado
+  materiais: Material[]
+  aoMarcar: () => void
+  /** dentro de uma linha de tabela: botão pequeno e o código no lugar do nome por extenso */
+  curto?: boolean
+}) {
+  const cada = materiais.map(m => lugaresDe(guardado, m.id))
+  const comLugar = cada.filter(l => l.length).length
+  const so = materiais.length === 1 ? cada[0] : null
+  return (
+    <div className="es-onde" data-lugar-no-cadastro="">
+      {so ? (
+        so.length ? (
+          so.map((l, i) => (
+            <EtiquetaDoLugar
+              key={l.lugar.id}
+              movel={l.movel}
+              lugar={l.lugar}
+              porExtenso={!curto}
+              forte={i === 0}
+            />
+          ))
+        ) : (
+          <span className="es-onde-vazio">ainda sem lugar</span>
+        )
+      ) : (
+        <span className="es-onde-vazio">
+          {comLugar === 0
+            ? 'nenhum com lugar ainda'
+            : comLugar === materiais.length
+              ? 'todos com lugar marcado'
+              : `${comLugar} de ${materiais.length} com lugar marcado`}
+        </span>
+      )}
+      <Botao tamanho={curto ? 'sm' : undefined} onClick={aoMarcar}>
+        <MapPin size={16} aria-hidden="true" />
+        {so
+          ? so.length
+            ? 'Mudar o lugar'
+            : 'Marcar no depósito'
+          : `Definir o lugar dos ${materiais.length}`}
+      </Botao>
+    </div>
   )
 }

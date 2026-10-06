@@ -66,6 +66,14 @@ import { MarcarLugar } from './marcar-lugar'
 export type InicioDoNovo = { categoria: Categoria; tecidoId?: string; grupo?: string }
 
 const UNIDADES = ['un', 'm', 'kg', 'L', 'cone', 'rolo', 'cx', 'par']
+/* TECIDO É GUARDADO POR PESO OU POR METRO (pedido do Henrique de 06/10/2026:
+   o campo era fixo em quilo). Malha se compra no quilo, tecido plano no metro.
+   A reserva do banco já sabe as duas (026): pede quilo ou metro conforme a
+   unidade do material. */
+const UNIDADES_DE_TECIDO = [
+  { valor: 'kg', rotulo: 'kg · peso' },
+  { valor: 'm', rotulo: 'm · metro' },
+]
 const SEM_NENHUMA = new Set<string>()
 
 export function NovoMaterial({
@@ -209,6 +217,14 @@ export function NovoMaterial({
 
   const malha = malhas?.find(m => m.id === malhaId)
   const cor = cores.find(c => c.id === corId)
+  /* as cores deste tecido que já estão no estoque dizem a unidade dele: a cor
+     nova nasce na mesma, e a pessoa troca se quiser */
+  const coresNoEstoque = ehTecido && malhaId ? materiais.filter(m => m.tecidoId === malhaId) : []
+  const unidadeDoTecido = coresNoEstoque.find(m => m.unidade === 'kg' || m.unidade === 'm')?.unidade
+  useEffect(() => {
+    if (ehTecido && unidadeDoTecido) setUnidade(unidadeDoTecido)
+  }, [ehTecido, malhaId, unidadeDoTecido])
+  const unidadeFinal = ehTecido ? (unidade === 'm' ? 'm' : 'kg') : unidade
   const min = lerNumero(minimo)
   const minimoValido = min === null || (!Number.isNaN(min) && min >= 0)
   const nomeFinal = ehTecido ? (malha && cor ? `${malha.nome} · ${cor.nome}` : '') : nome.trim()
@@ -222,7 +238,7 @@ export function NovoMaterial({
       const novo = {
         categoria,
         nome: nomeFinal,
-        unidade: ehTecido ? 'kg' : unidade,
+        unidade: unidadeFinal,
         minimo: min ?? 0,
         tecidoId: ehTecido ? malhaId : undefined,
         corId: ehTecido ? corId : undefined,
@@ -411,8 +427,22 @@ export function NovoMaterial({
 
             <div className={guardado.planta ? 'es-novo-tres es-novo-dois' : 'es-novo-tres'}>
               {ehTecido ? (
-                <Campo rotulo="Unidade">
-                  <Entrada value="kg" readOnly aria-label="Unidade, fixa em quilo para tecido" />
+                <Campo
+                  rotulo="Unidade"
+                  dica={
+                    unidadeDoTecido && unidadeDoTecido !== unidadeFinal
+                      ? `As outras cores deste tecido estão em ${unidadeDoTecido}.`
+                      : undefined
+                  }
+                >
+                  <Seletor
+                    campo
+                    bloco
+                    valor={unidadeFinal}
+                    opcoes={UNIDADES_DE_TECIDO}
+                    aoEscolher={v => v && setUnidade(v)}
+                    vazio="Escolha"
+                  />
                 </Campo>
               ) : (
                 <Campo rotulo="Unidade">
@@ -427,7 +457,7 @@ export function NovoMaterial({
                 </Campo>
               )}
               <Campo
-                rotulo={'Mínimo no estoque, em ' + (ehTecido ? 'kg' : unidade)}
+                rotulo={'Mínimo no estoque, em ' + unidadeFinal}
                 erro={!minimoValido}
               >
                 <Entrada

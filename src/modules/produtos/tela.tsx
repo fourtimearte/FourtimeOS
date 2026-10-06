@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Kanban } from '@phosphor-icons/react'
 import { Botao, Busca, Chip, Esqueleto, Modal, Pagina, Segmentado, Vazio } from '@ds'
-import { usarConsulta } from '@shared'
+import { MES_LONGO, chaveDoMes, lerMes, ultimosMeses, usarConsulta } from '@shared'
+import { COLUNAS } from '@dominio/producao'
 import { pode, useSessao } from '@dominio/sessao'
 import {
   carregarKits,
@@ -10,22 +12,36 @@ import {
   carregarReferencias,
   carregarTecidosDeConta,
   casaComABusca,
+  casaComOMovimento,
+  janelasDoPeriodo,
+  linhasDaFabrica,
+  movimentoDoMes,
   oQueFalta,
+  orcamentosCom,
+  rankingDeKits,
+  rankingDeReferencias,
+  ultimosOrcamentosCom,
   type Ficha,
   type GrupoDeReferencia,
   type KitNaLista,
+  type LayoutVendido,
   type MaterialDoEstoque,
   type PecaDoKit,
+  type Periodo,
   type ReferenciaNaFicha,
   type TecidoDeConta,
 } from '@dominio/produto'
 import { plural } from './apoio'
 import { Arvore, type Lista } from './arvore'
 import { EditorDoKit } from './editor-do-kit'
+import { Estatisticas, PERIODOS, type Categoria } from './estatisticas'
+import { VisaoGeral } from './geral'
 import { ImpressaoDaReferencia, ImpressaoDoKit } from './impressa'
 import { FichaDoKit, type KitCarregado } from './kit'
+import { Movimento, type Agrupar, type Situacao } from './movimento'
 import { NovaReferencia } from './nova'
 import { FichaDaReferencia } from './referencia'
+import { usarVendas } from './vendas'
 import './produtos.css'
 
 /* ==========================================================================
@@ -41,10 +57,14 @@ import './produtos.css'
    ficha dela do lado direito. O estoque diz quanto tem; a ficha técnica diz
    de que a peça é feita.
 
-   O QUE EXISTE: as referências e os kits. O molde em tela cheia com as
-   medidas, a folha impressa, o Movimento, o Depósito de peças prontas e as
-   Estatísticas chegam nos próximos passos, e até lá cada um diz isso na
-   própria aba, em vez de fingir que existe.
+   O QUE EXISTE: as referências e os kits, o molde em tela cheia com as
+   medidas, a folha impressa, o Movimento e as Estatísticas. O Depósito de
+   peças prontas chega no próximo passo, e até lá ele diz isso na própria aba,
+   em vez de fingir que existe.
+
+   AS VENDAS SÃO UMA LEITURA SÓ (vendas.tsx), feita quando a página abre: ela
+   serve à árvore, ao lado direito antes de escolher uma peça, ao Movimento e
+   às Estatísticas. É apoio: se falhar, as fichas continuam de pé.
 
    O GRUPO DOS KITS FICA FORA DA LISTA DE REFERÊNCIAS. Kit é um conjunto de
    peças, e não uma peça: ele não tem molde nem tabela de medidas próprios. Os
@@ -63,22 +83,27 @@ const ABAS: { valor: Aba; rotulo: string }[] = [
   { valor: 'estatisticas', rotulo: 'Estatísticas' },
 ]
 
-const AINDA_NAO: Record<Exclude<Aba, 'fichas'>, { titulo: string; texto: string }> = {
-  movimento: {
-    titulo: 'O Movimento ainda não chegou',
-    texto:
-      'Aqui vão aparecer as peças feitas, orçamento por orçamento: o que saiu da produção, em que grade e com qual técnica.',
-  },
-  deposito: {
-    titulo: 'O Depósito de peças prontas ainda não chegou',
-    texto:
-      'Aqui vai ficar a peça pronta guardada: a pronta entrega, a sobra de pedido e o mostruário, por tamanho e com o lugar de cada lote.',
-  },
-  estatisticas: {
-    titulo: 'As Estatísticas ainda não chegaram',
-    texto:
-      'Aqui vão aparecer as referências e os kits que mais vendem, os tamanhos que mais saem e a venda mês a mês.',
-  },
+const AINDA_NAO = {
+  titulo: 'O Depósito de peças prontas ainda não chegou',
+  texto:
+    'Aqui vai ficar a peça pronta guardada: a pronta entrega, a sobra de pedido e o mostruário, por tamanho e com o lugar de cada lote.',
+}
+
+const O_QUE_BUSCAR: Record<Exclude<Aba, 'deposito'>, string> = {
+  fichas: 'Buscar referência, código ou kit',
+  movimento: 'Buscar referência, kit, orçamento ou cliente',
+  estatisticas: 'Buscar referência ou kit',
+}
+
+const SITUACOES: { valor: Situacao; rotulo: string }[] = [
+  { valor: 'tudo', rotulo: 'Tudo' },
+  { valor: 'producao', rotulo: 'Em produção' },
+  { valor: 'pronto', rotulo: 'Pronto' },
+]
+
+const mesComMaiuscula = (chave: string) => {
+  const nome = MES_LONGO[lerMes(chave).mes]
+  return nome[0].toUpperCase() + nome.slice(1)
 }
 
 const GRUPO_DOS_KITS = 'KIT'
@@ -92,6 +117,8 @@ export function TelaProdutos() {
   const chefia = !!pessoa && (pessoa.papel === 'admin' || pessoa.papel === 'gerente')
   const podeCriar = podeEditar && chefia
   const podeExcluir = chefia && !!pessoa && pode(pessoa, 'produtos', 'deletar')
+  const veOKanban = !!pessoa && pode(pessoa, 'kanban', 'ver')
+  const navegar = useNavigate()
 
   const [grupos, setGrupos] = useState<GrupoDeReferencia[]>([])
   const [referencias, setReferencias] = useState<ReferenciaNaFicha[]>([])
@@ -130,6 +157,17 @@ export function TelaProdutos() {
   >(null)
 
   const celular = usarConsulta('(max-width: 767px)')
+
+  /* --- as vendas: o Movimento, as Estatísticas e os números das fichas ---------- */
+  /* o dia de hoje é um só enquanto a página está aberta: é ele que diz qual é o mês */
+  const [hoje] = useState(() => new Date())
+  const { vendas, erro: erroDasVendas, reler: relerAsVendas } = usarVendas(hoje)
+  const mesAtual = chaveDoMes(hoje.getFullYear(), hoje.getMonth())
+  const [mes, setMes] = useState(mesAtual)
+  const [situacao, setSituacao] = useState<Situacao>('tudo')
+  const [agrupar, setAgrupar] = useState<Agrupar>('orcamento')
+  const [periodo, setPeriodo] = useState<Periodo>(1)
+  const [categoria, setCategoria] = useState<Categoria>('referencias')
 
   const ler = useCallback(async () => {
     /* os kits são da mesma página, mas uma falha neles não derruba as referências */
@@ -224,6 +262,62 @@ export function TelaProdutos() {
   const grupoDaAberta = aberta ? (grupos.find(g => g.cod === aberta.grupo) ?? null) : null
   const completas = useMemo(() => dePeca.filter(r => !oQueFalta(r).length).length, [dePeca])
 
+  /* --- o que sai das vendas ------------------------------------------------------ */
+  const linhasDaProducao = useMemo(
+    () => (vendas ? linhasDaFabrica(vendas.layouts, vendas.fatias, vendas.kits, COLUNAS) : []),
+    [vendas],
+  )
+  const movimento = useMemo(() => movimentoDoMes(linhasDaProducao, mes, mesAtual), [linhasDaProducao, mes, mesAtual])
+  /* a busca escolhe as linhas; os números de cima continuam sendo os do mês */
+  const movimentoBuscado = useMemo(
+    () =>
+      termo
+        ? movimentoDoMes(
+            linhasDaProducao.filter(x => casaComOMovimento(x, termo)),
+            mes,
+            mesAtual,
+          ).pedidos
+        : movimento.pedidos,
+    [linhasDaProducao, movimento, termo, mes, mesAtual],
+  )
+  const contaDaSituacao: Record<Situacao, number> = {
+    tudo: movimentoBuscado.length,
+    producao: movimentoBuscado.filter(g => g.emProducao).length,
+    pronto: movimentoBuscado.filter(g => !g.emProducao).length,
+  }
+  const pedidosDoMovimento =
+    situacao === 'tudo' ? movimentoBuscado : movimentoBuscado.filter(g => (situacao === 'producao') === g.emProducao)
+
+  const doMes = useMemo(() => janelasDoPeriodo(1, hoje), [hoje])
+  const de3Meses = useMemo(() => janelasDoPeriodo(3, hoje), [hoje])
+  const nomeDoMesAtual = MES_LONGO[hoje.getMonth()]
+  /* quanto cada peça e cada kit vendeu no mês: é o que a árvore mostra do lado do nome */
+  const pecasNoMes = useMemo(() => {
+    const mapa = new Map<string, number>()
+    if (vendas) {
+      for (const v of rankingDeReferencias(vendas.layouts, vendas.kits, doMes.atual)) {
+        if (v.referenciaId) mapa.set(v.referenciaId, v.quanto)
+      }
+    }
+    return mapa
+  }, [vendas, doMes])
+  const kitsNoMes = useMemo(() => {
+    const mapa = new Map<string, number>()
+    if (vendas) {
+      for (const v of rankingDeKits(vendas.layouts, doMes.atual)) if (v.referenciaId) mapa.set(v.referenciaId, v.quanto)
+    }
+    return mapa
+  }, [vendas, doMes])
+  const pecasEm3Meses = useMemo(() => {
+    const mapa = new Map<string, number>()
+    if (vendas) {
+      for (const v of rankingDeReferencias(vendas.layouts, vendas.kits, de3Meses.atual)) {
+        if (v.referenciaId) mapa.set(v.referenciaId, v.quanto)
+      }
+    }
+    return mapa
+  }, [vendas, de3Meses])
+
   /* a peça escolhida sumiu da lista (foi excluída, ou outra pessoa arquivou) */
   useEffect(() => {
     if (escolhida && !carregando && !aberta) setEscolhida('')
@@ -275,8 +369,29 @@ export function TelaProdutos() {
     if (a === aba) return
     seDerParaSair(() => {
       setEditando(false)
+      /* cada aba busca uma coisa: o que foi digitado numa não vale na outra */
+      setBusca('')
       setAba(a)
     })
+  }
+
+  /* do Movimento e das Estatísticas para a ficha da peça ou do kit */
+  function abrirReferenciaDeFora(id: string) {
+    setAba('fichas')
+    setBusca('')
+    escolher(id)
+  }
+  function abrirKitDeFora(id: string) {
+    setAba('fichas')
+    setBusca('')
+    escolherKit(id)
+  }
+  const abreALinha = (l: LayoutVendido): (() => void) | null => {
+    const id = l.referenciaId
+    if (!id) return null
+    if (kits.some(k => k.id === id)) return () => abrirKitDeFora(id)
+    if (dePeca.some(r => r.id === id)) return () => abrirReferenciaDeFora(id)
+    return null
   }
 
   function abrirGrupo(cod: string) {
@@ -306,6 +421,8 @@ export function TelaProdutos() {
       : `${plural(dePeca.length, 'referência', 'referências')} · ${plural(kits.length, 'kit', 'kits')} · ${completas} com a ficha completa`
 
   const naFicha = aba === 'fichas' && (!!aberta || !!kitAberto)
+  /* antes de escolher uma peça, o lado direito mostra o que as vendas dizem */
+  const comGeral = !naFicha && !celular && !!vendas
 
   /* O EDITOR DO KIT TOMA A PÁGINA: tem os próprios botões no topo, e só
      devolve a tela quando a pessoa salva, exclui ou volta. */
@@ -397,7 +514,14 @@ export function TelaProdutos() {
       titulo="Fichas técnicas"
       sub={sub}
       acoes={
-        podeCriar && !celular ? (
+        aba === 'movimento' ? (
+          veOKanban ? (
+            <Botao onClick={() => navegar('/kanban')}>
+              <Kanban size={16} aria-hidden="true" />
+              Abrir o Kanban
+            </Botao>
+          ) : undefined
+        ) : aba === 'fichas' && podeCriar && !celular ? (
           <>
             <Botao onClick={() => seDerParaSair(abrirNovoKit)}>Novo kit</Botao>
             <Botao tom="primario" onClick={() => seDerParaSair(() => setNova({}))}>
@@ -407,7 +531,7 @@ export function TelaProdutos() {
         ) : undefined
       }
     >
-      {podeCriar && celular && !naFicha ? (
+      {aba === 'fichas' && podeCriar && celular && !naFicha ? (
         <div className="pd-acoes">
           <Botao tom="primario" className="pd-cresce" onClick={() => setNova({})}>
             Nova referência
@@ -435,28 +559,111 @@ export function TelaProdutos() {
           ) : (
             <Segmentado className="pd-seg pd-abas-da-pagina" valor={aba} aoMudar={trocarAba} opcoes={ABAS} />
           )}
-          {aba === 'fichas' ? (
+          {aba !== 'deposito' ? (
             <Busca
               className="pd-busca"
               value={busca}
               onChange={e => {
                 const texto = e.currentTarget.value
                 /* no celular a ficha toma a tela: quem busca quer ver a lista */
-                if (celular && escolhida && !editando) escolher('')
-                if (celular && kitEscolhido) escolherKit('')
+                if (aba === 'fichas' && celular && escolhida && !editando) escolher('')
+                if (aba === 'fichas' && celular && kitEscolhido) escolherKit('')
                 setBusca(texto)
               }}
-              placeholder="Buscar referência, código ou kit"
+              placeholder={O_QUE_BUSCAR[aba]}
               aria-label="Buscar"
             />
+          ) : null}
+          {aba === 'movimento' ? (
+            <>
+              <div className="pd-barra-fim">
+                <Segmentado
+                  className="pd-seg"
+                  valor={agrupar}
+                  aoMudar={setAgrupar}
+                  opcoes={[
+                    { valor: 'orcamento', rotulo: 'Por orçamento' },
+                    { valor: 'referencia', rotulo: 'Por referência' },
+                  ]}
+                />
+              </div>
+              <div className="pd-barra-linha" data-filtros-do-movimento="">
+                {ultimosMeses(hoje, 4).map(m => (
+                  <Chip key={m} ligado={mes === m} aria-pressed={mes === m} data-mes={m} onClick={() => setMes(m)}>
+                    {mesComMaiuscula(m)}
+                  </Chip>
+                ))}
+                <span className="pd-risco" aria-hidden="true" />
+                {SITUACOES.map(s => (
+                  <Chip
+                    key={s.valor}
+                    ligado={situacao === s.valor}
+                    aria-pressed={situacao === s.valor}
+                    data-situacao={s.valor}
+                    onClick={() => setSituacao(s.valor)}
+                  >
+                    {s.rotulo} <span className="pd-chip-n">{contaDaSituacao[s.valor]}</span>
+                  </Chip>
+                ))}
+              </div>
+            </>
+          ) : aba === 'estatisticas' ? (
+            <div className="pd-barra-fim">
+              <Segmentado
+                className="pd-seg"
+                valor={String(periodo) as `${Periodo}`}
+                aoMudar={v => setPeriodo(Number(v) as Periodo)}
+                opcoes={PERIODOS}
+              />
+            </div>
           ) : null}
         </div>
       </div>
 
-      {aba !== 'fichas' ? (
+      {aba === 'deposito' ? (
         <section className="cartao pd-quadro" data-ainda-nao={aba}>
-          <Vazio titulo={AINDA_NAO[aba].titulo} texto={AINDA_NAO[aba].texto} />
+          <Vazio titulo={AINDA_NAO.titulo} texto={AINDA_NAO.texto} />
         </section>
+      ) : aba !== 'fichas' ? (
+        !vendas ? (
+          erroDasVendas ? (
+            <section className="cartao pd-quadro" data-vendas="erro">
+              <Vazio
+                titulo="Não consegui ler as vendas"
+                texto={erroDasVendas}
+                acao={<Botao onClick={relerAsVendas}>Tentar de novo</Botao>}
+              />
+            </section>
+          ) : (
+            semDados
+          )
+        ) : aba === 'movimento' ? (
+          <Movimento
+            doMes={movimento}
+            pedidos={pedidosDoMovimento}
+            agrupar={agrupar}
+            mes={mes}
+            mesAtual={mesAtual}
+            kits={vendas.kits}
+            hoje={hoje}
+            celular={celular}
+            filtrando={!!termo || situacao !== 'tudo'}
+            aoAbrir={abreALinha}
+          />
+        ) : (
+          <Estatisticas
+            vendas={vendas}
+            hoje={hoje}
+            periodo={periodo}
+            categoria={categoria}
+            aoMudarCategoria={setCategoria}
+            busca={busca}
+            referencias={dePeca}
+            kits={kits}
+            aoAbrirReferencia={abrirReferenciaDeFora}
+            aoAbrirKit={abrirKitDeFora}
+          />
+        )
       ) : erro ? (
         <section className="cartao pd-quadro">
           <Vazio
@@ -469,7 +676,7 @@ export function TelaProdutos() {
         semDados
       ) : (
         <div className="pd-palco">
-          <div className={naFicha ? 'pd-quatro com-ficha' : 'pd-quatro'}>
+          <div className={naFicha ? 'pd-quatro com-ficha' : comGeral ? 'pd-quatro pd-com-geral' : 'pd-quatro'}>
             {celular && naFicha ? null : (
               <Arvore
                 grupos={gruposDePeca}
@@ -486,6 +693,8 @@ export function TelaProdutos() {
                 aoEscolher={escolher}
                 kitEscolhido={kitEscolhido}
                 aoEscolherKit={escolherKit}
+                pecasNoMes={pecasNoMes}
+                kitsNoMes={kitsNoMes}
               />
             )}
             {kitAberto ? (
@@ -502,6 +711,16 @@ export function TelaProdutos() {
                     setKits(await carregarKits())
                   }}
                   aoFechar={() => escolherKit('')}
+                  vendas={
+                    vendas
+                      ? {
+                          mes: nomeDoMesAtual,
+                          kitsNoMes: kitsNoMes.get(kitAberto.id) ?? 0,
+                          orcamentosEm3Meses: orcamentosCom(vendas.layouts, kitAberto.id, de3Meses.atual),
+                          ultimos: ultimosOrcamentosCom(vendas.layouts, kitAberto.id, 4),
+                        }
+                      : null
+                  }
                 />
               </div>
             ) : aberta ? (
@@ -535,9 +754,30 @@ export function TelaProdutos() {
                   aoFechar={() => escolher('')}
                   aoAbrirKit={escolherKit}
                   aoImprimir={lido => setFolha({ de: 'referencia', r: aberta, ...lido })}
+                  vendas={
+                    vendas
+                      ? {
+                          mes: nomeDoMesAtual,
+                          pecasNoMes: pecasNoMes.get(aberta.id) ?? 0,
+                          pecasEm3Meses: pecasEm3Meses.get(aberta.id) ?? 0,
+                          kitsNoMes,
+                        }
+                      : null
+                  }
                 />
               </div>
-            ) : celular ? null : (
+            ) : celular ? null : vendas ? (
+              <VisaoGeral
+                vendas={vendas}
+                linhas={linhasDaProducao}
+                hoje={hoje}
+                referencias={dePeca}
+                kits={kits}
+                aoAbrirKit={escolherKit}
+                aoVerEstatisticas={() => trocarAba('estatisticas')}
+                aoVerMovimento={() => trocarAba('movimento')}
+              />
+            ) : (
               <section className="cartao pd-largo pd-quadro" data-nada-escolhido="">
                 {listaAVista === 'kits' ? (
                   <Vazio

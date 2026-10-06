@@ -10,6 +10,7 @@ import {
   type PecaDoKit,
   type TecidoDaPeca,
 } from './kit'
+import type { FatiaDoLayout, LayoutVendido, PecasDosKits } from './vendas'
 import {
   codigoCurto,
   tamanhosDaReferencia,
@@ -28,6 +29,7 @@ import {
 export * from './contas'
 export * from './kit'
 export * from './molde'
+export * from './vendas'
 
 /* --- a busca ----------------------------------------------------------------- */
 
@@ -335,4 +337,106 @@ export async function carregarKitsDaReferencia(referenciaId: string): Promise<Ki
 /** Cria o kit (sem id) ou salva a ficha dele. Devolve o id do kit. */
 export function salvarKit(kitId: string | null, kit: Kit): Promise<string> {
   return chamar<string>('salvar_kit', { p_kit: kitId, p_ficha: kitParaOBanco(kit) })
+}
+
+/* --- o movimento e as vendas ------------------------------------------------------
+   A tela lê os layouts dos pedidos (a cópia da migração 053), as fatias do
+   kanban e as peças de cada kit, e quem soma é vendas.ts. */
+
+const DE_CADA_VEZ = 1000
+
+/** Lê a lista inteira, de mil em mil: o banco devolve no máximo mil linhas por vez, e
+    uma lista cortada em silêncio daria uma soma errada sem ninguém ver.
+    O caminho precisa trazer uma ordem que não empata. */
+async function lerTudo<T>(caminho: string): Promise<T[]> {
+  const tudo: T[] = []
+  for (let de = 0; ; de += DE_CADA_VEZ) {
+    const parte = await tabela<T[]>(`${caminho}&limit=${DE_CADA_VEZ}&offset=${de}`)
+    tudo.push(...parte)
+    if (parte.length < DE_CADA_VEZ) return tudo
+  }
+}
+
+type LinhaDoLayout = {
+  pedido_id: string
+  numero: string
+  cliente: string | null
+  estado: string
+  etapa: string
+  etapa_em: string | null
+  aprovado_em: string | null
+  fechado_em: string | null
+  teste: boolean | null
+  ordem: number
+  layout: number
+  referencia: string | null
+  nome: string | null
+  arte: string | null
+  grade: Record<string, number> | null
+  pecas: number
+  tecnicas: string[] | null
+  referencia_id: string | null
+  kit: boolean | null
+}
+
+/** Os layouts dos pedidos aprovados de `desde` (um dia, AAAA-MM-DD) para cá. Pedido cancelado não vem. */
+export async function carregarLayoutsVendidos(desde: string): Promise<LayoutVendido[]> {
+  const linhas = await lerTudo<LinhaDoLayout>(
+    'layout_na_fabrica?select=pedido_id,numero,cliente,estado,etapa,etapa_em,aprovado_em,fechado_em,teste,ordem,layout,referencia,nome,arte,grade,pecas,tecnicas,referencia_id,kit' +
+      `&aprovado_em=gte.${desde}&order=pedido_id.asc,ordem.asc`,
+  )
+  return linhas.map(l => ({
+    pedidoId: l.pedido_id,
+    numero: l.numero,
+    cliente: l.cliente ?? '',
+    estado: l.estado,
+    etapa: l.etapa,
+    etapaEm: l.etapa_em ?? '',
+    aprovadoEm: l.aprovado_em ?? '',
+    fechadoEm: l.fechado_em ?? '',
+    teste: !!l.teste,
+    ordem: l.ordem,
+    layout: l.layout,
+    referencia: l.referencia ?? '',
+    nome: l.nome ?? '',
+    arte: l.arte ?? '',
+    grade: l.grade ?? {},
+    pecas: Number(l.pecas) || 0,
+    tecnicas: l.tecnicas ?? [],
+    referenciaId: l.referencia_id,
+    kit: !!l.kit,
+  }))
+}
+
+/** As fatias do kanban que dizem onde cada layout está: as abertas, e as que fecharam de `desde` (AAAA-MM-DD) para cá. */
+export async function carregarFatiasDosLayouts(desde: string): Promise<FatiaDoLayout[]> {
+  const linhas = await lerTudo<{
+    pedido_id: string
+    tecnica: string
+    etapa: string
+    etapa_em: string | null
+    fechado_em: string | null
+    layouts: number[] | null
+  }>(
+    'fatia_na_fabrica?select=pedido_id,tecnica,etapa,etapa_em,fechado_em,layouts&estado=in.(producao,pronto,enviado,entregue)' +
+      `&or=(fechado_em.is.null,fechado_em.gte.${desde})&order=id.asc`,
+  )
+  return linhas.map(f => ({
+    pedidoId: f.pedido_id,
+    tecnica: f.tecnica,
+    etapa: f.etapa,
+    etapaEm: f.etapa_em ?? '',
+    fechadoEm: f.fechado_em ?? '',
+    layouts: f.layouts ?? [],
+  }))
+}
+
+/** As peças de cada kit, pelo id do kit. Entram os kits arquivados: a venda antiga deles continua valendo. */
+export async function carregarPecasDosKits(): Promise<PecasDosKits> {
+  const linhas = await lerTudo<{ kit_id: string; referencia_id: string; cod: string; nome: string }>(
+    'peca_do_kit_na_lista?select=kit_id,referencia_id,cod,nome&order=kit_id.asc,ordem.asc',
+  )
+  const kits: PecasDosKits = {}
+  for (const l of linhas) (kits[l.kit_id] ??= []).push({ referenciaId: l.referencia_id, cod: l.cod, nome: l.nome })
+  return kits
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, ClipboardText, Image, Needle, PencilSimple, Printer, Scroll, TShirt, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, ClipboardText, Image, Needle, PencilSimple, Printer, Receipt, Scroll, TShirt, X } from '@phosphor-icons/react'
 import { Botao, ChipTecnica, Esqueleto, TituloCartao, Vazio, avisar } from '@ds'
 import {
   DETALHES,
@@ -27,6 +27,7 @@ import {
 import { LARGURA_DA_TABELA_DEITADA, plural, usarLargura } from './apoio'
 import { GradePorTamanho } from './grade'
 import { CartaoDoMolde } from './molde'
+import { emKits } from './vendas'
 
 /* ==========================================================================
    A ficha de um kit: o lado direito da página, com a aba Kits.
@@ -130,6 +131,31 @@ function TecidoDeUmKit({ tecidos, grade }: { tecidos: TecidoDoKit[]; grade: stri
   )
 }
 
+/** O que as vendas dizem deste kit. Nulo enquanto a página não leu as vendas. */
+export type VendasDoKit = {
+  /** o mês que está correndo, em minúscula: "outubro" */
+  mes: string
+  kitsNoMes: number
+  orcamentosEm3Meses: number
+  ultimos: { pedidoId: string; numero: string; cliente: string; estado: string; fechadoEm: string; unidades: number }[]
+}
+
+/** Em que pé está o pedido, em palavras de quem vende. */
+function situacaoDoPedido(o: { estado: string; fechadoEm: string }): string {
+  if (o.estado === 'pronto') return o.fechadoEm ? 'pronto em ' + diaEMes(o.fechadoEm) : 'pronto'
+  if (o.estado === 'enviado') return 'enviado'
+  if (o.estado === 'entregue') return 'entregue'
+  if (o.estado === 'producao') return 'em produção'
+  if (o.estado === 'pcp') return 'no PCP'
+  if (o.estado === 'separacao') return 'na Separação'
+  return 'aprovado'
+}
+
+const diaEMes = (iso: string) => {
+  const d = new Date(iso)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export function FichaDoKit({
   kit,
   referencias,
@@ -140,7 +166,9 @@ export function FichaDoKit({
   aoAbrirReferencia,
   aoMudou,
   aoFechar,
+  vendas,
 }: {
+  vendas: VendasDoKit | null
   kit: KitNaLista
   referencias: ReferenciaNaFicha[]
   celular: boolean
@@ -305,6 +333,21 @@ export function FichaDoKit({
                   </Botao>
                 </div>
               ))}
+              {vendas ? (
+                <>
+                  <div className="pd-sub">Vendas</div>
+                  <div className="pd-dois-numeros" data-vendas-do-kit="">
+                    <div className="pd-numero">
+                      <b>{emKits(vendas.kitsNoMes)}</b>
+                      <span>em {vendas.mes}</span>
+                    </div>
+                    <div className="pd-numero">
+                      <b>{plural(vendas.orcamentosEm3Meses, 'orçamento', 'orçamentos')}</b>
+                      <span>nos últimos 3 meses</span>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </section>
           </div>
 
@@ -409,6 +452,7 @@ export function FichaDoKit({
 
           <TecidoDeUmKit tecidos={tecidos} grade={grade} />
 
+          <div className={vendas ? 'pd-dois' : 'pd-dois um'}>
           <section className="cartao pd-col" data-cartao="aviamentos-do-kit">
             <div className="pd-topo">
               <TituloCartao icone={Needle}>Aviamentos e insumos de um kit</TituloCartao>
@@ -434,6 +478,31 @@ export function FichaDoKit({
               </div>
             )}
           </section>
+          {vendas ? (
+            <section className="cartao pd-col" data-cartao="orcamentos-do-kit">
+              <div className="pd-topo">
+                <TituloCartao icone={Receipt}>Últimos orçamentos com este kit</TituloCartao>
+              </div>
+              {vendas.ultimos.length ? (
+                vendas.ultimos.map(o => (
+                  <div className="pd-lin" key={o.pedidoId} data-orcamento-do-kit={o.numero}>
+                    <span className="pd-txt">
+                      <b>{o.cliente || 'sem cliente'}</b>
+                      <small>
+                        {o.numero} · {situacaoDoPedido(o)}
+                      </small>
+                    </span>
+                    <span className="pd-val">{emKits(o.unidades)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="pd-corpo">
+                  <p className="pd-nota">Nenhum orçamento aprovado com este kit nos últimos dois anos.</p>
+                </div>
+              )}
+            </section>
+          ) : null}
+          </div>
         </>
       )}
     </div>

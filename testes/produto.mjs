@@ -17,6 +17,7 @@
 import * as p from './compilado-produto/src/dominio/produto/contas.js'
 import * as k from './compilado-produto/src/dominio/produto/kit.js'
 import * as o from './compilado-produto/src/dominio/produto/molde.js'
+import * as v from './compilado-produto/src/dominio/produto/vendas.js'
 
 let ruins = 0
 const conta = (certo, frase) => {
@@ -311,6 +312,123 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(perto(perto2.z, v.z * 2) && perto(perto2.x + antes.ux * perto2.z, 300, 1e-6) && perto(perto2.y + antes.uy * perto2.z, 200, 1e-6) && o.zoomEmPorcento(perto2, v.z) === 200, 'aproximar: dobra o zoom e o ponto debaixo do cursor não sai do lugar')
   conta(perto(o.aproximar(v, 100, { x: 0, y: 0 }, v.z).z, v.z * 8) && perto(o.aproximar(v, 0.001, { x: 0, y: 0 }, v.z).z, v.z * 0.25) && o.zoomEmPorcento(v, v.z) === 100, 'aproximar: para em 8 vezes e em um quarto do encaixe')
   conta(o.parteNoPonto(partes, 60, 60) === 'frente' && o.parteNoPonto(partes, 600, 200) === 'manga' && o.parteNoPonto(partes, 900, 400) === null && o.parteNoPonto([{ chave: 'a', nome: 'A', vezes: 1, largura: 0, altura: 0, caixas: [{ x: 0, y: 0, w: 100, h: 100 }] }, { chave: 'b', nome: 'B', vezes: 1, largura: 0, altura: 0, caixas: [{ x: 60, y: 60, w: 20, h: 20 }] }], 70, 70) === 'b', 'parte no ponto: a que está debaixo do clique, e entre duas sobrepostas a menor')
+}
+
+/* ---- o movimento e as vendas (migração 053) ---------------------------------
+   As datas são escritas NA HORA DE QUEM ESTÁ OLHANDO (new Date(ano, mês, dia)),
+   e não em UTC: assim a conferência dá o mesmo em qualquer fuso. Os números
+   esperados foram somados à mão, layout por layout, no comentário de cada caso. */
+{
+  const em = (mes, dia, hora = 12, min = 0) => new Date(2026, mes - 1, dia, hora, min).toISOString()
+  const ETAPAS = ['corte', 'subli', 'dtf', 'prensa', 'silk', 'bordado', 'calandra', 'futurize', 'conferencia', 'cd-costura', 'costura', 'embalagem', 'finalizado']
+  const KITS = { kitA: [{ referenciaId: 'cam', cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD' }, { referenciaId: 'cal', cod: 'FT-090-000M', nome: 'CALÇAO MASC SEM BOLSO' }] }
+  const soma = (g) => Object.values(g).reduce((a, n) => a + n, 0)
+  const L = (ped, ordem, o2) => ({
+    pedidoId: ped.id, numero: ped.numero, cliente: ped.cliente, estado: ped.estado, etapa: ped.etapa ?? 'corte', etapaEm: ped.etapaEm ?? '',
+    aprovadoEm: ped.aprovadoEm, fechadoEm: ped.fechadoEm ?? '', teste: false, ordem, layout: o2.layout ?? ordem,
+    referencia: o2.cod ?? '', nome: o2.nome, arte: o2.arte ?? '', grade: o2.grade, pecas: soma(o2.grade), tecnicas: o2.tecnicas ?? [],
+    referenciaId: o2.id ?? null, kit: !!o2.kit,
+  })
+  const CAM = { id: 'cam', cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD' }
+  const INF = { id: 'inf', cod: 'FT-010-008C', nome: 'CAMISETA INFANTIL UNISSEX' }
+  const KIT = { id: 'kitA', cod: 'FT-KIT-010-000M-090-000M', nome: 'KIT CAMISETA E CALÇAO', kit: true }
+
+  const P1 = { id: 'p1', numero: 'PD-0412', cliente: 'Atlético Exemplo', estado: 'producao', etapa: 'costura', etapaEm: em(10, 4, 9), aprovadoEm: em(9, 20) }
+  const P2 = { id: 'p2', numero: 'PD-0409', cliente: 'Escola Exemplo', estado: 'pronto', etapa: 'finalizado', etapaEm: em(10, 5, 16, 42), aprovadoEm: em(10, 2), fechadoEm: em(10, 5, 16, 42) }
+  const P3 = { id: 'p3', numero: 'PD-0390', cliente: 'Clube Exemplo', estado: 'pronto', etapa: 'finalizado', etapaEm: em(9, 28), aprovadoEm: em(9, 3), fechadoEm: em(9, 28) }
+  const P4 = { id: 'p4', numero: 'PD-0420', cliente: 'Academia Exemplo', estado: 'producao', etapa: 'corte', etapaEm: em(10, 3), aprovadoEm: em(10, 3, 8) }
+  const P5 = { id: 'p5', numero: 'PD-0421', cliente: 'Auto Peças Exemplo', estado: 'pcp', aprovadoEm: em(10, 5) }
+  const P6 = { id: 'p6', numero: 'PD-0388', cliente: 'Pelada Exemplo', estado: 'producao', etapa: 'prensa', etapaEm: em(10, 2), aprovadoEm: em(8, 30) }
+  const P7 = { id: 'p7', numero: 'PD-0422', cliente: 'Escolinha Exemplo', estado: 'aprovado', aprovadoEm: em(10, 4) }
+  const P8 = { id: 'p8', numero: 'PD-0400', cliente: 'Loja Exemplo', estado: 'separacao', aprovadoEm: em(9, 10) }
+
+  const layouts = [
+    L(P1, 1, { ...KIT, arte: 'linha', grade: { P: 10, M: 32, G: 30, GG: 14, XG: 3 }, tecnicas: ['subli', 'patch'] }), // 89 kits, 178 peças
+    L(P1, 2, { ...CAM, arte: 'goleiro', grade: { M: 2, G: 4, GG: 2 }, tecnicas: ['subli'] }), // 8
+    L(P1, 3, { ...CAM, arte: 'comissão', grade: { P: 20, M: 48, G: 44, GG: 24, XG: 7 }, tecnicas: ['dtf'] }), // 143
+    L(P2, 1, { ...INF, arte: 'uniforme', grade: { '4A': 8, '6A': 14, '8A': 18, '10A': 14, '12A': 10 }, tecnicas: ['silk'] }), // 64
+    L(P3, 1, { ...CAM, grade: { M: 50 }, tecnicas: ['subli'] }), // 50
+    L(P4, 1, { nome: 'PEÇA LISA', grade: { M: 20 } }), // 20, fora do catálogo e sem técnica
+    L(P5, 1, { ...CAM, grade: { P: 10, GG: 20 }, tecnicas: ['subli'] }), // 30, ainda no PCP
+    L(P6, 1, { ...CAM, grade: { G: 25 }, tecnicas: ['subli'] }), // 25
+    L(P6, 2, { ...CAM, grade: { G: 40 }, tecnicas: ['dtf', 'bordado'] }), // 40
+    L(P7, 1, { ...KIT, grade: { M: 10 } }), // 10 kits, 20 peças
+    L(P8, 1, { ...CAM, grade: { G: 100 }, tecnicas: ['subli'] }), // 100
+  ]
+  const F = (ped, tecnica, etapa, quando, quais, fechou = '') => ({ pedidoId: ped.id, tecnica, etapa, etapaEm: quando, fechadoEm: fechou, layouts: quais })
+  const fatias = [
+    F(P1, 'subli', 'finalizado', em(10, 6, 14, 10), [1, 2], em(10, 6, 14, 10)),
+    F(P1, 'patch', 'finalizado', em(10, 5, 11), [1], em(10, 5, 11)),
+    F(P1, 'dtf', 'costura', em(10, 4, 9), [3]),
+    F(P2, 'silk', 'finalizado', em(10, 5, 16, 40), [1], em(10, 5, 16, 40)),
+    F(P6, 'subli', 'finalizado', em(9, 30, 10), [1], em(9, 30, 10)),
+    F(P6, 'dtf', 'prensa', em(10, 2), [2]),
+    F(P6, 'bordado', 'bordado', em(10, 1), [2]),
+  ]
+
+  /* o mês de quem olha */
+  conta(v.mesDe(new Date(2026, 9, 31, 23, 30).toISOString()) === '2026-10' && v.mesDe(new Date(2026, 10, 1, 0, 10).toISOString()) === '2026-11' && v.mesDe('') === '' && v.mesDe('lixo') === '', 'o mês de um instante: onze e meia da noite do dia 31 ainda é outubro para quem está olhando; sem data, sem mês')
+  conta(v.pecasDoLayout(layouts[0], KITS) === 178 && v.pecasDoLayout(layouts[1], KITS) === 8 && v.pecasDoLayout(layouts[0], {}) === 89 && v.pecasDoLayout({ ...layouts[0], referenciaId: null }, KITS) === 89, 'peças do layout: 89 kits de duas peças são 178 peças de roupa; kit sem peça cadastrada conta uma por kit')
+
+  /* a situação de cada layout */
+  const sit = (l, fs = fatias) => v.situacaoDoLayout(l, fs, ETAPAS)
+  conta(igual(sit(layouts[0]), { pronto: true, etapa: 'finalizado', em: em(10, 6, 14, 10) }), 'situação: layout com duas técnicas fechadas está pronto, no dia da ÚLTIMA que fechou')
+  conta(igual(sit(layouts[2]), { pronto: false, etapa: 'costura', em: em(10, 4, 9) }), 'situação: no mesmo pedido, o layout de outra técnica continua na costura')
+  conta(igual(sit(layouts[8]), { pronto: false, etapa: 'prensa', em: em(10, 2) }), 'situação: com duas fatias abertas, quem segura é a do posto que vem antes na fábrica (prensa antes de bordado)')
+  conta(sit(layouts[8], [F(P6, 'dtf', 'costura', em(10, 2), [2]), F(P6, 'bordado', 'costura', em(10, 1), [2])]).em === em(10, 1), 'situação: no mesmo posto, quem segura é a que está parada há mais tempo')
+  conta(igual(sit(layouts[5]), { pronto: false, etapa: 'corte', em: em(10, 3) }) && sit({ ...layouts[5], etapa: 'finalizado' }).pronto, 'situação: peça lisa não tem fatia, e vale o posto do pedido')
+  conta(igual(sit(layouts[4]), { pronto: true, etapa: 'finalizado', em: em(9, 28) }), 'situação: pedido finalizado sem fatia lida fica pronto no dia do pedido')
+  conta(igual(sit(layouts[3]), { pronto: true, etapa: 'finalizado', em: em(10, 5, 16, 40) }), 'situação: pedido finalizado com a fatia fechada fica pronto no dia da fatia')
+  conta(igual(sit(layouts[3], [F(P2, 'silk', 'costura', em(10, 5), [1])]), { pronto: true, etapa: 'finalizado', em: em(10, 5, 16, 42) }), 'situação: pedido finalizado à mão com fatia esquecida aberta está pronto, no dia do pedido')
+  conta(sit(layouts[3], [F(P2, 'silk', 'finalizado', em(10, 1), [1], em(10, 1)), F(P2, 'dtf', 'costura', em(10, 5), [1])]).em === em(10, 5, 16, 42), 'situação: pedido finalizado com uma fatia fechada e outra esquecida aberta vale o dia do pedido, e não o da fatia que fechou antes')
+  conta(['enviado', 'entregue'].every((estado) => igual(sit({ ...layouts[4], estado }), { pronto: true, etapa: 'finalizado', em: em(9, 28) })) && v.passouPelaFabrica('enviado') && v.passouPelaFabrica('entregue') && v.passouPelaFabrica('producao') && !v.passouPelaFabrica('pcp') && !v.passouPelaFabrica('cancelado'), 'situação: o pedido que já foi enviado ou entregue continua pronto, no dia em que ficou pronto')
+  conta(igual(sit(layouts[6]), { pronto: false, etapa: '', em: '' }) && igual(sit(layouts[9]), { pronto: false, etapa: '', em: '' }), 'situação: pedido que ainda não entrou na produção não tem posto')
+  conta(sit(layouts[1], [F(P6, 'subli', 'corte', em(10, 1), [2]), ...fatias]).pronto, 'situação: a fatia de outro pedido com o mesmo número de layout não conta')
+
+  /* o movimento do mês */
+  const linhas = v.linhasDaFabrica(layouts, fatias, KITS, ETAPAS)
+  conta(linhas.length === 8 && !linhas.some((x) => ['p5', 'p7', 'p8'].includes(x.l.pedidoId)), 'movimento: só entra o que está ou esteve na fábrica (PCP, separação e aprovado ficam de fora)')
+  conta(v.linhasDaFabrica(layouts.map((l) => (l.pedidoId === 'p3' ? { ...l, estado: 'entregue' } : l.pedidoId === 'p2' ? { ...l, estado: 'enviado' } : l)), fatias, KITS, ETAPAS).filter((x) => x.pronto).length === 5, 'movimento: o pedido enviado e o entregue continuam no movimento, como peça pronta')
+  const out = v.movimentoDoMes(linhas, '2026-10', '2026-10')
+  conta(igual(out.pedidos.map((g) => [g.numero, g.pecasDeRoupa, g.emProducao, g.linhas.length]), [['PD-0412', 329, true, 3], ['PD-0409', 64, false, 1], ['PD-0420', 20, true, 1], ['PD-0388', 40, true, 1]]), 'movimento de outubro: quatro orçamentos, do mais novo para o mais velho, e o PD-0388 só com o layout que ainda está na fábrica')
+  conta(out.pecasFeitas === 250 && out.orcamentosComPecaFeita === 2 && out.kitsFeitos === 89, 'movimento de outubro: 178 + 8 + 64 = 250 peças feitas, em 2 orçamentos, 89 kits')
+  conta(out.pecasEmProducao === 203 && out.orcamentosEmProducao === 3, 'movimento: 143 + 20 + 40 = 203 peças na fábrica agora, em 3 orçamentos')
+  conta(out.pedidos[0].quando === em(10, 6, 14, 10) && igual(out.pedidos[0].linhas.map((x) => x.l.ordem), [1, 2, 3]), 'movimento: o orçamento fica com a hora da linha mais nova, e as linhas na ordem do orçamento')
+  const set = v.movimentoDoMes(linhas, '2026-09', '2026-10')
+  conta(igual(set.pedidos.map((g) => [g.numero, g.pecasDeRoupa, g.emProducao]), [['PD-0388', 25, false], ['PD-0390', 50, false]]) && set.pecasFeitas === 75 && set.kitsFeitos === 0, 'movimento de setembro: só o que ficou pronto nele (25 + 50), e nada do que está na fábrica hoje')
+  conta(set.pecasEmProducao === 203 && set.orcamentosEmProducao === 3, 'movimento: "em produção agora" não muda com o mês escolhido')
+  conta(v.movimentoDoMes(linhas, '2026-07', '2026-10').pedidos.length === 0, 'movimento: mês sem nada pronto vem vazio')
+  conta(igual(v.ultimasFeitas(linhas, 4).map((x) => [x.l.numero, x.l.ordem]), [['PD-0412', 1], ['PD-0412', 2], ['PD-0409', 1], ['PD-0388', 1]]), 'últimas peças feitas: da mais nova para a mais velha, atravessando os meses')
+  conta(igual(v.movimentoPorReferencia(out.pedidos).map((r) => [r.nome, r.unidades, r.orcamentos, r.kit]), [['CAMISETA MASC TRAD', 191, 2, false], ['KIT CAMISETA E CALÇAO', 89, 1, true], ['CAMISETA INFANTIL UNISSEX', 64, 1, false], ['PEÇA LISA', 20, 1, false]]), 'movimento por referência: as mesmas linhas juntas pela peça (8 + 143 + 40 = 191 em 2 orçamentos), e o kit em kits')
+  conta(v.casaComOMovimento(linhas[0], 'calcao') && v.casaComOMovimento(linhas[0], 'CALÇÃO') && v.casaComOMovimento(linhas[3], 'pd-0409') && v.casaComOMovimento(linhas[3], 'ESCOLA') && v.casaComOMovimento(linhas[1], '010-000') && v.casaComOMovimento(linhas[1], 'goleiro') && !v.casaComOMovimento(linhas[1], 'xyz') && v.casaComOMovimento(linhas[1], '  '), 'busca no movimento: pela peça sem acento, pelo código, pelo pedido, pelo cliente e pela arte')
+
+  /* as janelas */
+  const hoje = new Date(2026, 9, 6, 15, 0)
+  const iso = (a, m, d) => new Date(a, m - 1, d).toISOString()
+  const j1 = v.janelasDoPeriodo(1, hoje)
+  conta(igual(j1.atual, { de: iso(2026, 10, 1), ate: iso(2026, 10, 7) }) && igual(j1.anterior, { de: iso(2026, 9, 1), ate: iso(2026, 9, 7) }) && igual(j1.meses, ['2026-10']) && igual(j1.mesesAntes, ['2026-09']), 'janela de 1 mês no dia 6: de 1 a 6 de outubro, contra de 1 a 6 de setembro')
+  const j3 = v.janelasDoPeriodo(3, hoje)
+  conta(igual(j3.atual, { de: iso(2026, 8, 1), ate: iso(2026, 10, 7) }) && igual(j3.anterior, { de: iso(2026, 5, 1), ate: iso(2026, 7, 7) }) && igual(j3.meses, ['2026-08', '2026-09', '2026-10']) && igual(j3.mesesAntes, ['2026-05', '2026-06', '2026-07']), 'janela de 3 meses: de agosto até hoje, contra de maio até 6 de julho')
+  const j12 = v.janelasDoPeriodo(12, hoje)
+  conta(j12.atual.de === iso(2025, 11, 1) && igual(j12.anterior, { de: iso(2024, 11, 1), ate: iso(2025, 10, 7) }) && j12.meses.length === 12 && j12.mesesAntes[0] === '2024-11', 'janela de 1 ano: atravessa a virada do ano, para trás duas vezes')
+  conta(igual(v.janelasDoPeriodo(1, new Date(2026, 2, 31, 9)).anterior, { de: iso(2026, 2, 1), ate: iso(2026, 3, 1) }), 'janela no dia 31 de março: o mês anterior acaba no dia 28 de fevereiro, e não invade março')
+  conta(v.periodoEmPalavras(j1.meses) === 'em outubro' && v.periodoEmPalavras(j3.meses) === 'de agosto a outubro' && v.comparacaoEmPalavras(j1.mesesAntes) === 'contra setembro' && v.comparacaoEmPalavras(j3.mesesAntes) === 'contra os 3 meses antes', 'o período em palavras')
+  conta(v.rumoDe(105, 100) === 'igual' && v.rumoDe(106, 100) === 'subiu' && v.rumoDe(95, 100) === 'igual' && v.rumoDe(94, 100) === 'caiu' && v.rumoDe(0, 0) === 'igual' && v.rumoDe(1, 0) === 'subiu' && v.rumoDe(0, 1) === 'caiu', 'subiu, igual ou caiu: até 5% de diferença é igual')
+
+  /* as vendas: vale o dia em que o orçamento foi aprovado, e entra o que ainda nem foi para a fábrica */
+  conta(v.pecasVendidas(layouts, KITS, j1.atual) === 134 && v.pecasVendidas(layouts, KITS, j1.anterior) === 50 && v.pecasVendidas(layouts, KITS, j3.atual) === 678, 'peças vendidas: 64 + 20 + 30 + 20 = 134 em outubro; de 1 a 6 de setembro só as 50 do dia 3; em 3 meses, 678')
+  const r1 = v.rankingDeReferencias(layouts, KITS, j1.atual, j1.anterior)
+  conta(igual(r1.map((x) => [x.nome, x.quanto, x.orcamentos, x.antes, x.rumo]), [['CAMISETA INFANTIL UNISSEX', 64, 1, 0, 'subiu'], ['CAMISETA MASC TRAD', 40, 2, 50, 'caiu'], ['PEÇA LISA', 20, 1, 0, 'subiu'], ['CALÇAO MASC SEM BOLSO', 10, 1, 0, 'subiu']]), 'ranking de outubro: a camiseta soma a venda solta (30) e a de dentro do kit (10), em 2 orçamentos, e caiu contra as 50 do mesmo trecho de setembro')
+  conta(perto(r1[0].parte, 64 / 134) && perto(r1.reduce((a, x) => a + x.parte, 0), 1) && r1[2].referenciaId === null && r1[2].chave === 'fora:PEÇA LISA' && r1[3].referenciaId === 'cal' && r1[3].cod === 'FT-090-000M', 'ranking: as partes somam o total; a peça fora do catálogo fica com o nome do orçamento, e a de dentro do kit com o código dela')
+  const r3 = v.rankingDeReferencias(layouts, KITS, j3.atual, j3.anterior)
+  conta(igual(r3.map((x) => [x.cod || x.nome, x.quanto]), [['FT-010-000M', 495], ['FT-090-000M', 99], ['FT-010-008C', 64], ['PEÇA LISA', 20]]), 'ranking de 3 meses: camiseta 40 + 390 + 65 = 495, calção 10 + 89 = 99')
+  conta(igual(v.rankingDeReferencias(layouts, {}, j1.atual).map((x) => [x.nome, x.quanto]), [['CAMISETA INFANTIL UNISSEX', 64], ['CAMISETA MASC TRAD', 30], ['PEÇA LISA', 20], ['KIT CAMISETA E CALÇAO', 10]]), 'ranking: kit sem peça cadastrada entra com o próprio nome, e nada some da conta')
+  conta(igual(v.rankingDeKits(layouts, j1.atual, j1.anterior).map((x) => [x.nome, x.quanto, x.orcamentos, x.antes, x.rumo]), [['KIT CAMISETA E CALÇAO', 10, 1, 0, 'subiu']]) && v.rankingDeKits(layouts, j3.atual)[0].quanto === 99, 'ranking dos kits: em kits, e não em peças (10 em outubro, 99 em 3 meses)')
+  conta(igual(v.tamanhosVendidos(layouts, KITS, j1.atual).map((t) => [t.tamanho, t.pecas]), [['P', 10], ['M', 40], ['G', 0], ['GG', 20], ['4A', 8], ['6A', 14], ['8A', 18], ['10A', 14], ['12A', 10]]), 'tamanhos de outubro: o M do kit conta dobrado (20 + 20), o G que não saiu aparece com zero no meio da grade, e o infantil vem depois')
+  conta(perto(v.tamanhosVendidos(layouts, KITS, j1.atual).reduce((a, t) => a + t.parte, 0), 1) && v.tamanhosVendidos([], KITS, j1.atual).length === 0, 'tamanhos: as partes somam o total, e sem venda não há tamanho')
+  conta(igual(v.vendaMesAMes(layouts, KITS, hoje).map((m) => [m.mes, m.pecas, m.corrente]), [['2026-05', 0, false], ['2026-06', 0, false], ['2026-07', 0, false], ['2026-08', 65, false], ['2026-09', 479, false], ['2026-10', 134, true]]), 'mês a mês: seis meses, setembro com 329 + 50 + 100 = 479, e outubro marcado como o que está correndo')
+  conta(v.orcamentosCom(layouts, 'kitA', j3.atual) === 2 && v.orcamentosCom(layouts, 'kitA', j1.atual) === 1 && v.orcamentosCom(layouts, 'cam', j1.atual) === 1, 'em quantos orçamentos saiu: o kit em 2 nos 3 meses; a camiseta solta em 1 em outubro')
+  conta(igual(v.ultimosOrcamentosCom(layouts, 'kitA', 4).map((x) => [x.numero, x.unidades, x.estado]), [['PD-0422', 10, 'aprovado'], ['PD-0412', 89, 'producao']]) && v.ultimosOrcamentosCom(layouts, 'cam', 2).length === 2 && v.ultimosOrcamentosCom(layouts, 'cam', 9).find((x) => x.numero === 'PD-0388').unidades === 65, 'últimos orçamentos com o kit: do mais novo para o mais velho, e dois layouts da mesma peça no pedido somam (25 + 40)')
 }
 
 console.log('')

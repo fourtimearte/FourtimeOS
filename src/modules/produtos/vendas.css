@@ -1,0 +1,756 @@
+/* ==========================================================================
+   O Movimento, as Estatísticas e o lado direito da página antes de escolher
+   uma peça (wireframe de 05/10/2026, pranchas 57, 62 e 64). Prefixo pd-.
+
+   As regras nasceram das do Estoque (materiais.css e estatisticas.css) e
+   moram aqui com o prefixo deste módulo. As duas colunas e as fileiras de
+   números medem a própria caixa, e não a janela.
+   ========================================================================== */
+
+/* --- a barra: o que é só da aba ------------------------------------------------ */
+.pd-barra-fim {
+  grid-column: 4;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.pd-barra-fim > .pd-seg {
+  display: flex;
+  width: 100%;
+}
+.pd-barra-linha {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.pd-risco {
+  flex: none;
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-2);
+}
+.pd-chip-n {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+@container pd-barra (max-width: 1039px) {
+  .pd-barra-fim {
+    grid-column: 1 / -1;
+  }
+}
+/* na caixa estreita os chips rolam de lado dentro da própria fileira, e não a página */
+@container pd-barra (max-width: 719px) {
+  .pd-barra-linha {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+  .pd-barra-linha::-webkit-scrollbar {
+    display: none;
+  }
+  .pd-barra-linha > * {
+    flex: none;
+  }
+}
+
+/* --- os quatro números: dois a dois na caixa estreita ----------------------------- */
+.pd-numeros-caixa {
+  container: pd-numeros / inline-size;
+  min-width: 0;
+}
+@container pd-numeros (max-width: 559px) {
+  .pd-numeros-caixa .pd-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+}
+
+/* --- a tabela do movimento ---------------------------------------------------------- */
+.pd-mov {
+  width: 100%;
+}
+.pd-grupo-nome {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--re-1) var(--re-4);
+}
+.pd-grupo-nome b {
+  font-weight: 600;
+  color: var(--text);
+}
+.pd-marca-teste {
+  padding: 0 var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pd-celula {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+  line-height: 1.3;
+}
+.pd-celula b {
+  font-weight: 600;
+  white-space: normal;
+}
+.pd-celula small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+/* o nome que abre a ficha: um botão com cara de texto, sublinhado só debaixo do ponteiro */
+.pd-liga {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.pd-liga:hover {
+  text-decoration: underline;
+}
+.pd-liga:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.pd-apoio {
+  color: var(--text-2);
+}
+.pd-gradinha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-1) var(--re-4);
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+}
+.pd-gradinha b {
+  font-weight: 600;
+  color: var(--text);
+}
+.pd-quanto {
+  font-weight: 600;
+}
+/* no celular a tabela vira lista: seis colunas em 390 px são seis colunas que ninguém lê */
+.pd-mov-grupo {
+  padding: var(--re-4) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.pd-mov-lin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.pd-mov-lin:last-child {
+  border-bottom: 0;
+}
+.pd-mov-cima {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--re-5);
+}
+.pd-mov-cima > .pd-val {
+  padding-top: var(--re-1);
+}
+
+/* --- o alto das estatísticas -------------------------------------------------------- */
+.pd-alto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn) var(--sp-4);
+  min-width: 0;
+}
+.pd-categoria {
+  display: flex;
+  flex: 0 1 420px;
+  min-width: 0;
+}
+.pd-est-dois-caixa {
+  container: pd-est-dois / inline-size;
+  min-width: 0;
+}
+.pd-est-dois {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+@container pd-est-dois (max-width: 899px) {
+  .pd-est-dois {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.pd-est-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.pd-est-col {
+  container: pd-est-col / inline-size;
+  overflow: hidden;
+  min-width: 0;
+}
+.pd-est-pe {
+  margin: 0;
+  padding: var(--re-5) var(--re-7);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* --- o ranking ------------------------------------------------------------------------ */
+.pd-est-cabeca,
+.pd-est-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(56px, 1fr) 76px 52px minmax(0, 1.4fr);
+  gap: var(--re-6);
+  align-items: center;
+  padding: 0 var(--re-7);
+}
+.pd-est-cabeca {
+  min-height: 36px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.pd-est-linha {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--t-fast);
+}
+button.pd-est-linha {
+  cursor: pointer;
+}
+button.pd-est-linha:hover {
+  background-color: var(--surface-2);
+}
+button.pd-est-linha:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-est-nome {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-width: 0;
+}
+.pd-est-nome b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pd-est-nome small {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pd-posicao {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pd-est-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+b.pd-est-num {
+  font-weight: 600;
+}
+.pd-est-apoio {
+  font-size: 13px;
+  color: var(--text-2);
+}
+/* a barra: fina, com a ponta do dado arredondada, e a mesma régua em todas */
+.pd-est-barra {
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.pd-est-barra i {
+  display: block;
+  width: var(--pd-parte, 0%);
+  height: 100%;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--ink);
+  transform-origin: left center;
+  animation: pd-cresce var(--t-slow) var(--ease-out);
+}
+@keyframes pd-cresce {
+  from {
+    transform: scaleX(0);
+  }
+}
+.pd-est-onde {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+  line-height: 1.3;
+}
+.pd-est-onde small {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.pd-est-onde b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pd-est-onde b.pd-est-caiu {
+  font-weight: 400;
+  color: var(--text-2);
+}
+@container pd-est-col (max-width: 559px) {
+  .pd-est-cabeca {
+    display: none;
+  }
+  .pd-est-linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--re-3);
+    padding-block: var(--re-5);
+  }
+  .pd-est-linha > .pd-est-barra,
+  .pd-est-linha > .pd-est-onde {
+    grid-column: 1 / -1;
+  }
+  .pd-est-linha > .pd-est-barra {
+    grid-row: 2;
+  }
+  .pd-est-linha > .pd-est-apoio {
+    display: none;
+  }
+  .pd-est-onde {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--re-4);
+  }
+}
+/* o pé que abre o resto da lista, e o que leva para outra aba */
+.pd-pe {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3);
+  min-height: 44px;
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-pe:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  color: var(--text);
+}
+.pd-pe:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-est-col > .pd-pe {
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- os kits e as peças do lado: uma linha de duas alturas ------------------------------ */
+.pd-pri {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--t-fast);
+}
+.pd-pri:last-child {
+  border-bottom: 0;
+}
+button.pd-pri {
+  cursor: pointer;
+}
+button.pd-pri:hover {
+  background-color: var(--surface-2);
+}
+button.pd-pri:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-pri-texto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.pd-pri-texto b,
+.pd-pri-texto small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pd-pri-texto b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pd-pri-texto small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-pri-quanto {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- as colunas finas: os tamanhos e o mês a mês ---------------------------------------- */
+.pd-colunas {
+  display: grid;
+  grid-template-columns: repeat(var(--pd-quantas, 6), minmax(0, 1fr));
+  gap: var(--re-2);
+  padding: var(--re-7) var(--re-7) 0;
+}
+.pd-coluna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.pd-coluna-valor {
+  min-height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pd-coluna-trilho {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 96px;
+  border-bottom: 1px solid var(--border-2);
+}
+.pd-coluna-trilho i {
+  display: block;
+  width: min(28px, 70%);
+  height: var(--pd-parte, 0%);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--ink);
+  transform-origin: center bottom;
+  animation: pd-sobe var(--t-slow) var(--ease-out);
+}
+.pd-coluna.pd-corrente .pd-coluna-trilho i {
+  background: var(--text-3);
+}
+@keyframes pd-sobe {
+  from {
+    transform: scaleY(0);
+  }
+}
+.pd-coluna-nome {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* --- antes de escolher uma peça: as três caixas do lado da árvore ------------------------ */
+.pd-quatro.pd-com-geral {
+  /* a árvore atravessa as duas fileiras, e a sobra de altura vai para a última */
+  grid-template-rows: auto 1fr;
+}
+.pd-quatro.pd-com-geral > .pd-arvore {
+  grid-row: 1 / span 2;
+}
+.pd-quatro > .pd-dupla {
+  grid-column: span 2;
+  min-width: 0;
+}
+.pd-quatro > .pd-faixa-caixa {
+  grid-column: 2 / -1;
+  min-width: 0;
+}
+@container pd-palco (max-width: 1039px) {
+  .pd-quatro.pd-com-geral {
+    grid-template-rows: auto auto 1fr;
+  }
+  .pd-quatro.pd-com-geral > .pd-arvore {
+    grid-row: 1 / span 3;
+  }
+  .pd-quatro > .pd-dupla {
+    grid-column: auto;
+  }
+  .pd-quatro > .pd-faixa-caixa {
+    grid-column: 2;
+  }
+}
+.pd-curta {
+  height: 368px;
+}
+.pd-rolagem {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.pd-rolagem::-webkit-scrollbar {
+  display: none;
+}
+.pd-rolagem:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+/* o esfumado em cima do pé diz que a lista continua */
+.pd-rolagem + .pd-pe::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 1px);
+  height: 36px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+}
+.pd-sem-linhas {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: var(--sp-6) var(--re-7);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+/* o gráfico de barras deitadas: o nome, a barra na mesma régua e o número */
+.pd-graf {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: var(--re-2);
+  padding: var(--re-3) var(--re-7);
+}
+.pd-graf-lin {
+  display: grid;
+  grid-template-columns: minmax(0, 236px) minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: var(--re-6);
+}
+.pd-graf-nome {
+  display: flex;
+  align-items: baseline;
+  gap: var(--re-3);
+  min-width: 0;
+}
+.pd-graf-nome b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pd-graf-nome small {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-graf-trilho {
+  display: block;
+  height: 14px;
+  border-left: 1px solid var(--border-2);
+}
+.pd-graf-trilho i {
+  display: block;
+  width: var(--pd-parte, 0%);
+  height: 100%;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--ink);
+  transform-origin: left center;
+  animation: pd-cresce var(--t-slow) var(--ease-out);
+}
+.pd-graf-valor {
+  text-align: right;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* a faixa dos kits: até quatro lado a lado, e dois a dois na caixa estreita */
+.pd-faixa-caixa {
+  container: pd-faixa / inline-size;
+}
+.pd-faixa {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.pd-kit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  padding: var(--re-7);
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: none;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-kit:last-child {
+  border-right: 0;
+}
+.pd-kit:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-kit:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pd-kit-desenho {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84px;
+  padding: var(--re-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.pd-kit-desenho img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+.pd-kit b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pd-kit small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-kit small b {
+  font-size: inherit;
+  color: var(--text);
+}
+@container pd-faixa (max-width: 619px) {
+  .pd-faixa {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pd-kit:nth-child(2n) {
+    border-right: 0;
+  }
+  .pd-kit:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* --- na árvore e nas fichas: o quanto vendeu ------------------------------------------- */
+.pd-fim {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.pd-fim b {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pd-fim small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-sel .pd-fim small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.pd-dois-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--re-5);
+  padding: var(--re-2) var(--re-7) var(--re-7);
+}
+.pd-numero b {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pd-numero span {
+  font-size: 12.5px;
+  color: var(--text-2);
+}

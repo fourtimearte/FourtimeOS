@@ -130,7 +130,7 @@ export const doEstoque = [
 export function perfil(acesso) {
   const [p] = D.perfil('admin')
   if (acesso === 'edita') { p.papel = 'estoquista'; p.nome = 'Estoquista'; p.permissoes.produtos = { ver: true, editar: true, deletar: true, total: false } }
-  if (acesso === 'le') { p.papel = 'vendedor'; p.nome = 'Vendedor'; p.permissoes.produtos = { ver: true, editar: false, deletar: false, total: false } }
+  if (acesso === 'le') { p.papel = 'vendedor'; p.nome = 'Vendedor'; p.permissoes.produtos = { ver: true, editar: false, deletar: false, total: false }; delete p.permissoes.kanban; p.paineis = p.paineis.filter((k) => k !== 'kanban') }
   if (acesso === 'fora') { p.papel = 'vendedor'; p.nome = 'Vendedor'; delete p.permissoes.produtos; p.paineis = p.paineis.filter((k) => k !== 'produtos') }
   return [p]
 }
@@ -145,13 +145,75 @@ const PECAS_DOS_KITS = {
   ],
 }
 
+/* ---- as vendas: os layouts dos pedidos, como a view layout_na_fabrica devolve ----
+   O DIA DE HOJE DA PROVA É 06/10/2026, 15h em Goiânia (a prova trava o relógio
+   da página nele). Os números que a prova espera estão somados à mão em
+   testes/produtos.mjs, ao lado de cada conferência. */
+export const HOJE_DA_PROVA = '2026-10-06T15:00:00-03:00'
+const em = (dia, hora = '12:00') => `${dia}T${hora}:00-03:00`
+const PEDIDOS = {
+  p1: { numero: 'PD-0412', cliente: 'Atlético Exemplo', estado: 'producao', etapa: 'costura', etapa_em: em('2026-10-04', '09:00'), aprovado_em: em('2026-09-20'), fechado_em: null, teste: false },
+  p2: { numero: 'PD-0409', cliente: 'Escola Exemplo', estado: 'pronto', etapa: 'finalizado', etapa_em: em('2026-10-05', '16:42'), aprovado_em: em('2026-10-02', '10:00'), fechado_em: em('2026-10-05', '16:42'), teste: false },
+  /* entregue e enviado (p9) são pedidos que já saíram da fábrica: continuam contando como peça pronta */
+  p3: { numero: 'PD-0390', cliente: 'Clube Exemplo', estado: 'entregue', etapa: 'finalizado', etapa_em: em('2026-09-28', '15:30'), aprovado_em: em('2026-09-03'), fechado_em: em('2026-09-28', '15:30'), teste: false },
+  p4: { numero: 'PD-0420', cliente: 'Academia Exemplo', estado: 'producao', etapa: 'corte', etapa_em: em('2026-10-03', '08:00'), aprovado_em: em('2026-10-03', '07:00'), fechado_em: null, teste: true },
+  p5: { numero: 'PD-0421', cliente: 'Auto Peças Exemplo', estado: 'pcp', etapa: 'corte', etapa_em: em('2026-10-05'), aprovado_em: em('2026-10-05'), fechado_em: null, teste: false },
+  p7: { numero: 'PD-0422', cliente: 'Escolinha Exemplo', estado: 'aprovado', etapa: 'corte', etapa_em: em('2026-10-04'), aprovado_em: em('2026-10-04'), fechado_em: null, teste: false },
+  p8: { numero: 'PD-0400', cliente: 'Loja Exemplo', estado: 'separacao', etapa: 'corte', etapa_em: em('2026-09-10'), aprovado_em: em('2026-09-10'), fechado_em: null, teste: false },
+  p9: { numero: 'PD-0101', cliente: 'Cliente Antigo Exemplo', estado: 'enviado', etapa: 'finalizado', etapa_em: em('2025-02-20'), aprovado_em: em('2025-01-15'), fechado_em: em('2025-02-20'), teste: false },
+}
+const CAMISETA = { referencia: 'FT-010-000M', nome: 'CAMISETA MASC TRAD', referencia_id: 'r000', kit: false }
+const KIT_DA_PROVA = { referencia: 'FT-KIT-020-000M-090-000M', nome: 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO', referencia_id: 'rkit', kit: true }
+const lay = (pedido, ordem, peca, arte, grade, tecnicas) => ({ pedido_id: pedido, ...PEDIDOS[pedido], pedido_nome: '', ordem, layout: ordem, genero: 'masculino', faixa: 'adulto', ...peca, arte, grade, pecas: Object.values(grade).reduce((a, n) => a + n, 0), tecnicas })
+const LAYOUTS = [
+  lay('p1', 1, KIT_DA_PROVA, 'linha', { P: 10, M: 32, G: 30, GG: 14, XG: 3 }, ['subli', 'patch']),
+  /* a grade fora de ordem, como o orçamento pode guardar: a tela é que põe na ordem da fábrica */
+  lay('p1', 2, CAMISETA, 'goleiro', { GG: 2, M: 2, G: 4 }, ['subli']),
+  lay('p1', 3, CAMISETA, 'comissão', { P: 20, M: 48, G: 44, GG: 24, XG: 7 }, ['dtf']),
+  lay('p2', 1, { referencia: 'FT-010-008C', nome: 'CAMISETA INFANTIL UNISSEX', referencia_id: 'r008', kit: false }, 'uniforme', { '4A': 8, '6A': 14, '8A': 18, '10A': 14, '12A': 10 }, ['silk']),
+  lay('p3', 1, { referencia: 'FT-020-000M', nome: 'RAGLAN MASC SEM PUNHO', referencia_id: 'r020', kit: false }, 'treino', { P: 12, M: 38, G: 40, GG: 22, XG: 8 }, ['subli']),
+  lay('p4', 1, { referencia: '', nome: 'PEÇA LISA', referencia_id: null, kit: false }, '', { M: 20 }, []),
+  /* o orçamento guardou um nome que a referência já não tem: nas vendas vale o nome de hoje */
+  lay('p5', 1, { ...CAMISETA, nome: 'CAMISETA MASCULINA TRADICIONAL' }, 'polo', { P: 10, GG: 20 }, ['bordado']),
+  lay('p7', 1, KIT_DA_PROVA, '', { M: 10 }, ['subli']),
+  lay('p8', 1, { referencia: 'FT-010-004F', nome: 'BABY LOOK', referencia_id: 'r004', kit: false }, '', { P: 40, M: 60 }, ['subli']),
+  lay('p9', 1, CAMISETA, '', { M: 500 }, ['subli']),
+]
+const fat = (id, pedido, tecnica, etapa, quando, layouts, fechou = null) => ({ id, pedido_id: pedido, tecnica, etapa, etapa_em: quando, fechado_em: fechou, layouts, estado: PEDIDOS[pedido].estado })
+const FATIAS = [
+  fat('f1', 'p1', 'subli', 'finalizado', em('2026-10-06', '14:10'), [1, 2], em('2026-10-06', '14:10')),
+  fat('f2', 'p1', 'patch', 'finalizado', em('2026-10-05', '11:00'), [1], em('2026-10-05', '11:00')),
+  fat('f3', 'p1', 'dtf', 'costura', em('2026-10-04', '09:00'), [3]),
+  fat('f4', 'p2', 'silk', 'finalizado', em('2026-10-05', '16:42'), [1], em('2026-10-05', '16:42')),
+  fat('f5', 'p3', 'subli', 'finalizado', em('2026-09-28', '15:30'), [1], em('2026-09-28', '15:30')),
+]
+/* quinze peças fora do catálogo, cada uma com uma quantidade: mais do que o ranking mostra de primeira */
+const LAYOUTS_VARIADOS = Array.from({ length: 15 }, (_, i) => ({ ...lay('p5', 1, { referencia: '', nome: 'PEÇA ' + String(i + 1).padStart(2, '0'), referencia_id: null, kit: false }, '', { M: 150 - i * 10 }, ['subli']), pedido_id: 'v' + i, numero: 'PD-V' + i }))
+/* dois mil e trezentos layouts de uma peça cada: mais do que o banco devolve de uma vez */
+const MUITOS_LAYOUTS = Array.from({ length: 2300 }, (_, i) => ({ ...lay('p5', 1, CAMISETA, '', { M: 1 }, ['subli']), pedido_id: 'm' + String(i).padStart(4, '0'), numero: 'PD-M' + String(i).padStart(4, '0') }))
+
 const copia = (x) => JSON.parse(JSON.stringify(x))
 
 /* `estado`: 'cheio' (o de cima), 'vazio' (nenhuma referência), 'erro' (a
    leitura da lista falha), 'sem-apoio' (o catálogo de tecidos e o Estoque não
    respondem, e a página tem de continuar de pé).
-   `recusa`: o salvar da ficha recusa uma vez, do jeito que a função do banco recusa. */
-export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
+   `recusa`: o salvar da ficha recusa uma vez, do jeito que a função do banco recusa.
+   `vendas`: 'cheias' (as de cima), 'vazias' (nenhum pedido), 'erro' (a leitura
+   dos layouts falha), 'muitas' (2.300 layouts, para a leitura de mil em mil) ou
+   'variadas' (quinze peças diferentes, para o ranking que abre o resto). */
+export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias' } = {}) {
+  const semVenda = vendas === 'vazias' || estado === 'vazio'
+  const layouts = semVenda ? [] : vendas === 'muitas' ? MUITOS_LAYOUTS : vendas === 'variadas' ? LAYOUTS_VARIADOS : copia(LAYOUTS)
+  const fatias = semVenda || vendas === 'muitas' || vendas === 'variadas' ? [] : copia(FATIAS)
+  /* os pedidos de leitura que a página fez, para a prova ver o que ela pediu */
+  const lidos = []
+  /* devolve o pedaço que o endereço pede: limit e offset, como o banco */
+  const pedaco = (u, lista) => {
+    const limite = Number((u.match(/[?&]limit=(\d+)/) ?? [])[1] ?? 1000)
+    const de = Number((u.match(/[?&]offset=(\d+)/) ?? [])[1] ?? 0)
+    /* o banco nunca devolve mais de mil de uma vez, peça o que pedir */
+    return lista.slice(de, de + Math.min(limite, 1000))
+  }
   const refs = estado === 'vazio' ? [] : copia(REFERENCIAS)
   const fichas = copia(FICHAS)
   const pecasDosKits = estado === 'vazio' ? {} : copia(PECAS_DOS_KITS)
@@ -256,9 +318,21 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
       return { status: 200, corpo: (id ? refs.filter((r) => r.id === id) : refs.filter((r) => r.ativo)).map(naLista) }
     }
     if (u.includes('kit_na_ficha')) return estado === 'sem-kits' ? { status: 404, corpo: { message: 'relation "public.kit_na_ficha" does not exist' } } : { status: 200, corpo: refs.filter((r) => r.grupo === 'KIT' && r.ativo).map(kitNaLista).sort((a, b) => a.nome.localeCompare(b.nome)) }
+    if (u.includes('layout_na_fabrica')) {
+      lidos.push(u)
+      if (vendas === 'erro') return { status: 403, corpo: { message: 'permission denied for view layout_na_fabrica' } }
+      const desde = (u.match(/aprovado_em=gte\.([^&]+)/) ?? [])[1]
+      return { status: 200, corpo: pedaco(u, layouts.filter((l) => !desde || new Date(l.aprovado_em) >= new Date(desde))) }
+    }
+    if (u.includes('fatia_na_fabrica') && u.includes('select=pedido_id,tecnica')) {
+      lidos.push(u)
+      return { status: 200, corpo: pedaco(u, fatias) }
+    }
     if (u.includes('peca_do_kit_na_lista')) {
       const kitId = idDe(u, 'kit_id'); const refId = idDe(u, 'referencia_id')
       if (kitId) return { status: 200, corpo: (pecasDosKits[kitId] ?? []).map(pecaNaLista(kitId)) }
+      /* a lista de todas as peças de todos os kits, que as vendas pedem */
+      if (!refId) { lidos.push(u); return { status: 200, corpo: pedaco(u, Object.keys(pecasDosKits).flatMap((k) => pecasDosKits[k].map(pecaNaLista(k)))) } }
       return { status: 200, corpo: Object.keys(pecasDosKits).flatMap((k) => pecasDosKits[k].map(pecaNaLista(k))).filter((p) => p.referencia_id === refId) }
     }
     if (u.includes('medida_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).medidas }
@@ -279,5 +353,5 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
     if (u.includes('/material?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table material' } } : { status: 200, corpo: doEstoque }
     return null
   }
-  return { responder, gravados, fichas, refs, pecasDosKits }
+  return { responder, gravados, fichas, refs, pecasDosKits, lidos }
 }

@@ -21,6 +21,7 @@ import { Editor } from './editor'
 import { MedidasETecido, type AbaDoModulo } from './medidas'
 import { CartaoDoMolde } from './molde'
 import { SEM_ETIQUETA, Trilha, apoioDoMaterial } from './pecas'
+import { emKits, emPecas } from './vendas'
 import { VisorDoMolde } from './visor'
 
 /* ==========================================================================
@@ -33,6 +34,16 @@ import { VisorDoMolde } from './visor'
    cartões e duas tabelas, e isso não cabe numa caixa por cima da página. Ele
    toma o lugar da ficha e devolve quando a pessoa salva ou cancela.
    ========================================================================== */
+
+/** O que as vendas dizem desta peça. Nulo enquanto a página não leu as vendas. */
+export type VendasDaReferencia = {
+  /** o mês que está correndo, em minúscula: "outubro" */
+  mes: string
+  pecasNoMes: number
+  pecasEm3Meses: number
+  /** os kits vendidos no mês, pelo id do kit */
+  kitsNoMes: Map<string, number>
+}
 
 function Vista({
   r,
@@ -55,7 +66,9 @@ function Vista({
   aoAbrirKit,
   aoAmpliarMolde,
   aoImprimir,
+  vendas,
 }: {
+  vendas: VendasDaReferencia | null
   kits: KitDaReferencia[]
   aoAbrirKit: (id: string) => void
   aoAmpliarMolde: () => void
@@ -214,6 +227,12 @@ function Vista({
                 <b>{k.kitNome}</b>
                 <small>{k.papel ? k.papel.toLowerCase() + ' do kit' : 'peça do kit'}</small>
               </span>
+              {vendas?.kitsNoMes.get(k.kitId) ? (
+                <span className="pd-val" data-kits-no-mes="">
+                  {emKits(vendas.kitsNoMes.get(k.kitId) ?? 0)}
+                  <small>no mês</small>
+                </span>
+              ) : null}
               <Botao tom="limpo" tamanho="sm" onClick={() => aoAbrirKit(k.kitId)}>
                 Abrir
                 <ArrowRight size={14} aria-hidden="true" />
@@ -225,6 +244,21 @@ function Vista({
             <p className="pd-nota">Esta peça não está em nenhum kit.</p>
           </div>
         )}
+        {vendas ? (
+          <>
+            <div className="pd-sub">Vendas</div>
+            <div className="pd-dois-numeros" data-vendas-da-peca="">
+              <div className="pd-numero">
+                <b>{emPecas(vendas.pecasNoMes)}</b>
+                <span>em {vendas.mes}</span>
+              </div>
+              <div className="pd-numero">
+                <b>{emPecas(vendas.pecasEm3Meses)}</b>
+                <span>nos últimos 3 meses</span>
+              </div>
+            </div>
+          </>
+        ) : null}
       </section>
       </div>
     </div>
@@ -253,6 +287,7 @@ export function FichaDaReferencia({
   aoFechar,
   aoAbrirKit,
   aoImprimir,
+  vendas,
 }: {
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
@@ -281,6 +316,7 @@ export function FichaDaReferencia({
   aoAbrirKit: (id: string) => void
   /** a folha impressa toma a página: a ficha entrega o que já leu, para ninguém ler de novo */
   aoImprimir: (lido: { ficha: Ficha; molde: string | null }) => void
+  vendas: VendasDaReferencia | null
 }) {
   /* em que kits a peça entra: apoio, que pode falhar sem derrubar a ficha */
   const [kits, setKits] = useState<KitDaReferencia[]>([])
@@ -413,6 +449,7 @@ export function FichaDaReferencia({
       aoAbrirKit={aoAbrirKit}
       aoAmpliarMolde={() => setVisor(true)}
       aoImprimir={() => aoImprimir({ ficha, molde })}
+      vendas={vendas}
     />
     {visor ? (
       <VisorDoMolde

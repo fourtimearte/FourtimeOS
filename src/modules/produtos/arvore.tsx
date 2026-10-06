@@ -13,6 +13,7 @@ import {
   type ReferenciaNaFicha,
 } from '@dominio/produto'
 import { plural } from './apoio'
+import { emKits, emPecas } from './vendas'
 
 /* ==========================================================================
    A primeira coluna: Referências e Kits em abas, e os grupos em sanfona.
@@ -24,6 +25,9 @@ import { plural } from './apoio'
    referências estavam em branco, e 112 pontos vermelhos não avisam nada. O
    ponto vermelho é da ficha que alguém COMEÇOU e não terminou: ele diz
    quantas coisas faltam (medidas, tecido, molde), e a linha diz quais.
+
+   O QUE VENDEU NO MÊS fica do lado do nome: quem abre um grupo vê de uma vez
+   qual peça dele está saindo. Peça que não vendeu no mês não ganha um zero.
    ========================================================================== */
 
 export type Lista = 'referencias' | 'kits'
@@ -57,14 +61,26 @@ function Alerta({ n, frase }: { n: number; frase?: string }) {
   )
 }
 
+/** quanto saiu no mês, do lado do nome */
+function NoMes({ quanto }: { quanto: string }) {
+  return (
+    <span className="pd-fim" data-no-mes="">
+      <b>{quanto}</b>
+      <small>no mês</small>
+    </span>
+  )
+}
+
 function Linha({
   r,
   escolhida,
   aoEscolher,
+  noMes,
 }: {
   r: ReferenciaNaFicha
   escolhida: boolean
   aoEscolher: () => void
+  noMes: number
 }) {
   const falta = oQueFalta(r)
   const branco = emBranco(r)
@@ -80,6 +96,7 @@ function Linha({
             {branco ? ' · ficha em branco' : falta.length ? ' · ' + faltaEmPalavras(falta) : ''}
           </small>
         </span>
+        {noMes ? <NoMes quanto={emPecas(noMes)} /> : null}
         {n ? <Alerta n={n} frase={faltaEmPalavras(falta)} /> : null}
       </button>
     </div>
@@ -90,10 +107,12 @@ function LinhaDoKit({
   k,
   escolhido,
   aoEscolher,
+  noMes,
 }: {
   k: KitNaLista
   escolhido: boolean
   aoEscolher: () => void
+  noMes: number
 }) {
   const branco = kitEmBranco(k)
   const n = branco || !k.pecas ? 0 : faltasDoKit(k)
@@ -109,6 +128,7 @@ function LinhaDoKit({
             {!k.pecas ? '' : branco ? ' · ficha em branco' : n ? ' · ' + plural(n, 'coisa por fazer', 'coisas por fazer') : ''}
           </small>
         </span>
+        {noMes ? <NoMes quanto={emKits(noMes)} /> : null}
         {n ? <Alerta n={n} frase={plural(n, 'coisa por fazer', 'coisas por fazer')} /> : null}
       </button>
     </div>
@@ -130,6 +150,8 @@ export function Arvore({
   aoEscolher,
   kitEscolhido,
   aoEscolherKit,
+  pecasNoMes,
+  kitsNoMes,
 }: {
   grupos: GrupoDeReferencia[]
   /** já filtradas pela busca */
@@ -148,11 +170,15 @@ export function Arvore({
   aoEscolher: (id: string) => void
   kitEscolhido: string
   aoEscolherKit: (id: string) => void
+  /** as peças de cada referência vendidas no mês, pelo id; vazio enquanto as vendas não chegam */
+  pecasNoMes: Map<string, number>
+  /** os kits vendidos no mês, pelo id do kit */
+  kitsNoMes: Map<string, number>
 }) {
   const gavetas = emGavetas(grupos, referencias).filter(g => !termo || g.itens.length)
 
   return (
-    <section className="cartao pd-col" data-arvore="">
+    <section className="cartao pd-col pd-arvore" data-arvore="">
       <div className="pd-abas">
         <Segmentado
           className="pd-seg"
@@ -190,7 +216,13 @@ export function Arvore({
         ) : (
           <div className="pd-kits">
             {kits.map(k => (
-              <LinhaDoKit key={k.id} k={k} escolhido={k.id === kitEscolhido} aoEscolher={() => aoEscolherKit(k.id)} />
+              <LinhaDoKit
+                key={k.id}
+                k={k}
+                escolhido={k.id === kitEscolhido}
+                aoEscolher={() => aoEscolherKit(k.id)}
+                noMes={kitsNoMes.get(k.id) ?? 0}
+              />
             ))}
           </div>
         )
@@ -237,6 +269,7 @@ export function Arvore({
                       r={r}
                       escolhida={r.id === escolhida}
                       aoEscolher={() => aoEscolher(r.id)}
+                      noMes={pecasNoMes.get(r.id) ?? 0}
                     />
                   ))}
                 </div>

@@ -41,7 +41,8 @@ const PAGINAS: Pagina[] = [
     nome: 'Fichas técnicas',
     onde: 'Materiais',
     rota: '/produtos',
-    porque: 'Ainda é uma tela de aviso, e não uma tela de trabalho.',
+    porque:
+      'A ficha de cada referência: molde, medidas, tecido por tamanho e aviamentos. Guardar a página não apaga as fichas, e a Separação continua lendo o tecido delas.',
   },
   {
     chave: 'fornecedores',

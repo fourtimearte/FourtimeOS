@@ -19,7 +19,6 @@ import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotac
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
-import { TelaEmBreve } from '@modules/em-breve'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaCalculadoraDeDtf, TelaVerificadorDeBoleto } from '@modules/ferramentas'
 import { TelaFicha } from '@modules/ficha'
@@ -28,6 +27,7 @@ import { TelaTransporte } from '@modules/transporte'
 import { TelaParceiros } from '@modules/parceiros'
 import { TelaFunil } from '@modules/funil'
 import { TelaPcp } from '@modules/pcp'
+import { TelaProdutos } from '@modules/produtos'
 import { TelaSeparacao } from '@modules/separacao'
 import { TelaPerfil } from '@modules/perfil'
 import { TelaRelatorio } from '@modules/relatorio'
@@ -117,21 +117,9 @@ export const rotas = createBrowserRouter([
       { path: 'config/ferramentas', element: pede('config', <TelaConfigDeFerramentas />) },
       { path: 'config/tags', element: pede('config', <TelaTags />) },
 
-      /* O destino do v5 que ainda não tem módulo. Ele existe para o menu estar
-         inteiro: nenhum item leva a lugar nenhum. */
-      {
-        path: 'produtos',
-        element: pede(
-          'produtos',
-          <TelaEmBreve
-            acima="Produção"
-            titulo="Fichas técnicas"
-            sub="A referência de cada peça: molde, tecido, consumo e mínimo."
-            fase="fase 2"
-            texto="Ela nasce junto com a ficha de produção, porque as duas leem o mesmo cadastro de referência."
-          />,
-        ),
-      },
+      /* AS FICHAS TÉCNICAS SÃO DE MATERIAIS, ao lado do Estoque: a ficha diz de
+         que a peça é feita e o estoque diz quanto disso existe. */
+      { path: 'produtos', element: pede('produtos', <TelaProdutos />) },
     ],
   },
 ])

@@ -1,0 +1,192 @@
+import { CaretRight } from '@phosphor-icons/react'
+import { Segmentado, Vazio } from '@ds'
+import {
+  NOME_DO_GENERO,
+  codigoCurto,
+  emBranco,
+  faltaEmPalavras,
+  oQueFalta,
+  type GrupoDeReferencia,
+  type ReferenciaNaFicha,
+} from '@dominio/produto'
+import { plural } from './apoio'
+
+/* ==========================================================================
+   A primeira coluna: Referências e Kits em abas, e os grupos em sanfona.
+
+   ABRIR NÃO É ESCOLHER, como no Estoque. O grupo abre e fecha; o clique no
+   nome da peça escolhe, e aí o lado direito da página vira a ficha dela.
+
+   FICHA EM BRANCO NÃO É ALERTA. No dia em que a página nasceu as 112
+   referências estavam em branco, e 112 pontos vermelhos não avisam nada. O
+   ponto vermelho é da ficha que alguém COMEÇOU e não terminou: ele diz
+   quantas coisas faltam (medidas, tecido, molde), e a linha diz quais.
+   ========================================================================== */
+
+export type Lista = 'referencias' | 'kits'
+
+/** o grupo de quem não tem grupo, ou tem um que saiu do cadastro */
+const SEM_GRUPO = ''
+
+type Gaveta = { cod: string; nome: string; itens: ReferenciaNaFicha[] }
+
+function emGavetas(grupos: GrupoDeReferencia[], referencias: ReferenciaNaFicha[]): Gaveta[] {
+  const conhecidos = new Set(grupos.map(g => g.cod))
+  const gavetas: Gaveta[] = grupos.map(g => ({
+    cod: g.cod,
+    nome: g.nome,
+    itens: referencias.filter(r => r.grupo === g.cod),
+  }))
+  const soltas = referencias.filter(r => !r.grupo || !conhecidos.has(r.grupo))
+  if (soltas.length) gavetas.push({ cod: SEM_GRUPO, nome: 'Sem grupo', itens: soltas })
+  return gavetas
+}
+
+/** quantas coisas faltam numa ficha que já foi começada; em branco não conta */
+const pendencias = (r: ReferenciaNaFicha) => (emBranco(r) ? 0 : oQueFalta(r).length)
+
+function Alerta({ n, frase }: { n: number; frase?: string }) {
+  return (
+    <span className={n ? 'pd-alerta' : 'pd-alerta nada'} aria-label={n ? frase : undefined}>
+      <i />
+      {n}
+    </span>
+  )
+}
+
+function Linha({
+  r,
+  escolhida,
+  aoEscolher,
+}: {
+  r: ReferenciaNaFicha
+  escolhida: boolean
+  aoEscolher: () => void
+}) {
+  const falta = oQueFalta(r)
+  const branco = emBranco(r)
+  const n = pendencias(r)
+  return (
+    <div className={escolhida ? 'pd-t pd-sel' : 'pd-t'} data-ref={codigoCurto(r.cod)}>
+      <span className="pd-t-seta" aria-hidden="true" />
+      <button type="button" className="pd-t-nome" aria-pressed={escolhida} onClick={aoEscolher}>
+        <span className="pd-nomes">
+          <b>{r.nome}</b>
+          <small className={n ? 'pd-falta' : undefined}>
+            {codigoCurto(r.cod)} · {NOME_DO_GENERO[r.genero] ?? r.genero}
+            {branco ? ' · ficha em branco' : falta.length ? ' · ' + faltaEmPalavras(falta) : ''}
+          </small>
+        </span>
+        {n ? <Alerta n={n} frase={faltaEmPalavras(falta)} /> : null}
+      </button>
+    </div>
+  )
+}
+
+export function Arvore({
+  grupos,
+  referencias,
+  haReferencias,
+  termo,
+  lista,
+  aoTrocarLista,
+  abertos,
+  aoAbrir,
+  escolhida,
+  aoEscolher,
+}: {
+  grupos: GrupoDeReferencia[]
+  /** já filtradas pela busca */
+  referencias: ReferenciaNaFicha[]
+  /** existe alguma referência, antes da busca */
+  haReferencias: boolean
+  termo: string
+  lista: Lista
+  aoTrocarLista: (l: Lista) => void
+  abertos: Set<string>
+  aoAbrir: (cod: string) => void
+  escolhida: string
+  aoEscolher: (id: string) => void
+}) {
+  const gavetas = emGavetas(grupos, referencias).filter(g => !termo || g.itens.length)
+
+  return (
+    <section className="cartao pd-col" data-arvore="">
+      <div className="pd-abas">
+        <Segmentado
+          className="pd-seg"
+          valor={lista}
+          aoMudar={aoTrocarLista}
+          opcoes={[
+            {
+              valor: 'referencias',
+              rotulo: (
+                <>
+                  Referências <small>{referencias.length}</small>
+                </>
+              ),
+            },
+            { valor: 'kits', rotulo: 'Kits' },
+          ]}
+        />
+      </div>
+
+      {lista === 'kits' ? (
+        <Vazio
+          titulo="Os kits ainda não chegaram"
+          texto="O kit junta duas ou mais referências numa ficha de fabricação só. Ele entra aqui no próximo passo desta página."
+        />
+      ) : !haReferencias ? (
+        <Vazio
+          titulo="Nenhuma referência cadastrada"
+          texto="A referência é a peça que a fábrica faz: uma camiseta, um calção, um moletom. Cadastre a primeira em Nova referência."
+        />
+      ) : !gavetas.length ? (
+        <Vazio titulo="Nada com esse nome" texto="Tente o nome da peça ou um pedaço do código, como 010 ou 000M." />
+      ) : (
+        gavetas.map(g => {
+          /* com busca, todo grupo que sobrou fica aberto: quem buscou quer ver o que achou */
+          const aberto = !!termo || abertos.has(g.cod)
+          const faltam = g.itens.filter(r => pendencias(r) > 0).length
+          return (
+            <div className="pd-gaveta" key={g.cod || 'sem-grupo'}>
+              <button
+                type="button"
+                className={aberto ? 'pd-g aberto' : 'pd-g'}
+                aria-expanded={aberto}
+                data-grupo={g.cod}
+                onClick={() => aoAbrir(g.cod)}
+              >
+                <CaretRight
+                  size={14}
+                  weight="bold"
+                  className={aberto ? 'pd-seta aberta' : 'pd-seta'}
+                  aria-hidden="true"
+                />
+                <span className={g.cod ? 'pd-cod' : 'pd-cod sem'}>{g.cod || 'sem'}</span>
+                <b>{g.nome}</b>
+                <span className="pd-conta">{plural(g.itens.length, 'referência', 'referências')}</span>
+                <Alerta
+                  n={faltam}
+                  frase={plural(faltam, 'ficha começada e incompleta', 'fichas começadas e incompletas')}
+                />
+              </button>
+              {aberto ? (
+                <div className="pd-dentro">
+                  {g.itens.map(r => (
+                    <Linha
+                      key={r.id}
+                      r={r}
+                      escolhida={r.id === escolhida}
+                      aoEscolher={() => aoEscolher(r.id)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )
+        })
+      )}
+    </section>
+  )
+}

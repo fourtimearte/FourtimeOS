@@ -53,6 +53,7 @@ declare module 'react' {
   export type SelectHTMLAttributes<T = any> = any
   export type AnchorHTMLAttributes<T = any> = any
   export type ButtonHTMLAttributes<T = any> = any
+  export type ClipboardEvent<T = any> = any
   export type ChangeEvent<T = any> = any
   export type DragEvent<T = any> = any
   export type FormEvent<T = any> = any

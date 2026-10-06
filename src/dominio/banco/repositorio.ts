@@ -209,7 +209,16 @@ export async function gravarConsumo(c: {
   return deLinhaDoConsumo(um(linhas))
 }
 
+/* A LINHA QUE TAMBÉM GUARDA A ÁREA DA FICHA TÉCNICA NÃO SOME (050). Desde a
+   ficha técnica da referência, a mesma linha pode ter a área que a ficha
+   escreveu. Apagar o metro e o quilo daqui tira só os dois: a área é da ficha,
+   e só ela tira. */
 export async function apagarConsumo(id: string): Promise<void> {
+  const comArea = await tabela<{ id: string }[]>(
+    `consumo_da_referencia?id=eq.${id}&area=not.is.null`,
+    { metodo: 'PATCH', devolver: true, corpo: { metros: null, quilos: null } },
+  )
+  if (comArea.length) return
   await tabela<void>(`consumo_da_referencia?id=eq.${id}`, { metodo: 'DELETE' })
 }
 

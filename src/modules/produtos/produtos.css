@@ -1,0 +1,939 @@
+/* ==========================================================================
+   Fichas técnicas (wireframe de 05/10/2026, pranchas 57 a 71). Prefixo pd-.
+
+   A página é irmã do Estoque e tem o mesmo desenho: a barra, a árvore em
+   sanfona e a ficha do lado direito. As regras de esqueleto nasceram das do
+   Estoque (materiais.css) e moram aqui com o prefixo deste módulo, porque um
+   módulo só escreve regra para classe que é dele.
+
+   A largura que manda é a do palco e a da ficha, e não a da janela: com o
+   menu aberto ou fechado, a página se arruma pelo espaço que sobrou.
+   ========================================================================== */
+
+.pd-palco {
+  container-type: inline-size;
+  container-name: pd-palco;
+  min-width: 0;
+}
+
+/* --- a barra: as abas da página, a busca e o que é da aba --------------------- */
+.pd-barra-caixa {
+  container-type: inline-size;
+  container-name: pd-barra;
+  min-width: 0;
+}
+.pd-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  gap: var(--gap-btn) var(--sp-4);
+  align-items: center;
+  min-width: 0;
+}
+.pd-barra > .pd-seg {
+  display: flex;
+  width: 100%;
+}
+.pd-seg button {
+  flex: 1;
+  padding: 0 var(--re-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3);
+  min-width: 0;
+}
+.pd-seg button small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+/* as quatro abas da página medem o texto de cada uma, e não a mesma largura */
+.pd-seg.pd-abas-da-pagina button {
+  flex: 1 1 auto;
+}
+.pd-barra > .pd-busca {
+  grid-column: 2 / span 2;
+  min-width: 0;
+}
+@container pd-barra (max-width: 1039px) {
+  .pd-barra {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pd-barra > .pd-seg,
+  .pd-barra > .pd-busca {
+    grid-column: 1 / -1;
+  }
+}
+.pd-secoes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--re-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+}
+.pd-secoes::-webkit-scrollbar {
+  display: none;
+}
+.pd-secoes .chip {
+  flex: none;
+}
+.pd-acoes {
+  display: flex;
+  gap: var(--gap-btn);
+}
+.pd-acoes .pd-cresce {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- as quatro colunas: a árvore e a ficha ------------------------------------ */
+.pd-quatro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+.pd-quatro > .pd-largo {
+  grid-column: 2 / -1;
+  min-width: 0;
+}
+@container pd-palco (max-width: 1039px) {
+  .pd-quatro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+  .pd-quatro > .pd-largo {
+    grid-column: 2;
+  }
+}
+@container pd-palco (max-width: 719px) {
+  .pd-quatro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pd-quatro > .pd-largo {
+    grid-column: 1;
+  }
+}
+
+.pd-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.pd-quadro {
+  overflow: hidden;
+  min-width: 0;
+}
+.pd-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  padding: var(--pad-cartao);
+}
+
+/* o topo de uma caixa: o título à esquerda e a nota ou o controle à direita */
+.pd-topo {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-4);
+  padding: var(--re-2) var(--re-7);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+/* o topo com controles largos quebra de linha em vez de espremer o título */
+.pd-topo.quebra {
+  flex-wrap: wrap;
+  padding-block: var(--re-4);
+}
+.pd-topo .cartao-titulo {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.pd-topo-n {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pd-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  padding: var(--re-7);
+  min-width: 0;
+}
+.pd-rodape {
+  border-top: 1px solid var(--border);
+}
+.pd-nota {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.pd-nota b {
+  font-weight: 600;
+  color: var(--text);
+}
+.pd-nota.pd-erro {
+  color: var(--brand-text);
+}
+.pd-nota.pd-cresce {
+  flex: 1 1 320px;
+}
+.pd-vago {
+  color: var(--text-3);
+}
+.pd-rotulo-solto {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.pd-rotulo-com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+}
+
+/* --- linha de lista dentro de uma caixa ---------------------------------------- */
+.pd-lin {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+}
+.pd-lin:last-child {
+  border-bottom: 0;
+}
+button.pd-lin {
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+button.pd-lin:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pd-txt b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pd-txt small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+.pd-val {
+  flex: none;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.pd-val small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+/* a lista de escolha dentro de um modal: uma caixa com borda, que rola por dentro */
+.pd-lista-de-escolha {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* --- a árvore ------------------------------------------------------------------- */
+.pd-abas {
+  padding: var(--re-6);
+  border-bottom: 1px solid var(--border);
+}
+.pd-abas > .pd-seg {
+  display: flex;
+  width: 100%;
+}
+.pd-gaveta {
+  border-bottom: 1px solid var(--border);
+}
+.pd-gaveta:last-child {
+  border-bottom: 0;
+}
+.pd-g {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--re-7) 0 var(--re-5);
+  border: 0;
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-g:hover,
+.pd-g.aberto {
+  background-color: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-g > b {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pd-seta {
+  flex: none;
+  color: var(--text-3);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.pd-seta.aberta {
+  transform: rotate(90deg);
+}
+.pd-cod {
+  flex: none;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 var(--re-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pd-cod.sem {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.pd-conta {
+  flex: none;
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.pd-alerta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--re-2);
+  min-width: 30px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand-text);
+  font-variant-numeric: tabular-nums;
+}
+.pd-alerta i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.pd-alerta.nada {
+  visibility: hidden;
+}
+.pd-dentro {
+  border-top: 1px solid var(--border);
+  animation: pd-abre var(--t-base) var(--ease-out);
+}
+@keyframes pd-abre {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.pd-t {
+  display: flex;
+  align-items: stretch;
+  min-height: 52px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  transition: background-color var(--t-fast);
+}
+.pd-dentro > .pd-t:last-child {
+  border-bottom: 0;
+}
+.pd-t:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+/* o lugar da seta, vazio: a referência não abre outra gaveta, e o recuo diz
+   que ela está dentro do grupo */
+.pd-t-seta {
+  flex: none;
+  width: 44px;
+}
+.pd-t-nome {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  padding: var(--re-2) var(--re-7) var(--re-2) 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pd-nomes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.pd-nomes b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pd-nomes small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+.pd-nomes small.pd-falta {
+  color: var(--warn);
+}
+.pd-sel,
+.pd-sel:hover {
+  background-color: var(--ink);
+  color: var(--on-ink);
+}
+.pd-sel .pd-nomes small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.pd-sel .pd-nomes small.pd-falta,
+.pd-sel .pd-alerta {
+  color: var(--brand-no-ink);
+}
+.pd-sel .pd-alerta i {
+  background: var(--brand-no-ink);
+}
+
+/* --- a ficha: o lado direito ----------------------------------------------------- */
+.pd-ficha {
+  container-type: inline-size;
+  container-name: pd-ficha;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  animation: pd-surge var(--t-base) var(--ease-out);
+}
+@keyframes pd-surge {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.pd-ficha-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.pd-ficha-nome {
+  min-width: 0;
+}
+.pd-trilha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pd-ficha-nome h2 {
+  margin: var(--re-2) 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.pd-ficha-nome p {
+  margin: var(--re-1) 0 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.pd-dois {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.pd-dois.largo-estreito {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+.pd-dois.um {
+  grid-template-columns: minmax(0, 1fr);
+}
+@container pd-ficha (max-width: 699px) {
+  .pd-dois,
+  .pd-dois.largo-estreito {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* os detalhes da peça: o nome do detalhe e o que ele é */
+.pd-linhas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  margin: 0;
+}
+.pd-linhas > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--re-6);
+  align-items: baseline;
+}
+.pd-linhas dt {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pd-linhas dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.pd-linhas dd b {
+  font-weight: 600;
+}
+.pd-linhas dd.pd-texto {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+/* --- o molde ------------------------------------------------------------------------
+   O papel é branco nos dois temas: o SVG vem do Affinity com traço preto. */
+.pd-molde-caixa {
+  display: grid;
+  place-items: center;
+  padding: var(--re-8);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: var(--branco);
+}
+.pd-molde {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+.pd-solta {
+  display: grid;
+  place-items: center;
+  gap: var(--re-3);
+  min-height: 132px;
+  padding: var(--re-7);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+  transition: background-color var(--t-fast);
+}
+.pd-solta.baixa {
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3) var(--re-5);
+}
+.pd-solta.sobre {
+  border-color: var(--ink);
+  background-color: var(--ink-soft);
+}
+.pd-partes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-3);
+}
+.pd-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  min-height: 24px;
+  padding: var(--pad-selo);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.pd-tag-nome {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pd-tag-nome:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pd-tag-tira {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: calc(var(--re-2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-tag-tira:hover {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+/* as duas abas do módulo têm a mesma largura, para a troca não dançar */
+.pd-abas-do-modulo button {
+  min-width: 84px;
+}
+
+/* --- a tabela por tamanho: uma coluna por tamanho ----------------------------------- */
+.pd-grade-rola {
+  overflow-x: auto;
+  min-width: 0;
+}
+.pd-grade {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+.pd-grade th,
+.pd-grade td {
+  padding: var(--re-4) var(--re-2);
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 400;
+}
+.pd-grade thead th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-grade th:first-child {
+  width: 26%;
+  text-align: left;
+  padding-left: var(--re-7);
+}
+.pd-grade tbody th b {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pd-grade tbody th small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-grade tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.pd-grade th:last-child,
+.pd-grade td:last-child {
+  padding-right: var(--re-7);
+}
+.pd-grade td.sem,
+.pd-grade tr.apagada td {
+  color: var(--text-3);
+}
+.pd-grade tr.soma > * {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+/* em pé: um tamanho por linha, uma coluna por medida. Com muitas medidas a
+   tabela rola dentro da própria caixa, e a coluna do tamanho fica parada */
+.pd-grade.pd-em-pe {
+  min-width: calc(72px + var(--pd-colunas, 3) * 76px);
+}
+.pd-grade.pd-em-pe th:first-child {
+  width: 72px;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
+.pd-grade.pd-em-pe thead th {
+  vertical-align: bottom;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.pd-grade.pd-em-pe thead th:first-child {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+}
+.pd-grade.pd-em-pe tbody th {
+  font-weight: 700;
+}
+.pd-grade.pd-em-pe td.soma {
+  font-weight: 700;
+}
+.pd-grade.pd-em-pe td.apagada {
+  color: var(--text-3);
+}
+
+/* a tabela no editor: um campo por tamanho */
+.pd-grade.pd-ed {
+  min-width: 760px;
+}
+.pd-grade.pd-ed th:first-child {
+  width: 31%;
+}
+.pd-grade.pd-ed tbody > tr > * {
+  vertical-align: top;
+}
+.pd-grade.pd-ed tr.soma > *,
+.pd-grade.pd-ed tr.apagada > * {
+  vertical-align: middle;
+}
+.pd-grade .entrada {
+  height: var(--btn-h-sm);
+  padding: 0 var(--re-1);
+  text-align: center;
+  font-size: 13px;
+}
+.pd-grade td.vazia .entrada {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.pd-grade td.erro .entrada {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+.pd-grade tr.presa > * {
+  background: color-mix(in srgb, var(--surface-2) 55%, var(--surface));
+}
+.pd-med-nome {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) var(--btn-h-sm);
+  align-items: center;
+  gap: var(--re-2);
+}
+.pd-pega {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: var(--btn-h-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-3);
+  cursor: grab;
+  touch-action: none;
+}
+.pd-pega:hover {
+  color: var(--text);
+}
+.pd-pega:active {
+  cursor: grabbing;
+}
+.pd-grade .pd-nome-da-medida {
+  text-align: left;
+  padding: 0 var(--re-4);
+  font-weight: 600;
+}
+.pd-grade .pd-como {
+  display: block;
+  width: calc(100% - 20px - var(--btn-h-sm) - var(--re-2) * 2);
+  height: 28px;
+  margin: var(--re-2) 0 0 calc(20px + var(--re-2));
+  padding: 0 var(--re-4);
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-2);
+  border-color: var(--border);
+}
+.pd-parte-nome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--btn-h-sm);
+  align-items: center;
+  gap: var(--re-2);
+}
+
+/* --- a grade de tamanhos da peça: liga e desliga ------------------------------------- */
+.pd-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  min-width: 0;
+}
+.pd-campo-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-1) var(--sp-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.pd-campo-topo small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-3);
+}
+.pd-tamanhos {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: var(--re-2);
+}
+.pd-tam {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: var(--btn-h-sm);
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pd-tam:hover {
+  background-color: var(--surface-2);
+}
+.pd-tam.on,
+.pd-tam.on:hover {
+  background-color: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+/* --- o editor ------------------------------------------------------------------------ */
+.pd-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--re-7);
+}
+.pd-form .pd-inteiro {
+  grid-column: 1 / -1;
+}
+.pd-chips-soltos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.pd-outra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--gap-btn);
+  max-width: 620px;
+}
+.pd-outro-material {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+  gap: var(--gap-btn);
+}
+.pd-qtd-ed {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pd-qtd-ed .entrada {
+  width: 76px;
+  text-align: right;
+}
+.pd-qtd-ed.erro .entrada {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+.pd-qtd-ed small {
+  min-width: 34px;
+  font-size: 12.5px;
+}
+.pd-pe-esquerda {
+  margin-right: auto;
+}
+@container pd-ficha (max-width: 519px) {
+  /* a nota do topo é apoio: sem lugar, ela sai e o título fica inteiro */
+  .pd-ficha .pd-topo-n {
+    display: none;
+  }
+  .pd-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pd-tamanhos {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .pd-outra,
+  .pd-outro-material {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
+  .pd-g {
+    min-height: 52px;
+  }
+  .pd-t {
+    min-height: 56px;
+  }
+  .pd-tam,
+  .pd-pega,
+  .pd-tag-nome {
+    min-height: 44px;
+  }
+  .pd-tag-tira {
+    width: 28px;
+    height: 28px;
+  }
+}

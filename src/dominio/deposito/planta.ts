@@ -13,6 +13,11 @@
    O CÓDIGO DO LUGAR é o que a pessoa lê e fala: "D2-3" é a prateleira D, vão
    2, nível 3; "P07" é o palete. O banco monta o mesmo código na view, e os
    dois precisam concordar.
+
+   O PALETE TEM DOIS CAMPOS (pedido do Henrique de 06/10/2026, migração 055):
+   a REFERÊNCIA, que é o código dele ("P07") e mora em `nome`, e o NOME, que é
+   o que a pessoa escreve para se achar ("ALGODÃO") e mora em `apelido`. A
+   referência não repete; o nome é livre e pode ficar vazio.
    ========================================================================== */
 
 export type TipoDeMovel = 'prateleira' | 'palete' | 'escada' | 'porta'
@@ -20,7 +25,10 @@ export type TipoDeMovel = 'prateleira' | 'palete' | 'escada' | 'porta'
 export type Movel = {
   id: string
   tipo: TipoDeMovel
+  /** no palete é a referência ("P07"); nos outros é o nome da peça */
   nome: string
+  /** só no palete: o nome que a pessoa dá ("ALGODÃO"); vazio nos outros */
+  apelido: string
   /** para que serve: Tecido, Aviamentos e insumos... só texto, para quem lê o desenho */
   uso: string
   /** o canto de cima, à esquerda, em metros */
@@ -57,7 +65,10 @@ export type Celula = {
   movelId: string
   vao: number | null
   tipo: 'prateleira' | 'palete'
+  /** o código do lugar: a referência do palete ou o nome do vão */
   nome: string
+  /** o nome do palete; vazio no vão */
+  apelido: string
   x: number
   y: number
   largura: number
@@ -67,6 +78,8 @@ export type Celula = {
 export const MAXIMO_DE_VAOS = 20
 /** nove: é quantas cores de nível o Design System tem (--nivel-1 a --nivel-9), e é o limite do banco (054) */
 export const MAXIMO_DE_NIVEIS = 9
+/** o nome do palete é livre, mas não é um texto sem fim (055) */
+export const MAXIMO_DO_NOME_DO_PALETE = 60
 export const MENOR_LADO_DO_CHAO = 2
 export const MAIOR_LADO_DO_CHAO = 200
 /** o encaixe do editor: 10 cm */
@@ -120,9 +133,12 @@ export function codigoDoLugar(m: Movel, vao: number | null, nivel: number | null
   return nomeDoVao(m, vao) + (nivel === null ? '' : '-' + nivel)
 }
 
-/** "Prateleira D · vão 2 · nível 3" ou "Palete P07" */
+/** "Prateleira D · vão 2 · nível 3", "Palete P07" ou "Palete P07 · ALGODÃO" */
 export function lugarPorExtenso(m: Movel, vao: number | null, nivel: number | null): string {
-  if (m.tipo !== 'prateleira' || vao === null) return NOME_DO_TIPO[m.tipo] + ' ' + m.nome
+  if (m.tipo !== 'prateleira' || vao === null) {
+    const nome = m.tipo === 'palete' ? m.apelido.trim() : ''
+    return NOME_DO_TIPO[m.tipo] + ' ' + m.nome + (nome ? ' · ' + nome : '')
+  }
   const escrito = (m.nomesDosVaos[vao - 1] ?? '').trim()
   const doVao = escrito && escrito !== m.nome + vao ? escrito : 'vão ' + vao
   return 'Prateleira ' + m.nome + ' · ' + doVao + (nivel === null ? '' : ' · nível ' + nivel)
@@ -157,10 +173,15 @@ export function lugarPeloCodigo(planta: Planta, texto: string): Lugar | null {
   const inteiro = tentar(alvo, null)
   if (inteiro) return inteiro
   const corte = alvo.lastIndexOf('-')
-  if (corte <= 0) return null
-  const nivel = Number(alvo.slice(corte + 1))
-  if (!Number.isInteger(nivel)) return null
-  return tentar(alvo.slice(0, corte).trim(), nivel)
+  const nivel = corte > 0 ? Number(alvo.slice(corte + 1)) : NaN
+  const comNivel = Number.isInteger(nivel) ? tentar(alvo.slice(0, corte).trim(), nivel) : null
+  if (comNivel) return comNivel
+  /* por último, o NOME do palete, quando um só se chama assim: quem escreve
+     "algodão" quer o palete do algodão, e não precisa saber que ele é o P13 */
+  const peloNome = planta.moveis.filter(
+    m => m.tipo === 'palete' && semAcentoEMinusculo(m.apelido) === alvo,
+  )
+  return peloNome.length === 1 ? { movelId: peloNome[0].id, vao: null, nivel: null } : null
 }
 
 /* ---------- geometria ------------------------------------------------------ */
@@ -213,6 +234,7 @@ export function celulasDoMovel(m: Movel): Celula[] {
         vao: null,
         tipo: 'palete',
         nome: m.nome,
+        apelido: m.apelido,
         x: m.x,
         y: m.y,
         largura: m.largura,
@@ -230,6 +252,7 @@ export function celulasDoMovel(m: Movel): Celula[] {
       vao: i + 1,
       tipo: 'prateleira',
       nome: nomeDoVao(m, i + 1),
+      apelido: '',
       x: m.emPe ? m.x : m.x + (i * m.largura) / n,
       y: m.emPe ? m.y + (i * m.fundo) / n : m.y,
       largura: m.emPe ? m.largura : m.largura / n,
@@ -346,6 +369,7 @@ function base(id: string, tipo: TipoDeMovel, nome: string): Movel {
     id,
     tipo,
     nome,
+    apelido: '',
     uso: '',
     x: 0,
     y: 0,
@@ -681,7 +705,11 @@ export function conferirPlanta(planta: Planta): string {
   const codigos = new Map<string, string>()
   for (const m of planta.moveis) {
     const nome = m.nome.trim()
-    if (!nome) return 'Toda peça do depósito precisa de um nome.'
+    if (!nome) {
+      return m.tipo === 'palete'
+        ? 'Todo palete precisa de uma referência, como P01.'
+        : 'Toda peça do depósito precisa de um nome.'
+    }
     if (!(m.largura > 0 && m.fundo > 0)) return nome + ' está com medida inválida.'
     if (!cabeNoChao(m, planta)) return nome + ' está fora do chão do depósito.'
     if (m.tipo === 'prateleira') {
@@ -697,8 +725,11 @@ export function conferirPlanta(planta: Planta): string {
       }
     } else if (m.tipo === 'palete') {
       const chave = nome.toLowerCase()
-      if (codigos.has(chave)) return 'O nome ' + nome + ' aparece em mais de um lugar do depósito.'
+      if (codigos.has(chave))
+        return 'A referência ' + nome + ' aparece em mais de um lugar do depósito.'
       codigos.set(chave, nome)
+      if (m.apelido.trim().length > MAXIMO_DO_NOME_DO_PALETE)
+        return 'O nome do palete ' + nome + ' passa de ' + MAXIMO_DO_NOME_DO_PALETE + ' letras.'
     }
   }
   return ''
@@ -738,6 +769,7 @@ export function plantasIguais(a: Planta, b: Planta): boolean {
         .map(m => ({
           ...m,
           nome: m.nome.trim(),
+          apelido: m.tipo === 'palete' ? m.apelido.trim() : '',
           uso: m.uso.trim(),
           x: duasCasas(m.x),
           y: duasCasas(m.y),

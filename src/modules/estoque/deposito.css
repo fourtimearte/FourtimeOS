@@ -162,18 +162,39 @@
   stroke-width: 1;
 }
 
-/* o lugar: o vão da prateleira e o palete */
+/* o lugar: o vão da prateleira e o palete.
+   --dp-fundo é a cor da caixa em cada estado. O texto usa a mesma cor como
+   contorno, para as ripas do palete não riscarem a letra. */
+.dp-lugar {
+  --dp-fundo: var(--surface);
+  --dp-tinta: var(--text-2);
+}
 .dp-lugar .dp-caixa {
-  fill: var(--surface);
+  fill: var(--dp-fundo);
   stroke: var(--border-2);
   stroke-width: 1;
 }
-.dp-lugar .dp-fundo-do-nome {
-  fill: var(--surface);
+/* a referência do palete, o nome do palete e o nome do vão: sempre dentro da forma */
+.dp-lugar .dp-ref,
+.dp-lugar .dp-nome {
+  fill: var(--dp-tinta);
+  paint-order: stroke;
+  stroke: var(--dp-fundo);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.dp-lugar .dp-ref {
+  font-weight: 700;
 }
 .dp-lugar .dp-nome {
-  fill: var(--text-3);
   font-weight: 600;
+}
+/* o nome da prateleira, na tarja dentro da moldura */
+.dp-tarja {
+  fill: var(--text-2);
+  font-weight: 700;
   pointer-events: none;
 }
 .dp-lugar .dp-ripa {
@@ -182,44 +203,35 @@
   opacity: 0.6;
   pointer-events: none;
 }
-.dp-lugar.tem .dp-caixa,
-.dp-lugar.tem .dp-fundo-do-nome {
-  fill: var(--ink-soft);
+.dp-lugar.tem {
+  --dp-fundo: var(--ink-soft);
+  --dp-tinta: var(--text);
 }
-.dp-lugar.tem .dp-nome {
-  fill: var(--text);
-}
-.dp-lugar.aberto .dp-caixa,
-.dp-lugar.aberto .dp-fundo-do-nome {
-  fill: var(--ink);
+.dp-lugar.aberto {
+  --dp-fundo: var(--ink);
+  --dp-tinta: var(--on-ink);
 }
 .dp-lugar.aberto .dp-caixa {
   stroke: var(--ink);
-}
-.dp-lugar.aberto .dp-nome {
-  fill: var(--on-ink);
 }
 .dp-lugar.aberto .dp-ripa {
   stroke: var(--on-ink);
   opacity: 0.25;
 }
-.dp-lugar.achado .dp-caixa,
-.dp-lugar.achado .dp-fundo-do-nome {
-  fill: var(--brand);
+.dp-lugar.achado {
+  --dp-fundo: var(--brand);
+  --dp-tinta: var(--on-brand);
 }
 .dp-lugar.achado .dp-caixa {
   stroke: var(--brand);
-}
-.dp-lugar.achado .dp-nome {
-  fill: var(--on-brand);
 }
 .dp-lugar.achado .dp-ripa {
   stroke: var(--on-brand);
   opacity: 0.3;
 }
-.dp-lugar.apagado .dp-caixa,
-.dp-lugar.apagado .dp-fundo-do-nome {
-  fill: var(--surface-2);
+.dp-lugar.apagado {
+  --dp-fundo: var(--surface-2);
+  --dp-tinta: var(--text-3);
 }
 .dp-lugar.apagado .dp-caixa {
   stroke: var(--border);

@@ -223,7 +223,7 @@ for (const tema of ['light', 'dark']) {
     const nova = await pg.locator('input[aria-label="Nome da prateleira"]').inputValue()
     conta(nova === 'B', `${T} editor: a prateleira nova nasce com o próximo nome livre (${nova})`)
     await pg.getByRole('button', { name: 'Palete', exact: true }).click(); await pausa(pg, 300)
-    const palete = await pg.locator('input[aria-label="Nome do palete"]').inputValue()
+    const palete = await pg.locator('input[aria-label="Referência do palete"]').inputValue()
     conta(palete === 'P22', `${T} editor: o palete novo continua a numeração (${palete})`)
     await pg.keyboard.press('Delete'); await pausa(pg, 300)
     conta(await pg.locator('[data-movel="P22"]').count() === 0, `${T} editor: Delete apaga a peça escolhida`)

@@ -87,8 +87,8 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     else if (u.includes('/cor_de_tecido?')) corpo = [...E.coresDoCatalogo.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) })), ...coresCriadas.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) }))]
     else if (u.includes('grupo_de_cor')) corpo = E.gruposDeCor
     else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : deposito === 'nove' ? P.lugaresDeNove : [] }
-    else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : deposito === 'nove' ? P.moveisDeNove : deposito === 'esticado' ? P.moveisEsticados : []
-    else if (u.includes('/deposito?')) { if (deposito === 'erro') return json(r, { message: 'permission denied for table deposito' }, 403); corpo = deposito === 'cheio' || deposito === 'nove' || deposito === 'esticado' ? [P.DEPOSITO] : [] }
+    else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : deposito === 'nove' ? P.moveisDeNove : deposito === 'esticado' ? P.moveisEsticados : deposito === 'comprido' ? P.moveisCompridos : []
+    else if (u.includes('/deposito?')) { if (deposito === 'erro') return json(r, { message: 'permission denied for table deposito' }, 403); corpo = deposito === 'comprido' ? [P.DEPOSITO_COMPRIDO] : deposito === 'cheio' || deposito === 'nove' || deposito === 'esticado' ? [P.DEPOSITO] : [] }
     return json(r, corpo)
   })
   await ctx.addInitScript(([c, t]) => { try {

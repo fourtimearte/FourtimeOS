@@ -355,7 +355,7 @@ export function MarcarLugar({
               ) : null}
               <Campo
                 rotulo="Ou escreva o código"
-                dica="Como D2-3 (prateleira D, vão 2, nível 3) ou P07 (palete)."
+                dica="Como D2-3 (prateleira D, vão 2, nível 3), P07 (palete) ou o nome do palete."
               >
                 <Entrada
                   value={codigo}

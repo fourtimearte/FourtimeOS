@@ -10,7 +10,7 @@ import * as D from './materiais-dados.mjs'
 export const DEPOSITO = { id: 'dep-1', nome: 'Depósito de tecidos', largura: 15, fundo: 10 }
 
 const base = (id, tipo, nome, x, y, largura, fundo, extra = {}) => ({
-  id, tipo, nome, uso: extra.uso ?? '', x, y, largura, fundo, em_pe: !!extra.emPe,
+  id, tipo, nome, apelido: extra.apelido ?? '', uso: extra.uso ?? '', x, y, largura, fundo, em_pe: !!extra.emPe,
   vaos: extra.vaos ?? 1, niveis: extra.niveis ?? 1, nomes_dos_vaos: extra.nomes ?? [], grade: extra.grade ?? null,
 })
 const doisDigitos = (n) => (n < 10 ? '0' + n : String(n))
@@ -95,4 +95,28 @@ export const lugaresDeNove = [
   lugar('MOLETOM · Preto', 'prat-d', 2, 7, false),
   lugar('PIQUET 100% · Azul Marinho', 'prat-d', 2, 8, false),
   lugar('Papel sublimático 100 g', 'prat-d', 2, 9, false),
+]
+
+/* O DEPÓSITO DE NOMES COMPRIDOS: é o desenho que o Henrique tinha salvo em
+   06/10/2026 quando pediu que o nome ficasse sempre dentro da forma. Chão de
+   11 m por 10 m, dezesseis paletes soltos com nome de tecido (o maior tem 25
+   letras num palete de 1,7 m), a prateleira A em pé com vinte vãos e nove
+   níveis, e a prateleira "B - AVIAMENTOS", de um vão só. `nome` é o que
+   estava escrito no palete; `ref` é a referência que ele passa a ter. */
+export const DEPOSITO_COMPRIDO = { id: 'dep-c', nome: 'Depósito', largura: 11, fundo: 10 }
+const PALETES_COMPRIDOS = [
+  ['POLIAMIDA C/ ELASTANO', 3.4, 0.1, 1.8, 1.4, 'Tecido'], ['POLIAMIDA S/ ELASTANO', 5.3, 0.1, 1.8, 1.4], ['MOLETOM ESPORTIVO', 7.2, 0.1, 1.8, 1.4], ['PIQUE', 9.1, 0.1, 1.8, 1.8],
+  ['SUPLEX', 5.6, 2, 1.8, 1.8], ['CREPE', 9.1, 2, 1.8, 1.8], ['POLIAMIDA FUR C/ ELASTANO', 2.4, 2.6, 1.7, 1.7],
+  ['POLIAMIDA FLOW', 5.6, 4, 1.8, 1.8], ['POLIAMIDA FURADINHA SUB', 9.1, 4, 1.8, 1.8], ['POLIAMIDA FURADINHA', 2.4, 4.5, 1.7, 1.7, 'Tecido'],
+  ['TACTEL', 5.6, 6, 1.8, 1.8], ['VISCOLICRA', 9.1, 6, 1.8, 1.8], ['ALGODÃO', 2.4, 6.4, 1.7, 1.7, 'Tecido'],
+  ['DRY DE SUBLIMAÇÃO', 5.6, 8, 1.8, 1.8], ['BRIM', 7.6, 8, 1.3, 1.8], ['MOLETON', 9.1, 8, 1.8, 1.8],
+]
+export const moveisCompridos = [
+  base('escada-c', 'escada', 'Escada', 0, 8.3, 4.2, 1.7),
+  base('prat-ca', 'prateleira', 'A', 0.1, 1.8, 1.1, 6.2, { emPe: true, vaos: 20, niveis: 9, nomes: Array.from({ length: 20 }, (_, i) => 'A' + (i + 1)) }),
+  base('prat-cb', 'prateleira', 'B - AVIAMENTOS', 1.3, 0.1, 2, 0.5, { vaos: 1, niveis: 3, nomes: ['B1'] }),
+  /* como a migração 055 deixou: a referência (P01 em diante, na ordem de leitura do desenho) mora em `nome`, e o nome que ele escreveu, em `apelido` */
+  ...[...PALETES_COMPRIDOS]
+    .sort((a, b) => a[2] - b[2] || a[1] - b[1])
+    .map(([apelido, x, y, largura, fundo, uso], i) => base('pc-' + doisDigitos(i + 1), 'palete', 'P' + doisDigitos(i + 1), x, y, largura, fundo, { uso: uso ?? '', apelido })),
 ]

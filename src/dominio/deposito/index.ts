@@ -22,6 +22,7 @@ import {
    ========================================================================== */
 
 export * from './planta'
+export * from './texto'
 
 /** onde um material está, do jeito que a view entrega */
 export type LugarDoMaterial = Lugar & {
@@ -48,6 +49,7 @@ type LinhaDoMovel = {
   id: string
   tipo: TipoDeMovel
   nome: string
+  apelido: string | null
   uso: string | null
   x: number | string
   y: number | string
@@ -83,6 +85,7 @@ function deLinha(l: LinhaDoMovel): Movel {
     id: l.id,
     tipo: l.tipo,
     nome: l.nome,
+    apelido: l.apelido ?? '',
     uso: l.uso ?? '',
     x: numero(l.x),
     y: numero(l.y),
@@ -107,7 +110,7 @@ export async function carregarDeposito(): Promise<Planta | null> {
   const chao = chaos[0]
   if (!chao) return null
   const moveis = await tabela<LinhaDoMovel[]>(
-    `movel_do_deposito?select=id,tipo,nome,uso,x,y,largura,fundo,em_pe,vaos,niveis,nomes_dos_vaos,grade&deposito_id=eq.${chao.id}&order=nome.asc`,
+    `movel_do_deposito?select=id,tipo,nome,apelido,uso,x,y,largura,fundo,em_pe,vaos,niveis,nomes_dos_vaos,grade&deposito_id=eq.${chao.id}&order=nome.asc`,
   )
   return {
     id: chao.id,
@@ -149,6 +152,7 @@ export async function salvarDeposito(planta: Planta, soltar: boolean): Promise<v
         id: m.id,
         tipo: m.tipo,
         nome: m.nome.trim(),
+        apelido: m.tipo === 'palete' ? m.apelido.trim() : '',
         uso: m.uso.trim(),
         x: duasCasas(m.x),
         y: duasCasas(m.y),

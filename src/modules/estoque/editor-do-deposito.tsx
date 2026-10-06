@@ -50,6 +50,7 @@ import {
   maiorVaoDaGrade,
   montarGrade,
   mudarContagemDaGrade,
+  MAXIMO_DO_NOME_DO_PALETE,
   nomeDoVao,
   novaEscada,
   novaPorta,
@@ -288,6 +289,8 @@ export function EditorDoDeposito({
         ...m,
         id: novoId(),
         grade: '',
+        /* a cópia é outro palete: ganha referência nova e nasce sem nome */
+        apelido: '',
         nome:
           m.tipo === 'palete'
             ? novoPalete(p, '').nome
@@ -1278,21 +1281,33 @@ function PainelDoPalete({
 }) {
   return (
     <Caixa titulo={'Palete ' + movel.nome} icone={Package} selo="escolhido">
+      {/* DOIS CAMPOS (pedido do Henrique de 06/10/2026). A referência é o
+          endereço do palete, curta, e aparece no canto de cima do desenho. O
+          nome é livre, comprido se precisar, e aparece no canto de baixo. */}
       <div className="dp-dois">
-        <Campo rotulo="Nome">
+        <Campo rotulo="Referência">
           <Entrada
             value={movel.nome}
             onChange={e => aoMudar({ nome: e.currentTarget.value })}
-            aria-label="Nome do palete"
+            aria-label="Referência do palete"
           />
         </Campo>
         <CampoDoUso valor={movel.uso} aoMudar={uso => aoMudar({ uso })} />
       </div>
-      {daGrade ? (
-        <p className="dp-nota">
-          Cada palete da grade pode ter o nome que você quiser, como "Dry fit 1" ou "Retalhos".
-        </p>
-      ) : (
+      <Campo rotulo="Nome">
+        <Entrada
+          value={movel.apelido}
+          maxLength={MAXIMO_DO_NOME_DO_PALETE}
+          placeholder="Algodão, retalhos, o que ajudar a achar"
+          onChange={e => aoMudar({ apelido: e.currentTarget.value })}
+          aria-label="Nome do palete"
+        />
+      </Campo>
+      <p className="dp-nota">
+        A referência é o endereço do palete, como P01, e não se repete. O nome é livre e aparece
+        inteiro dentro do palete, em quantas linhas precisar.
+      </p>
+      {daGrade ? null : (
         <div className="dp-dois">
           <CampoDeNumero
             rotulo="Largura"
@@ -1446,11 +1461,11 @@ function PainelDaGrade({
         />
       </div>
       <div className="dp-dois">
-        <Campo rotulo="Os nomes começam em">
+        <Campo rotulo="As referências começam em">
           <Entrada
             value={comeca}
             placeholder={membros[0]?.nome ?? 'P01'}
-            aria-label="Os nomes começam em"
+            aria-label="As referências começam em"
             onChange={e => setComeca(e.currentTarget.value)}
             onBlur={() => {
               if (comeca.trim()) renomear(comeca, ordem)
@@ -1460,7 +1475,7 @@ function PainelDaGrade({
             }}
           />
         </Campo>
-        <Grupo rotulo="Ordem dos nomes">
+        <Grupo rotulo="Ordem das referências">
           <Seletor
             campo
             bloco

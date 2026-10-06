@@ -831,6 +831,13 @@ div.pa-mes-dentro .pa-mes-vazio {
 .pa-unidade.antes input {
   padding-left: var(--sp-10);
 }
+/* o aviso das vendas que a data do acordo deixa de fora: o texto, e o botão embaixo */
+.pa-fora {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
 .pa-ajuda {
   margin: 0;
   font-size: 12.5px;

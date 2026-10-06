@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CaretLeft, Handshake, Plus } from '@phosphor-icons/react'
 import { Botao, Esqueleto, IconeDoTitulo, Pagina, Segmentado, Seletor, Vazio } from '@ds'
-import { mesesAte, quandoFoi, usarConsulta } from '@shared'
+import { mesesAte, mesesEntre, quandoFoi, usarConsulta } from '@shared'
 import {
   carregarParceiros,
   carregarVendas,
@@ -65,8 +65,8 @@ export function TelaParceiros() {
   const [hoje] = useState(() => new Date())
   const mesAtual = useMemo(() => mesDaLoja(hoje), [hoje])
   const dia = useMemo(() => diaDaLoja(hoje), [hoje])
-  const [periodo, setPeriodo] = useState(6)
-  const meses = useMemo(() => mesesAte(mesAtual, periodo), [mesAtual, periodo])
+  /* 3, 6 ou 12 meses, ou "tudo": desde a primeira venda (pedido do Henrique de 06/10/2026) */
+  const [periodo, setPeriodo] = useState<number | 'tudo'>(6)
 
   const [parceiros, setParceiros] = useState<Parceiro[]>([])
   const [vendas, setVendas] = useState<VendaDoParceiro[]>([])
@@ -81,6 +81,21 @@ export function TelaParceiros() {
   const [aba, setAba] = useState<Aba>('vendas')
   /* o que está aberto na sanfona dos meses do parceiro escolhido */
   const [sanfona, setSanfona] = useState(() => sanfonaDeChegada(mesAtual))
+
+  /* DESDE O INÍCIO vai do mês da primeira venda até hoje. Com um parceiro
+     aberto, a primeira venda é a dele; na visão geral, a de todos. É a mesma
+     conta da página do parceiro na loja. */
+  const primeiroMes = useMemo(() => {
+    const doEscopo = aberto && aberto !== NOVO ? vendas.filter(v => v.parceiroId === aberto) : vendas
+    return doEscopo.reduce((m, v) => (v.mes < m ? v.mes : m), mesAtual)
+  }, [vendas, aberto, mesAtual])
+  const meses = useMemo(
+    () =>
+      periodo === 'tudo'
+        ? mesesAte(mesAtual, Math.max(1, mesesEntre(primeiroMes, mesAtual) + 1))
+        : mesesAte(mesAtual, periodo),
+    [mesAtual, periodo, primeiroMes],
+  )
 
   /* as duas colunas só cabem na tela larga; o celular troca tabela por lista */
   const larga = usarConsulta('(min-width: 1366px)')
@@ -192,8 +207,9 @@ export function TelaParceiros() {
       opcoes={[
         { valor: '3', rotulo: 'Últimos 3 meses' },
         { valor: '12', rotulo: 'Últimos 12 meses' },
+        { valor: 'tudo', rotulo: 'Desde o início' },
       ]}
-      aoEscolher={v => setPeriodo(Number(v) || 6)}
+      aoEscolher={v => setPeriodo(v === 'tudo' ? 'tudo' : Number(v) || 6)}
       vazio="Últimos 6 meses"
     />
   )
@@ -265,6 +281,7 @@ export function TelaParceiros() {
     <FichaDoParceiro
       key={novo ? NOVO : (escolhido?.id ?? 'nenhum')}
       parceiro={escolhido}
+      vendas={dele}
       novo={novo}
       podeEditar={podeEditar}
       colecoes={colecoes}
@@ -315,6 +332,7 @@ export function TelaParceiros() {
           key={escolhido.id}
           vendas={dele}
           meses={meses}
+          desdeOInicio={periodo === 'tudo'}
           mesAtual={mesAtual}
           dia={dia}
           estreita={estreita}

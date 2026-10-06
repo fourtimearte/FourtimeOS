@@ -288,6 +288,13 @@ export function diaDaLoja(agora = new Date()): string {
   return pedacosNaLoja(agora).day
 }
 
+/** "2026-10-03": o dia de uma venda no horário da loja, para comparar com a
+    data em que um acordo começa a valer. */
+export function dataNaLoja(iso: string): string {
+  const p = pedacosNaLoja(new Date(iso))
+  return `${p.year}-${p.month}-${p.day}`
+}
+
 /** O dia e a hora de uma venda, no horário da loja: "03/10" e "14:32". */
 export function quandoNaLoja(iso: string): { dia: string; hora: string } {
   const p = pedacosNaLoja(new Date(iso))

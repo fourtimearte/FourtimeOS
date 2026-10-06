@@ -62,6 +62,7 @@ const MESES_POR_VEZ = 6
 export function VendasDoParceiro({
   vendas,
   meses,
+  desdeOInicio,
   mesAtual,
   dia,
   estreita,
@@ -72,6 +73,8 @@ export function VendasDoParceiro({
   vendas: VendaDoParceiro[]
   /** os meses do período, do mais velho para o mais novo */
   meses: string[]
+  /** o período é "Desde o início": os meses vão da primeira venda até hoje */
+  desdeOInicio?: boolean
   mesAtual: string
   /** o dia de hoje na loja, "03": até onde o mês em andamento foi */
   dia: string
@@ -109,7 +112,9 @@ export function VendasDoParceiro({
   )
   const nomeDoTotal = antigos > 0 ? `Total de ${mesesDaTabela.length} meses` : 'Total'
 
-  const nosUltimos = `nos últimos ${meses.length} meses`
+  const nosUltimos = desdeOInicio
+    ? `desde ${mesSozinho(meses[0])} de ${meses[0].slice(0, 4)}`
+    : `nos últimos ${meses.length} meses`
   const esteMes = mesSozinho(mesAtual)
 
   const abrir = (m: string) => {
@@ -439,7 +444,7 @@ export function VendasDoParceiro({
           sub={faltaDeAcordo(noMes) || undefined}
         />
         <Kpi
-          rotulo={`Parte em ${meses.length} meses`}
+          rotulo={desdeOInicio ? 'Parte desde o início' : `Parte em ${meses.length} meses`}
           valor={parteNaTela(total)}
           sub={faltaDeAcordo(total) || undefined}
         />

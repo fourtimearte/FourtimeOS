@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { type IconeDoPacote, TituloCartao } from '@ds'
 import { nomeDoMes } from '@shared'
-import { degrauDoEixo, mesCurto, rotuloDoEixo } from './apoio'
+import { degrauDoEixo, mesCurto, mesCurtoComAno, rotuloDoEixo } from './apoio'
 
 /* ==========================================================================
    O gráfico de barras por mês.
@@ -54,6 +54,9 @@ export function GraficoPorMes({
   const teto = passo * 3
   /* com muitos meses as barras ficam perto: só a última mostra o número */
   const fixas = meses.length <= 6 ? 2 : 1
+  /* até doze meses cabem todos os nomes; com mais ("Desde o início"), seis no
+     máximo, contando do mês atual para trás, e com o ano junto */
+  const pulo = meses.length > 12 ? Math.ceil(meses.length / 6) : 1
 
   return (
     <section
@@ -101,8 +104,14 @@ export function GraficoPorMes({
           })}
         </div>
         <div className="pa-grafico-meses" aria-hidden="true">
-          {meses.map(m => (
-            <span key={m}>{mesCurto(m)}</span>
+          {meses.map((m, i) => (
+            <span key={m}>
+              {(meses.length - 1 - i) % pulo !== 0
+                ? ''
+                : meses.length > 12
+                  ? mesCurtoComAno(m)
+                  : mesCurto(m)}
+            </span>
           ))}
         </div>
       </div>

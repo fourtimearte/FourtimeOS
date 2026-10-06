@@ -366,7 +366,7 @@ for (const tema of ['light', 'dark']) {
   /* --------------------------------------------------------------- O PERÍODO */
   await parceiroNaLista(pg, 'Saneago')
   const opcoes = await escolherPeriodo(pg, 'Últimos 12 meses')
-  conta(opcoes.join(' | ') === 'Últimos 6 meses | Últimos 3 meses | Últimos 12 meses', `${G} período: 6, 3 ou 12 meses (${opcoes.join(' | ')})`)
+  conta(opcoes.join(' | ') === 'Últimos 6 meses | Últimos 3 meses | Últimos 12 meses | Desde o início', `${G} período: 6, 3 ou 12 meses, e Desde o início (${opcoes.join(' | ')})`)
   S = await meses(pg)
   const g12 = await grafico(pg, 1)
   conta(S.meses.length === 12 && S.meses[6].texto === 'Abril de 2026 | 3 | R$ 749,70 | R$ 74,97' && S.meses[11].texto === 'Novembro de 2025 | 0 | R$ 0,00 | R$ 0,00' && S.total === 'Total | 46 | R$ 10.525,40 | R$ 1.052,54', `${G} 12 meses: doze linhas, abril entra e o total cresce (${S.total})`)
@@ -653,6 +653,57 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
   await pg.locator('table.pa-vendas .pa-ver-mais').click(); await pausa(pg)
   const S = await meses(pg)
   conta(S.vendas.length === 6 && S.vendas[5].texto === '01/10 18:40 | Camisa Saneago Goiás Vôlei 2026/2027 Verde Devolvida | G | 1 |  | não conta' && erros.length === 0, `se a leitura do valor riscado cai, a devolvida aparece sem o valor e a página continua de pé (${S.vendas[5]?.texto})`)
+  await ctx.close()
+}
+
+/* ==========================================================================
+   3b. DESDE O INÍCIO, E O AVISO DA DATA DO ACORDO (06/10/2026)
+
+   O Henrique pôs 17% no Saneago com a data de hoje, que é a que o campo traz,
+   e a página do parceiro continuou em zero: todas as vendas eram de antes. E
+   pediu o período "o tempo todo desde o início".
+   ========================================================================== */
+{
+  const I = 'desde o início:'
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light' })
+  await ir(pg, '/parceiros', '.pa-lado')
+  await escolherPeriodo(pg, 'Desde o início')
+  /* na visão geral, da primeira venda de qualquer parceiro (agosto de 2025) até hoje: 15 meses */
+  const geral = await grafico(pg, 0)
+  const nomes = geral.meses.split(/\s+/).filter(Boolean)
+  conta(nomes.join(' ') === 'out/25 jan/26 abr/26 jul/26 out/26' && (await pg.locator('.pa-grafico').first().locator('.pa-coluna').count()) === 15, `${I} na visão geral o gráfico vai de agosto de 2025 a outubro de 2026, 15 barras, com um nome a cada três e o ano junto (${nomes.join(' ')})`)
+  await parceiroNaLista(pg, 'Saneago')
+  const S = await meses(pg)
+  const k = await numeros(pg)
+  const g = await grafico(pg, 0)
+  conta(k[3] === 'Parte desde o início R$ 1.127,51' && g.sub === 'peças desde agosto de 2025' && g.numero === '49', `${I} no parceiro: 49 peças desde agosto de 2025 e a parte do tempo todo (${k[3]}; ${g.numero} ${g.sub})`)
+  conta(S.meses.length === 15 && S.meses[14].texto === 'Agosto de 2025 | 2 | R$ 499,80 | R$ 49,98' && S.total === 'Total | 49 | R$ 11.275,10 | R$ 1.127,51' && S.maisMeses === '', `${I} a tabela lista os 15 meses até o da primeira venda, soma tudo, e não sobra mês antigo para pedir (${S.total})`)
+  await parceiroNaLista(pg, 'Viapol')
+  const V2 = await meses(pg)
+  conta(V2.meses.length === 6 && V2.meses[5].texto.startsWith('Maio de 2026'), `${I} trocar de parceiro troca o início: o Viapol começa em maio de 2026 (${V2.meses.length} meses)`)
+  conta(await sobra(pg) <= 0 && erros.length === 0, `${I} nada rola para o lado e nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await foto(pg, 'desde-o-inicio-1440-light')
+  await ctx.close()
+}
+{
+  const D = 'data do acordo:'
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', semAcordo: true })
+  await ir(pg, '/parceiros', '.pa-lado')
+  await parceiroNaLista(pg, 'Saneago'); await aba(pg, 'Acordo e página')
+  const fora = pg.locator('[data-fora-do-acordo]')
+  conta(await fora.count() === 0, `${D} sem valor digitado, a ficha não avisa nada`)
+  await pg.locator('input[aria-label="Percentual por peça"]').fill('17'); await pausa(pg, 200)
+  const aviso = (await fora.innerText()).replace(/\s+/g, ' ').trim()
+  conta(aviso === '47 peças foram vendidas antes de 03/10/2026 e ficam sem parte: na página do parceiro elas aparecem como "sem acordo". A primeira é de 15/08/2025.', `${D} com o valor e a data de hoje, a ficha diz quantas peças ficam sem parte (as 2 de hoje não entram na conta) e de quando é a primeira (${aviso})`)
+  await foto(pg, 'data-do-acordo-1440-light')
+  await pg.getByRole('button', { name: 'Valer desde a primeira venda' }).click(); await pausa(pg, 300)
+  conta(await fora.count() === 0 && /A data está no passado/.test(await pg.locator(`${CARTOES}`).first().innerText()), `${D} o botão leva a data para a primeira venda, e o aviso sai`)
+  await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
+  const confirmar = pg.getByRole('button', { name: 'Confirmar e refazer' })
+  if (await confirmar.count()) { await confirmar.click(); await pausa(pg, 700) }
+  const ac = gravados.filter((x) => x[0] === 'acordo').map((x) => x[1])
+  conta(ac.length >= 1 && ac[ac.length - 1].p_vale_desde === '2025-08-15' && Number(ac[ac.length - 1].p_valor) === 17, `${D} salvar manda o acordo valendo desde a primeira venda (${JSON.stringify(ac[ac.length - 1] ?? null).slice(0, 140)})`)
+  conta(erros.length === 0, `${D} nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 }
 

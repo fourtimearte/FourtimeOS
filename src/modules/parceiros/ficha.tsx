@@ -6,6 +6,7 @@ import {
   CampoDeData,
   Entrada,
   Interruptor,
+  Aviso,
   Modal,
   Segmentado,
   Seletor,
@@ -16,6 +17,7 @@ import { hojeEmData, quandoFoi } from '@shared'
 import {
   NOME_DA_BASE,
   NOME_DO_TIPO,
+  dataNaLoja,
   lerNumero,
   linkDaPagina,
   mesmoAcordo,
@@ -30,6 +32,7 @@ import {
   type Colecao,
   type Parceiro,
   type TipoDeAcordo,
+  type VendaDoParceiro,
 } from '@dominio/parceiro'
 import { plural } from './apoio'
 
@@ -58,6 +61,7 @@ type Pergunta =
 
 export function FichaDoParceiro({
   parceiro,
+  vendas,
   novo,
   podeEditar,
   colecoes,
@@ -69,6 +73,8 @@ export function FichaDoParceiro({
 }: {
   /** o parceiro aberto; nulo quando é um cadastro novo */
   parceiro: Parceiro | null
+  /** as vendas dele, para dizer quantas ficam de fora da data do acordo */
+  vendas?: VendaDoParceiro[]
   novo: boolean
   podeEditar: boolean
   colecoes: Colecao[]
@@ -130,6 +136,18 @@ export function FichaDoParceiro({
      não recalcula nada ao ser salvo de novo */
   const noPassado =
     !!acordoNovo && !mesmoAcordo(acordoNovo, acordoDeAgora) && acordoNovo.desde < hojeEmData(hoje)
+
+  /* AS VENDAS QUE A DATA DEIXA DE FORA (06/10/2026). O Henrique pôs 17% com a
+     data de hoje, que é a que o campo traz, e a página do parceiro continuou em
+     zero: todas as vendas eram de antes. A ficha agora conta as peças que hoje
+     não têm acordo e foram vendidas antes da data escolhida, e oferece a data
+     da primeira delas. */
+  const semParteAntes = (vendas ?? []).filter(
+    v => v.conta && v.parte === null && !!desde && dataNaLoja(v.quando) < desde,
+  )
+  const pecasDeFora = !semValor && !valorRuim ? semParteAntes.reduce((n, v) => n + v.pecas, 0) : 0
+  const primeiraDeFora = semParteAntes.map(v => dataNaLoja(v.quando)).sort()[0] ?? ''
+  const porExtenso = (d: string) => d.split('-').reverse().join('/')
 
   async function gravar() {
     if (!valido || gravando) return
@@ -333,6 +351,24 @@ export function FichaDoParceiro({
               ]}
             />
           </Campo>
+        ) : null}
+        {pecasDeFora > 0 ? (
+          <Aviso tom="warn">
+            {/* o botão vai embaixo do texto: ao lado, no cartão estreito, ele não cabe */}
+            <span className="pa-fora">
+              <span data-fora-do-acordo="">
+                {plural(pecasDeFora, 'peça foi vendida', 'peças foram vendidas')} antes de{' '}
+                {porExtenso(desde)} e {pecasDeFora === 1 ? 'fica' : 'ficam'} sem parte: na página
+                do parceiro {pecasDeFora === 1 ? 'ela aparece' : 'elas aparecem'} como "sem
+                acordo". A primeira é de {porExtenso(primeiraDeFora)}.
+              </span>
+              {podeEditar ? (
+                <Botao tamanho="sm" onClick={() => setDesde(primeiraDeFora)}>
+                  Valer desde a primeira venda
+                </Botao>
+              ) : null}
+            </span>
+          </Aviso>
         ) : null}
         <p className="pa-ajuda">
           {sobreOQue}{' '}

@@ -65,7 +65,8 @@ export type Celula = {
 }
 
 export const MAXIMO_DE_VAOS = 20
-export const MAXIMO_DE_NIVEIS = 6
+/** nove: é quantas cores de nível o Design System tem (--nivel-1 a --nivel-9), e é o limite do banco (054) */
+export const MAXIMO_DE_NIVEIS = 9
 export const MENOR_LADO_DO_CHAO = 2
 export const MAIOR_LADO_DO_CHAO = 200
 /** o encaixe do editor: 10 cm */
@@ -687,7 +688,7 @@ export function conferirPlanta(planta: Planta): string {
       if (!(m.vaos >= 1 && m.vaos <= MAXIMO_DE_VAOS))
         return 'A prateleira ' + nome + ' precisa ter de 1 a 20 vãos.'
       if (!(m.niveis >= 1 && m.niveis <= MAXIMO_DE_NIVEIS))
-        return 'A prateleira ' + nome + ' precisa ter de 1 a 6 níveis.'
+        return 'A prateleira ' + nome + ' precisa ter de 1 a ' + MAXIMO_DE_NIVEIS + ' níveis.'
       for (let v = 1; v <= m.vaos; v++) {
         const c = nomeDoVao(m, v)
         const chave = c.toLowerCase()

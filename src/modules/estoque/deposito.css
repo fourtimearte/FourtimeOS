@@ -8,7 +8,7 @@
    pessoa procurou. O aviso de compra é um ponto no canto, e nunca o lugar
    inteiro pintado.
 
-   O NÍVEL DA PRATELEIRA É UMA COR (--nivel-1 a --nivel-6, do tokens.css), e a
+   O NÍVEL DA PRATELEIRA É UMA COR (--nivel-1 a --nivel-9, do tokens.css), e a
    cor nunca vai sozinha: o número está sempre dentro dela.
 
    A folga ENTRE os blocos é da página (.pagina tem gap), então nada aqui
@@ -638,6 +638,15 @@
 .dp-nv.n6 {
   --nv: var(--nivel-6);
 }
+.dp-nv.n7 {
+  --nv: var(--nivel-7);
+}
+.dp-nv.n8 {
+  --nv: var(--nivel-8);
+}
+.dp-nv.n9 {
+  --nv: var(--nivel-9);
+}
 
 /* --- a etiqueta do lugar --------------------------------------------------------- */
 .dp-etiqueta {
@@ -752,6 +761,15 @@
 }
 .dp-casa.n6 {
   --nv: var(--nivel-6);
+}
+.dp-casa.n7 {
+  --nv: var(--nivel-7);
+}
+.dp-casa.n8 {
+  --nv: var(--nivel-8);
+}
+.dp-casa.n9 {
+  --nv: var(--nivel-9);
 }
 .dp-casa.tem {
   border-color: color-mix(in srgb, var(--nv) 55%, var(--surface));

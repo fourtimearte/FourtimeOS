@@ -17,7 +17,8 @@ export const { chromium } = pegarPlaywright()
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 const json = (r, corpo, status = 200) => r.fulfill({ status, contentType: 'application/json', headers: CORS, body: JSON.stringify(corpo) })
 
-/* `deposito`: 'cheio' (o do wireframe), 'esticado' (a grade puxada pelo canto
+/* `deposito`: 'cheio' (o do wireframe), 'nove' (o mesmo, com a prateleira D em
+   nove níveis e material do 1 ao 9 no vão D2), 'esticado' (a grade puxada pelo canto
    até ocupar o chão, sem lugar marcado), 'vazio' (ninguém desenhou ainda) ou
    'erro' (a leitura falha). `recusa`: quantas vezes o salvar_deposito recusa
    por material que ficaria sem lugar, do jeito que a função do banco recusa. */
@@ -85,9 +86,9 @@ export async function abrir(nav, { largura, altura, tema, papel = 'admin', depos
     else if (u.includes('/tecido?')) corpo = (estoque === 'grande' ? [...E.tecidos, ...E.tecidosAMais] : E.tecidos).filter((t) => !u.includes('ativo=is.true') || t.ativo)
     else if (u.includes('/cor_de_tecido?')) corpo = [...E.coresDoCatalogo.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) })), ...coresCriadas.map((c) => ({ ...c, ...(coresMudadas[c.id] ?? {}) }))]
     else if (u.includes('grupo_de_cor')) corpo = E.gruposDeCor
-    else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : [] }
-    else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : deposito === 'esticado' ? P.moveisEsticados : []
-    else if (u.includes('/deposito?')) { if (deposito === 'erro') return json(r, { message: 'permission denied for table deposito' }, 403); corpo = deposito === 'cheio' || deposito === 'esticado' ? [P.DEPOSITO] : [] }
+    else if (u.includes('lugar_do_material_na_lista')) { if (deposito === 'erro') return json(r, { message: 'permission denied for view lugar_do_material_na_lista' }, 403); corpo = deposito === 'cheio' ? P.lugares : deposito === 'nove' ? P.lugaresDeNove : [] }
+    else if (u.includes('movel_do_deposito')) corpo = deposito === 'cheio' ? P.moveis : deposito === 'nove' ? P.moveisDeNove : deposito === 'esticado' ? P.moveisEsticados : []
+    else if (u.includes('/deposito?')) { if (deposito === 'erro') return json(r, { message: 'permission denied for table deposito' }, 403); corpo = deposito === 'cheio' || deposito === 'nove' || deposito === 'esticado' ? [P.DEPOSITO] : [] }
     return json(r, corpo)
   })
   await ctx.addInitScript(([c, t]) => { try {

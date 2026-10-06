@@ -1286,7 +1286,10 @@ const NIVEIS: [string, string][] = [
   ['--nivel-3', 'nível 3'],
   ['--nivel-4', 'nível 4'],
   ['--nivel-5', 'nível 5'],
-  ['--nivel-6', 'nível 6, o de cima'],
+  ['--nivel-6', 'nível 6'],
+  ['--nivel-7', 'nível 7'],
+  ['--nivel-8', 'nível 8'],
+  ['--nivel-9', 'nível 9, o de cima'],
   ['--on-nivel', 'o número sobre a cor'],
 ]
 

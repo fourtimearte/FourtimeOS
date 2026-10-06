@@ -82,3 +82,17 @@ export const lugares = [
 ]
 /* sem lugar: HELANCA COLEGIAL · Azul Marinho, Tela de silk, Tinta silk e Saco de embalagem */
 export const SEM_LUGAR = D.materiais.filter((m) => !lugares.some((l) => l.material_id === m.id)).map((m) => m.nome)
+
+/* A PRATELEIRA DE NOVE NÍVEIS (pedido do Henrique de 06/10/2026, migração 054):
+   a prateleira D sobe de 4 para 9 níveis, e o vão D2 ganha um material em cada
+   nível novo, do 5 ao 9. São segundos lugares de materiais que já tinham um, e
+   por isso a lista de quem está sem lugar continua a mesma. */
+export const moveisDeNove = moveis.map((m) => (m.id === 'prat-d' ? { ...m, niveis: 9 } : m))
+export const lugaresDeNove = [
+  ...lugares,
+  lugar('ALGODAO 100% · Preto', 'prat-d', 2, 5, false),
+  lugar('ALGODAO MESCLA SEM ELASTANO · Cinza Mescla', 'prat-d', 2, 6, false),
+  lugar('MOLETOM · Preto', 'prat-d', 2, 7, false),
+  lugar('PIQUET 100% · Azul Marinho', 'prat-d', 2, 8, false),
+  lugar('Papel sublimático 100 g', 'prat-d', 2, 9, false),
+]

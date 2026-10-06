@@ -677,6 +677,116 @@ await caso('desfazer', async () => {
   await ctx.close()
 })
 
+/* ==========================================================================
+   9. A PRATELEIRA DE ATÉ NOVE NÍVEIS (pedido do Henrique de 06/10/2026)
+
+   O limite era seis, porque seis era quantas cores de nível havia. Agora são
+   nove cores e nove níveis. Aqui se confere que os nove aparecem, cada um com
+   a sua cor e o número dentro, que nada estoura no computador nem no celular,
+   que o editor aceita 9 e recusa 10, e que o nível 9 chega ao banco.
+   ========================================================================== */
+const NOVE = Array.from({ length: 9 }, (_, i) => '--nivel-' + (i + 1))
+for (const tema of ['light', 'dark']) {
+  const T = `nove níveis ${tema === 'light' ? 'gelo' : 'grafite'}`
+  await caso(T, async () => {
+    const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema, deposito: 'nove' })
+    await ir(pg, '/estoque?aba=deposito', '[data-mapa]')
+    const K = await tokens(pg, [...NOVE, '--on-nivel'])
+    conta(new Set(NOVE.map((n) => K[n])).size === 9 && NOVE.every((n) => K[n] !== 'rgba(0, 0, 0, 0)'), `${T}: o Design System tem nove cores de nível, todas diferentes (${new Set(NOVE.map((n) => K[n])).size})`)
+
+    /* o lugar aberto: os nove níveis de cima para baixo, e a prateleira de frente */
+    await pg.locator('[data-mapa] [data-lugar="D2"]').click(); await pausa(pg)
+    const painel = pg.locator('.dp-painel[data-aberto="D2"]')
+    const secoes = await painel.locator('.dp-secao').allInnerTexts()
+    conta(secoes.map((s) => s.match(/Nível (\d+)/)?.[1]).join('') === '987654321', `${T}: o vão aberto lista os nove níveis de cima para baixo (${secoes.map((s) => s.match(/Nível (\d+)/)?.[1]).join('')})`)
+    const nv = await painel.locator('.dp-secao .dp-nv').evaluateAll((l) => l.map((e) => ({ n: e.textContent.trim(), fundo: getComputedStyle(e).backgroundColor, cor: getComputedStyle(e).color })))
+    conta(nv.length === 9 && nv.every((x) => x.fundo === K['--nivel-' + x.n] && x.cor === K['--on-nivel']), `${T}: cada um dos nove níveis tem a sua cor, com o número dentro dela (${nv.map((x) => x.n).join(', ')})`)
+    const casas = await painel.locator('.dp-casa').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return { classe: e.className, w: r.width, h: r.height, borda: getComputedStyle(e).borderTopColor } }))
+    conta(casas.length === 36 && casas.every((c) => c.w >= 20 && c.h >= 20), `${T}: a prateleira de frente tem 4 vãos por 9 níveis, e nenhuma casa some (${casas.length}, menor ${Math.min(...casas.map((c) => Math.round(c.w)))} por ${Math.min(...casas.map((c) => Math.round(c.h)))})`)
+    const cheias = casas.filter((c) => /do-aberto/.test(c.classe) && /\btem\b/.test(c.classe)).length
+    conta(cheias === 9, `${T}: no vão D2 as nove casas têm material, uma por nível (${cheias})`)
+    conta(new Set(casas.filter((c) => /do-aberto/.test(c.classe)).map((c) => c.borda)).size === 9, `${T}: as nove casas do vão aberto têm nove cores de borda diferentes`)
+    const cabe = await painel.evaluate((e) => e.scrollWidth - e.clientWidth)
+    conta(cabe <= 0 && (await sobra(pg)) <= 0, `${T}: com nove níveis o painel não estoura e nada rola para o lado (${cabe})`)
+    await pg.screenshot({ path: `${PASTA}/nove-aberto-1440-${tema}.png`, fullPage: true })
+
+    /* marcar no nível 9 */
+    await pg.locator('.dp-linha', { hasText: 'HELANCA COLEGIAL' }).locator('.dp-marcar').click(); await pausa(pg, 500)
+    const caixa = pg.locator('dialog[open]')
+    await caixa.locator('[data-lugar="D3"]').click(); await pausa(pg)
+    conta(await caixa.locator('.dp-casa').count() === 36, `${T} marcar: a prateleira aparece de frente com as 36 casas`)
+    await caixa.getByRole('button', { name: 'D3, nível 9, vazio' }).click(); await pausa(pg, 200)
+    conta(await caixa.locator('input[aria-label="Código do lugar"]').inputValue() === 'D3-9', `${T} marcar: o clique na casa de cima dá o código D3-9`)
+    await pg.screenshot({ path: `${PASTA}/nove-marcar-1440-${tema}.png`, fullPage: false })
+    const dentro = await caixa.evaluate((e) => { const c = e.querySelector('.caixa') ?? e; const r = c.getBoundingClientRect(); return { fundo: r.bottom, tela: innerHeight, lado: e.scrollWidth - e.clientWidth } })
+    conta(dentro.fundo <= dentro.tela + 0.5 && dentro.lado <= 0, `${T} marcar: a caixa com nove níveis cabe na tela de 900 px de altura (${Math.round(dentro.fundo)} de ${dentro.tela})`)
+    await caixa.getByRole('button', { name: 'Marcar aqui' }).click(); await pausa(pg, 600)
+    const g = gravados.find((x) => x.u === 'rpc/definir_lugares')
+    conta(JSON.stringify(g?.corpo.p_lugares) === JSON.stringify([{ movel: 'prat-d', vao: 3, nivel: 9 }]), `${T} marcar: o banco recebe o nível 9 (${JSON.stringify(g?.corpo.p_lugares)})`)
+
+    /* o código escrito: D1-9 existe, D1-10 não */
+    await pg.locator('.dp-linha', { hasText: 'Tela de silk' }).locator('.dp-marcar').click(); await pausa(pg, 500)
+    await caixa.locator('input[aria-label="Código do lugar"]').fill('d1-10'); await pausa(pg, 300)
+    const semDez = await caixa.getByRole('button', { name: 'Marcar aqui' }).isDisabled()
+    await caixa.locator('input[aria-label="Código do lugar"]').fill('d1-9'); await pausa(pg, 300)
+    conta(semDez && await caixa.getByRole('button', { name: 'Marcar aqui' }).isEnabled() && /nível 9/.test(await caixa.locator('.dp-lugares').innerText()), `${T} marcar: o código D1-9 escrito é aceito, e o D1-10 não aponta lugar nenhum`)
+    await pg.keyboard.press('Escape'); await pausa(pg, 300)
+    conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+
+  /* o editor: de 4 para 9, e 10 não passa */
+  await caso(`${T} editor`, async () => {
+    const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema })
+    await ir(pg, '/estoque?aba=deposito', '[data-mapa]')
+    const K = await tokens(pg, [...NOVE, '--on-nivel'])
+    await pg.getByRole('button', { name: 'Editar o depósito' }).click(); await pausa(pg, 600)
+    await pg.locator('[data-movel="D"]').click({ position: { x: 10, y: 30 } }); await pausa(pg)
+    const campo = pg.locator('input[aria-label="Níveis"]')
+    conta(await campo.inputValue() === '4', `${T} editor: a prateleira D chega com 4 níveis`)
+    /* com o foco ainda no campo: ao sair, o campo volta a mostrar o último número que valeu */
+    await campo.fill('10'); await pausa(pg, 200)
+    const dica = await pg.locator('.campo', { has: campo }).last().innerText()
+    conta(await campo.getAttribute('aria-invalid') === 'true' && /De 1 a 9/.test(dica) && await pg.locator('.dp-cores-dos-niveis .dp-nv').count() === 4, `${T} editor: 10 níveis é recusado, a dica diz "De 1 a 9" e o desenho continua com 4 (${dica.replace(/\s+/g, ' ').trim()})`)
+    await campo.blur(); await pausa(pg, 200)
+    conta(await campo.inputValue() === '4', `${T} editor: saindo do campo sem corrigir, ele volta a mostrar 4`)
+    await campo.fill('9'); await campo.blur(); await pausa(pg, 200)
+    const cores = await pg.locator('.dp-cores-dos-niveis .dp-cor-do-nivel').evaluateAll((l) => l.map((e) => { const i = e.querySelector('.dp-nv'); return { n: i.textContent.trim(), fundo: getComputedStyle(i).backgroundColor, cor: getComputedStyle(i).color, texto: e.textContent.replace(/\s+/g, ' ').trim() } }))
+    conta(cores.map((c) => c.n).join('') === '987654321' && cores.every((c) => c.fundo === K['--nivel-' + c.n] && c.cor === K['--on-nivel']), `${T} editor: com 9 no campo, "A cor de cada nível" mostra os nove, de cima para baixo, cada um na sua cor (${cores.map((c) => c.n).join('')})`)
+    conta(/em cima/.test(cores[0].texto) && /embaixo/.test(cores[8].texto), `${T} editor: o nível 9 é o de cima e o 1 é o de baixo (${cores[0].texto} | ${cores[8].texto})`)
+    conta((await sobra(pg)) <= 0, `${T} editor: com nove níveis nada rola para o lado`)
+    await pg.screenshot({ path: `${PASTA}/nove-editor-1440-${tema}.png`, fullPage: true })
+    await pg.getByRole('button', { name: 'Salvar o depósito' }).click(); await pausa(pg, 800)
+    const pd = gravados.find((x) => x.u === 'rpc/salvar_deposito')?.corpo.p_planta.moveis.find((m) => m.id === 'prat-d')
+    conta(pd?.niveis === 9 && pd.vaos === 4, `${T} editor: o Salvar manda a prateleira D com 9 níveis (${pd?.niveis})`)
+    conta(erros.length === 0, `${T} editor: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+
+  /* o celular */
+  await caso(`${T} no celular`, async () => {
+    const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema, deposito: 'nove' })
+    await ir(pg, '/estoque?aba=deposito', '[data-mapa]')
+    await pg.locator('[data-mapa] [data-lugar="D2"]').click({ force: true }); await pausa(pg)
+    const painel = pg.locator('.dp-painel[data-aberto="D2"]')
+    const casas = await painel.locator('.dp-casa').evaluateAll((l) => l.map((e) => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height, dir: r.right } }))
+    const largura = await painel.evaluate((e) => e.getBoundingClientRect().right)
+    conta(casas.length === 36 && casas.every((c) => c.w >= 20 && c.h >= 20 && c.dir <= largura + 0.5), `${T}: em 390 px as 36 casas cabem dentro do painel (menor ${Math.min(...casas.map((c) => Math.round(c.w)))} por ${Math.min(...casas.map((c) => Math.round(c.h)))})`)
+    conta((await sobra(pg)) <= 0, `${T}: nada rola para o lado`)
+    await pg.screenshot({ path: `${PASTA}/nove-aberto-390-${tema}.png`, fullPage: true })
+    await pg.locator('.dp-linha', { hasText: 'HELANCA COLEGIAL' }).locator('.dp-marcar').click(); await pausa(pg, 600)
+    const caixa = pg.locator('dialog[open]')
+    await caixa.locator('[data-lugar="D3"]').click({ force: true }); await pausa(pg, 400)
+    const alvo = await caixa.getByRole('button', { name: 'D3, nível 9, vazio' }).boundingBox()
+    conta(await caixa.locator('.dp-casa').count() === 36 && alvo && alvo.height >= 36, `${T} marcar: as 36 casas aparecem e cada uma tem altura de toque (${Math.round(alvo?.height ?? 0)} px)`)
+    await caixa.getByRole('button', { name: 'D3, nível 9, vazio' }).click(); await pausa(pg, 200)
+    conta(await caixa.locator('input[aria-label="Código do lugar"]').inputValue() === 'D3-9' && await caixa.evaluate((e) => e.scrollWidth - e.clientWidth) <= 0, `${T} marcar: o toque na casa de cima dá D3-9, e a caixa não rola para o lado`)
+    await pg.screenshot({ path: `${PASTA}/nove-marcar-390-${tema}.png`, fullPage: false })
+    conta(erros.length === 0, `${T}: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+    await ctx.close()
+  })
+}
+
 await nav.close()
 const ruins = achados.filter((a) => !a.certo)
 console.log(`\n${achados.length - ruins.length} de ${achados.length} conferências passaram.`)

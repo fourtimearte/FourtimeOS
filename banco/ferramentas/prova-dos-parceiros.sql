@@ -1,5 +1,5 @@
 -- ===========================================================================
--- A PROVA DA 043 E DA 044: os parceiros da loja.
+-- A PROVA DA 043 A 046 E DA 056: os parceiros da loja.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. O relatorio sai dentro da
@@ -293,6 +293,29 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 18c. a venda traz a foto do produto; endereco que nao e https fica de fora; releitura sem foto nao apaga a que estava';
 
+  -- 18d. o painel manda desde a primeira venda, e diz as pecas vendidas sem acordo (056)
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform public.registrar_pedido_da_loja(jsonb_build_object(
+         'id', 800056, 'nome', '#P56', 'criado_em', now() - interval '3 years', 'atualizado_em', now() - interval '3 years',
+         'situacao', 'paid',
+         'itens', jsonb_build_array(
+           jsonb_build_object('id', 700056, 'produto_id', 900101, 'produto', 'Camisa Verde', 'variante', 'GG',
+                              'quantidade', 2, 'devolvida', 0, 'preco', 100, 'desconto', 0))), 'carga', 'carga');
+  perform set_config('request.jwt.claim.sub', a::text, true);
+  set local role anon;
+  j := public.painel_do_parceiro(chave_g, senha_g);
+  reset role;
+  txt := txt || E'\n' || case when
+               (select count(*) = 1 and bool_and((m ->> 'pecas')::int = 2 and (m ->> 'sem_acordo')::int = 2 and (m ->> 'parte')::numeric = 0)
+                  from jsonb_array_elements(j -> 'meses') m
+                 where m ->> 'mes' = to_char((now() - interval '3 years') at time zone 'America/Sao_Paulo', 'YYYY-MM'))
+           and (select count(*) = 1 and bool_and(x -> 'parte' = 'null'::jsonb)
+                  from jsonb_array_elements(j -> 'vendas') x
+                 where x ->> 'mes' = to_char((now() - interval '3 years') at time zone 'America/Sao_Paulo', 'YYYY-MM'))
+           and (select coalesce(sum((m ->> 'sem_acordo')::int), 0) = 2 from jsonb_array_elements(j -> 'meses') m)
+                              then 'ok  ' else 'RUIM' end
+             || ' 18d. a venda de tres anos atras vem no painel, no mes dela, com as 2 pecas marcadas como sem acordo; os meses com acordo marcam zero';
+
   -- 19. pagina desligada e link trocado
   perform public.salvar_parceiro(vi, 'Viapol da Prova', 'colecao-viapol-prova', 'Viapol da Prova', false);
   select chave, senha into r from public.parceiro where id = vi;
@@ -368,7 +391,8 @@ begin
   set local role authenticated;
   select count(*) into n from public.venda_do_parceiro where parceiro_id = g;
   reset role;
-  txt := txt || E'\n' || case when n = 4 then 'ok  ' else 'RUIM' end || ' 22. o admin le as vendas do parceiro (' || n || ')';
+  /* cinco: as quatro de antes e a de tres anos atras, do caso 18d */
+  txt := txt || E'\n' || case when n = 5 then 'ok  ' else 'RUIM' end || ' 22. o admin le as vendas do parceiro (' || n || ')';
   perform set_config('request.jwt.claim.sub', v::text, true);
   set local role authenticated;
   select count(*) into n from public.parceiro;
@@ -413,5 +437,5 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 25. a lista traz o acordo de hoje e os 2 produtos';
 
-  raise exception E'PROVA DOS PARCEIROS, 043 a 046 (tudo desfeito):%', txt;
+  raise exception E'PROVA DOS PARCEIROS, 043 a 046 e 056 (tudo desfeito):%', txt;
 end $$;

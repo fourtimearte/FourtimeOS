@@ -332,10 +332,11 @@ export function periodoEmPalavras(meses: string[]): string {
   return meses.length === 1 ? 'em ' + minusculo(meses[0]) : `de ${minusculo(meses[0])} a ${minusculo(meses[meses.length - 1])}`
 }
 
-/** "contra setembro", "contra os 3 meses antes": com o que a tela compara. */
+/** "contra setembro", e com mais de um mês "contra o anterior" (o período anterior): com o que a tela
+    compara. É curto de propósito: vai em cada linha do ranking, numa coluna estreita. */
 export function comparacaoEmPalavras(mesesAntes: string[]): string {
   if (!mesesAntes.length) return ''
-  return mesesAntes.length === 1 ? 'contra ' + minusculo(mesesAntes[0]) : `contra os ${mesesAntes.length} meses antes`
+  return mesesAntes.length === 1 ? 'contra ' + minusculo(mesesAntes[0]) : 'contra o anterior'
 }
 
 const dentro = (l: LayoutVendido, j: Janela) => {

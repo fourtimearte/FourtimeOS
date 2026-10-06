@@ -1432,13 +1432,15 @@ await secao(async () => {
   await pg.locator('.pd-barra-fim button', { hasText: '3 meses' }).click(); await pausa(pg)
   conta(mesma(await numeros(pg), ['Peças vendidas 683 pçs de agosto a outubro, até hoje', 'A que mais sai 219 pçs RAGLAN MASC SEM PUNHO · 32% do total', 'Kits vendidos 99 kits 1 kit diferente', 'Paradas 3 ref. referências que não venderam no período']), `estatísticas de 3 meses: 134 + 549 = 683 peças, o raglan na frente (10 + 89 + 120 = 219) e 99 kits`)
   conta(mesma((await textos(pg, '[data-vendida]')).slice(0, 4), [
-    '1 RAGLAN MASC SEM PUNHO 020-000M 219 pçs 32% em 3 orçamentos subiu contra os 3 meses antes',
-    '2 CAMISETA MASC TRAD 010-000M 181 pçs 27% em 2 orçamentos subiu contra os 3 meses antes',
-    '3 BABY LOOK 010-004F 100 pçs 15% em 1 orçamento subiu contra os 3 meses antes',
-    '4 CALÇAO MASC SEM BOLSO 090-000M 99 pçs 14% em 2 orçamentos subiu contra os 3 meses antes',
+    '1 RAGLAN MASC SEM PUNHO 020-000M 219 pçs 32% em 3 orçamentos subiu contra o anterior',
+    '2 CAMISETA MASC TRAD 010-000M 181 pçs 27% em 2 orçamentos subiu contra o anterior',
+    '3 BABY LOOK 010-004F 100 pçs 15% em 1 orçamento subiu contra o anterior',
+    '4 CALÇAO MASC SEM BOLSO 090-000M 99 pçs 14% em 2 orçamentos subiu contra o anterior',
   ]) && (await textos(pg, '[data-cartao="ranking"] .pd-topo'))[0].endsWith('6 referências saíram · de agosto a outubro'), `ranking de 3 meses: o raglan em 3 orçamentos (um solto e dois de kit), a camiseta com 30 + 8 + 143 = 181`)
   await pg.locator('.pd-barra-fim button', { hasText: '1 ano' }).click(); await pausa(pg)
-  conta((await textos(pg, '[data-vendida]'))[1] === '2 CAMISETA MASC TRAD 010-000M 181 pçs 27% em 2 orçamentos caiu contra os 12 meses antes' && (await numeros(pg))[0] === 'Peças vendidas 683 pçs de novembro a outubro, até hoje', `ranking de 1 ano: o ano de antes entra na comparação (a camiseta vendeu 500 em janeiro de 2025, e caiu)`)
+  conta((await textos(pg, '[data-vendida]'))[1] === '2 CAMISETA MASC TRAD 010-000M 181 pçs 27% em 2 orçamentos caiu contra o anterior' && (await numeros(pg))[0] === 'Peças vendidas 683 pçs de novembro a outubro, até hoje', `ranking de 1 ano: o ano de antes entra na comparação (a camiseta vendeu 500 em janeiro de 2025, e caiu)`)
+  const ondeSaiu = await pg.evaluate(() => [...document.querySelectorAll('[data-vendida]')].map((e) => { const b = e.querySelector('.pd-est-onde b'); const r = b.getBoundingClientRect(); return { linha: e.getBoundingClientRect().height, alto: r.height, cortado: b.scrollWidth > b.clientWidth + 1 } }))
+  conta(ondeSaiu.length === 6 && ondeSaiu.every((x) => x.linha === 48 && x.alto < 20 && !x.cortado), `ranking de 1 ano: a frase da comparação cabe inteira numa linha, sem reticências e sem engordar a linha`)
   await pg.locator('.pd-barra-fim button', { hasText: '1 mês' }).click(); await pausa(pg)
 
   /* ---- a busca, e da linha para a ficha ---- */

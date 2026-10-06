@@ -257,8 +257,8 @@ export function Estatisticas({
             )}
             <p className="pd-est-pe">
               Conta a peça de orçamento aprovado no período. Peça vendida dentro de kit conta no ranking das
-              referências e também no dos kits. A comparação é com o mesmo trecho de antes: os mesmos dias,{' '}
-              {plural(periodo, 'mês', 'meses')} atrás.
+              referências e também no dos kits. A comparação é com o mesmo trecho do período anterior: os mesmos
+              dias, {plural(periodo, 'mês', 'meses')} atrás.
             </p>
           </section>
 

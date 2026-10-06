@@ -412,7 +412,7 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   const j12 = v.janelasDoPeriodo(12, hoje)
   conta(j12.atual.de === iso(2025, 11, 1) && igual(j12.anterior, { de: iso(2024, 11, 1), ate: iso(2025, 10, 7) }) && j12.meses.length === 12 && j12.mesesAntes[0] === '2024-11', 'janela de 1 ano: atravessa a virada do ano, para trás duas vezes')
   conta(igual(v.janelasDoPeriodo(1, new Date(2026, 2, 31, 9)).anterior, { de: iso(2026, 2, 1), ate: iso(2026, 3, 1) }), 'janela no dia 31 de março: o mês anterior acaba no dia 28 de fevereiro, e não invade março')
-  conta(v.periodoEmPalavras(j1.meses) === 'em outubro' && v.periodoEmPalavras(j3.meses) === 'de agosto a outubro' && v.comparacaoEmPalavras(j1.mesesAntes) === 'contra setembro' && v.comparacaoEmPalavras(j3.mesesAntes) === 'contra os 3 meses antes', 'o período em palavras')
+  conta(v.periodoEmPalavras(j1.meses) === 'em outubro' && v.periodoEmPalavras(j3.meses) === 'de agosto a outubro' && v.comparacaoEmPalavras(j1.mesesAntes) === 'contra setembro' && v.comparacaoEmPalavras(j3.mesesAntes) === 'contra o anterior', 'o período em palavras')
   conta(v.rumoDe(105, 100) === 'igual' && v.rumoDe(106, 100) === 'subiu' && v.rumoDe(95, 100) === 'igual' && v.rumoDe(94, 100) === 'caiu' && v.rumoDe(0, 0) === 'igual' && v.rumoDe(1, 0) === 'subiu' && v.rumoDe(0, 1) === 'caiu', 'subiu, igual ou caiu: até 5% de diferença é igual')
 
   /* as vendas: vale o dia em que o orçamento foi aprovado, e entra o que ainda nem foi para a fábrica */

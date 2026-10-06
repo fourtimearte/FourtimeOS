@@ -233,7 +233,7 @@
 .pd-est-cabeca,
 .pd-est-linha {
   display: grid;
-  grid-template-columns: minmax(0, 2.4fr) minmax(56px, 1fr) 76px 52px minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 2.2fr) minmax(48px, 0.8fr) 76px 52px minmax(0, 1.7fr);
   gap: var(--re-6);
   align-items: center;
   padding: 0 var(--re-7);
@@ -344,10 +344,8 @@ b.pd-est-num {
   color: var(--text-2);
   white-space: nowrap;
 }
+/* "subiu contra os 3 meses antes" não se corta: na caixa estreita desce para a linha de baixo */
 .pd-est-onde b {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
 }

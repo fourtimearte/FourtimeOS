@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowUUpLeft, Check, Stamp, Warning } from '@phosphor-icons/react'
+import {
+  ArrowFatLineDown,
+  ArrowUUpLeft,
+  Check,
+  ListChecks,
+  Stamp,
+  UserCircleCheck,
+  Warning,
+} from '@phosphor-icons/react'
 import {
   AreaTexto,
+  avisar,
   Botao,
   Cartao,
   Esqueleto,
+  type IconeDoPacote,
   Kpi,
   Marcacao,
   Pagina,
@@ -12,7 +22,6 @@ import {
   Selo,
   TituloCartao,
   Vazio,
-  avisar,
 } from '@ds'
 import { acharCotacao, fatiasDaCotacao } from '@dominio/cotacao'
 import {
@@ -261,6 +270,7 @@ export function TelaPcp() {
         <div className="pcp-mesa">
           <Fila
             titulo="Conferindo"
+            icone={ListChecks}
             vazio="Tudo que está no PCP já foi marcado."
             linha="O PCP confere a cotação e o material, e marca o que pode descer."
             pedidos={esperando}
@@ -278,6 +288,7 @@ export function TelaPcp() {
 
           <Fila
             titulo="Esperando o diretor"
+            icone={UserCircleCheck}
             vazio="Nada marcado ainda. O PCP marca do lado de cá."
             linha="Aprovar cria as fatias no kanban e põe o pedido no chão de fábrica."
             pedidos={naMesaDoDiretor}
@@ -312,7 +323,9 @@ export function TelaPcp() {
           aprovar sem ver o que está aprovando não é. */}
       {confirmando ? (
         <Cartao className="pcp-confirma">
-          <TituloCartao>Descer {escolhidos.length} para a fábrica?</TituloCartao>
+          <TituloCartao icone={ArrowFatLineDown}>
+            Descer {escolhidos.length} para a fábrica?
+          </TituloCartao>
           <ul className="pcp-lista-confirma">
             {escolhidos.map((p) => (
               <li key={p.id}>
@@ -344,7 +357,7 @@ export function TelaPcp() {
 
       {devolvendo ? (
         <Cartao className="pcp-confirma">
-          <TituloCartao>Devolver {devolvendo.numero} ao PCP</TituloCartao>
+          <TituloCartao icone={ArrowUUpLeft}>Devolver {devolvendo.numero} ao PCP</TituloCartao>
           <p className="pcp-apoio">
             O pedido continua no PCP e a marca cai. O motivo aparece para quem for arrumar, e sem
             ele a devolução vira recado de WhatsApp.
@@ -377,6 +390,7 @@ export function TelaPcp() {
 
 function Fila({
   titulo,
+  icone,
   linha,
   vazio,
   pedidos,
@@ -392,6 +406,7 @@ function Fila({
   aoVerAFolha,
 }: {
   titulo: string
+  icone: IconeDoPacote
   linha: string
   vazio: string
   pedidos: PedidoNoPcp[]
@@ -408,7 +423,7 @@ function Fila({
 }) {
   return (
     <Cartao className="pcp-coluna">
-      <TituloCartao>
+      <TituloCartao icone={icone}>
         {titulo} <span className="pcp-conta">{pedidos.length}</span>
       </TituloCartao>
       <p className="pcp-apoio pcp-linha-topo">{linha}</p>

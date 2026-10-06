@@ -1,6 +1,13 @@
 import { Fragment, useMemo } from 'react'
-import { CaretDown, CaretRight, CaretUp, TShirt } from '@phosphor-icons/react'
-import { Kpi, Selo } from '@ds'
+import {
+  CalendarBlank,
+  CaretDown,
+  CaretRight,
+  CaretUp,
+  ChartBar,
+  TShirt,
+} from '@phosphor-icons/react'
+import { IconeDoTitulo, Kpi, Selo } from '@ds'
 import { mesesAte, mesesEntre, nomeDoMes } from '@shared'
 import {
   miniatura,
@@ -441,6 +448,7 @@ export function VendasDoParceiro({
       <div className="pa-graficos">
         <GraficoPorMes
           titulo="Peças vendidas"
+          icone={TShirt}
           total={inteiro(total.pecas)}
           sub={`${total.pecas === 1 ? 'peça' : 'peças'} ${nosUltimos}`}
           meses={meses}
@@ -454,6 +462,7 @@ export function VendasDoParceiro({
         />
         <GraficoPorMes
           titulo="Total vendido"
+          icone={ChartBar}
           total={dinheiro(total.valor)}
           sub={`em vendas ${nosUltimos}`}
           meses={meses}
@@ -469,7 +478,10 @@ export function VendasDoParceiro({
 
       <section className="pa-bloco">
         <div className="pa-bloco-topo">
-          <h2 className="pa-bloco-titulo">Vendas por mês</h2>
+          <h2 className="pa-bloco-titulo">
+            <IconeDoTitulo icone={CalendarBlank} />
+            Vendas por mês
+          </h2>
           {estreita ? null : (
             <span className="pa-ajuda">Clique num mês para abrir as vendas dele.</span>
           )}

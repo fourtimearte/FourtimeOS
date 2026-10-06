@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { ArrowCounterClockwise, Copy } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Copy, Ruler } from '@phosphor-icons/react'
 import { Aviso, Botao, Cartao, Chip, Pagina, TituloCartao, avisar } from '@ds'
 import {
   contaDoDtf,
@@ -144,7 +144,7 @@ export function TelaCalculadoraDeDtf() {
       <div className="dtf-palco">
         <div className="dtf-grade">
           <Cartao className="dtf-lado">
-            <TituloCartao>A medida</TituloCartao>
+            <TituloCartao icone={Ruler}>A medida</TituloCartao>
 
             <div className="dtf-medidas">
               <Numero

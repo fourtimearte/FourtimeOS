@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { MapPin, PencilSimple } from '@phosphor-icons/react'
-import { Botao, Kpi, Vazio } from '@ds'
+import {
+  MagnifyingGlass,
+  MapPin,
+  MapPinLine,
+  MapTrifold,
+  Package,
+  PencilSimple,
+  Rows,
+  Warning,
+} from '@phosphor-icons/react'
+import { Botao, Kpi, TituloCartao, Vazio } from '@ds'
 import { semAcento } from '@shared'
 import {
   celulasDaPlanta,
@@ -202,12 +211,12 @@ export function Deposito({
           legenda desce para o pé (prancha 48) */}
       {celular ? null : (
         <div className="dp-topo">
-          <h3 className="cartao-titulo">
-            <span className="marca" />O depósito visto de cima
+          <TituloCartao icone={MapTrifold}>
+            O depósito visto de cima
             <small>
               {metros(planta.largura)} × {metros(planta.fundo)} m
             </small>
-          </h3>
+          </TituloCartao>
           <LegendaDoMapa />
         </div>
       )}
@@ -282,10 +291,7 @@ export function Deposito({
   const listaSemLugar = semLugar.length ? (
     <section className="cartao dp-cartao">
       <div className="dp-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          Sem lugar marcado
-        </h3>
+        <TituloCartao icone={Warning}>Sem lugar marcado</TituloCartao>
         <span className="dp-conta">{plural(semLugar.length, 'material', 'materiais')}</span>
       </div>
       {semLugar.slice(0, semLugarAVista).map(m => {
@@ -391,10 +397,7 @@ export function Deposito({
     ) : (
       <section className="cartao dp-cartao dp-painel">
         <div className="dp-topo">
-          <h3 className="cartao-titulo">
-            <span className="marca" />
-            Nenhum lugar aberto
-          </h3>
+          <TituloCartao icone={MapPin}>Nenhum lugar aberto</TituloCartao>
         </div>
         <p className="dp-nota dp-recheio">
           Clique numa prateleira ou num palete do desenho, ou procure um material na busca.
@@ -405,10 +408,11 @@ export function Deposito({
   const tambem = outros.length ? (
     <section className="cartao dp-cartao">
       <div className="dp-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
+        <TituloCartao
+          icone={celulaAberta && marcadores.includes(aberta) ? MapPinLine : MagnifyingGlass}
+        >
           {celulaAberta && marcadores.includes(aberta) ? 'Também está em' : 'Onde achei'}
-        </h3>
+        </TituloCartao>
         <span className="dp-conta">{plural(outros.length, 'lugar', 'lugares')}</span>
       </div>
       {outros.map(chave => {
@@ -615,10 +619,9 @@ function LugarAberto({
   return (
     <section className="cartao dp-cartao dp-painel" data-aberto={celula.nome}>
       <div className="dp-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
+        <TituloCartao icone={movel.tipo === 'prateleira' ? Rows : Package}>
           {lugarPorExtenso(movel, celula.vao, null)}
-        </h3>
+        </TituloCartao>
         <span className="dp-conta">
           {dentro.length ? plural(dentro.length, 'material', 'materiais') : 'vazio'}
         </span>

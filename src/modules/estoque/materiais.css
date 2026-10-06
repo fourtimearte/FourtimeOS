@@ -315,7 +315,9 @@ button.em-lin:hover {
 .em-topo-breve {
   display: none;
 }
-@container em-caixa (max-width: 251px) {
+/* 269 e não mais 251: o título ganhou um ícone de 20 px no lugar do quadradinho
+   de 6, e a conta comprida passou a caber só numa caixa 18 px mais larga */
+@container em-caixa (max-width: 269px) {
   .em-topo-longo {
     display: none;
   }

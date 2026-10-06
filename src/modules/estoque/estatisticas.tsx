@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { CaretRight } from '@phosphor-icons/react'
-import { Botao, Kpi, Segmentado, Vazio } from '@ds'
+import { CalendarBlank, CaretRight, ChartBar, ShoppingCart } from '@phosphor-icons/react'
+import { Botao, Kpi, Segmentado, TituloCartao, Vazio } from '@ds'
 import {
   CATEGORIAS,
   NOME_DO_PERIODO,
@@ -338,10 +338,9 @@ export function Estatisticas({
         <div className="eu-dois">
           <section className="cartao eu-col" data-uso-por-tecido="">
             <header className="eu-topo">
-              <h3 className="cartao-titulo">
-                <span className="marca" />
+              <TituloCartao icone={ChartBar}>
                 {ehTecido ? 'Uso por tecido' : 'Uso por grupo'}
-              </h3>
+              </TituloCartao>
               <span className="eu-nota">
                 {ehTecido
                   ? plural(lista.length, 'tecido', 'tecidos')
@@ -486,10 +485,7 @@ export function Estatisticas({
           <div className="eu-lado">
             <section className="cartao eu-col" data-prioridade="">
               <header className="eu-topo">
-                <h3 className="cartao-titulo">
-                  <span className="marca" />
-                  Prioridade de compra
-                </h3>
+                <TituloCartao icone={ShoppingCart}>Prioridade de compra</TituloCartao>
                 <span className="eu-nota">
                   {ehTecido ? 'a que acaba antes primeiro' : 'o que acaba antes primeiro'}
                 </span>
@@ -525,10 +521,7 @@ export function Estatisticas({
 
             <section className="cartao eu-col" data-mes-a-mes="">
               <header className="eu-topo">
-                <h3 className="cartao-titulo">
-                  <span className="marca" />
-                  Mês a mês
-                </h3>
+                <TituloCartao icone={CalendarBlank}>Mês a mês</TituloCartao>
                 <span className="eu-nota">
                   {series.length === 1
                     ? notaDaSerie(series[0])

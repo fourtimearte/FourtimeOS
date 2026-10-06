@@ -280,14 +280,14 @@ for (const tema of ['light', 'dark']) {
 
   /* -------------------------------------------------------------- BOLETO */
   await ir(pg, '/ferramentas/boleto', '.bo-tabela')
-  m = await medir(pg, ['.pagina-topo', '.pagina-topo h1', '.pagina-topo .acima', '.bo-duas', '.bo-caixa', '.bo-solta', '.bo-ou', '.bo-nivel', '.bo-registro', '.bo-tabela thead th', '.bo-tabela tbody tr', '.bo-resultado', '.cartao-titulo', '.cartao-titulo .marca'])
+  m = await medir(pg, ['.pagina-topo', '.pagina-topo h1', '.pagina-topo .acima', '.bo-duas', '.bo-caixa', '.bo-solta', '.bo-ou', '.bo-nivel', '.bo-registro', '.bo-tabela thead th', '.bo-tabela tbody tr', '.bo-resultado', '.cartao-titulo', '.cartao-titulo .cartao-icone', '.cartao-titulo .cartao-icone svg'])
   conta(m['.pagina-topo h1'].letra === '24px/600' && m['.pagina-topo h1'].texto === 'Verificador de Boleto' && m['.pagina-topo .acima'].letra === '12.5px/600', `${T} boleto: titulo 24/600 com a sobrelinha`)
   conta(igual(m['.bo-duas'].y - m['.pagina-topo'].baixo, 24), `${T} boleto: 24 do topo ate as caixas (${m['.bo-duas'].y - m['.pagina-topo'].baixo})`)
   conta(igual(m['.bo-caixa'].w, 600) && m['.bo-caixa'].raio === '14px' && m['.bo-caixa'].borda === '1px' && m['.bo-caixa'].recheio === '24px 24px 24px 24px' && m['.bo-caixa'].fundo === K['--surface'], `${T} boleto: caixa da entrada 600, raio 14, borda 1, recheio 24`)
   const caixas = await todos(pg, '.bo-duas > .bo-caixa')
   conta(caixas.length === 2 && igual(caixas[1].x - caixas[0].dir, 16) && igual(caixas[1].dir, 1878), `${T} boleto: as duas caixas com 16 entre elas, ate a margem`)
   conta(m['.bo-solta'].raio === '10px' && m['.bo-solta'].borda === '1px' && m['.bo-solta'].estilo === 'dashed' && m['.bo-solta'].fundo === K['--surface-2'] && igual(m['.bo-solta'].h, 176), `${T} boleto: area de soltar tracejada, raio 10, 176 de altura, --surface-2 (${m['.bo-solta'].estilo}, ${m['.bo-solta'].h})`)
-  conta(m['.cartao-titulo'].letra === '15px/600' && igual(m['.cartao-titulo .marca'].w, 6), `${T} boleto: titulo de cartao 15/600 com o quadradinho`)
+  conta(m['.cartao-titulo'].letra === '15px/600' && igual(m['.cartao-titulo .cartao-icone'].w, 20) && igual(m['.cartao-titulo .cartao-icone svg'].w, 18), `${T} boleto: titulo de cartao 15/600 com o icone de 18 numa caixa de 20`)
   const niveis = await todos(pg, '.bo-nivel')
   conta(niveis.length === 3 && niveis.every((n) => n.raio === '10px' && igual(n.w, niveis[0].w)) && folga(niveis).every((f) => igual(f, 12)), `${T} boleto: tres niveis iguais, raio 10, 12 entre eles (${folga(niveis).join(', ')})`)
   conta(m['.bo-registro'].raio === '14px' && igual(m['.bo-registro'].w, 1598) && igual(m['.bo-registro'].y - m['.bo-duas'].baixo, 16), `${T} boleto: registro na largura inteira, 16 abaixo das caixas`)

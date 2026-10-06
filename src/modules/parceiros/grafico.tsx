@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { TituloCartao } from '@ds'
+import { type IconeDoPacote, TituloCartao } from '@ds'
 import { nomeDoMes } from '@shared'
 import { degrauDoEixo, mesCurto, rotuloDoEixo } from './apoio'
 
@@ -18,6 +18,7 @@ import { degrauDoEixo, mesCurto, rotuloDoEixo } from './apoio'
 
 export function GraficoPorMes({
   titulo,
+  icone,
   total,
   sub,
   meses,
@@ -30,6 +31,8 @@ export function GraficoPorMes({
   falado,
 }: {
   titulo: string
+  /** o ícone do título do cartão */
+  icone: IconeDoPacote
   /** o número grande, que é a soma do período */
   total: ReactNode
   sub: ReactNode
@@ -58,7 +61,7 @@ export function GraficoPorMes({
         meses.length > 6 ? 'cartao cartao-pad pa-grafico muitos' : 'cartao cartao-pad pa-grafico'
       }
     >
-      <TituloCartao>{titulo}</TituloCartao>
+      <TituloCartao icone={icone}>{titulo}</TituloCartao>
       <div className="pa-grafico-cabeca">
         <b className="pa-grafico-numero">{total}</b>
         <span className="pa-ajuda">{sub}</span>

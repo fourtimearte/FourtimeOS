@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { type IconeDoPacote, TituloCartao } from '@ds'
+import { ArrowsDownUp, ListChecks, ShoppingCart } from '@phosphor-icons/react'
 import {
   faltaDoMaterial,
   quantoNaUnidade,
@@ -44,6 +46,7 @@ function DoisNomes({ m, nome }: { m?: Material; nome: string }) {
 
 export function Coluna({
   titulo,
+  icone,
   direita,
   verMais,
   aoVerMais,
@@ -52,6 +55,7 @@ export function Coluna({
   children,
 }: {
   titulo: string
+  icone: IconeDoPacote
   direita?: ReactNode
   /** o texto do pé; sem ele a caixa não tem pé */
   verMais?: string
@@ -65,10 +69,7 @@ export function Coluna({
   return (
     <section className={inteira ? 'cartao em-col' : 'cartao em-col em-curta'} data-coluna={nome}>
       <div className="em-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          {titulo}
-        </h3>
+        <TituloCartao icone={icone}>{titulo}</TituloCartao>
         {direita}
       </div>
       {/* a caixa que rola recebe o foco do teclado: sem isso, quem não usa o
@@ -112,6 +113,7 @@ export function ParaSeparacao({
     <Coluna
       nome="separacao"
       titulo="Para separação"
+      icone={ListChecks}
       inteira={inteira}
       direita={<span className="em-topo-n">{plural(fila.length, 'pedido', 'pedidos')}</span>}
       verMais={
@@ -194,6 +196,7 @@ export function ParaComprar({
     <Coluna
       nome="comprar"
       titulo="Para comprar"
+      icone={ShoppingCart}
       inteira={inteira}
       direita={
         comprar.length ? (
@@ -271,6 +274,7 @@ export function UltimosMovimentos({
     <Coluna
       nome="movimentos"
       titulo="Últimos movimentos"
+      icone={ArrowsDownUp}
       inteira={inteira}
       verMais={movimentos.length ? 'Ver mais · todas as movimentações' : undefined}
       aoVerMais={aoVerMais}

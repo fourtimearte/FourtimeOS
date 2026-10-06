@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Trash } from '@phosphor-icons/react'
+import { PencilSimpleLine, Plus, TagSimple, Trash } from '@phosphor-icons/react'
 import {
   Aviso,
   Botao,
@@ -173,7 +173,7 @@ export function TelaTags() {
 
       <div className="tg-colunas">
         <Cartao>
-          <TituloCartao>As tags que existem</TituloCartao>
+          <TituloCartao icone={TagSimple}>As tags que existem</TituloCartao>
           {erro ? (
             <Vazio titulo="Não consegui ler as tags" texto={erro} />
           ) : carregando ? (
@@ -225,7 +225,9 @@ export function TelaTags() {
 
         {rascunho ? (
           <Cartao>
-            <TituloCartao>{rascunho.nova ? 'Nova tag' : 'Editar ' + rascunho.nome}</TituloCartao>
+            <TituloCartao icone={PencilSimpleLine}>
+              {rascunho.nova ? 'Nova tag' : 'Editar ' + rascunho.nome}
+            </TituloCartao>
 
             <label className="tg-rot" htmlFor="tg-nome">
               Nome

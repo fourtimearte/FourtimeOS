@@ -1,20 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, Circle, Copy, FilePdf, WarningCircle, X, XCircle } from '@phosphor-icons/react'
+import {
+  Bank,
+  Barcode,
+  CheckCircle,
+  Circle,
+  ClockCounterClockwise,
+  Copy,
+  FilePdf,
+  Handshake,
+  SealCheck,
+  WarningCircle,
+  X,
+  XCircle,
+} from '@phosphor-icons/react'
 import {
   AreaTexto,
+  avisar,
   Aviso,
   Botao,
   Campo,
   Entrada,
   Esqueleto,
+  IconeDoTitulo,
   Marcacao,
   Modal,
   Pagina,
   TituloCartao,
   Vazio,
-  avisar,
 } from '@ds'
 import { formatarDinheiroExato } from '@shared'
 import {
@@ -328,7 +342,7 @@ export function TelaVerificadorDeBoleto() {
         {/* ------------------------------------------------ o boleto */}
         <section className="cartao bo-caixa">
           <div className="bo-topo">
-            <TituloCartao>O boleto</TituloCartao>
+            <TituloCartao icone={Barcode}>O boleto</TituloCartao>
             <span className="bo-nota">lido aqui no navegador, sem guardar o arquivo</span>
           </div>
 
@@ -490,7 +504,7 @@ export function TelaVerificadorDeBoleto() {
         {/* ------------------------------------------------ o resultado */}
         <section className="cartao bo-caixa">
           <div className="bo-topo">
-            <TituloCartao>O resultado</TituloCartao>
+            <TituloCartao icone={SealCheck}>O resultado</TituloCartao>
             <span className="bo-nota">
               {conferido ? (registro ? 'conferido ' + quandoFoi(registro.quando) : 'conferido agora') : 'aparece aqui depois de conferir'}
             </span>
@@ -659,7 +673,7 @@ export function TelaVerificadorDeBoleto() {
       {/* ------------------------------------------------ o registro */}
       <section className="cartao bo-registro">
         <div className="bo-registro-topo">
-          <TituloCartao>Últimas conferências</TituloCartao>
+          <TituloCartao icone={ClockCounterClockwise}>Últimas conferências</TituloCartao>
           <span className="bo-nota">o registro guarda os dados lidos e o resultado, nunca o arquivo</span>
         </div>
         {carregando ? (
@@ -901,7 +915,10 @@ function DecisaoDoBoleto({
 
           <div className="bo-colunas">
             <div className="bo-coluna">
-              <h3>O boleto</h3>
+              <h3>
+                <IconeDoTitulo icone={Barcode} miudo />
+                O boleto
+              </h3>
               <div className="bo-par">
                 <span>Valor</span>
                 <b>{c.valor !== null ? formatarDinheiroExato(c.valor) : 'a linha não traz'}</b>
@@ -928,7 +945,10 @@ function DecisaoDoBoleto({
               </div>
             </div>
             <div className="bo-coluna">
-              <h3>O que a Receita diz</h3>
+              <h3>
+                <IconeDoTitulo icone={Bank} miudo />
+                O que a Receita diz
+              </h3>
               <div className="bo-par">
                 <span>CNPJ</span>
                 <b>{c.cnpj ? cnpjNaTela(c.cnpj) : 'o boleto não traz'}</b>
@@ -967,7 +987,10 @@ function DecisaoDoBoleto({
 
           {sabe.length ? (
             <div className="bo-sabe">
-              <h3>O que a Fourtime sabe deste CNPJ</h3>
+              <h3>
+                <IconeDoTitulo icone={Handshake} miudo />
+                O que a Fourtime sabe deste CNPJ
+              </h3>
               {sabe.map((k) => (
                 <div key={k.chave} className="bo-sabe-linha" style={cor(COR_DO_ESTADO[k.estado])}>
                   <Icone estado={k.estado} />

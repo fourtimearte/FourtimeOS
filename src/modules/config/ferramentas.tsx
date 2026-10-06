@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Calculator } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import { Aviso, Botao, Campo, Cartao, Entrada, Esqueleto, Pagina, TituloCartao, avisar } from '@ds'
 import { gravarPrecoDoMetro, lerNumero, lerPrecoDoMetro, type PrecoDoMetro } from '@dominio/ferramentas'
@@ -108,7 +109,7 @@ export function TelaConfigDeFerramentas() {
       ) : null}
 
       <Cartao>
-        <TituloCartao>Calculadora de DTF</TituloCartao>
+        <TituloCartao icone={Calculator}>Calculadora de DTF</TituloCartao>
         {!lido && !falha ? (
           <Esqueleto altura={64} />
         ) : (

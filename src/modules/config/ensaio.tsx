@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Flask, Trash } from '@phosphor-icons/react'
+import { Broom, Database, Flask, Trash } from '@phosphor-icons/react'
 import { Aviso, Botao, Cartao, Pagina, TituloCartao, avisar } from '@ds'
 import {
   apagarDadosDeTeste,
@@ -156,7 +156,7 @@ export function TelaEnsaio() {
       </Aviso>
 
       <Cartao>
-        <TituloCartao>O que está no banco agora</TituloCartao>
+        <TituloCartao icone={Database}>O que está no banco agora</TituloCartao>
         {carregando ? (
           <p className="cfg-nota">Contando...</p>
         ) : falha ? (
@@ -174,7 +174,7 @@ export function TelaEnsaio() {
       </Cartao>
 
       <Cartao>
-        <TituloCartao>Semear</TituloCartao>
+        <TituloCartao icone={Flask}>Semear</TituloCartao>
         <p className="cfg-nota">
           <b>Clientes</b>: grava os 136 de exemplo com o histórico de compras no lugar em que a
           importação do Bling vai colocar o dela. Semear duas vezes não duplica ninguém: a trava
@@ -247,7 +247,7 @@ export function TelaEnsaio() {
       </Cartao>
 
       <Cartao>
-        <TituloCartao>Limpar</TituloCartao>
+        <TituloCartao icone={Broom}>Limpar</TituloCartao>
         <p className="cfg-nota">
           Apaga <b>só</b> o que está marcado como teste, na ordem que o banco permite: pedido,
           cotação, lead, cliente e material. O que não está marcado não é tocado. O razão do

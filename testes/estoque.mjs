@@ -826,8 +826,10 @@ for (const [largura, altura] of [[1440, 900], [390, 844]]) {
 }
 
 /* o topo das três caixas baixas: a conta nunca encosta na borda. Achado no dia
-   04/10/2026: "16 abaixo do mínimo" passava do recheio da caixa em 1440 */
-for (const [largura, espera] of [[1366, /^16 materiais$/], [1440, /^16 materiais$/], [1536, /^16 abaixo do mínimo$/], [1680, /^16 abaixo do mínimo$/]]) {
+   04/10/2026: "16 abaixo do mínimo" passava do recheio da caixa em 1440. Em
+   05/10/2026 o título ganhou o ícone, 14 px mais largo que o quadradinho, e a
+   conta comprida deixou de caber em 1536: de lá para baixo vale a curta */
+for (const [largura, espera] of [[1366, /^16 materiais$/], [1440, /^16 materiais$/], [1536, /^16 materiais$/], [1680, /^16 abaixo do mínimo$/]]) {
   await caso(`topo das caixas ${largura}`, async () => {
     const { ctx, pg } = await abrir(nav, { largura, altura: 900, tema: 'light', estoque: 'grande' })
     await ir(pg, '/estoque', '[data-arvore]')

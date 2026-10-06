@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FolderOpen, GraduationCap, Package, Palette, SoccerBall } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import { Botao, Chip } from '../componentes/botao'
 import {
@@ -419,17 +420,17 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
           <Secao
             id="cartoes"
             titulo="Cartões"
-            texto="Superfície branca sobre cinza, borda de 1 px, sombra baixa. O cartão clicável sobe dois pixels e ganha sombra: é o único lugar onde a superfície se mexe."
+            texto="Superfície branca sobre cinza, borda de 1 px, sombra baixa. O cartão clicável sobe dois pixels e ganha sombra: é o único lugar onde a superfície se mexe. Todo título de cartão leva um ícone que diz do que o cartão trata (Phosphor em duotone, na cor de ícone do tema): o ícone é obrigatório, título sem ícone não compila."
           >
             <div className="kit-bancada grade">
               <Cartao>
-                <TituloCartao>Pedido 2.481</TituloCartao>
+                <TituloCartao icone={Package}>Pedido 2.481</TituloCartao>
                 <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
                   Cartão parado. Ele não reage ao ponteiro porque não leva a lugar nenhum.
                 </p>
               </Cartao>
               <Cartao clicavel>
-                <TituloCartao>Colégio Delta</TituloCartao>
+                <TituloCartao icone={GraduationCap}>Colégio Delta</TituloCartao>
                 <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
                   Cartão clicável. Passe o ponteiro: ele sobe dois pixels.
                 </p>
@@ -446,14 +447,14 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
               <span className="kit-nota">Cartão sem cor: passe o ponteiro devagar</span>
               <div className="grade">
                 <Cartao clicavel>
-                  <TituloCartao>Colégio Santa Clara</TituloCartao>
+                  <TituloCartao icone={GraduationCap}>Colégio Santa Clara</TituloCartao>
                   <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
                     O pontilhado acende só onde o ponteiro está. Se você conseguir apontar o que
                     mudou, está forte demais.
                   </p>
                 </Cartao>
                 <Cartao clicavel>
-                  <TituloCartao>Liga Goiana de Futsal</TituloCartao>
+                  <TituloCartao icone={SoccerBall}>Liga Goiana de Futsal</TituloCartao>
                   <p style={{ color: 'var(--text-2)', margin: 'var(--sp-3) 0 0' }}>
                     Nada de filtro e nada de imagem: é um degradê de pontos recortado por uma
                     máscara, numa camada só.
@@ -464,14 +465,14 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
               <span className="kit-nota">Cartão de tinta, um por tela</span>
               <div className="grade">
                 <Cartao clicavel className="tinta m-grafite aceso">
-                  <TituloCartao>Item aberto</TituloCartao>
+                  <TituloCartao icone={FolderOpen}>Item aberto</TituloCartao>
                   <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
                     Grafite é a cor mãe padrão. É a que menos briga com o resto e a única que
                     funciona nos dois temas sem ajuste.
                   </p>
                 </Cartao>
                 <Cartao clicavel className="tinta m-subli">
-                  <TituloCartao>Cor de setor</TituloCartao>
+                  <TituloCartao icone={Palette}>Cor de setor</TituloCartao>
                   <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
                     Cor de setor só quando o cartão pertence mesmo a um setor. O degradê é a mesma
                     cor em dois tons, nunca um caminho de uma cor para outra.

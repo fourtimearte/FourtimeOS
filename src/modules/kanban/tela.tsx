@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Kanban } from '@phosphor-icons/react'
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
-import { Esqueleto, Vazio, avisar } from '@ds'
+import { avisar, Esqueleto, IconeDoTitulo, Vazio } from '@ds'
 import {
   COLUNAS,
   carregarAsRotas,
@@ -376,7 +377,10 @@ export function TelaKanban() {
       ) : (
         <section className="kb-postos" aria-label="Postos">
           <div className="kb-postos-topo">
-            <h2>Postos</h2>
+            <h2>
+              <IconeDoTitulo icone={Kanban} />
+              Postos
+            </h2>
             <span className="kb-faixa">
               {inicio + 1} a {ultima} de {COLUNAS.length} · {nomeDoPosto(COLUNAS[inicio])} até{' '}
               {nomeDoPosto(COLUNAS[ultima - 1])}

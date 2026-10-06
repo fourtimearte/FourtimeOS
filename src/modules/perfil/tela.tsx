@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { ArrowClockwise, Camera, SignOut, Trash } from '@phosphor-icons/react'
+import {
+  ArrowClockwise,
+  Camera,
+  SignOut,
+  SquaresFour,
+  Trash,
+  UserCircle,
+} from '@phosphor-icons/react'
 import {
   Avatar,
   Aviso,
@@ -173,7 +180,7 @@ export function TelaPerfil() {
 
       <div className="pf-grade">
         <Cartao>
-          <TituloCartao>Seus dados</TituloCartao>
+          <TituloCartao icone={UserCircle}>Seus dados</TituloCartao>
           <div className="pf-foto">
             <Avatar iniciais={iniciaisDe(pessoa.nome)} foto={fotoDe(pessoa)} tamanho={72} />
             <div>
@@ -244,7 +251,7 @@ export function TelaPerfil() {
         </Cartao>
 
         <Cartao>
-          <TituloCartao>Seus painéis</TituloCartao>
+          <TituloCartao icone={SquaresFour}>Seus painéis</TituloCartao>
           {meus.length === 0 ? (
             <p className="pf-nada">
               {esperando

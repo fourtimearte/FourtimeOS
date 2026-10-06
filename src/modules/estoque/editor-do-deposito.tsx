@@ -4,21 +4,31 @@ import {
   ArrowClockwise,
   ArrowUUpLeft,
   ArrowUUpRight,
+  BoundingBox,
   Copy,
+  Door,
+  GridFour,
+  ListNumbers,
+  Package,
+  PencilSimpleLine,
   Plus,
+  Rows,
+  Stairs,
   Trash,
 } from '@phosphor-icons/react'
 import {
+  avisar,
   Aviso,
   Botao,
   BotaoComMenu,
   Campo,
   Entrada,
+  type IconeDoPacote,
   Modal,
   Pagina,
   Segmentado,
   Seletor,
-  avisar,
+  TituloCartao,
 } from '@ds'
 import {
   ENCAIXE,
@@ -682,13 +692,12 @@ export function EditorDoDeposito({
       <div className={estreita ? 'dp-tela editor estreita' : 'dp-tela editor'}>
         <section className="cartao dp-cartao" data-mapa="">
           <div className="dp-topo ferramentas">
-            <h3 className="cartao-titulo">
-              <span className="marca" />
+            <TituloCartao icone={PencilSimpleLine}>
               Editando o depósito
               <small>
                 {metros(p.largura)} × {metros(p.fundo)} m
               </small>
-            </h3>
+            </TituloCartao>
             <span className="dp-desfazer">
               <Botao
                 tamanho="sm"
@@ -1019,14 +1028,21 @@ function CampoDoUso({ valor, aoMudar }: { valor: string; aoMudar: (v: string) =>
   )
 }
 
-function Caixa({ titulo, selo, children }: { titulo: string; selo?: string; children: ReactNode }) {
+function Caixa({
+  titulo,
+  icone,
+  selo,
+  children,
+}: {
+  titulo: string
+  icone: IconeDoPacote
+  selo?: string
+  children: ReactNode
+}) {
   return (
     <section className="cartao dp-cartao dp-painel">
       <div className="dp-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          {titulo}
-        </h3>
+        <TituloCartao icone={icone}>{titulo}</TituloCartao>
         {selo ? <span className="dp-conta">{selo}</span> : null}
       </div>
       <div className="dp-recheio dp-formulario">{children}</div>
@@ -1062,7 +1078,10 @@ function PainelDoChao({
   const feitos = passos.filter(x => x[2]).length
   return (
     <>
-      <Caixa titulo="O chão do depósito" selo={feitos < 4 ? `passo ${feitos} de 4` : undefined}>
+      <Caixa
+      titulo="O chão do depósito"
+      icone={BoundingBox}
+      selo={feitos < 4 ? `passo ${feitos} de 4` : undefined}>
         <Campo rotulo="Nome do depósito">
           <Entrada
             value={planta.nome}
@@ -1092,7 +1111,7 @@ function PainelDoChao({
           Dá para mudar depois: o que já estiver no chão fica onde está. A grade do desenho tem 1 m.
         </p>
       </Caixa>
-      <Caixa titulo="Como montar">
+      <Caixa titulo="Como montar" icone={ListNumbers}>
         {passos.map(([nome, texto, feito], i) => (
           <div key={nome} className="dp-passo-linha">
             <span className={feito ? 'dp-passo feito' : 'dp-passo falta'}>{i + 1}</span>
@@ -1132,7 +1151,7 @@ function PainelDaPrateleira({
   const profundidade = movel.emPe ? movel.largura : movel.fundo
   const niveis = Array.from({ length: movel.niveis }, (_, i) => movel.niveis - i)
   return (
-    <Caixa titulo={'Prateleira ' + movel.nome} selo="escolhida">
+    <Caixa titulo={'Prateleira ' + movel.nome} icone={Rows} selo="escolhida">
       <div className="dp-dois">
         <Campo rotulo="Nome">
           <Entrada
@@ -1258,7 +1277,7 @@ function PainelDoPalete({
   aoApagar: () => void
 }) {
   return (
-    <Caixa titulo={'Palete ' + movel.nome} selo="escolhido">
+    <Caixa titulo={'Palete ' + movel.nome} icone={Package} selo="escolhido">
       <div className="dp-dois">
         <Campo rotulo="Nome">
           <Entrada
@@ -1365,7 +1384,10 @@ function PainelDaGrade({
   }
 
   return (
-    <Caixa titulo="Grade de paletes" selo={plural(membros.length, 'palete', 'paletes')}>
+    <Caixa
+      titulo="Grade de paletes"
+      icone={GridFour}
+      selo={plural(membros.length, 'palete', 'paletes')}>
       <div className="dp-dois">
         <CampoDeNumero
           rotulo="Fileiras"
@@ -1487,6 +1509,7 @@ function PainelDaPassagem({
   return (
     <Caixa
       titulo={movel.nome || (movel.tipo === 'escada' ? 'Escada' : 'Porta')}
+      icone={movel.tipo === 'escada' ? Stairs : Door}
       selo={movel.tipo === 'escada' ? 'escolhida' : 'escolhida'}
     >
       <Campo

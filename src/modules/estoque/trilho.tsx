@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { TituloCartao } from '@ds'
+import { CaretLeft, CaretRight, HourglassMedium } from '@phosphor-icons/react'
 import {
   faltaDoMaterial,
   nomeInteiro,
@@ -73,9 +74,7 @@ export function Trilho({
   return (
     <section className="cartao em-col em-trilho" data-trilho="">
       <div className="em-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />O que está acabando
-        </h3>
+        <TituloCartao icone={HourglassMedium}>O que está acabando</TituloCartao>
         <span className="em-topo-nota">
           {acabando.length
             ? [

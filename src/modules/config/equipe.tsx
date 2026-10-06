@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Check, Envelope, Prohibit, Trash, UserPlus } from '@phosphor-icons/react'
+import {
+  Check,
+  Envelope,
+  EnvelopeSimple,
+  HourglassMedium,
+  Prohibit,
+  Trash,
+  UserPlus,
+  UsersThree,
+} from '@phosphor-icons/react'
 import {
   Avatar,
   Aviso,
@@ -143,7 +152,7 @@ export function TelaEquipe() {
             />
 
             <Cartao>
-              <TituloCartao>
+              <TituloCartao icone={UsersThree}>
                 Equipe {jaDentro.length ? <span className="cfg-conta">{jaDentro.length}</span> : null}
               </TituloCartao>
               {jaDentro.length === 0 ? (
@@ -233,7 +242,7 @@ function FilaDeAprovacao({
 
   return (
     <Cartao className="cfg-fila">
-      <TituloCartao>
+      <TituloCartao icone={HourglassMedium}>
         Esperando aprovação <span className="cfg-conta forte">{quantosEsperando(fila)}</span>
       </TituloCartao>
 
@@ -445,7 +454,7 @@ function Convites({
 
   return (
     <Cartao>
-      <TituloCartao>E-mails liberados</TituloCartao>
+      <TituloCartao icone={EnvelopeSimple}>E-mails liberados</TituloCartao>
       <p className="cfg-nada">
         Só quem está nesta lista consegue criar conta. Quem não está recebe uma recusa do banco,
         e a conta nem chega a nascer.

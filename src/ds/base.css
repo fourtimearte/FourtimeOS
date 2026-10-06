@@ -679,12 +679,23 @@ textarea.entrada {
   gap: var(--re-5);
   margin: 0;
 }
-.cartao-titulo .marca {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-marca);
-  background: var(--brand);
+/* o ícone do título, no lugar do quadradinho vermelho de antes. Ele tem caixa
+   própria de 20 px para o título não andar de lado quando o desenho do ícone
+   é mais estreito ou mais largo */
+.cartao-icone {
   flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--icon-accent);
+}
+.cartao-icone.miudo {
+  width: 16px;
+  height: 16px;
+}
+.cartao-icone svg {
+  display: block;
 }
 
 /* --- selo, tag ----------------------------------------------------------- */
@@ -2301,8 +2312,8 @@ dialog.cmdk .caixa {
 .tinta .terciario {
   color: var(--tinta-texto-3);
 }
-.tinta .cartao-titulo .marca {
-  background: var(--tinta-texto);
+.tinta .cartao-icone {
+  color: var(--tinta-texto);
 }
 
 /* Cor mae. Sempre um token que ja existe: nenhuma cor nova entrou no sistema.

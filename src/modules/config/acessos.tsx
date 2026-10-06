@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Prohibit, ShieldCheck, Trash, UserPlus } from '@phosphor-icons/react'
+import { Key, Prohibit, ShieldCheck, Trash, UserPlus, UsersThree } from '@phosphor-icons/react'
 import {
   Botao,
   Campo,
@@ -314,7 +314,7 @@ export function TelaAcessos() {
 
           <div className="ac-mesa">
             <Cartao className="ac-papeis">
-              <TituloCartao>Papéis</TituloCartao>
+              <TituloCartao icone={UsersThree}>Papéis</TituloCartao>
               <div className="ac-lista">
                 {papeis.map((p) => {
                   const quantas = Object.values(matriz[p.chave] ?? {}).filter((l) => l.ver).length
@@ -421,7 +421,7 @@ export function TelaAcessos() {
             </Cartao>
 
             <Cartao className="ac-quadro">
-              <TituloCartao>
+              <TituloCartao icone={ShieldCheck}>
                 {papelAtual ? `O que o ${papelAtual.nome.toLowerCase()} pode` : 'Permissões'}
               </TituloCartao>
 
@@ -478,7 +478,7 @@ export function TelaAcessos() {
 
           {papelAtual ? (
             <Cartao className="ac-acoes">
-              <TituloCartao>O que o {papelAtual.nome.toLowerCase()} pode fazer</TituloCartao>
+              <TituloCartao icone={Key}>O que o {papelAtual.nome.toLowerCase()} pode fazer</TituloCartao>
               <p className="ac-legenda-acao">
                 Isto não é página, é botão. Só entra aqui a ação que o banco já pergunta à
                 matriz antes de deixar acontecer.

@@ -449,7 +449,8 @@
 .ct-cab {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  /* pelo centro, e não pela linha de base: o título agora leva um ícone */
+  align-items: center;
   gap: var(--re-4);
   margin-bottom: var(--sp-4);
 }
@@ -457,16 +458,6 @@
   margin: 0;
   font-size: 14.5px;
   font-weight: 700;
-}
-.ct-cab h3::before {
-  content: '';
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: var(--re-4);
-  border-radius: 50%;
-  background: var(--brand);
-  vertical-align: middle;
 }
 .ct-cab span {
   margin-left: auto;

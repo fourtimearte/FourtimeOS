@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PencilSimple, Plus, Trash, X } from '@phosphor-icons/react'
-import { Aviso, Botao, Campo, Entrada, Marcacao, Modal, Seletor, avisar } from '@ds'
+import { ClipboardText, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react'
+import { avisar, Aviso, Botao, Campo, Entrada, Marcacao, Modal, Seletor, TituloCartao } from '@ds'
 import {
   composicaoPorExtenso,
   definirCadastro,
@@ -123,10 +123,7 @@ export function CartaoDaFichaTecnica({
   return (
     <section className="cartao em-col" data-ficha-tecnica="">
       <div className="em-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          Ficha técnica
-        </h3>
+        <TituloCartao icone={ClipboardText}>Ficha técnica</TituloCartao>
         {podeEditar ? (
           <Botao tamanho="sm" onClick={aoEditar}>
             <PencilSimple size={15} aria-hidden="true" />

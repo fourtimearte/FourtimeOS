@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { CalendarBlank, Receipt, Target, Truck, UsersThree } from '@phosphor-icons/react'
 import { Kpi, TituloCartao, Vazio } from '@ds'
 import {
   MEIOS,
@@ -117,7 +118,7 @@ export function RelatorioDeTransporte({
       <div className="tp-rel-duas">
         <section className="cartao tp-caixa">
           <div className="tp-caixa-topo">
-            <TituloCartao>Por meio</TituloCartao>
+            <TituloCartao icone={Truck}>Por meio</TituloCartao>
             <span className="tp-caixa-nota">onde o dinheiro foi</span>
           </div>
           <div className="tp-caixa-corpo">
@@ -126,7 +127,7 @@ export function RelatorioDeTransporte({
         </section>
         <section className="cartao tp-caixa">
           <div className="tp-caixa-topo">
-            <TituloCartao>Para quê</TituloCartao>
+            <TituloCartao icone={Target}>Para quê</TituloCartao>
             <span className="tp-caixa-nota">entregar ao cliente ou buscar material</span>
           </div>
           <div className="tp-caixa-corpo">
@@ -137,7 +138,7 @@ export function RelatorioDeTransporte({
 
       <section className="cartao tp-caixa">
         <div className="tp-caixa-topo">
-          <TituloCartao>Por semana</TituloCartao>
+          <TituloCartao icone={CalendarBlank}>Por semana</TituloCartao>
           <span className="tp-caixa-nota tp-some-estreito">a semana é a do mês: do dia 1 ao 7, do 8 ao 14, e assim vai</span>
         </div>
         <div className="tp-colunas">
@@ -169,7 +170,7 @@ export function RelatorioDeTransporte({
       <div className="tp-rel-duas">
         <section className="cartao tp-caixa">
           <div className="tp-caixa-topo">
-            <TituloCartao>Quem mais recebeu</TituloCartao>
+            <TituloCartao icone={UsersThree}>Quem mais recebeu</TituloCartao>
             <span className="tp-caixa-nota">{plural(porQuem.length, 'nome', 'nomes')} no mês</span>
           </div>
           <div className="tabela-rola">
@@ -206,7 +207,7 @@ export function RelatorioDeTransporte({
 
         <section className="cartao tp-caixa">
           <div className="tp-caixa-topo">
-            <TituloCartao>Pedidos que mais gastaram</TituloCartao>
+            <TituloCartao icone={Receipt}>Pedidos que mais gastaram</TituloCartao>
             <span className="tp-caixa-nota">
               {dinheiro(somaDe(comPedido))} em {plural(new Set(comPedido.map((l) => l.pedido)).size, 'pedido', 'pedidos')}
             </span>

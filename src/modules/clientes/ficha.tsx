@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ClockCounterClockwise, IdentificationCard } from '@phosphor-icons/react'
 import {
+  avisar,
   Botao,
   Campo,
+  type Coluna,
   Entrada,
+  IconeDoTitulo,
   Modal,
-  Selo,
   Seletor,
+  Selo,
   Tabela,
   Vazio,
-  avisar,
-  type Coluna,
 } from '@ds'
 import {
   NOME_DA_SITUACAO,
@@ -233,7 +235,10 @@ export function FichaDoCliente({
     >
       <div className="ficha">
         <section>
-          <h3 className="ficha-titulo">Cadastro</h3>
+          <h3 className="ficha-titulo">
+            <IconeDoTitulo icone={IdentificationCard} miudo />
+            Cadastro
+          </h3>
 
           {editando ? (
             <div className="ficha-form">
@@ -394,7 +399,10 @@ export function FichaDoCliente({
             ) : null}
           </div>
 
-          <h3 className="ficha-titulo">Histórico</h3>
+          <h3 className="ficha-titulo">
+            <IconeDoTitulo icone={ClockCounterClockwise} miudo />
+            Histórico
+          </h3>
 
           {/* O que veio do Bling não tem detalhe, e dizer isso em uma linha é
               mais honesto do que uma lista de pedidos que ninguém consegue

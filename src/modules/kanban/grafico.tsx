@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react'
+import { Path } from '@phosphor-icons/react'
+import { IconeDoTitulo } from '@ds'
 import {
   COLUNAS,
   NOME_DA_TECNICA,
@@ -163,7 +165,10 @@ export function GraficoDoPedido({
   return (
     <section className="kb-gg" style={grade}>
       <div className="kb-gg-cima">
-        <h3 className="kb-gg-titulo">Onde cada layout está</h3>
+        <h3 className="kb-gg-titulo">
+          <IconeDoTitulo icone={Path} miudo />
+          Onde cada layout está
+        </h3>
         <span className="kb-gg-leg">
           <span className="kb-gg-ponto passou" />
           passou

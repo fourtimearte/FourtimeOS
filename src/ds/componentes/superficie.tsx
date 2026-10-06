@@ -23,10 +23,43 @@ export function Cartao({
   )
 }
 
-export function TituloCartao({ children, marca = true }: { children: ReactNode; marca?: boolean }) {
+/* UM ÍCONE DO PACOTE, isto é, o componente (`Truck`) e não o elemento já
+   desenhado (`<Truck />`). O tipo é escrito aqui, e não importado do pacote,
+   porque a conferência de tipo deste ambiente roda sem o pacote instalado: um
+   tipo que vem de lá não existe para ela, e a publicação quebraria num lugar
+   que ninguém vê. Todo ícone do Phosphor cabe nele. */
+export type IconeDoPacote = (props: {
+  size?: number | string
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
+}) => ReactNode
+
+/* O ÍCONE DO TÍTULO. Até 05/10/2026 todo título de cartão levava um quadradinho
+   vermelho na frente. O Henrique pediu ícone no lugar: o quadradinho era igual
+   em todo cartão e não dizia nada, o ícone diz do que o cartão trata antes de
+   alguém ler o título.
+
+   Phosphor em duotone, que é o ícone de conteúdo do Design System, na cor
+   `--icon-accent`. Ele é decoração: quem lê a tela com leitor ouve o título. */
+export function IconeDoTitulo({ icone: Icone, miudo }: { icone: IconeDoPacote; miudo?: boolean }) {
+  return (
+    <span className={miudo ? 'cartao-icone miudo' : 'cartao-icone'} aria-hidden="true">
+      <Icone size={miudo ? 16 : 18} weight="duotone" />
+    </span>
+  )
+}
+
+/* O `icone` É OBRIGATÓRIO, DE PROPÓSITO. Título de cartão sem ícone não compila,
+   e é assim que nenhuma tela nova nasce sem o dela. */
+export function TituloCartao({
+  icone,
+  children,
+}: {
+  icone: IconeDoPacote
+  children: ReactNode
+}) {
   return (
     <h3 className="cartao-titulo">
-      {marca ? <span className="marca" /> : null}
+      <IconeDoTitulo icone={icone} />
       {children}
     </h3>
   )

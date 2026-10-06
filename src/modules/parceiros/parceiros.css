@@ -392,6 +392,9 @@
   gap: var(--re-2) var(--sp-3);
 }
 .pa-bloco-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
   margin: 0;
   font-size: 15px;
   font-weight: 600;

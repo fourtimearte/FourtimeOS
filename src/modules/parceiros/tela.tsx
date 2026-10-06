@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { CaretLeft, Plus } from '@phosphor-icons/react'
-import { Botao, Esqueleto, Pagina, Segmentado, Seletor, Vazio } from '@ds'
+import { CaretLeft, Handshake, Plus } from '@phosphor-icons/react'
+import { Botao, Esqueleto, IconeDoTitulo, Pagina, Segmentado, Seletor, Vazio } from '@ds'
 import { mesesAte, quandoFoi, usarConsulta } from '@shared'
 import {
   carregarParceiros,
@@ -411,7 +411,10 @@ export function TelaParceiros() {
         <div className="pa-miolo">
           {visaoGeral(
             <section className="pa-bloco">
-              <h2 className="pa-bloco-titulo">Parceiros</h2>
+              <h2 className="pa-bloco-titulo">
+                <IconeDoTitulo icone={Handshake} />
+                Parceiros
+              </h2>
               <div className="cartao pa-quadro pa-lista">{itens}</div>
               <p className="pa-ajuda">Toque num parceiro para ver as vendas e o acordo dele.</p>
             </section>,

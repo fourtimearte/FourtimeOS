@@ -137,8 +137,8 @@ for (const tema of ['light', 'dark']) {
 
   /* --------------------------------------------------------- LANÇAMENTOS */
   await ir(pg, '/transporte', '.tp-tabela')
-  const K = await tokens(pg, ['--bg', '--surface', '--surface-2', '--surface-3', '--brand', '--brand-text', '--text', '--text-2', '--text-3', '--ink', '--ok', '--warn'])
-  let m = await medir(pg, ['body', '.pagina-topo', '.pagina-topo .acima', '.pagina-topo h1', '.pagina-topo .sub', '.tp-barra', '.tp-aba', '.tp-aba button', '.tp-busca', '.tp-fim', '.tp-duas', '.tp-quadro', '.tp-lado', 'table.tabela thead th', 'table.tabela tr.grupo td', '.tp-linha', '.tp-grupo b', '.tp-do-grupo', '.tp-nome b', '.tp-nome small', '.tp-situacao', '.tp-heroi', '.tp-heroi-numero', '.tp-heroi h2', '.tp-heroi p', '.tp-caixa-topo', '.cartao-titulo', '.cartao-titulo .marca', '.tp-linha-caixa', '.tp-linha-caixa .btn', '.tp-trilho', '.tp-cheio'])
+  const K = await tokens(pg, ['--bg', '--surface', '--surface-2', '--surface-3', '--brand', '--brand-text', '--text', '--text-2', '--text-3', '--ink', '--ok', '--warn', '--icon-accent'])
+  let m = await medir(pg, ['body', '.pagina-topo', '.pagina-topo .acima', '.pagina-topo h1', '.pagina-topo .sub', '.tp-barra', '.tp-aba', '.tp-aba button', '.tp-busca', '.tp-fim', '.tp-duas', '.tp-quadro', '.tp-lado', 'table.tabela thead th', 'table.tabela tr.grupo td', '.tp-linha', '.tp-grupo b', '.tp-do-grupo', '.tp-nome b', '.tp-nome small', '.tp-situacao', '.tp-heroi', '.tp-heroi-numero', '.tp-heroi h2', '.tp-heroi p', '.tp-caixa-topo', '.cartao-titulo', '.cartao-titulo .cartao-icone', '.tp-linha-caixa', '.tp-linha-caixa .btn', '.tp-trilho', '.tp-cheio'])
   conta(m.body.fundo === K['--bg'], `${G}: o fundo da página é o token --bg`)
   conta(igual(m['.pagina-topo'].x, 280) && igual(m['.pagina-topo'].w, 1598), `${G}: a página vai de 280 a 1878 (${m['.pagina-topo'].x}, ${m['.pagina-topo'].w})`)
   conta(m['.pagina-topo .acima'].letra === '12.5px/600' && m['.pagina-topo .acima'].texto.toLowerCase() === 'gestão' && m['.pagina-topo .acima'].cor === K['--text-3'], `${G}: sobrelinha "Gestão" 12.5/600 em --text-3`)
@@ -175,7 +175,7 @@ for (const tema of ['light', 'dark']) {
   conta(numeros.map((x) => x.texto.replace(/\s/g, ' ')).join(' | ') === '35 | R$ 68,94 | R$ 979,50' && numeros.every((x) => x.letra === '24px/600') && numeros[2].cor === K['--brand-text'], `${G}: 35 corridas, R$ 68,94 por corrida e R$ 979,50 a pagar em vermelho (${numeros.map((x) => x.texto).join(' | ')})`)
   const doLado = await todos(pg, '.tp-lado > *')
   conta(doLado.length === 4 && doLado.slice(1).every((x, i) => igual(x.y - doLado[i].baixo, 16)), `${G}: quatro blocos no lado, 16 entre eles`)
-  conta(igual(m['.tp-caixa-topo'].h, 44) && m['.cartao-titulo'].letra === '15px/600' && igual(m['.cartao-titulo .marca'].w, 6) && m['.cartao-titulo .marca'].fundo === K['--brand'], `${G}: topo de caixa com 44 e título 15/600 com o quadradinho vermelho`)
+  conta(igual(m['.tp-caixa-topo'].h, 44) && m['.cartao-titulo'].letra === '15px/600' && igual(m['.cartao-titulo .cartao-icone'].w, 20) && m['.cartao-titulo .cartao-icone'].cor === K['--icon-accent'], `${G}: topo de caixa com 44 e título 15/600 com o ícone na cor de ícone do tema`)
   const aPagar = await todos(pg, '.tp-linha-caixa')
   conta(aPagar.length === 4 && aPagar.every((x) => igual(x.h, 56)) && /^Transportadora Exemplo Ltda .* R\$ 640,00 Acertar$/.test(aPagar[0].texto.replace(/\s/g, ' ')) && /^João 6 corridas, desde 19\/10 R\$ 149,00/.test(aPagar[1].texto.replace(/\s/g, ' ')), `${G}: A pagar junta por quem recebe, do maior para o menor (${aPagar.map((x) => x.texto.replace(/\s/g, ' ').slice(0, 28)).join(' / ')})`)
   conta(igual(m['.tp-linha-caixa .btn'].h, 34) && m['.tp-linha-caixa .btn'].raio === '10px', `${G}: botão Acertar com 34`)

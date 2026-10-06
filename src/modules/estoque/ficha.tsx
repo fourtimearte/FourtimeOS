@@ -1,7 +1,17 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { MapPin, PencilSimple, Plus, X } from '@phosphor-icons/react'
-import { Botao } from '@ds'
+import {
+  ArrowsLeftRight,
+  BookmarkSimple,
+  ClipboardText,
+  Handshake,
+  MapPin,
+  Palette,
+  PencilSimple,
+  Plus,
+  X,
+} from '@phosphor-icons/react'
+import { Botao, type IconeDoPacote, TituloCartao } from '@ds'
 import { chaveDaCelula, lugarPorExtenso, type Lugar, type Movel } from '@dominio/deposito'
 import {
   NOME_DA_CATEGORIA,
@@ -52,11 +62,13 @@ import { Bola, VaoDoMaterial } from './vao'
 
 function Caixa({
   titulo,
+  icone,
   direita,
   solta,
   children,
 }: {
   titulo: string
+  icone: IconeDoPacote
   direita?: ReactNode
   /** as linhas encostam nas bordas: é a caixa de lista */
   solta?: boolean
@@ -65,10 +77,7 @@ function Caixa({
   return (
     <section className="cartao em-col">
       <div className="em-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          {titulo}
-        </h3>
+        <TituloCartao icone={icone}>{titulo}</TituloCartao>
         {direita}
       </div>
       {solta ? children : <div className="em-corpo">{children}</div>}
@@ -158,10 +167,7 @@ function FichasDasCores({
   return (
     <section className="cartao em-col" data-fichas-das-cores="">
       <div className="em-topo">
-        <h3 className="cartao-titulo">
-          <span className="marca" />
-          Ficha técnica das cores
-        </h3>
+        <TituloCartao icone={ClipboardText}>Ficha técnica das cores</TituloCartao>
         {podeEditar ? (
           <Botao tamanho="sm" onClick={aoEditar}>
             <PencilSimple size={15} aria-hidden="true" />
@@ -245,6 +251,7 @@ function OQueAndou({
   return (
     <Caixa
       titulo="O que andou"
+      icone={ArrowsLeftRight}
       solta
       direita={
         movimentos.length > 5 ? (
@@ -415,10 +422,7 @@ export function FichaDoTecido({
           <div className="pilha larga">
             <section className="cartao em-col">
               <div className="em-topo">
-                <h3 className="cartao-titulo">
-                  <span className="marca" />
-                  As cores deste tecido
-                </h3>
+                <TituloCartao icone={Palette}>As cores deste tecido</TituloCartao>
               </div>
               <div className="em-corpo">
                 <p className="em-nota">
@@ -440,7 +444,7 @@ export function FichaDoTecido({
           </div>
           <div className="pilha larga">
             {fornecimento.disponivel ? (
-              <Caixa titulo="Fornecedor">
+              <Caixa titulo="Fornecedor" icone={Handshake}>
                 <div className="em-campo">
                   <span>Fornecedor do tecido</span>
                   <div className="em-fornecedor">
@@ -521,10 +525,7 @@ export function FichaDoTecido({
         <div className="pilha larga">
           <section className="cartao em-col">
             <div className="em-topo">
-              <h3 className="cartao-titulo">
-                <span className="marca" />
-                As cores deste tecido
-              </h3>
+              <TituloCartao icone={Palette}>As cores deste tecido</TituloCartao>
               <span className="em-topo-nota">a altura é o livre · o risco é o mínimo</span>
             </div>
             <div className="em-grade-cores">
@@ -573,7 +574,7 @@ export function FichaDoTecido({
 
         <div className="pilha larga">
           {fornecimento.disponivel ? (
-            <Caixa titulo="Fornecedor">
+            <Caixa titulo="Fornecedor" icone={Handshake}>
               <div className="em-campo">
                 <span>Fornecedor do tecido</span>
                 <div className="em-fornecedor">
@@ -613,6 +614,7 @@ export function FichaDoTecido({
 
           <Caixa
             titulo="Onde está"
+            icone={MapPin}
             direita={
               lugares.length ? (
                 <Botao
@@ -843,6 +845,7 @@ export function FichaDoMaterial({
 
           <Caixa
             titulo="Reservas em aberto"
+            icone={BookmarkSimple}
             solta
             direita={
               reservas.length ? (
@@ -887,7 +890,7 @@ export function FichaDoMaterial({
         </div>
 
         <div className="pilha larga">
-          <Caixa titulo="Onde está guardado">
+          <Caixa titulo="Onde está guardado" icone={MapPin}>
             {!guardado.planta ? (
               <p className="em-nota">
                 O depósito ainda não foi desenhado. Depois de desenhado, é aqui que se marca o lugar
@@ -953,7 +956,7 @@ export function FichaDoMaterial({
           </Caixa>
 
           {fornecimento.disponivel ? (
-            <Caixa titulo="Fornecedor">
+            <Caixa titulo="Fornecedor" icone={Handshake}>
               <div className="em-campo">
                 <span>{tecido ? 'Fornecedor desta cor' : 'Fornecedor deste item'}</span>
                 <div className="em-fornecedor">

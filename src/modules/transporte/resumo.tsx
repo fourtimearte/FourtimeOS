@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
-import { Car, Motorcycle, Taxi, Truck } from '@phosphor-icons/react'
-import { Botao, TituloCartao } from '@ds'
+import { Car, Motorcycle, NotePencil, Taxi, Truck, Wallet } from '@phosphor-icons/react'
+import { Botao, IconeDoTitulo, TituloCartao } from '@ds'
 import {
   MEIOS,
   NOME_DA_FORMA,
@@ -166,7 +166,7 @@ export function ResumoDoMes({
 
       <section className="cartao tp-caixa">
         <div className="tp-caixa-topo">
-          <TituloCartao>A pagar</TituloCartao>
+          <TituloCartao icone={Wallet}>A pagar</TituloCartao>
           {emAberto.length ? (
             <button type="button" className="tp-link" onClick={aoVerAbertos}>
               ver {plural(emAberto.length, 'corrida', 'corridas')}
@@ -198,7 +198,7 @@ export function ResumoDoMes({
 
       <section className="cartao tp-caixa">
         <div className="tp-caixa-topo">
-          <TituloCartao>Por meio</TituloCartao>
+          <TituloCartao icone={Truck}>Por meio</TituloCartao>
           <span className="tp-caixa-nota">onde o dinheiro foi</span>
         </div>
         <div className="tp-caixa-corpo">
@@ -252,7 +252,12 @@ export function CorpoDoLancamento({ l, hoje }: { l: Lancamento; hoje: Date }) {
       </div>
       {l.observacao ? (
         <div className="tp-secao">
-          <div className="tp-secao-topo">Observação</div>
+          <div className="tp-secao-topo">
+            <span className="tp-secao-nome">
+              <IconeDoTitulo icone={NotePencil} miudo />
+              Observação
+            </span>
+          </div>
           <p className="tp-obs">{l.observacao}</p>
         </div>
       ) : null}

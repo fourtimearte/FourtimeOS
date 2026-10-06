@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { CaretRight, X } from '@phosphor-icons/react'
-import { Botao, Tag } from '@ds'
+import { CaretRight, Package, TreeStructure, X } from '@phosphor-icons/react'
+import { Botao, IconeDoTitulo, Tag } from '@ds'
 import {
   CATEGORIAS,
   gruposDoEstoque,
@@ -158,7 +158,9 @@ export function CorpoDaFicha({
 
       <div className="fo-secao">
         <div className="fo-secao-topo">
-          O que ele fornece, por tipo
+          <span className="fo-secao-nome">
+            <IconeDoTitulo icone={Package} miudo />O que ele fornece, por tipo
+          </span>
           <small>
             {materiais.length === 1 ? '1 material do Estoque' : `${materiais.length} materiais do Estoque`}
           </small>
@@ -218,7 +220,12 @@ export function CorpoDaFicha({
       </div>
 
       <div className="fo-secao">
-        <div className="fo-secao-topo">Onde ele aparece no sistema</div>
+        <div className="fo-secao-topo">
+          <span className="fo-secao-nome">
+            <IconeDoTitulo icone={TreeStructure} miudo />
+            Onde ele aparece no sistema
+          </span>
+        </div>
         <div>
           <button type="button" className="fo-onde" onClick={() => aoIrPara('estoque')}>
             <b>Estoque</b>

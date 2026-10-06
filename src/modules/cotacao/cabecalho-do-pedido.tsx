@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Plus, X } from '@phosphor-icons/react'
-import { Campo, CampoDeData, Entrada, Flutuante, Seletor } from '@ds'
+import { ClipboardText, Plus, X } from '@phosphor-icons/react'
+import { Campo, CampoDeData, Entrada, Flutuante, Seletor, TituloCartao } from '@ds'
 import {
   opcoesDeDepartamento,
   DEPARTAMENTOS,
@@ -76,7 +76,7 @@ export function CabecalhoDoPedido({
   return (
     <section className="cartao ct-cartao">
       <header className="ct-cab">
-        <h3>Dados do pedido</h3>
+        <TituloCartao icone={ClipboardText}>Dados do pedido</TituloCartao>
         <span>vai para o cabeçalho da página 1, e para a ficha da produção</span>
       </header>
 

@@ -50,8 +50,9 @@ export {
   Selo,
   Tag,
   TituloCartao,
+  IconeDoTitulo,
 } from './componentes/superficie'
-export type { Tecnica, TomDeEtiqueta, TomSelo } from './componentes/superficie'
+export type { IconeDoPacote, Tecnica, TomDeEtiqueta, TomSelo } from './componentes/superficie'
 
 export { abrirDica, fecharDica, Flutuante, semAcento } from './componentes/flutuante'
 export type { OpcoesFlutuante } from './componentes/flutuante'

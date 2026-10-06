@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FolderOpen, List } from '@phosphor-icons/react'
 import { Aviso, Botao, Cartao, Interruptor, Pagina, TituloCartao, avisar } from '@ds'
 import { mostrarPagina, paginasEscondidas } from '@dominio/regulagem'
 import { AbasDaConfig } from './abas'
@@ -127,7 +128,7 @@ export function TelaPaginas() {
       {falha ? <Aviso tom="warn">{falha}</Aviso> : null}
 
       <Cartao>
-        <TituloCartao>Menu</TituloCartao>
+        <TituloCartao icone={List}>Menu</TituloCartao>
         <p className="cfg-texto">
           Desligar tira a página do menu de todo mundo. O endereço continua funcionando para quem o
           tiver, e é assim que dá para conferir uma página guardada sem religar ela para a fábrica
@@ -161,7 +162,7 @@ export function TelaPaginas() {
       </Cartao>
 
       <Cartao>
-        <TituloCartao>Abrir uma página guardada</TituloCartao>
+        <TituloCartao icone={FolderOpen}>Abrir uma página guardada</TituloCartao>
         <p className="cfg-texto">
           A rota continua de pé. Para ver a Ficha de produção mesmo com ela fora do menu, abra{' '}
           <code>/ficha</code> direto no endereço.

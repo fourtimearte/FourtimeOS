@@ -1,6 +1,17 @@
 import { Fragment, useEffect, useState } from 'react'
-import { CaretRight } from '@phosphor-icons/react'
-import { AreaTexto, Botao, Campo, Entrada, Gaveta, Modal, Segmentado, Vazio, avisar } from '@ds'
+import { CaretRight, NotePencil, Path } from '@phosphor-icons/react'
+import {
+  AreaTexto,
+  avisar,
+  Botao,
+  Campo,
+  Entrada,
+  Gaveta,
+  IconeDoTitulo,
+  Modal,
+  Segmentado,
+  Vazio,
+} from '@ds'
 import { cnpjNaTela, cnpjValido, mascaraDoCnpj } from '@dominio/fornecedor'
 import {
   MEIOS,
@@ -296,7 +307,11 @@ export function QuemTransporta({
 
               <div className="tp-secao">
                 <div className="tp-secao-topo">
-                  Últimas corridas <small>de {nomeDoMes}</small>
+                  <span className="tp-secao-nome">
+                    <IconeDoTitulo icone={Path} miudo />
+                    Últimas corridas
+                  </span>
+                  <small>de {nomeDoMes}</small>
                 </div>
                 <div className="tp-lista">
                   {doEscolhido.length ? (
@@ -318,7 +333,12 @@ export function QuemTransporta({
 
               {escolhido.observacao ? (
                 <div className="tp-secao">
-                  <div className="tp-secao-topo">Observação</div>
+                  <div className="tp-secao-topo">
+                    <span className="tp-secao-nome">
+                      <IconeDoTitulo icone={NotePencil} miudo />
+                      Observação
+                    </span>
+                  </div>
                   <p className="tp-obs">{escolhido.observacao}</p>
                 </div>
               ) : null}

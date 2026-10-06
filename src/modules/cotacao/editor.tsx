@@ -1,18 +1,33 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { emEnsaio } from '@dominio/regulagem'
-import { Check, Copy, FileText, FloppyDisk, Plus, Trash, WhatsappLogo, X } from '@phosphor-icons/react'
+import {
+  Check,
+  Copy,
+  FileText,
+  FloppyDisk,
+  Info,
+  PaperPlaneTilt,
+  Percent,
+  Plus,
+  Receipt,
+  Trash,
+  WhatsappLogo,
+  Wrench,
+  X,
+} from '@phosphor-icons/react'
 import {
   AreaTexto,
+  avisar,
   Aviso,
   Botao,
+  Esqueleto,
   Pagina,
   Segmentado,
-  Selo,
   Seletor,
-  Esqueleto,
+  Selo,
+  TituloCartao,
   Vazio,
-  avisar,
 } from '@ds'
 import {
   CaixaDeImagem,
@@ -380,7 +395,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           {/* --- os informes --- */}
           <section className="cartao ct-cartao">
             <header className="ct-cab">
-              <h3>Informes sobre a produção</h3>
+              <TituloCartao icone={Info}>Informes sobre a produção</TituloCartao>
               <span>página 1 do documento · desmarcar tira do PDF</span>
             </header>
             <div className="ct-informes">
@@ -483,7 +498,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           {c.produtos.length ? (
             <section className="cartao ct-cartao">
               <header className="ct-cab">
-                <h3>Ajustes no valor</h3>
+                <TituloCartao icone={Percent}>Ajustes no valor</TituloCartao>
                 <span>do documento, não de um produto</span>
               </header>
               {c.ajustes.length ? (
@@ -539,7 +554,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
           {c.enviadas.length ? (
             <section className="cartao ct-cartao">
               <header className="ct-cab">
-                <h3>O que já foi enviado</h3>
+                <TituloCartao icone={PaperPlaneTilt}>O que já foi enviado</TituloCartao>
                 <span>o valor de cada envio fica congelado como saiu</span>
               </header>
               <div className="ct-envios">
@@ -566,7 +581,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         <aside className="ct-lado">
           <section className="cartao ct-cartao">
             <header className="ct-cab">
-              <h3>Resumo da cotação</h3>
+              <TituloCartao icone={Receipt}>Resumo da cotação</TituloCartao>
             </header>
             <div className="ct-linha">
               <span>Produtos</span>
@@ -630,7 +645,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
               procura num lugar em vez de três. */}
           <section className="cartao ct-cartao ct-ferramentas">
             <header className="ct-cab">
-              <h3>Ferramentas</h3>
+              <TituloCartao icone={Wrench}>Ferramentas</TituloCartao>
             </header>
 
             <Segmentado

@@ -44,22 +44,8 @@
   gap: var(--re-6);
   padding: var(--re-9) var(--re-9) var(--re-6);
 }
-.pn-cartao-topo h3 {
-  display: flex;
-  align-items: center;
-  gap: var(--re-4);
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-/* o ponto vermelho antes do título, como em toda seção do v5 */
-.pn-cartao-topo h3::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-marca);
-  background: var(--brand);
-}
+/* o título é o TituloCartao do Design System, com o ícone dele: aqui não há
+   regra de título */
 .pn-cartao-topo button {
   border: 0;
   padding: 0;

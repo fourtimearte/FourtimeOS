@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
-import { TShirt } from '@phosphor-icons/react'
-import { Kpi, TituloCartao } from '@ds'
+import { ChartBar, ShoppingBag, TShirt, UsersThree } from '@phosphor-icons/react'
+import { IconeDoTitulo, Kpi, TituloCartao } from '@ds'
 import { quandoFoi } from '@shared'
 import {
   fraseDoAcordo,
@@ -86,6 +86,7 @@ export function VisaoGeral({
 
       <GraficoPorMes
         titulo="Vendido por mês"
+        icone={ChartBar}
         total={dinheiro(total.valor)}
         sub="em vendas de peças de parceiros, sem o frete"
         meses={meses}
@@ -100,7 +101,10 @@ export function VisaoGeral({
 
       {larga ? (
         <section className="pa-bloco">
-          <h2 className="pa-bloco-titulo">Por parceiro, no período</h2>
+          <h2 className="pa-bloco-titulo">
+            <IconeDoTitulo icone={UsersThree} />
+            Por parceiro, no período
+          </h2>
           <div className="cartao pa-quadro">
             <div className="tabela-rola">
               <table className="tabela">
@@ -143,7 +147,7 @@ export function VisaoGeral({
       ) : null}
 
       <section className="cartao cartao-pad pa-ultimas">
-        <TituloCartao>Últimas compras</TituloCartao>
+        <TituloCartao icone={ShoppingBag}>Últimas compras</TituloCartao>
         {ultimas.length === 0 ? (
           <p className="pa-ajuda">Nenhuma compra de peça de parceiro no período.</p>
         ) : (

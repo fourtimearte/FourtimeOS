@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Buildings, MapPin, Phone } from '@phosphor-icons/react'
 import { Aviso, Botao, Campo, Cartao, Entrada, Pagina, TituloCartao, avisar } from '@ds'
 import {
   CAMPOS_DO_DOCUMENTO,
@@ -114,7 +115,7 @@ export function TelaEmpresa() {
       ) : null}
 
       <Cartao>
-        <TituloCartao>Quem é a empresa</TituloCartao>
+        <TituloCartao icone={Buildings}>Quem é a empresa</TituloCartao>
         <div className="cfg-grade">
           {campo('nome')}
           {campo('descricao', { largo: true })}
@@ -125,7 +126,7 @@ export function TelaEmpresa() {
       </Cartao>
 
       <Cartao>
-        <TituloCartao>Onde ela fica</TituloCartao>
+        <TituloCartao icone={MapPin}>Onde ela fica</TituloCartao>
         <div className="cfg-grade">
           {campo('endereco', { largo: true })}
           {campo('bairro')}
@@ -136,7 +137,7 @@ export function TelaEmpresa() {
       </Cartao>
 
       <Cartao>
-        <TituloCartao>Como falam com ela</TituloCartao>
+        <TituloCartao icone={Phone}>Como falam com ela</TituloCartao>
         <div className="cfg-grade">
           {campo('telefone', { mascara: mascaraDeTelefone })}
           {campo('whatsapp', { mascara: mascaraDeTelefone })}

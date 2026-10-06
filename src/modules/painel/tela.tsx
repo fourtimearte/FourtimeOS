@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BellRinging, Package, WhatsappLogo } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
-import { Botao, Kpi, Nivel, Pagina, PilulaTecnica, Selo, Vazio } from '@ds'
+import { Botao, Kpi, Nivel, Pagina, PilulaTecnica, Selo, TituloCartao, Vazio } from '@ds'
 import {
   abaixoDoMinimo,
   carregarMateriais,
@@ -185,7 +186,7 @@ export function TelaPainel() {
       <div className="pn-grade">
         <section className="cartao pn-cartao">
           <header className="pn-cartao-topo">
-            <h3>Precisa de você</h3>
+            <TituloCartao icone={BellRinging}>Precisa de você</TituloCartao>
             <button type="button" onClick={() => navegar('/kanban')}>
               Kanban
             </button>
@@ -232,7 +233,7 @@ export function TelaPainel() {
         <div className="pn-coluna">
           <section className="cartao pn-cartao">
             <header className="pn-cartao-topo">
-              <h3>WhatsApp</h3>
+              <TituloCartao icone={WhatsappLogo}>WhatsApp</TituloCartao>
               <button type="button" onClick={() => navegar('/funil')}>
                 Funil
               </button>
@@ -265,7 +266,7 @@ export function TelaPainel() {
 
           <section className="cartao pn-cartao">
             <header className="pn-cartao-topo">
-              <h3>Estoque abaixo do mínimo</h3>
+              <TituloCartao icone={Package}>Estoque abaixo do mínimo</TituloCartao>
               <button type="button" onClick={() => navegar('/estoque')}>
                 Estoque
               </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowSquareOut, Copy } from '@phosphor-icons/react'
+import { ArrowSquareOut, Browser, Copy, Handshake } from '@phosphor-icons/react'
 import {
   Botao,
   Campo,
@@ -236,7 +236,7 @@ export function FichaDoParceiro({
 
   const acordo = (
     <section className="cartao cartao-pad pa-cartao">
-      <TituloCartao>Acordo</TituloCartao>
+      <TituloCartao icone={Handshake}>Acordo</TituloCartao>
       <Campo rotulo="Nome do parceiro">
         <Entrada
           value={nome}
@@ -346,7 +346,7 @@ export function FichaDoParceiro({
 
   const pagina = (
     <section className="cartao cartao-pad pa-cartao">
-      <TituloCartao>Página do parceiro</TituloCartao>
+      <TituloCartao icone={Browser}>Página do parceiro</TituloCartao>
       {parceiro ? (
         <>
           <Campo rotulo="Link da página do parceiro">

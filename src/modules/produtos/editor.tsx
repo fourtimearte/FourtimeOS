@@ -334,6 +334,7 @@ export function Editor({
   tecidos,
   doEstoque,
   abaInicial,
+  emKits,
   podeExcluir,
   aoSujar,
   aoCancelar,
@@ -348,6 +349,8 @@ export function Editor({
   tecidos: TecidoDeConta[]
   doEstoque: MaterialDoEstoque[]
   abaInicial: AbaDoModulo
+  /** em quantos kits a peça entra: excluir a peça tira ela deles */
+  emKits: number
   podeExcluir: boolean
   aoSujar: (sujo: boolean) => void
   aoCancelar: () => void
@@ -1174,8 +1177,13 @@ export function Editor({
             </div>
             <div className="pd-corpo">
               <p className="pd-nota">
-                Excluir tira a peça das listas, junto com a ficha, o molde e o tecido medido dela. Os
-                orçamentos que já foram feitos continuam como estão.
+                {emKits ? (
+                  <>
+                    Esta referência está em <b>{plural(emKits, 'kit', 'kits')}</b>.{' '}
+                  </>
+                ) : null}
+                Excluir tira a peça das listas{emKits ? ' e do kit' : ''}, junto com a ficha, o molde e o
+                tecido medido dela. Os orçamentos que já foram feitos continuam como estão.
               </p>
               <div className="fileira">
                 <Botao tom="perigo" onClick={() => setExcluindo(true)}>
@@ -1220,8 +1228,8 @@ export function Editor({
         }
       >
         <p className="pd-nota">
-          A referência {r.cod} sai das listas, e a ficha técnica dela vai junto: as medidas, o tecido, os
-          aviamentos e o molde. Isso não volta atrás. Os orçamentos que já foram feitos continuam como estão.
+          A referência {r.cod} sai das listas{emKits ? ' e de ' + plural(emKits, 'kit', 'kits') : ''}, e a
+          ficha técnica dela vai junto: as medidas, o tecido, os aviamentos e o molde. Isso não volta atrás. Os orçamentos que já foram feitos continuam como estão.
         </p>
       </Modal>
     </div>

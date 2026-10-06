@@ -5,8 +5,11 @@ import {
   codigoCurto,
   emBranco,
   faltaEmPalavras,
+  faltasDoKit,
+  kitEmBranco,
   oQueFalta,
   type GrupoDeReferencia,
+  type KitNaLista,
   type ReferenciaNaFicha,
 } from '@dominio/produto'
 import { plural } from './apoio'
@@ -83,10 +86,41 @@ function Linha({
   )
 }
 
+function LinhaDoKit({
+  k,
+  escolhido,
+  aoEscolher,
+}: {
+  k: KitNaLista
+  escolhido: boolean
+  aoEscolher: () => void
+}) {
+  const branco = kitEmBranco(k)
+  const n = branco || !k.pecas ? 0 : faltasDoKit(k)
+  return (
+    <div className={escolhido ? 'pd-t pd-solta-na-lista pd-sel' : 'pd-t pd-solta-na-lista'} data-kit={codigoCurto(k.cod)}>
+      <button type="button" className="pd-t-nome" aria-pressed={escolhido} onClick={aoEscolher}>
+        <span className="pd-nomes">
+          <b>{k.nome}</b>
+          <small className={n ? 'pd-falta' : undefined}>
+            {k.pecas
+              ? plural(k.pecas, 'peça', 'peças') + ' · ' + k.pecasCod.map(codigoCurto).join(' + ')
+              : 'sem as peças'}
+            {!k.pecas ? '' : branco ? ' · ficha em branco' : n ? ' · ' + plural(n, 'coisa por fazer', 'coisas por fazer') : ''}
+          </small>
+        </span>
+        {n ? <Alerta n={n} frase={plural(n, 'coisa por fazer', 'coisas por fazer')} /> : null}
+      </button>
+    </div>
+  )
+}
+
 export function Arvore({
   grupos,
   referencias,
   haReferencias,
+  kits,
+  haKits,
   termo,
   lista,
   aoTrocarLista,
@@ -94,12 +128,17 @@ export function Arvore({
   aoAbrir,
   escolhida,
   aoEscolher,
+  kitEscolhido,
+  aoEscolherKit,
 }: {
   grupos: GrupoDeReferencia[]
   /** já filtradas pela busca */
   referencias: ReferenciaNaFicha[]
   /** existe alguma referência, antes da busca */
   haReferencias: boolean
+  /** os kits, já filtrados pela busca */
+  kits: KitNaLista[]
+  haKits: boolean
   termo: string
   lista: Lista
   aoTrocarLista: (l: Lista) => void
@@ -107,6 +146,8 @@ export function Arvore({
   aoAbrir: (cod: string) => void
   escolhida: string
   aoEscolher: (id: string) => void
+  kitEscolhido: string
+  aoEscolherKit: (id: string) => void
 }) {
   const gavetas = emGavetas(grupos, referencias).filter(g => !termo || g.itens.length)
 
@@ -126,16 +167,33 @@ export function Arvore({
                 </>
               ),
             },
-            { valor: 'kits', rotulo: 'Kits' },
+            {
+              valor: 'kits',
+              rotulo: (
+                <>
+                  Kits <small>{kits.length}</small>
+                </>
+              ),
+            },
           ]}
         />
       </div>
 
       {lista === 'kits' ? (
-        <Vazio
-          titulo="Os kits ainda não chegaram"
-          texto="O kit junta duas ou mais referências numa ficha de fabricação só. Ele entra aqui no próximo passo desta página."
-        />
+        !haKits ? (
+          <Vazio
+            titulo="Nenhum kit cadastrado"
+            texto="O kit junta duas ou mais referências numa ficha de fabricação só: camiseta e calção, agasalho. Monte o primeiro em Novo kit."
+          />
+        ) : !kits.length ? (
+          <Vazio titulo="Nenhum kit com esse nome" texto="Tente o nome do kit ou o código de uma das peças dele." />
+        ) : (
+          <div className="pd-kits">
+            {kits.map(k => (
+              <LinhaDoKit key={k.id} k={k} escolhido={k.id === kitEscolhido} aoEscolher={() => aoEscolherKit(k.id)} />
+            ))}
+          </div>
+        )
       ) : !haReferencias ? (
         <Vazio
           titulo="Nenhuma referência cadastrada"

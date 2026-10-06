@@ -15,6 +15,9 @@
      4. o que não deixa salvar, o banco recusando, e sair com mudança sem salvar
      5. nova referência, duplicar e excluir
      6. quem edita sem ser chefia, quem só lê e quem não tem a página
+     6b. os kits (pranchas 60 e 61): a lista, a ficha de fabricação, o editor
+        em três colunas com mais de um tecido por peça, o kit novo com o
+        código que nasce das peças, o que não deixa salvar, excluir
      7. sem referência, com a leitura falhando e sem o apoio do Estoque
      8. o celular e o tablet: nada rola para o lado e a tabela fica em pé
      9. que não houve erro de JavaScript
@@ -121,9 +124,9 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   await ir(pg, '/produtos', '[data-arvore]')
 
   conta((await textos(pg, '.pagina-topo h1'))[0] === 'Fichas técnicas' && (await textos(pg, '.pagina-topo .acima'))[0] === 'Materiais', `${G} topo: Materiais, Fichas técnicas`)
-  conta((await textos(pg, '.pagina-topo .sub'))[0] === '8 referências · 1 com a ficha completa', `${G} topo: conta as peças sem o kit e diz quantas têm a ficha completa (${(await textos(pg, '.pagina-topo .sub'))[0]})`)
+  conta((await textos(pg, '.pagina-topo .sub'))[0] === '8 referências · 1 kit · 1 com a ficha completa', `${G} topo: conta as peças sem o kit, os kits, e diz quantas têm a ficha completa (${(await textos(pg, '.pagina-topo .sub'))[0]})`)
   conta(mesma(await textos(pg, '.pd-abas-da-pagina button'), ['Referências e kits', 'Movimento', 'Depósito', 'Estatísticas']), `${G} barra: as quatro abas da página`)
-  conta(mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 8', 'Kits']), `${G} árvore: Referências com a conta, e Kits`)
+  conta(mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 8', 'Kits 1']), `${G} árvore: Referências e Kits, cada uma com a conta`)
   const grupos = await textos(pg, '.pd-g')
   conta(grupos.length === 5 && !grupos.some((g) => /KIT/.test(g)), `${G} árvore: cinco gavetas, e o grupo dos kits não é uma delas (${grupos.join(' / ')})`)
   conta(/^010 Camisetas e polos 4 referências 1$/.test(grupos[0]) && /^020 Raglan 1 referência$/.test(grupos[1]) && /^sem Sem grupo 1 referência/.test(grupos[4]), `${G} árvore: o código, o nome, quantas referências e quantas começadas e incompletas`)
@@ -150,7 +153,7 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   conta(sel && sel.fundo === await token(pg, '--ink') && sel.cor === await token(pg, '--on-ink'), `${G} árvore: a peça aberta fica na tinta`)
 
   const titulos = await pg.evaluate(() => [...document.querySelectorAll('[data-ficha] .pd-topo .cartao-titulo')].map((h) => [h.textContent.trim(), !!h.querySelector('.cartao-icone svg')]))
-  conta(mesma(titulos.map((t) => t[0]), ['Molde', 'Detalhes da peça', 'Medidas e tecido', 'Aviamentos e insumos por peça']) && titulos.every((t) => t[1]), `${G} ficha: os quatro cartões, cada título com o ícone`)
+  conta(mesma(titulos.map((t) => t[0]), ['Molde', 'Detalhes da peça', 'Medidas e tecido', 'Aviamentos e insumos por peça', 'Onde esta peça entra']) && titulos.every((t) => t[1]), `${G} ficha: os cinco cartões, cada título com o ícone`)
 
   const papel = (await caixas(pg, '.pd-molde-caixa'))[0]
   const img = await pg.evaluate(() => { const i = document.querySelector('.pd-molde'); return { src: i.src.slice(0, 34), largura: i.naturalWidth, alt: i.alt } })
@@ -190,11 +193,11 @@ for (const tema of ['light', 'dark']) await secao(async () => {
     await pg.locator('[data-tecido-de-conta] .cb').click(); await pausa(pg)
     const opcoes = await textos(pg, '.mn-item')
     conta(mesma(opcoes.map((o) => o.replace(/\s*✓$/, '')), ['Não converter', 'DRYFIT POLIESTER 100%', 'MOLETOM 3 CABOS']), `tecido de conta: só entra tecido com largura e gramatura (o Jakar fica de fora)`)
-    await pg.locator('.mn-item', { hasText: 'MOLETOM 3 CABOS' }).click(); await pausa(pg)
+    await pg.locator('.mn-item:visible', { hasText: 'MOLETOM 3 CABOS' }).click(); await pausa(pg)
     const comMoletom = await tabela(pg, '[data-modulo] table.pd-grade')
     conta(comMoletom[5][0] === 'dá em metros, com 1,85 m de largura' && comMoletom[5][1] === br(soma[0] / 1.85, 2) && comMoletom[6][0] === 'dá em gramas, com malha de 310 g/m²' && comMoletom[6][1] === br(Math.round(soma[0] * 310), 0), `tecido de conta: trocou o tecido, trocaram o metro e o grama (PP ${comMoletom[5][1]} m e ${comMoletom[6][1]} g)`)
     await pg.locator('[data-tecido-de-conta] .cb').click(); await pausa(pg)
-    await pg.locator('.mn-item', { hasText: 'Não converter' }).click(); await pausa(pg)
+    await pg.locator('.mn-item:visible', { hasText: 'Não converter' }).click(); await pausa(pg)
     conta((await tabela(pg, '[data-modulo] table.pd-grade')).length === 6, `tecido de conta: sem converter, as duas linhas de conta saem`)
   }
   await foto(pg, `referencia-tecido-${tema}`)
@@ -205,14 +208,16 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   const arv = (await caixas(pg, '[data-arvore]'))[0]; const lado = (await caixas(pg, '.pd-largo'))[0]
   conta(Math.abs(arv.w / lado.w - 1.5 / 3) < 0.03 && Math.abs(arv.y - lado.y) < 1, `${G} desenho: a árvore ocupa uma coluna e meia e a ficha as outras três (${Math.round(arv.w)} e ${Math.round(lado.w)})`)
   const dois = await caixas(pg, '[data-ficha] .pd-dois > section')
-  conta(dois.length === 2 && Math.abs(dois[0].y - dois[1].y) < 1 && dois[0].w > dois[1].w, `${G} desenho: o molde e os detalhes lado a lado, o molde mais largo`)
+  conta(dois.length === 4 && Math.abs(dois[0].y - dois[1].y) < 1 && dois[0].w > dois[1].w && Math.abs(dois[2].y - dois[3].y) < 1, `${G} desenho: o molde e os detalhes lado a lado, o molde mais largo; os aviamentos e onde a peça entra lado a lado`)
+  conta((await textos(pg, '[data-cartao="onde-entra"] .pd-nota'))[0] === 'Esta peça não está em nenhum kit.', `${G} onde a peça entra: a camiseta não está em nenhum kit, e a ficha diz`)
   conta(await sobra(pg) <= 0, `${G} ficha: nada rola para o lado`)
 
   /* ---- fechar, e as outras abas ---- */
   await pg.locator('.pd-ficha-topo button', { hasText: 'Fechar' }).click(); await pausa(pg)
   conta(await pg.locator('[data-nada-escolhido]').count() === 1 && !new URL(pg.url()).searchParams.get('ref'), `${G} fechar: volta o convite e o endereço esquece a peça`)
   await pg.locator('[data-arvore] .pd-abas button', { hasText: 'Kits' }).click(); await pausa(pg)
-  conta((await textos(pg, '[data-arvore] .vazio h3'))[0] === 'Os kits ainda não chegaram', `${G} kits: a aba diz que eles ainda não chegaram, em vez de fingir`)
+  conta(mesma(await textos(pg, '[data-arvore] .pd-kits .pd-t'), ['KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO 2 peças · 020-000M + 090-000M · ficha em branco']) && await pg.locator('[data-arvore] .pd-kits .pd-alerta').count() === 0, `${G} kits: a aba lista o kit do catálogo, com as peças lidas do código, e em branco não é alerta`)
+  conta((await textos(pg, '[data-nada-escolhido] h3'))[0] === 'Escolha um kit', `${G} kits: com a aba Kits à vista, o convite do lado direito é o do kit`)
   for (const [aba, titulo] of [['Movimento', 'O Movimento ainda não chegou'], ['Depósito', 'O Depósito de peças prontas ainda não chegou'], ['Estatísticas', 'As Estatísticas ainda não chegaram']]) {
     await pg.locator('.pd-abas-da-pagina button', { hasText: aba }).click(); await pausa(pg)
     conta((await textos(pg, '[data-ainda-nao] h3'))[0] === titulo && await pg.locator('.pd-busca').count() === 0, `${G} ${aba}: diz o que vai ter ali, sem busca de enfeite`)
@@ -381,7 +386,7 @@ await secao(async () => {
   await pg.locator('[data-cartao="aviamentos"] .sel .cb').click(); await pausa(pg)
   const livres = (await textos(pg, '.mn-item')).map((o) => o.replace(/\s*✓$/, ''))
   conta(mesma(livres, ['Adicionar um material do Estoque', 'Elástico 30 mm · Elástico', 'Cordão de poliéster · Cordão']), `aviamentos: o seletor só oferece o que a ficha ainda não tem`)
-  await pg.locator('.mn-item', { hasText: 'Elástico 30 mm' }).click(); await pausa(pg)
+  await pg.locator('.mn-item:visible', { hasText: 'Elástico 30 mm' }).click(); await pausa(pg)
   conta((await textos(pg, '[data-cartao="aviamentos"] .pd-lin'))[3]?.startsWith('Elástico 30 mm Aviamento · Elástico') && await pg.locator('[data-material="Elástico 30 mm"] small').last().innerText() === 'm', `aviamentos: o do Estoque entra com a unidade do Estoque`)
   await salvar(pg)
   conta(gravados.length === antes && (await textos(pg, '.aviso'))[0]?.includes('Diga quanto de "Elástico 30 mm"'), `não salva com aviamento sem quantidade`)
@@ -481,7 +486,7 @@ await secao(async () => {
   conta(gravados.filter((g) => g.u === 'rpc/salvar_ficha_da_referencia').length === 1 && (await textos(pg, '.aviso'))[0]?.includes('A medida "Comprimento" está duas vezes na tabela.') && await pg.locator('[data-ficha="editar"]').count() === 1, `o banco recusa: a frase dele aparece e o editor fica aberto, com tudo`)
   await salvar(pg)
   conta(gravados.filter((g) => g.u === 'rpc/salvar_ficha_da_referencia').length === 2 && await pg.locator('[data-ficha="referencia"]').count() === 1, `salvar de novo: passa`)
-  conta((await textos(pg, '[data-ref="010-001M"]'))[0] === 'CAMISETA MASC TRAD GOLA V 010-001M · masculino · faltam tecido e molde 2' && (await textos(pg, '.pagina-topo .sub'))[0] === '8 referências · 1 com a ficha completa', `depois de salvar: a linha da árvore deixa de dizer em branco e passa a dizer o que falta`)
+  conta((await textos(pg, '[data-ref="010-001M"]'))[0] === 'CAMISETA MASC TRAD GOLA V 010-001M · masculino · faltam tecido e molde 2' && (await textos(pg, '.pagina-topo .sub'))[0] === '8 referências · 1 kit · 1 com a ficha completa', `depois de salvar: a linha da árvore deixa de dizer em branco e passa a dizer o que falta`)
   conta((await textos(pg, '.pd-g'))[0].endsWith('2'), `depois de salvar: o grupo conta duas fichas começadas e incompletas`)
 
   /* descartar */
@@ -510,7 +515,7 @@ await secao(async () => {
   await naModal(pg).locator('.sel .cb').click(); await pausa(pg)
   const gruposDaCaixa = (await textos(pg, '.mn-item')).map((o) => o.replace(/\s*✓$/, ''))
   conta(mesma(gruposDaCaixa, ['Escolha o grupo', '010 · Camisetas e polos', '020 · Raglan', '070 · Calças', '090 · Calções']), `nova referência: os grupos de peça, sem o dos kits`)
-  await pg.locator('.mn-item', { hasText: '010 · Camisetas e polos' }).click(); await pausa(pg)
+  await pg.locator('.mn-item:visible', { hasText: '010 · Camisetas e polos' }).click(); await pausa(pg)
   conta(await naModal(pg).locator('input[inputmode=numeric]').inputValue() === '002', `nova referência: o número já vem com o primeiro livre do grupo (000 e 001 usados, vem 002)`)
   await naModal(pg).locator('.seg button', { hasText: 'Feminino' }).click(); await pausa(pg, 150)
   conta((await naModal(pg).locator('.pd-nota').last().innerText()).includes('FT-010-002F'), `nova referência: o código vai se formando com o grupo, o número e o gênero`)
@@ -588,7 +593,7 @@ await secao(async () => {
 await secao(async () => {
   const { ctx, pg, erros } = await abrir(nav, { largura: 1536, altura: 900, estado: 'vazio' })
   await ir(pg, '/produtos', '[data-arvore]')
-  conta((await textos(pg, '[data-arvore] .vazio h3'))[0] === 'Nenhuma referência cadastrada' && (await textos(pg, '.pagina-topo .sub'))[0] === '0 referências · 0 com a ficha completa', `sem referência: a árvore diz que não tem nenhuma`)
+  conta((await textos(pg, '[data-arvore] .vazio h3'))[0] === 'Nenhuma referência cadastrada' && (await textos(pg, '.pagina-topo .sub'))[0] === '0 referências · 0 kits · 0 com a ficha completa', `sem referência: a árvore diz que não tem nenhuma`)
   conta(erros.length === 0, `sem referência: nenhum erro de JavaScript`)
   await ctx.close()
 })
@@ -612,6 +617,260 @@ await secao(async () => {
 })
 
 /* ==========================================================================
+   7b. OS KITS
+   ========================================================================== */
+const abrirKit = async (pg, curto) => { await pg.locator(`[data-kit="${curto}"] .pd-t-nome`).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 400) }
+const editarKit = async (pg) => { await pg.locator('[data-ficha="kit"] .pd-ficha-topo button', { hasText: 'Editar a ficha' }).click(); await pg.waitForSelector('[data-editor-do-kit]'); await pausa(pg, 400) }
+const resumo = (pg) => pg.evaluate(() => { const d = document.querySelector('.pd-resumo'); const o = {}; [...d.querySelectorAll('dt')].forEach((dt) => { o[dt.textContent.trim()] = dt.nextElementSibling.textContent.trim() }); return o })
+const fabricacao = (pg) => tabela(pg, '[data-ficha="kit"] table.pd-fab')
+const escolherNoSeletor = async (pg, gatilho, opcao) => { await gatilho.click(); await pausa(pg, 200); await pg.locator('.mn-item:visible', { hasText: opcao }).first().click(); await pausa(pg, 200) }
+
+await secao(async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos', '[data-arvore]')
+
+  /* a busca que só o kit responde troca de aba sozinha */
+  await pg.fill('.pd-busca input', 's/ bolso'); await pausa(pg)
+  conta(await pg.locator('[data-arvore] .pd-kits .pd-t').count() === 1 && (await textos(pg, '[data-arvore] .pd-abas button.ligado'))[0] === 'Kits 1', `busca que só o kit responde: a árvore passa para a aba Kits sozinha`)
+  await pg.fill('.pd-busca input', '090-000m'); await pausa(pg)
+  conta(mesma(await textos(pg, '.pd-t .pd-nomes b'), ['CALÇAO MASC SEM BOLSO']) && mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 1', 'Kits 1']), `busca pelo código de uma peça: acha a referência, e conta também o kit que tem essa peça`)
+  await pg.fill('.pd-busca input', ''); await pausa(pg)
+
+  /* ---- a ficha do kit que veio do catálogo ---- */
+  await pg.locator('[data-arvore] .pd-abas button', { hasText: 'Kits' }).click(); await pausa(pg)
+  await abrirKit(pg, 'KIT-020-000M-090-000M')
+  conta(new URL(pg.url()).searchParams.get('kit') === 'FT-KIT-020-000M-090-000M', `kit: o endereço guarda o kit aberto`)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'KIT-020-000M-090-000M · masculino · grade adulta, PP a G4' && (await textos(pg, '.pd-trilha'))[0] === 'KIT Kits › 2 peças', `kit: o nome, o código sem o FT, o gênero e a grade que as peças têm em comum`)
+  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Fechar']), `kit: Editar a ficha e Fechar`)
+  const titulosDoKit = await pg.evaluate(() => [...document.querySelectorAll('[data-ficha="kit"] .pd-topo .cartao-titulo')].map((h) => [h.textContent.trim(), !!h.querySelector('.cartao-icone svg')]))
+  conta(mesma(titulosDoKit.map((t) => t[0]), ['Desenho do kit', 'Peças do kit', 'Ficha de fabricação', 'Tecido de um kit, em cada tamanho', 'Aviamentos e insumos de um kit']) && titulosDoKit.every((t) => t[1]), `kit: os cinco cartões, cada título com o ícone`)
+  conta(mesma(await textos(pg, '[data-cartao="pecas"] .pd-lin'), ['PARTE DE CIMA RAGLAN MASC SEM PUNHO 020-000M · masculino Abrir', 'PARTE DE BAIXO CALÇAO MASC SEM BOLSO 090-000M · masculino Abrir']), `kit: as duas peças, cada uma com o papel dela e o Abrir`)
+  const fab = await fabricacao(pg)
+  conta(mesma(fab[0], ['Característica', 'Parte de cima RAGLAN MASC SEM PUNHO', 'Parte de baixo CALÇAO MASC SEM BOLSO']) && mesma(fab.slice(1).map((l) => l[0]), ['Tecidos', 'Gola', 'Manga', 'Punho', 'Barra', 'Costura', 'Design impresso', 'Etiqueta']), `ficha de fabricação: uma coluna por peça, e as oito características`)
+  conta(mesma(fab[1].slice(1), ['não escolhido', 'não escolhido']) && mesma(fab[2].slice(1), ['não informado', 'não informado']) && mesma(fab[7].slice(1), ['nenhum', 'nenhum']) && mesma(fab[8].slice(1), ['não escolhida', 'não escolhida']), `ficha de fabricação em branco: cada célula diz o que ainda não foi dito`)
+  conta((await textos(pg, '[data-cartao="tecido-do-kit"] .pd-nota'))[0].includes('falta escolher o tecido de cada peça') && await pg.locator('[data-cartao="tecido-do-kit"] table').count() === 0, `tecido de um kit sem tecido escolhido: diz o que falta, sem tabela vazia`)
+  conta(await pg.locator('[data-cartao="molde"] .pd-solta').count() === 1 && (await textos(pg, '[data-cartao="molde"] .pd-solta'))[0].startsWith('Solte aqui o SVG do kit'), `kit sem desenho: a caixa para soltar o SVG do kit`)
+  await foto(pg, 'kit-em-branco')
+
+  /* a peça abre a referência, e a referência sabe em que kit entra */
+  await pg.locator('[data-peca="020-000M"]').getByRole('button', { name: 'Abrir' }).click(); await pg.waitForSelector('[data-ficha="referencia"]'); await pausa(pg, 400)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'RAGLAN MASC SEM PUNHO' && (await textos(pg, '[data-arvore] .pd-abas button.ligado'))[0] === 'Referências 8' && await pg.locator('[data-ref="020-000M"].pd-sel').count() === 1, `Abrir a peça: vai para a ficha da referência, com a aba Referências e o grupo dela abertos`)
+  conta(mesma(await textos(pg, '[data-cartao="onde-entra"] .pd-lin'), ['KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO parte de cima do kit Abrir']), `onde a peça entra: o raglan diz em que kit está, e com que papel`)
+  await editar(pg)
+  conta((await textos(pg, '[data-cartao="excluir"] .pd-nota'))[0].startsWith('Esta referência está em 1 kit. Excluir tira a peça das listas e do kit'), `excluir a referência que está num kit: o aviso diz em quantos kits ela está`)
+  await pg.getByRole('button', { name: 'Cancelar' }).click(); await pausa(pg)
+  await pg.locator('[data-cartao="onde-entra"]').getByRole('button', { name: 'Abrir' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 400)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0].startsWith('KIT RAGLAN') && (await textos(pg, '[data-arvore] .pd-abas button.ligado'))[0] === 'Kits 1', `Abrir o kit pela referência: volta para a ficha do kit`)
+
+  /* ---- o editor do kit que existe ---- */
+  await editarKit(pg)
+  conta((await textos(pg, '.pagina-topo h1'))[0] === 'Editor da ficha do kit' && (await textos(pg, '.pagina-topo .acima'))[0] === 'Fichas técnicas · Kits' && (await textos(pg, '.pagina-topo .sub'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO · 2 peças · 5 pendências', `editor do kit: toma a página, com o nome, as peças e as pendências no subtítulo`)
+  conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Voltar', 'Excluir o kit', 'Salvar o kit']) && await pg.locator('.pd-barra, [data-arvore]').count() === 0, `editor do kit: Voltar, Excluir o kit e Salvar o kit; a barra e a árvore saem`)
+  const colunas = await caixas(pg, '.pd-editor-kit > *')
+  conta(colunas.length === 3 && Math.round(colunas[0].w) === 320 && Math.round(colunas[2].w) === 320 && colunas[1].w > 480 && Math.abs(colunas[0].y - colunas[1].y) < 1 && Math.abs(colunas[1].y - colunas[2].y) < 1 && Math.round(colunas[1].x - colunas[0].dir) === 16, `editor do kit: três colunas, 320 de cada lado e a ficha no meio, com 16 px entre elas (${colunas.map((c) => Math.round(c.w)).join(' / ')})`)
+  const titulosDoEditor = await pg.evaluate(() => [...document.querySelectorAll('.pd-editor-kit .pd-topo .cartao-titulo')].map((h) => [h.textContent.trim(), !!h.querySelector('.cartao-icone svg')]))
+  conta(mesma(titulosDoEditor.map((t) => t[0]), ['Peças do kit', 'Ficha de fabricação da parte de cima', 'Resumo do kit', 'Para salvar']) && titulosDoEditor.every((t) => t[1]), `editor do kit que existe: os quatro cartões com ícone, e sem o Adicionar peça`)
+  conta(await pg.locator('.pd-peca-tira').count() === 0 && (await textos(pg, '[data-cartao="pecas-do-kit"] .pd-rodape'))[0].startsWith('As peças não mudam depois que o kit é criado'), `editor do kit que existe: as peças estão travadas, e a página diz por quê`)
+  conta(mesma(await resumo(pg), { 'Código': 'KIT-020-000M-090-000M', 'Peças': '2', 'Grade': 'grade adulta, PP a G4', 'Tecidos': 'nenhum escolhido', 'Design impresso': 'nenhum', 'Etiqueta': 'não escolhida' }), `resumo do kit: o código, as peças, a grade, e o que ainda não foi escolhido`)
+  conta(mesma(await textos(pg, '[data-ainda-falta] li'), ['Parte de cima: falta escolher o tecido.', 'Parte de cima: falta escolher a etiqueta.', 'Parte de baixo: falta escolher o tecido.', 'Parte de baixo: falta escolher a etiqueta.', 'Falta o desenho do kit, em SVG.']) && await pg.locator('[data-impede]').count() === 0 && (await textos(pg, '[data-cartao="para-salvar"] .pd-nota'))[0].startsWith('Dá para salvar assim e completar depois.'), `para salvar: as cinco coisas por fazer, nenhuma impede`)
+  conta((await textos(pg, '[data-da-referencia] .pd-campo-topo'))[0] === 'Da ficha da referência muda lá, e não aqui' && await pg.locator('[data-da-referencia] input').count() === 0, `editor do kit: gola, manga, punho, barra e costura são mostrados, e não editados`)
+
+  /* os tecidos */
+  conta((await textos(pg, '[data-tecidos-da-peca] .pd-nota'))[0].startsWith('A ficha desta referência ainda não tem as partes do molde'), `tecidos: a referência sem partes no molde só deixa dizer a peça inteira, e a página diz`)
+  await pg.locator('[data-tecidos-da-peca]').getByRole('button', { name: 'Tecido', exact: true }).click(); await pausa(pg)
+  const primeira = pg.locator('.pd-tecido-lin').first()
+  conta((await primeira.locator('.sel .v').first().innerText()) === 'A peça inteira' && (await primeira.locator('.sel .v').nth(1).innerText()) === 'Escolha o tecido', `tecidos: o primeiro tecido já nasce como a peça inteira`)
+  conta(await pg.locator('[data-impede]').count() === 1 && (await textos(pg, '[data-impede]'))[0].includes('tem um tecido sem a parte do molde ou sem o tecido escolhido'), `tecidos: a linha sem tecido escolhido impede de salvar, e diz de quem é`)
+  conta(await pg.locator('[data-tecidos-da-peca]').getByRole('button', { name: 'Tecido', exact: true }).isDisabled(), `tecidos: sem outra parte livre, não dá para pôr outro tecido`)
+  await escolherNoSeletor(pg, primeira.locator('.sel .cb').nth(1), 'DRYFIT POLIESTER 100%')
+  conta(await pg.locator('[data-impede]').count() === 0 && (await resumo(pg)).Tecidos === '1 tecido', `tecidos: escolhido o tecido, a pendência some e o resumo conta`)
+
+  /* o design impresso e a etiqueta */
+  await pg.locator('[data-design] .chip', { hasText: 'Patch' }).click(); await pg.locator('[data-design] .chip', { hasText: 'Sublimação' }).click(); await pausa(pg)
+  conta(mesma(await textos(pg, '[data-onde-vai] .pd-onde .tec-soft'), ['Sublimação', 'Patch']) && (await resumo(pg))['Design impresso'] === 'Sublimação, Patch', `design impresso: mais de um, na ordem da lista e não na do clique`)
+  conta((await textos(pg, '[data-ainda-falta] li')).includes('Parte de cima: falta dizer onde vai Sublimação e Patch.'), `design impresso: marcou a técnica, falta dizer onde vai`)
+  await pg.locator('[data-onde-vai] input').nth(0).fill('peça inteira'); await pg.locator('[data-onde-vai] input').nth(1).fill('  escudo no peito  '); await pausa(pg, 150)
+  await pg.locator('[data-design] .chip', { hasText: 'DTF' }).click(); await pausa(pg, 150)
+  await pg.locator('[data-design] .chip', { hasText: 'DTF' }).click(); await pausa(pg, 150)
+  conta(mesma(await pg.evaluate(() => [...document.querySelectorAll('[data-onde-vai] input')].map((i) => i.value)), ['peça inteira', '  escudo no peito  ']), `design impresso: ligar e desligar outra técnica não apaga o que já foi escrito`)
+  await pg.locator('[data-etiqueta] .chip', { hasText: 'Silk' }).click(); await pausa(pg, 150)
+  conta(await pg.locator('[data-etiqueta] input').count() === 1, `etiqueta: escolhida a técnica, aparece o campo de onde ela vai`)
+  await pg.locator('[data-etiqueta] input').fill('no decote, por dentro')
+  await pg.locator('[data-etiqueta] .chip', { hasText: 'Sem etiqueta' }).click(); await pausa(pg, 150)
+  conta(await pg.locator('[data-etiqueta] input').count() === 0 && (await resumo(pg)).Etiqueta === 'Sem etiqueta', `etiqueta: sem etiqueta é uma escolha, e não tem lugar`)
+  await pg.locator('[data-etiqueta] .chip', { hasText: 'Silk' }).click(); await pausa(pg, 150)
+  await pg.locator('[data-etiqueta] input').fill('no decote, por dentro')
+  await pg.locator('[data-cartao="fabricacao-da-peca"] textarea').fill('Patch depois da costura.')
+
+  /* a outra peça */
+  await pg.locator('[data-peca="090-000M"] .pd-peca-nome').click(); await pausa(pg)
+  conta((await textos(pg, '[data-cartao="fabricacao-da-peca"] .cartao-titulo'))[0] === 'Ficha de fabricação da parte de baixo' && (await textos(pg, '[data-cartao="fabricacao-da-peca"] .pd-topo-nome'))[0] === 'CALÇAO MASC SEM BOLSO' && await pg.locator('.pd-tecido-lin').count() === 0, `editor do kit: tocar na outra peça abre a ficha dela, em branco`)
+  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb'), 'Acessório')
+  conta((await textos(pg, '[data-peca="090-000M"] .pd-papel'))[0] === 'ACESSÓRIO' && (await textos(pg, '[data-cartao="fabricacao-da-peca"] .cartao-titulo'))[0] === 'Ficha de fabricação da acessório', `papel no kit: trocado no seletor, muda na lista de peças`)
+  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb'), 'Parte de baixo')
+  await pg.locator('[data-peca="020-000M"] .pd-peca-nome').click(); await pausa(pg)
+  conta(await pg.locator('[data-etiqueta] input').inputValue() === 'no decote, por dentro' && await pg.locator('.pd-tecido-lin').count() === 1, `editor do kit: voltar para a primeira peça encontra o que foi preenchido`)
+  await foto(pg, 'editor-do-kit')
+
+  /* sair com mudança pergunta */
+  await pg.getByRole('button', { name: 'Voltar' }).click(); await pausa(pg)
+  conta(await naModal(pg).locator('h2').innerText() === 'Sair sem salvar?', `editor do kit: Voltar com mudança pergunta antes`)
+  await naModal(pg).getByRole('button', { name: 'Continuar editando' }).click(); await pausa(pg)
+
+  /* o desenho do kit só sobe no Salvar */
+  await pg.setInputFiles('[data-editor-do-kit] [data-arquivo-do-molde]', { name: 'kit.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(F.OUTRO_MOLDE) }); await pausa(pg, 400)
+  conta(!gravados.some((g) => g.u === 'rpc/salvar_molde_da_referencia') && (await textos(pg, '[data-cartao="resumo"] .pd-topo-n'))[0] === 'sobe ao salvar' && !(await textos(pg, '[data-ainda-falta] li')).includes('Falta o desenho do kit, em SVG.'), `desenho do kit no editor: aparece, espera o Salvar, e a pendência do desenho some`)
+
+  /* salvar */
+  await pg.getByRole('button', { name: 'Salvar o kit' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 600)
+  const salvo = ultimo(gravados, 'rpc/salvar_kit')?.corpo
+  conta(salvo?.p_kit === 'rkit' && mesma(Object.keys(salvo.p_ficha).sort(), ['nome', 'pecas']) && salvo.p_ficha.nome === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO' && mesma(salvo.p_ficha.pecas.map((p) => p.referencia_id), ['r020', 'r090']), `salvar o kit: vai inteiro, numa chamada só, com as duas peças na ordem`)
+  conta(mesma(salvo?.p_ficha.pecas[0], { referencia_id: 'r020', papel: 'Parte de cima', tecidos: [{ parte: 'A peça inteira', tecido_id: 't1' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: 'escudo no peito' }], etiqueta: 'silk', etiqueta_onde: 'no decote, por dentro', observacao: 'Patch depois da costura.' }), `salvar o kit: a peça de cima com o tecido pelo id, as duas técnicas com o texto aparado, a etiqueta e a observação`)
+  conta(mesma(salvo?.p_ficha.pecas[1], { referencia_id: 'r090', papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiqueta_onde: '', observacao: '' }), `salvar o kit: a peça que ninguém preencheu vai em branco, com o papel de volta`)
+  const iKit = gravados.findIndex((g) => g.u === 'rpc/salvar_kit'); const iDes = gravados.findIndex((g) => g.u === 'rpc/salvar_molde_da_referencia')
+  conta(iDes > iKit && gravados[iDes].corpo.p_referencia === 'rkit' && gravados[iDes].corpo.p_svg === F.OUTRO_MOLDE, `salvar o kit: o desenho sobe depois, para o kit`)
+
+  /* a página lê de volta */
+  const fab2 = await fabricacao(pg)
+  conta(fab2[1][1] === 'DRYFIT POLIESTER 100% a peça inteira' && fab2[7][1] === 'Sublimação Patch sublimação: peça inteira; patch: escudo no peito' && fab2[8][1] === 'Silk no decote, por dentro' && fab2[9][0] === 'Observação' && fab2[9][1] === 'Patch depois da costura.' && fab2[9][2] === 'nenhuma', `depois de salvar: a ficha de fabricação mostra o tecido, as técnicas com o lugar, a etiqueta e a observação`)
+  conta(await pg.locator('[data-ficha="kit"] .pd-fab .tec-soft').count() === 3, `depois de salvar: as técnicas e a etiqueta saem em pílula de técnica`)
+  conta(await pg.evaluate(() => decodeURIComponent(document.querySelector('[data-ficha="kit"] .pd-molde')?.src ?? '').includes('<rect')) && (await caixas(pg, '[data-ficha="kit"] .pd-molde-caixa'))[0].fundo === 'rgb(255, 255, 255)', `depois de salvar: o desenho do kit aparece, sobre papel branco`)
+  conta(mesma(await textos(pg, '[data-arvore] .pd-kits .pd-t'), ['KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO 2 peças · 020-000M + 090-000M · 2 coisas por fazer 2']) && await pg.locator('[data-arvore] .pd-kits .pd-sel').count() === 1, `depois de salvar: a linha do kit deixa de dizer em branco e conta o que falta (o tecido e a etiqueta da parte de baixo)`)
+  conta((await textos(pg, '[data-cartao="tecido-do-kit"] .pd-nota'))[0].includes('falta medir o tecido') && await pg.locator('[data-cartao="tecido-do-kit"] table').count() === 0, `tecido de um kit com tecido escolhido e referência sem medida: diz que falta medir na referência`)
+  await foto(pg, 'kit-salvo')
+  conta(erros.length === 0, `kit que existe: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ---- o kit novo: mais de um tecido na mesma peça, e o código que nasce das peças ---- */
+await secao(async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos', '[data-arvore]')
+  conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Novo kit', 'Nova referência']), `topo: Novo kit e Nova referência, a principal por último`)
+  await pg.getByRole('button', { name: 'Novo kit' }).click(); await pg.waitForSelector('[data-editor-do-kit="novo"]'); await pausa(pg)
+  conta((await textos(pg, '.pagina-topo h1'))[0] === 'Novo kit' && mesma(await textos(pg, '.pagina-topo .btn'), ['Voltar', 'Criar o kit']) && (await textos(pg, '.pagina-topo .sub'))[0] === 'kit sem nome · 0 peças · 3 pendências', `kit novo: Voltar e Criar o kit, sem Excluir`)
+  conta(mesma((await textos(pg, '[data-impede]')), ['O kit precisa de um nome.', 'Um kit tem pelo menos duas peças.']) && (await resumo(pg))['Código'] === 'nasce com duas peças', `kit novo vazio: o nome e as duas peças impedem, e o código ainda não existe`)
+  await pg.getByRole('button', { name: 'Criar o kit' }).click(); await pausa(pg)
+  conta(!gravados.some((g) => g.u === 'rpc/salvar_kit') && (await textos(pg, '[data-cartao="para-salvar"] [role=alert]'))[0]?.includes('O kit precisa de um nome.'), `kit novo vazio: Criar o kit não manda nada, e diz o que impede`)
+
+  /* as peças entram pela busca, e o código vai se formando */
+  await pg.fill('[data-cartao="adicionar-peca"] input', 'raglan'); await pausa(pg)
+  conta(mesma(await textos(pg, '[data-cartao="adicionar-peca"] .pd-lin .pd-txt b'), ['RAGLAN MASC SEM PUNHO']), `adicionar peça: a busca acha a referência, e o kit que tem raglan no nome não entra`)
+  await pg.locator('[data-cartao="adicionar-peca"] .pd-lin').first().click(); await pausa(pg)
+  conta(await pg.locator('.pd-peca').count() === 1 && (await textos(pg, '.pd-peca .pd-papel'))[0] === 'PARTE DE CIMA' && await pg.inputValue('[data-cartao="adicionar-peca"] input') === '' && (await resumo(pg))['Código'] === 'nasce com duas peças', `adicionar peça: a primeira entra como parte de cima, e a busca limpa`)
+  await pg.fill('[data-cartao="adicionar-peca"] input', 'calçao'); await pausa(pg)
+  await pg.locator('[data-cartao="adicionar-peca"] .pd-lin').first().click(); await pausa(pg)
+  conta((await resumo(pg))['Código'] === 'KIT-020-000M-090-000M' && (await textos(pg, '[data-impede]')).some((t) => t.includes('Já existe um kit com estas peças, nesta ordem: KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO.')), `kit novo com as peças de um que já existe: o código se forma, e a página avisa na hora`)
+  await pg.getByRole('button', { name: 'Tirar RAGLAN MASC SEM PUNHO do kit' }).click(); await pausa(pg)
+  conta(await pg.locator('.pd-peca').count() === 1 && (await textos(pg, '.pd-peca .pd-peca-nome b'))[0] === 'CALÇAO MASC SEM BOLSO' && !(await textos(pg, '[data-impede]')).some((t) => t.includes('Já existe')), `kit novo: o X tira a peça, e o aviso de repetido sai`)
+  await pg.getByRole('button', { name: 'Tirar CALÇAO MASC SEM BOLSO do kit' }).click(); await pausa(pg)
+  await pg.fill('[data-cartao="adicionar-peca"] input', '010-000m'); await pausa(pg)
+  await pg.locator('[data-cartao="adicionar-peca"] .pd-lin').first().click(); await pausa(pg)
+  await pg.fill('[data-cartao="adicionar-peca"] input', 'calça moletom'); await pausa(pg)
+  await pg.locator('[data-cartao="adicionar-peca"] .pd-lin').first().click(); await pausa(pg, 500)
+  const r = await resumo(pg)
+  conta(r['Código'] === 'KIT-010-000M-070-000M' && r['Peças'] === '2' && r['Grade'] === 'grade adulta, PP a GG', `kit novo: o código é o das peças na ordem em que entraram, e a grade é a que as duas têm em comum (a calça vai só até o GG)`)
+  await pg.fill('[data-cartao="adicionar-peca"] input', 'camiseta masc trad'); await pausa(pg)
+  conta(mesma(await textos(pg, '[data-cartao="adicionar-peca"] .pd-lin .pd-txt b'), ['CAMISETA MASC TRAD GOLA V']), `adicionar peça: quem já está no kit não aparece de novo na busca`)
+  await pg.fill('[data-cartao="adicionar-peca"] input', '')
+
+  /* mais de um tecido na mesma peça: a camiseta tem as partes do molde na ficha */
+  await pg.locator('[data-peca="010-000M"] .pd-peca-nome').click(); await pausa(pg, 500)
+  conta((await textos(pg, '[data-tecidos-da-peca] .pd-nota'))[0].startsWith('As partes são as do molde da referência'), `tecidos: a camiseta tem as partes do molde, e a página passa a oferecer`)
+  await pg.locator('[data-tecidos-da-peca]').getByRole('button', { name: 'Tecido', exact: true }).click(); await pausa(pg)
+  await pg.locator('.pd-tecido-lin').nth(0).locator('.sel .cb').nth(0).click(); await pausa(pg, 200)
+  conta(mesma((await textos(pg, '.mn-item')).map((o) => o.replace(/\s*✓$/, '')), ['Escolha a parte', 'A peça inteira', 'Frente', 'Costas', 'Mangas']), `tecidos: as partes são as de pano do molde (a ribana, que é fita, não entra)`)
+  await pg.locator('.mn-item:visible', { hasText: 'Frente' }).click(); await pausa(pg, 200)
+  await escolherNoSeletor(pg, pg.locator('.pd-tecido-lin').nth(0).locator('.sel .cb').nth(1), 'DRYFIT POLIESTER 100%')
+  await pg.locator('[data-tecidos-da-peca]').getByRole('button', { name: 'Tecido', exact: true }).click(); await pausa(pg)
+  await pg.locator('.pd-tecido-lin').nth(1).locator('.sel .cb').nth(0).click(); await pausa(pg, 200)
+  conta(mesma((await textos(pg, '.mn-item')).map((o) => o.replace(/\s*✓$/, '')), ['Escolha a parte', 'A peça inteira', 'Costas', 'Mangas']), `tecidos: a parte que já tem tecido não é oferecida para outro`)
+  await pg.locator('.mn-item:visible', { hasText: 'Mangas' }).click(); await pausa(pg, 200)
+  await escolherNoSeletor(pg, pg.locator('.pd-tecido-lin').nth(1).locator('.sel .cb').nth(1), 'DRYFIT JAKAR 100%')
+  await pg.locator('[data-tecidos-da-peca]').getByRole('button', { name: 'Tecido', exact: true }).click(); await pausa(pg)
+  await escolherNoSeletor(pg, pg.locator('.pd-tecido-lin').nth(2).locator('.sel .cb').nth(0), 'Costas')
+  await escolherNoSeletor(pg, pg.locator('.pd-tecido-lin').nth(2).locator('.sel .cb').nth(1), 'DRYFIT POLIESTER 100%')
+  conta((await textos(pg, '[data-tecidos-da-peca] .pd-campo-topo'))[0] === 'Tecidos da peça 3 tecidos · pode ter quantos precisar' && (await resumo(pg)).Tecidos === '2 diferentes', `mais de um tecido na mesma peça: três partes, dois tecidos diferentes`)
+  await pg.getByRole('button', { name: 'Tirar este tecido' }).nth(2).click(); await pausa(pg)
+  conta(await pg.locator('.pd-tecido-lin').count() === 2, `tecidos: a lixeira tira a linha`)
+  await pg.locator('[data-etiqueta] .chip', { hasText: 'DTF' }).click()
+  await pg.fill('[data-cartao="resumo"] input:not([type=file])', '  KIT CAMISETA TRAD E CALÇA MOLETOM  '); await pausa(pg)
+  conta(await pg.locator('[data-impede]').count() === 0, `kit novo com nome e duas peças: nada mais impede`)
+  await foto(pg, 'kit-novo')
+
+  await pg.getByRole('button', { name: 'Criar o kit' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 700)
+  const criado = ultimo(gravados, 'rpc/salvar_kit')?.corpo
+  conta(criado?.p_kit === null && criado.p_ficha.nome === 'KIT CAMISETA TRAD E CALÇA MOLETOM' && mesma(criado.p_ficha.pecas.map((p) => [p.referencia_id, p.papel]), [['r000', 'Parte de cima'], ['r070', 'Parte de baixo']]), `criar o kit: sem id, com o nome aparado e as peças na ordem, cada uma com o papel`)
+  conta(mesma(criado?.p_ficha.pecas[0].tecidos, [{ parte: 'Frente', tecido_id: 't1' }, { parte: 'Mangas', tecido_id: 't3' }]) && criado.p_ficha.pecas[0].etiqueta === 'dtf', `criar o kit: os dois tecidos da camiseta, cada um na sua parte`)
+  conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'KIT CAMISETA TRAD E CALÇA MOLETOM' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'KIT-010-000M-070-000M · masculino · grade adulta, PP a GG' && (await textos(pg, '.pagina-topo .sub'))[0].startsWith('8 referências · 2 kits') && mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 8', 'Kits 2']), `criar o kit: a página volta, na aba Kits, com o kit novo aberto e contado`)
+  const fab = await fabricacao(pg)
+  conta(fab[1][1] === 'DRYFIT POLIESTER 100% frente DRYFIT JAKAR 100% mangas' && fab[2][1] === 'Redonda, ribana 1x1 de 2 cm' && fab[6][2] === 'Overloque de 4 fios, reta no cós' && fab[2][2] === 'não informado', `ficha de fabricação: os dois tecidos da camiseta com a parte de cada um, e a gola e a costura vindas da ficha de cada referência`)
+
+  /* o tecido de um kit: a soma da ficha de cada peça, tecido por tecido, conferida por fora */
+  const tk = await tabela(pg, '[data-cartao="tecido-do-kit"] table.pd-grade')
+  const quatro = (v) => Math.round(v * 10000) / 10000
+  conta(mesma(tk[0], ['Tecido, em m²', 'PP', 'P', 'M', 'G', 'GG']) && tk.length === 3 && tk[1][0] === 'DRYFIT POLIESTER 100% frente da parte de cima' && tk[2][0] === 'DRYFIT JAKAR 100% mangas da parte de cima', `tecido de um kit: uma linha por tecido, dizendo onde ele vai, nos tamanhos que as peças têm em comum`)
+  conta(mesma(tk[1].slice(1), F.BRUTA.slice(0, 5).map((a) => br(quatro(a * 0.36), 3))) && mesma(tk[2].slice(1), F.BRUTA.slice(0, 5).map((a) => br(quatro(a * 0.27), 3))), `tecido de um kit: o dryfit é a frente da camiseta e o jakar as mangas, com os números da ficha dela (PP ${tk[1][1]} e ${tk[2][1]})`)
+  conta(mesma(await textos(pg, '[data-cartao="aviamentos-do-kit"] .pd-lin'), ['Linha poliéster 120 da parte de cima 0,02 cone por kit', 'Fio texturizado, na cor do tecido da parte de cima 0,03 cone por kit', 'Saco de embalagem 30x40 da parte de cima 1 un por kit']), `aviamentos de um kit: os da ficha de cada peça, dizendo de qual vêm`)
+  conta(await sobra(pg) <= 0, `kit: nada rola para o lado`)
+  await foto(pg, 'kit-com-dois-tecidos')
+
+  /* a camiseta agora sabe que está num kit */
+  await pg.locator('[data-peca="010-000M"]').getByRole('button', { name: 'Abrir' }).click(); await pg.waitForSelector('[data-ficha="referencia"]'); await pausa(pg, 400)
+  conta(mesma(await textos(pg, '[data-cartao="onde-entra"] .pd-lin'), ['KIT CAMISETA TRAD E CALÇA MOLETOM parte de cima do kit Abrir']), `onde a peça entra: depois de criado o kit, a camiseta passa a dizer que está nele`)
+  await pg.locator('[data-cartao="onde-entra"]').getByRole('button', { name: 'Abrir' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 400)
+
+  /* excluir o kit */
+  await editarKit(pg)
+  await pg.getByRole('button', { name: 'Excluir o kit' }).click(); await pausa(pg)
+  conta(await naModal(pg).locator('h2').innerText() === 'Excluir KIT CAMISETA TRAD E CALÇA MOLETOM?' && (await naModal(pg).locator('.pd-nota').innerText()).includes('As referências que são as peças continuam como estão'), `excluir o kit: pergunta antes, e diz que as peças ficam`)
+  await naModal(pg).getByRole('button', { name: 'Excluir', exact: true }).click(); await pg.waitForSelector('[data-arvore]'); await pausa(pg, 600)
+  conta(ultimo(gravados, 'referencia DELETE')?.corpo === 'kit1' && mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 8', 'Kits 1']) && await pg.locator('[data-nada-escolhido]').count() === 1, `excluir o kit: apaga o kit, ele sai da lista, e as oito referências continuam`)
+  conta(erros.length === 0, `kit novo: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ---- o banco recusando o kit, o acesso, e a página sem a lista de kits ---- */
+await secao(async () => {
+  const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, recusa: 1 })
+  await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
+  conta((await textos(pg, '[data-arvore] .pd-abas button.ligado'))[0] === 'Kits 1' && await pg.locator('[data-kit="KIT-020-000M-090-000M"].pd-sel').count() === 1, `pelo endereço: a página abre no kit, com a aba Kits`)
+  await editarKit(pg)
+  await pg.locator('[data-etiqueta] .chip', { hasText: 'Sem etiqueta' }).click(); await pausa(pg, 150)
+  await pg.getByRole('button', { name: 'Salvar o kit' }).click(); await pausa(pg, 600)
+  conta(gravados.filter((g) => g.u === 'rpc/salvar_kit').length === 1 && (await textos(pg, '[data-cartao="para-salvar"] [role=alert]'))[0]?.includes('escolha o tecido de "Mangas" no catálogo') && await pg.locator('[data-editor-do-kit]').count() === 1, `o banco recusa o kit: a frase dele aparece no Para salvar e o editor fica aberto`)
+  await pg.getByRole('button', { name: 'Salvar o kit' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 500)
+  conta((await fabricacao(pg))[8][1] === 'Sem etiqueta', `salvar de novo: passa, e a ficha mostra a escolha de ir sem etiqueta`)
+  /* trocar o desenho direto da ficha do kit */
+  await pg.setInputFiles('[data-ficha="kit"] [data-arquivo-do-molde]', { name: 'kit.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(F.MOLDE) }); await pausa(pg, 600)
+  conta(ultimo(gravados, 'rpc/salvar_molde_da_referencia')?.corpo.p_referencia === 'rkit' && (await recado(pg)).includes('Desenho do kit trocado') && await pg.locator('[data-ficha="kit"] .pd-molde').count() === 1, `desenho na ficha do kit: soltar o arquivo grava na hora e mostra`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'edita' })
+  await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
+  conta(await pg.getByRole('button', { name: 'Novo kit' }).count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar a ficha', 'Fechar']), `quem edita sem ser chefia: edita a ficha do kit, mas não cria kit`)
+  await editarKit(pg)
+  conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Voltar', 'Salvar o kit']), `quem edita sem ser chefia: salva o kit, e não vê o Excluir`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg, gravados } = await abrir(nav, { largura: 1536, altura: 900, acesso: 'le' })
+  await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
+  conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Fechar']) && await pg.locator('[data-ficha="kit"] [data-arquivo-do-molde]').count() === 0 && (await textos(pg, '[data-cartao="molde"] .pd-solta'))[0] === 'Este kit ainda não tem desenho.' && gravados.length === 0, `quem só lê: vê a ficha do kit, sem Editar a ficha e sem enviar desenho`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg, erros } = await abrir(nav, { largura: 1536, altura: 900, estado: 'sem-kits' })
+  await ir(pg, '/produtos', '[data-arvore]')
+  conta((await textos(pg, '.pagina-topo .sub'))[0] === '8 referências · 0 kits · 1 com a ficha completa' && (await textos(pg, '.pd-g')).length === 5, `sem a lista de kits: as referências continuam de pé`)
+  await pg.locator('[data-arvore] .pd-abas button', { hasText: 'Kits' }).click(); await pausa(pg)
+  conta((await textos(pg, '[data-arvore] .vazio h3'))[0] === 'Nenhum kit cadastrado', `sem kits: a aba diz que não tem nenhum, e aponta o Novo kit`)
+  conta(erros.length === 0, `sem a lista de kits: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ==========================================================================
    8. O CELULAR E O TABLET
    ========================================================================== */
 for (const tema of ['light', 'dark']) await secao(async () => {
@@ -620,8 +879,8 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   await ir(pg, '/produtos', '[data-arvore]')
   conta(await sobra(pg) <= 0, `${G} lista: nada rola para o lado`)
   conta(mesma(await textos(pg, '.pd-secoes .chip'), ['Referências e kits', 'Movimento', 'Depósito', 'Estatísticas']) && await pg.locator('.pd-abas-da-pagina').count() === 0, `${G}: as abas da página viram chips`)
-  const nova = (await caixas(pg, '.pd-acoes .btn'))[0]
-  conta(nova && nova.w > 300 && await pg.locator('.pagina-topo .btn').count() === 0, `${G}: Nova referência desce do topo e ocupa a largura`)
+  const acoes = await caixas(pg, '.pd-acoes .btn')
+  conta(acoes.length === 2 && acoes[0].w > 200 && acoes[0].w > acoes[1].w * 2 && mesma(await textos(pg, '.pd-acoes .btn'), ['Nova referência', 'Novo kit']) && await pg.locator('.pagina-topo .btn').count() === 0, `${G}: Nova referência e Novo kit descem do topo, a primeira com a largura que sobra`)
   await abrirGrupo(pg, '010')
   const alvos = await caixas(pg, '.pd-g, .pd-t')
   conta(alvos.every((a) => a.h >= 43.5), `${G}: toda linha da árvore tem pelo menos 44 px de altura (a menor tem ${Math.min(...alvos.map((a) => Math.round(a.h)))})`)
@@ -660,6 +919,25 @@ await secao(async () => {
   conta(dedo.length >= 7 && dedo.every((t) => t.h >= 43.5), `${G} editor: a alça da medida e a etiqueta da parte também têm alvo de dedo`)
   await foto(pg, 'celular-editor')
   conta(erros.length === 0, `${G} editor: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+await secao(async () => {
+  const G = 'celular gelo'
+  const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
+  conta(await sobra(pg) <= 0 && await pg.locator('[data-arvore]').count() === 0 && mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Voltar', 'Editar a ficha']), `${G} kit: a ficha toma a tela, com Voltar e Editar a ficha, e nada rola para o lado`)
+  const rolaFab = await pg.evaluate(() => { const r = document.querySelector('[data-cartao="fabricacao"] .pd-grade-rola'); return r.scrollWidth > r.clientWidth })
+  conta(rolaFab, `${G} kit: a ficha de fabricação, com uma coluna por peça, rola dentro da própria caixa`)
+  await editarKit(pg)
+  const pilha = await caixas(pg, '.pd-editor-kit > *')
+  conta(await sobra(pg) <= 0 && pilha.length === 3 && pilha[1].y > pilha[0].y && pilha[2].y > pilha[1].y, `${G} editor do kit: as três colunas empilham, e nada rola para o lado`)
+  const dedo = await caixas(pg, '.pd-peca-nome')
+  conta(dedo.length === 2 && dedo.every((d) => d.h >= 43.5), `${G} editor do kit: cada peça da lista é alvo de dedo`)
+  await foto(pg, 'celular-editor-do-kit')
+  await pg.getByRole('button', { name: 'Voltar' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg)
+  await pg.locator('.pd-ficha-topo button', { hasText: 'Voltar' }).click(); await pausa(pg)
+  conta(await pg.locator('[data-arvore] .pd-kits .pd-t').count() === 1 && await pg.locator('[data-ficha]').count() === 0, `${G} kit: Voltar devolve a lista, na aba Kits`)
+  conta(erros.length === 0, `${G} kit: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()
 })
 await secao(async () => {

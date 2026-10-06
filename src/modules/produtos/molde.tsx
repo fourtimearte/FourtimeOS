@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { Scissors, UploadSimple } from '@phosphor-icons/react'
-import { Botao, TituloCartao, avisar } from '@ds'
+import { Botao, TituloCartao, avisar, type IconeDoPacote } from '@ds'
 import { erroNoMolde, moldeComoImagem, type Parte } from '@dominio/produto'
 import { lerArquivoDeTexto } from './apoio'
 
@@ -66,10 +66,19 @@ export function usarArquivoDoMolde(aoEscolher: (svg: string) => void) {
 }
 
 /** O desenho do molde, sobre o papel. */
-export function DesenhoDoMolde({ svg, nome }: { svg: string; nome: string }) {
+export function DesenhoDoMolde({
+  svg,
+  nome,
+  rotulo = 'Molde',
+}: {
+  svg: string
+  nome: string
+  /** o que o desenho é, para o texto de quem não vê: "Molde", "Desenho do kit" */
+  rotulo?: string
+}) {
   return (
     <div className="pd-molde-caixa">
-      <img className="pd-molde" src={moldeComoImagem(svg)} alt={'Molde de ' + nome} />
+      <img className="pd-molde" src={moldeComoImagem(svg)} alt={rotulo + ' de ' + nome} />
     </div>
   )
 }
@@ -117,25 +126,36 @@ export function PartesDoMolde({ partes, acao }: { partes: Parte[]; acao?: ReactN
 /* O cartão do molde na ficha. Quem pode editar troca o arquivo daqui mesmo,
    sem abrir o editor: é a troca mais comum, e ela não mexe em mais nada. */
 export function CartaoDoMolde({
+  titulo = 'Molde',
+  icone = Scissors,
   nome,
   svg,
   partes,
   podeEditar,
   enviando,
   aoTrocar,
+  vazio = 'Esta peça ainda não tem o desenho do molde.',
+  soltar,
+  nota = 'O desenho é um SVG tirado do molde no Affinity. Trocar o arquivo troca o desenho aqui.',
 }: {
+  /** o mesmo cartão serve ao desenho do kit, com outro título e outras frases */
+  titulo?: string
+  icone?: IconeDoPacote
   nome: string
   svg: string | null
   partes: Parte[]
   podeEditar: boolean
   enviando: boolean
   aoTrocar: (svg: string) => void
+  vazio?: string
+  soltar?: string
+  nota?: string
 }) {
   const arquivo = usarArquivoDoMolde(aoTrocar)
   return (
     <section className="cartao pd-col" data-cartao="molde">
       <div className="pd-topo">
-        <TituloCartao icone={Scissors}>Molde</TituloCartao>
+        <TituloCartao icone={icone}>{titulo}</TituloCartao>
         {podeEditar && svg ? (
           <Botao tamanho="sm" carregando={enviando} onClick={arquivo.abrir}>
             <UploadSimple size={14} aria-hidden="true" />
@@ -145,18 +165,16 @@ export function CartaoDoMolde({
       </div>
       <div className="pd-corpo" {...(podeEditar && svg ? arquivo.zona : {})}>
         {svg ? (
-          <DesenhoDoMolde svg={svg} nome={nome} />
+          <DesenhoDoMolde svg={svg} nome={nome} rotulo={titulo} />
         ) : podeEditar ? (
-          <SoltarOMolde arquivo={arquivo} />
+          <SoltarOMolde arquivo={arquivo} texto={soltar} />
         ) : (
           <div className="pd-solta">
-            <span>Esta peça ainda não tem o desenho do molde.</span>
+            <span>{vazio}</span>
           </div>
         )}
         <PartesDoMolde partes={partes} />
-        <p className="pd-nota">
-          O desenho é um SVG tirado do molde no Affinity. Trocar o arquivo troca o desenho aqui.
-        </p>
+        <p className="pd-nota">{nota}</p>
         {podeEditar ? arquivo.campo : null}
       </div>
     </section>

@@ -1,6 +1,16 @@
 import { chamar, tabela } from '@shared/supabase'
 import { semAcento } from '@shared/formatar'
 import {
+  kitParaOBanco,
+  type DesignDaPeca,
+  type EtiquetaDoKit,
+  type Kit,
+  type KitDaReferencia,
+  type KitNaLista,
+  type PecaDoKit,
+  type TecidoDaPeca,
+} from './kit'
+import {
   codigoCurto,
   tamanhosDaReferencia,
   type Detalhes,
@@ -16,6 +26,7 @@ import {
    contas.ts, que não conhece o banco nem o navegador e por isso roda sozinho
    na conferência (sh testes/produto.sh). Aqui fica o que fala com o banco. */
 export * from './contas'
+export * from './kit'
 
 /* --- a busca ----------------------------------------------------------------- */
 
@@ -195,3 +206,98 @@ export function carregarMateriaisDeAviamento(): Promise<MaterialDoEstoque[]> {
   )
 }
 
+/* --- os kits ------------------------------------------------------------------- */
+
+type LinhaDoKit = {
+  id: string
+  cod: string
+  nome: string
+  genero: string
+  ativo: boolean
+  ficha_em: string | null
+  pecas: number
+  pecas_cod: string[] | null
+  pecas_sem_tecido: number
+  pecas_sem_etiqueta: number
+  tem_desenho: boolean
+}
+
+const doKit = (l: LinhaDoKit): KitNaLista => ({
+  id: l.id,
+  cod: l.cod,
+  nome: l.nome,
+  genero: l.genero,
+  ativo: l.ativo,
+  fichaEm: l.ficha_em,
+  pecas: l.pecas,
+  pecasCod: l.pecas_cod ?? [],
+  pecasSemTecido: l.pecas_sem_tecido,
+  pecasSemEtiqueta: l.pecas_sem_etiqueta,
+  temDesenho: l.tem_desenho,
+})
+
+const COLUNAS_DO_KIT =
+  'id,cod,nome,genero,ativo,ficha_em,pecas,pecas_cod,pecas_sem_tecido,pecas_sem_etiqueta,tem_desenho'
+
+/** Os kits, para a aba. Só os ativos. */
+export async function carregarKits(): Promise<KitNaLista[]> {
+  const linhas = await tabela<LinhaDoKit[]>(
+    `kit_na_ficha?select=${COLUNAS_DO_KIT}&ativo=is.true&order=nome.asc`,
+  )
+  return linhas.map(doKit)
+}
+
+type LinhaDaPeca = {
+  kit_id: string
+  kit_cod: string
+  kit_nome: string
+  referencia_id: string
+  cod: string
+  nome: string
+  genero: string
+  detalhes: Detalhes | null
+  tamanhos: string[] | null
+  papel: string
+  tecidos: { parte: string; tecido_id: string; tecido?: string }[] | null
+  design: DesignDaPeca[] | null
+  etiqueta: EtiquetaDoKit
+  etiqueta_onde: string
+  observacao: string
+}
+
+/** As peças de um kit, na ordem dele, cada uma com a ficha de fabricação. */
+export async function carregarPecasDoKit(kitId: string): Promise<PecaDoKit[]> {
+  const linhas = await tabela<LinhaDaPeca[]>(
+    'peca_do_kit_na_lista?select=kit_id,kit_cod,kit_nome,referencia_id,cod,nome,genero,detalhes,tamanhos,papel,tecidos,design,etiqueta,etiqueta_onde,observacao' +
+      `&kit_id=eq.${kitId}&order=ordem.asc`,
+  )
+  return linhas.map(l => ({
+    referenciaId: l.referencia_id,
+    cod: l.cod,
+    nome: l.nome,
+    genero: l.genero,
+    detalhes: l.detalhes ?? {},
+    tamanhos: l.tamanhos ?? [],
+    papel: l.papel,
+    tecidos: (l.tecidos ?? []).map(
+      (t): TecidoDaPeca => ({ parte: t.parte, tecidoId: t.tecido_id, tecido: t.tecido ?? '' }),
+    ),
+    design: l.design ?? [],
+    etiqueta: l.etiqueta,
+    etiquetaOnde: l.etiqueta_onde,
+    observacao: l.observacao,
+  }))
+}
+
+/** Os kits em que uma referência entra. */
+export async function carregarKitsDaReferencia(referenciaId: string): Promise<KitDaReferencia[]> {
+  const linhas = await tabela<{ kit_id: string; kit_cod: string; kit_nome: string; papel: string }[]>(
+    `peca_do_kit_na_lista?select=kit_id,kit_cod,kit_nome,papel&referencia_id=eq.${referenciaId}&kit_ativo=is.true&order=kit_nome.asc`,
+  )
+  return linhas.map(l => ({ kitId: l.kit_id, kitCod: l.kit_cod, kitNome: l.kit_nome, papel: l.papel }))
+}
+
+/** Cria o kit (sem id) ou salva a ficha dele. Devolve o id do kit. */
+export function salvarKit(kitId: string | null, kit: Kit): Promise<string> {
+  return chamar<string>('salvar_kit', { p_kit: kitId, p_ficha: kitParaOBanco(kit) })
+}

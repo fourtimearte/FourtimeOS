@@ -4,6 +4,7 @@ import { Botao, Busca, Chip, Esqueleto, Modal, Pagina, Segmentado, Vazio } from 
 import { usarConsulta } from '@shared'
 import { pode, useSessao } from '@dominio/sessao'
 import {
+  carregarKits,
   carregarMateriaisDeAviamento,
   carregarReferencia,
   carregarReferencias,
@@ -11,12 +12,16 @@ import {
   casaComABusca,
   oQueFalta,
   type GrupoDeReferencia,
+  type KitNaLista,
   type MaterialDoEstoque,
+  type PecaDoKit,
   type ReferenciaNaFicha,
   type TecidoDeConta,
 } from '@dominio/produto'
 import { plural } from './apoio'
 import { Arvore, type Lista } from './arvore'
+import { EditorDoKit } from './editor-do-kit'
+import { FichaDoKit } from './kit'
 import { NovaReferencia } from './nova'
 import { FichaDaReferencia } from './referencia'
 import './produtos.css'
@@ -34,13 +39,17 @@ import './produtos.css'
    ficha dela do lado direito. O estoque diz quanto tem; a ficha técnica diz
    de que a peça é feita.
 
-   ESTE É O PRIMEIRO PASSO: as referências. Os kits, o molde em tela cheia com
-   as medidas, a folha impressa, o Movimento, o Depósito de peças prontas e as
-   Estatísticas chegam nos próximos, e até lá cada um diz isso na própria aba,
-   em vez de fingir que existe.
+   O QUE EXISTE: as referências e os kits. O molde em tela cheia com as
+   medidas, a folha impressa, o Movimento, o Depósito de peças prontas e as
+   Estatísticas chegam nos próximos passos, e até lá cada um diz isso na
+   própria aba, em vez de fingir que existe.
 
    O GRUPO DOS KITS FICA FORA DA LISTA DE REFERÊNCIAS. Kit é um conjunto de
-   peças, e não uma peça: ele não tem molde nem tabela de medidas próprios.
+   peças, e não uma peça: ele não tem molde nem tabela de medidas próprios. Os
+   kits moram na aba Kits da árvore, com a ficha de fabricação de cada um.
+
+   O EDITOR DO KIT TOMA A PÁGINA (prancha 61): tem as três colunas dele e os
+   próprios botões no topo, e só devolve a tela quando a pessoa sai.
    ========================================================================== */
 
 type Aba = 'fichas' | 'movimento' | 'deposito' | 'estatisticas'
@@ -84,6 +93,7 @@ export function TelaProdutos() {
 
   const [grupos, setGrupos] = useState<GrupoDeReferencia[]>([])
   const [referencias, setReferencias] = useState<ReferenciaNaFicha[]>([])
+  const [kits, setKits] = useState<KitNaLista[]>([])
   const [tecidos, setTecidos] = useState<TecidoDeConta[]>([])
   const [doEstoque, setDoEstoque] = useState<MaterialDoEstoque[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -101,15 +111,25 @@ export function TelaProdutos() {
   /* o que a pessoa pediu para fazer com o editor aberto e mudança sem salvar */
   const [saida, setSaida] = useState<(() => void) | null>(null)
   const [nova, setNova] = useState<{ de?: ReferenciaNaFicha } | null>(null)
+  /* o id do kit aberto do lado direito */
+  const [kitEscolhido, setKitEscolhido] = useState('')
+  /* o editor do kit, que toma a página: o kit que existe (com o que já foi lido dele) ou um novo */
+  const [editorDoKit, setEditorDoKit] = useState<{
+    kit: KitNaLista | null
+    pecas: PecaDoKit[]
+    desenho: string | null
+  } | null>(null)
 
   const celular = usarConsulta('(max-width: 767px)')
 
   const ler = useCallback(async () => {
-    const tudo = await carregarReferencias()
+    /* os kits são da mesma página, mas uma falha neles não derruba as referências */
+    const [tudo, ks] = await Promise.all([carregarReferencias(), carregarKits().catch(() => [] as KitNaLista[])])
     setGrupos(tudo.grupos)
     setReferencias(tudo.referencias)
+    setKits(ks)
     setErro('')
-    return tudo.referencias
+    return { referencias: tudo.referencias, kits: ks }
   }, [])
 
   /* O tecido de conta e a lista de aviamentos são apoio: sem eles a ficha
@@ -140,12 +160,18 @@ export function TelaProdutos() {
     ler()
       .then(lidas => {
         if (!vivo) return
-        /* a página abre já na peça quando alguém chega com ela no endereço */
+        /* a página abre já na peça, ou no kit, quando alguém chega com ele no endereço */
         const pedida = endereco.get('ref')
-        const r = pedida ? lidas.find(x => x.cod === pedida || x.id === pedida) : undefined
+        const r = pedida ? lidas.referencias.find(x => x.cod === pedida || x.id === pedida) : undefined
         if (r) {
           setEscolhida(r.id)
           setAbertos(new Set([r.grupo ?? '']))
+        }
+        const kitPedido = endereco.get('kit')
+        const k = kitPedido ? lidas.kits.find(x => x.cod === kitPedido || x.id === kitPedido) : undefined
+        if (k && !r) {
+          setKitEscolhido(k.id)
+          setLista('kits')
         }
       })
       .catch((e: unknown) => {
@@ -168,7 +194,24 @@ export function TelaProdutos() {
     () => (termo ? dePeca.filter(r => casaComABusca(r, termo)) : dePeca),
     [dePeca, termo],
   )
+  const kitsFiltrados = useMemo(
+    () =>
+      termo
+        ? kits.filter(
+            k => casaComABusca(k, termo) || k.pecasCod.some(c => casaComABusca({ nome: '', cod: c }, termo)),
+          )
+        : kits,
+    [kits, termo],
+  )
+  /* a busca troca de aba sozinha quando só a outra lista tem o que foi digitado */
+  const listaAVista: Lista =
+    termo && lista === 'referencias' && !filtradas.length && kitsFiltrados.length
+      ? 'kits'
+      : termo && lista === 'kits' && !kitsFiltrados.length && filtradas.length
+        ? 'referencias'
+        : lista
   const aberta = useMemo(() => dePeca.find(r => r.id === escolhida) ?? null, [dePeca, escolhida])
+  const kitAberto = useMemo(() => kits.find(k => k.id === kitEscolhido) ?? null, [kits, kitEscolhido])
   const grupoDaAberta = aberta ? (grupos.find(g => g.cod === aberta.grupo) ?? null) : null
   const completas = useMemo(() => dePeca.filter(r => !oQueFalta(r).length).length, [dePeca])
 
@@ -176,6 +219,9 @@ export function TelaProdutos() {
   useEffect(() => {
     if (escolhida && !carregando && !aberta) setEscolhida('')
   }, [escolhida, carregando, aberta])
+  useEffect(() => {
+    if (kitEscolhido && !carregando && !kitAberto) setKitEscolhido('')
+  }, [kitEscolhido, carregando, kitAberto])
 
   /* --- sair do editor sem perder o que foi digitado ---------------------------- */
   function seDerParaSair(depois: () => void) {
@@ -184,13 +230,36 @@ export function TelaProdutos() {
   }
 
   function escolher(id: string) {
-    if (id === escolhida && !editando) return
+    if (id === escolhida && !editando && !kitEscolhido) return
     seDerParaSair(() => {
       setEditando(false)
       setEscolhida(id)
+      setKitEscolhido('')
       const r = referencias.find(x => x.id === id)
+      if (r) {
+        setLista('referencias')
+        setAbertos(atual => new Set([...atual, r.grupo ?? '']))
+      }
       setEndereco(r ? { ref: r.cod || r.id } : {}, { replace: true })
     })
+  }
+
+  function escolherKit(id: string) {
+    if (id === kitEscolhido && !editando && !escolhida) return
+    seDerParaSair(() => {
+      setEditando(false)
+      setEscolhida('')
+      setKitEscolhido(id)
+      const k = kits.find(x => x.id === id)
+      if (k) setLista('kits')
+      setEndereco(k ? { kit: k.cod || k.id } : {}, { replace: true })
+    })
+  }
+
+  function trocarLista(l: Lista) {
+    /* trocar de aba na árvore é só olhar a outra lista: o que está aberto do lado direito fica */
+    setLista(l)
+    if (termo && l !== listaAVista) setBusca('')
   }
 
   function trocarAba(a: Aba) {
@@ -210,6 +279,11 @@ export function TelaProdutos() {
     })
   }
 
+  function abrirNovoKit() {
+    setEditando(false)
+    setEditorDoKit({ kit: null, pecas: [], desenho: null })
+  }
+
   const relerAAberta = useCallback(async () => {
     if (!escolhida) return
     const linha = await carregarReferencia(escolhida)
@@ -220,9 +294,41 @@ export function TelaProdutos() {
     ? 'Lendo as referências'
     : erro
       ? undefined
-      : `${plural(dePeca.length, 'referência', 'referências')} · ${completas} com a ficha completa`
+      : `${plural(dePeca.length, 'referência', 'referências')} · ${plural(kits.length, 'kit', 'kits')} · ${completas} com a ficha completa`
 
-  const naFicha = aba === 'fichas' && !!aberta
+  const naFicha = aba === 'fichas' && (!!aberta || !!kitAberto)
+
+  /* O EDITOR DO KIT TOMA A PÁGINA: tem os próprios botões no topo, e só
+     devolve a tela quando a pessoa salva, exclui ou volta. */
+  if (editorDoKit && podeEditar) {
+    return (
+      <EditorDoKit
+        kit={editorDoKit.kit}
+        pecasIniciais={editorDoKit.pecas}
+        desenhoInicial={editorDoKit.desenho}
+        referencias={dePeca}
+        existentes={referencias.map(r => ({ cod: r.cod, nome: r.nome }))}
+        tecidos={tecidos}
+        podeExcluir={podeExcluir}
+        aoSair={() => setEditorDoKit(null)}
+        aoSalvou={async id => {
+          await ler()
+          setEditorDoKit(null)
+          setAba('fichas')
+          setLista('kits')
+          setBusca('')
+          setEscolhida('')
+          setKitEscolhido(id)
+        }}
+        aoExcluiu={async () => {
+          setEditorDoKit(null)
+          setKitEscolhido('')
+          setEndereco({}, { replace: true })
+          await ler()
+        }}
+      />
+    )
+  }
   const semDados = (
     <section className="cartao pd-quadro">
       <div className="pd-espera">
@@ -243,9 +349,12 @@ export function TelaProdutos() {
       sub={sub}
       acoes={
         podeCriar && !celular ? (
-          <Botao tom="primario" onClick={() => seDerParaSair(() => setNova({}))}>
-            Nova referência
-          </Botao>
+          <>
+            <Botao onClick={() => seDerParaSair(abrirNovoKit)}>Novo kit</Botao>
+            <Botao tom="primario" onClick={() => seDerParaSair(() => setNova({}))}>
+              Nova referência
+            </Botao>
+          </>
         ) : undefined
       }
     >
@@ -254,6 +363,7 @@ export function TelaProdutos() {
           <Botao tom="primario" className="pd-cresce" onClick={() => setNova({})}>
             Nova referência
           </Botao>
+          <Botao onClick={abrirNovoKit}>Novo kit</Botao>
         </div>
       ) : null}
 
@@ -284,9 +394,10 @@ export function TelaProdutos() {
                 const texto = e.currentTarget.value
                 /* no celular a ficha toma a tela: quem busca quer ver a lista */
                 if (celular && escolhida && !editando) escolher('')
+                if (celular && kitEscolhido) escolherKit('')
                 setBusca(texto)
               }}
-              placeholder="Buscar referência ou código"
+              placeholder="Buscar referência, código ou kit"
               aria-label="Buscar"
             />
           ) : null}
@@ -309,22 +420,41 @@ export function TelaProdutos() {
         semDados
       ) : (
         <div className="pd-palco">
-          <div className={aberta ? 'pd-quatro com-ficha' : 'pd-quatro'}>
-            {celular && aberta ? null : (
+          <div className={naFicha ? 'pd-quatro com-ficha' : 'pd-quatro'}>
+            {celular && naFicha ? null : (
               <Arvore
                 grupos={gruposDePeca}
                 referencias={filtradas}
                 haReferencias={dePeca.length > 0}
+                kits={kitsFiltrados}
+                haKits={kits.length > 0}
                 termo={termo}
-                lista={lista}
-                aoTrocarLista={setLista}
+                lista={listaAVista}
+                aoTrocarLista={trocarLista}
                 abertos={abertos}
                 aoAbrir={abrirGrupo}
                 escolhida={escolhida}
                 aoEscolher={escolher}
+                kitEscolhido={kitEscolhido}
+                aoEscolherKit={escolherKit}
               />
             )}
-            {aberta ? (
+            {kitAberto ? (
+              <div className="pd-largo">
+                <FichaDoKit
+                  kit={kitAberto}
+                  referencias={dePeca}
+                  celular={celular}
+                  podeEditar={podeEditar}
+                  aoEditar={dado => setEditorDoKit({ kit: kitAberto, pecas: dado.pecas, desenho: dado.desenho })}
+                  aoAbrirReferencia={escolher}
+                  aoMudou={async () => {
+                    setKits(await carregarKits())
+                  }}
+                  aoFechar={() => escolherKit('')}
+                />
+              </div>
+            ) : aberta ? (
               <div className="pd-largo">
                 <FichaDaReferencia
                   r={aberta}
@@ -353,14 +483,22 @@ export function TelaProdutos() {
                   }}
                   aoDuplicar={() => setNova({ de: aberta })}
                   aoFechar={() => escolher('')}
+                  aoAbrirKit={escolherKit}
                 />
               </div>
             ) : celular ? null : (
               <section className="cartao pd-largo pd-quadro" data-nada-escolhido="">
-                <Vazio
-                  titulo="Escolha uma referência"
-                  texto="Abra um grupo na lista e toque na peça. A ficha dela aparece aqui: o molde, os detalhes de costura, a tabela de medidas, o tecido por tamanho e os aviamentos."
-                />
+                {listaAVista === 'kits' ? (
+                  <Vazio
+                    titulo="Escolha um kit"
+                    texto="Toque no kit na lista. A ficha dele aparece aqui: o desenho, as peças, a ficha de fabricação com os tecidos, o design impresso e a etiqueta, e o tecido de um kit em cada tamanho."
+                  />
+                ) : (
+                  <Vazio
+                    titulo="Escolha uma referência"
+                    texto="Abra um grupo na lista e toque na peça. A ficha dela aparece aqui: o molde, os detalhes de costura, a tabela de medidas, o tecido por tamanho e os aviamentos."
+                  />
+                )}
               </section>
             )}
           </div>
@@ -375,9 +513,10 @@ export function TelaProdutos() {
         aoCriou={async id => {
           setNova(null)
           const lidas = await ler()
-          const r = lidas.find(x => x.id === id)
+          const r = lidas.referencias.find(x => x.id === id)
           setBusca('')
           setLista('referencias')
+          setKitEscolhido('')
           setEscolhida(id)
           if (r) {
             setAbertos(atual => new Set([...atual, r.grupo ?? '']))

@@ -113,6 +113,16 @@ export function perfil(acesso) {
   return [p]
 }
 
+/* As peças de cada kit, por id do kit: o que a tabela peca_do_kit guarda. O kit
+   do catálogo nasce como a migração 051 o deixa: as duas peças lidas do
+   código, sem tecido, sem etiqueta e sem desenho. */
+const PECAS_DOS_KITS = {
+  rkit: [
+    { referencia_id: 'r020', papel: 'Parte de cima', tecidos: [], design: [], etiqueta: '', etiqueta_onde: '', observacao: '' },
+    { referencia_id: 'r090', papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiqueta_onde: '', observacao: '' },
+  ],
+}
+
 const copia = (x) => JSON.parse(JSON.stringify(x))
 
 /* `estado`: 'cheio' (o de cima), 'vazio' (nenhuma referência), 'erro' (a
@@ -122,6 +132,7 @@ const copia = (x) => JSON.parse(JSON.stringify(x))
 export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
   const refs = estado === 'vazio' ? [] : copia(REFERENCIAS)
   const fichas = copia(FICHAS)
+  const pecasDosKits = estado === 'vazio' ? {} : copia(PECAS_DOS_KITS)
   const gravados = []
   let recusas = recusa
   let novos = 0
@@ -133,6 +144,17 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
     return { ...r, medidas: comNumero(f.medidas, 'valores'), partes_com_tecido: comNumero(f.partes, 'quantidades'), materiais: f.materiais.length, tem_molde: !!f.molde }
   }
   const idDe = (u, campo) => (u.match(new RegExp(campo + '=eq\\.([^&]+)')) ?? [])[1]
+
+  /* o kit como a view kit_na_ficha devolve */
+  const kitNaLista = (k) => {
+    const ps = pecasDosKits[k.id] ?? []
+    return { id: k.id, cod: k.cod, nome: k.nome, genero: k.genero, ativo: k.ativo, ficha_em: k.ficha_em, pecas: ps.length, pecas_cod: ps.map((p) => refs.find((r) => r.id === p.referencia_id)?.cod ?? ''), pecas_sem_tecido: ps.filter((p) => !p.tecidos.length).length, pecas_sem_etiqueta: ps.filter((p) => !p.etiqueta).length, tem_desenho: !!fichaDe(k.id).molde }
+  }
+  /* a peça como a view peca_do_kit_na_lista devolve */
+  const pecaNaLista = (kitId) => (p, ordem) => {
+    const k = refs.find((x) => x.id === kitId); const r = refs.find((x) => x.id === p.referencia_id)
+    return { kit_id: kitId, kit_cod: k.cod, kit_nome: k.nome, kit_ativo: k.ativo, referencia_id: r.id, cod: r.cod, nome: r.nome, genero: r.genero, grupo: r.grupo, detalhes: r.detalhes, tamanhos: r.tamanhos, ordem, ...p }
+  }
 
   /* devolve { status, corpo } para um pedido ao banco, ou nulo se não é com ele */
   function responder(metodo, u, corpo) {
@@ -146,6 +168,25 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
       Object.assign(r, { nome: f.nome, detalhes: f.detalhes, observacao: f.observacao, tamanhos: f.tamanhos, ficha_em: '2026-10-06T12:00:00Z' })
       Object.assign(fichaDe(r.id), { medidas: f.medidas, partes: f.partes, materiais: f.materiais })
       return { status: 200, corpo: r.ficha_em }
+    }
+    if (u.includes('rpc/salvar_kit')) {
+      gravados.push({ u: 'rpc/salvar_kit', corpo })
+      if (recusas > 0) { recusas--; return { status: 400, corpo: { code: '23514', message: 'Em "CAMISETA MASC TRAD", escolha o tecido de "Mangas" no catálogo.' } } }
+      const f = corpo.p_ficha
+      const cods = f.pecas.map((p) => refs.find((r) => r.id === p.referencia_id).cod)
+      const cod = 'FT-KIT-' + cods.map((c) => c.replace(/^FT-/, '')).join('-')
+      let kit = corpo.p_kit ? refs.find((x) => x.id === corpo.p_kit) : null
+      if (corpo.p_kit && (!kit || kit.cod !== cod)) return { status: 400, corpo: { code: '23514', message: 'As peças de um kit não mudam depois de criado: o código dele é feito delas. Para outras peças, crie outro kit.' } }
+      if (!kit) {
+        if (refs.some((x) => x.cod === cod)) return { status: 409, corpo: { code: '23505', message: 'Já existe um kit com estas peças, nesta ordem.' } }
+        novos += 1
+        const generos = new Set(f.pecas.map((p) => refs.find((r) => r.id === p.referencia_id).genero))
+        kit = ref('kit' + novos, cod, f.nome, 'KIT', generos.size === 1 ? [...generos][0] : 'U')
+        refs.push(kit)
+      }
+      Object.assign(kit, { nome: f.nome, ficha_em: '2026-10-06T12:00:00Z' })
+      pecasDosKits[kit.id] = f.pecas.map((p) => ({ referencia_id: p.referencia_id, papel: p.papel, tecidos: p.tecidos.map((t) => ({ ...t, tecido: tecidos.find((x) => x.id === t.tecido_id)?.nome ?? '' })), design: p.design, etiqueta: p.etiqueta, etiqueta_onde: p.etiqueta_onde, observacao: p.observacao }))
+      return { status: 200, corpo: kit.id }
     }
     if (u.includes('rpc/salvar_molde_da_referencia')) {
       gravados.push({ u: 'rpc/salvar_molde_da_referencia', corpo })
@@ -163,6 +204,8 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
       gravados.push({ u: 'referencia DELETE', corpo: idDe(u, 'id') })
       const i = refs.findIndex((x) => x.id === idDe(u, 'id'))
       if (i >= 0) refs.splice(i, 1)
+      delete pecasDosKits[idDe(u, 'id')]
+      for (const k of Object.keys(pecasDosKits)) pecasDosKits[k] = pecasDosKits[k].filter((p) => p.referencia_id !== idDe(u, 'id'))
       return { status: 204, corpo: null }
     }
     if (metodo !== 'GET') return null
@@ -172,6 +215,12 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
       const id = idDe(u, 'id')
       return { status: 200, corpo: (id ? refs.filter((r) => r.id === id) : refs.filter((r) => r.ativo)).map(naLista) }
     }
+    if (u.includes('kit_na_ficha')) return estado === 'sem-kits' ? { status: 404, corpo: { message: 'relation "public.kit_na_ficha" does not exist' } } : { status: 200, corpo: refs.filter((r) => r.grupo === 'KIT' && r.ativo).map(kitNaLista).sort((a, b) => a.nome.localeCompare(b.nome)) }
+    if (u.includes('peca_do_kit_na_lista')) {
+      const kitId = idDe(u, 'kit_id'); const refId = idDe(u, 'referencia_id')
+      if (kitId) return { status: 200, corpo: (pecasDosKits[kitId] ?? []).map(pecaNaLista(kitId)) }
+      return { status: 200, corpo: Object.keys(pecasDosKits).flatMap((k) => pecasDosKits[k].map(pecaNaLista(k))).filter((p) => p.referencia_id === refId) }
+    }
     if (u.includes('medida_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).medidas }
     if (u.includes('parte_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).partes }
     if (u.includes('material_da_referencia')) return { status: 200, corpo: fichaDe(idDe(u, 'referencia_id')).materiais }
@@ -180,5 +229,5 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0 } = {}) {
     if (u.includes('/material?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table material' } } : { status: 200, corpo: doEstoque }
     return null
   }
-  return { responder, gravados, fichas, refs }
+  return { responder, gravados, fichas, refs, pecasDosKits }
 }

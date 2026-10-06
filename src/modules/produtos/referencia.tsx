@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Copy, Needle, PencilSimple, TShirt, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, Copy, Needle, PencilSimple, TShirt, TreeStructure, X } from '@phosphor-icons/react'
 import { Botao, Esqueleto, TituloCartao, Vazio, avisar } from '@ds'
 import {
   DETALHES,
   NOME_DO_GENERO,
   carregarFicha,
+  carregarKitsDaReferencia,
   carregarMolde,
   gradeEmPalavras,
   paraOCampo,
   salvarMolde,
   type Ficha,
   type GrupoDeReferencia,
+  type KitDaReferencia,
   type MaterialDoEstoque,
   type ReferenciaNaFicha,
   type TecidoDeConta,
@@ -48,7 +50,11 @@ function Vista({
   aoEditar,
   aoDuplicar,
   aoFechar,
+  kits,
+  aoAbrirKit,
 }: {
+  kits: KitDaReferencia[]
+  aoAbrirKit: (id: string) => void
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
   ficha: Ficha
@@ -156,6 +162,7 @@ function Vista({
         aoEditar={aoEditar}
       />
 
+      <div className="pd-dois">
       <section className="cartao pd-col" data-cartao="aviamentos">
         <div className="pd-topo">
           <TituloCartao icone={Needle}>Aviamentos e insumos por peça</TituloCartao>
@@ -183,6 +190,32 @@ function Vista({
           </div>
         )}
       </section>
+
+      <section className="cartao pd-col" data-cartao="onde-entra">
+        <div className="pd-topo">
+          <TituloCartao icone={TreeStructure}>Onde esta peça entra</TituloCartao>
+        </div>
+        <div className="pd-sub">Kits</div>
+        {kits.length ? (
+          kits.map(k => (
+            <div className="pd-lin" key={k.kitId} data-kit-da-peca={k.kitCod}>
+              <span className="pd-txt">
+                <b>{k.kitNome}</b>
+                <small>{k.papel ? k.papel.toLowerCase() + ' do kit' : 'peça do kit'}</small>
+              </span>
+              <Botao tom="limpo" tamanho="sm" onClick={() => aoAbrirKit(k.kitId)}>
+                Abrir
+                <ArrowRight size={14} aria-hidden="true" />
+              </Botao>
+            </div>
+          ))
+        ) : (
+          <div className="pd-corpo">
+            <p className="pd-nota">Esta peça não está em nenhum kit.</p>
+          </div>
+        )}
+      </section>
+      </div>
     </div>
   )
 }
@@ -207,6 +240,7 @@ export function FichaDaReferencia({
   aoExcluiu,
   aoDuplicar,
   aoFechar,
+  aoAbrirKit,
 }: {
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
@@ -232,7 +266,10 @@ export function FichaDaReferencia({
   aoExcluiu: () => Promise<void>
   aoDuplicar: () => void
   aoFechar: () => void
+  aoAbrirKit: (id: string) => void
 }) {
+  /* em que kits a peça entra: apoio, que pode falhar sem derrubar a ficha */
+  const [kits, setKits] = useState<KitDaReferencia[]>([])
   const [ficha, setFicha] = useState<Ficha | null>(null)
   const [molde, setMolde] = useState<string | null>(null)
   const [erro, setErro] = useState('')
@@ -255,8 +292,20 @@ export function FichaDaReferencia({
   useEffect(() => {
     setFicha(null)
     setMolde(null)
+    setKits([])
     void ler()
-  }, [ler])
+    let vivo = true
+    carregarKitsDaReferencia(r.id)
+      .then(lista => {
+        if (vivo) setKits(lista)
+      })
+      .catch(() => {
+        /* sem a lista de kits a ficha continua inteira */
+      })
+    return () => {
+      vivo = false
+    }
+  }, [ler, r.id])
 
   async function trocarMolde(svg: string) {
     setEnviandoMolde(true)
@@ -308,6 +357,7 @@ export function FichaDaReferencia({
         tecidos={tecidos}
         doEstoque={doEstoque}
         abaInicial={aba}
+        emKits={kits.length}
         podeExcluir={podeExcluir}
         aoSujar={aoSujar}
         aoCancelar={aoCancelarEdicao}
@@ -343,6 +393,8 @@ export function FichaDaReferencia({
       }}
       aoDuplicar={aoDuplicar}
       aoFechar={aoFechar}
+      kits={kits}
+      aoAbrirKit={aoAbrirKit}
     />
   )
 }

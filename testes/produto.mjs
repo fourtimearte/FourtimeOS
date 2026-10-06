@@ -15,6 +15,7 @@
    ========================================================================== */
 
 import * as p from './compilado-produto/src/dominio/produto/contas.js'
+import * as k from './compilado-produto/src/dominio/produto/kit.js'
 
 let ruins = 0
 const conta = (certo, frase) => {
@@ -204,6 +205,57 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   copia.detalhes.gola = 'x'
   copia.tamanhos.push('M')
   conta(copia.nome === 'B' && de.medidas[0].valores.P === 1 && de.partes[0].quantidades.P === 1 && de.detalhes.gola === 'Polo' && de.tamanhos.length === 1, 'copiar a ficha: mexer na cópia não mexe na original')
+}
+
+/* ---- o kit -------------------------------------------------------------------- */
+{
+  conta(k.codigoDoKit(['FT-020-000M', 'FT-090-000M']) === 'FT-KIT-020-000M-090-000M', 'código do kit: FT-KIT e o código de cada peça sem o FT-, na ordem')
+  conta(k.codigoDoKit(['FT-090-000M', 'FT-020-000M']) === 'FT-KIT-090-000M-020-000M', 'código do kit: outra ordem das peças é outro código')
+  conta(k.codigoDoKit(['FT-020-000M']) === '' && k.codigoDoKit([]) === '' && k.codigoDoKit(['FT-020-000M', '']) === '', 'código do kit: com uma peça só, ou com peça sem código, não tem código')
+  conta(k.generoDoKit(['M', 'M']) === 'M' && k.generoDoKit(['F', 'M']) === 'U' && k.generoDoKit(['C', 'C', 'C']) === 'C' && k.generoDoKit(['', '']) === 'U', 'gênero do kit: o das peças quando concordam; senão, unissex')
+  const adulto = { tamanhos: [], genero: 'M', nome: 'CAMISETA' }
+  conta(igual(k.gradeDoKit([adulto, { tamanhos: ['P', 'M', 'G', '10A'], genero: 'M', nome: 'CALÇA' }]), ['P', 'M', 'G']), 'grade do kit: só os tamanhos que todas as peças têm')
+  conta(igual(k.gradeDoKit([adulto, { tamanhos: [], genero: 'C', nome: 'INFANTIL' }]), []), 'grade do kit: peça adulta com peça infantil não têm tamanho em comum')
+  conta(igual(k.gradeDoKit([]), []), 'grade do kit: sem peça, sem grade')
+
+  const lista = { fichaEm: null, temDesenho: false, pecasSemTecido: 2, pecasSemEtiqueta: 2 }
+  conta(k.kitEmBranco(lista) && !k.kitEmBranco({ ...lista, fichaEm: '2026-10-06' }) && !k.kitEmBranco({ ...lista, temDesenho: true }), 'kit em branco: nunca salvo e sem desenho')
+  conta(k.faltasDoKit(lista) === 5 && k.faltasDoKit({ fichaEm: 'x', temDesenho: true, pecasSemTecido: 0, pecasSemEtiqueta: 0 }) === 0, 'faltas do kit: peça sem tecido, peça sem etiqueta e o desenho')
+
+  const cima = { referenciaId: 'a', cod: 'FT-010-000M', nome: 'CAMISETA', genero: 'M', detalhes: {}, tamanhos: [], papel: 'Parte de cima', tecidos: [{ parte: 'Frente e costas', tecidoId: 't1', tecido: 'DRYFIT' }, { parte: 'Mangas', tecidoId: 't2', tecido: 'JAKAR' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: ' ' }], etiqueta: 'silk', etiquetaOnde: 'no decote', observacao: '' }
+  const baixo = { referenciaId: 'b', cod: 'FT-090-000M', nome: 'CALÇAO', genero: 'M', detalhes: {}, tamanhos: [], papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiquetaOnde: '', observacao: '' }
+  const pend = k.pendenciasDoKit({ nome: 'KIT', pecas: [cima, baixo] }, false)
+  conta(pend.every((x) => !x.impede) && igual(pend.map((x) => x.deQuem + ': ' + x.texto), ['Parte de cima: falta dizer onde vai Patch.', 'Parte de baixo: falta escolher o tecido.', 'Parte de baixo: falta escolher a etiqueta.', ': Falta o desenho do kit, em SVG.']), 'pendências: o que falta em cada peça e o desenho, sem impedir de salvar')
+  conta(k.pendenciasDoKit({ nome: 'KIT', pecas: [{ ...cima, design: [{ tecnica: 'subli', onde: 'tudo' }] }, { ...baixo, tecidos: [{ parte: 'A peça inteira', tecidoId: 't1', tecido: 'DRYFIT' }], etiqueta: 'sem' }] }, true).length === 0, 'pendências: kit inteiro não tem nenhuma, e "sem etiqueta" é uma escolha')
+  const impede = k.pendenciasDoKit({ nome: ' ', pecas: [{ ...cima, tecidos: [{ parte: 'Mangas', tecidoId: 't1', tecido: 'A' }, { parte: ' mangas ', tecidoId: 't2', tecido: 'B' }, { parte: 'Frente', tecidoId: '', tecido: '' }] }] }, true).filter((x) => x.impede)
+  conta(impede.length === 4 && impede[0].texto.includes('nome') && impede[1].texto.includes('duas peças') && impede[2].texto.includes('sem a parte') && impede[3].texto.includes('dois tecidos'), 'pendências que impedem: sem nome, menos de duas peças, tecido pela metade e parte com dois tecidos')
+
+  /* o tecido de um kit: a soma das peças, tecido por tecido, com números fáceis de conferir na mão */
+  const partesDaCamiseta = [
+    { nome: 'Frente', vezes: 1, unidade: 'm2', quantidades: { P: 0.3, M: 0.4 } },
+    { nome: 'Costas', vezes: 1, unidade: 'm2', quantidades: { P: 0.3, M: 0.4 } },
+    { nome: 'Mangas', vezes: 2, unidade: 'm2', quantidades: { P: 0.2, M: 0.25 } },
+    { nome: 'Ribana', vezes: 1, unidade: 'm', quantidades: { P: 0.5, M: 0.5 } },
+  ]
+  const partesDoCalcao = [{ nome: 'Perna', vezes: 2, unidade: 'm2', quantidades: { P: 0.5 } }, { nome: 'Cós', vezes: 1, unidade: 'm2', quantidades: { P: 0.05 } }]
+  const comFicha = [
+    { papel: 'Parte de cima', nome: 'CAMISETA', tecidos: [{ parte: 'frente', tecidoId: 't1', tecido: 'DRYFIT' }, { parte: 'Costas', tecidoId: 't1', tecido: 'DRYFIT' }, { parte: 'Mangas', tecidoId: 't2', tecido: 'JAKAR' }], partes: partesDaCamiseta, materiais: [{ materialId: 'l', nome: 'Linha', quantidade: 0.1, unidade: 'cone' }, { materialId: null, nome: 'Etiqueta de composição', quantidade: 1, unidade: 'un' }] },
+    { papel: 'Parte de baixo', nome: 'CALÇAO', tecidos: [{ parte: 'A peça inteira', tecidoId: 't1', tecido: 'DRYFIT' }], partes: partesDoCalcao, materiais: [{ materialId: 'l', nome: 'Linha', quantidade: 0.2, unidade: 'cone' }, { materialId: 'e', nome: 'Elástico', quantidade: 0.7, unidade: 'm' }, { materialId: null, nome: 'etiqueta de composição', quantidade: 1, unidade: 'un' }] },
+  ]
+  const tec = k.tecidoDoKit(comFicha, ['P', 'M', 'G'])
+  conta(tec.length === 2 && tec[0].tecido === 'DRYFIT' && tec[1].tecido === 'JAKAR', 'tecido do kit: uma linha por tecido, e tecidos diferentes não se somam')
+  conta(perto(tec[0].areas[0], 0.3 + 0.3 + 0.5 + 0.05) && perto(tec[0].areas[1], 0.8) && tec[0].areas[2] === null, 'tecido do kit: o dryfit no P é frente, costas e o calção inteiro (1,15); no M só a camiseta tem número (0,80); no G ninguém tem')
+  conta(perto(tec[1].areas[0], 0.2) && perto(tec[1].areas[1], 0.25), 'tecido do kit: o jakar é só a manga, e a ribana em metro não entra')
+  conta(tec[0].onde === 'frente e costas da parte de cima, e a parte de baixo' && tec[1].onde === 'mangas da parte de cima', 'tecido do kit: diz em palavras onde cada tecido vai')
+  conta(k.tecidoDoKit([{ ...comFicha[0], tecidos: [] }], ['P']).length === 0, 'tecido do kit: peça sem tecido escolhido não entra na conta')
+
+  const avi = k.aviamentosDoKit(comFicha)
+  conta(igual(avi.map((a) => [a.nome, a.quantidade, a.unidade, a.deQuem]), [['Linha', 0.3, 'cone', 'das duas peças'], ['Etiqueta de composição', 2, 'un', 'das duas peças'], ['Elástico', 0.7, 'm', 'da parte de baixo']]), 'aviamentos do kit: o mesmo material numa linha só, somado (0,1 + 0,2 dá 0,3, e não 0,30000000000000004), e de que peça ele vem')
+
+  const banco = k.kitParaOBanco({ nome: '  KIT  ', pecas: [{ ...cima, papel: ' Parte de cima ', observacao: ' x ' }, baixo] })
+  conta(banco.nome === 'KIT' && igual(Object.keys(banco.pecas[0]).sort(), ['design', 'etiqueta', 'etiqueta_onde', 'observacao', 'papel', 'referencia_id', 'tecidos']) && igual(banco.pecas[0].tecidos[0], { parte: 'Frente e costas', tecido_id: 't1' }) && banco.pecas[0].papel === 'Parte de cima' && banco.pecas[0].observacao === 'x' && banco.pecas[0].design[1].onde === '', 'kit para o banco: só o que é do kit vai, com o texto aparado e o tecido pelo id')
+  const nova = k.pecaNova({ id: 'z', cod: 'FT-1', nome: 'N', genero: 'M', detalhes: { gola: 'V' }, tamanhos: ['P'] }, 0)
+  conta(nova.papel === 'Parte de cima' && k.pecaNova({ id: 'z', cod: '', nome: '', genero: '', detalhes: {}, tamanhos: [] }, 1).papel === 'Parte de baixo' && k.papelDaPosicao(5) === 'Acessório' && nova.etiqueta === '' && nova.tecidos.length === 0, 'peça nova: a primeira é a parte de cima, a segunda a de baixo, as outras acessório, com a ficha em branco')
 }
 
 console.log('')

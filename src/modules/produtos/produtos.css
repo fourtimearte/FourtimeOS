@@ -161,6 +161,17 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+/* um nome comprido no topo: cabe o que couber, e o resto vira reticência */
+.pd-topo-nome {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
 .pd-corpo {
   display: flex;
   flex-direction: column;
@@ -920,6 +931,256 @@ button.pd-lin:hover {
   }
 }
 
+/* --- os kits -------------------------------------------------------------------------- */
+.pd-kits > .pd-t:last-child {
+  border-bottom: 0;
+}
+/* a linha do kit não está dentro de um grupo: começa na margem do cartão */
+.pd-solta-na-lista .pd-t-nome {
+  padding-left: var(--re-7);
+}
+.pd-pouco {
+  color: var(--brand-text);
+}
+/* o papel da peça no kit, em cima do nome: parte de cima, parte de baixo */
+.pd-papel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pd-sub {
+  padding: var(--re-5) var(--re-7) var(--re-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pd-pilha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* a ficha de fabricação do kit: uma coluna por peça */
+.pd-fab {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.pd-fab th,
+.pd-fab td {
+  padding: var(--re-5) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  font-size: 13.5px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.pd-fab thead th {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.pd-fab thead th b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pd-fab th:first-child {
+  width: 160px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.pd-fab tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.pd-fab td small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.pd-fab td.pd-texto {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+.pd-pano {
+  display: block;
+}
+.pd-pano + .pd-pano {
+  margin-top: var(--re-4);
+}
+.pd-tecnicas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-2);
+}
+.pd-fab .pd-tecnicas + small {
+  margin-top: var(--re-2);
+}
+
+/* o editor do kit: toma a página, em três colunas */
+.pd-editor-kit {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+@container pd-palco (max-width: 1099px) {
+  .pd-editor-kit {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+  /* o resumo desce para baixo das duas, na largura inteira */
+  .pd-editor-kit > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+@container pd-palco (max-width: 719px) {
+  .pd-editor-kit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.pd-peca {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  transition: background-color var(--t-fast);
+}
+.pd-peca:last-child {
+  border-bottom: 0;
+}
+.pd-peca:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+.pd-peca-nome {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  padding: var(--re-5) var(--re-7);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pd-peca-nome b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pd-peca-nome small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-peca .pd-peca-tira {
+  align-self: center;
+  margin-right: var(--re-4);
+}
+.pd-peca.on,
+.pd-peca.on:hover {
+  background-color: var(--ink);
+  color: var(--on-ink);
+}
+.pd-peca.on .pd-papel,
+.pd-peca.on .pd-peca-nome small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.pd-peca.on .pd-peca-tira {
+  color: var(--on-ink);
+}
+.pd-tecido-cab,
+.pd-tecido-lin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) var(--btn-h);
+  align-items: center;
+  gap: var(--re-5);
+}
+.pd-tecido-cab {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.pd-onde {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--re-5);
+}
+.pd-resumo {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--re-3) var(--re-6);
+  font-size: 13.5px;
+}
+.pd-resumo dt {
+  color: var(--text-2);
+}
+.pd-resumo dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.pd-pendencia {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-4);
+  padding: var(--re-5);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.pd-pendencia svg {
+  flex: none;
+}
+.pd-faltas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.pd-faltas b {
+  font-weight: 600;
+  color: var(--text);
+}
+@container pd-palco (max-width: 519px) {
+  .pd-tecido-cab {
+    display: none;
+  }
+  .pd-tecido-lin {
+    grid-template-columns: minmax(0, 1fr) var(--btn-h);
+  }
+  /* o tecido desce para a segunda linha, debaixo da parte */
+  .pd-tecido-lin > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .pd-onde {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (pointer: coarse) {
   .pd-g {
     min-height: 52px;
@@ -929,7 +1190,8 @@ button.pd-lin:hover {
   }
   .pd-tam,
   .pd-pega,
-  .pd-tag-nome {
+  .pd-tag-nome,
+  .pd-peca-nome {
     min-height: 44px;
   }
   .pd-tag-tira {

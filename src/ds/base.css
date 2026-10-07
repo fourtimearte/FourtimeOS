@@ -2254,7 +2254,9 @@ dialog.cmdk .caixa {
 
 .cartao.tinta,
 .kpi.tinta,
-.luz.tinta {
+.luz.tinta,
+.luz.tinta.tinta-linha,
+.luz.tinta.tinta-linha:hover {
   --ponto-cor: var(--tinta-ponto);
   --brilho-cor: var(--tinta-brilho);
   --ponto-op: 1;
@@ -2299,6 +2301,36 @@ dialog.cmdk .caixa {
   border-color: color-mix(in oklab, var(--mae) var(--tinta-borda), var(--tinta-fim));
   border-color: oklch(from var(--mae) var(--tinta-lb) calc(c * var(--tinta-cb)) h);
   box-shadow: var(--tinta-sombra);
+}
+
+/* A LINHA ESCOLHIDA E O ITEM ABERTO DO MENU (07/10/2026, decisao 136).
+   O Henrique: "aquele efeito que temos com o pontilhado ao passar o mouse em
+   cima com o gradiente, por que nao usamos aquilo em tudo que for selecao? ja
+   usamos ele no selecionado do menu esquerdo, vamos so parear os outros
+   locais". Entao a linha escolhida de uma lista, de uma sanfona ou de uma
+   fila leva as MESMAS classes do item aberto do menu (luz tinta m-grafite) e
+   mais esta, que so tira o que e de cartao. Quem usa pega a lista pronta em
+   LINHA_ESCOLHIDA, de @ds, para o conjunto nao ser escrito de cor.
+
+   Ela entra tambem na lista de selecionadores da regra de cima, com mais
+   peso, de proposito: o :hover da linha do modulo (.pa-item:hover,
+   .dp-linha.clica:hover) escreve um fundo, e sem esse peso a linha escolhida
+   perderia o degrade no instante em que o ponteiro chega nela.
+
+   Peca pequena NAO usa isto: caixa de marcacao, bolinha, filtro e tamanho
+   ligados continuam no preto liso (--ink). O pontilhado precisa de area. */
+.luz.tinta.tinta-linha,
+.luz.tinta.tinta-linha:hover {
+  /* linha de lista nao flutua: sai a sombra alta do cartao e entra um aro de
+     1px por dentro, que so aparece no Grafite (--tinta-linha-aro), igual a
+     moldura cinza do item do menu. O risco de baixo da linha some no degrade. */
+  box-shadow: inset 0 0 0 1px var(--tinta-linha-aro);
+  border-color: transparent;
+  /* Quem escrevia em cima do preto continua lendo sem mudar uma regra: dentro
+     da linha, as duas cores do preto passam a ser as da tinta. No Grafite a
+     tinta e a superficie tingida, e o texto dela e o do sistema. */
+  --on-ink: var(--tinta-texto);
+  --brand-no-ink: var(--tinta-marca);
 }
 
 /* os tres niveis de texto do V7 dentro da tinta */

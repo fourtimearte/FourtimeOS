@@ -294,8 +294,9 @@ for (const tema of ['light', 'dark']) {
     const acesos = await pg.locator('[data-ficha] .em-planta .dp-lugar.aberto').evaluateAll((l) => l.map((e) => e.dataset.lugar).sort())
     const apagados = await pg.locator('[data-ficha] .em-planta .dp-lugar.apagado').count()
     conta(acesos.join(' ') === 'D2 P11' && apagados === 27, `${T} tecido: na planta miúda só os lugares do tecido ficam acesos (${acesos.join(' ')})`)
-    const sel = await pg.locator(DRY).evaluate((e) => getComputedStyle(e).backgroundColor)
-    conta(sel === K['--ink'] && await pg.locator('[data-arvore] .em-c').count() === 4, `${T} tecido: na árvore o tecido escolhido fica na tinta do sistema, com as cores abertas`)
+    /* a linha escolhida se pinta igual ao item aberto do menu (07/10/2026): as quatro classes do DS e o degradê */
+    const sel = await pg.locator(DRY).evaluate((e) => { const c = getComputedStyle(e); return ['luz', 'tinta', 'm-grafite', 'tinta-linha'].every((n) => e.classList.contains(n)) && c.backgroundImage.includes('gradient') })
+    conta(sel && await pg.locator('[data-arvore] .em-c').count() === 4, `${T} tecido: na árvore o tecido escolhido fica na tinta do menu, com as cores abertas`)
     conta(await pg.locator('[data-ficha] .em-col', { hasText: 'O que andou' }).locator('.em-lin').count() === 5 && /Preto hoje, 14:10 · Separação · pedido PD-0412/.test(await texto(pg, '[data-ficha] .em-col:has-text("O que andou") .em-lin')), `${T} tecido: "O que andou" mostra os 5 últimos, com a cor em negrito`)
     conta((await sobra(pg)) <= 0, `${T} tecido: nada rola para o lado`)
 
@@ -329,8 +330,8 @@ for (const tema of ['light', 'dark']) {
     const achados2 = await onde.locator('.dp-lugar.achado').evaluateAll((l) => l.map((e) => e.dataset.lugar).sort())
     conta(achados2.join(' ') === 'D2 P11', `${T} cor: a planta miúda acende os dois lugares em vermelho`)
     conta(/É o mesmo fornecedor do tecido/.test(await texto(pg, '[data-ficha] .em-col:has(.em-fornecedor)')), `${T} cor: o fornecedor da cor, e que é o mesmo do tecido`)
-    const sel = await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).evaluate((e) => getComputedStyle(e).backgroundColor)
-    conta(sel === K['--ink'] && await pg.locator('[data-arvore] .em-sel').count() === 1, `${T} cor: na árvore só a cor escolhida fica na tinta`)
+    const sel = await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).evaluate((e) => { const c = getComputedStyle(e); return ['luz', 'tinta', 'm-grafite', 'tinta-linha'].every((n) => e.classList.contains(n)) && c.backgroundImage.includes('gradient') })
+    conta(sel && await pg.locator('[data-arvore] .em-sel').count() === 1 && await pg.locator('[data-arvore] .tinta-linha').count() === 1, `${T} cor: na árvore só a cor escolhida fica na tinta do menu`)
 
     /* mudar o lugar e outro lugar */
     await onde.getByRole('button', { name: 'Mudar o lugar' }).click(); await pausa(pg, 500)
@@ -697,8 +698,8 @@ await caso('catálogo inteiro', async () => {
   const botoes = (await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()).map((b) => b.trim()).join('|')
   conta(await pg.locator('[data-ficha="tecido"][data-sem-estoque]').count() === 1 && /DRY FIT › tecido DRYFIT JAKAR 100% sem estoque/.test(ficha) && /nenhuma cor dele foi cadastrada no estoque/.test(ficha), `${T}: o nome abre a ficha, que diz que o tecido é do catálogo e não tem cor no estoque (${ficha.slice(0, 90)})`)
   conta(botoes === 'Nova cor|Fechar' && await pg.locator('[data-ficha] .em-nums').count() === 0 && await pg.locator('[data-ficha] .em-cor-nova').count() === 1, `${T}: a ficha vazia tem Nova cor e Fechar, sem Editar, sem Registrar movimento e sem os quatro números (${botoes})`)
-  const sel = await pg.locator(`${SEM('DRYFIT JAKAR 100%')}`).evaluate((e) => ({ c: e.className, f: getComputedStyle(e).backgroundColor }))
-  conta(/em-sel/.test(sel.c) && sel.f === K['--ink'], `${T}: o tecido vazio escolhido fica marcado na árvore como os outros`)
+  const sel = await pg.locator(`${SEM('DRYFIT JAKAR 100%')}`).evaluate((e) => ({ c: e.className, f: getComputedStyle(e).backgroundImage }))
+  conta(/em-sel/.test(sel.c) && /tinta-linha/.test(sel.c) && sel.f.includes('gradient'), `${T}: o tecido vazio escolhido fica marcado na árvore como os outros`)
   await pg.screenshot({ path: `${PASTA}/sem-estoque-1440-light.png`, fullPage: true })
   await pg.locator(`${SEM('DRYFIT JAKAR 100%')} .em-t-nome`).click(); await pausa(pg, 400)
   conta(await pg.locator('[data-ficha]').count() === 0, `${T}: clicar de novo no tecido vazio escolhido solta`)

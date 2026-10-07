@@ -163,8 +163,9 @@ for (const tema of ['light', 'dark']) await secao(async () => {
   conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'CAMISETA MASC TRAD' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'FT-010-000M · masculino · grade adulta, PP a G4', `${G} ficha: o nome, o código, o gênero e a grade`)
   conta((await textos(pg, '.pd-trilha'))[0] === '010 Camisetas e polos › referência', `${G} ficha: a trilha com o grupo`)
   conta(mesma(await textos(pg, '.pd-ficha-topo .btn'), ['Editar', 'Imprimir', 'Duplicar', 'Fechar']), `${G} ficha: Editar, Imprimir, Duplicar e Fechar`)
-  const sel = (await caixas(pg, '.pd-t.pd-sel'))[0]
-  conta(sel && sel.fundo === await token(pg, '--ink') && sel.cor === await token(pg, '--on-ink'), `${G} árvore: a peça aberta fica na tinta`)
+  /* a peça aberta se pinta igual ao item aberto do menu (07/10/2026): as quatro classes do DS e o degradê */
+  const sel = await pg.locator('.pd-t.pd-sel').first().evaluate((e) => { const c = getComputedStyle(e); return ['luz', 'tinta', 'm-grafite', 'tinta-linha'].every((n) => e.classList.contains(n)) && c.backgroundImage.includes('gradient') })
+  conta(sel, `${G} árvore: a peça aberta fica na tinta do menu`)
 
   const titulos = await pg.evaluate(() => [...document.querySelectorAll('[data-ficha] .pd-topo .cartao-titulo')].map((h) => [h.textContent.trim(), !!h.querySelector('.cartao-icone svg')]))
   conta(mesma(titulos.map((t) => t[0]), ['Molde', 'Detalhes da peça', 'Medidas e tecido', 'Aviamentos e insumos por peça', 'Onde esta peça entra']) && titulos.every((t) => t[1]), `${G} ficha: os cinco cartões, cada título com o ícone`)

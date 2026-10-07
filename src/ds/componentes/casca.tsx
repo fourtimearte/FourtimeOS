@@ -221,7 +221,7 @@ function BarraDeBaixo({
                   key={f.para}
                   to={f.para}
                   className={
-                    (f.ativo ?? ligado(f.para)) ? 'pe-item ligado' : 'pe-item'
+                    (f.ativo ?? ligado(f.para)) ? 'pe-item ligado luz tinta m-grafite tinta-linha' : 'pe-item'
                   }
                 >
                   {f.icone}

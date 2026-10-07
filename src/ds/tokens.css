@@ -159,7 +159,11 @@
   --on-brand: #ffffff;
   --brand-soft: #fdecec;
   --brand-text: #b3121a;
-  --ink: #1a1d23;
+  /* O PRETO DO SISTEMA E O PRETO A 84% (07/10/2026, decisao 136). O Henrique achou o
+     preto cheio forte demais no que esta escolhido, viu dez niveis na prancha 101 e
+     ficou com o segundo: 84% do preto antigo (#1a1d23) com 16% de branco. O texto
+     (--text) e o anel de foco (--ring) continuam no preto cheio. */
+  --ink: #3f4146;
   --on-ink: #ffffff;
   --ink-soft: #e4e7ec;
   --icon-accent: #c6161b;
@@ -216,7 +220,9 @@
   --on-brand: #ffffff;
   --brand-soft: #3b1b1d;
   --brand-text: #ff6b70;
-  --ink: #edeef0;
+  /* a mesma conta do tema claro, do outro lado: 84% do claro antigo (#edeef0)
+     com 16% da superficie (#1c1e21) */
+  --ink: #cccdcf;
   --on-ink: #131416;
   --ink-soft: #2e3237;
   --icon-accent: #e0262e;
@@ -467,6 +473,9 @@
   /* o vermelho que sobrevive em cima da tinta. O da marca morre no fundo
      escuro, igual ao que ja acontecia na tarja preta do menu. */
   --tinta-marca: #ff6b70;
+  /* o aro da linha escolhida (base.css, .tinta-linha). No Gelo a linha e escura
+     sobre branco e nao precisa de aro nenhum. */
+  --tinta-linha-aro: transparent;
   --tinta-ponto: color-mix(in oklab, var(--branco) 28%, transparent);
   --tinta-brilho: color-mix(in oklab, var(--branco) 15%, transparent);
   --tinta-sombra:
@@ -507,6 +516,9 @@
   --tinta-texto-3: color-mix(in oklab, var(--text-2) 60%, var(--text-3));
   /* no Grafite a tinta tambem e escura, entao o vermelho claro serve nos dois */
   --tinta-marca: #ff6b70;
+  /* No Grafite a tinta e so a superficie um pouco mais clara: sem aro, a linha
+     escolhida quase some na lista. E a mesma moldura cinza do item do menu. */
+  --tinta-linha-aro: var(--border-2);
   --tinta-ponto: color-mix(in oklab, var(--text) 20%, transparent);
   --tinta-brilho: color-mix(in oklab, var(--text) 10%, transparent);
   --tinta-sombra:

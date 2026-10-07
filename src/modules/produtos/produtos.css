@@ -438,9 +438,10 @@ button.pd-lin:hover {
 .pd-nomes small.pd-falta {
   color: var(--warn);
 }
+/* a peça aberta se pinta igual ao item aberto do menu: o fundo e a luz vêm de
+   LINHA_ESCOLHIDA, do Design System. Aqui fica só o texto. */
 .pd-sel,
 .pd-sel:hover {
-  background-color: var(--ink);
   color: var(--on-ink);
 }
 .pd-sel .pd-nomes small {
@@ -1088,9 +1089,9 @@ button.pd-lin:hover {
   align-self: center;
   margin-right: var(--re-4);
 }
+/* a peça escolhida do kit: fundo e luz de LINHA_ESCOLHIDA, do Design System */
 .pd-peca.on,
 .pd-peca.on:hover {
-  background-color: var(--ink);
   color: var(--on-ink);
 }
 .pd-peca.on .pd-papel,
@@ -1458,8 +1459,8 @@ button.pd-lin:hover {
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
+/* a parte escolhida do molde: fundo e luz de LINHA_ESCOLHIDA, do Design System */
 .pd-visor-parte.on {
-  background-color: var(--ink);
   color: var(--on-ink);
 }
 .pd-visor-parte-nome {

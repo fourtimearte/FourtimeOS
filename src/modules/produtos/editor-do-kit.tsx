@@ -19,6 +19,7 @@ import {
   Chip,
   ChipTecnica,
   Entrada,
+  LINHA_ESCOLHIDA,
   Modal,
   Pagina,
   Seletor,
@@ -360,7 +361,7 @@ export function EditorDoKit({
               {rasc.pecas.map((p, i) => {
                 const n = pendenciasDe(p)
                 return (
-                  <div className={i === iDaPeca ? 'pd-peca on' : 'pd-peca'} key={p.referenciaId} data-peca={codigoCurto(p.cod)}>
+                  <div className={i === iDaPeca ? 'pd-peca on ' + LINHA_ESCOLHIDA : 'pd-peca'} key={p.referenciaId} data-peca={codigoCurto(p.cod)}>
                     <button
                       type="button"
                       className="pd-peca-nome"

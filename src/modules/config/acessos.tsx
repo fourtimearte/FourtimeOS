@@ -7,6 +7,7 @@ import {
   Entrada,
   Esqueleto,
   Kpi,
+  LINHA_ESCOLHIDA,
   Marcacao,
   Pagina,
   Selo,
@@ -322,7 +323,7 @@ export function TelaAcessos() {
                     <button
                       key={p.chave}
                       type="button"
-                      className={p.chave === escolhido ? 'ac-item escolhido' : 'ac-item'}
+                      className={p.chave === escolhido ? 'ac-item escolhido ' + LINHA_ESCOLHIDA : 'ac-item'}
                       onClick={() => {
                         setEscolhido(p.chave)
                         setForma(null)

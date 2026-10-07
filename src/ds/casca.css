@@ -341,8 +341,9 @@
 .pe-item:active {
   background: var(--surface-2);
 }
+/* a página aberta, na folha do menu do celular: o mesmo item aberto do menu
+   de lado, com as classes luz tinta m-grafite tinta-linha */
 .pe-item.ligado {
-  background: var(--ink);
   color: var(--on-ink);
   font-weight: 600;
 }

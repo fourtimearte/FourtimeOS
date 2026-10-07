@@ -247,7 +247,9 @@ for (const tema of ['light', 'dark']) {
   conta(itens[1].texto === 'Saneago Goiás Vôlei 10% por peça · Página ativa R$ 155,94 6 peças', `${G} lista: Goiás em primeiro, com o acordo, a página, a parte e as peças (${itens[1].texto})`)
   conta(itens[2].texto === 'Viapol Vôlei São José R$ 25,00 por peça · Página ativa R$ 50,00 2 peças', `${G} lista: Viapol em segundo, com valor por peça (${itens[2].texto})`)
   conta(itens[3].texto === 'Colégio Professora Yolanda 15% por peça · Página ligada, ainda não aberta R$ 0,00 0 peças', `${G} lista: quem não vendeu no mês vem por último, zerado (${itens[3].texto})`)
-  conta(itens.every((i) => i.h >= 64) && itens[0].fundo === tinta && itens[1].fundo !== tinta && await pg.locator('.pa-item.ligado').count() === 1, `${G} lista: itens de 64, e Todos os parceiros vem escolhido, em preto`)
+  /* o escolhido se pinta igual ao item aberto do menu (07/10/2026): as quatro classes do DS e o degradê */
+  const naTinta = await pg.locator('.pa-item').evaluateAll((l) => l.map((e) => ['luz', 'tinta', 'm-grafite', 'tinta-linha'].every((n) => e.classList.contains(n)) && getComputedStyle(e).backgroundImage.includes('gradient')))
+  conta(itens.every((i) => i.h >= 64) && naTinta[0] === true && naTinta[1] === false && await pg.locator('.pa-item.ligado').count() === 1, `${G} lista: itens de 64, e Todos os parceiros vem escolhido, na tinta do menu`)
   conta(igual(M['.pa-lado'].w, 300) && igual(M['.pa-miolo'].x - M['.pa-lado'].dir, 24) && igual(M['.pa-lado'].y, M['.pa-miolo'].y), `${G} a lista de 300 ao lado do miolo, alinhados em cima, com 24 entre os dois (${M['.pa-lado'].w}, ${M['.pa-miolo'].x - M['.pa-lado'].dir})`)
 
   /* ----------------------------------------------------------- A VISÃO GERAL */

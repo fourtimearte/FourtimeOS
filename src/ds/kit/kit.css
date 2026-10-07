@@ -373,3 +373,38 @@
 .kit-abas {
   padding: var(--sp-3) var(--gutter) 0;
 }
+
+/* --- a linha escolhida: a lista de exemplo da secao Luz e tinta -------------
+   So o esqueleto da linha. O fundo, o texto e a luz da escolhida vem de
+   LINHA_ESCOLHIDA, igual em qualquer lista do sistema. */
+.kit-lista {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 440px;
+}
+.kit-lista-linha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-height: var(--row-h);
+  padding: var(--pad-linha);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.kit-lista-linha:last-child {
+  border-bottom: 0;
+}
+.kit-lista-linha:not(.tinta) small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.kit-lista-linha.tinta small {
+  font-size: 12px;
+}

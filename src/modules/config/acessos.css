@@ -60,10 +60,9 @@
   background: var(--surface-2);
 }
 
+/* o papel escolhido: fundo e luz de LINHA_ESCOLHIDA, do Design System */
 .ac-item.escolhido {
-  background: var(--ink);
   color: var(--on-ink);
-  border-color: var(--ink);
 }
 
 .ac-item-topo {

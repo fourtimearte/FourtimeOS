@@ -1,5 +1,5 @@
 import { CaretRight } from '@phosphor-icons/react'
-import { Segmentado, Vazio } from '@ds'
+import { LINHA_ESCOLHIDA, Segmentado, Vazio } from '@ds'
 import {
   NOME_DO_GENERO,
   codigoCurto,
@@ -86,7 +86,7 @@ function Linha({
   const branco = emBranco(r)
   const n = pendencias(r)
   return (
-    <div className={escolhida ? 'pd-t pd-sel' : 'pd-t'} data-ref={codigoCurto(r.cod)}>
+    <div className={escolhida ? 'pd-t pd-sel ' + LINHA_ESCOLHIDA : 'pd-t'} data-ref={codigoCurto(r.cod)}>
       <span className="pd-t-seta" aria-hidden="true" />
       <button type="button" className="pd-t-nome" aria-pressed={escolhida} onClick={aoEscolher}>
         <span className="pd-nomes">
@@ -117,7 +117,7 @@ function LinhaDoKit({
   const branco = kitEmBranco(k)
   const n = branco || !k.pecas ? 0 : faltasDoKit(k)
   return (
-    <div className={escolhido ? 'pd-t pd-solta-na-lista pd-sel' : 'pd-t pd-solta-na-lista'} data-kit={codigoCurto(k.cod)}>
+    <div className={escolhido ? 'pd-t pd-solta-na-lista pd-sel ' + LINHA_ESCOLHIDA : 'pd-t pd-solta-na-lista'} data-kit={codigoCurto(k.cod)}>
       <button type="button" className="pd-t-nome" aria-pressed={escolhido} onClick={aoEscolher}>
         <span className="pd-nomes">
           <b>{k.nome}</b>

@@ -476,11 +476,10 @@
 .dp-linha.achada.clica:hover {
   background: color-mix(in srgb, var(--brand) 11%, var(--surface));
 }
+/* a linha escolhida: fundo e luz de LINHA_ESCOLHIDA, do Design System */
 .dp-linha.escolhida,
 .dp-linha.escolhida.clica:hover {
-  background: var(--ink);
   color: var(--on-ink);
-  box-shadow: none;
 }
 .dp-texto {
   flex: 1;

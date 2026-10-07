@@ -651,10 +651,11 @@ button.em-lin:hover {
   color: var(--brand-text);
 }
 
-/* o escolhido fica na tinta do sistema */
+/* O escolhido se pinta igual ao item aberto do menu: o fundo e a luz vêm de
+   LINHA_ESCOLHIDA, do Design System (base.css, em TINTA). Aqui fica só o texto.
+   Dentro da linha, --on-ink e --brand-no-ink já são as cores da tinta. */
 .em-sel,
 .em-sel:hover {
-  background-color: var(--ink);
   color: var(--on-ink);
 }
 .em-sel .em-nomes small,

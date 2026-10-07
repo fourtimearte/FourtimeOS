@@ -86,11 +86,11 @@
 .pa-item:hover {
   background: var(--surface-2);
 }
-/* o escolhido é preto, como toda seleção do sistema. A tinta clareia no tema
-   escuro, então o texto em cima dela nasce de --on-ink, nunca de um branco */
+/* O escolhido se pinta igual ao item aberto do menu: o fundo e a luz vêm de
+   LINHA_ESCOLHIDA, do Design System. O texto em cima nasce de --on-ink, que
+   dentro da linha é a cor do texto da tinta, nunca de um branco escrito. */
 .pa-item.ligado,
 .pa-item.ligado:hover {
-  background: var(--ink);
   color: var(--on-ink);
 }
 .pa-item.ligado small {

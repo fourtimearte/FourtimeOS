@@ -36,6 +36,7 @@ import {
   type Tecnica,
 } from '../componentes/superficie'
 import { aplicarTema, temaAtual, temaGuardado, type Tema } from './tema'
+import { LINHA_ESCOLHIDA } from '../escolhida'
 import './kit.css'
 
 const SECOES: [string, string][] = [
@@ -479,6 +480,31 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
                   </p>
                 </Cartao>
               </div>
+
+              <span className="kit-nota">A linha escolhida de uma lista: o mesmo item aberto do menu</span>
+              <div className="cartao kit-lista">
+                {[
+                  ['Atlético Exemplo', 'CO2026-0131 · 186 peças'],
+                  ['Clube Exemplo', 'CO2026-0127 · 120 peças'],
+                  ['Corrida Exemplo', 'CO2026-0132 · 150 peças'],
+                ].map(([nome, apoio], i) => (
+                  <button
+                    type="button"
+                    key={nome}
+                    className={i === 1 ? 'kit-lista-linha ' + LINHA_ESCOLHIDA : 'kit-lista-linha'}
+                    aria-pressed={i === 1}
+                  >
+                    <b>{nome}</b>
+                    <small>{apoio}</small>
+                  </button>
+                ))}
+              </div>
+              <p className="kit-nota">
+                Linha escolhida de lista, de sanfona e de fila leva LINHA_ESCOLHIDA, que são as
+                mesmas classes do item aberto do menu: o degradê grafite e o pontilhado que segue o
+                ponteiro. Peça pequena ligada (caixa de marcação, filtro, tamanho, dia do
+                calendário) não leva: fica no preto liso do sistema, que é o preto a 84%.
+              </p>
 
               <span className="kit-nota">O cartão herói do início, e o que ele não pode ser</span>
               <div className="fila-kpi">

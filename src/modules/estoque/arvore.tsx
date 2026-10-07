@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { CaretRight, Plus } from '@phosphor-icons/react'
-import { Botao, Nivel, Segmentado, Vazio } from '@ds'
+import { Botao, LINHA_ESCOLHIDA, Nivel, Segmentado, Vazio } from '@ds'
 import {
   CATEGORIAS,
   nivel,
@@ -96,7 +96,7 @@ export function LinhaDoMaterial({
   return (
     <button
       type="button"
-      className={['em-c', comBola ? '' : 'em-item', escolhido ? 'em-sel' : '']
+      className={['em-c', comBola ? '' : 'em-item', escolhido ? 'em-sel ' + LINHA_ESCOLHIDA : '']
         .filter(Boolean)
         .join(' ')}
       aria-pressed={escolhido}
@@ -304,7 +304,7 @@ function TecidoSemEstoque({
 }) {
   return (
     <div
-      className={escolhido ? 'em-t em-sem em-sel' : 'em-t em-sem'}
+      className={escolhido ? 'em-t em-sem em-sel ' + LINHA_ESCOLHIDA : 'em-t em-sem'}
       data-tecido={t.nome}
       data-sem-estoque=""
     >
@@ -354,7 +354,7 @@ function Tecido({
   const eu = escolhido === t.chave
   return (
     <>
-      <div className={eu ? 'em-t em-sel' : 'em-t'} data-tecido={t.nome}>
+      <div className={eu ? 'em-t em-sel ' + LINHA_ESCOLHIDA : 'em-t'} data-tecido={t.nome}>
         <button
           type="button"
           className="em-t-seta"

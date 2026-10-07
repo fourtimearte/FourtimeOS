@@ -10,7 +10,7 @@ import {
   Rows,
   Warning,
 } from '@phosphor-icons/react'
-import { Botao, Kpi, TituloCartao, Vazio } from '@ds'
+import { Botao, Kpi, LINHA_ESCOLHIDA, TituloCartao, Vazio } from '@ds'
 import { semAcento } from '@shared'
 import {
   celulasDaPlanta,
@@ -538,7 +538,7 @@ function LugarAberto({
           'dp-linha',
           'clica',
           achado ? 'achada' : '',
-          escolhido === m.id ? 'escolhida' : '',
+          escolhido === m.id ? 'escolhida ' + LINHA_ESCOLHIDA : '',
         ]
           .filter(Boolean)
           .join(' ')}

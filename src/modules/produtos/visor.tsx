@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { ArrowsIn, DownloadSimple, Minus, Plus, Ruler, Trash, UploadSimple } from '@phosphor-icons/react'
-import { Aviso, Botao, Chip, Entrada, Esqueleto, Modal, Segmentado, Seletor, TituloCartao, Vazio, avisar } from '@ds'
+import { Aviso, Botao, Chip, Entrada, Esqueleto, LINHA_ESCOLHIDA, Modal, Segmentado, Seletor, TituloCartao, Vazio, avisar } from '@ds'
 import {
   acertarEscalaDoMolde,
   aproximar,
@@ -478,7 +478,7 @@ export function VisorDoMolde({
             <button
               type="button"
               key={p.chave}
-              className={escolhida === p.chave ? 'pd-visor-parte on' : 'pd-visor-parte'}
+              className={escolhida === p.chave ? 'pd-visor-parte on ' + LINHA_ESCOLHIDA : 'pd-visor-parte'}
               aria-pressed={escolhida === p.chave}
               data-parte={p.chave}
               onClick={() => setEscolhida(atual => (atual === p.chave ? null : p.chave))}

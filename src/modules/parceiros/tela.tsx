@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CaretLeft, Handshake, Plus } from '@phosphor-icons/react'
-import { Botao, Esqueleto, IconeDoTitulo, Pagina, Segmentado, Seletor, Vazio } from '@ds'
+import { Botao, Esqueleto, IconeDoTitulo, LINHA_ESCOLHIDA, Pagina, Segmentado, Seletor, Vazio } from '@ds'
 import { mesesAte, mesesEntre, quandoFoi, usarConsulta } from '@shared'
 import {
   carregarParceiros,
@@ -231,7 +231,7 @@ export function TelaParceiros() {
     <button
       key={chave}
       type="button"
-      className={marcado ? 'pa-item ligado' : 'pa-item'}
+      className={marcado ? 'pa-item ligado ' + LINHA_ESCOLHIDA : 'pa-item'}
       aria-pressed={larga ? marcado : undefined}
       onClick={() => escolher(chave)}
     >

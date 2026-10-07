@@ -1,5 +1,5 @@
 -- ===========================================================================
--- A PROVA DA 043 A 046 E DA 056: os parceiros da loja.
+-- A PROVA DA 043 A 046, DA 056 E DA 057: os parceiros da loja.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. O relatorio sai dentro da
@@ -16,6 +16,8 @@ declare
   g uuid; vi uuid; y uuid;      -- os tres parceiros
   r record;
   j jsonb;
+  j0 jsonb; j1 jsonb;           -- o painel antes e depois (057)
+  corte date;
   txt text := '';
   n int;
   chave_g text; senha_g text; chave_velha text;
@@ -437,5 +439,113 @@ begin
                               then 'ok  ' else 'RUIM' end
              || ' 25. a lista traz o acordo de hoje e os 2 produtos';
 
-  raise exception E'PROVA DOS PARCEIROS, 043 a 046 e 056 (tudo desfeito):%', txt;
+  -- 26. O QUE A PAGINA MOSTRA (057): o imposto na frase e o dia em que o relatorio comeca
+  select chave, senha into r from public.parceiro where id = g;
+  set local role anon;
+  j0 := public.painel_do_parceiro(r.chave, r.senha);
+  reset role;
+  txt := txt || E'\n' || case when (j0 -> 'acordo' ->> 'imposto')::numeric = 0 and j0 -> 'inicio' = 'null'::jsonb
+                              then 'ok  ' else 'RUIM' end
+             || ' 26. parceiro nasce sem imposto e sem data: o painel manda imposto 0 e inicio vazio';
+
+  perform set_config('request.jwt.claim.sub', v::text, true);
+  begin
+    perform public.salvar_exibicao_do_parceiro(g, 3, null);
+    txt := txt || E'\nRUIM 26b. vendedor mudou o imposto';
+  exception when insufficient_privilege then
+    txt := txt || E'\nok   26b. vendedor nao muda o imposto nem a data';
+  end;
+  perform set_config('request.jwt.claim.sub', a::text, true);
+  begin
+    perform public.salvar_exibicao_do_parceiro(g, 100.01, null);
+    txt := txt || E'\nRUIM 26c. aceitou imposto acima de 100';
+  exception when check_violation then
+    begin
+      perform public.salvar_exibicao_do_parceiro(g, -1, null);
+      txt := txt || E'\nRUIM 26c. aceitou imposto negativo';
+    exception when check_violation then
+      txt := txt || E'\nok   26c. imposto fora de 0 a 100 e recusado';
+    end;
+  end;
+  begin
+    perform public.salvar_exibicao_do_parceiro(gen_random_uuid(), 3, null);
+    txt := txt || E'\nRUIM 26d. salvou em parceiro que nao existe';
+  exception when no_data_found then
+    txt := txt || E'\nok   26d. parceiro que nao existe e recusado';
+  end;
+
+  -- 27. o imposto e so texto: os meses e as vendas saem IGUAIS, com a mesma parte
+  perform public.salvar_exibicao_do_parceiro(g, 3, null);
+  set local role anon;
+  j1 := public.painel_do_parceiro(r.chave, r.senha);
+  reset role;
+  txt := txt || E'\n' || case when (j1 -> 'acordo' ->> 'imposto')::numeric = 3
+                               and (j1 -> 'acordo' ->> 'valor')::numeric = (j0 -> 'acordo' ->> 'valor')::numeric
+                               and j1 -> 'meses' = j0 -> 'meses' and j1 -> 'vendas' = j0 -> 'vendas'
+                               and jsonb_array_length(j0 -> 'vendas') > 0
+                              then 'ok  ' else 'RUIM' end
+             || ' 27. imposto 3: o painel leva o 3, o acordo continua o mesmo, e os meses e as '
+             || jsonb_array_length(j0 -> 'vendas') || ' vendas saem iguais';
+  select * into r from public.parceiro_na_lista where id = g;
+  txt := txt || E'\n' || case when r.imposto = 3 and r.mostrar_desde is null then 'ok  ' else 'RUIM' end
+             || ' 27b. a lista do OS traz o imposto';
+
+  -- 28. o dia em que o relatorio comeca: some o que e de antes, e o que fica nao muda
+  corte := hoje - 30;
+  perform public.salvar_exibicao_do_parceiro(g, 3, corte);
+  select chave, senha into r from public.parceiro where id = g;
+  set local role anon;
+  j1 := public.painel_do_parceiro(r.chave, r.senha);
+  reset role;
+  select count(*) into n from jsonb_array_elements(j0 -> 'vendas') x where left(x ->> 'quando', 10)::date < corte;
+  txt := txt || E'\n' || case when n > 0
+                               and j1 ->> 'inicio' = corte::text
+                               and jsonb_array_length(j1 -> 'vendas') = jsonb_array_length(j0 -> 'vendas') - n
+                               and jsonb_array_length(j1 -> 'vendas') > 0
+                               and not exists (select 1 from jsonb_array_elements(j1 -> 'vendas') x
+                                                where left(x ->> 'quando', 10)::date < corte)
+                               /* cada venda que ficou e a mesma de antes, com o mesmo valor e a mesma parte */
+                               and not exists (select 1 from jsonb_array_elements(j1 -> 'vendas') x
+                                                where not exists (select 1 from jsonb_array_elements(j0 -> 'vendas') ant where ant = x))
+                              then 'ok  ' else 'RUIM' end
+             || ' 28. com a data, ' || n || ' venda(s) de antes somem da pagina e as '
+             || jsonb_array_length(j1 -> 'vendas') || ' que ficam saem iguais';
+  txt := txt || E'\n' || case when
+               (select coalesce(sum((m ->> 'pecas')::int), 0) from jsonb_array_elements(j1 -> 'meses') m)
+             = (select coalesce(sum((x ->> 'pecas')::int), 0) from jsonb_array_elements(j1 -> 'vendas') x where (x ->> 'conta')::boolean)
+           and (select coalesce(sum((m ->> 'parte')::numeric), 0) from jsonb_array_elements(j1 -> 'meses') m)
+             = (select coalesce(sum((x ->> 'parte')::numeric), 0) from jsonb_array_elements(j1 -> 'vendas') x where (x ->> 'conta')::boolean)
+           and (select coalesce(sum((m ->> 'pecas')::int), 0) from jsonb_array_elements(j1 -> 'meses') m)
+             < (select coalesce(sum((m ->> 'pecas')::int), 0) from jsonb_array_elements(j0 -> 'meses') m)
+                              then 'ok  ' else 'RUIM' end
+             || ' 28b. os meses somam so as vendas que ficaram';
+  /* o Fourtime OS le a view, e nao o painel: para ele nada some */
+  set local role authenticated;
+  select count(*) into n from public.venda_do_parceiro where parceiro_id = g;
+  reset role;
+  txt := txt || E'\n' || case when n = 5 then 'ok  ' else 'RUIM' end
+             || ' 28c. o Fourtime OS continua lendo todas as vendas do parceiro (' || n || ')';
+
+  -- 29. apagar os dois volta ao que era
+  perform public.salvar_exibicao_do_parceiro(g, null, null);
+  set local role anon;
+  j1 := public.painel_do_parceiro(r.chave, r.senha);
+  reset role;
+  txt := txt || E'\n' || case when (j1 -> 'acordo' ->> 'imposto')::numeric = 0 and j1 -> 'inicio' = 'null'::jsonb
+                               and j1 -> 'meses' = j0 -> 'meses' and j1 -> 'vendas' = j0 -> 'vendas'
+                              then 'ok  ' else 'RUIM' end
+             || ' 29. imposto e data em branco: a pagina volta a mostrar tudo, igual a antes';
+
+  -- 30. quem nao entrou no sistema nao muda o que a pagina mostra
+  begin
+    set local role anon;
+    perform public.salvar_exibicao_do_parceiro(g, 50, null);
+    reset role;
+    txt := txt || E'\nRUIM 30. o parceiro mudou o proprio imposto';
+  exception when insufficient_privilege then
+    reset role;
+    txt := txt || E'\nok   30. quem nao entrou no sistema nao chama salvar_exibicao_do_parceiro';
+  end;
+
+  raise exception E'PROVA DOS PARCEIROS, 043 a 046, 056 e 057 (tudo desfeito):%', txt;
 end $$;

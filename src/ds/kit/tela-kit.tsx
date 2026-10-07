@@ -1060,6 +1060,8 @@ function FiltrosDemo() {
   const [segmento, setSegmento] = useState('')
   const [uf, setUf] = useState('GO')
   const [posto, setPosto] = useState('silk')
+  const [gola, setGola] = useState('Redonda')
+  const [golas, setGolas] = useState(['Redonda', 'Gola V', 'Polo'])
   const [dataPilula, setDataPilula] = useState('2026-09-18')
   const [pagina, setPagina] = useState(3)
   return (
@@ -1145,6 +1147,33 @@ function FiltrosDemo() {
             vazio="Escolher"
             aoEscolher={() => {}}
             opcoes={[{ valor: 'esc', rotulo: 'Escola' }]}
+          />
+        </Campo>
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap', marginTop: 'var(--sp-4)' }}>
+        <span className="kit-nota" style={{ width: '100%' }}>
+          A lista que aceita item novo: a busca fica sempre à mostra, e escrever um nome que a
+          lista não tem faz aparecer a linha Adicionar (o Enter também adiciona). O pé leva uma
+          frase curta e uma ação, que aqui é o caminho para o editor da lista. Quem grava o item
+          é quem usa o seletor: ele só pergunta
+        </span>
+        <Campo rotulo="Gola">
+          <Seletor
+            campo
+            valor={gola}
+            vazio="Não informado"
+            aoEscolher={setGola}
+            opcoes={golas.map(g => ({ valor: g, rotulo: g }))}
+            aoCriar={texto => {
+              setGolas(atual => [...atual, texto])
+              setGola(texto)
+            }}
+            pe={{
+              texto: golas.length + ' itens',
+              rotulo: 'Editar a lista de golas',
+              aoClicar: () => avisar('Aqui abre o editor da lista.', 'ok'),
+            }}
           />
         </Campo>
       </div>

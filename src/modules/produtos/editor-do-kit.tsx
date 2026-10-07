@@ -30,6 +30,7 @@ import { apagarReferencia } from '@dominio/banco'
 import {
   A_PECA_INTEIRA,
   DETALHES,
+  comNomesTrocados,
   ETIQUETAS,
   NOME_DA_ETIQUETA,
   NOME_DA_TECNICA,
@@ -54,8 +55,10 @@ import {
   type ReferenciaNaFicha,
   type TecidoDeConta,
   type TecnicaDoKit,
+  type Renome,
 } from '@dominio/produto'
 import { plural } from './apoio'
+import { EditorDasListas, SeletorDeDetalhe, usarListasDeDetalhe } from './detalhes'
 import { DesenhoDoMolde, SoltarOMolde, usarArquivoDoMolde } from './molde'
 
 /* ==========================================================================
@@ -67,10 +70,13 @@ import { DesenhoDoMolde, SoltarOMolde, usarArquivoDoMolde } from './molde'
    e o código vai se formando com o código delas. No que existe as peças estão
    travadas: o código é feito delas, e código não muda.
 
-   GOLA, MANGA, PUNHO, BARRA E COSTURA NÃO SE EDITAM AQUI. São da referência,
-   e aparecem para quem está montando o kit ver o que a peça já diz. O que se
-   edita é o que é do kit: o papel, os tecidos de cada parte, o design
-   impresso, a etiqueta e a observação.
+   GOLA, MANGA, PUNHO, BARRA E COSTURA: O KIT ESCOLHE POR CIMA DA REFERÊNCIA
+   (07/10/2026; H: "o kit pode dar override nos detalhes da referência, é por
+   isso que sinto falta da opção de escolher os detalhes da peça"). Até aí
+   eles só eram lidos da referência. Agora cada um é um seletor com a lista do
+   detalhe (pranchas 113 e 114): em branco, vale o que a referência diz, e o
+   seletor mostra isso; escolhido, vale o do kit, só neste kit. A referência
+   não é mexida daqui.
 
    MAIS DE UM TECIDO NA MESMA PEÇA: "Tecidos da peça" é uma lista de parte do
    molde e tecido, e cada parte usa um tecido só. As partes são as que a ficha
@@ -91,6 +97,7 @@ export function EditorDoKit({
   aoSair,
   aoSalvou,
   aoExcluiu,
+  aoListasMudaram,
 }: {
   /** nulo: kit novo */
   kit: KitNaLista | null
@@ -104,6 +111,9 @@ export function EditorDoKit({
   aoSair: () => void
   aoSalvou: (id: string) => Promise<void>
   aoExcluiu: () => Promise<void>
+  /** o editor das listas mudou o nome de um item: a página relê as referências,
+      para a peça que entrar no kit depois já vir com o nome novo */
+  aoListasMudaram: () => Promise<unknown> | void
 }) {
   const [rasc, setRasc] = useState<Kit>(() => ({
     nome: kit?.nome ?? '',
@@ -113,7 +123,7 @@ export function EditorDoKit({
       design: p.design.map(d => ({ ...d })),
     })),
   }))
-  const [inicial] = useState(() => JSON.stringify(kitParaOBanco(rasc)))
+  const [inicial, setInicial] = useState(() => JSON.stringify(kitParaOBanco(rasc)))
   const [escolhida, setEscolhida] = useState(0)
   /* indefinido: ninguém mexeu no desenho. Texto: o SVG novo, que sobe no Salvar. */
   const [desenhoNovo, setDesenhoNovo] = useState<string | undefined>(undefined)
@@ -165,6 +175,43 @@ export function EditorDoKit({
     /* as partes já lidas não precisam ler de novo */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsDasPecas, referencias])
+
+  /* --- os detalhes de cada peça, com a lista de cada um --- */
+  const detalhesEmLista = usarListasDeDetalhe()
+  /* O editor das listas mudou o nome de um item: o banco já trocou o texto nas
+     fichas, e este kit troca o que tem na tela, no que ele escolheu e no que
+     veio da referência. Kit sem mudança continua sem mudança. */
+  async function acertarOsNomes(renomes: Renome[]) {
+    await detalhesEmLista.reler()
+    if (!renomes.length) return
+    try {
+      await aoListasMudaram()
+    } catch {
+      /* a releitura caiu: as referências ficam com o nome antigo até recarregar */
+    }
+    const limpo = !sujo
+    const depois = {
+      ...rasc,
+      pecas: rasc.pecas.map(p => ({
+        ...p,
+        detalhes: comNomesTrocados(p.detalhes, renomes),
+        detalhesDoKit: comNomesTrocados(p.detalhesDoKit, renomes),
+      })),
+    }
+    setRasc(depois)
+    if (limpo) setInicial(JSON.stringify(kitParaOBanco(depois)))
+  }
+
+  /* escolher um detalhe para UMA peça do kit. Vazio volta a valer o da referência */
+  const escolherDetalhe = (i: number, chave: keyof PecaDoKit['detalhesDoKit'], texto: string) => {
+    setRasc(atual => ({
+      ...atual,
+      pecas: atual.pecas.map((p, k) =>
+        k === i ? { ...p, detalhesDoKit: { ...p.detalhesDoKit, [chave]: texto } } : p,
+      ),
+    }))
+    setErro('')
+  }
 
   const mudarNome = (nome: string) => {
     setRasc(atual => ({ ...atual, nome }))
@@ -543,24 +590,41 @@ export function EditorDoKit({
                   </span>
                 </div>
 
-                <div className="pd-campo" data-da-referencia="">
+                <div className="pd-campo" data-detalhes-da-peca="">
                   <span className="pd-campo-topo">
-                    Da ficha da referência <small>muda lá, e não aqui</small>
+                    Detalhes da peça <small>em branco, vale o que a referência diz</small>
                   </span>
-                  <dl className="pd-linhas">
+                  <div className="pd-form pd-detalhes-do-kit">
                     {DETALHES.map(d => (
-                      <div key={d.chave}>
-                        <dt>{d.nome}</dt>
-                        <dd>
-                          {peca.detalhes[d.chave] ? (
-                            <b>{peca.detalhes[d.chave]}</b>
-                          ) : (
-                            <span className="pd-vago">não informado</span>
-                          )}
-                        </dd>
-                      </div>
+                      <Campo
+                        rotulo={d.nome}
+                        key={d.chave}
+                        className={d.chave === 'costura' ? 'pd-inteiro' : ''}
+                      >
+                        <SeletorDeDetalhe
+                          detalhe={d.chave}
+                          nome={d.nome}
+                          valor={peca.detalhesDoKit[d.chave] ?? ''}
+                          lista={detalhesEmLista.listas[d.chave]}
+                          vazio={
+                            peca.detalhes[d.chave]
+                              ? `Da referência: ${peca.detalhes[d.chave]}`
+                              : 'Não informado'
+                          }
+                          aoEscolher={texto => escolherDetalhe(iDaPeca, d.chave, texto)}
+                          aoCriar={async texto => {
+                            const nome = await detalhesEmLista.adicionar(d.chave, texto)
+                            if (nome) escolherDetalhe(iDaPeca, d.chave, nome)
+                          }}
+                          aoEditarALista={() => detalhesEmLista.setEditando(d.chave)}
+                        />
+                      </Campo>
                     ))}
-                  </dl>
+                  </div>
+                  <span className="pd-nota">
+                    O que você escolher aqui vale só para esta peça neste kit. A referência não
+                    muda. Para voltar ao que ela diz, escolha a primeira linha da lista.
+                  </span>
                 </div>
 
                 <div className="pd-campo" data-design="">
@@ -761,6 +825,13 @@ export function EditorDoKit({
           </div>
         </div>
       </div>
+
+      <EditorDasListas
+        aberta={detalhesEmLista.editando}
+        listas={detalhesEmLista.listas}
+        aoFechar={() => detalhesEmLista.setEditando(null)}
+        aoSalvo={acertarOsNomes}
+      />
 
       <Modal
         aberto={saindo}

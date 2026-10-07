@@ -36,6 +36,9 @@ export function Seletor({
   campo,
   cor,
   comBusca,
+  aoCriar,
+  buscaDica,
+  pe,
 }: {
   /** o rotulo miudo dentro do botao, tipo VENDEDOR */
   rotulo?: string
@@ -57,15 +60,28 @@ export function Seletor({
      e a producao, nao o Design System. */
   cor?: string
   comBusca?: boolean
+  /* A LISTA QUE ACEITA ITEM NOVO. Com isto a busca fica sempre à mostra, e
+     quando o que foi escrito não é o nome de nenhuma opção aparece a linha
+     "Adicionar", que devolve o texto. Quem grava o item e escolhe o valor é
+     quem usa o seletor: aqui só se pergunta. Nasceu com as listas dos detalhes
+     de peça (gola, manga, punho), que são do usuário e crescem no uso. */
+  aoCriar?: (texto: string) => void
+  /** o que a busca diz antes de alguém escrever */
+  buscaDica?: string
+  /** o pé do menu: uma frase curta à esquerda e uma ação à direita */
+  pe?: { texto?: string; rotulo: string; aoClicar: () => void }
 }) {
   const [aberto, setAberto] = useState(false)
   const [busca, setBusca] = useState('')
   const bt = useRef<HTMLButtonElement>(null)
 
   const escolhida = opcoes.find((o) => o.valor === valor)
-  const mostraBusca = comBusca ?? opcoes.length > 10
+  const mostraBusca = aoCriar ? true : (comBusca ?? opcoes.length > 10)
   const b = semAcento(busca.trim())
   const lista = b ? opcoes.filter((o) => semAcento(o.rotulo).includes(b)) : opcoes
+  /* o que foi escrito já é o nome de uma opção? então não há o que adicionar */
+  const jaExiste = b ? opcoes.find((o) => semAcento(o.rotulo.trim()) === b) : undefined
+  const podeCriar = !!aoCriar && !!b && !jaExiste
 
   function fechar() {
     setAberto(false)
@@ -117,8 +133,17 @@ export function Seletor({
                 autoFocus
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar"
-                aria-label="Buscar"
+                onKeyDown={(e) => {
+                  /* Enter na lista que aceita item novo: escolhe o que tem
+                     esse nome, ou adiciona o que foi escrito */
+                  if (e.key !== 'Enter' || !aoCriar || !b) return
+                  e.preventDefault()
+                  if (jaExiste) aoEscolher(jaExiste.valor)
+                  else aoCriar(busca.trim())
+                  fechar()
+                }}
+                placeholder={buscaDica ?? (aoCriar ? 'Buscar, ou escrever um item novo' : 'Buscar')}
+                aria-label={buscaDica ?? (aoCriar ? 'Buscar, ou escrever um item novo' : 'Buscar')}
               />
               <button
                 type="button"
@@ -132,7 +157,14 @@ export function Seletor({
           </div>
         ) : null}
 
-        <div className="mn-lista">
+        {/* O SELETOR MORA DENTRO DE UM <label> (o Campo). Um clique num botão
+            de dentro do rótulo não aciona o rótulo, mas só enquanto o botão
+            está lá: a linha "Adicionar" some da tela no mesmo clique, o
+            navegador já não a acha dentro do rótulo, aciona o rótulo, o rótulo
+            clica no botão do seletor, e o menu que acabou de fechar abre de
+            novo. Dizer que o clique já foi tratado corta isso na raiz, para
+            qualquer linha da lista. */}
+        <div className="mn-lista" onClick={(e) => e.preventDefault()}>
           <button
             type="button"
             className={['mn-item', !valor ? 'on' : ''].filter(Boolean).join(' ')}
@@ -145,7 +177,7 @@ export function Seletor({
             <span className="ok">✓</span>
           </button>
           {lista.length === 0 ? (
-            <div className="mn-vazio">Nada com esse nome</div>
+            podeCriar ? null : <div className="mn-vazio">Nada com esse nome</div>
           ) : (
             lista.map((o) => (
               <button
@@ -176,9 +208,47 @@ export function Seletor({
               </button>
             ))
           )}
+          {podeCriar ? (
+            <button
+              type="button"
+              className="mn-item mn-novo"
+              data-criar=""
+              onClick={() => {
+                aoCriar?.(busca.trim())
+                fechar()
+              }}
+            >
+              <Mais />
+              <span className="nm">
+                Adicionar <b>"{busca.trim()}"</b> à lista
+              </span>
+            </button>
+          ) : null}
         </div>
+        {pe ? (
+          <div className="mn-pe">
+            <span>{pe.texto ?? ''}</span>
+            <button
+              type="button"
+              onClick={() => {
+                fechar()
+                pe.aoClicar()
+              }}
+            >
+              {pe.rotulo}
+            </button>
+          </div>
+        ) : null}
       </Flutuante>
     </span>
+  )
+}
+
+function Mais() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   )
 }
 

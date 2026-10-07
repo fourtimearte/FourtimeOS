@@ -91,8 +91,12 @@ export type PecaDoKit = {
   cod: string
   nome: string
   genero: string
-  /** os detalhes da referência: é dela que vêm gola, punho e costura */
+  /** os detalhes da REFERÊNCIA: o que vale quando o kit não escolhe outro */
   detalhes: Detalhes
+  /** O QUE O KIT ESCOLHE POR CIMA DA REFERÊNCIA (07/10/2026; H: "o kit pode dar
+      override nos detalhes da referência"). Só os detalhes em que este kit
+      disse outra coisa; o que está em branco aqui vale o da referência. */
+  detalhesDoKit: Detalhes
   /** a grade que a ficha da referência ligou; vazia se ela está em branco */
   tamanhos: string[]
   papel: string
@@ -107,6 +111,16 @@ export type Kit = { nome: string; pecas: PecaDoKit[] }
 
 /** Em que kit uma referência entra. */
 export type KitDaReferencia = { kitId: string; kitCod: string; kitNome: string; papel: string }
+
+/** Os detalhes que VALEM para uma peça dentro do kit: o que o kit escolheu e,
+    onde ele não escolheu, o que a referência diz. É o que a página do kit e a
+    folha impressa mostram. */
+export function detalhesDaPecaDoKit(p: { detalhes: Detalhes; detalhesDoKit: Detalhes }): Detalhes {
+  const sai: Detalhes = { ...p.detalhes }
+  for (const [chave, texto] of Object.entries(p.detalhesDoKit) as [keyof Detalhes, string][])
+    if (texto?.trim()) sai[chave] = texto.trim()
+  return sai
+}
 
 /* --- o código, o gênero e a grade -------------------------------------------- */
 
@@ -293,6 +307,12 @@ export function kitParaOBanco(kit: Kit) {
       etiqueta: p.etiqueta,
       etiqueta_onde: p.etiquetaOnde.trim(),
       observacao: p.observacao.trim(),
+      /* só o que o kit escolheu: em branco não vai, e vale o da referência */
+      detalhes: Object.fromEntries(
+        Object.entries(p.detalhesDoKit)
+          .map(([chave, texto]) => [chave, (texto ?? '').trim()])
+          .filter(([, texto]) => texto),
+      ),
     })),
   }
 }
@@ -308,6 +328,7 @@ export function pecaNova(
     nome: r.nome,
     genero: r.genero,
     detalhes: r.detalhes,
+    detalhesDoKit: {},
     tamanhos: r.tamanhos,
     papel: papelDaPosicao(posicao),
     tecidos: [],

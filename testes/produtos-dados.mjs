@@ -145,6 +145,18 @@ const PECAS_DOS_KITS = {
   ],
 }
 
+/* As listas dos detalhes de peça (migração 058): o catálogo dos nomes que se
+   pode escolher. A lista de PUNHOS NASCE VAZIA de propósito: a camiseta diz
+   "Sem punho", que então não é de lista nenhuma, e a prova vê o seletor
+   mostrar o texto de antes das listas em vez de escondê-lo. */
+const item = (id, detalhe, nome, ordem) => ({ id, detalhe, nome, ordem })
+const ITENS_DE_DETALHE = [
+  item('ig1', 'gola', 'Redonda, ribana 1x1 de 2 cm', 1), item('ig2', 'gola', 'Gola V', 2), item('ig3', 'gola', 'Polo', 3),
+  item('im1', 'manga', 'Curta, com bainha', 1), item('im2', 'manga', 'Longa', 2),
+  item('ib1', 'barra', 'Bainha de 2 cm', 1),
+  item('ic1', 'costura', 'Overloque de 4 fios e galoneira', 1), item('ic2', 'costura', 'Overloque de 4 fios, reta no cós', 2),
+]
+
 /* ---- as vendas: os layouts dos pedidos, como a view layout_na_fabrica devolve ----
    O DIA DE HOJE DA PROVA É 06/10/2026, 15h em Goiânia (a prova trava o relógio
    da página nele). Os números que a prova espera estão somados à mão em
@@ -217,9 +229,19 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
   const refs = estado === 'vazio' ? [] : copia(REFERENCIAS)
   const fichas = copia(FICHAS)
   const pecasDosKits = estado === 'vazio' ? {} : copia(PECAS_DOS_KITS)
+  const itens = estado === 'vazio' ? [] : copia(ITENS_DE_DETALHE)
+  const igual = (x, y) => (x ?? '').trim().toLowerCase() === (y ?? '').trim().toLowerCase()
+  /* o item como a view item_de_detalhe_na_lista devolve: com quem usa o nome */
+  const itemNaLista = (i) => ({
+    ...i,
+    referencias: refs.filter((r) => r.grupo !== 'KIT' && igual(r.detalhes?.[i.detalhe], i.nome)).length,
+    kits: Object.values(pecasDosKits).flat().filter((p) => igual(p.detalhes_do_kit?.[i.detalhe], i.nome)).length,
+  })
+  const ORDEM_DOS_DETALHES = ['barra', 'costura', 'gola', 'manga', 'punho']
   const gravados = []
   let recusas = recusa
   let novos = 0
+  let itensNovos = 0
   const fichaDe = (id) => (fichas[id] ??= { medidas: [], partes: [], materiais: [], molde: null })
   /* o molde de cada tamanho e a escala acertada de cada molde ('' é o geral) */
   const moldesDe = (id) => (fichaDe(id).moldes ??= {})
@@ -240,7 +262,7 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
   /* a peça como a view peca_do_kit_na_lista devolve */
   const pecaNaLista = (kitId) => (p, ordem) => {
     const k = refs.find((x) => x.id === kitId); const r = refs.find((x) => x.id === p.referencia_id)
-    return { kit_id: kitId, kit_cod: k.cod, kit_nome: k.nome, kit_ativo: k.ativo, referencia_id: r.id, cod: r.cod, nome: r.nome, genero: r.genero, grupo: r.grupo, detalhes: r.detalhes, tamanhos: r.tamanhos, ordem, ...p }
+    return { kit_id: kitId, kit_cod: k.cod, kit_nome: k.nome, kit_ativo: k.ativo, referencia_id: r.id, cod: r.cod, nome: r.nome, genero: r.genero, grupo: r.grupo, detalhes: r.detalhes, detalhes_do_kit: {}, tamanhos: r.tamanhos, ordem, ...p }
   }
 
   /* devolve { status, corpo } para um pedido ao banco, ou nulo se não é com ele */
@@ -272,8 +294,39 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
         refs.push(kit)
       }
       Object.assign(kit, { nome: f.nome, ficha_em: '2026-10-06T12:00:00Z' })
-      pecasDosKits[kit.id] = f.pecas.map((p) => ({ referencia_id: p.referencia_id, papel: p.papel, tecidos: p.tecidos.map((t) => ({ ...t, tecido: tecidos.find((x) => x.id === t.tecido_id)?.nome ?? '' })), design: p.design, etiqueta: p.etiqueta, etiqueta_onde: p.etiqueta_onde, observacao: p.observacao }))
+      pecasDosKits[kit.id] = f.pecas.map((p) => ({ referencia_id: p.referencia_id, papel: p.papel, tecidos: p.tecidos.map((t) => ({ ...t, tecido: tecidos.find((x) => x.id === t.tecido_id)?.nome ?? '' })), design: p.design, etiqueta: p.etiqueta, etiqueta_onde: p.etiqueta_onde, observacao: p.observacao, detalhes_do_kit: p.detalhes ?? {} }))
       return { status: 200, corpo: kit.id }
+    }
+    if (u.includes('rpc/adicionar_item_de_detalhe')) {
+      gravados.push({ u: 'rpc/adicionar_item_de_detalhe', corpo })
+      const ja = itens.find((i) => i.detalhe === corpo.p_detalhe && igual(i.nome, corpo.p_nome))
+      if (ja) return { status: 200, corpo: ja.id }
+      itensNovos += 1
+      const daLista = itens.filter((i) => i.detalhe === corpo.p_detalhe)
+      const novo = item('inovo' + itensNovos, corpo.p_detalhe, corpo.p_nome.trim(), Math.max(0, ...daLista.map((i) => i.ordem)) + 1)
+      itens.push(novo)
+      return { status: 200, corpo: novo.id }
+    }
+    if (u.includes('rpc/salvar_listas_de_detalhe')) {
+      gravados.push({ u: 'rpc/salvar_listas_de_detalhe', corpo })
+      if (recusas > 0) { recusas--; return { status: 400, corpo: { code: '23514', message: '"Polo" está duas vezes na lista de golas.' } } }
+      let mexidos = 0
+      /* como a 058: a lista que vem é a lista inteira; a que não vem fica como está */
+      for (const [detalhe, lista] of Object.entries(corpo.p_listas)) {
+        const fica = new Set(lista.map((x) => x.id).filter(Boolean))
+        for (let n = itens.length - 1; n >= 0; n--) if (itens[n].detalhe === detalhe && !fica.has(itens[n].id)) itens.splice(n, 1)
+        lista.forEach((x, n) => {
+          const i = x.id ? itens.find((y) => y.id === x.id) : null
+          if (!i) { itensNovos += 1; itens.push(item('inovo' + itensNovos, detalhe, x.nome, n + 1)); mexidos++; return }
+          /* mudou o nome: muda o texto nas referências e nas peças dos kits que o usam */
+          if (i.nome !== x.nome) {
+            for (const r of refs) if (igual(r.detalhes?.[detalhe], i.nome)) r.detalhes = { ...r.detalhes, [detalhe]: x.nome }
+            for (const p of Object.values(pecasDosKits).flat()) if (igual(p.detalhes_do_kit?.[detalhe], i.nome)) p.detalhes_do_kit = { ...p.detalhes_do_kit, [detalhe]: x.nome }
+          }
+          Object.assign(i, { nome: x.nome, ordem: n + 1 }); mexidos++
+        })
+      }
+      return { status: 200, corpo: mexidos }
     }
     if (u.includes('rpc/salvar_molde_da_referencia')) {
       gravados.push({ u: 'rpc/salvar_molde_da_referencia', corpo })
@@ -311,6 +364,10 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
       return { status: 204, corpo: null }
     }
     if (metodo !== 'GET') return null
+    if (u.includes('item_de_detalhe_na_lista')) {
+      if (estado === 'sem-apoio') return { status: 403, corpo: { message: 'permission denied for view item_de_detalhe_na_lista' } }
+      return { status: 200, corpo: [...itens].sort((x, y) => ORDEM_DOS_DETALHES.indexOf(x.detalhe) - ORDEM_DOS_DETALHES.indexOf(y.detalhe) || x.ordem - y.ordem || x.nome.localeCompare(y.nome)).map(itemNaLista) }
+    }
     if (u.includes('grupo_de_referencia')) return { status: 200, corpo: estado === 'erro' ? [] : grupos }
     if (u.includes('referencia_na_ficha')) {
       if (estado === 'erro') return { status: 403, corpo: { message: 'permission denied for view referencia_na_ficha' } }
@@ -353,5 +410,5 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
     if (u.includes('/material?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table material' } } : { status: 200, corpo: doEstoque }
     return null
   }
-  return { responder, gravados, fichas, refs, pecasDosKits, lidos }
+  return { responder, gravados, fichas, refs, pecasDosKits, itens, lidos }
 }

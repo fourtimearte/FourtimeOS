@@ -14,6 +14,7 @@ import {
 } from '@dominio/layout'
 import {
   DETALHES,
+  detalhesDaPecaDoKit,
   NOME_DA_ETIQUETA,
   NOME_DA_TECNICA,
   NOME_DO_GENERO,
@@ -613,7 +614,7 @@ function documentoDoKit({
                 <tr key={d.chave}>
                   <td>{d.nome}</td>
                   {pecas.map(p => (
-                    <td key={p.referenciaId}>{p.detalhes[d.chave] || 'não informado'}</td>
+                    <td key={p.referenciaId}>{detalhesDaPecaDoKit(p)[d.chave] || 'não informado'}</td>
                   ))}
                 </tr>
               ))}

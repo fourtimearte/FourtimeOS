@@ -7,6 +7,7 @@ import {
   carregarFicha,
   carregarKitsDaReferencia,
   carregarMolde,
+  comNomesTrocados,
   gradeEmPalavras,
   paraOCampo,
   salvarMolde,
@@ -412,6 +413,12 @@ export function FichaDaReferencia({
         podeExcluir={podeExcluir}
         aoSujar={aoSujar}
         aoCancelar={aoCancelarEdicao}
+        aoListasMudaram={async renomes => {
+          /* o banco já trocou o texto na referência; a ficha que está na
+             memória troca junto, para quem sair do editor sem salvar */
+          setFicha(f => (f ? { ...f, detalhes: comNomesTrocados(f.detalhes, renomes) } : f))
+          await aoMudou()
+        }}
         aoSalvou={async (nova, moldeNovo) => {
           setFicha(nova)
           setMolde(moldeNovo)

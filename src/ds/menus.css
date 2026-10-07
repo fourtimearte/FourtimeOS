@@ -262,6 +262,16 @@
   border-color: var(--ink);
   color: var(--text);
 }
+/* a linha "Adicionar" do seletor que aceita item novo: o mais em vermelho, e o
+   nome que foi escrito em destaque, para a pessoa conferir antes de pôr na lista */
+.mn-novo > svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.mn-novo b {
+  font-weight: 700;
+  color: var(--text);
+}
 .mn-vazio {
   padding: var(--re-10) var(--re-6);
   text-align: center;

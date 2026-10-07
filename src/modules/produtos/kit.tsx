@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ClipboardText, Image, Needle, PencilSimple, Prin
 import { Botao, ChipTecnica, Esqueleto, TituloCartao, Vazio, avisar } from '@ds'
 import {
   DETALHES,
+  detalhesDaPecaDoKit,
   NOME_DA_ETIQUETA,
   NOME_DA_TECNICA,
   NOME_DO_GENERO,
@@ -388,7 +389,7 @@ export function FichaDoKit({
                     <tr key={d.chave} data-linha={d.chave}>
                       <th scope="row">{d.nome}</th>
                       {pecas.map(p => (
-                        <td key={p.referenciaId}>{p.detalhes[d.chave] || NAO_INFORMADO}</td>
+                        <td key={p.referenciaId}>{detalhesDaPecaDoKit(p)[d.chave] || NAO_INFORMADO}</td>
                       ))}
                     </tr>
                   ))}

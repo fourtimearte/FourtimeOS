@@ -10,10 +10,12 @@ import {
   type PecaDoKit,
   type TecidoDaPeca,
 } from './kit'
+import { emListas, type ItemDeDetalhe, type ListasDeDetalhe, type ListasParaOBanco } from './listas'
 import type { FatiaDoLayout, LayoutVendido, PecasDosKits } from './vendas'
 import {
   codigoCurto,
   tamanhosDaReferencia,
+  type ChaveDeDetalhe,
   type Detalhes,
   type Ficha,
   type GrupoDeReferencia,
@@ -28,6 +30,7 @@ import {
    na conferência (sh testes/produto.sh). Aqui fica o que fala com o banco. */
 export * from './contas'
 export * from './kit'
+export * from './listas'
 export * from './molde'
 export * from './vendas'
 
@@ -293,6 +296,8 @@ type LinhaDaPeca = {
   nome: string
   genero: string
   detalhes: Detalhes | null
+  /* da 058: banco de antes dela não manda, e vale vazio */
+  detalhes_do_kit?: Detalhes | null
   tamanhos: string[] | null
   papel: string
   tecidos: { parte: string; tecido_id: string; tecido?: string }[] | null
@@ -305,7 +310,7 @@ type LinhaDaPeca = {
 /** As peças de um kit, na ordem dele, cada uma com a ficha de fabricação. */
 export async function carregarPecasDoKit(kitId: string): Promise<PecaDoKit[]> {
   const linhas = await tabela<LinhaDaPeca[]>(
-    'peca_do_kit_na_lista?select=kit_id,kit_cod,kit_nome,referencia_id,cod,nome,genero,detalhes,tamanhos,papel,tecidos,design,etiqueta,etiqueta_onde,observacao' +
+    'peca_do_kit_na_lista?select=kit_id,kit_cod,kit_nome,referencia_id,cod,nome,genero,detalhes,detalhes_do_kit,tamanhos,papel,tecidos,design,etiqueta,etiqueta_onde,observacao' +
       `&kit_id=eq.${kitId}&order=ordem.asc`,
   )
   return linhas.map(l => ({
@@ -314,6 +319,7 @@ export async function carregarPecasDoKit(kitId: string): Promise<PecaDoKit[]> {
     nome: l.nome,
     genero: l.genero,
     detalhes: l.detalhes ?? {},
+    detalhesDoKit: l.detalhes_do_kit ?? {},
     tamanhos: l.tamanhos ?? [],
     papel: l.papel,
     tecidos: (l.tecidos ?? []).map(
@@ -332,6 +338,49 @@ export async function carregarKitsDaReferencia(referenciaId: string): Promise<Ki
     `peca_do_kit_na_lista?select=kit_id,kit_cod,kit_nome,papel&referencia_id=eq.${referenciaId}&kit_ativo=is.true&order=kit_nome.asc`,
   )
   return linhas.map(l => ({ kitId: l.kit_id, kitCod: l.kit_cod, kitNome: l.kit_nome, papel: l.papel }))
+}
+
+/* --- as listas dos detalhes da peça (058) ---------------------------------------- */
+
+type LinhaDoItem = {
+  id: string
+  detalhe: ChaveDeDetalhe
+  nome: string
+  ordem: number | string
+  referencias: number | string | null
+  kits: number | string | null
+}
+
+/** As cinco listas (gola, manga, punho, barra e costura), cada uma na ordem dela. */
+export async function carregarListasDeDetalhe(): Promise<ListasDeDetalhe> {
+  const linhas = await tabela<LinhaDoItem[]>(
+    'item_de_detalhe_na_lista?select=id,detalhe,nome,ordem,referencias,kits&order=detalhe.asc,ordem.asc,nome.asc',
+  )
+  return emListas(
+    linhas.map(
+      (l): ItemDeDetalhe => ({
+        id: l.id,
+        detalhe: l.detalhe,
+        nome: l.nome,
+        ordem: Number(l.ordem) || 0,
+        referencias: Number(l.referencias) || 0,
+        kits: Number(l.kits) || 0,
+      }),
+    ),
+  )
+}
+
+/** Põe um item no fim da lista de um detalhe. Se o nome já existe, escrito de
+    outro jeito, o banco devolve o que já existe. */
+export function adicionarItemDeDetalhe(detalhe: ChaveDeDetalhe, nome: string): Promise<string> {
+  return chamar<string>('adicionar_item_de_detalhe', { p_detalhe: detalhe, p_nome: nome.trim() })
+}
+
+/** Salva as listas pelo editor: cada uma inteira e na ordem. Mudar o nome de um
+    item muda o texto nas referências e nos kits que o usam; tirar não apaga nada.
+    A lista que não vai fica como está no banco. */
+export function salvarListasDeDetalhe(listas: Partial<ListasParaOBanco>): Promise<number> {
+  return chamar<number>('salvar_listas_de_detalhe', { p_listas: listas })
 }
 
 /** Cria o kit (sem id) ou salva a ficha dele. Devolve o id do kit. */

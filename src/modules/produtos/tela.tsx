@@ -437,6 +437,7 @@ export function TelaProdutos() {
         tecidos={tecidos}
         podeExcluir={podeExcluir}
         aoSair={() => setEditorDoKit(null)}
+        aoListasMudaram={ler}
         aoSalvou={async id => {
           await ler()
           setEditorDoKit(null)

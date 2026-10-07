@@ -4,6 +4,7 @@ import {
   DotsSixVertical,
   GridFour,
   IdentificationCard,
+  ListPlus,
   Needle,
   PencilSimple,
   Plus,
@@ -30,6 +31,7 @@ import { apagarReferencia } from '@dominio/banco'
 import { TAMANHOS_ADULTO, TAMANHOS_INFANTIL } from '@dominio/layout/grade'
 import {
   DETALHES,
+  comNomesTrocados,
   MEDIDAS_SUGERIDAS,
   NOME_DO_GENERO,
   abrirRascunho,
@@ -56,8 +58,10 @@ import {
   type ReferenciaNaFicha,
   type TecidoDeConta,
   type UnidadeDaParte,
+  type Renome,
 } from '@dominio/produto'
 import { plural } from './apoio'
+import { EditorDasListas, SeletorDeDetalhe, usarListasDeDetalhe } from './detalhes'
 import {
   EscolhaDoTecidoDeConta,
   TopoDoModulo,
@@ -340,6 +344,7 @@ export function Editor({
   aoCancelar,
   aoSalvou,
   aoExcluiu,
+  aoListasMudaram,
 }: {
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
@@ -354,6 +359,9 @@ export function Editor({
   podeExcluir: boolean
   aoSujar: (sujo: boolean) => void
   aoCancelar: () => void
+  /** o editor das listas mudou o nome de um item: o banco trocou o texto nas
+      fichas, e a página relê as referências para a ficha não mostrar o antigo */
+  aoListasMudaram: (renomes: Renome[]) => Promise<unknown> | void
   aoSalvou: (ficha: Ficha, molde: string | null) => Promise<void>
   aoExcluiu: () => Promise<void>
 }) {
@@ -400,6 +408,26 @@ export function Editor({
     setRasc(atual => ({ ...atual, ...troca }))
     /* o aviso era do que estava na tela na hora do Salvar: mexeu, ele sai */
     setErro(null)
+  }
+
+  /* --- os detalhes da peça, cada um com a sua lista (pranchas 113 e 114) --- */
+  const detalhesEmLista = usarListasDeDetalhe()
+  /* O editor das listas mudou o nome de um item: o banco já trocou o texto nas
+     fichas, e esta que está aberta troca o que tem na tela. Se ela estava sem
+     mudança, continua sem mudança: o nome novo não é coisa para salvar. */
+  async function acertarOsNomes(renomes: Renome[]) {
+    await detalhesEmLista.reler()
+    if (!renomes.length) return
+    /* quem sai sem salvar volta para a ficha, e ela tem de mostrar o nome novo */
+    try {
+      await aoListasMudaram(renomes)
+    } catch {
+      /* a releitura caiu: a ficha aberta fica com o nome antigo até recarregar */
+    }
+    const limpo = retratoDoRascunho(rasc) === inicial.current
+    const depois = { ...rasc, detalhes: comNomesTrocados(rasc.detalhes, renomes) }
+    setRasc(depois)
+    if (limpo) inicial.current = retratoDoRascunho(depois)
   }
 
   /* --- a grade --- */
@@ -832,18 +860,27 @@ export function Editor({
         <section className="cartao pd-col" data-cartao="detalhes" ref={guardarLugar('detalhes')}>
           <div className="pd-topo">
             <TituloCartao icone={TShirt}>Detalhes da peça</TituloCartao>
+            <Botao tamanho="sm" onClick={() => detalhesEmLista.setEditando('gola')}>
+              <ListPlus size={16} aria-hidden="true" />
+              Editar as listas
+            </Botao>
           </div>
           <div className="pd-corpo">
             <div className="pd-form">
               {DETALHES.map(d => (
                 <Campo rotulo={d.nome} key={d.chave} className={d.chave === 'costura' ? 'pd-inteiro' : ''}>
-                  <Entrada
-                    value={rasc.detalhes[d.chave]}
-                    maxLength={200}
-                    placeholder={d.exemplo}
-                    onChange={e =>
-                      mudar({ detalhes: { ...rasc.detalhes, [d.chave]: e.currentTarget.value } })
-                    }
+                  <SeletorDeDetalhe
+                    detalhe={d.chave}
+                    nome={d.nome}
+                    valor={rasc.detalhes[d.chave]}
+                    lista={detalhesEmLista.listas[d.chave]}
+                    vazio="Não informado"
+                    aoEscolher={texto => mudar({ detalhes: { ...rasc.detalhes, [d.chave]: texto } })}
+                    aoCriar={async texto => {
+                      const nome = await detalhesEmLista.adicionar(d.chave, texto)
+                      if (nome) setRasc(atual => ({ ...atual, detalhes: { ...atual.detalhes, [d.chave]: nome } }))
+                    }}
+                    aoEditarALista={() => detalhesEmLista.setEditando(d.chave)}
                   />
                 </Campo>
               ))}
@@ -856,8 +893,19 @@ export function Editor({
                 />
               </Campo>
             </div>
+            <p className="pd-nota" data-nota-das-listas="">
+              Cada detalhe é uma lista sua. Escreveu um nome que ainda não existe? Aparece{' '}
+              <b>Adicionar</b>, e o item entra na hora na lista, para esta e para as próximas
+              referências.
+            </p>
             <p className="pd-nota">{SEM_ETIQUETA}</p>
           </div>
+          <EditorDasListas
+            aberta={detalhesEmLista.editando}
+            listas={detalhesEmLista.listas}
+            aoFechar={() => detalhesEmLista.setEditando(null)}
+            aoSalvo={acertarOsNomes}
+          />
         </section>
       </div>
 

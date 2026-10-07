@@ -16,6 +16,7 @@
 
 import * as p from './compilado-produto/src/dominio/produto/contas.js'
 import * as k from './compilado-produto/src/dominio/produto/kit.js'
+import * as l from './compilado-produto/src/dominio/produto/listas.js'
 import * as o from './compilado-produto/src/dominio/produto/molde.js'
 import * as v from './compilado-produto/src/dominio/produto/vendas.js'
 
@@ -224,8 +225,8 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(k.kitEmBranco(lista) && !k.kitEmBranco({ ...lista, fichaEm: '2026-10-06' }) && !k.kitEmBranco({ ...lista, temDesenho: true }), 'kit em branco: nunca salvo e sem desenho')
   conta(k.faltasDoKit(lista) === 5 && k.faltasDoKit({ fichaEm: 'x', temDesenho: true, pecasSemTecido: 0, pecasSemEtiqueta: 0 }) === 0, 'faltas do kit: peça sem tecido, peça sem etiqueta e o desenho')
 
-  const cima = { referenciaId: 'a', cod: 'FT-010-000M', nome: 'CAMISETA', genero: 'M', detalhes: {}, tamanhos: [], papel: 'Parte de cima', tecidos: [{ parte: 'Frente e costas', tecidoId: 't1', tecido: 'DRYFIT' }, { parte: 'Mangas', tecidoId: 't2', tecido: 'JAKAR' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: ' ' }], etiqueta: 'silk', etiquetaOnde: 'no decote', observacao: '' }
-  const baixo = { referenciaId: 'b', cod: 'FT-090-000M', nome: 'CALÇAO', genero: 'M', detalhes: {}, tamanhos: [], papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiquetaOnde: '', observacao: '' }
+  const cima = { referenciaId: 'a', cod: 'FT-010-000M', nome: 'CAMISETA', genero: 'M', detalhes: {}, detalhesDoKit: {}, tamanhos: [], papel: 'Parte de cima', tecidos: [{ parte: 'Frente e costas', tecidoId: 't1', tecido: 'DRYFIT' }, { parte: 'Mangas', tecidoId: 't2', tecido: 'JAKAR' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: ' ' }], etiqueta: 'silk', etiquetaOnde: 'no decote', observacao: '' }
+  const baixo = { referenciaId: 'b', cod: 'FT-090-000M', nome: 'CALÇAO', genero: 'M', detalhes: {}, detalhesDoKit: {}, tamanhos: [], papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiquetaOnde: '', observacao: '' }
   const pend = k.pendenciasDoKit({ nome: 'KIT', pecas: [cima, baixo] }, false)
   conta(pend.every((x) => !x.impede) && igual(pend.map((x) => x.deQuem + ': ' + x.texto), ['Parte de cima: falta dizer onde vai Patch.', 'Parte de baixo: falta escolher o tecido.', 'Parte de baixo: falta escolher a etiqueta.', ': Falta o desenho do kit, em SVG.']), 'pendências: o que falta em cada peça e o desenho, sem impedir de salvar')
   conta(k.pendenciasDoKit({ nome: 'KIT', pecas: [{ ...cima, design: [{ tecnica: 'subli', onde: 'tudo' }] }, { ...baixo, tecidos: [{ parte: 'A peça inteira', tecidoId: 't1', tecido: 'DRYFIT' }], etiqueta: 'sem' }] }, true).length === 0, 'pendências: kit inteiro não tem nenhuma, e "sem etiqueta" é uma escolha')
@@ -255,8 +256,15 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(igual(avi.map((a) => [a.nome, a.quantidade, a.unidade, a.deQuem]), [['Linha', 0.3, 'cone', 'das duas peças'], ['Etiqueta de composição', 2, 'un', 'das duas peças'], ['Elástico', 0.7, 'm', 'da parte de baixo']]), 'aviamentos do kit: o mesmo material numa linha só, somado (0,1 + 0,2 dá 0,3, e não 0,30000000000000004), e de que peça ele vem')
 
   const banco = k.kitParaOBanco({ nome: '  KIT  ', pecas: [{ ...cima, papel: ' Parte de cima ', observacao: ' x ' }, baixo] })
-  conta(banco.nome === 'KIT' && igual(Object.keys(banco.pecas[0]).sort(), ['design', 'etiqueta', 'etiqueta_onde', 'observacao', 'papel', 'referencia_id', 'tecidos']) && igual(banco.pecas[0].tecidos[0], { parte: 'Frente e costas', tecido_id: 't1' }) && banco.pecas[0].papel === 'Parte de cima' && banco.pecas[0].observacao === 'x' && banco.pecas[0].design[1].onde === '', 'kit para o banco: só o que é do kit vai, com o texto aparado e o tecido pelo id')
+  conta(banco.nome === 'KIT' && igual(Object.keys(banco.pecas[0]).sort(), ['design', 'detalhes', 'etiqueta', 'etiqueta_onde', 'observacao', 'papel', 'referencia_id', 'tecidos']) && igual(banco.pecas[0].tecidos[0], { parte: 'Frente e costas', tecido_id: 't1' }) && banco.pecas[0].papel === 'Parte de cima' && banco.pecas[0].observacao === 'x' && banco.pecas[0].design[1].onde === '', 'kit para o banco: só o que é do kit vai, com o texto aparado e o tecido pelo id')
+  /* o kit escolhe o detalhe por cima da referência (migração 058) */
+  const comDetalhe = { ...cima, detalhes: { gola: 'Redonda', manga: 'Curta', barra: 'Bainha' }, detalhesDoKit: { manga: ' Longa ', punho: '   ', barra: '' } }
+  conta(igual(k.detalhesDaPecaDoKit(comDetalhe), { gola: 'Redonda', manga: 'Longa', barra: 'Bainha' }) && igual(k.detalhesDaPecaDoKit(cima), {}), 'detalhes da peça no kit: vale o que o kit escolheu e, onde ele deixou em branco, o que a referência diz')
+  conta(comDetalhe.detalhes.manga === 'Curta', 'detalhes da peça no kit: a conta não mexe no que a referência diz')
+  const comD = k.kitParaOBanco({ nome: 'KIT', pecas: [comDetalhe, baixo] })
+  conta(igual(comD.pecas[0].detalhes, { manga: 'Longa' }) && igual(comD.pecas[1].detalhes, {}), 'kit para o banco: de cada peça só vai o detalhe que o kit escolheu, aparado; o branco não vai')
   const nova = k.pecaNova({ id: 'z', cod: 'FT-1', nome: 'N', genero: 'M', detalhes: { gola: 'V' }, tamanhos: ['P'] }, 0)
+  conta(igual(nova.detalhesDoKit, {}) && nova.detalhes.gola === 'V', 'peça nova: entra sem escolher detalhe nenhum, valendo o da referência')
   conta(nova.papel === 'Parte de cima' && k.pecaNova({ id: 'z', cod: '', nome: '', genero: '', detalhes: {}, tamanhos: [] }, 1).papel === 'Parte de baixo' && k.papelDaPosicao(5) === 'Acessório' && nova.etiqueta === '' && nova.tecidos.length === 0, 'peça nova: a primeira é a parte de cima, a segunda a de baixo, as outras acessório, com a ficha em branco')
 }
 
@@ -429,6 +437,36 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(igual(v.vendaMesAMes(layouts, KITS, hoje).map((m) => [m.mes, m.pecas, m.corrente]), [['2026-05', 0, false], ['2026-06', 0, false], ['2026-07', 0, false], ['2026-08', 65, false], ['2026-09', 479, false], ['2026-10', 134, true]]), 'mês a mês: seis meses, setembro com 329 + 50 + 100 = 479, e outubro marcado como o que está correndo')
   conta(v.orcamentosCom(layouts, 'kitA', j3.atual) === 2 && v.orcamentosCom(layouts, 'kitA', j1.atual) === 1 && v.orcamentosCom(layouts, 'cam', j1.atual) === 1, 'em quantos orçamentos saiu: o kit em 2 nos 3 meses; a camiseta solta em 1 em outubro')
   conta(igual(v.ultimosOrcamentosCom(layouts, 'kitA', 4).map((x) => [x.numero, x.unidades, x.estado]), [['PD-0422', 10, 'aprovado'], ['PD-0412', 89, 'producao']]) && v.ultimosOrcamentosCom(layouts, 'cam', 2).length === 2 && v.ultimosOrcamentosCom(layouts, 'cam', 9).find((x) => x.numero === 'PD-0388').unidades === 65, 'últimos orçamentos com o kit: do mais novo para o mais velho, e dois layouts da mesma peça no pedido somam (25 + 40)')
+}
+
+/* ---- as listas dos detalhes de peça ------------------------------------------- */
+{
+  const it = (id, detalhe, nome, ordem, referencias = 0, kits = 0) => ({ id, detalhe, nome, ordem, referencias, kits })
+  const listas = l.emListas([it('g2', 'gola', 'Polo', 2), it('m1', 'manga', 'Curta', 1, 3, 1), it('g1', 'gola', 'Redonda', 1, 58), it('g3', 'gola', 'Careca', 2), it('x', 'bolso', 'Faca', 1)])
+  conta(igual(listas.gola.map((i) => i.nome), ['Redonda', 'Careca', 'Polo']) && listas.manga.length === 1 && listas.punho.length === 0 && igual(Object.keys(listas), ['gola', 'manga', 'punho', 'barra', 'costura']), 'listas: cada item na lista do seu detalhe, na ordem dela e, no empate, pelo nome; o que não é detalhe conhecido fica de fora')
+  conta(igual(l.opcoesDoDetalhe(listas.gola, 'Polo'), [{ valor: 'Redonda', rotulo: 'Redonda' }, { valor: 'Careca', rotulo: 'Careca' }, { valor: 'Polo', rotulo: 'Polo' }]), 'opções do seletor: os itens da lista, e o valor é o próprio nome')
+  conta(igual(l.opcoesDoDetalhe(listas.gola, ' Gola V ').at(-1), { valor: 'Gola V', rotulo: 'Gola V (fora da lista)' }) && l.opcoesDoDetalhe(listas.gola, ' polo ').length === 3 && l.opcoesDoDetalhe(listas.gola, '  ').length === 3, 'opções do seletor: o texto que não é de lista nenhuma entra no fim, marcado; o que já está nela, escrito de outro jeito, não repete')
+  conta(l.nomeNaLista(listas.gola, ' redonda ') === 'Redonda' && l.nomeNaLista(listas.gola, ' Gola V ') === 'Gola V', 'nome na lista: o que já existe vem como está na lista, e o que não existe vem aparado')
+  conta(l.quemUsa(listas.gola[0]) === '58 referências' && l.quemUsa(listas.manga[0]) === '3 referências e 1 kit' && l.quemUsa({ referencias: 1, kits: 0 }) === '1 referência' && l.quemUsa({ referencias: 0, kits: 2 }) === '2 kits' && l.quemUsa({ referencias: 0, kits: 0 }) === 'sem uso', 'quem usa: referências e kits, no singular e no plural, e sem uso')
+
+  const rasc = l.abrirListas(listas)
+  conta(igual(rasc.gola.map((i) => [i.id, i.nome]), [['g1', 'Redonda'], ['g3', 'Careca'], ['g2', 'Polo']]) && new Set(rasc.gola.map((i) => i.chave)).size === 3 && !l.listasMudaram(listas, rasc), 'rascunho das listas: abre igual ao banco, cada linha com a sua chave, e sem mudança')
+  const comNovo = l.comItemNovo(rasc.gola, '  Gola V ')
+  conta(comNovo.length === 4 && comNovo[3].id === null && comNovo[3].nome === 'Gola V' && l.comItemNovo(rasc.gola, ' POLO ') === rasc.gola && l.comItemNovo(rasc.gola, '   ') === rasc.gola, 'item novo no rascunho: entra no fim, aparado e sem id; nome vazio ou que já existe não entra')
+  conta(l.listaMudou(listas.gola, comNovo) && l.listaMudou(listas.gola, [rasc.gola[1], rasc.gola[0], rasc.gola[2]]) && l.listaMudou(listas.gola, rasc.gola.slice(1)) && l.listaMudou(listas.gola, [{ ...rasc.gola[0], nome: 'Redonda 2' }, ...rasc.gola.slice(1)]) && !l.listaMudou(listas.gola, [{ ...rasc.gola[0], nome: ' Redonda ' }, ...rasc.gola.slice(1)]), 'lista mudou: item novo, outra ordem, item tirado e nome trocado mudam; espaço em volta do nome não')
+  const fechado = l.fecharListas({ ...rasc, gola: [{ ...comNovo[3] }, { ...rasc.gola[0], nome: ' Redonda ' }] })
+  conta(igual(fechado.listas?.gola, [{ nome: 'Gola V' }, { id: 'g1', nome: 'Redonda' }]) && igual(fechado.listas.manga, [{ id: 'm1', nome: 'Curta' }]) && igual(fechado.listas.punho, []) && fechado.erro === '', 'fechar as listas: cada uma inteira e na ordem, o item que existe com o id, o novo sem, e o nome aparado')
+  const semNome = l.fecharListas({ ...rasc, manga: [{ ...rasc.manga[0], nome: '  ' }] })
+  const repetido = l.fecharListas({ ...rasc, gola: [rasc.gola[0], { ...rasc.gola[1], nome: 'REDONDA' }] })
+  const comprido = l.fecharListas({ ...rasc, barra: [{ chave: 1, id: null, nome: 'x'.repeat(201), referencias: 0, kits: 0 }] })
+  conta(semNome.listas === null && semNome.onde === 'manga' && semNome.erro === 'Tem um item sem nome na lista de mangas.' && repetido.onde === 'gola' && repetido.erro === '"REDONDA" está duas vezes na lista de golas.' && comprido.onde === 'barra' && comprido.erro.includes('passa de 200 letras'), 'fechar as listas: item sem nome, nome repetido e nome comprido demais não fecham, e a resposta diz em que lista')
+
+  const renomes = [{ detalhe: 'gola', de: 'Redonda', para: 'Redonda com ribana' }, { detalhe: 'manga', de: 'Curta', para: 'Curta' }]
+  const antes = { gola: ' redonda ', manga: 'Curta', barra: 'Bainha' }
+  const depois = l.comNomesTrocados(antes, renomes)
+  conta(igual(depois, { gola: 'Redonda com ribana', manga: 'Curta', barra: 'Bainha' }) && antes.gola === ' redonda ' && l.comNomesTrocados({ gola: 'Polo' }, renomes).gola === 'Polo' && igual(l.comNomesTrocados({}, renomes), {}), 'nomes trocados: o detalhe que tinha o nome antigo passa a ter o novo, sem mexer no objeto de origem; o resto fica como está')
+  const mesmo = { gola: 'Polo' }
+  conta(l.comNomesTrocados(mesmo, renomes) === mesmo && l.comNomesTrocados(mesmo, []) === mesmo, 'nomes trocados: se nada mudou, devolve o mesmo objeto (a tela não redesenha à toa)')
 }
 
 console.log('')

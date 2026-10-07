@@ -128,6 +128,14 @@ const abaDoModulo = async (pg, nome) => { await pg.locator('.pd-abas-do-modulo b
 const editar = async (pg) => { await pg.locator('[data-ficha="referencia"] .pd-ficha-topo button', { hasText: 'Editar' }).click(); await pg.waitForSelector('[data-ficha="editar"]'); await pausa(pg, 300) }
 const salvar = async (pg) => { await pg.getByRole('button', { name: 'Salvar referência' }).click(); await pausa(pg, 700) }
 const naModal = (pg) => pg.locator('dialog.modal[open]')
+/* os detalhes da peça em lista (migração 058): o botão do seletor de um detalhe,
+   o que os cinco seletores dizem, as linhas do menu aberto, e as linhas e as
+   listas do editor das listas */
+const seletorDeDetalhe = (pg, raiz, chave) => pg.locator(`${raiz} [data-detalhe="${chave}"] .cb`)
+const oQueOsDetalhesDizem = (pg, raiz) => textos(pg, `${raiz} [data-detalhe] .cb .v`)
+const itensDoMenu = async (pg) => (await textos(pg, '.mn-item')).map((o) => o.replace(/\s*✓$/, ''))
+const linhasDaLista = (pg) => pg.evaluate(() => [...document.querySelectorAll('dialog.modal[open] [data-item-da-lista]')].map((l) => [l.querySelector('input').value, l.querySelector('small').textContent.trim()]))
+const listasDoEditor = (pg) => textos(pg, 'dialog.modal[open] .pd-lo-d')
 
 /* ==========================================================================
    1. A LISTA E A FICHA, NO COMPUTADOR, NOS DOIS TEMAS
@@ -284,7 +292,7 @@ await secao(async () => {
   conta(mesma(await textos(pg, '[data-ficha="editar"] .pd-ficha-topo .btn'), ['Cancelar', 'Salvar referência']) && (await textos(pg, '.pd-trilha'))[0].endsWith('editando a referência'), `editor: Cancelar e Salvar referência no topo`)
   const ident = await pg.evaluate(() => { const c = document.querySelector('[data-cartao="identificacao"]'); return { campos: c.querySelectorAll('input').length, valor: c.querySelector('input').value, nota: c.querySelector('.pd-nota').innerText } })
   conta(ident.campos === 1 && ident.valor === 'CAMISETA MASC TRAD' && ident.nota.includes('FT-010-000M') && ident.nota.includes('não muda'), `identificação: só o nome se edita, e o código é dito como coisa que não muda`)
-  conta(await pg.locator('[data-ficha="editar"] button', { hasText: 'Editar' }).count() === 0, `editor: toma o lugar da ficha, sem os botões dela`)
+  conta(await pg.locator('[data-ficha="editar"] button', { hasText: /^Editar$/ }).count() === 0 && await pg.locator('[data-ficha="editar"] button', { hasText: 'Imprimir' }).count() === 0, `editor: toma o lugar da ficha, sem os botões dela`)
 
   /* ---- a grade ---- */
   const tam = () => pg.evaluate(() => [...document.querySelectorAll('.pd-tam')].map((b) => b.textContent + (b.getAttribute('aria-pressed') === 'true' ? '+' : '')))
@@ -417,8 +425,68 @@ await secao(async () => {
   conta((await recado(pg)).includes('não é um SVG'), `molde no editor: arquivo que não é SVG é recusado`)
 
   /* ---- os detalhes ---- */
-  await pg.locator('[data-cartao="detalhes"] .campo', { hasText: 'Punho' }).locator('input').fill('  ')
-  await pg.locator('[data-cartao="detalhes"] .campo', { hasText: 'Gola' }).locator('input').fill('Gola V')
+  const ED = '[data-cartao="detalhes"]'
+  conta(mesma(await oQueOsDetalhesDizem(pg, ED), ['Redonda, ribana 1x1 de 2 cm', 'Curta, com bainha', 'Sem punho (fora da lista)', 'Bainha de 2 cm', 'Overloque de 4 fios e galoneira']) && await pg.locator(`${ED} input:visible`).count() === 0, `detalhes no editor: cinco seletores no lugar dos cinco campos de texto, e o texto que não é de lista nenhuma continua à mostra, marcado`)
+  conta((await textos(pg, `${ED} .pd-topo .btn`))[0] === 'Editar as listas' && (await textos(pg, `${ED} [data-nota-das-listas]`))[0].startsWith('Cada detalhe é uma lista sua.'), `detalhes no editor: o Editar as listas no topo do cartão, e a nota de como a lista cresce`)
+  await seletorDeDetalhe(pg, ED, 'gola').click(); await pausa(pg, 200)
+  conta(mesma(await itensDoMenu(pg), ['Não informado', 'Redonda, ribana 1x1 de 2 cm', 'Gola V', 'Polo']) && mesma(await textos(pg, '.mn-pe > *'), ['3 itens', 'Editar a lista de golas']) && await pg.locator('.mn-busca input:visible').getAttribute('placeholder') === 'Buscar, ou escrever um item novo', `seletor de gola: a primeira linha limpa, os itens na ordem da lista, a busca que aceita item novo, e o pé com a conta e o Editar a lista`)
+  await pg.locator('.mn-busca input:visible').fill('gola v'); await pausa(pg, 200)
+  conta(mesma(await itensDoMenu(pg), ['Não informado', 'Gola V']) && await pg.locator('[data-criar]:visible').count() === 0, `seletor de gola: escrever um nome que já existe só filtra, sem oferecer Adicionar`)
+  await pg.keyboard.press('Enter'); await pausa(pg, 200)
+  conta((await oQueOsDetalhesDizem(pg, ED))[0] === 'Gola V' && !gravados.some((g) => g.u === 'rpc/adicionar_item_de_detalhe'), `seletor de gola: Enter escolhe o item, com o nome como está na lista, e nada vai para o banco`)
+  await seletorDeDetalhe(pg, ED, 'punho').click(); await pausa(pg, 200)
+  conta(mesma(await itensDoMenu(pg), ['Não informado', 'Sem punho (fora da lista)']) && (await textos(pg, '.mn-pe > *'))[0] === '0 itens', `seletor de punho: a lista vazia ainda mostra o que a ficha diz`)
+  await pg.locator('.mn-item:visible', { hasText: 'Não informado' }).click(); await pausa(pg, 200)
+  conta((await oQueOsDetalhesDizem(pg, ED))[2] === 'Não informado', `seletor de punho: a primeira linha apaga o detalhe`)
+  await seletorDeDetalhe(pg, ED, 'barra').click(); await pausa(pg, 200)
+  await pg.locator('.mn-busca input:visible').fill('  Barra italiana '); await pausa(pg, 200)
+  conta(mesma(await itensDoMenu(pg), ['Não informado', 'Adicionar "Barra italiana" à lista']), `item novo: escreveu um nome que a lista não tem, aparece o Adicionar com o nome aparado`)
+  await pg.locator('[data-criar]:visible').click(); await pausa(pg, 500)
+  conta(mesma(ultimo(gravados, 'rpc/adicionar_item_de_detalhe')?.corpo, { p_detalhe: 'barra', p_nome: 'Barra italiana' }) && (await oQueOsDetalhesDizem(pg, ED))[3] === 'Barra italiana', `item novo: entra na lista na hora, por uma chamada só dele, e já fica escolhido`)
+  /* o seletor mora dentro de um rótulo: a linha Adicionar some no mesmo clique, e o rótulo não pode reabrir o menu */
+  conta(await pg.locator('.sel.aberto').count() === 0 && (await itensDoMenu(pg)).length === 0, `item novo: depois de adicionar, o menu fica fechado`)
+  await seletorDeDetalhe(pg, ED, 'barra').click(); await pausa(pg, 200)
+  const barras = await itensDoMenu(pg)
+  conta(mesma(barras, ['Não informado', 'Bainha de 2 cm', 'Barra italiana']) && (await textos(pg, '.mn-pe > *'))[0] === '2 itens', `item novo: a lista relida já o traz, no fim (${barras.join(' / ')} · ${(await textos(pg, '.mn-pe > *')).join(' / ')})`)
+  await pg.keyboard.press('Escape'); await pausa(pg, 200)
+
+  /* ---- o editor das listas ---- */
+  await pg.locator(`${ED} .pd-topo`).getByRole('button', { name: 'Editar as listas' }).click(); await pausa(pg, 400)
+  const cx = naModal(pg)
+  conta(await cx.locator('h2').innerText() === 'Listas dos detalhes de peça' && mesma(await listasDoEditor(pg), ['Gola 3 itens', 'Manga 2 itens', 'Punho 0 itens', 'Barra 2 itens', 'Costura 2 itens']) && mesma(await textos(pg, 'dialog.modal[open] .pd-lo-d.on'), ['Gola 3 itens']), `editor das listas: as cinco listas de um lado, com a conta de cada uma, e a de golas à mostra`)
+  conta(mesma(await linhasDaLista(pg), [['Redonda, ribana 1x1 de 2 cm', '1 referência'], ['Gola V', 'sem uso'], ['Polo', 'sem uso']]) && await cx.getByRole('button', { name: 'Salvar as listas' }).isDisabled(), `editor das listas: cada item diz quem o usa, e sem mudança não há o que salvar`)
+  const lados = await caixas(pg, 'dialog.modal[open] [data-listas] > *')
+  conta(lados.length === 2 && Math.round(lados[0].w) === 240 && Math.abs(lados[0].y - lados[1].y) < 1 && lados[1].w > lados[0].w, `editor das listas: as listas numa coluna de 240 px e os itens ao lado (${lados.map((l) => Math.round(l.w)).join(' e ')})`)
+  /* a ordem, pelo teclado: a primeira gola desce duas vezes */
+  await cx.locator('[data-item-da-lista]').nth(0).locator('.pd-pega').focus(); await pg.keyboard.press('ArrowDown'); await pausa(pg, 100); await pg.keyboard.press('ArrowDown'); await pausa(pg, 150)
+  conta(mesma((await linhasDaLista(pg)).map((l) => l[0]), ['Gola V', 'Polo', 'Redonda, ribana 1x1 de 2 cm']), `editor das listas: seta para baixo duas vezes na alça leva o item ao fim, porque o foco acompanha a linha`)
+  await cx.getByRole('button', { name: 'Tirar Gola V da lista' }).click(); await pausa(pg, 150)
+  await cx.locator('.pd-lo-d', { hasText: 'Manga' }).click(); await pausa(pg, 150)
+  await cx.locator('[data-item-da-lista] input').nth(0).fill('Curta com bainha')
+  await cx.locator('.pd-lo-d', { hasText: 'Punho' }).click(); await pausa(pg, 150)
+  conta((await textos(pg, 'dialog.modal[open] .pd-lo-vazia'))[0].startsWith('Esta lista está vazia') && await cx.getByRole('button', { name: 'Adicionar', exact: true }).isDisabled(), `editor das listas: a lista vazia diz como começar, e o Adicionar espera um nome`)
+  await cx.getByLabel('Item novo', { exact: true }).fill('Ribana 2x1'); await cx.getByRole('button', { name: 'Adicionar', exact: true }).click(); await pausa(pg, 150)
+  await cx.getByLabel('Item novo', { exact: true }).fill('ribana 2X1'); await pg.keyboard.press('Enter'); await pausa(pg, 300)
+  conta(mesma(await linhasDaLista(pg), [['Ribana 2x1', 'novo · ainda sem uso']]) && (await recado(pg)).includes('"ribana 2X1" já está na lista de punhos'), `editor das listas: o item novo entra marcado, e o mesmo nome escrito de outro jeito é recusado na hora`)
+  await cx.getByLabel('Item novo', { exact: true }).fill('')
+  /* a ordem, arrastando: a segunda costura vai para cima da primeira */
+  await cx.locator('.pd-lo-d', { hasText: 'Costura' }).click(); await pausa(pg, 150)
+  const alca = await cx.locator('[data-item-da-lista]').nth(1).locator('.pd-pega').boundingBox(); const alvo = await cx.locator('[data-item-da-lista]').nth(0).boundingBox()
+  await pg.mouse.move(alca.x + alca.width / 2, alca.y + alca.height / 2); await pg.mouse.down(); await pg.mouse.move(alvo.x + 60, alvo.y + alvo.height / 2, { steps: 5 }); await pg.mouse.up(); await pausa(pg, 150)
+  conta(mesma((await linhasDaLista(pg)).map((l) => l[0]), ['Overloque de 4 fios, reta no cós', 'Overloque de 4 fios e galoneira']), `editor das listas: arrastar pela alça troca a ordem`)
+  /* item sem nome não salva, e a caixa mostra onde ele está */
+  await cx.locator('[data-item-da-lista] input').nth(0).fill('  ')
+  await cx.locator('.pd-lo-d', { hasText: 'Gola' }).click(); await pausa(pg, 150)
+  await cx.getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 300)
+  conta(!gravados.some((g) => g.u === 'rpc/salvar_listas_de_detalhe') && (await recado(pg)).includes('Tem um item sem nome na lista de costuras') && (await textos(pg, 'dialog.modal[open] .pd-lo-d.on'))[0].startsWith('Costura'), `editor das listas: item sem nome não salva, e a caixa passa para a lista em que ele está`)
+  await cx.locator('[data-item-da-lista] input').nth(0).fill('Overloque de 4 fios, reta no cós')
+  await cx.locator('.pd-lo-d', { hasText: 'Gola' }).click(); await pausa(pg, 150)
+  await foto(pg, 'editor-das-listas')
+  await cx.getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 700)
+  const listas = ultimo(gravados, 'rpc/salvar_listas_de_detalhe')?.corpo.p_listas
+  conta(mesma(Object.keys(listas ?? {}).sort(), ['costura', 'gola', 'manga', 'punho']), `salvar as listas: só vai a lista que mudou (a de barras, em que ninguém mexeu, não vai)`)
+  conta(mesma(listas?.gola, [{ id: 'ig3', nome: 'Polo' }, { id: 'ig1', nome: 'Redonda, ribana 1x1 de 2 cm' }]) && mesma(listas.manga, [{ id: 'im1', nome: 'Curta com bainha' }, { id: 'im2', nome: 'Longa' }]) && mesma(listas.punho, [{ nome: 'Ribana 2x1' }]) && mesma(listas.costura, [{ id: 'ic2', nome: 'Overloque de 4 fios, reta no cós' }, { id: 'ic1', nome: 'Overloque de 4 fios e galoneira' }]), `salvar as listas: cada lista inteira e na ordem da tela; o item que existe vai com o id, o novo sem, e o tirado fica de fora`)
+  conta(await pg.locator('dialog.modal[open]').count() === 0 && (await recado(pg)).includes('Listas salvas.') && mesma(await oQueOsDetalhesDizem(pg, ED), ['Gola V (fora da lista)', 'Curta com bainha', 'Não informado', 'Barra italiana', 'Overloque de 4 fios e galoneira']), `depois de salvar as listas: a caixa fecha, o nome trocado troca na ficha aberta, e o item tirado continua nela como texto`)
   await pg.locator('[data-cartao="detalhes"] textarea').fill('Reforço de ombro a ombro.')
   await pg.locator('.pd-tam', { hasText: /^G4$/ }).click(); await pausa(pg, 150)
 
@@ -428,7 +496,7 @@ await secao(async () => {
   const f = ficha?.p_ficha
   conta(!!f && ficha.p_referencia === 'r000' && mesma(Object.keys(f).sort(), ['detalhes', 'materiais', 'medidas', 'nome', 'observacao', 'partes', 'tamanhos']), `salvar: a ficha vai inteira, numa chamada só`)
   conta(f?.nome === 'CAMISETA MASC TRADICIONAL' && mesma(f.tamanhos, F.ADULTA.slice(0, 9)), `salvar: o nome novo e a grade sem o G4`)
-  conta(mesma(f?.detalhes, { gola: 'Gola V', manga: 'Curta, com bainha', barra: 'Bainha de 2 cm', costura: 'Overloque de 4 fios e galoneira' }) && f.observacao === 'Reforço de ombro a ombro.', `salvar: o detalhe apagado não vai, e o texto vai aparado`)
+  conta(mesma(f?.detalhes, { gola: 'Gola V', manga: 'Curta com bainha', barra: 'Barra italiana', costura: 'Overloque de 4 fios e galoneira' }) && f.observacao === 'Reforço de ombro a ombro.', `salvar: o detalhe apagado não vai, o item tirado da lista vai como texto, e o que foi escolhido vai com o nome da lista`)
   conta(mesma(f?.medidas.map((m) => m.nome), ['Comprimento', 'Largura', 'Manga curta', 'Ombro a ombro']) && f.medidas[3].como_medir === 'de costura a costura', `salvar: as medidas na ordem da tela, com o nome trocado`)
   conta(mesma(f?.medidas[3].valores, { PP: 41, P: 42, M: 43.5, G: 44, GG: 45, XG: 46, G1: 47, G2: 48, G3: 49 }) && f.medidas[0].valores.G3 === 90 && !('G4' in f.medidas[0].valores), `salvar: os números vão como número, com a vírgula virando ponto, e o tamanho desligado fica de fora`)
   conta(mesma(f?.partes.map((p) => [p.nome, p.vezes, p.unidade]), [['Frente', 1, 'm2'], ['Mangas', 2, 'm2'], ['Ribana', 1, 'm'], ['Bolso', 2, 'm2']]) && f.partes[0].quantidades.PP === 0.3602 && f.partes[3].quantidades.PP === 0.012 && Object.keys(f.partes[3].quantidades).length === 1, `salvar: as partes, com a que saiu fora e a nova dentro`)
@@ -615,6 +683,43 @@ await secao(async () => {
   conta((await textos(pg, '.vazio h3'))[0] === 'Não consegui ler as fichas técnicas' && await pg.getByRole('button', { name: 'Tentar de novo' }).count() === 1 && await pg.locator('[data-arvore]').count() === 0, `leitura falhando: diz que não leu e oferece tentar de novo`)
   await ctx.close()
 })
+/* mudar o nome de um item com a ficha aberta e sem mudança: o texto troca na
+   tela, mas isso não é mudança da ficha, e ela sai sem perguntar. E o banco
+   recusando o salvar das listas: a caixa continua aberta, com o que foi feito. */
+await secao(async () => {
+  const { ctx, pg, erros, gravados, banco } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await editar(pg)
+  const ED = '[data-cartao="detalhes"]'
+  await seletorDeDetalhe(pg, ED, 'gola').click(); await pausa(pg, 200)
+  await pg.locator('.mn-pe button:visible').click(); await pausa(pg, 400)
+  await naModal(pg).locator('[data-item-da-lista] input').nth(0).fill('Redonda')
+  conta((await linhasDaLista(pg))[0][1] === '1 referência' && await naModal(pg).getByRole('button', { name: 'Salvar as listas' }).isEnabled(), `editor das listas: mudou um nome, o Salvar acende`)
+  await naModal(pg).getByRole('button', { name: 'Cancelar' }).click(); await pausa(pg, 300)
+  conta(await naModal(pg).count() === 0 && !gravados.some((g) => g.u === 'rpc/salvar_listas_de_detalhe') && (await oQueOsDetalhesDizem(pg, ED))[0] === 'Redonda, ribana 1x1 de 2 cm', `editor das listas: Cancelar fecha sem mandar nada`)
+  await pg.locator(`${ED} .pd-topo`).getByRole('button', { name: 'Editar as listas' }).click(); await pausa(pg, 400)
+  conta((await linhasDaLista(pg))[0][0] === 'Redonda, ribana 1x1 de 2 cm', `editor das listas: aberto de novo, começa do que está no banco, e não do que foi cancelado`)
+  await naModal(pg).locator('[data-item-da-lista] input').nth(0).fill('Redonda')
+  await naModal(pg).getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 700)
+  conta(mesma(ultimo(gravados, 'rpc/salvar_listas_de_detalhe')?.corpo.p_listas, { gola: [{ id: 'ig1', nome: 'Redonda' }, { id: 'ig2', nome: 'Gola V' }, { id: 'ig3', nome: 'Polo' }] }) && banco.refs.find((r) => r.id === 'r000').detalhes.gola === 'Redonda' && (await oQueOsDetalhesDizem(pg, ED))[0] === 'Redonda', `mudar o nome de um item em uso: o banco troca na referência, e a ficha aberta mostra o nome novo`)
+  await pg.getByRole('button', { name: 'Cancelar' }).click(); await pausa(pg)
+  conta(await pg.locator('[data-ficha="referencia"]').count() === 1 && await naModal(pg).count() === 0 && (await textos(pg, '.pd-linhas > div'))[0] === 'Gola Redonda', `mudar o nome de um item não é mudança da ficha: Cancelar sai sem perguntar, e a ficha já mostra o nome novo (${await pg.locator('[data-ficha="referencia"]').count()} ficha, ${await naModal(pg).count()} caixa, ${(await textos(pg, '.pd-linhas > div'))[0]})`)
+  conta(erros.length === 0, `listas com a ficha sem mudança: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900, recusa: 1 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await editar(pg)
+  await pg.locator('[data-cartao="detalhes"] .pd-topo').getByRole('button', { name: 'Editar as listas' }).click(); await pausa(pg, 400)
+  await naModal(pg).getByLabel('Item novo', { exact: true }).fill('Careca'); await pg.keyboard.press('Enter'); await pausa(pg, 150)
+  await naModal(pg).getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 600)
+  conta((await recado(pg)).includes('"Polo" está duas vezes na lista de golas.') && await naModal(pg).count() === 1 && (await linhasDaLista(pg)).length === 4, `o banco recusa as listas: a página diz o que ele disse, e a caixa continua aberta com o item novo`)
+  await naModal(pg).getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 700)
+  conta(gravados.filter((g) => g.u === 'rpc/salvar_listas_de_detalhe').length === 2 && await naModal(pg).count() === 0, `o banco recusa as listas: salvar de novo vai, e a caixa fecha`)
+  conta(erros.length === 0, `listas recusadas: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
 await secao(async () => {
   const { ctx, pg, erros } = await abrir(nav, { largura: 1536, altura: 900, estado: 'sem-apoio' })
   await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
@@ -624,6 +729,9 @@ await secao(async () => {
   conta((await textos(pg, '[data-cartao="aviamentos"] .pd-lin'))[0] === 'Linha poliéster 120 do Estoque 0,02 cone por peça', `sem o Estoque: o aviamento continua na ficha, só sem o grupo`)
   await editar(pg)
   conta((await textos(pg, '[data-cartao="aviamentos"] .pd-nota'))[0] === 'O Estoque ainda não tem aviamento nem insumo cadastrado.' && await pg.locator('[data-cartao="aviamentos"] .sel').count() === 0, `sem o Estoque no editor: diz que não há o que escolher, e deixa adicionar pelo nome`)
+  await seletorDeDetalhe(pg, '[data-cartao="detalhes"]', 'gola').click(); await pausa(pg, 200)
+  conta(mesma(await itensDoMenu(pg), ['Não informado', 'Redonda, ribana 1x1 de 2 cm (fora da lista)']) && (await textos(pg, '.mn-pe > *'))[0] === '0 itens', `sem as listas dos detalhes no editor: o seletor mostra o que a ficha diz, e o editor continua de pé`)
+  await pg.keyboard.press('Escape'); await pausa(pg, 200)
   conta(erros.length === 0, `sem o apoio: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()
 })
@@ -638,7 +746,7 @@ const fabricacao = (pg) => tabela(pg, '[data-ficha="kit"] table.pd-fab')
 const escolherNoSeletor = async (pg, gatilho, opcao) => { await gatilho.click(); await pausa(pg, 200); await pg.locator('.mn-item:visible', { hasText: opcao }).first().click(); await pausa(pg, 200) }
 
 await secao(async () => {
-  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900 })
+  const { ctx, pg, erros, gravados, banco } = await abrir(nav, { largura: 1536, altura: 900 })
   await ir(pg, '/produtos', '[data-arvore]')
 
   /* a busca que só o kit responde troca de aba sozinha */
@@ -685,7 +793,10 @@ await secao(async () => {
   conta(await pg.locator('.pd-peca-tira').count() === 0 && (await textos(pg, '[data-cartao="pecas-do-kit"] .pd-rodape'))[0].startsWith('As peças não mudam depois que o kit é criado'), `editor do kit que existe: as peças estão travadas, e a página diz por quê`)
   conta(mesma(await resumo(pg), { 'Código': 'KIT-020-000M-090-000M', 'Peças': '2', 'Grade': 'grade adulta, PP a G4', 'Tecidos': 'nenhum escolhido', 'Design impresso': 'nenhum', 'Etiqueta': 'não escolhida' }), `resumo do kit: o código, as peças, a grade, e o que ainda não foi escolhido`)
   conta(mesma(await textos(pg, '[data-ainda-falta] li'), ['Parte de cima: falta escolher o tecido.', 'Parte de cima: falta escolher a etiqueta.', 'Parte de baixo: falta escolher o tecido.', 'Parte de baixo: falta escolher a etiqueta.', 'Falta o desenho do kit, em SVG.']) && await pg.locator('[data-impede]').count() === 0 && (await textos(pg, '[data-cartao="para-salvar"] .pd-nota'))[0].startsWith('Dá para salvar assim e completar depois.'), `para salvar: as cinco coisas por fazer, nenhuma impede`)
-  conta((await textos(pg, '[data-da-referencia] .pd-campo-topo'))[0] === 'Da ficha da referência muda lá, e não aqui' && await pg.locator('[data-da-referencia] input').count() === 0, `editor do kit: gola, manga, punho, barra e costura são mostrados, e não editados`)
+  const KD = '[data-detalhes-da-peca]'
+  conta((await textos(pg, `${KD} .pd-campo-topo`))[0] === 'Detalhes da peça em branco, vale o que a referência diz' && mesma(await oQueOsDetalhesDizem(pg, KD), Array(5).fill('Não informado')) && await pg.locator('[data-da-referencia]').count() === 0, `editor do kit: gola, manga, punho, barra e costura são escolhidos aqui, peça por peça, e em branco vale o que a referência diz (que neste raglan é nada)`)
+  await escolherNoSeletor(pg, seletorDeDetalhe(pg, KD, 'gola'), 'Polo')
+  conta((await oQueOsDetalhesDizem(pg, KD))[0] === 'Polo' && (await textos(pg, `${KD} .pd-nota`))[0].startsWith('O que você escolher aqui vale só para esta peça neste kit.'), `editor do kit: a gola escolhida aqui vale para a peça neste kit, e a página diz que a referência não muda`)
 
   /* os tecidos */
   conta((await textos(pg, '[data-tecidos-da-peca] .pd-nota'))[0].startsWith('A ficha desta referência ainda não tem as partes do molde'), `tecidos: a referência sem partes no molde só deixa dizer a peça inteira, e a página diz`)
@@ -717,11 +828,11 @@ await secao(async () => {
   /* a outra peça */
   await pg.locator('[data-peca="090-000M"] .pd-peca-nome').click(); await pausa(pg)
   conta((await textos(pg, '[data-cartao="fabricacao-da-peca"] .cartao-titulo'))[0] === 'Ficha de fabricação da parte de baixo' && (await textos(pg, '[data-cartao="fabricacao-da-peca"] .pd-topo-nome'))[0] === 'CALÇAO MASC SEM BOLSO' && await pg.locator('.pd-tecido-lin').count() === 0, `editor do kit: tocar na outra peça abre a ficha dela, em branco`)
-  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb'), 'Acessório')
+  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb').first(), 'Acessório')
   conta((await textos(pg, '[data-peca="090-000M"] .pd-papel'))[0] === 'ACESSÓRIO' && (await textos(pg, '[data-cartao="fabricacao-da-peca"] .cartao-titulo'))[0] === 'Ficha de fabricação da acessório', `papel no kit: trocado no seletor, muda na lista de peças`)
-  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb'), 'Parte de baixo')
+  await escolherNoSeletor(pg, pg.locator('[data-cartao="fabricacao-da-peca"] .pd-form .sel .cb').first(), 'Parte de baixo')
   await pg.locator('[data-peca="020-000M"] .pd-peca-nome').click(); await pausa(pg)
-  conta(await pg.locator('[data-etiqueta] input').inputValue() === 'no decote, por dentro' && await pg.locator('.pd-tecido-lin').count() === 1, `editor do kit: voltar para a primeira peça encontra o que foi preenchido`)
+  conta(await pg.locator('[data-etiqueta] input').inputValue() === 'no decote, por dentro' && await pg.locator('.pd-tecido-lin').count() === 1 && (await oQueOsDetalhesDizem(pg, KD))[0] === 'Polo', `editor do kit: voltar para a primeira peça encontra o que foi preenchido`)
   await foto(pg, 'editor-do-kit')
 
   /* sair com mudança pergunta */
@@ -737,8 +848,8 @@ await secao(async () => {
   await pg.getByRole('button', { name: 'Salvar o kit' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg, 600)
   const salvo = ultimo(gravados, 'rpc/salvar_kit')?.corpo
   conta(salvo?.p_kit === 'rkit' && mesma(Object.keys(salvo.p_ficha).sort(), ['nome', 'pecas']) && salvo.p_ficha.nome === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO' && mesma(salvo.p_ficha.pecas.map((p) => p.referencia_id), ['r020', 'r090']), `salvar o kit: vai inteiro, numa chamada só, com as duas peças na ordem`)
-  conta(mesma(salvo?.p_ficha.pecas[0], { referencia_id: 'r020', papel: 'Parte de cima', tecidos: [{ parte: 'A peça inteira', tecido_id: 't1' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: 'escudo no peito' }], etiqueta: 'silk', etiqueta_onde: 'no decote, por dentro', observacao: 'Patch depois da costura.' }), `salvar o kit: a peça de cima com o tecido pelo id, as duas técnicas com o texto aparado, a etiqueta e a observação`)
-  conta(mesma(salvo?.p_ficha.pecas[1], { referencia_id: 'r090', papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiqueta_onde: '', observacao: '' }), `salvar o kit: a peça que ninguém preencheu vai em branco, com o papel de volta`)
+  conta(mesma(salvo?.p_ficha.pecas[0], { referencia_id: 'r020', papel: 'Parte de cima', tecidos: [{ parte: 'A peça inteira', tecido_id: 't1' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: 'escudo no peito' }], etiqueta: 'silk', etiqueta_onde: 'no decote, por dentro', observacao: 'Patch depois da costura.', detalhes: { gola: 'Polo' } }), `salvar o kit: a peça de cima com o tecido pelo id, as duas técnicas com o texto aparado, a etiqueta e a observação`)
+  conta(mesma(salvo?.p_ficha.pecas[1], { referencia_id: 'r090', papel: 'Parte de baixo', tecidos: [], design: [], etiqueta: '', etiqueta_onde: '', observacao: '', detalhes: {} }), `salvar o kit: a peça que ninguém preencheu vai em branco, com o papel de volta`)
   const iKit = gravados.findIndex((g) => g.u === 'rpc/salvar_kit'); const iDes = gravados.findIndex((g) => g.u === 'rpc/salvar_molde_da_referencia')
   conta(iDes > iKit && gravados[iDes].corpo.p_referencia === 'rkit' && gravados[iDes].corpo.p_svg === F.OUTRO_MOLDE, `salvar o kit: o desenho sobe depois, para o kit`)
 
@@ -746,6 +857,7 @@ await secao(async () => {
   const fab2 = await fabricacao(pg)
   conta(fab2[1][1] === 'DRYFIT POLIESTER 100% a peça inteira' && fab2[7][1] === 'Sublimação Patch sublimação: peça inteira; patch: escudo no peito' && fab2[8][1] === 'Silk no decote, por dentro' && fab2[9][0] === 'Observação' && fab2[9][1] === 'Patch depois da costura.' && fab2[9][2] === 'nenhuma', `depois de salvar: a ficha de fabricação mostra o tecido, as técnicas com o lugar, a etiqueta e a observação`)
   conta(await pg.locator('[data-ficha="kit"] .pd-fab .tec-soft').count() === 3, `depois de salvar: as técnicas e a etiqueta saem em pílula de técnica`)
+  conta(fab2[2][0] === 'Gola' && fab2[2][1] === 'Polo' && fab2[2][2] === 'não informado' && !banco.refs.find((r) => r.id === 'r020').detalhes.gola, `depois de salvar: a ficha de fabricação mostra a gola que o kit escolheu, e a ficha da referência continua sem gola`)
   conta(await pg.evaluate(() => decodeURIComponent(document.querySelector('[data-ficha="kit"] .pd-molde')?.src ?? '').includes('<rect')) && (await caixas(pg, '[data-ficha="kit"] .pd-molde-caixa'))[0].fundo === 'rgb(255, 255, 255)', `depois de salvar: o desenho do kit aparece, sobre papel branco`)
   conta(mesma(await textos(pg, '[data-arvore] .pd-kits .pd-t'), ['KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO 2 peças · 020-000M + 090-000M · 2 coisas por fazer 10 kits no mês 2']) && await pg.locator('[data-arvore] .pd-kits .pd-sel').count() === 1, `depois de salvar: a linha do kit deixa de dizer em branco e conta o que falta (o tecido e a etiqueta da parte de baixo)`)
   conta((await textos(pg, '[data-cartao="tecido-do-kit"] .pd-nota'))[0].includes('falta medir o tecido') && await pg.locator('[data-cartao="tecido-do-kit"] table').count() === 0, `tecido de um kit com tecido escolhido e referência sem medida: diz que falta medir na referência`)
@@ -756,7 +868,7 @@ await secao(async () => {
 
 /* ---- o kit novo: mais de um tecido na mesma peça, e o código que nasce das peças ---- */
 await secao(async () => {
-  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1536, altura: 900 })
+  const { ctx, pg, erros, gravados, banco } = await abrir(nav, { largura: 1536, altura: 900 })
   await ir(pg, '/produtos', '[data-arvore]')
   conta(mesma(await textos(pg, '.pagina-topo .btn'), ['Novo kit', 'Nova referência']), `topo: Novo kit e Nova referência, a principal por último`)
   await pg.getByRole('button', { name: 'Novo kit' }).click(); await pg.waitForSelector('[data-editor-do-kit="novo"]'); await pausa(pg)
@@ -805,6 +917,30 @@ await secao(async () => {
   conta((await textos(pg, '[data-tecidos-da-peca] .pd-campo-topo'))[0] === 'Tecidos da peça 3 tecidos · pode ter quantos precisar' && (await resumo(pg)).Tecidos === '2 diferentes', `mais de um tecido na mesma peça: três partes, dois tecidos diferentes`)
   await pg.getByRole('button', { name: 'Tirar este tecido' }).nth(2).click(); await pausa(pg)
   conta(await pg.locator('.pd-tecido-lin').count() === 2, `tecidos: a lixeira tira a linha`)
+
+  /* os detalhes da peça no kit: em branco vale o da referência, e o kit pode dizer outra coisa */
+  const KD = '[data-detalhes-da-peca]'
+  conta(mesma(await oQueOsDetalhesDizem(pg, KD), ['Da referência: Redonda, ribana 1x1 de 2 cm', 'Da referência: Curta, com bainha', 'Da referência: Sem punho', 'Da referência: Bainha de 2 cm', 'Da referência: Overloque de 4 fios e galoneira']), `detalhes no kit: em branco, cada seletor diz o que a referência diz`)
+  await escolherNoSeletor(pg, seletorDeDetalhe(pg, KD, 'manga'), 'Longa')
+  conta((await oQueOsDetalhesDizem(pg, KD))[1] === 'Longa', `detalhes no kit: a manga escolhida aqui passa por cima da que a referência diz`)
+  await escolherNoSeletor(pg, seletorDeDetalhe(pg, KD, 'manga'), 'Da referência: Curta, com bainha')
+  conta((await oQueOsDetalhesDizem(pg, KD))[1] === 'Da referência: Curta, com bainha', `detalhes no kit: a primeira linha da lista volta ao que a referência diz`)
+  await escolherNoSeletor(pg, seletorDeDetalhe(pg, KD, 'manga'), 'Longa')
+  /* o editor das listas pelo pé do seletor: abre na lista daquele detalhe */
+  await seletorDeDetalhe(pg, KD, 'manga').click(); await pausa(pg, 200)
+  await pg.locator('.mn-pe button:visible').click(); await pausa(pg, 400)
+  conta(mesma(await textos(pg, 'dialog.modal[open] .pd-lo-d.on'), ['Manga 2 itens']) && mesma(await linhasDaLista(pg), [['Curta, com bainha', '1 referência'], ['Longa', 'sem uso']]), `editor das listas pelo pé do seletor: abre já na lista de mangas`)
+  await naModal(pg).locator('[data-item-da-lista] input').nth(1).fill('Manga longa')
+  await naModal(pg).getByRole('button', { name: 'Salvar as listas' }).click(); await pausa(pg, 700)
+  conta(mesma(ultimo(gravados, 'rpc/salvar_listas_de_detalhe')?.corpo.p_listas, { manga: [{ id: 'im1', nome: 'Curta, com bainha' }, { id: 'im2', nome: 'Manga longa' }] }) && (await oQueOsDetalhesDizem(pg, KD))[1] === 'Manga longa', `mudar o nome na lista com o kit aberto: o que o kit tinha escolhido troca na tela`)
+  /* a outra peça: a calça só tem a costura na ficha, e ganha uma barra que a lista ainda não tinha */
+  await pg.locator('[data-peca="070-000M"] .pd-peca-nome').click(); await pausa(pg, 400)
+  conta(mesma(await oQueOsDetalhesDizem(pg, KD), ['Não informado', 'Não informado', 'Não informado', 'Não informado', 'Da referência: Overloque de 4 fios, reta no cós']), `detalhes no kit: cada peça tem os seus, e o que a referência não diz aparece como não informado`)
+  await seletorDeDetalhe(pg, KD, 'barra').click(); await pausa(pg, 200)
+  await pg.locator('.mn-busca input:visible').fill('Barra italiana'); await pg.keyboard.press('Enter'); await pausa(pg, 500)
+  conta(mesma(ultimo(gravados, 'rpc/adicionar_item_de_detalhe')?.corpo, { p_detalhe: 'barra', p_nome: 'Barra italiana' }) && (await oQueOsDetalhesDizem(pg, KD))[3] === 'Barra italiana', `detalhes no kit: Enter num nome novo põe o item na lista e escolhe para esta peça`)
+  await pg.locator('[data-peca="010-000M"] .pd-peca-nome').click(); await pausa(pg, 400)
+  conta((await oQueOsDetalhesDizem(pg, KD))[1] === 'Manga longa', `detalhes no kit: voltar para a camiseta encontra a manga escolhida`)
   await pg.locator('[data-etiqueta] .chip', { hasText: 'DTF' }).click()
   await pg.fill('[data-cartao="resumo"] input:not([type=file])', '  KIT CAMISETA TRAD E CALÇA MOLETOM  '); await pausa(pg)
   conta(await pg.locator('[data-impede]').count() === 0, `kit novo com nome e duas peças: nada mais impede`)
@@ -814,9 +950,11 @@ await secao(async () => {
   const criado = ultimo(gravados, 'rpc/salvar_kit')?.corpo
   conta(criado?.p_kit === null && criado.p_ficha.nome === 'KIT CAMISETA TRAD E CALÇA MOLETOM' && mesma(criado.p_ficha.pecas.map((p) => [p.referencia_id, p.papel]), [['r000', 'Parte de cima'], ['r070', 'Parte de baixo']]), `criar o kit: sem id, com o nome aparado e as peças na ordem, cada uma com o papel`)
   conta(mesma(criado?.p_ficha.pecas[0].tecidos, [{ parte: 'Frente', tecido_id: 't1' }, { parte: 'Mangas', tecido_id: 't3' }]) && criado.p_ficha.pecas[0].etiqueta === 'dtf', `criar o kit: os dois tecidos da camiseta, cada um na sua parte`)
+  conta(mesma(criado?.p_ficha.pecas.map((p) => p.detalhes), [{ manga: 'Manga longa' }, { barra: 'Barra italiana' }]), `criar o kit: de cada peça só vai o detalhe que o kit escolheu; o que ficou em branco não vai`)
   conta((await textos(pg, '.pd-ficha-nome h2'))[0] === 'KIT CAMISETA TRAD E CALÇA MOLETOM' && (await textos(pg, '.pd-ficha-nome p'))[0] === 'KIT-010-000M-070-000M · masculino · grade adulta, PP a GG' && (await textos(pg, '.pagina-topo .sub'))[0].startsWith('8 referências · 2 kits') && mesma(await textos(pg, '[data-arvore] .pd-abas button'), ['Referências 8', 'Kits 2']), `criar o kit: a página volta, na aba Kits, com o kit novo aberto e contado`)
   const fab = await fabricacao(pg)
   conta(fab[1][1] === 'DRYFIT POLIESTER 100% frente DRYFIT JAKAR 100% mangas' && fab[2][1] === 'Redonda, ribana 1x1 de 2 cm' && fab[6][2] === 'Overloque de 4 fios, reta no cós' && fab[2][2] === 'não informado', `ficha de fabricação: os dois tecidos da camiseta com a parte de cada um, e a gola e a costura vindas da ficha de cada referência`)
+  conta(fab[3][0] === 'Manga' && fab[3][1] === 'Manga longa' && fab[5][0] === 'Barra' && fab[5][1] === 'Bainha de 2 cm' && fab[5][2] === 'Barra italiana' && banco.refs.find((r) => r.id === 'r000').detalhes.manga === 'Curta, com bainha' && !banco.refs.find((r) => r.id === 'r070').detalhes.barra, `ficha de fabricação: o que o kit escolheu passa por cima (a manga da camiseta, a barra da calça), o resto vem da referência, e a ficha das duas referências não mudou`)
 
   /* o tecido de um kit: a soma da ficha de cada peça, tecido por tecido, conferida por fora */
   const tk = await tabela(pg, '[data-cartao="tecido-do-kit"] table.pd-grade')
@@ -1173,7 +1311,7 @@ await secao(async () => {
   const { ctx, pg, erros, banco } = await abrir(nav, { largura: 1536, altura: 900 })
   /* o kit do catálogo já com a ficha de fabricação da parte de cima */
   Object.assign(banco.pecasDosKits.rkit[0], { tecidos: [{ parte: 'A peça inteira', tecido_id: 't1', tecido: 'DRYFIT POLIESTER 100%' }], design: [{ tecnica: 'subli', onde: 'peça inteira' }, { tecnica: 'patch', onde: '' }], etiqueta: 'silk', etiqueta_onde: 'no decote, por dentro', observacao: 'Patch depois da costura.' })
-  Object.assign(banco.pecasDosKits.rkit[1], { etiqueta: 'sem' })
+  Object.assign(banco.pecasDosKits.rkit[1], { etiqueta: 'sem', detalhes_do_kit: { barra: 'Barra italiana' } })
   await ir(pg, '/produtos?kit=FT-KIT-020-000M-090-000M', '[data-ficha="kit"]')
   await imprimirFicha(pg, 'kit')
   conta((await textos(pg, '.pagina-topo h1'))[0] === 'Ficha técnica impressa do kit' && (await textos(pg, '.pagina-topo .acima'))[0] === 'Voltar ao kit' && (await textos(pg, '.pagina-topo .sub'))[0] === 'KIT RAGLAN S/ PUNHO E CALÇAO S/ BOLSO, do jeito que sai na impressora. 1 página.', `kit impresso: a folha toma a página, com o nome do kit e a conta de páginas`)
@@ -1184,6 +1322,7 @@ await secao(async () => {
   conta(mesma(await tabelaDoPapel(pg, '.fl [data-secao="pecas"] table'), [['Papel', 'Referência', 'Peça'], ['Parte de cima', 'FT-020-000M', 'RAGLAN MASC SEM PUNHO'], ['Parte de baixo', 'FT-090-000M', 'CALÇAO MASC SEM BOLSO']]), `kit impresso: as peças, com o papel e o código de cada uma`)
   const fab = await tabelaDoPapel(pg, '.fl [data-secao="fabricacao"] table')
   conta(mesma(fab[0], ['Característica', 'Parte de cima · RAGLAN MASC SEM PUNHO', 'Parte de baixo · CALÇAO MASC SEM BOLSO']) && mesma(fab.slice(1).map((l) => l[0]), ['Tecidos', 'Gola', 'Manga', 'Punho', 'Barra', 'Costura', 'Design impresso', 'Etiqueta']) && mesma(fab[1].slice(1), ['DRYFIT POLIESTER 100% (a peça inteira)', 'não escolhido']) && mesma(fab[7].slice(1), ['Sublimação: peça inteira Patch', 'nenhum']) && mesma(fab[8].slice(1), ['Silk, no decote, por dentro', 'Sem etiqueta']), `kit impresso: a ficha de fabricação, uma coluna por peça, com o tecido e a parte, a técnica e o lugar, e a etiqueta`)
+  conta(mesma(fab[5], ['Barra', 'não informado', 'Barra italiana']), `kit impresso: o detalhe que o kit escolheu por cima da referência sai na folha`)
   conta((await textos(pg, '.fl [data-secao="observacao"] .pd-p-obs'))[0] === 'Parte de cima: Patch depois da costura.' && (await textos(pg, '.fl [data-secao="tecido"] .pd-p-nota'))[0].includes('falta medir o tecido') && (await textos(pg, '.fl-pe'))[0].includes('KIT-020-000M-090-000M página 1 de 1'), `kit impresso: a observação diz de que peça é, o tecido sem medida diz o que falta, e o rodapé leva o código do kit`)
   await foto(pg, 'kit-impresso')
 
@@ -1252,6 +1391,24 @@ await secao(async () => {
   conta(erros.length === 0, `${G} editor: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
   await ctx.close()
 })
+/* A CAIXA DAS LISTAS NO CELULAR, também numa abertura só dela e medida antes da foto */
+await secao(async () => {
+  const G = 'celular gelo'
+  const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await editar(pg)
+  await pg.locator('[data-cartao="detalhes"] .pd-topo').getByRole('button', { name: 'Editar as listas' }).click(); await pausa(pg, 500)
+  const lados = await caixas(pg, 'dialog.modal[open] [data-listas] > *')
+  const toque = await caixas(pg, 'dialog.modal[open] .pd-lo-d, dialog.modal[open] [data-item-da-lista] .pd-pega')
+  const cabe = await pg.evaluate(() => { const c = document.querySelector('dialog.modal[open] [data-listas]'); const d = document.querySelector('dialog.modal[open] .pd-lo-dir'); return [c.scrollWidth - c.clientWidth, d.scrollWidth - d.clientWidth] })
+  conta(await sobra(pg) <= 0 && cabe.every((x) => x <= 0) && lados.length === 2 && lados[1].y > lados[0].y, `${G} caixa das listas: as cinco listas em cima, os itens embaixo, e nada rola para o lado`)
+  conta(toque.length === 8 && toque.every((x) => x.h >= 43.5), `${G} caixa das listas: cada lista e cada alça é alvo de dedo (${toque.map((x) => Math.round(x.w) + 'x' + x.h.toFixed(0)).join(' ')})`)
+  const linha = await pg.evaluate(() => { const l = document.querySelector('dialog.modal[open] [data-item-da-lista]'); const i = l.querySelector('input').getBoundingClientRect(); const u = l.querySelector('small').getBoundingClientRect(); return { nome: i.width, usoAbaixo: u.top >= i.bottom - 1 } })
+  conta(linha.nome >= 220 && linha.usoAbaixo, `${G} caixa das listas: o nome fica com a largura da linha, e quem usa desce para debaixo dele (${Math.round(linha.nome)} px)`)
+  await foto(pg, 'celular-caixa-das-listas')
+  conta(erros.length === 0, `${G} caixa das listas: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
 await secao(async () => {
   const G = 'celular gelo'
   const { ctx, pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
@@ -1264,6 +1421,8 @@ await secao(async () => {
   conta(await sobra(pg) <= 0 && pilha.length === 3 && pilha[1].y > pilha[0].y && pilha[2].y > pilha[1].y, `${G} editor do kit: as três colunas empilham, e nada rola para o lado`)
   const dedo = await caixas(pg, '.pd-peca-nome')
   conta(dedo.length === 2 && dedo.every((d) => d.h >= 43.5), `${G} editor do kit: cada peça da lista é alvo de dedo`)
+  const selsDoKit = await caixas(pg, '[data-detalhes-da-peca] [data-detalhe] .cb')
+  conta(selsDoKit.length === 5 && selsDoKit.every((x) => Math.round(x.h) === 40) && selsDoKit.slice(0, 4).every((x) => Math.abs(x.w - selsDoKit[0].w) < 1), `${G} editor do kit: os cinco seletores de detalhe da peça, com a altura dos outros seletores da tela e a mesma largura (${selsDoKit.map((x) => Math.round(x.w) + 'x' + x.h.toFixed(0)).join(' ')})`)
   await foto(pg, 'celular-editor-do-kit')
   await pg.getByRole('button', { name: 'Voltar' }).click(); await pg.waitForSelector('[data-ficha="kit"]'); await pausa(pg)
   await pg.locator('.pd-ficha-topo button', { hasText: 'Voltar' }).click(); await pausa(pg)

@@ -12,6 +12,8 @@ const P = (id, nome, colecao, colecao_nome, extra) => ({
   ativo: true, aberta_em: '2026-10-02T12:00:00Z', travado_ate: null, produtos_em: '2026-10-03T12:00:00Z', criado_em: '2026-09-01T12:00:00Z', produtos: 8,
   acordo_tipo: null, acordo_valor: null, acordo_base: null, acordo_desde: null,
   ultimo_tipo: null, ultimo_valor: null, ultimo_base: null, ultimo_desde: null,
+  /* a 057: o imposto que entra na frase e o dia em que o relatorio da pagina comeca */
+  imposto: '0.00', mostrar_desde: null,
   ...extra,
 })
 const acordo = (tipo, valor, base = 'valor_pago', desde = '2026-10-01') => ({

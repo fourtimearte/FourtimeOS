@@ -68,6 +68,13 @@ export type Parceiro = {
   /** o acordo que vale hoje, e o último escrito (que pode começar depois) */
   acordo: Acordo | null
   ultimo: Acordo | null
+  /** O percentual de imposto que a página do parceiro escreve ao lado do
+      acordo ("20% menos 3% de imposto / 17%"). Zero é "sem imposto". É só
+      texto: não entra na conta da parte. */
+  imposto: number
+  /** AAAA-MM-DD: o dia em que o relatório da página do parceiro começa. Vazio,
+      ela mostra desde a primeira venda. O Fourtime OS continua lendo todas. */
+  mostrarDesde: string
 }
 
 /** Uma linha de pedido da loja que é de um parceiro, com a conta feita. */
@@ -129,6 +136,9 @@ type LinhaDoParceiro = {
   ultimo_valor: number | string | null
   ultimo_base: BaseDoAcordo | null
   ultimo_desde: string | null
+  /* as duas da 057: banco de antes dela não manda, e vale zero e vazio */
+  imposto?: number | string | null
+  mostrar_desde?: string | null
 }
 
 function acordoDe(
@@ -157,6 +167,8 @@ export async function carregarParceiros(): Promise<Parceiro[]> {
     produtos: Number(l.produtos) || 0,
     acordo: acordoDe(l.acordo_tipo, l.acordo_valor, l.acordo_base, l.acordo_desde),
     ultimo: acordoDe(l.ultimo_tipo, l.ultimo_valor, l.ultimo_base, l.ultimo_desde),
+    imposto: Number(l.imposto) || 0,
+    mostrarDesde: l.mostrar_desde ?? '',
   }))
 }
 
@@ -373,6 +385,21 @@ export async function salvarAcordo(
   }
 }
 
+/** O que a página do parceiro MOSTRA, e que não muda conta nenhuma: o imposto
+    que entra na frase do acordo e o dia em que o relatório começa. Por não
+    refazer conta, não passa pela pergunta do acordo com data no passado. */
+export async function salvarExibicao(
+  parceiroId: string,
+  imposto: number,
+  mostrarDesde: string,
+): Promise<void> {
+  await chamar('salvar_exibicao_do_parceiro', {
+    p_parceiro: parceiroId,
+    p_imposto: imposto,
+    p_mostrar_desde: mostrarDesde || null,
+  })
+}
+
 /** Gera outra senha. A antiga para de abrir na hora, e a página destrava. */
 export function trocarSenha(parceiroId: string): Promise<string> {
   return chamar<string>('trocar_senha_do_parceiro', { p_parceiro: parceiroId })
@@ -490,6 +517,22 @@ export function tamanhoDaVenda(v: VendaDoParceiro): string {
 export function seloDaVenda(v: VendaDoParceiro): string {
   if (!v.conta) return v.motivo === 'cancelada' ? 'Cancelada' : 'Devolvida'
   return v.quantidade > v.pecas ? 'Parte devolvida' : ''
+}
+
+/** A frase que a PÁGINA DO PARCEIRO escreve depois de "Seu acordo:". Tem de
+    ser a mesma do `ft-parceiro.js` do tema da loja: a ficha a mostra para quem
+    preenche o imposto ver o que o parceiro vai ler.
+    Com imposto: "20% menos 3% de imposto / 17% do valor de cada peça", em que
+    os 20 são a soma do acordo com o imposto. A conta continua sendo os 17. */
+export function fraseNaPaginaDoParceiro(a: Acordo | null, imposto = 0): string {
+  if (!a) return 'ainda não definido'
+  if (a.tipo === 'valor_por_peca') return `${formatarDinheiroExato(a.valor)} por peça vendida`
+  const sobre = a.base === 'preco_cheio' ? 'do preço cheio de cada peça' : 'do valor de cada peça'
+  const dele = `${percentualNaTela(a.valor)} ${sobre}`
+  if (!(imposto > 0)) return dele
+  /* 17 + 3 em ponto flutuante pode dar 20,000000004: arredonda em centésimos */
+  const cheio = Math.round((a.valor + imposto) * 100) / 100
+  return `${percentualNaTela(cheio)} menos ${percentualNaTela(imposto)} de imposto / ${dele}`
 }
 
 /** "10% por peça, sobre o valor pago", "R$ 25,00 por peça", "Sem acordo". */

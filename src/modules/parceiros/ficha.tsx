@@ -20,10 +20,12 @@ import {
   dataNaLoja,
   lerNumero,
   linkDaPagina,
+  fraseNaPaginaDoParceiro,
   mesmoAcordo,
   numeroNoCampo,
   relerProdutos,
   salvarAcordo,
+  salvarExibicao,
   salvarParceiro,
   trocarLink,
   trocarSenha,
@@ -99,6 +101,12 @@ export function FichaDoParceiro({
   const [base, setBase] = useState<BaseDoAcordo>(acordoDeAgora?.base ?? 'valor_pago')
   const [desde, setDesde] = useState(acordoDeAgora?.desde ?? hojeEmData(hoje))
   const [ativo, setAtivo] = useState(parceiro ? parceiro.ativo : false)
+  /* O QUE A PÁGINA MOSTRA (07/10/2026): o imposto que entra na frase do acordo
+     e o dia em que o relatório começa. Nenhum dos dois mexe na conta. */
+  const [imposto, setImposto] = useState(
+    parceiro && parceiro.imposto > 0 ? numeroNoCampo(parceiro.imposto, 'percentual') : '',
+  )
+  const [mostrarDesde, setMostrarDesde] = useState(parceiro?.mostrarDesde ?? '')
   const [mostrando, setMostrando] = useState(false)
   const [gravando, setGravando] = useState(false)
   const [pergunta, setPergunta] = useState<Pergunta>(null)
@@ -131,7 +139,18 @@ export function FichaDoParceiro({
   const faltaValor = semValor && !!acordoDeAgora
   const acordoNovo: Acordo | null =
     numero !== null && !valorRuim && desde ? { tipo, valor: numero, base, desde } : null
-  const valido = nome.trim() !== '' && !valorRuim && !faltaValor && (semValor || !!desde)
+  /* o imposto só existe no acordo percentual. Em branco é zero. Somado ao
+     acordo não passa de 100: "120% menos 20% de imposto" não é frase que se mande */
+  const numeroDoImposto = imposto.trim() === '' ? 0 : lerNumero(imposto)
+  const impostoRuim =
+    tipo === 'percentual' &&
+    (numeroDoImposto === null ||
+      numeroDoImposto > 100 ||
+      /* a soma só é cobrada com o acordo certo: acordo de 150% já tem o erro dele */
+      (!valorRuim && (numero ?? 0) + numeroDoImposto > 100))
+  const impostoNovo = tipo === 'percentual' && !impostoRuim ? (numeroDoImposto ?? 0) : 0
+  const valido =
+    nome.trim() !== '' && !valorRuim && !faltaValor && !impostoRuim && (semValor || !!desde)
   /* só é aviso quando o acordo mudou: o acordo que já vale desde o mês passado
      não recalcula nada ao ser salvo de novo */
   const noPassado =
@@ -160,6 +179,15 @@ export function FichaDoParceiro({
         colecaoNome: nomeDaColecao,
         ativo,
       })
+
+      /* antes do acordo, que pode parar para perguntar: o imposto e a data não
+         refazem conta e não esperam a resposta */
+      if (
+        impostoNovo !== (parceiro?.imposto ?? 0) ||
+        mostrarDesde !== (parceiro?.mostrarDesde ?? '')
+      ) {
+        await salvarExibicao(id, impostoNovo, mostrarDesde)
+      }
 
       if (acordoNovo && !mesmoAcordo(acordoNovo, acordoDeAgora)) {
         const r = await salvarAcordo(id, acordoNovo)
@@ -352,6 +380,40 @@ export function FichaDoParceiro({
             />
           </Campo>
         ) : null}
+        {tipo === 'percentual' ? (
+          <>
+            <div className="pa-dois">
+              <Campo
+                rotulo="Imposto, só no texto"
+                erro={impostoRuim}
+                dica={
+                  impostoRuim
+                    ? 'Um número de 0 a 100 que, somado ao acordo, não passe de 100.'
+                    : undefined
+                }
+              >
+                <span className="pa-unidade depois" data-imposto="">
+                  <Entrada
+                    inputMode="decimal"
+                    value={imposto}
+                    onChange={e => setImposto(e.currentTarget.value)}
+                    placeholder="0"
+                    disabled={!podeEditar}
+                    aria-label="Imposto, só no texto"
+                  />
+                  <i aria-hidden="true">%</i>
+                </span>
+              </Campo>
+            </div>
+            <p className="pa-ajuda" data-frase-da-pagina="">
+              {acordoNovo
+                ? `Na página do parceiro: "Seu acordo: ${fraseNaPaginaDoParceiro(acordoNovo, impostoNovo)}". `
+                : ''}
+              O imposto não entra na conta: a parte do parceiro continua saindo do percentual
+              acima.
+            </p>
+          </>
+        ) : null}
         {pecasDeFora > 0 ? (
           <Aviso tom="warn">
             {/* o botão vai embaixo do texto: ao lado, no cartão estreito, ele não cabe */}
@@ -427,6 +489,23 @@ export function FichaDoParceiro({
         <p className="pa-ajuda">O link e a senha da página nascem quando você salvar.</p>
       )}
 
+      {/* na largura do cartão, como o link e a senha: em meia largura o rótulo quebrava em duas linhas */}
+      <Campo rotulo="Mostrar as vendas a partir de">
+        {podeEditar ? (
+          <CampoDeData valor={mostrarDesde} aoMudar={setMostrarDesde} bloco />
+        ) : (
+          <Entrada
+            value={mostrarDesde ? mostrarDesde.split('-').reverse().join('/') : 'Desde a primeira'}
+            readOnly
+          />
+        )}
+      </Campo>
+      <p className="pa-ajuda" data-inicio-do-relatorio="">
+        {mostrarDesde
+          ? `A página do parceiro só mostra as vendas de ${mostrarDesde.split('-').reverse().join('/')} em diante. Aqui no sistema você continua vendo todas.`
+          : 'Em branco, a página do parceiro mostra desde a primeira venda.'}
+      </p>
+
       <div className="pa-risco" />
 
       <div className="pa-chave">
@@ -449,7 +528,11 @@ export function FichaDoParceiro({
               ? `Aberta pelo parceiro pela última vez: ${quandoFoi(parceiro.abertaEm, hoje)}.`
               : 'O parceiro ainda não abriu a página.'}
           </p>
-          <p className="pa-ajuda">O parceiro vê na página dele as mesmas vendas da aba Vendas.</p>
+          <p className="pa-ajuda">
+            {parceiro.mostrarDesde
+              ? `O parceiro vê na página dele as vendas de ${parceiro.mostrarDesde.split('-').reverse().join('/')} em diante. A aba Vendas, aqui, mostra todas.`
+              : 'O parceiro vê na página dele as mesmas vendas da aba Vendas.'}
+          </p>
         </div>
       ) : null}
     </section>

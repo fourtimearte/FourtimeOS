@@ -64,7 +64,7 @@ function perfil(acesso) {
   return [p]
 }
 
-async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semAcordo = false, lojaCai = false }) {
+async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semAcordo = false, lojaCai = false, comExibicao = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: P.FUSO, locale: 'pt-BR' })
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {})
   const gravados = []
@@ -90,12 +90,13 @@ async function abrir(nav, { largura, altura, tema, acesso = 'tudo', semAcordo = 
       if (c.p_vale_desde < '2026-10-03' && !c.p_refazer && !jaPerguntou) { jaPerguntou = true; return json(r, { code: '23514', message: P.PEDE_CONFIRMACAO }, 400) }
       return json(r, 'acordo-novo')
     }
+    if (u.includes('rpc/salvar_exibicao_do_parceiro')) { const c = corpo(); gravados.push(['exibicao', c]); return json(r, c.p_parceiro) }
     if (u.includes('rpc/trocar_senha_do_parceiro')) { gravados.push(['senha', corpo()]); return json(r, 'NOVASENH') }
     if (u.includes('rpc/trocar_link_do_parceiro')) { gravados.push(['link', corpo()]); return json(r, 'chavenova00000000000000000000000') }
     if (m !== 'GET') return json(r, u.includes('rpc/') ? {} : [])
     let lista = []
     if (u.includes('meu_perfil')) lista = perfil(acesso)
-    else if (u.includes('parceiro_na_lista')) lista = semAcordo ? P.parceiros.map((x) => ({ ...x, acordo_tipo: null, acordo_valor: null, acordo_base: null, acordo_desde: null, ultimo_tipo: null, ultimo_valor: null, ultimo_base: null, ultimo_desde: null })) : P.parceiros
+    else if (u.includes('parceiro_na_lista')) lista = semAcordo ? P.parceiros.map((x) => ({ ...x, acordo_tipo: null, acordo_valor: null, acordo_base: null, acordo_desde: null, ultimo_tipo: null, ultimo_valor: null, ultimo_base: null, ultimo_desde: null })) : comExibicao ? P.parceiros.map((x) => (x.id === 'p1' ? { ...x, imposto: '3.00', mostrar_desde: '2026-07-01' } : x)) : P.parceiros
     else if (u.includes('venda_da_loja')) {
       /* a linha do pedido da venda que nao conta, de onde sai o valor riscado */
       gravados.push(['leu-loja', u])
@@ -407,12 +408,12 @@ for (const tema of ['light', 'dark']) {
   conta(cartoes.length === 2 && linha(titulos) === 'Acordo | Página do parceiro' && titulos.every((t) => t.letra === '15px/600'), `${G} acordo: dois cartões, Acordo e Página do parceiro (${linha(titulos)})`)
   conta(igual(cartoes[0].y, cartoes[1].y) && igual(cartoes[1].x - cartoes[0].dir, 24) && cartoes.every((c) => c.raio === '14px'), `${G} acordo: os dois lado a lado, com 24 entre eles e raio 14`)
   const rotulos = async (i) => (await todos(pg, `${CARTOES} > .cartao:nth-child(${i}) .campo > span:first-child`)).map((r) => r.texto).join(' | ')
-  conta(await rotulos(1) === 'Nome do parceiro | Coleção da loja | Acordo | Percentual por peça | Vale a partir de | O percentual é sobre', `${G} acordo: os campos do cartão Acordo, na ordem (${await rotulos(1)})`)
-  conta(await rotulos(2) === 'Link da página do parceiro | Senha da página', `${G} acordo: o link e a senha no cartão da página (${await rotulos(2)})`)
+  conta(await rotulos(1) === 'Nome do parceiro | Coleção da loja | Acordo | Percentual por peça | Vale a partir de | O percentual é sobre | Imposto, só no texto', `${G} acordo: os campos do cartão Acordo, na ordem (${await rotulos(1)})`)
+  conta(await rotulos(2) === 'Link da página do parceiro | Senha da página | Mostrar as vendas a partir de', `${G} acordo: o link, a senha e o dia em que o relatório começa no cartão da página (${await rotulos(2)})`)
   const campos = await todos(pg, `${CARTOES} input`)
   conta(campos[0].valor === 'Saneago Goiás Vôlei' && campos[1].valor === '10' && campos[2].valor === '01/10/2026', `${G} acordo: nome, 10% e a data 01/10/2026 (${campos.slice(0, 3).map((c) => c.valor).join(', ')})`)
   conta((await pg.locator(`${CARTOES} .sel .cb`).first().innerText()).replace(/\s+/g, ' ').includes('Saneago Goiás Vôlei Completo (8 produtos)'), `${G} acordo: a coleção mostra o nome e quantos produtos tem`)
-  conta(campos[3].valor === `fourtimefit.com.br/pages/parceiro#k=${P.parceiros[1].chave}`, `${G} página: o link leva a chave depois do #, sem o https`)
+  conta(campos[3].valor === '' && campos[6].valor === '' && campos[4].valor === `fourtimefit.com.br/pages/parceiro#k=${P.parceiros[1].chave}`, `${G} página: o link leva a chave depois do #, sem o https`)
   conta(await pg.locator(`${CARTOES} input[aria-label="Senha da página"]`).getAttribute('type') === 'password', `${G} página: a senha nasce escondida`)
   await pg.getByRole('button', { name: 'Mostrar' }).click(); await pausa(pg, 200)
   conta(await pg.locator(`${CARTOES} input[aria-label="Senha da página"]`).getAttribute('type') === 'text' && await pg.getByRole('button', { name: 'Esconder' }).count() === 1, `${G} página: Mostrar revela a senha e vira Esconder`)
@@ -430,22 +431,22 @@ for (const tema of ['light', 'dark']) {
   await foto(pg, `acordo-1440-${tema}`)
 
   /* o que foi digitado não se perde ao olhar as vendas e voltar */
-  await pg.locator('.pa-unidade input').fill('17'); await aba(pg, 'Vendas'); await aba(pg, 'Acordo e página')
-  conta(await pg.locator('.pa-unidade input').inputValue() === '17', `${G} acordo: ir à aba Vendas e voltar não apaga o que foi digitado`)
-  await pg.locator('.pa-unidade input').fill('10'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('17'); await aba(pg, 'Vendas'); await aba(pg, 'Acordo e página')
+  conta(await pg.locator('.pa-unidade:not([data-imposto]) input').inputValue() === '17', `${G} acordo: ir à aba Vendas e voltar não apaga o que foi digitado`)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('10'); await pausa(pg, 200)
 
   /* ----------------------------------------------------------- SALVAR */
   gravados.length = 0
   await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
-  conta(quantos(gravados, 'parceiro') === 1 && quantos(gravados, 'acordo') === 0, `${G} salvar sem mexer no acordo: grava o cadastro e não escreve acordo novo`)
+  conta(quantos(gravados, 'parceiro') === 1 && quantos(gravados, 'acordo') === 0 && quantos(gravados, 'exibicao') === 0, `${G} salvar sem mexer no acordo: grava o cadastro e não escreve acordo novo, nem imposto, nem data`)
   const c1 = ultimo(gravados, 'parceiro')
   conta(c1.p_id === 'p1' && c1.p_nome === 'Saneago Goiás Vôlei' && c1.p_colecao === 'saneago-goias-volei-completo' && c1.p_colecao_nome === 'Saneago Goiás Vôlei Completo' && c1.p_ativo === true, `${G} salvar: o cadastro vai com nome, coleção e a página ativa`)
   conta(JSON.stringify(ultimo(gravados, 'funcao')) === JSON.stringify({ acao: 'produtos', parceiro: 'p1' }), `${G} salvar: manda o porteiro reler os produtos da coleção`)
   conta(await pg.locator('.pa-abas button.ligado', { hasText: 'Acordo e página' }).count() === 1 && quantos(gravados, 'leu-vendas') === 1, `${G} salvar: relê o banco e fica na aba do acordo`)
 
   gravados.length = 0
-  await pg.locator('.pa-unidade input').fill('12,5'); await pg.locator(`${CARTOES} .seg button`, { hasText: 'Preço cheio' }).click()
-  await pg.locator(`${CARTOES} .data-campo`).fill('03/10/2026'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('12,5'); await pg.locator(`${CARTOES} .seg button`, { hasText: 'Preço cheio' }).click()
+  await pg.locator(`${CARTOES} > .cartao:nth-child(1) .data-campo`).fill('03/10/2026'); await pausa(pg, 200)
   await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
   const a1 = ultimo(gravados, 'acordo')
   conta(a1 && a1.p_parceiro === 'p1' && a1.p_tipo === 'percentual' && a1.p_valor === 12.5 && a1.p_base === 'preco_cheio' && a1.p_vale_desde === '2026-10-03' && a1.p_refazer === false, `${G} acordo novo: 12,5% sobre o preço cheio a partir de hoje (${JSON.stringify(a1)})`)
@@ -453,7 +454,7 @@ for (const tema of ['light', 'dark']) {
 
   /* --------------------------------------- ACORDO COM DATA NO PASSADO */
   gravados.length = 0
-  await pg.locator('.pa-unidade input').fill('20'); await pg.locator(`${CARTOES} .data-campo`).fill('15/09/2026'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('20'); await pg.locator(`${CARTOES} > .cartao:nth-child(1) .data-campo`).fill('15/09/2026'); await pausa(pg, 200)
   conta((await pg.locator(`${CARTOES} > .cartao:nth-child(1) .pa-ajuda`).last().innerText()).includes('A data está no passado'), `${G} data no passado: o cartão avisa antes de salvar`)
   await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
   conta(await pg.locator('dialog[open] .t', { hasText: 'Refazer a conta das vendas?' }).count() === 1 && (await pg.locator('dialog[open] .pa-pergunta').innerText()).includes('6 venda(s)'), `${G} data no passado: a pergunta do banco aparece numa caixa própria, com o número de vendas`)
@@ -464,9 +465,41 @@ for (const tema of ['light', 'dark']) {
   conta(await pg.locator('dialog[open]').count() === 0, `${G} data no passado: confirmado, a caixa fecha`)
 
   /* ------------------------------------------- VALOR RUIM NÃO SALVA */
-  await pg.locator('.pa-unidade input').fill('150'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('150'); await pausa(pg, 200)
   conta(await pg.getByRole('button', { name: 'Salvar' }).isDisabled() && (await pg.locator(`${CARTOES} .campo.erro .dica`).innerText()) === 'Um número de 0 a 100.', `${G} percentual acima de 100: o campo diz o que aceita e o Salvar apaga`)
-  await pg.locator('.pa-unidade input').fill('10'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('10'); await pausa(pg, 200)
+
+  /* ------------------------- O IMPOSTO NA FRASE E O DIA DO RELATÓRIO (057) */
+  {
+    const frase = async () => (await pg.locator('[data-frase-da-pagina]').innerText()).replace(/\s+/g, ' ').trim()
+    const imposto = pg.locator('input[aria-label="Imposto, só no texto"]')
+    await pg.locator(`${CARTOES} .seg button`, { hasText: 'Valor pago' }).click(); await pausa(pg, 200)
+    conta(await frase() === 'Na página do parceiro: "Seu acordo: 10% do valor de cada peça". O imposto não entra na conta: a parte do parceiro continua saindo do percentual acima.', `${G} imposto em branco: a frase da página é a de sempre (${await frase()})`)
+    const cx = await todos(pg, `${CARTOES} > .cartao:nth-child(1) .pa-unidade`)
+    conta(cx.length === 2 && igual(cx[0].w, cx[1].w) && igual(cx[0].x, cx[1].x) && cx.every((c) => igual(c.h, 40)), `${G} imposto: o campo tem a largura e a altura do campo do percentual, embaixo dele (${cx.map((c) => c.w + 'x' + c.h).join(', ')})`)
+    await imposto.fill('3'); await pausa(pg, 200)
+    conta(await frase() === 'Na página do parceiro: "Seu acordo: 13% menos 3% de imposto / 10% do valor de cada peça". O imposto não entra na conta: a parte do parceiro continua saindo do percentual acima.', `${G} imposto 3 com acordo 10: a frase vira 13% menos 3% de imposto / 10% (${await frase()})`)
+    await pg.locator('.pa-unidade:not([data-imposto]) input').fill('17'); await pausa(pg, 200)
+    conta((await frase()).startsWith('Na página do parceiro: "Seu acordo: 20% menos 3% de imposto / 17% do valor de cada peça".'), `${G} imposto 3 com acordo 17: 20% menos 3% de imposto / 17% do valor de cada peça`)
+    await foto(pg, `imposto-1440-${tema}`)
+    await pg.locator('.pa-unidade:not([data-imposto]) input').fill('10'); await pausa(pg, 200)
+    await imposto.fill('95'); await pausa(pg, 200)
+    conta(await pg.getByRole('button', { name: 'Salvar' }).isDisabled() && (await pg.locator(`${CARTOES} .campo.erro .dica`).innerText()) === 'Um número de 0 a 100 que, somado ao acordo, não passe de 100.', `${G} imposto que estoura os 100 com o acordo: o campo diz o que aceita e o Salvar apaga`)
+    await imposto.fill('3'); await pausa(pg, 200)
+    const inicio = pg.locator(`${CARTOES} > .cartao:nth-child(2) .data-campo`)
+    const nota = async () => (await pg.locator('[data-inicio-do-relatorio]').innerText()).replace(/\s+/g, ' ').trim()
+    conta(await nota() === 'Em branco, a página do parceiro mostra desde a primeira venda.', `${G} início do relatório em branco: a ficha diz que a página mostra tudo`)
+    await inicio.fill('01/07/2026'); await pausa(pg, 200)
+    conta(await nota() === 'A página do parceiro só mostra as vendas de 01/07/2026 em diante. Aqui no sistema você continua vendo todas.', `${G} início do relatório em 01/07/2026: a ficha diz o que o parceiro passa a ver (${await nota()})`)
+    gravados.length = 0
+    await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
+    const ex = ultimo(gravados, 'exibicao')
+    conta(quantos(gravados, 'exibicao') === 1 && ex.p_parceiro === 'p1' && ex.p_imposto === 3 && ex.p_mostrar_desde === '2026-07-01', `${G} salvar: o imposto e a data vão numa chamada só (${JSON.stringify(ex)})`)
+    const ordem = gravados.map((g) => g[0]).filter((t) => ['parceiro', 'exibicao', 'acordo'].includes(t))
+    conta(ordem.indexOf('exibicao') === 1 && ordem.every((t, i) => t !== 'acordo' || i > 1), `${G} salvar: o imposto e a data vão logo depois do cadastro, antes do acordo, que pode parar para perguntar (${ordem.join(', ')})`)
+    conta(gravados.filter((g) => g[0] === 'acordo').every((g) => g[1].p_valor === 10), `${G} salvar: o acordo que vai ao banco continua 10, sem o imposto dentro`)
+    conta(await sobra(pg) <= 0, `${G} imposto e data: nada rola para o lado`)
+  }
 
   /* ------------------------------------------- SENHA E LINK NOVOS */
   gravados.length = 0
@@ -486,7 +519,7 @@ for (const tema of ['light', 'dark']) {
   conta(await pg.locator('.pa-abas button.ligado', { hasText: 'Vendas' }).count() === 1 && (await numeros(pg))[2] === 'Parte em outubro R$ 50,00', `${G} trocar de parceiro volta para a aba Vendas`)
   await aba(pg, 'Acordo e página')
   const v = await todos(pg, `${CARTOES} input`)
-  conta(v[1].valor === '25,00' && await pg.locator(`${CARTOES} .seg button.ligado`, { hasText: 'Valor por peça' }).count() === 1 && !(await rotulos(1)).includes('O percentual é sobre'), `${G} valor por peça: mostra R$ 25,00 e some a pergunta "o percentual é sobre" (${v[1].valor})`)
+  conta(v[1].valor === '25,00' && await pg.locator(`${CARTOES} .seg button.ligado`, { hasText: 'Valor por peça' }).count() === 1 && !(await rotulos(1)).includes('O percentual é sobre') && !(await rotulos(1)).includes('Imposto') && await pg.locator('[data-frase-da-pagina]').count() === 0, `${G} valor por peça: mostra R$ 25,00 e somem a pergunta "o percentual é sobre" e o imposto (${v[1].valor})`)
 
   /* --------------------------------------------------- PARCEIRO NOVO */
   gravados.length = 0
@@ -500,7 +533,7 @@ for (const tema of ['light', 'dark']) {
   await pg.locator(`${CARTOES} .sel .cb`).first().click(); await pausa(pg, 300)
   conta((await todos(pg, '.mn.flutua .mn-item')).length === 5, `${G} novo: a lista traz as coleções da loja e a opção de não escolher`)
   await pg.locator('.mn.flutua .mn-item', { hasText: 'Fourtime Run' }).first().click(); await pausa(pg, 300)
-  await pg.locator('.pa-unidade input').fill('8'); await pausa(pg, 200)
+  await pg.locator('.pa-unidade:not([data-imposto]) input').fill('8'); await pausa(pg, 200)
   await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
   const novo = ultimo(gravados, 'parceiro'); const acordoDoNovo = ultimo(gravados, 'acordo')
   conta(novo.p_id === null && novo.p_nome === 'Vôlei Guarulhos' && novo.p_colecao === 'fourtime-run' && novo.p_colecao_nome === 'Fourtime Run' && novo.p_ativo === false, `${G} novo: nasce sem id, com a coleção escolhida e a página desligada (${JSON.stringify(novo)})`)
@@ -706,6 +739,36 @@ for (const [nome, largura, altura] of [['820', 820, 1180], ['390', 390, 844]]) {
   const ac = gravados.filter((x) => x[0] === 'acordo').map((x) => x[1])
   conta(ac.length >= 1 && ac[ac.length - 1].p_vale_desde === '2025-08-15' && Number(ac[ac.length - 1].p_valor) === 17, `${D} salvar manda o acordo valendo desde a primeira venda (${JSON.stringify(ac[ac.length - 1] ?? null).slice(0, 140)})`)
   conta(erros.length === 0, `${D} nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
+  await ctx.close()
+}
+
+/* O PARCEIRO QUE JÁ TEM IMPOSTO E DIA DE INÍCIO (057): a ficha mostra os dois,
+   e apagar os dois manda zero e vazio ao banco */
+{
+  const X = 'imposto e início já salvos:'
+  const { ctx, pg, erros, gravados } = await abrir(nav, { largura: 1440, altura: 900, tema: 'light', comExibicao: true })
+  await ir(pg, '/parceiros', '.pa-lado')
+  await parceiroNaLista(pg, 'Saneago'); await aba(pg, 'Acordo e página')
+  const imposto = pg.locator('input[aria-label="Imposto, só no texto"]')
+  const inicio = pg.locator(`${CARTOES} > .cartao:nth-child(2) .data-campo`)
+  conta(await imposto.inputValue() === '3' && await inicio.inputValue() === '01/07/2026', `${X} a ficha abre com 3 e 01/07/2026 (${await imposto.inputValue()}, ${await inicio.inputValue()})`)
+  conta((await pg.locator('[data-frase-da-pagina]').innerText()).replace(/\s+/g, ' ').startsWith('Na página do parceiro: "Seu acordo: 13% menos 3% de imposto / 10% do valor de cada peça".'), `${X} a frase já vem com o imposto`)
+  conta((await textos(pg, '.pa-notas .pa-ajuda'))[1] === 'O parceiro vê na página dele as vendas de 01/07/2026 em diante. A aba Vendas, aqui, mostra todas.', `${X} a nota do pé diz que o parceiro vê menos que a aba Vendas`)
+  await foto(pg, 'inicio-do-relatorio-1440-light')
+  /* a aba Vendas, aqui no sistema, continua com tudo: os mesmos números de quem não tem data */
+  await aba(pg, 'Vendas')
+  conta((await numeros(pg))[2] === 'Parte em outubro R$ 155,94', `${X} a aba Vendas do sistema não corta nada pela data (${(await numeros(pg))[2]})`)
+  await aba(pg, 'Acordo e página')
+  gravados.length = 0
+  await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
+  conta(quantos(gravados, 'exibicao') === 0, `${X} salvar sem mexer não escreve imposto nem data de novo`)
+  await imposto.fill(''); await inicio.fill(''); await pausa(pg, 300)
+  conta((await pg.locator('[data-inicio-do-relatorio]').innerText()).trim() === 'Em branco, a página do parceiro mostra desde a primeira venda.', `${X} apagar a data volta a dizer "desde a primeira venda"`)
+  gravados.length = 0
+  await pg.getByRole('button', { name: 'Salvar' }).click(); await pausa(pg, 700)
+  const ex = ultimo(gravados, 'exibicao')
+  conta(quantos(gravados, 'exibicao') === 1 && ex.p_imposto === 0 && ex.p_mostrar_desde === null, `${X} apagar os dois manda imposto 0 e data vazia (${JSON.stringify(ex)})`)
+  conta(erros.length === 0, `${X} nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
   await ctx.close()
 }
 

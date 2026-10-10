@@ -722,6 +722,15 @@ await secao(async () => {
   conta(fls.length >= 3 && fls.every((f) => f[0] === fls[0][0]) && fls.every((f, i) => !i || f[2] > fls[i - 1][2]), 'as folhas uma embaixo da outra, na mesma coluna (' + fls.length + ')')
   conta(fls.every((f) => f[1] >= 990 && f[1] <= 1001), `as folhas com uma largura boa: ${fls[0][1]} px na tela`)
   conta(/Igual ao preset salvo/.test(await pe(pg)), 'o pé diz que a folha está igual ao preset')
+  /* a coluna acompanha a rolagem: na página 2 e na última ela continua à vista */
+  for (const n of [2, fls.length]) {
+    await pg.evaluate((n) => document.querySelectorAll('.fl')[n - 1].scrollIntoView({ block: 'start' }), n)
+    await pausa(pg, 300)
+    const b2 = await caixa(pg, '.ct-pr-barra')
+    conta(b2 && b2.y >= 60 && b2.y <= 100 && b2.b <= 1080, `na página ${n} a barra do preset continua à vista, presa embaixo do topo (${b2 && Math.round(b2.y)} a ${b2 && Math.round(b2.b)})`)
+  }
+  await pg.evaluate(() => window.scrollTo(0, 0))
+  await pausa(pg, 200)
   conta(await pg.getByRole('radio', { name: /Com valor/ }).getAttribute('aria-checked') === 'true', 'o Cliente sai com valor')
   conta(await chip(pg, 'cliente').getAttribute('aria-pressed') === 'true' && await chip(pg, 'telefone').getAttribute('aria-pressed') === 'false' && await pg.locator('.ct-dg-c').count() === 20, 'no diagrama, os 20 campos do cabeçalho, ligados os do preset')
   await foto(pg, 'presets-1920-cliente', false)
@@ -805,7 +814,7 @@ await secao(async () => {
   /* na impressão, a barra some */
   await pg.evaluate(() => document.body.classList.add('imprimindo'))
   await pg.emulateMedia({ media: 'print' })
-  conta(await pg.evaluate(() => getComputedStyle(document.querySelector('.ct-pr-barra')).display) === 'none', 'na impressão a barra some e só as folhas saem')
+  conta(await pg.evaluate(() => getComputedStyle(document.querySelector('.ct-pr-lado')).display) === 'none', 'na impressão a barra some e só as folhas saem')
   await pg.emulateMedia({ media: 'screen' })
   conta(!erros.length, 'sem erro de JavaScript (presets): ' + erros.join(' | '))
 })
@@ -854,6 +863,13 @@ for (const tema of ['light', 'dark']) {
       await irFolha(pg)
       await pausa(pg, 400)
       conta(await sobra(pg) <= 0, `presets ${largura} ${tema}: nada rola de lado (${await sobra(pg)})`)
+      if (largura >= 1200) {
+        await pg.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+        await pausa(pg, 300)
+        const b3 = await caixa(pg, '.ct-pr-lado')
+        conta(b3 && b3.y >= 60 && b3.b <= altura + 1, `presets ${largura} ${tema}: no fim da folha a coluna está inteira na tela (${b3 && Math.round(b3.y)} a ${b3 && Math.round(b3.b)})`)
+        await pg.evaluate(() => window.scrollTo(0, 0))
+      }
       const b = await caixa(pg, '.ct-pr-barra'), fl = await caixa(pg, '.fl')
       if (largura < 1200) conta(b && fl && b.y > fl.y && b.w > fl.w - 2, `presets ${largura}: a barra desce para baixo das folhas, na largura toda`)
       await foto(pg, `presets-${largura}-${tema}`, largura < 1200)

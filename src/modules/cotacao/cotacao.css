@@ -2840,9 +2840,17 @@ i.ct-cv-pe {
 .ct-pr-folhas {
   min-width: 0;
 }
-.ct-pr-barra {
+/* presa logo abaixo do topo do sistema (também preso): a coluna fica à vista
+   em qualquer página da folha; mais alta que a tela, ela rola por dentro */
+.ct-pr-lado {
   position: sticky;
-  top: var(--sp-4);
+  top: calc(var(--topbar-h) + var(--sp-4));
+  max-height: calc(100dvh - var(--topbar-h) - var(--sp-8));
+  overflow-y: auto;
+  min-width: 0;
+  border-radius: var(--radius-lg);
+}
+.ct-pr-barra {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -2852,8 +2860,10 @@ i.ct-cv-pe {
   .ct-pr-tela {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ct-pr-barra {
+  .ct-pr-lado {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 @media print {

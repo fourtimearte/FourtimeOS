@@ -16,7 +16,17 @@ import {
   SlidersHorizontal,
   Trash,
 } from '@phosphor-icons/react'
-import { Botao, Campo, Entrada, MenuDeContexto, Modal, Segmentado, Seletor, TituloCartao, avisar } from '@ds'
+import {
+  Botao,
+  Campo,
+  Entrada,
+  MenuDeContexto,
+  Modal,
+  Segmentado,
+  Seletor,
+  TituloCartao,
+  avisar,
+} from '@ds'
 import { useSessao } from '@dominio/sessao'
 import {
   CAMPOS_DO_CABECALHO,
@@ -70,14 +80,14 @@ export function usarPresetsDaFolha(para: Destino, inicial = '') {
 
   useEffect(() => {
     let vivo = true
-    void carregarPresets().then((r) => {
+    void carregarPresets().then(r => {
       if (!vivo) return
       setSalvos(r.presets)
       setOnde(r.onde)
       setFalha(r.falha)
       /* quem chega com ?preset= (o modal da folha abre a página assim) fica com ele */
-      const pedido = [...PRESETS_DA_FABRICA, ...r.presets].find((x) => x.id === inicial)
-      setEscolhidoId((id) => id || pedido?.id || presetQueAbre(r.presets, para, eu).id)
+      const pedido = [...PRESETS_DA_FABRICA, ...r.presets].find(x => x.id === inicial)
+      setEscolhidoId(id => id || pedido?.id || presetQueAbre(r.presets, para, eu).id)
     })
     return () => {
       vivo = false
@@ -85,24 +95,34 @@ export function usarPresetsDaFolha(para: Destino, inicial = '') {
   }, [para, eu, inicial])
 
   const lista = useMemo(
-    () => [...PRESETS_DA_FABRICA, ...[...salvos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))],
+    () => [
+      ...PRESETS_DA_FABRICA,
+      ...[...salvos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+    ],
     [salvos],
   )
   const escolhido =
-    lista.find((p) => p.id === escolhidoId) ?? (para === 'producao' ? PRESETS_DA_FABRICA[1] : PRESETS_DA_FABRICA[0])
+    lista.find(p => p.id === escolhidoId) ??
+    (para === 'producao' ? PRESETS_DA_FABRICA[1] : PRESETS_DA_FABRICA[0])
   const salvo = useMemo(() => vistaDe(escolhido), [escolhido])
   const vista = agora ?? salvo
   const mudou = useMemo(() => mudancas(vista, salvo), [vista, salvo])
-  const podeSalvar = !escolhido.fabrica && (escolhido.dono === eu || (escolhido.equipe && admin) || onde === 'navegador')
+  const podeSalvar =
+    !escolhido.fabrica &&
+    (escolhido.dono === eu || (escolhido.equipe && admin) || onde === 'navegador')
 
-  const mexer = useCallback((m: (v: VistaDaFolha) => VistaDaFolha) => setAgora((a) => vistaDe(m(a ?? salvo))), [salvo])
+  const mexer = useCallback(
+    (m: (v: VistaDaFolha) => VistaDaFolha) => setAgora(a => vistaDe(m(a ?? salvo))),
+    [salvo],
+  )
 
   const escolher = (id: string) => {
     setEscolhidoId(id)
     setAgora(null)
   }
 
-  const alternar = (lista: string[], k: string) => (lista.includes(k) ? lista.filter((x) => x !== k) : [...lista, k])
+  const alternar = (lista: string[], k: string) =>
+    lista.includes(k) ? lista.filter(x => x !== k) : [...lista, k]
 
   async function gravar<T>(fazer: () => Promise<T>, ok: string): Promise<T | null> {
     setGravando(true)
@@ -129,36 +149,51 @@ export function usarPresetsDaFolha(para: Destino, inicial = '') {
     podeSalvar,
     podeMexerNoPreset: podeSalvar,
     escolher,
-    trocarValor: (valor: boolean) => mexer((v) => ({ ...v, valor })),
-    alternarCampo: (k: string) => mexer((v) => ({ ...v, campos: alternar(v.campos, k) })),
-    alternarModulo: (k: string) => mexer((v) => ({ ...v, fora: alternar(v.fora, k) })),
+    trocarValor: (valor: boolean) => mexer(v => ({ ...v, valor })),
+    alternarCampo: (k: string) => mexer(v => ({ ...v, campos: alternar(v.campos, k) })),
+    alternarModulo: (k: string) => mexer(v => ({ ...v, fora: alternar(v.fora, k) })),
     desfazer: () => setAgora(null),
     async salvar() {
-      const r = await gravar(() => salvarPreset({ ...escolhido, ...vista }, onde), 'Preset ' + escolhido.nome + ' salvo.')
+      const r = await gravar(
+        () => salvarPreset({ ...escolhido, ...vista }, onde),
+        'Preset ' + escolhido.nome + ' salvo.',
+      )
       if (!r) return
-      setSalvos((s) => s.map((x) => (x.id === r.id ? r : x)))
+      setSalvos(s => s.map(x => (x.id === r.id ? r : x)))
       setAgora(null)
     },
-    async criar(dados: { nome: string; equipe: boolean; abre: AbreEm }, base: VistaDaFolha = vista) {
-      const r = await gravar(() => criarPreset({ ...base, ...dados }, onde, eu), 'Preset ' + dados.nome.trim() + ' criado.')
+    async criar(
+      dados: { nome: string; equipe: boolean; abre: AbreEm },
+      base: VistaDaFolha = vista,
+    ) {
+      const r = await gravar(
+        () => criarPreset({ ...base, ...dados }, onde, eu),
+        'Preset ' + dados.nome.trim() + ' criado.',
+      )
       if (!r) return false
-      setSalvos((s) => [...s, r])
+      setSalvos(s => [...s, r])
       setEscolhidoId(r.id)
       setAgora(null)
       return true
     },
     async editar(dados: { nome: string; equipe: boolean; abre: AbreEm }) {
       /* renomear não leva junto o que mudou nesta impressão: só nome, quem e onde abre */
-      const r = await gravar(() => salvarPreset({ ...escolhido, ...dados }, onde), 'Preset ' + dados.nome.trim() + ' salvo.')
+      const r = await gravar(
+        () => salvarPreset({ ...escolhido, ...dados }, onde),
+        'Preset ' + dados.nome.trim() + ' salvo.',
+      )
       if (!r) return false
-      setSalvos((s) => s.map((x) => (x.id === r.id ? r : x)))
+      setSalvos(s => s.map(x => (x.id === r.id ? r : x)))
       return true
     },
     async apagar() {
       const qual = escolhido
-      const r = await gravar(() => apagarPreset(qual, onde).then(() => true), 'Preset ' + qual.nome + ' apagado.')
+      const r = await gravar(
+        () => apagarPreset(qual, onde).then(() => true),
+        'Preset ' + qual.nome + ' apagado.',
+      )
       if (!r) return
-      setSalvos((s) => s.filter((x) => x.id !== qual.id))
+      setSalvos(s => s.filter(x => x.id !== qual.id))
       setEscolhidoId(presetQueAbre([], para, eu).id)
       setAgora(null)
     },
@@ -178,7 +213,7 @@ export function PresetsNoTopo({ p, aoNovo }: { p: PresetsDaFolha; aoNovo: () => 
       <Segmentado
         className="ct-pr-topo-seg"
         valor={p.escolhido.id}
-        opcoes={p.lista.map((x) => ({
+        opcoes={p.lista.map(x => ({
           valor: x.id,
           rotulo:
             x.id === p.escolhido.id && p.mudou.length ? (
@@ -200,7 +235,13 @@ export function PresetsNoTopo({ p, aoNovo }: { p: PresetsDaFolha; aoNovo: () => 
 }
 
 /* ---------- o diagrama ------------------------------------------------------------ */
-type OpcoesDoBloco = { h: number; traco?: number; classe?: string; fixo?: boolean; travado?: string }
+type OpcoesDoBloco = {
+  h: number
+  traco?: number
+  classe?: string
+  fixo?: boolean
+  travado?: string
+}
 
 function Bloco({
   k,
@@ -221,7 +262,13 @@ function Bloco({
   return (
     <button
       type="button"
-      className={['ct-dg-b', fora ? 'fora' : '', mudou ? 'mudou' : '', o.fixo ? 'fixo' : '', o.classe ?? '']
+      className={[
+        'ct-dg-b',
+        fora ? 'fora' : '',
+        mudou ? 'mudou' : '',
+        o.fixo ? 'fixo' : '',
+        o.classe ?? '',
+      ]
         .filter(Boolean)
         .join(' ')}
       style={{ '--h': o.h + 'px' } as CSSProperties}
@@ -229,7 +276,9 @@ function Bloco({
       aria-label={nome + (fora ? ': fora da folha' : ': na folha')}
       data-modulo={k}
       disabled={fixo}
-      title={o.travado || (o.fixo ? 'Sai sempre' : fora ? 'Pôr de volta na folha' : 'Tirar da folha')}
+      title={
+        o.travado || (o.fixo ? 'Sai sempre' : fora ? 'Pôr de volta na folha' : 'Tirar da folha')
+      }
       onClick={() => aoApertar?.(k)}
     >
       <span className="ct-dg-n">
@@ -252,9 +301,16 @@ function Bloco({
 function PaginaUmDesenhada({ p, numero }: { p: PresetsDaFolha; numero: string }) {
   const v = p.vista
   const b = (k: string, nome: string, o: OpcoesDoBloco) => (
-    <Bloco k={k} nome={nome} fora={v.fora.includes(k)} mudou={p.mudou.includes(k)} aoApertar={p.alternarModulo} o={o} />
+    <Bloco
+      k={k}
+      nome={nome}
+      fora={v.fora.includes(k)}
+      mudou={p.mudou.includes(k)}
+      aoApertar={p.alternarModulo}
+      o={o}
+    />
   )
-  const naFolha = v.campos.filter((k) => v.valor || !soComValor(k)).length
+  const naFolha = v.campos.filter(k => v.valor || !soComValor(k)).length
   return (
     <div className="ct-dg-pag" aria-label="A página 1 da folha">
       <div className="ct-dg-cab">
@@ -266,19 +322,23 @@ function PaginaUmDesenhada({ p, numero }: { p: PresetsDaFolha; numero: string })
           </span>
         </div>
         <div className="ct-dg-campos">
-          {CAMPOS_DO_CABECALHO.map((c) => {
+          {CAMPOS_DO_CABECALHO.map(c => {
             const semRs = soComValor(c.k) && !v.valor
             const fora = !v.campos.includes(c.k) || semRs
             return (
               <button
                 key={c.k}
                 type="button"
-                className={['ct-dg-c', fora ? 'fora' : '', p.mudou.includes(c.k) ? 'mudou' : ''].filter(Boolean).join(' ')}
+                className={['ct-dg-c', fora ? 'fora' : '', p.mudou.includes(c.k) ? 'mudou' : '']
+                  .filter(Boolean)
+                  .join(' ')}
                 aria-pressed={!fora}
                 aria-label={c.r + (fora ? ': fora do cabeçalho' : ': no cabeçalho')}
                 data-campo={c.k}
                 disabled={semRs}
-                title={semRs ? 'Só sai com valor' : fora ? 'Pôr no cabeçalho' : 'Tirar do cabeçalho'}
+                title={
+                  semRs ? 'Só sai com valor' : fora ? 'Pôr no cabeçalho' : 'Tirar do cabeçalho'
+                }
                 onClick={() => p.alternarCampo(c.k)}
               >
                 <span>{c.r}</span>
@@ -325,7 +385,13 @@ function PaginaDeLayoutDesenhada({ p }: { p: PresetsDaFolha }) {
      só para mostrar o arranjo de dois por página */
   const coluna = (espelho: boolean) => (
     <div className={espelho ? 'ct-dg-col espelho' : 'ct-dg-col'} aria-hidden={espelho || undefined}>
-      <Bloco k="lcab" nome="Cabeçalho do layout" fora={false} mudou={false} o={{ h: 20, fixo: true }} />
+      <Bloco
+        k="lcab"
+        nome="Cabeçalho do layout"
+        fora={false}
+        mudou={false}
+        o={{ h: 20, fixo: true }}
+      />
       {COLUNA_DO_LAYOUT.map(([k, nome, o]) => (
         <Bloco
           key={k}
@@ -355,8 +421,8 @@ function PaginaDeLayoutDesenhada({ p }: { p: PresetsDaFolha }) {
 const NOME_DA_MUDANCA = (k: string): string =>
   k === 'valor'
     ? 'os valores'
-    : (CAMPOS_DO_CABECALHO.find((c) => c.k === k)?.r ??
-      COLUNA_DO_LAYOUT.find((c) => c[0] === k)?.[1] ??
+    : (CAMPOS_DO_CABECALHO.find(c => c.k === k)?.r ??
+      COLUNA_DO_LAYOUT.find(c => c[0] === k)?.[1] ??
       { res: 'o Resumo', cond: 'as Condições', inf: 'os Informes', ace: 'o Aceite' }[k] ??
       k)
 
@@ -383,135 +449,172 @@ export function BarraDoPreset({
   const itens = [
     ...(p.podeMexerNoPreset ? [{ rotulo: 'Renomear e quem usa', aoEscolher: aoEditar }] : []),
     { rotulo: 'Duplicar', aoEscolher: aoNovo },
-    ...(p.podeMexerNoPreset ? [{ rotulo: 'Apagar o preset', risco: true, aoEscolher: aoApagar }] : []),
+    ...(p.podeMexerNoPreset
+      ? [{ rotulo: 'Apagar o preset', risco: true, aoEscolher: aoApagar }]
+      : []),
   ]
 
   return (
-    <aside className="cartao ct-pr-barra fl-nao-imprime" aria-label={'Editar o preset ' + p.escolhido.nome}>
-      <div className="ct-pr-cab">
-        <TituloCartao icone={SlidersHorizontal}>Preset {p.escolhido.nome}</TituloCartao>
-        <button
-          ref={btMais}
-          type="button"
-          className="btn btn-limpo icone"
-          aria-label="Renomear, duplicar ou apagar o preset"
-          title="Renomear, duplicar ou apagar"
-          aria-haspopup="menu"
-          aria-expanded={menu}
-          onClick={() => setMenu((m) => !m)}
-        >
-          <DotsThree size={18} weight="bold" />
-        </button>
-        <MenuDeContexto
-          aberto={menu}
-          ancora={btMais}
-          aoFechar={() => setMenu(false)}
-          cabecalho={p.escolhido.fabrica ? 'Preset da fábrica: não muda' : undefined}
-          itens={itens}
-        />
-      </div>
-
-      <div className="ct-pr-sec">
-        <div className="ct-pr-valores" role="radiogroup" aria-label="Valores na folha">
+    /* A COLUNA ACOMPANHA A ROLAGEM: quem fica presa é esta caixa, e não o
+       cartão, porque a regra .cartao do Design System (position: relative)
+       chega depois no pacote e ganhava do sticky (11/10/2026: na página 2 a
+       barra já tinha sumido) */
+    <div className="ct-pr-lado fl-nao-imprime">
+      <aside className="cartao ct-pr-barra" aria-label={'Editar o preset ' + p.escolhido.nome}>
+        <div className="ct-pr-cab">
+          <TituloCartao icone={SlidersHorizontal}>Preset {p.escolhido.nome}</TituloCartao>
           <button
+            ref={btMais}
             type="button"
-            role="radio"
-            aria-checked={v.valor}
-            className={['ct-pr-v', v.valor ? 'sim' : '', v.valor && p.mudou.includes('valor') ? 'mudou' : '']
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => p.trocarValor(true)}
+            className="btn btn-limpo icone"
+            aria-label="Renomear, duplicar ou apagar o preset"
+            title="Renomear, duplicar ou apagar"
+            aria-haspopup="menu"
+            aria-expanded={menu}
+            onClick={() => setMenu(m => !m)}
           >
-            <CurrencyDollar size={18} />
-            <span>
-              <b>Com valor</b>
-              <small>preços, totais e aceite</small>
-            </span>
+            <DotsThree size={18} weight="bold" />
           </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={!v.valor}
-            className={['ct-pr-v', v.valor ? '' : 'sim', !v.valor && p.mudou.includes('valor') ? 'mudou' : '']
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => p.trocarValor(false)}
-          >
-            <Prohibit size={18} />
-            <span>
-              <b>Sem valor</b>
-              <small>a folha da fábrica</small>
-            </span>
-          </button>
+          <MenuDeContexto
+            aberto={menu}
+            ancora={btMais}
+            aoFechar={() => setMenu(false)}
+            cabecalho={p.escolhido.fabrica ? 'Preset da fábrica: não muda' : undefined}
+            itens={itens}
+          />
         </div>
-      </div>
 
-      <div className="ct-pr-sec">
-        <Segmentado
-          className="ct-pr-seg"
-          valor={pagina}
-          opcoes={[
-            { valor: 'um', rotulo: 'Página 1' },
-            { valor: 'layout', rotulo: 'Página de layout' },
-          ]}
-          aoMudar={setPagina}
-        />
-        {pagina === 'um' ? <PaginaUmDesenhada p={p} numero={numero} /> : <PaginaDeLayoutDesenhada p={p} />}
-        <small className="ct-pr-dica">
-          <HandPointing size={14} />
-          Aperte um bloco para tirar ou pôr de volta.
-        </small>
-      </div>
-
-      <div className="ct-pr-pe">
-        {n === 0 ? (
-          <p className="ct-pr-igual">
-            <CheckCircle size={16} />
-            <span>Igual ao preset salvo. O que mudar aqui vale para esta impressão; para guardar, aparece o salvar.</span>
-          </p>
-        ) : (
-          <>
-            <div className="ct-pr-aviso">
-              <PencilSimpleLine size={16} />
+        <div className="ct-pr-sec">
+          <div className="ct-pr-valores" role="radiogroup" aria-label="Valores na folha">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={v.valor}
+              className={[
+                'ct-pr-v',
+                v.valor ? 'sim' : '',
+                v.valor && p.mudou.includes('valor') ? 'mudou' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => p.trocarValor(true)}
+            >
+              <CurrencyDollar size={18} />
               <span>
-                <b>
-                  {n} {n === 1 ? 'mudança' : 'mudanças'} nesta impressão
-                </b>
-                <small>
-                  {n === 1 ? 'Mudou ' + NOME_DA_MUDANCA(p.mudou[0]) + '. ' : ''}
-                  {p.escolhido.fabrica
-                    ? 'O preset da fábrica não muda: salve como novo.'
-                    : p.podeSalvar
-                      ? 'O preset só muda se salvar.'
-                      : 'Este preset é de outra pessoa: salve como novo.'}
-                </small>
+                <b>Com valor</b>
+                <small>preços, totais e aceite</small>
               </span>
-            </div>
-            <div className="ct-pr-botoes">
-              <Botao tom="limpo" icone aria-label="Desfazer: volta ao preset" title="Desfazer: volta ao preset" onClick={p.desfazer}>
-                <ArrowCounterClockwise size={18} />
-              </Botao>
-              <span className="ct-pr-cresce" />
-              <Botao tom="contorno" onClick={aoNovo}>
-                Salvar como novo
-              </Botao>
-              {p.podeSalvar ? (
-                <Botao tom="forte" disabled={p.gravando} title={'Salvar em ' + p.escolhido.nome} onClick={() => void p.salvar()}>
-                  <FloppyDisk size={17} />
-                  Salvar
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!v.valor}
+              className={[
+                'ct-pr-v',
+                v.valor ? '' : 'sim',
+                !v.valor && p.mudou.includes('valor') ? 'mudou' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => p.trocarValor(false)}
+            >
+              <Prohibit size={18} />
+              <span>
+                <b>Sem valor</b>
+                <small>a folha da fábrica</small>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="ct-pr-sec">
+          <Segmentado
+            className="ct-pr-seg"
+            valor={pagina}
+            opcoes={[
+              { valor: 'um', rotulo: 'Página 1' },
+              { valor: 'layout', rotulo: 'Página de layout' },
+            ]}
+            aoMudar={setPagina}
+          />
+          {pagina === 'um' ? (
+            <PaginaUmDesenhada p={p} numero={numero} />
+          ) : (
+            <PaginaDeLayoutDesenhada p={p} />
+          )}
+          <small className="ct-pr-dica">
+            <HandPointing size={14} />
+            Aperte um bloco para tirar ou pôr de volta.
+          </small>
+        </div>
+
+        <div className="ct-pr-pe">
+          {n === 0 ? (
+            <p className="ct-pr-igual">
+              <CheckCircle size={16} />
+              <span>
+                Igual ao preset salvo. O que mudar aqui vale para esta impressão; para guardar,
+                aparece o salvar.
+              </span>
+            </p>
+          ) : (
+            <>
+              <div className="ct-pr-aviso">
+                <PencilSimpleLine size={16} />
+                <span>
+                  <b>
+                    {n} {n === 1 ? 'mudança' : 'mudanças'} nesta impressão
+                  </b>
+                  <small>
+                    {n === 1 ? 'Mudou ' + NOME_DA_MUDANCA(p.mudou[0]) + '. ' : ''}
+                    {p.escolhido.fabrica
+                      ? 'O preset da fábrica não muda: salve como novo.'
+                      : p.podeSalvar
+                        ? 'O preset só muda se salvar.'
+                        : 'Este preset é de outra pessoa: salve como novo.'}
+                  </small>
+                </span>
+              </div>
+              <div className="ct-pr-botoes">
+                <Botao
+                  tom="limpo"
+                  icone
+                  aria-label="Desfazer: volta ao preset"
+                  title="Desfazer: volta ao preset"
+                  onClick={p.desfazer}
+                >
+                  <ArrowCounterClockwise size={18} />
                 </Botao>
-              ) : null}
-            </div>
-          </>
-        )}
-        {p.onde === 'navegador' ? (
-          <p className="ct-pr-onde">
-            Os presets salvos estão guardados só neste navegador até o banco ganhar a tabela deles (migração 059).
-          </p>
-        ) : null}
-        {p.falha ? <p className="ct-pr-onde">Não consegui ler os presets salvos: {p.falha}</p> : null}
-      </div>
-    </aside>
+                <span className="ct-pr-cresce" />
+                <Botao tom="contorno" onClick={aoNovo}>
+                  Salvar como novo
+                </Botao>
+                {p.podeSalvar ? (
+                  <Botao
+                    tom="forte"
+                    disabled={p.gravando}
+                    title={'Salvar em ' + p.escolhido.nome}
+                    onClick={() => void p.salvar()}
+                  >
+                    <FloppyDisk size={17} />
+                    Salvar
+                  </Botao>
+                ) : null}
+              </div>
+            </>
+          )}
+          {p.onde === 'navegador' ? (
+            <p className="ct-pr-onde">
+              Os presets salvos estão guardados só neste navegador até o banco ganhar a tabela deles
+              (migração 059).
+            </p>
+          ) : null}
+          {p.falha ? (
+            <p className="ct-pr-onde">Não consegui ler os presets salvos: {p.falha}</p>
+          ) : null}
+        </div>
+      </aside>
+    </div>
   )
 }
 
@@ -532,17 +635,22 @@ export function ModalDoPreset({
   aoFechar: () => void
 }) {
   const e = p.escolhido
-  const [nome, setNome] = useState(modo === 'editar' ? e.nome : e.fabrica || !p.mudou.length ? e.nome + ' (cópia)' : '')
+  const [nome, setNome] = useState(
+    modo === 'editar' ? e.nome : e.fabrica || !p.mudou.length ? e.nome + ' (cópia)' : '',
+  )
   const [equipe, setEquipe] = useState(modo === 'editar' ? e.equipe : true)
   const [abre, setAbre] = useState<AbreEm>(modo === 'editar' ? e.abre : '')
   const v = p.vista
-  const naFolha = v.campos.filter((k) => v.valor || !soComValor(k)).length
+  const naFolha = v.campos.filter(k => v.valor || !soComValor(k)).length
   const modulos = 12 - v.fora.length - (v.valor || v.fora.includes('ace') ? 0 : 1)
   const vazio = !nome.trim()
 
   async function confirmar() {
     if (vazio) return
-    const ok = modo === 'editar' ? await p.editar({ nome, equipe, abre }) : await p.criar({ nome, equipe, abre })
+    const ok =
+      modo === 'editar'
+        ? await p.editar({ nome, equipe, abre })
+        : await p.criar({ nome, equipe, abre })
     if (ok) aoFechar()
   }
 
@@ -567,16 +675,21 @@ export function ModalDoPreset({
         {modo === 'novo' ? (
           <p className="ct-pr-modal-sub">
             Com o que está na folha agora: {v.valor ? 'com valor' : 'sem valor'}, {naFolha}{' '}
-            {naFolha === 1 ? 'campo' : 'campos'} no cabeçalho, {modulos} {modulos === 1 ? 'módulo' : 'módulos'}.
+            {naFolha === 1 ? 'campo' : 'campos'} no cabeçalho, {modulos}{' '}
+            {modulos === 1 ? 'módulo' : 'módulos'}.
           </p>
         ) : null}
-        <Campo rotulo="Nome do preset" erro={vazio} dica={vazio ? 'O preset precisa de um nome.' : undefined}>
+        <Campo
+          rotulo="Nome do preset"
+          erro={vazio}
+          dica={vazio ? 'O preset precisa de um nome.' : undefined}
+        >
           <Entrada
             value={nome}
             maxLength={60}
             autoFocus
-            onChange={(ev) => setNome(ev.target.value)}
-            onKeyDown={(ev) => {
+            onChange={ev => setNome(ev.target.value)}
+            onKeyDown={ev => {
               if (ev.key === 'Enter') void confirmar()
             }}
           />
@@ -590,7 +703,7 @@ export function ModalDoPreset({
               { valor: 'eu', rotulo: 'Só eu' },
               { valor: 'todos', rotulo: 'Toda a equipe' },
             ]}
-            aoMudar={(x) => setEquipe(x === 'todos')}
+            aoMudar={x => setEquipe(x === 'todos')}
           />
         </div>
         <div className="campo">
@@ -601,9 +714,11 @@ export function ModalDoPreset({
             valor={abre}
             vazio="Nenhuma folha: escolho na hora"
             opcoes={OPCOES_DO_ABRE}
-            aoEscolher={(x) => setAbre(x === 'cliente' || x === 'producao' ? x : '')}
+            aoEscolher={x => setAbre(x === 'cliente' || x === 'producao' ? x : '')}
           />
-          <span className="dica">Ele entra no topo, ao lado dos outros presets, e abre sozinho na folha escolhida.</span>
+          <span className="dica">
+            Ele entra no topo, ao lado dos outros presets, e abre sozinho na folha escolhida.
+          </span>
         </div>
       </div>
     </Modal>
@@ -611,7 +726,13 @@ export function ModalDoPreset({
 }
 
 /* ---------- a pergunta antes de apagar ------------------------------------------------- */
-export function PerguntaDeApagarPreset({ p, aoFechar }: { p: PresetsDaFolha; aoFechar: () => void }) {
+export function PerguntaDeApagarPreset({
+  p,
+  aoFechar,
+}: {
+  p: PresetsDaFolha
+  aoFechar: () => void
+}) {
   return (
     <Modal
       aberto
@@ -636,7 +757,8 @@ export function PerguntaDeApagarPreset({ p, aoFechar }: { p: PresetsDaFolha; aoF
       }
     >
       <p className="ct-pr-modal-sub">
-        O preset <b>{p.escolhido.nome}</b> sai do topo{p.escolhido.equipe ? ' de toda a equipe' : ''}. As folhas já impressas não mudam.
+        O preset <b>{p.escolhido.nome}</b> sai do topo
+        {p.escolhido.equipe ? ' de toda a equipe' : ''}. As folhas já impressas não mudam.
       </p>
     </Modal>
   )

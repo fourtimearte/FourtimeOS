@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowsClockwise, CaretLeft, CaretRight, Copy, Image as Imagem, Trash } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretLeft, CaretRight, Copy, Image as Imagem_, Lock, LockOpen, Selection, Trash } from '@phosphor-icons/react'
 import { Botao, MenuReferencia, TituloCartao } from '@ds'
 import {
   CATEGORIAS,
   CaixaDeImagem,
+  MAX_DESTAQUES,
   ORDEM_DAS_CATEGORIAS,
   REFERENCIAS,
+  imagemDe,
+  muralVazio,
   type Bloco,
+  type Imagem,
 } from '@dominio/layout'
 import type { ProdutoCotado } from '@dominio/cotacao'
 import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
+import { MuralDaArte } from './mural-da-arte'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -189,42 +194,101 @@ function BarraDeReferencia({ bloco, travado, aoMudar }: { bloco: Bloco; travado:
    Remover moram no cabeçalho do cartão. O highlight do mockup entra aqui na
    parte 4. */
 function CartaoDaArte({ bloco, travado, aoMudar }: { bloco: Bloco; travado: boolean; aoMudar: (b: Bloco) => void }) {
-  const [alta, setAlta] = useState(false)
+  const [dim, setDim] = useState<Imagem | null>(null)
+  const [selecionando, setSelecionando] = useState(false)
   const controle = useRef<{ trocar: () => void } | null>(null)
   useEffect(() => {
+    setSelecionando(false)
     if (!bloco.imagem) {
-      setAlta(false)
+      setDim(null)
       return
     }
+    let vivo = true
     const im = new Image()
-    im.onload = () => setAlta(im.naturalHeight > im.naturalWidth)
+    im.onload = () => vivo && setDim(imagemDe(im.naturalWidth, im.naturalHeight))
     im.src = bloco.imagem
+    return () => {
+      vivo = false
+    }
   }, [bloco.imagem])
+  const alta = !!dim && dim.a < 1
+  const mural = bloco.destaques
+  /* o mural aparece quando há destaque ou quando a pessoa vai escolher um;
+     sem nada disso a caixa é a de sempre, que aceita arrastar e colar a arte */
+  const comMural = !!bloco.imagem && !!dim && (mural.regs.length > 0 || selecionando)
+  /* imagem nova, mural novo: as regiões eram frações da arte de antes */
+  const trocarImagem = (img: string) => aoMudar({ ...bloco, imagem: img, destaques: muralVazio() })
   return (
     <section className="cartao ct-arte">
       <header className="ct-arte-cab">
-        <TituloCartao icone={Imagem}>Arte do layout</TituloCartao>
-        {!travado && bloco.imagem ? (
+        <TituloCartao icone={Imagem_}>Arte do layout</TituloCartao>
+        {bloco.imagem ? (
           <span className="ct-arte-bts">
-            <Botao tom="contorno" tamanho="sm" icone aria-label="Trocar a arte" title="Trocar a arte" onClick={() => controle.current?.trocar()}>
-              <ArrowsClockwise size={16} />
-            </Botao>
-            <Botao tom="contorno" tamanho="sm" icone aria-label="Remover a arte" title="Remover a arte" onClick={() => aoMudar({ ...bloco, imagem: '' })}>
-              <Trash size={16} />
-            </Botao>
+            {mural.travado ? (
+              <>
+                <span className="ct-hl-selo">
+                  <Lock size={14} />
+                  Mural travado
+                </span>
+                {!travado ? (
+                  <Botao tom="contorno" tamanho="sm" onClick={() => aoMudar({ ...bloco, destaques: { ...mural, travado: false } })}>
+                    <LockOpen size={16} />
+                    Destravar
+                  </Botao>
+                ) : null}
+              </>
+            ) : !travado ? (
+              <>
+                <Botao
+                  tom="contorno"
+                  tamanho="sm"
+                  aria-pressed={selecionando}
+                  className={selecionando ? 'ct-hl-modo' : undefined}
+                  disabled={!dim || (mural.regs.length >= MAX_DESTAQUES && !selecionando)}
+                  onClick={() => setSelecionando((x) => !x)}
+                >
+                  <Selection size={16} />
+                  {selecionando ? 'Pronto' : 'Destacar região'}
+                </Botao>
+                {mural.regs.length ? (
+                  <Botao tom="contorno" tamanho="sm" onClick={() => { setSelecionando(false); aoMudar({ ...bloco, destaques: { ...mural, travado: true } }) }}>
+                    <Lock size={16} />
+                    Travar o mural
+                  </Botao>
+                ) : null}
+              </>
+            ) : null}
+            {!travado ? (
+              <>
+                <Botao tom="contorno" tamanho="sm" icone aria-label="Trocar a arte" title="Trocar a arte" onClick={() => controle.current?.trocar()}>
+                  <ArrowsClockwise size={16} />
+                </Botao>
+                <Botao tom="contorno" tamanho="sm" icone aria-label="Remover a arte" title="Remover a arte" onClick={() => trocarImagem('')}>
+                  <Trash size={16} />
+                </Botao>
+              </>
+            ) : null}
           </span>
         ) : null}
       </header>
       <div className={alta ? 'ct-arte-quadro ct-arte-alta' : 'ct-arte-quadro'}>
-        <CaixaDeImagem
-          caber
-          controle={controle}
-          leitura={travado}
-          imagem={bloco.imagem}
-          arte={bloco.arte}
-          aoMudarImagem={(img) => aoMudar({ ...bloco, imagem: img })}
-        />
+        {comMural && dim ? (
+          <MuralDaArte
+            imagem={bloco.imagem}
+            dimensoes={dim}
+            mural={mural}
+            selecionando={selecionando && !travado}
+            aoTerminarDeSelecionar={() => setSelecionando(false)}
+            aoMudar={(m) => aoMudar({ ...bloco, destaques: m })}
+          />
+        ) : null}
+        {/* a caixa de sempre fica montada (escondida com o mural à vista): é ela
+            que sabe abrir o arquivo quando alguém clica em Trocar */}
+        <div className={comMural ? 'ct-arte-caixa-oculta' : 'ct-arte-caixa'}>
+          <CaixaDeImagem caber controle={controle} leitura={travado} imagem={bloco.imagem} arte={bloco.arte} aoMudarImagem={trocarImagem} />
+        </div>
       </div>
+      {selecionando ? <p className="ct-hl-dica">Arraste em cima da arte para escolher a região (até {MAX_DESTAQUES}). Esc desiste.</p> : null}
     </section>
   )
 }

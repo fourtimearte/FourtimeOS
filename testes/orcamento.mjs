@@ -275,7 +275,7 @@ await secao(async () => {
   await pausa(pg, 400)
   conta(/CALÇAO MASC SEM BOLSO/.test(await texto(pg, '.ct-rf')) && /Layout 2 de 3/.test(await texto(pg, '.ct-ly-conta')), 'escolher o L-02 na lista abre ele')
   const quadro = await caixa(pg, '.ct-arte-quadro')
-  conta(quadro && Math.round(quadro.h) === 511, `a arte alta ganha a caixa de 511 (${quadro && Math.round(quadro.h)})`)
+  conta(quadro && Math.round(quadro.h) === 511, `a arte alta ganha o quadro de 511 (${quadro && Math.round(quadro.h)})`)
   conta(await pg.locator('.ct-chaves-2 .ct-chave[aria-pressed="true"]', { hasText: 'Cliente' }).count() === 1 && await pg.locator('.ct-chaves-3 .ct-chave[aria-pressed="true"]', { hasText: 'DTF' }).count() === 1, 'a etiqueta do L-02: Cliente em DTF')
   /* duplicar e remover */
   await pg.getByRole('button', { name: 'Próximo layout' }).click()
@@ -303,6 +303,84 @@ await secao(async () => {
   const b1 = g?.corpo.corpo.produtos[0].bloco
   conta(b1 && b1.design.some((d) => d.tag === 'Eti. Cliente') && !b1.design.some((d) => d.tag === 'Eti. Fourtime') && b1.design.some((d) => d.tag === 'Silk') && b1.grade.P === 12 && b1.grade.G === 12 && g.corpo.corpo.produtos[0].precoPorTamanho.M === 70, 'o Salvar leva a etiqueta, a técnica, a grade e o valor mudados')
   conta(!erros.length, 'sem erro de JavaScript (3b): ' + erros.join(' | '))
+})
+
+/* 3c. o highlight do mockup (parte 4, decisão 164) */
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  const modo = () => pg.locator('.ct-arte-bts button', { hasText: /Destacar região|Pronto/ })
+  const arrastar = async (x0, y0, x1, y1) => {
+    if (!(await pg.locator('.ct-hl-sel').count())) await modo().click()
+    await pausa(pg, 150)
+    const a = await pg.evaluate(() => { const i = document.querySelector('.ct-hl-arte').getBoundingClientRect(); return { x: i.left, y: i.top, w: i.width, h: i.height } })
+    await pg.mouse.move(a.x + x0 * a.w, a.y + y0 * a.h)
+    await pg.mouse.down()
+    await pg.mouse.move(a.x + x1 * a.w, a.y + y1 * a.h, { steps: 6 })
+    await pg.mouse.up()
+    await pausa(pg, 250)
+  }
+  const thumbs = () => pg.evaluate(() => { const a = document.querySelector('.ct-hl-area').getBoundingClientRect(); return [...document.querySelectorAll('.ct-hl-th')].map((t) => { const r = t.getBoundingClientRect(); return { x: r.left - a.left, y: r.top - a.top, w: r.width, h: r.height, bp: t.style.backgroundPosition, bs: t.style.backgroundSize } }) })
+  await modo().click()
+  await pausa(pg, 200)
+  conta(await pg.locator('.ct-hl-sel').count() === 1 && (await modo().getAttribute('aria-pressed')) === 'true', 'Destacar região liga o modo de escolher em cima da arte')
+  await arrastar(0.1, 0.3, 0.3, 0.42)
+  let t = await thumbs()
+  const arte = await pg.evaluate(() => { const a = document.querySelector('.ct-hl-area').getBoundingClientRect(); const i = document.querySelector('.ct-hl-arte').getBoundingClientRect(); return { x: i.left - a.left, w: i.width, aw: a.width, ah: a.height } })
+  conta(t.length === 1 && arte.x < 2, 'a primeira região vira destaque e a arte desliza para a esquerda')
+  conta(await pg.locator('.ct-hl-sel').count() === 0, 'depois de escolher a região o modo de destacar termina')
+  await arrastar(0.55, 0.2, 0.85, 0.7)
+  await arrastar(0.3, 0.05, 0.7, 0.15)
+  t = await thumbs()
+  conta(t.length === 3 && t.every((c) => c.x >= arte.w - 1 && c.x + c.w <= arte.aw + 1 && c.y >= -1 && c.y + c.h <= arte.ah + 1), `três destaques na sobra da direita, dentro da caixa (${t.length})`)
+  const formatos = await pg.evaluate(() => { const im = document.querySelector('.ct-hl-arte'); return [...document.querySelectorAll('.ct-hl-th')].map((x) => x.getBoundingClientRect()).map((r) => r.width / r.height) })
+  const regsTela = [[0.2, 0.12], [0.3, 0.5], [0.4, 0.1]].map(([w, h]) => (w * 1000) / (h * 857))
+  conta(formatos.every((f, i) => Math.abs(f - regsTela[i]) / regsTela[i] < 0.03), 'cada destaque com o formato da região (erro < 3%)')
+  /* ajustar um destaque */
+  await pg.locator('.ct-hl-th').nth(1).click()
+  await pausa(pg, 150)
+  conta(/Destaque 2/.test(await texto(pg, '.ct-hl-barra')) && /100%/.test(await texto(pg, '.ct-hl-barra')), 'clicar no destaque 2 mostra a barra dele com o zoom dele')
+  const antes = (await thumbs())[1]
+  await pg.locator('.ct-hl-zoom input').fill('200')
+  await pausa(pg, 150)
+  conta((await thumbs())[1].bs !== antes.bs && /200%/.test(await texto(pg, '.ct-hl-barra')), 'a régua muda o zoom só dele')
+  await pg.locator('.ct-hl-th').nth(1).focus()
+  await pg.keyboard.press('ArrowLeft')
+  await pausa(pg, 100)
+  conta((await thumbs())[1].bp !== antes.bp, 'a seta do teclado move a arte dentro do destaque')
+  await pg.locator('.ct-hl-th').nth(0).click()
+  await pausa(pg, 100)
+  conta(/Destaque 1/.test(await texto(pg, '.ct-hl-barra')) && /100%/.test(await texto(pg, '.ct-hl-barra')), 'trocar para o destaque 1 traz o zoom dele de volta à régua')
+  await foto(pg, '1920-destaques', false)
+  /* travar */
+  await pg.locator('.ct-arte-bts button', { hasText: 'Travar o mural' }).click()
+  await pausa(pg, 200)
+  conta(await pg.locator('.ct-hl-marca').count() === 0 && await pg.locator('.ct-hl-barra').count() === 0 && /Mural travado/.test(await texto(pg, '.ct-arte-cab')), 'travar esconde as marcas e a barra')
+  const p1 = (await thumbs())[0].bp
+  const th0 = await caixa(pg, '.ct-hl-th')
+  await pg.mouse.move(th0.x + 10, th0.y + 10); await pg.mouse.down(); await pg.mouse.move(th0.x + 40, th0.y + 30, { steps: 3 }); await pg.mouse.up()
+  conta((await thumbs())[0].bp === p1, 'travado, o arrasto não mexe no destaque')
+  await foto(pg, '1920-destaques-travado', false)
+  await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
+  await pausa(pg, 700)
+  const g = banco.gravados.filter((x) => x.metodo === 'PATCH').at(-1)
+  const m = g?.corpo.corpo.produtos[0].bloco.destaques
+  conta(m && m.regs.length === 3 && m.travado === true && m.regs[1].z === 2, 'o Salvar leva o mural: três regiões, o zoom do 2 e a trava')
+  /* o mural volta do banco depois de salvar (a cotação é relida) */
+  conta(await pg.locator('.ct-hl-th').count() === 3, 'relido do banco, o mural continua lá')
+  await pg.locator('.ct-arte-bts button', { hasText: 'Destravar' }).click()
+  await pausa(pg, 150)
+  await pg.locator('.ct-hl-th').nth(2).click()
+  await pg.locator('.ct-hl-barra button', { hasText: 'Tirar' }).click()
+  await pausa(pg, 150)
+  conta(await pg.locator('.ct-hl-th').count() === 2, 'Tirar remove o destaque escolhido')
+  /* o outro layout tem o mural dele */
+  await pg.locator('.ct-ly-linha').nth(1).click()
+  await pausa(pg, 400)
+  conta(await pg.locator('.ct-hl-th').count() === 0 && await pg.locator('.ct-arte-caixa').count() === 1, 'o L-02 abre sem destaques, com a caixa de sempre')
+  const altaH = await caixa(pg, '.ct-arte-caixa')
+  conta(altaH && Math.round(altaH.h) === 483, `na arte alta a caixa cresce (${altaH && Math.round(altaH.h)})`)
+  conta(!erros.length, 'sem erro de JavaScript (3c): ' + erros.join(' | '))
 })
 
 /* 4. o vendedor não vê a engrenagem; as abas que não cabem vão para os três pontos */

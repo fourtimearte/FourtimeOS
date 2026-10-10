@@ -29,8 +29,8 @@ import './cotacao.css'
 
    Da esquerda para a direita: a seta de voltar às cotações; o azulejo da
    cotação (número, cliente, data e o estado); um cartão de células que começa
-   com as duas PORTAS grandes, Dados do pedido e Fechamento (cada uma abre o
-   modal da decisão 161 e fica em tinta enquanto ele está aberto); e as
+   com as duas PORTAS grandes, Dados do pedido e Fechamento (cada uma abre a
+   gaveta das pranchas 124 e 124b e fica em tinta enquanto ela está aberta); e as
    células Layouts, Subtotal e Total. Tudo em 84 px de altura, a mesma dos
    botões em duas fileiras ao lado.
 
@@ -108,7 +108,6 @@ export function TopoDoEditor({
 }) {
   const total = totalDaCotacao(c)
   const pecas = pecasDaCotacao(c)
-  const informes = c.informes.filter((i) => i.noDocumento).length
   const completo = dadosCompletos(c)
   const quem = [c.vendedor, c.validaAte ? 'vale até ' + diaEMes(c.validaAte) : ''].filter(Boolean).join(' · ')
 
@@ -144,7 +143,7 @@ export function TopoDoEditor({
               icone={Percent}
               titulo="Fechamento"
               aberta={porta === 'fechamento'}
-              linhas={[textoDosAjustes(c), plural(informes, 'informe', 'informes') + ' · ' + plural(c.enviadas.length, 'envio', 'envios')]}
+              linhas={[textoDosAjustes(c), plural(c.enviadas.length, 'envio', 'envios')]}
               aoAbrir={() => aoAbrir('fechamento')}
             />
           </div>
@@ -223,7 +222,7 @@ function PortaDoTopo({
   aoAbrir: () => void
 }) {
   return (
-    <button type="button" className={aberta ? 'ct-porta ct-porta-aberta ' + LINHA_ESCOLHIDA : 'ct-porta'} aria-haspopup="dialog" aria-expanded={aberta} onClick={aoAbrir}>
+    <button type="button" className={aberta ? 'ct-porta ct-porta-aberta ' + LINHA_ESCOLHIDA : 'ct-porta'} aria-expanded={aberta} onClick={aoAbrir}>
       <span className="ct-porta-ic">
         <Icone size={18} />
       </span>

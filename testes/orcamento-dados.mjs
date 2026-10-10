@@ -92,7 +92,7 @@ const NOMES = ['Atlético Exemplo', 'Academia Exemplo', 'Auto Peças Exemplo', '
 /* rica: a CO2026-0131 com o que a folha das páginas de layout precisa
    mostrar: destaques na arte larga (L-01) e na alta (L-02), Silk e Bordado
    sem cor ao lado da Sublimação, e uma grade com infantil no L-03 */
-export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false, semPresets = false } = {}) {
+export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false, semPresets = false, semInformes = false } = {}) {
   /* a lista mistura os estados para a página do orçamento (parte 8): três
      enviadas (uma vence em 2 dias, outra amanhã), uma recusada, um rascunho
      mexido ontem e uma aprovada, que virou o pedido PD004410 */
@@ -206,7 +206,43 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }),
   ]
 
+  /* os informes da casa (060): três de produção e três termos, um desmarcado */
+  const informesDaCasa = semInformes
+    ? null
+    : [
+        { id: 'ic-p1', grupo: 'producao', texto: 'O prazo começa na aprovação da arte e do pagamento.', nasce_marcado: true, ordem: 1 },
+        { id: 'ic-p2', grupo: 'producao', texto: 'Tolerância de 2 cm nas medidas.', nasce_marcado: true, ordem: 2 },
+        { id: 'ic-p3', grupo: 'producao', texto: 'Mínimo de 10 peças por modelo.', nasce_marcado: false, ordem: 3 },
+        { id: 'ic-t1', grupo: 'termos', texto: 'Válida até a data do cabeçalho.', nasce_marcado: true, ordem: 1 },
+        { id: 'ic-t2', grupo: 'termos', texto: 'Pagamento: 50% na aprovação.', nasce_marcado: true, ordem: 2 },
+        { id: 'ic-t3', grupo: 'termos', texto: 'Frete por conta do cliente.', nasce_marcado: false, ordem: 3 },
+      ]
   function responder(metodo, u, corpo) {
+    if (u.includes('/rest/v1/informe_da_casa')) {
+      if (!informesDaCasa) return { status: 404, corpo: { code: 'PGRST205', message: "Could not find the table 'public.informe_da_casa' in the schema cache" } }
+      if (metodo === 'GET') {
+        const ordem = (x) => (x.grupo === 'producao' ? 0 : 1000) + x.ordem
+        return { status: 200, corpo: [...informesDaCasa].sort((a, b) => ordem(a) - ordem(b)) }
+      }
+      if (metodo === 'POST') {
+        gravados.push({ metodo, u: 'informe_da_casa', corpo })
+        for (const l of corpo) {
+          const i = informesDaCasa.findIndex((x) => x.id === l.id)
+          if (i >= 0) informesDaCasa[i] = { ...informesDaCasa[i], ...l }
+          else informesDaCasa.push(l)
+        }
+        return { status: 201, corpo: null }
+      }
+      if (metodo === 'DELETE') {
+        const ids = (u.match(/id=in\.\(([^)]*)\)/) || [])[1]?.split(',') ?? []
+        gravados.push({ metodo, u: 'informe_da_casa', ids })
+        for (const id of ids) {
+          const i = informesDaCasa.findIndex((x) => x.id === id)
+          if (i >= 0) informesDaCasa.splice(i, 1)
+        }
+        return { status: 204, corpo: null }
+      }
+    }
     if (u.includes('/rest/v1/cor_de_impressao')) return { status: 200, corpo: CORES }
     if (u.includes('/rest/v1/grupo_de_referencia')) return { status: 200, corpo: GRUPOS_REF }
     if (u.includes('/rest/v1/referencia?')) return { status: 200, corpo: REFERENCIAS_DO_BANCO }
@@ -270,5 +306,5 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }
     return null
   }
-  return { responder, gravados, corpos, presets, CORES, REFERENCIAS_DO_BANCO }
+  return { responder, gravados, corpos, presets, informesDaCasa, CORES, REFERENCIAS_DO_BANCO }
 }

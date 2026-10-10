@@ -15,7 +15,7 @@ import {
   TelaEquipe,
   TelaPaginas,
 } from '@modules/config'
-import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao } from '@modules/cotacao'
+import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao, TelaInformesDaCasa } from '@modules/cotacao'
 import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
@@ -67,6 +67,10 @@ export const rotas = createBrowserRouter([
       { path: 'funil', element: pede('funil', <TelaFunil />) },
       { path: 'clientes', element: pede('clientes', <TelaClientes />) },
       { path: 'cotacao', element: pede('cotacao', <TelaCotacao />) },
+      /* OS INFORMES DA CASA (060): a página que a engrenagem do editor abre.
+         Vem antes de cotacao/:id só para quem lê; o roteador já prefere o
+         caminho fixo ao que tem :id. */
+      { path: 'cotacao/informes', element: pede('cotacao', <TelaInformesDaCasa />) },
       { path: 'cotacao/:id', element: pede('cotacao', <EditorDeCotacao />) },
       { path: 'cotacao/:id/folha', element: pede('cotacao', <DocumentoDaCotacao />) },
       /* A MESMA FOLHA, OUTRO LEITOR. A do cliente nasce com valor e a da

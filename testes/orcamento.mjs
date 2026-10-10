@@ -7,10 +7,15 @@
         cotação; os quatro botões em duas fileiras, a de cima no topo do
         cabeçalho e a de baixo no pé; tudo dentro dos 946 px de uma tela 1080p
      2. a fileira das cotações abertas: a aberta com o X, as que não cabem nos
-        três pontos (decisão 138), a engrenagem só para o administrador
-     3. o modal dos dados: abre pelas duas portas, foco no X, clicar fora NÃO
-        fecha, Cancelar e Esc devolvem o que estava, Concluir aplica e deixa a
-        cotação "não salva"; cabe inteiro nos 946 px
+        três pontos (decisão 138), a engrenagem só para a gerência
+     3. a gaveta dos dados (pranchas 124 e 124b): abre pelas duas portas entre
+        o cabeçalho e as abas e empurra a página, clicar fora NÃO fecha, a
+        outra porta troca, Fechar, Esc e a mesma porta recolhem (com mudança,
+        o primeiro clique avisa e não descarta), Concluir aplica e deixa a
+        cotação "não salva"
+     3b. a página Informes e termos (123b), aberta pela engrenagem (123): os
+        dois grupos do banco, acrescentar, mudar, ordenar, apagar e salvar;
+        o vendedor só lê; antes da 060 ela avisa e não salva
      4. o Salvar grava e a seta salva e baixa o .cft
      5. o Apagar mora nos três pontos e pergunta antes, com o Cancelar em foco
      6. as larguras de 390, 820, 1440 e 1920 nos dois temas: nada rola de lado
@@ -43,9 +48,9 @@ mkdirSync(PASTA, { recursive: true })
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
 const abertos = new Set()
-async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false, semPresets = false }) {
+async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false, semPresets = false, semInformes = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
-  const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica, semPresets })
+  const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica, semPresets, semInformes })
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
@@ -76,12 +81,18 @@ async function ir(pg, rota = '/cotacao/c1') {
   await pg.evaluate(() => document.fonts.ready)
   await pg.waitForTimeout(500)
 }
+async function irInformes(pg) {
+  await pg.goto(SITE + '/cotacao/informes?de=c1', { waitUntil: 'networkidle' })
+  await pg.waitForSelector('.ct-ic-grupo', { timeout: 15000 })
+  await pg.evaluate(() => document.fonts.ready)
+}
 const pausa = (pg, ms = 300) => pg.waitForTimeout(ms)
 const foto = (pg, nome, cheia = true) => pg.screenshot({ path: `${PASTA}/${nome}.png`, fullPage: cheia })
 const sobra = (pg) => pg.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 const caixa = (pg, s) => pg.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, b: r.bottom, d: r.right } }, s)
 const texto = (pg, s) => pg.evaluate((s) => (document.querySelector(s)?.innerText ?? '').replace(/\s+/g, ' ').trim(), s)
 const naModal = (pg) => pg.locator('dialog.modal[open]')
+const naGaveta = (pg) => pg.locator('.ct-gav')
 
 const achados = []
 const conta = (certo, t) => { achados.push({ certo: !!certo, t }); console.log((certo ? 'ok   ' : 'RUIM ') + t) }
@@ -110,7 +121,7 @@ await secao(async () => {
   const t = await texto(pg, '.ct-cb')
   conta(/CO2026-0131/.test(t) && /Atlético Exemplo/.test(t) && /criada em/.test(t), 'o azulejo diz número, cliente e data')
   conta(/Dados do pedido/.test(t) && /Dani · vale até 20\/10/.test(t), 'a porta dos dados diz o vendedor e o vale até')
-  conta(/1 desconto/.test(t) && /3 informes · 1 envio/.test(t), 'a porta do fechamento conta descontos, informes e envios')
+  conta(/1 desconto/.test(t) && /1 envio/.test(t) && !/informe/.test(t), 'a porta do fechamento conta descontos e envios, e não informes')
   /* 186 peças; subtotal 89*62+3*6 (XG a 68) + 89*38 + 8*74 = 5536 + 3382 + 592 = 9510; total com 5% de desconto 9034,50 */
   conta(/Layouts\s*3\s*186 peças/i.test(t), 'a célula dos layouts: 3 e 186 peças')
   conta(/R\$\s*9\.510,00/.test(t) && /fidelidade 5%: - R\$\s*475,50/.test(t), 'o subtotal e o desconto que tirou dele')
@@ -120,86 +131,180 @@ await secao(async () => {
   conta(faixa && faixa.b <= 946, `o cabeçalho e as abas cabem nos 946 px (${faixa && Math.round(faixa.b)})`)
   conta(await pg.locator('.ct-docs > .ct-docs-seg .ct-doc').count() === 6, 'as seis cotações abertas à vista em 1920')
   conta(await pg.locator('.ct-doc[aria-selected="true"] .ct-doc-x').count() === 1, 'a aberta tem o X')
-  conta(await pg.getByRole('button', { name: 'Ferramentas do administrador' }).count() === 1, 'o administrador vê a engrenagem')
+  conta(await pg.getByRole('button', { name: 'Configurações do editor' }).count() === 1, 'o administrador vê a engrenagem')
   conta(await pg.getByText('Esconder os valores').count() === 0 && !(await pg.evaluate(() => [...document.querySelectorAll('button, span')].some((e) => /^Apagar cotação$/.test(e.textContent.trim()) && e.checkVisibility()))), 'nem Esconder os valores nem Apagar à vista')
   await foto(pg, '1920-editor', false)
   conta(!erros.length, 'sem erro de JavaScript (1): ' + erros.join(' | '))
 })
 
-/* 2. o modal dos dados */
+/* 2. a gaveta dos dados (124 e 124b) */
 await secao(async () => {
   const { pg, erros } = await abrir(nav, { largura: 1920 })
   await ir(pg)
+  const faixaAntes = await caixa(pg, '.ct-faixa')
   await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
   await pausa(pg, 400)
-  conta(await naModal(pg).count() === 1, 'a porta Dados do pedido abre o modal')
-  conta(await pg.evaluate(() => document.activeElement?.getAttribute('aria-label')) === 'Fechar', 'ao abrir, o foco vai para o X')
-  conta(await pg.locator('.ct-porta-aberta', { hasText: 'Dados do pedido' }).count() === 1, 'a porta fica em tinta com o modal aberto')
-  const caixaModal = await caixa(pg, 'dialog.modal[open] .caixa')
-  conta(caixaModal && caixaModal.w <= 1760.5 && caixaModal.y >= 23 && caixaModal.b <= 946 - 23, `o modal tem até 1760 de largura e cabe nos 946 (${caixaModal && [Math.round(caixaModal.w), Math.round(caixaModal.y), Math.round(caixaModal.b)].join(', ')})`)
-  const rolaDentro = await pg.evaluate(() => { const c = document.querySelector('dialog.modal[open] .sobre-corpo'); return c ? c.scrollHeight - c.clientHeight : -1 })
-  conta(rolaDentro <= 1, `o miolo do modal não rola em 1920 x 946 (${rolaDentro})`)
-  const titulos = await pg.evaluate(() => [...document.querySelectorAll('dialog.modal[open] .ct-mc-cab')].map((h) => h.innerText.split('\n')[0].trim()))
-  conta(titulos.join('|') === 'Quem compra|O que foi combinado|O que a fábrica precisa saber|Ajustes no valor|Informes e termos|O que já foi enviado', 'os seis cartões na ordem do modelo B: ' + titulos.join(', '))
-  const metades = await pg.evaluate(() => [...document.querySelectorAll('.ct-md-metade')].map((m) => Math.round(m.getBoundingClientRect().left)))
-  conta(metades.length === 2 && metades[1] > metades[0] + 600, 'meio a meio: o pedido à esquerda, o fechamento à direita')
-  await foto(pg, '1920-modal', false)
+  conta(await naGaveta(pg).count() === 1 && await naModal(pg).count() === 0, 'a porta Dados do pedido abre a gaveta, e não um modal')
+  conta(await pg.locator('.ct-porta-aberta', { hasText: 'Dados do pedido' }).count() === 1, 'a porta fica em tinta com a gaveta aberta')
+  const topo = await caixa(pg, '.ct-topo')
+  const gv = await caixa(pg, '.ct-gav')
+  const faixa = await caixa(pg, '.ct-faixa')
+  conta(gv && topo && faixa && gv.y >= topo.b + 15 && faixa.y >= gv.b + 15, `a gaveta fica entre o cabeçalho e as abas (${topo && Math.round(topo.b)}, ${gv && Math.round(gv.y)} a ${gv && Math.round(gv.b)}, ${faixa && Math.round(faixa.y)})`)
+  conta(faixa && faixaAntes && faixa.y - faixaAntes.y > 300, `as abas e o editor descem (${faixaAntes && Math.round(faixaAntes.y)} para ${faixa && Math.round(faixa.y)})`)
+  conta(await pg.evaluate(() => document.activeElement?.classList.contains('ct-gav')), 'ao abrir, o foco vai para a gaveta')
+  let titulos = await pg.evaluate(() => [...document.querySelectorAll('.ct-gav .ct-mc-cab')].map((h) => [h.innerText.split('\n')[0].trim(), Math.round(h.getBoundingClientRect().top)]))
+  conta(titulos.map((x) => x[0]).join('|') === 'Quem compra|O que foi combinado|O que a fábrica precisa saber' && new Set(titulos.map((x) => x[1])).size === 1, 'Dados do pedido: os três cartões lado a lado: ' + titulos.map((x) => x[0]).join(', '))
+  await foto(pg, '1920-gaveta-dados')
   /* clicar fora não fecha */
   await pg.mouse.click(8, 470)
   await pausa(pg)
-  conta(await naModal(pg).count() === 1, 'clicar fora NÃO fecha o modal')
-  /* Cancelar devolve */
-  const cliente = naModal(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first()
-  await cliente.fill('Atlético Mudado')
-  await naModal(pg).getByRole('button', { name: 'Cancelar' }).click()
-  await pausa(pg)
-  conta(await naModal(pg).count() === 0 && /Atlético Exemplo/.test(await texto(pg, '.ct-cb-id')) && await pg.locator('.ct-ponto-sujo').count() === 0, 'Cancelar fecha e devolve o que estava')
-  /* Esc devolve */
+  conta(await naGaveta(pg).count() === 1, 'clicar fora NÃO fecha a gaveta')
+  /* a outra porta troca o conteúdo */
+  await pg.locator('.ct-porta', { hasText: 'Fechamento' }).click()
+  await pausa(pg, 400)
+  titulos = await pg.evaluate(() => [...document.querySelectorAll('.ct-gav .ct-mc-cab')].map((h) => h.innerText.split('\n')[0].trim()))
+  conta(await pg.locator('.ct-gav[data-qual="fechamento"]').count() === 1 && titulos.join('|') === 'Ajustes no valor|O que já foi enviado', 'a outra porta troca para o Fechamento, sem os informes: ' + titulos.join(', '))
+  conta(await pg.locator('.ct-porta-aberta').count() === 1 && await pg.locator('.ct-porta-aberta', { hasText: 'Fechamento' }).count() === 1, 'só a porta do Fechamento fica em tinta')
+  await foto(pg, '1920-gaveta-fechamento')
+  /* a mesma porta recolhe, e a página volta ao lugar */
   await pg.locator('.ct-porta', { hasText: 'Fechamento' }).click()
   await pausa(pg)
-  await naModal(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first().fill('Pelo Esc')
+  const faixaDepois = await caixa(pg, '.ct-faixa')
+  conta(await naGaveta(pg).count() === 0 && await pg.locator('.ct-porta-aberta').count() === 0 && Math.abs(faixaDepois.y - faixaAntes.y) < 1, 'a mesma porta recolhe, e as abas voltam ao lugar')
+  /* Fechar com mudança: o primeiro clique avisa, o segundo descarta */
+  await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
+  await pausa(pg)
+  await naGaveta(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first().fill('Atlético Mudado')
+  await naGaveta(pg).getByRole('button', { name: 'Fechar' }).click()
+  await pausa(pg)
+  conta(await naGaveta(pg).count() === 1 && await pg.getByText('Há mudanças não concluídas').count() >= 1, 'Fechar com mudança avisa e não descarta no primeiro clique')
+  await naGaveta(pg).getByRole('button', { name: 'Fechar' }).click()
+  await pausa(pg)
+  conta(await naGaveta(pg).count() === 0 && /Atlético Exemplo/.test(await texto(pg, '.ct-cb-id')) && await pg.locator('.ct-ponto-sujo').count() === 0, 'o segundo Fechar recolhe e devolve o que estava')
+  /* Esc: igual */
+  await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
+  await pausa(pg)
+  await naGaveta(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first().fill('Pelo Esc')
   await pg.keyboard.press('Escape')
   await pausa(pg)
-  conta(await naModal(pg).count() === 0 && !/Pelo Esc/.test(await texto(pg, '.ct-cb-id')), 'Esc fecha sem aplicar')
+  const aindaAberta = await naGaveta(pg).count()
+  await pg.keyboard.press('Escape')
+  await pausa(pg)
+  conta(aindaAberta === 1 && await naGaveta(pg).count() === 0 && !/Pelo Esc/.test(await texto(pg, '.ct-cb-id')), 'Esc avisa na primeira vez e recolhe sem aplicar na segunda')
+  /* sem mudança, Fechar recolhe de primeira */
+  await pg.locator('.ct-porta', { hasText: 'Fechamento' }).click()
+  await pausa(pg)
+  await naGaveta(pg).getByRole('button', { name: 'Fechar' }).click()
+  await pausa(pg)
+  conta(await naGaveta(pg).count() === 0, 'sem mudança, Fechar recolhe de primeira')
   /* Concluir aplica, e a cotação fica não salva */
   await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
   await pausa(pg)
-  await naModal(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first().fill('Atlético Novo')
-  await naModal(pg).getByRole('button', { name: 'Concluir' }).click()
+  await naGaveta(pg).locator('.campo', { hasText: 'Cliente' }).locator('input').first().fill('Atlético Novo')
+  await naGaveta(pg).getByRole('button', { name: 'Concluir' }).click()
   await pausa(pg)
-  conta(await naModal(pg).count() === 0 && /Atlético Novo/.test(await texto(pg, '.ct-cb-id')), 'Concluir aplica o que foi digitado')
+  conta(await naGaveta(pg).count() === 0 && /Atlético Novo/.test(await texto(pg, '.ct-cb-id')), 'Concluir aplica o que foi digitado')
   conta(await pg.locator('.ct-ponto-sujo').count() === 1, 'o Salvar ganha o ponto de "não salva"')
   conta(!erros.length, 'sem erro de JavaScript (2): ' + erros.join(' | '))
 })
 
-/* 2b. os informes em dois grupos no editor, e a folha que monta igual (11/10/2026) */
+/* 2b. a engrenagem e a página Informes e termos (123 e 123b) */
 await secao(async () => {
   const { pg, erros, banco } = await abrir(nav, { largura: 1920 })
   await ir(pg)
-  await pg.locator('.ct-porta', { hasText: 'Fechamento' }).click()
-  await pausa(pg, 400)
-  const grupos = () => pg.evaluate(() => [...document.querySelectorAll('dialog.modal[open] .ct-if-grupo')].map((g) => [g.dataset.grupo, g.querySelector('.ct-if-cab').innerText.replace(/\s+/g, ' ').trim(), g.querySelectorAll('.ct-informe').length]))
-  let g = await grupos()
-  conta(g.length === 2 && /^Sobre a produção 2 na folha/.test(g[0][1]) && g[0][2] === 2 && /^Termos 1 na folha/.test(g[1][1]) && g[1][2] === 2, 'no editor, os informes em dois grupos, com quantos saem na folha: ' + g.map((x) => x[1].split(' ·')[0]).join(' | '))
-  conta(await naModal(pg).getByRole('button', { name: 'Adicionar informe' }).count() === 1 && await naModal(pg).getByRole('button', { name: 'Adicionar termo' }).count() === 1, 'cada grupo com o seu Adicionar')
-  await foto(pg, '1920-modal-informes', false)
-  /* passar "Cores de tela" para os termos, e escrever um termo novo */
-  await naModal(pg).locator('.ct-if-grupo[data-grupo="producao"] .ct-informe').nth(1).getByRole('button', { name: 'Passar para Termos' }).click()
-  await naModal(pg).getByRole('button', { name: 'Adicionar termo' }).click()
-  await naModal(pg).locator('.ct-if-grupo[data-grupo="termos"] textarea').last().fill('Troca de tamanho só antes do corte.')
-  g = await grupos()
-  conta(g[0][2] === 1 && g[1][2] === 4, 'a seta passa o informe para Termos, e o Adicionar termo nasce lá (' + g.map((x) => x[2]).join(' e ') + ')')
-  await naModal(pg).getByRole('button', { name: 'Concluir' }).click()
+  await pg.getByRole('button', { name: 'Configurações do editor' }).click()
   await pausa(pg)
-  await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
+  const itens = await pg.evaluate(() => [...document.querySelectorAll('.ct-menu-eng .mn-item')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()))
+  conta(itens.length === 2 && /^Informes e termos/.test(itens[0]) && /^Kit de teste/.test(itens[1]), 'a engrenagem do administrador: Informes e termos e Kit de teste: ' + itens.join(' | '))
+  await foto(pg, '1920-engrenagem', false)
+  await pg.locator('.ct-menu-eng .mn-item', { hasText: 'Informes e termos' }).click()
+  await pg.waitForSelector('.ct-ic-grupo', { timeout: 8000 })
+  await pausa(pg, 400)
+  conta(/\/cotacao\/informes\?de=c1$/.test(pg.url()), 'abre a página dos informes, lembrando de onde veio: ' + pg.url().replace(SITE, ''))
+  const grupos = () => pg.evaluate(() => [...document.querySelectorAll('.ct-ic-grupo')].map((g) => [g.dataset.grupo, g.querySelector('.ct-mc-apoio').innerText.replace(/\s+/g, ' ').trim(), [...g.querySelectorAll('textarea')].map((t) => t.value)]))
+  let g = await grupos()
+  conta(g.length === 2 && g[0][0] === 'producao' && g[1][0] === 'termos' && /^3 informes · 2 nascem marcados/.test(g[0][1]) && /^3 termos · 2 nascem marcados/.test(g[1][1]), 'os dois grupos do banco, com quantos nascem marcados: ' + g.map((x) => x[1].split(' · ').slice(0, 2).join(' ')).join(' | '))
+  const cols = await pg.evaluate(() => [...document.querySelectorAll('.ct-ic-grupo')].map((e) => Math.round(e.getBoundingClientRect().top)))
+  conta(cols.length === 2 && cols[0] === cols[1], 'os dois cartões lado a lado')
+  conta(await pg.getByRole('button', { name: 'Salvo' }).isDisabled(), 'sem mudança, o Salvar diz Salvo e fica apagado')
+  await foto(pg, '1920-informes-da-casa')
+  /* mudar um texto, desmarcar, acrescentar, subir pela alça e apagar */
+  await pg.locator('.ct-ic-grupo[data-grupo="producao"] textarea').first().fill('O prazo começa na aprovação da arte.')
+  await pg.getByRole('switch', { name: 'Nasce marcado, texto 2' }).first().click()
+  await pg.getByRole('button', { name: 'Adicionar termo' }).click()
+  await pausa(pg)
+  conta(await pg.evaluate(() => document.activeElement?.closest('.ct-ic-grupo')?.dataset.grupo === 'termos' && document.activeElement?.tagName === 'TEXTAREA'), 'o termo novo nasce no fim dos termos, com o cursor dentro')
+  await pg.keyboard.type('Troca de tamanho só antes do corte.')
+  const alca = pg.locator('.ct-ic-grupo[data-grupo="termos"] .ct-ic-pega').last()
+  await alca.focus()
+  await pg.keyboard.press('ArrowUp')
+  await pg.keyboard.press('ArrowUp')
+  await pausa(pg)
+  await pg.getByRole('button', { name: 'Apagar o texto 3' }).first().click()
+  await pausa(pg)
+  g = await grupos()
+  conta(g[0][2].length === 2 && g[0][2][0] === 'O prazo começa na aprovação da arte.' && g[1][2].length === 4 && g[1][2][1] === 'Troca de tamanho só antes do corte.', 'muda, acrescenta, sobe duas casas pela alça e apaga: ' + g.map((x) => x[2].length).join(' e '))
+  /* sair sem salvar avisa primeiro */
+  await pg.getByRole('button', { name: 'Voltar ao editor' }).first().click()
+  await pausa(pg)
+  conta(/\/cotacao\/informes/.test(pg.url()) && await pg.getByText('Há mudanças sem salvar').count() >= 1, 'Voltar com mudança avisa antes de sair')
+  await pg.getByRole('button', { name: 'Salvar', exact: true }).click()
   await pausa(pg, 700)
-  const inf = banco.gravados.filter((x) => x.metodo === 'PATCH').pop()?.corpo.corpo.informes ?? []
-  conta(inf.length === 5 && inf.every((x) => x.grupo === 'producao' || x.grupo === 'termos') && inf.find((x) => /Cores/.test(x.texto))?.grupo === 'termos' && inf.find((x) => /^Frete/.test(x.texto))?.grupo === 'termos', 'o banco recebe cada informe com o grupo, e o termo da casa antigo ganhou o dele pelo degrau')
+  const up = banco.gravados.filter((x) => x.u === 'informe_da_casa' && x.metodo === 'POST').pop()?.corpo ?? []
+  const del = banco.gravados.filter((x) => x.u === 'informe_da_casa' && x.metodo === 'DELETE').pop()?.ids ?? []
+  const novo = up.find((x) => /Troca de tamanho/.test(x.texto))
+  conta(up.length === 6 && del.join(',') === 'ic-p3' && novo && novo.grupo === 'termos' && novo.ordem === 2 && up.find((x) => x.id === 'ic-p2')?.nasce_marcado === false, 'Salvar manda a lista com grupo, ordem e marcação, e apaga o que saiu')
+  conta(await pg.getByRole('button', { name: 'Salvo' }).count() === 1, 'depois de salvar, o botão volta a Salvo')
+  await pg.getByRole('button', { name: 'Voltar ao editor' }).first().click()
+  await pg.waitForSelector('.ct-topo')
+  conta(/\/cotacao\/c1$/.test(pg.url()), 'Voltar ao editor volta para a cotação de onde veio')
+  conta(!erros.length, 'sem erro de JavaScript (informes da casa): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, tema: 'dark' })
+  await irInformes(pg)
+  await pausa(pg, 400)
+  await foto(pg, '1440-informes-da-casa-escuro')
+  conta(await sobra(pg) <= 0, '1440 escuro: a página dos informes não rola de lado')
+  conta(!erros.length, 'sem erro de JavaScript (informes 1440): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await irInformes(pg)
+  await pausa(pg, 400)
+  await foto(pg, '390-informes-da-casa')
+  conta(await sobra(pg) <= 0, '390: a página dos informes não rola de lado')
+  const baixos = await pg.evaluate(() => [...document.querySelectorAll('.ct-ic button')].filter((b) => b.getClientRects().length && b.getBoundingClientRect().height < 34 && !b.classList.contains('tgl')).length)
+  conta(baixos === 0, `390: nenhum botão da página baixo demais (${baixos})`)
+  conta(!erros.length, 'sem erro de JavaScript (informes 390): ' + erros.join(' | '))
+})
+
+/* o vendedor só lê; antes da 060 a página avisa e não salva */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, papel: 'vendedor' })
+  await irInformes(pg)
+  await pausa(pg, 400)
+  conta(await pg.locator('.ct-ic-grupo').count() === 2 && await pg.getByRole('button', { name: /^Salv/ }).count() === 0 && await pg.locator('.ct-ic-pega:not(.parada)').count() === 0 && await pg.locator('.ct-ic textarea[readonly]').count() === 6, 'o vendedor lê os seis textos, sem salvar, sem alça e sem escrever')
+  conta(!erros.length, 'sem erro de JavaScript (informes vendedor): ' + erros.join(' | '))
+})
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, semInformes: true })
+  await irInformes(pg)
+  await pausa(pg, 400)
+  conta(await pg.getByText('A tabela dos informes ainda não existe no banco').count() === 1 && await pg.locator('.ct-ic textarea').count() === 9 && await pg.getByRole('button', { name: 'Salvo' }).isDisabled(), 'antes da 060: avisa, mostra os nove de sempre e não salva')
+  conta(!erros.length, 'sem erro de JavaScript (informes antes da 060): ' + erros.join(' | '))
+})
+
+/* a folha monta os informes em dois grupos, como a cotação guardou */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440 })
   await irFolha(pg)
   const cols = await pg.evaluate(() => [...document.querySelectorAll('.fl .dc-inf-grupos > div')].map((d) => [d.dataset.grupo, d.querySelectorAll('li').length]))
-  conta(cols.map((x) => x.join(':')).join(',') === 'producao:1,termos:3', 'a folha monta igual ao editor: ' + cols.map((x) => x.join(' ')).join(', '))
+  conta(cols.map((x) => x.join(':')).join(',') === 'producao:2,termos:1', 'a folha monta os informes guardados na cotação em dois grupos: ' + cols.map((x) => x.join(' ')).join(', '))
   await foto(pg, 'folha-1440-informes-2', false)
-  conta(!erros.length, 'sem erro de JavaScript (informes): ' + erros.join(' | '))
+  conta(!erros.length, 'sem erro de JavaScript (informes na folha): ' + erros.join(' | '))
 })
 
 /* 2c. as cores de impressão do menu vêm do banco: 300 do DTF e 87 da sublimação (11/10/2026) */
@@ -275,13 +380,13 @@ await secao(async () => {
   await ir(pg)
   await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
   await pausa(pg)
-  await naModal(pg).locator('.campo', { hasText: 'Contato' }).locator('input').first().fill('Paula')
-  await naModal(pg).getByRole('button', { name: 'Concluir' }).click()
+  await naGaveta(pg).locator('.campo', { hasText: 'Contato' }).locator('input').first().fill('Paula')
+  await naGaveta(pg).getByRole('button', { name: 'Concluir' }).click()
   await pausa(pg)
   await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
   await pausa(pg, 700)
   const g = banco.gravados.filter((x) => x.metodo === 'PATCH')
-  conta(g.length === 1 && g[0].corpo.corpo.cliente.contato === 'Paula', 'Salvar manda a cotação com o que veio do modal')
+  conta(g.length === 1 && g[0].corpo.corpo.cliente.contato === 'Paula', 'Salvar manda a cotação com o que veio da gaveta')
   conta(await pg.locator('.ct-ponto-sujo').count() === 0, 'depois de salvar, o ponto some')
   const [baixa] = await Promise.all([pg.waitForEvent('download', { timeout: 6000 }), pg.getByRole('button', { name: 'Salvar e baixar o .cft' }).click()])
   conta(/\.cft$/.test(baixa.suggestedFilename()) && banco.gravados.filter((x) => x.metodo === 'PATCH').length === 2, 'a seta salva e baixa o .cft: ' + baixa.suggestedFilename())
@@ -487,7 +592,7 @@ await secao(async () => {
 await secao(async () => {
   const { pg, erros } = await abrir(nav, { largura: 1180, papel: 'vendedor', abertas: 8 })
   await ir(pg, '/cotacao/c8')
-  conta(await pg.getByRole('button', { name: 'Ferramentas do administrador' }).count() === 0, 'o vendedor não vê a engrenagem')
+  conta(await pg.getByRole('button', { name: 'Configurações do editor' }).count() === 0, 'o vendedor não vê a engrenagem')
   const vistas = await pg.locator('.ct-docs > .ct-docs-seg .ct-doc').count()
   conta(vistas < 8 && await pg.locator('.ct-doc-mais').count() === 1, `em 1180 as abas que não cabem vão para os três pontos (${vistas} de 8 à vista)`)
   conta(await pg.locator('.ct-docs > .ct-docs-seg .ct-doc[aria-selected="true"]').count() === 1, 'a aberta (a última da fila) continua à vista')
@@ -515,9 +620,10 @@ for (const tema of ['light', 'dark']) {
       await foto(pg, `${largura}-${tema}`)
       await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
       await pausa(pg, 400)
-      await foto(pg, `${largura}-${tema}-modal`, false)
-      const sobraModal = await pg.evaluate(() => { const c = document.querySelector('dialog.modal[open] .caixa'); return c ? c.scrollWidth - c.clientWidth : 0 })
-      conta(sobraModal <= 0, `${largura} ${tema}: o modal não rola de lado (${sobraModal})`)
+      await foto(pg, `${largura}-${tema}-gaveta`)
+      conta(await sobra(pg) <= 0, `${largura} ${tema}: com a gaveta aberta nada rola de lado (${await sobra(pg)})`)
+      const foraDaGaveta = await pg.evaluate(() => { const g = document.querySelector('.ct-gav'); if (!g) return -1; const r = g.getBoundingClientRect(); return [...g.querySelectorAll('*')].filter((e) => { const x = e.getBoundingClientRect(); return x.width && (x.right > r.right + 0.5 || x.left < r.left - 0.5) }).length })
+      conta(foraDaGaveta === 0, `${largura} ${tema}: nada sai da gaveta (${foraDaGaveta})`)
       conta(!erros.length, `sem erro de JavaScript (${largura} ${tema}): ` + erros.join(' | '))
     })
   }
@@ -755,7 +861,7 @@ await secao(async () => {
   await irLista(pg)
   const topo = await texto(pg, '.pagina-topo')
   conta(!/VENDEDOR/.test(topo) && /cotações suas/.test(topo), 'o vendedor não vê o filtro de vendedor, e o topo diz "suas"')
-  conta(await pg.locator('.ct-gv').count() === 0 && await pg.locator('.ct-cv').count() === 1, 'o vendedor vê a conversão, e não o aprovado por vendedor')
+  conta(await pg.locator('.ct-gav').count() === 0 && await pg.locator('.ct-cv').count() === 1, 'o vendedor vê a conversão, e não o aprovado por vendedor')
   conta(!(await linhasDaLista(pg))[0].includes('· Dani ·'), 'a linha do vendedor não repete o nome dele')
   await foto(pg, '1440-lista-vendedor', false)
   conta(!erros.length, 'sem erro de JavaScript (lista do vendedor): ' + erros.join(' | '))

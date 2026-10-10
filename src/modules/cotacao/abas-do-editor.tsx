@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DotsThree, Flask, GearSix, Plus, Trash, X } from '@phosphor-icons/react'
+import { CaretRight, DotsThree, Flask, GearSix, Info, Plus, Trash, X } from '@phosphor-icons/react'
 import { Botao, Flutuante, MenuDeContexto } from '@ds'
 import { carregarCotacoes, type CotacaoNaLista } from '@dominio/cotacao'
 import './cotacao.css'
@@ -52,19 +52,24 @@ const nomeDaAba = (x: CotacaoNaLista) => (x.clienteNome || x.numero).split(' ').
 export function AbasDoEditor({
   atual,
   admin,
+  chefia,
   ensaio,
   aoIr,
   aoLista,
   aoApagar,
   aoKitDeTeste,
+  aoInformes,
 }: {
   atual: string
   admin: boolean
+  /** administrador ou gerente: os dois mexem nos informes da casa */
+  chefia: boolean
   ensaio: boolean
   aoIr: (id: string) => void
   aoLista: () => void
   aoApagar: () => void
   aoKitDeTeste: () => void
+  aoInformes: () => void
 }) {
   const [ids, setIds] = useState<string[]>(() => {
     marcarAberta(atual)
@@ -114,7 +119,7 @@ export function AbasDoEditor({
       <AbasQueCabem abas={abas} atual={atual} aoIr={aoIr} aoFechar={fechar} aoLista={aoLista} />
       <div className="ct-faixa-fim">
         <MaisAcoes aoApagar={aoApagar} />
-        {admin ? <Engrenagem ensaio={ensaio} aoKitDeTeste={aoKitDeTeste} /> : null}
+        {chefia ? <Engrenagem admin={admin} ensaio={ensaio} aoKitDeTeste={aoKitDeTeste} aoInformes={aoInformes} /> : null}
       </div>
     </div>
   )
@@ -278,9 +283,21 @@ function MaisAcoes({ aoApagar }: { aoApagar: () => void }) {
   )
 }
 
-/* A ENGRENAGEM DO ADMINISTRADOR (item 35 (j) do 12): o vendedor não vê. Por
-   enquanto ela guarda o Kit de teste, que só funciona com o sistema em ensaio. */
-function Engrenagem({ ensaio, aoKitDeTeste }: { ensaio: boolean; aoKitDeTeste: () => void }) {
+/* A ENGRENAGEM (item 35 (j) do 12, e a prancha 123): o vendedor não vê. Ela
+   abre a página Informes e termos, que o administrador e o gerente mexem, e
+   guarda o Kit de teste, que é só do administrador e só funciona com o
+   sistema em ensaio. */
+function Engrenagem({
+  admin,
+  ensaio,
+  aoKitDeTeste,
+  aoInformes,
+}: {
+  admin: boolean
+  ensaio: boolean
+  aoKitDeTeste: () => void
+  aoInformes: () => void
+}) {
   const [aberto, setAberto] = useState(false)
   const bt = useRef<HTMLButtonElement>(null)
   return (
@@ -289,8 +306,8 @@ function Engrenagem({ ensaio, aoKitDeTeste }: { ensaio: boolean; aoKitDeTeste: (
         ref={bt}
         type="button"
         className="btn btn-contorno sm icone"
-        aria-label="Ferramentas do administrador"
-        title="Ferramentas do administrador"
+        aria-label="Configurações do editor"
+        title="Configurações do editor"
         aria-haspopup="menu"
         aria-expanded={aberto}
         onClick={() => setAberto((a) => !a)}
@@ -298,21 +315,41 @@ function Engrenagem({ ensaio, aoKitDeTeste }: { ensaio: boolean; aoKitDeTeste: (
         <GearSix size={17} />
       </button>
       <Flutuante aberto={aberto} ancora={bt} aoFechar={() => setAberto(false)} opcoes={{ alinhar: 'direita' }}>
-        <div className="mn-lista ct-menu">
-          <span className="ct-menu-rot">Só o administrador vê</span>
+        <div className="mn-lista ct-menu ct-menu-eng">
+          <span className="ct-menu-rot">{admin ? 'Só o administrador vê' : 'Só a gerência vê'}</span>
           <button
             type="button"
-            className="mn-item"
-            disabled={!ensaio}
-            title={ensaio ? undefined : 'O kit de teste só monta com o sistema em ensaio'}
+            className="mn-item ct-menu-2l"
             onClick={() => {
               setAberto(false)
-              aoKitDeTeste()
+              aoInformes()
             }}
           >
-            <Flask size={16} />
-            <span className="nm">Kit de teste</span>
+            <Info size={16} />
+            <span className="nm">
+              Informes e termos
+              <small>Os textos que toda cotação nova traz</small>
+            </span>
+            <CaretRight size={14} className="ct-menu-seta" />
           </button>
+          {admin ? (
+            <button
+              type="button"
+              className="mn-item ct-menu-2l"
+              disabled={!ensaio}
+              title={ensaio ? undefined : 'O kit de teste só monta com o sistema em ensaio'}
+              onClick={() => {
+                setAberto(false)
+                aoKitDeTeste()
+              }}
+            >
+              <Flask size={16} />
+              <span className="nm">
+                Kit de teste
+                <small>Monta uma cotação de exemplo, só em ensaio</small>
+              </span>
+            </button>
+          ) : null}
         </div>
       </Flutuante>
     </>

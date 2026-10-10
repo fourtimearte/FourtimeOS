@@ -10,6 +10,18 @@ export {
   nomeDoArquivo,
   paraCft,
 } from './arquivo'
+export {
+  carregarInformesDaCasa,
+  idNovo,
+  informesDoCodigo,
+  informesParaCotacaoNova,
+  mudancasDosInformes,
+  naOrdem,
+  salvarInformesDaCasa,
+  vazios,
+  type InformeDaCasa,
+  type OndeMoramOsInformes,
+} from './informes-da-casa'
 export { montarKitDeTeste, MOTIVOS_DO_KIT } from './kit-de-teste'
 export {
   fatiasDaCotacao,

@@ -22,6 +22,7 @@ import {
   carregarCotacoes,
   carregarPedidosDasCotacoes,
   cotacaoEmBranco,
+  informesParaCotacaoNova,
   diaDe,
   diasEntre,
   estatisticasDoComercial,
@@ -164,6 +165,8 @@ export function TelaCotacao() {
   async function nova() {
     try {
       const c = cotacaoEmBranco(await proximoNumero())
+      /* os informes da casa (060): a cotação nova leva a cópia de hoje */
+      c.informes = await informesParaCotacaoNova()
       const salva = await salvarCotacao(c)
       navegar('/cotacao/' + salva.id)
     } catch (e) {

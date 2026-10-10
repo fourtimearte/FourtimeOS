@@ -116,16 +116,20 @@ export function Interruptor({
   ligado,
   aoMudar,
   rotulo,
+  nome,
 }: {
   ligado: boolean
   aoMudar: (v: boolean) => void
   rotulo?: ReactNode
+  /** o nome para o leitor de tela, quando o rótulo visível se repete na página */
+  nome?: string
 }) {
   const conteudo = (
     <button
       type="button"
       role="switch"
       aria-checked={ligado}
+      aria-label={nome}
       className={['tgl', ligado ? 'ligado' : ''].filter(Boolean).join(' ')}
       onClick={() => aoMudar(!ligado)}
     />

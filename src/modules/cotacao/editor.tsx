@@ -18,7 +18,7 @@ import {
 } from '@dominio/cotacao'
 import { AbasDoEditor } from './abas-do-editor'
 import { CorpoDoEditor } from './corpo-do-editor'
-import { ModalDosDados } from './modal-dos-dados'
+import { GavetaDosDados } from './gaveta-dos-dados'
 import { PerguntaDeApagar } from './pergunta-de-apagar'
 import { TopoDoEditor, type Porta } from './topo-do-editor'
 import './cotacao.css'
@@ -30,9 +30,9 @@ import { usarCotacao } from './usar-cotacao'
 
    Em cima, o cabeçalho com o resumo no lugar do título e os quatro botões em
    duas fileiras (topo-do-editor). Embaixo dele, a fileira das cotações
-   abertas, com os três pontos e a engrenagem do administrador
-   (abas-do-editor). Dados do pedido e Fechamento moram no modal
-   (modal-dos-dados). A coluna fixa de 300 px da direita, com o resumo, os
+   abertas, com os três pontos e a engrenagem (abas-do-editor). Dados do
+   pedido e Fechamento abrem numa gaveta entre os dois, que empurra a página
+   para baixo (gaveta-dos-dados, pranchas 124 e 124b). A coluna fixa de 300 px da direita, com o resumo, os
    botões e o cartão Ferramentas, deixou de existir.
 
    Salvar é explícito, não automático: o vendedor precisa poder mexer no
@@ -79,11 +79,19 @@ export function EditorDeCotacao() {
 function Editor({ inicial }: { inicial: Cotacao }) {
   const navegar = useNavigate()
   const { estado } = useSessao()
-  const admin = souAdmin(estado.fase === 'dentro' ? estado.pessoa : null)
+  const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
+  const admin = souAdmin(pessoa)
+  const chefia = admin || (!!pessoa && pessoa.papel === 'gerente')
   const [c, setC] = useState<Cotacao>(inicial)
   const [sujo, setSujo] = useState(false)
   const [podeColar, setPodeColar] = useState(() => temCopia())
   const [porta, setPorta] = useState<Porta>('')
+  const [pedidoDeRecolher, setPedidoDeRecolher] = useState(0)
+  /* a outra porta troca o conteúdo; a mesma porta pede para recolher */
+  const abrirPorta = (p: Exclude<Porta, ''>) => {
+    if (p === porta) setPedidoDeRecolher((n) => n + 1)
+    else setPorta(p)
+  }
   /* o layout aberto no corpo: um por vez, escolhido na coluna da direita */
   const [escolhido, setEscolhido] = useState(0)
   const atual = Math.min(escolhido, Math.max(0, c.produtos.length - 1))
@@ -286,7 +294,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         gravando={gravando}
         fechada={fechada}
         aoVoltar={() => navegar('/cotacao')}
-        aoAbrir={setPorta}
+        aoAbrir={abrirPorta}
         aoImprimir={() => void imprimir()}
         aoAprovar={() => void dizerSim()}
         aoFolhaDaProducao={() => void verFolhaDaProducao()}
@@ -295,14 +303,31 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         aoSalvarEBaixar={() => void salvarEBaixar()}
       />
 
+      <GavetaDosDados
+        porta={porta}
+        c={c}
+        travado={fechada}
+        pedidoDeRecolher={pedidoDeRecolher}
+        aoFechar={() => setPorta('')}
+        aoConcluir={(r) => {
+          setPorta('')
+          if (r !== c) mudar(r)
+        }}
+      />
+
       <AbasDoEditor
         atual={c.id}
         admin={admin}
+        chefia={chefia}
         ensaio={ensaio}
         aoIr={(id) => navegar('/cotacao/' + id)}
         aoLista={() => navegar('/cotacao')}
         aoApagar={() => setPerguntaApagar(true)}
         aoKitDeTeste={() => void kitDeTeste()}
+        aoInformes={() => {
+          if (sujo) avisar('A cotação tem mudanças sem salvar: salve antes de sair, ou elas ficam para trás.', 'warn')
+          else navegar('/cotacao/informes?de=' + encodeURIComponent(c.id))
+        }}
       />
 
       {fechada && c.aprovacao ? (
@@ -341,16 +366,6 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         />
       )}
 
-      <ModalDosDados
-        aberto={porta !== ''}
-        c={c}
-        travado={fechada}
-        aoFechar={() => setPorta('')}
-        aoConcluir={(r) => {
-          setPorta('')
-          if (r !== c) mudar(r)
-        }}
-      />
       <PerguntaDeApagar
         aberto={perguntaApagar}
         c={c}

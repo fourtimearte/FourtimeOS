@@ -1,32 +1,15 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Check,
-  Info,
-  PaperPlaneTilt,
-  Percent,
-  Plus,
-  X,
-} from '@phosphor-icons/react'
-import { AreaTexto, Botao, Seletor, TituloCartao } from '@ds'
-import {
-  GRUPOS_DO_INFORME,
-  NOME_DO_GRUPO,
-  subtotal,
-  valorDoAjuste,
-  type Ajuste,
-  type Cotacao,
-  type GrupoDoInforme,
-  type InformeDoDocumento,
-} from '@dominio/cotacao'
+import { PaperPlaneTilt, Percent, Plus, X } from '@phosphor-icons/react'
+import { Botao, Seletor, TituloCartao } from '@ds'
+import { subtotal, valorDoAjuste, type Ajuste, type Cotacao } from '@dominio/cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
    O fechamento: o que vale para o documento inteiro, e não para um layout.
 
-   Desde a decisão 161 mora na metade direita do modal "Dados do pedido e
-   fechamento": Ajustes no valor e Informes e termos lado a lado, e O
-   que já foi enviado embaixo. O editor mostra sempre os valores (decisão 154):
+   Mora na gaveta do Fechamento (prancha 124b, 11/10/2026): Ajustes no valor
+   e O que já foi enviado lado a lado. Os informes e termos saíram daqui: são
+   os da casa, na página Informes e termos da engrenagem, e cada cotação nova
+   leva a cópia deles. O editor mostra sempre os valores (decisão 154):
    esconder o R$ é escolha da folha A4, e não da tela.
    ========================================================================== */
 
@@ -85,112 +68,6 @@ export function AjustesNoValor({ c, mudar, travado }: Props) {
           Ajuste em por cento vale sempre sobre o subtotal, nunca sobre o total já ajustado. Dois
           descontos de 10 por cento tiram 20, e não 19.
         </p>
-      </div>
-    </section>
-  )
-}
-
-/* OS INFORMES EM DOIS GRUPOS, do jeito que a folha monta (11/10/2026):
-   "Sobre a produção" e "Termos", um embaixo do outro, cada um com o seu
-   Adicionar na linha do nome (embaixo da lista, o modal passava da tela). A seta passa o informe para o outro grupo sem reescrever. O
-   apoio de cada grupo diz onde ele sai: termo de venda não vai na folha da
-   produção. */
-export function InformesDaProducao({ c, mudar }: Props) {
-  const mudarInforme = (id: string, troca: (x: InformeDoDocumento) => InformeDoDocumento) =>
-    mudar({ informes: c.informes.map(x => (x.id === id ? troca(x) : x)) })
-  const outro = (g: GrupoDoInforme): GrupoDoInforme => (g === 'producao' ? 'termos' : 'producao')
-  return (
-    <section className="cartao ct-mc">
-      <header className="ct-mc-cab">
-        <TituloCartao icone={Info}>Informes e termos</TituloCartao>
-        <span className="ct-mc-apoio">desmarcar tira da folha</span>
-      </header>
-      <div className="ct-mc-corpo ct-informes">
-        {GRUPOS_DO_INFORME.map(g => {
-          const lista = c.informes.filter(x => x.grupo === g)
-          const naFolha = lista.filter(x => x.noDocumento && x.texto.trim()).length
-          return (
-            <div className="ct-if-grupo" key={g} data-grupo={g}>
-              <div className="ct-if-cab">
-                <span>
-                  <b>{NOME_DO_GRUPO[g]}</b>
-                  <small>
-                    {naFolha} na folha ·{' '}
-                    {g === 'producao'
-                      ? 'coluna da esquerda, sai nas duas folhas'
-                      : 'coluna da direita, só na folha com valor'}
-                  </small>
-                </span>
-                <Botao
-                  tom="limpo"
-                  tamanho="sm"
-                  onClick={() =>
-                    mudar({
-                      informes: [
-                        ...c.informes,
-                        {
-                          id: 'IF' + Math.random().toString(36).slice(2, 7),
-                          texto: '',
-                          noDocumento: true,
-                          grupo: g,
-                        },
-                      ],
-                    })
-                  }
-                >
-                  <Plus size={15} />
-                  {g === 'producao' ? 'Adicionar informe' : 'Adicionar termo'}
-                </Botao>
-              </div>
-              {lista.length ? null : <p className="ct-nada">Nenhum informe neste grupo.</p>}
-              {lista.map(x => (
-                <div className={x.noDocumento ? 'ct-informe' : 'ct-informe fora'} key={x.id}>
-                  <button
-                    type="button"
-                    className="ct-marca"
-                    role="switch"
-                    aria-checked={x.noDocumento}
-                    aria-label={x.noDocumento ? 'Tirar da folha' : 'Pôr na folha'}
-                    title={
-                      x.noDocumento
-                        ? 'Sai na folha. Clique para tirar.'
-                        : 'Fora da folha. Clique para pôr.'
-                    }
-                    onClick={() => mudarInforme(x.id, i => ({ ...i, noDocumento: !i.noDocumento }))}
-                  >
-                    {x.noDocumento ? <Check size={13} weight="bold" /> : null}
-                  </button>
-                  <AreaTexto
-                    rows={2}
-                    value={x.texto}
-                    aria-label={'Texto do informe, ' + NOME_DO_GRUPO[g]}
-                    onChange={e => mudarInforme(x.id, i => ({ ...i, texto: e.target.value }))}
-                  />
-                  <span className="ct-if-acoes">
-                    <button
-                      type="button"
-                      className="ct-tira"
-                      aria-label={'Passar para ' + NOME_DO_GRUPO[outro(g)]}
-                      title={'Passar para ' + NOME_DO_GRUPO[outro(g)]}
-                      onClick={() => mudarInforme(x.id, i => ({ ...i, grupo: outro(g) }))}
-                    >
-                      {g === 'producao' ? <ArrowDown size={15} /> : <ArrowUp size={15} />}
-                    </button>
-                    <button
-                      type="button"
-                      className="ct-tira"
-                      aria-label="Apagar o informe"
-                      title="Apagar o informe"
-                      onClick={() => mudar({ informes: c.informes.filter(i => i.id !== x.id) })}
-                    >
-                      <X size={15} />
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )
-        })}
       </div>
     </section>
   )

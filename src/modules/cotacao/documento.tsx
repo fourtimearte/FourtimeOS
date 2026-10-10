@@ -19,11 +19,13 @@ import {
   LARGURA_DA_COLUNA,
   LARGURA_DA_PAGINA,
   ModuloNaFolha,
+  OPCOES_DO_MODO,
   PISO_DA_ARTE,
   alturaNaturalDaArte,
   encaixarArtes,
   usarConstrucoes,
   usarImagens,
+  usarModoDaFolha,
   type ModoDaFolha,
 } from './paginas-de-layout'
 import { usarCotacao } from './usar-cotacao'
@@ -237,12 +239,30 @@ export function FolhaDaCotacao({
      a altura de cada módulo. Ele só mexe no estado quando alguma arte muda
      de altura, então rodar de novo à toa custa só uma medição. Ver
      encaixarArtes, em paginas-de-layout.tsx. */
-  useEffect(() => {
+  const ultimo = useRef({ apertos, natural, piso: PISO_DA_ARTE[modo] })
+  ultimo.current = { apertos, natural, piso: PISO_DA_ARTE[modo] }
+  const encaixar = useCallback(() => {
     const p = palco.current
     if (!p) return
-    const novo = encaixarArtes(p, apertos, natural, PISO_DA_ARTE[modo])
+    const { apertos: a, natural: n, piso } = ultimo.current
+    const novo = encaixarArtes(p, a, n, piso)
     if (novo) setApertos(novo)
+  }, [])
+  useEffect(() => {
+    encaixar()
   })
+  /* E QUANDO UM MÓDULO MUDA DE TAMANHO SOZINHO: a fonte que chega, a pílula
+     que deita, a imagem que decodifica. Nada disso desenha a folha de novo,
+     e sem o observador a coluna ficava passando da folha até o próximo
+     desenho, que podia não vir. */
+  const nModulos = c.produtos.length
+  useEffect(() => {
+    const p = palco.current
+    if (!p || typeof ResizeObserver === 'undefined') return
+    const olho = new ResizeObserver(() => encaixar())
+    for (const m of p.querySelectorAll('.fl .dc-mod')) olho.observe(m)
+    return () => olho.disconnect()
+  }, [encaixar, nModulos, folhas.length])
 
   return (
     <>
@@ -263,7 +283,7 @@ export function FolhaDaCotacao({
       <Medidor aoMedir={dados.medidor} blocos={blocosDeDados} />
 
       <div ref={palco}>
-        <Palco>
+        <Palco zoom>
           {folhas.map((folha, i) => (
             /* O CABECALHO E DA PRIMEIRA FOLHA, E SO DELA.
 
@@ -310,6 +330,7 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
   const { cotacao: c, carregando, falha } = usarCotacao(id)
   /* o destino so decide o COMECO. Daqui para frente quem manda e o botao */
   const [comValor, setComValor] = useState(para !== 'producao')
+  const [modo, setModo] = usarModoDaFolha()
   const [paginas, setPaginas] = useState(0)
   const contar = useCallback((n: number) => setPaginas(n), [])
 
@@ -365,6 +386,8 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
             ]}
             aoMudar={(v) => setComValor(v === 'com')}
           />
+          {/* dois layouts por página ou um por página inteira (FOURTIME OS - 14) */}
+          <Segmentado valor={modo} opcoes={OPCOES_DO_MODO} aoMudar={(v) => setModo(v === 'cheia' ? 'cheia' : 'dupla')} />
           <Botao tom="contorno" onClick={() => navegar('/cotacao/' + c.id)}>
             Editar
           </Botao>
@@ -374,7 +397,7 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
         </>
       }
     >
-      <FolhaDaCotacao cotacao={c} comValor={comValor} aoContar={contar} />
+      <FolhaDaCotacao key={modo} cotacao={c} comValor={comValor} modo={modo} aoContar={contar} />
     </Pagina>
   )
 }

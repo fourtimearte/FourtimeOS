@@ -555,6 +555,31 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (páginas de layout): ' + erros.join(' | '))
 })
 
+/* 8. A PÁGINA INTEIRA (parte 7): um layout por página, com a arrumação própria */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, rica: true })
+  await irFolha(pg)
+  await pg.getByRole('tab', { name: 'Página inteira' }).click()
+  await pausa(pg, 900)
+  const pgs = await paginasDeLayout(pg)
+  conta(pgs.length === 3 && pgs.every((p) => p.mods.length === 1), 'página inteira: um layout por página (' + pgs.length + ' páginas)')
+  conta(pgs.every((p) => p.mods[0].largura === 704), 'o layout na largura da folha, 704 px')
+  conta(pgs.every((p) => p.mods.every((m) => m.fundo <= m.limite - 11)), 'nenhum layout passa da folha: ' + pgs.map((p) => Math.round(p.mods[0].limite - p.mods[0].fundo)).join(', ') + ' px de sobra')
+  conta(pgs.every((p) => p.mods[0].arte >= 260), 'a arte não fica abaixo do piso de 260 px (' + pgs.map((p) => p.mods[0].arte).join(', ') + ')')
+  const l1 = pgs[0].mods[0]
+  conta(l1.titulos.join('|') === 'GRADE VENDIDA|FICHA TÉCNICA DO LAYOUT|ETIQUETA|DESIGN|FABRICAÇÃO DA PEÇA|AVIAMENTOS E INSUMOS', 'a ficha deita em três colunas, cada uma com o seu título: ' + l1.titulos.join(' | '))
+  const lado = await pg.evaluate(() => { const m = document.querySelector('.fl .dc-mod'); const fab = m.querySelector('.dc-mod-2 > div:first-child'), avi = m.querySelector('.dc-mod-2 > div:last-child'), obs = avi.querySelector('.dc-ne-obs'); const r = (e) => e.getBoundingClientRect(); return [r(fab).left < r(avi).left, Math.abs(r(fab).top - r(avi).top) < 1, !!obs, obs ? Math.abs(r(obs).bottom - r(avi).bottom) < 1.5 : false] })
+  conta(lado.every(Boolean), 'embaixo, a fabricação à esquerda e os aviamentos à direita, com a observação no pé deles (' + lado + ')')
+  conta(l1.faixa === 2 && pgs[1].mods[0].mural === 3, 'os destaques: a faixa na larga e a coluna na alta')
+  const guardado = await pg.evaluate(() => localStorage.getItem('ft.folha.modo'))
+  conta(guardado === 'cheia', 'a escolha fica guardada neste navegador (' + guardado + ')')
+  await foto(pg, 'folha-1440-pagina-inteira')
+  await pg.reload({ waitUntil: 'networkidle' })
+  await pg.waitForSelector('.fl .dc-mod')
+  conta(await pg.evaluate(() => document.querySelectorAll('.fl .dc-dupla').length === 0 && document.querySelectorAll('.fl .dc-uma').length === 3), 'depois de recarregar, continua em página inteira')
+  conta(!erros.length, 'sem erro de JavaScript (página inteira): ' + erros.join(' | '))
+})
+
 for (const tema of ['light', 'dark']) {
   await secao(async () => {
     const { pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema })

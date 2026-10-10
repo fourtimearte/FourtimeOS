@@ -219,7 +219,14 @@ export function CabecalhoDaFolha({ sub, celulas }: { sub: string; celulas: Celul
 
 /* --- o palco: as folhas na tela, com zoom ------------------------------- */
 
-export function Palco({ children }: { children: ReactNode }) {
+/* O ZOOM DO CSS, E NÃO O TRANSFORM (FOURTIME OS - 14, seção 3). Encolhida
+   com transform, a folha desenha os riscos de 1 px com espessuras diferentes
+   (foi a reclamação do risco das Condições no protótipo); com o zoom do CSS
+   o navegador refaz o desenho na escala nova e os riscos saem iguais. O zoom
+   ainda é escolha de quem chama: a ficha técnica impressa mede a folha com a
+   compressão antiga, que mistura medidas da tela e do papel, e continua no
+   transform até ser refeita. */
+export function Palco({ children, zoom = false }: { children: ReactNode; zoom?: boolean }) {
   const caixa = useRef<HTMLDivElement>(null)
   const pilha = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
@@ -233,12 +240,14 @@ export function Palco({ children }: { children: ReactNode }) {
      Encolher com transform tem um porem que custa uma tela feia: o desenho
      encolhe e o espaco que ele ocupava NAO. No celular sobrava meia tela de
      branco embaixo das folhas. Por isso a altura da caixa e acertada na mao,
-     pela altura de verdade da pilha vezes a escala. */
+     pela altura de verdade da pilha vezes a escala. Com o zoom do CSS isso
+     nao existe: a pilha ocupa o tamanho encolhido, e o meio e da margem auto. */
   useEffect(() => {
     const medir = () => {
       const largura = caixa.current?.clientWidth ?? LARGURA_DA_FOLHA
       const e = Math.min(1, largura / LARGURA_DA_FOLHA)
       setEscala(e)
+      if (zoom) return
       const h = pilha.current?.scrollHeight ?? 0
       setAltura(h ? Math.ceil(h * e) : undefined)
       /* A folha fica no meio do palco.
@@ -258,8 +267,17 @@ export function Palco({ children }: { children: ReactNode }) {
       window.removeEventListener('resize', medir)
       obs.disconnect()
     }
-  }, [])
+  }, [zoom])
 
+  if (zoom) {
+    return (
+      <div className="fl-palco" ref={caixa}>
+        <div className="fl-pilha fl-pilha-zoom" ref={pilha} style={{ zoom: escala, width: LARGURA_DA_FOLHA }}>
+          {children}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="fl-palco" ref={caixa} style={{ height: altura }}>
       <div

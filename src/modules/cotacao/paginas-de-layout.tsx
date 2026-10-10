@@ -38,6 +38,34 @@ import './documento.css'
 
 export type ModoDaFolha = 'dupla' | 'cheia'
 
+/* A ESCOLHA DA ARRUMAÇÃO (parte 7): dois por página ou página inteira. É
+   gosto de quem imprime, e não da cotação: fica guardada neste navegador e
+   vale para a página da folha e para o modal do PCP. */
+const CHAVE_DO_MODO = 'ft.folha.modo'
+export function usarModoDaFolha(): [ModoDaFolha, (m: ModoDaFolha) => void] {
+  const [modo, setModo] = useState<ModoDaFolha>(() => {
+    try {
+      return localStorage.getItem(CHAVE_DO_MODO) === 'cheia' ? 'cheia' : 'dupla'
+    } catch {
+      return 'dupla'
+    }
+  })
+  const mudar = (m: ModoDaFolha) => {
+    setModo(m)
+    try {
+      localStorage.setItem(CHAVE_DO_MODO, m)
+    } catch {
+      /* sem armazenamento, vale só nesta visita */
+    }
+  }
+  return [modo, mudar]
+}
+
+export const OPCOES_DO_MODO = [
+  { valor: 'dupla', rotulo: '2 por página' },
+  { valor: 'cheia', rotulo: 'Página inteira' },
+]
+
 /** a largura útil de uma coluna: 704 px de folha menos 24 de vão, ao meio */
 export const LARGURA_DA_COLUNA = 340
 export const LARGURA_DA_PAGINA = 704

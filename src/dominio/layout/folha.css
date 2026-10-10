@@ -21,6 +21,10 @@
   gap: 16px;
   transform-origin: top left;
 }
+/* com o zoom do CSS a pilha ocupa o tamanho encolhido, e o meio é da margem */
+.fl-pilha.fl-pilha-zoom {
+  margin: 0 auto;
+}
 
 .fl {
   /* cores próprias: a folha não segue o tema */
@@ -287,6 +291,7 @@
     gap: 0 !important;
     /* na impressora a folha vale o tamanho natural: o zoom era só da tela */
     transform: none !important;
+    zoom: 1 !important;
     width: auto !important;
     /* e o recuo que centraliza no monitor empurraria a folha para fora do
        papel: na impressora a margem é da própria folha */

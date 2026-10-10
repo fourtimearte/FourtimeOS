@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 import { Botao, Esqueleto, Modal, Segmentado, Vazio } from '@ds'
 import { FolhaDaCotacao } from './documento'
+import { OPCOES_DO_MODO, usarModoDaFolha } from './paginas-de-layout'
 import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
@@ -42,6 +43,7 @@ export function ModalDaFolha({
      vai para o chão de fábrica, e preço não é assunto de lá. A regra está em
      claude/REGRA-COM-VALOR-E-SEM-VALOR.md, e o botão continua trocando. */
   const [comValor, setComValor] = useState(false)
+  const [modo, setModo] = usarModoDaFolha()
   const [paginas, setPaginas] = useState(0)
   const contar = useCallback((n: number) => setPaginas(n), [])
 
@@ -65,6 +67,7 @@ export function ModalDaFolha({
             ]}
             aoMudar={(v) => setComValor(v === 'com')}
           />
+          <Segmentado valor={modo} opcoes={OPCOES_DO_MODO} aoMudar={(v) => setModo(v === 'cheia' ? 'cheia' : 'dupla')} />
           <Botao tom="contorno" onClick={aoFechar}>
             Fechar
           </Botao>
@@ -95,7 +98,7 @@ export function ModalDaFolha({
         />
       ) : null}
 
-      {c ? <FolhaDaCotacao cotacao={c} comValor={comValor} aoContar={contar} /> : null}
+      {c ? <FolhaDaCotacao key={modo} cotacao={c} comValor={comValor} modo={modo} aoContar={contar} /> : null}
     </Modal>
   )
 }

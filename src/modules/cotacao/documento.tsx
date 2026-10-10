@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, Esqueleto, Pagina, Segmentado, Vazio } from '@ds'
-import { EMPRESA, empresaAConferir } from '@dominio/empresa'
+import { empresaAConferir } from '@dominio/empresa'
 import {
-  CabecalhoDaFolha,
   CaixaDeImagem,
   Folha,
   Medidor,
@@ -15,19 +15,17 @@ import {
   usarPaginacao,
   type BlocoDaFolha,
 } from '@dominio/layout'
-import {
-  NOME_DO_ESTADO_DA_COTACAO,
-  pecasDaCotacao,
-  pecasDoProduto,
-  precoMedioPorPeca,
-  subtotal,
-  totalDaCotacao,
-  totalDoProduto,
-  valorDoAjuste,
-  type Cotacao,
-  type ProdutoCotado,
-} from '@dominio/cotacao'
+import { pecasDoProduto, totalDoProduto, type Cotacao, type ProdutoCotado } from '@dominio/cotacao'
 import './documento.css'
+import {
+  AceiteDaPaginaUm,
+  CabecalhoDaPaginaUm,
+  CondicoesDaPaginaUm,
+  InformesDaPaginaUm,
+  ResumoDaPaginaUm,
+  RodapeDaFolhaNova,
+  condicoesDaFolha,
+} from './pagina-um'
 import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
@@ -63,10 +61,12 @@ const LAYOUTS_POR_FOLHA = 2
    alturas sao MEDIDAS na folha de verdade e tomam o lugar destes numeros.
    Palpite de altura sem medicao depois e o jeito classico de perder a ultima
    linha de cada pagina. */
-const ALTURA_COM_CABECALHO = 806
+/* A FOLHA NOVA (parte 5, 10/10/2026): 1123 px menos 45 em cima e 28
+   embaixo, menos uns 30 do rodapé e uns 150 do cabeçalho 4 com o vão de 16,
+   dá perto de 880. Continua sendo só o primeiro palpite. */
+const ALTURA_COM_CABECALHO = 880
 
 const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-const data = (iso: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
 
 /* ==========================================================================
    PARA QUEM A FOLHA VAI, E POR QUE ISSO DECIDE O DINHEIRO.
@@ -129,8 +129,8 @@ export function FolhaDaCotacao({
 
      OS DADOS seguem a REGUA, e nao a regra. A folha 1 e a dos dados, e o que
      a enche e o numero de layouts: com vinte layouts a tabela de resumo
-     sozinha passa de uma folha. Entao eles sao tres blocos que paginam entre
-     si (a tabela, as condicoes com os informes, e o aceite), e os layouts so
+     sozinha passa de uma folha. Entao eles sao quatro blocos que paginam entre
+     si (a tabela, as condicoes, os informes e o aceite), e os layouts so
      comecam na folha seguinte a ultima folha de dados. No caso normal isso da
      exatamente o que foi pedido: dados na 1, layouts da 2 em diante.
 
@@ -142,14 +142,28 @@ export function FolhaDaCotacao({
      ========================================================================== */
   const chave = c.id + ':' + c.alteradaEm + ':' + c.produtos.length + ':' + comValor
 
-  const blocosDeDados: BlocoDaFolha[] = useMemo(
-    () => [
-      { id: 'd-tabela', conteudo: <ResumoDoPedido cotacao={c} comValor={comValor} /> },
-      { id: 'd-condicoes', conteudo: <Condicoes cotacao={c} comValor={comValor} /> },
-      ...(comValor ? [{ id: 'd-aceite', conteudo: <Aceite cotacao={c} /> }] : []),
-    ],
-    [c, comValor],
-  )
+  /* A PÁGINA 1 DO TEMPLATE PADRÃO (FOURTIME OS - 14, seção 4), em quatro
+     blocos que paginam entre si: o resumo, as condições, os informes e o
+     aceite. Cada um vem embrulhado em dc-parte, que carrega os 16 px até o
+     próximo DENTRO do bloco: margem não entra na altura medida, e o vão que
+     não é medido é o vão que empurra a última linha para fora da folha.
+     Condição que sobra vazia (tudo já está no cabeçalho) não vira bloco. */
+  const blocosDeDados: BlocoDaFolha[] = useMemo(() => {
+    const parte = (id: string, conteudo: ReactNode): BlocoDaFolha => ({
+      id,
+      conteudo: <div className="dc-parte">{conteudo}</div>,
+    })
+    return [
+      parte('d-tabela', <ResumoDaPaginaUm cotacao={c} comValor={comValor} />),
+      ...(condicoesDaFolha(c, comValor).length
+        ? [parte('d-condicoes', <CondicoesDaPaginaUm cotacao={c} comValor={comValor} />)]
+        : []),
+      ...(c.informes.some((x) => x.noDocumento && x.texto.trim())
+        ? [parte('d-informes', <InformesDaPaginaUm cotacao={c} comValor={comValor} />)]
+        : []),
+      ...(comValor ? [parte('d-aceite', <AceiteDaPaginaUm cotacao={c} />)] : []),
+    ]
+  }, [c, comValor])
 
   const blocosDeLayout: BlocoDaFolha[] = useMemo(
     () =>
@@ -257,10 +271,11 @@ export function FolhaDaCotacao({
               key={i}
               numero={i + 1}
               de={folhas.length}
+              classe="fl-nova"
               cabecalho={
-                folha.comCabecalho ? <Cabecalho cotacao={c} comValor={comValor} /> : undefined
+                folha.comCabecalho ? <CabecalhoDaPaginaUm cotacao={c} comValor={comValor} /> : undefined
               }
-              rodape={<RodapeDaEmpresa cotacao={c} primeira={i === 0} comValor={comValor} />}
+              rodape={(n, de) => <RodapeDaFolhaNova cotacao={c} comValor={comValor} numero={n} de={de} />}
             >
               {folha.blocos.map((b) => (
                 <div key={b.id}>{b.conteudo}</div>
@@ -351,65 +366,6 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
   )
 }
 
-/* --- o cabecalho: quatro colunas por tres fileiras -----------------------
-   A logo ocupa a coluna 1 nas duas primeiras fileiras. O rotulo fica EM CIMA
-   do valor, e nao ao lado: com o rotulo ao lado, Cliente, CNPJ e Pagamento
-   cortavam com reticencia. As tres fileiras tem a mesma altura, entao a
-   altura do cabecalho nao depende do conteudo e a conta da quebra de pagina
-   continua sendo uma conta fixa. */
-function Cabecalho({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const c = cotacao
-  return (
-    <CabecalhoDaFolha
-      sub={EMPRESA.descricao}
-      celulas={[
-        { rotulo: 'Cliente', valor: c.cliente.nome },
-        { rotulo: 'CPF ou CNPJ', valor: c.cliente.documento },
-        { rotulo: 'Cotação nº', valor: c.numero },
-        { rotulo: 'Vendedor', valor: c.vendedor },
-        { rotulo: 'Contato', valor: c.cliente.contato },
-        { rotulo: 'Vale até', valor: data(c.validaAte) },
-        { rotulo: 'Situação', valor: NOME_DO_ESTADO_DA_COTACAO[c.estado] },
-        { rotulo: 'Prazo', valor: c.informe.prazo },
-        { rotulo: 'Pagamento', valor: c.informe.pagamento },
-        /* a ultima celula da grade nao pode sumir: as tres fileiras tem altura
-           fixa e e nela que a conta da quebra de pagina se apoia. Sem valor ela
-           troca de conteudo, e passa a dizer o numero que a fabrica confere */
-        comValor
-          ? { rotulo: 'Total', valor: dinheiro(totalDaCotacao(c)), forte: true }
-          : { rotulo: 'Peças', valor: String(pecasDaCotacao(c)), forte: true },
-      ]}
-    />
-  )
-}
-
-function RodapeDaEmpresa({
-  cotacao,
-  primeira,
-  comValor,
-}: {
-  cotacao: Cotacao
-  primeira: boolean
-  comValor: boolean
-}) {
-  return (
-    <div className="fl-rodape">
-      <span>
-        <b>{EMPRESA.nome}</b> · {EMPRESA.endereco} · {EMPRESA.cidade}, {EMPRESA.uf} · CNPJ{' '}
-        {EMPRESA.cnpj}
-      </span>
-      {/* o total em reais so na primeira folha: nas seguintes ele apareceria
-          solto, sem o que o explica, e ja houve confusao com isso */}
-      {primeira ? (
-        <span className="fl-rodape-total">
-          {pecasDaCotacao(cotacao)} peças
-          {comValor ? <> · {dinheiro(totalDaCotacao(cotacao))}</> : null}
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
 /* --- um produto na folha -------------------------------------------------
    O MESMO MODULO DA TELA, EM LEITURA. Nao e economia de codigo: e a promessa
    de que o que o cliente le no papel e o que o vendedor viu na tela. Duas
@@ -451,151 +407,5 @@ function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValo
         </div>
       }
     />
-  )
-}
-
-function Par({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <>
-      <dt>{rotulo}</dt>
-      <dd>{valor}</dd>
-    </>
-  )
-}
-
-/* --- os tres blocos da folha de dados -------------------------------------
-   Eram um so, e um bloco so nao pagina: ou cabia inteiro ou saia serrado. O
-   kit de teste mostrou o corte com seis layouts, que e um pedido pequeno.
-
-   Divididos assim, os tres paginam entre si, e o corte, quando existir, cai
-   ENTRE um bloco e outro em vez de no meio de uma clausula. A ordem e a da
-   leitura: o que foi pedido, em que condicoes, e onde assinar. */
-
-function ResumoDoPedido({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const c = cotacao
-  const base = subtotal(c)
-  return (
-    <section className="dc-resumo">
-      <h3 className="fl-h">{comValor ? 'Resumo do orçamento' : 'Resumo do pedido'}</h3>
-
-      {/* UMA FILEIRA POR LAYOUT, e o numero do layout na frente. Ele e a
-          unica coisa que amarra esta tabela as folhas de tras: quem le
-          "L-07 faltou" precisa achar o L-07 sem contar folha. A grade saiu
-          da linha: ela esta desenhada inteira, tamanho por tamanho, na folha
-          do proprio layout, e repetida aqui em texto corrido so gastava a
-          largura que o nome do produto precisava. */}
-      <table className="fl-tab dc-tab">
-        <thead>
-          <tr>
-            <th className="dc-col-l">Layout</th>
-            <th>Produto</th>
-            <th className="num">Total de peças</th>
-            {comValor ? <th className="num">Preço total</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {c.produtos.map((p) => (
-            <tr key={p.bloco.id}>
-              <td className="dc-col-l">L-{String(p.bloco.n).padStart(2, '0')}</td>
-              <td>
-                <b>{p.bloco.referencia}</b> {p.bloco.nomeDaReferencia}
-              </td>
-              <td className="num">{pecasDoProduto(p)}</td>
-              {comValor ? <td className="num">{dinheiro(totalDoProduto(p))}</td> : null}
-            </tr>
-          ))}
-        </tbody>
-        {/* SEM VALOR O RODAPE DA TABELA E SO A CONTA DE PECAS. Ajuste e total
-            sao conversa de venda, e nao existem para quem corta. */}
-        <tfoot>
-          <tr className={comValor ? undefined : 'dc-total'}>
-            <td colSpan={2}>{comValor ? 'Subtotal' : 'Total de peças'}</td>
-            <td className="num">{pecasDaCotacao(c)}</td>
-            {comValor ? <td className="num">{dinheiro(base)}</td> : null}
-          </tr>
-          {comValor
-            ? c.ajustes.map((a) => (
-                <tr key={a.id}>
-                  <td colSpan={3}>
-                    {a.descricao || 'Ajuste'}
-                    {a.tipo === 'porcento' ? ' (' + a.valor + '%)' : ''}
-                  </td>
-                  <td className="num">{dinheiro(valorDoAjuste(a, base))}</td>
-                </tr>
-              ))
-            : null}
-          {comValor ? (
-            <tr className="dc-total">
-              <td colSpan={2}>Total</td>
-              <td className="num">{dinheiro(precoMedioPorPeca(c))} por peça</td>
-              <td className="num">{dinheiro(totalDaCotacao(c))}</td>
-            </tr>
-          ) : null}
-        </tfoot>
-      </table>
-    </section>
-  )
-}
-
-function Condicoes({ cotacao, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const c = cotacao
-  const informes = c.informes.filter((x) => x.noDocumento)
-  return (
-    <section className="dc-resumo">
-      <dl className="fl-informe">
-        <Par rotulo="Prazo de produção" valor={c.informe.prazo} />
-        {comValor ? <Par rotulo="Pagamento" valor={c.informe.pagamento} /> : null}
-        <Par rotulo="Envio" valor={c.informe.entrega} />
-        {comValor ? <Par rotulo="Tabela de preço" valor={c.informe.tabelaDePreco} /> : null}
-        {comValor ? <Par rotulo="Validade desta proposta" valor={data(c.validaAte)} /> : null}
-        {!comValor ? <Par rotulo="Pedido" valor={c.producao.pedido} /> : null}
-        {!comValor ? <Par rotulo="Departamento" valor={c.producao.departamento} /> : null}
-        {!comValor ? <Par rotulo="Embalagem" valor={c.producao.embalagem} /> : null}
-      </dl>
-
-      {/* Os informes que o vendedor deixou marcados. Os desmarcados ficam
-          guardados na cotação e não aparecem aqui: o PDF é o que o cliente
-          recebe, e ele só mostra o que foi escolhido para ele. */}
-      {informes.length ? (
-        <section className="dc-informes">
-          <h3>Informes sobre a produção</h3>
-          <ol>
-            {informes.map((x) => (
-              <li key={x.id}>{x.texto}</li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-    </section>
-  )
-}
-
-/* O ACEITE E DA VENDA. Quem corta nao assina proposta, e uma linha de
-   assinatura na folha do galpao so confunde quem le: por isso ele nem entra
-   na lista de blocos quando a folha e sem valor. */
-function Aceite({ cotacao }: { cotacao: Cotacao }) {
-  const c = cotacao
-  return (
-    <div className="dc-aceite">
-      <p>
-        A produção começa depois da aprovação da arte e do pagamento combinado acima. Grade e
-        quantidade valem como estão nesta folha: mudança depois da aprovação pode mudar prazo e
-        valor.
-      </p>
-      <div className="dc-assinaturas">
-        <span>
-          <i />
-          {c.cliente.nome || 'Cliente'}
-        </span>
-        <span>
-          <i />
-          Fourtime · {c.vendedor || 'vendedor'}
-        </span>
-        <span>
-          <i />
-          Data
-        </span>
-      </div>
-    </div>
   )
 }

@@ -127,12 +127,15 @@ export function usarPaginacao(
 export function Medidor({
   aoMedir,
   blocos,
+  classe,
 }: {
   aoMedir: RefObject<HTMLDivElement | null>
   blocos: BlocoDaFolha[]
+  /** a mesma classe que a folha usa: a medida tem que sair com a letra do papel */
+  classe?: string
 }) {
   return (
-    <div className="fl-medidor papel" ref={aoMedir} aria-hidden="true">
+    <div className={'fl-medidor papel' + (classe ? ' ' + classe : '')} ref={aoMedir} aria-hidden="true">
       {blocos.map((b) => (
         <div key={b.id}>{b.conteudo}</div>
       ))}
@@ -140,28 +143,43 @@ export function Medidor({
   )
 }
 
+/* O RODAPÉ PODE SER UMA FUNÇÃO. A folha nova da cotação (FOURTIME OS - 14,
+   rodapé 1) põe o número da página DENTRO da frase da direita, junto das peças
+   e do total: "186 peças · R$ 9.870,00 · página 1 de 3". Com a função, quem
+   monta a folha escreve o rodapé inteiro e a folha não acrescenta o dela. A
+   ficha técnica impressa continua passando o rodapé pronto, e a folha põe o
+   número no canto, como sempre. */
 export function Folha({
   cabecalho,
   rodape,
   numero,
   de,
+  classe,
   children,
 }: {
   cabecalho?: ReactNode
-  rodape?: ReactNode
+  rodape?: ReactNode | ((numero: number, de: number) => ReactNode)
   numero: number
   de: number
+  /** a variante do papel, como a fl-nova da cotação */
+  classe?: string
   children: ReactNode
 }) {
   return (
-    <section className="fl papel">
+    <section className={'fl papel' + (classe ? ' ' + classe : '')}>
       {cabecalho ? <header className="fl-topo">{cabecalho}</header> : null}
       <div className="fl-corpo">{children}</div>
       <footer className="fl-pe">
-        {rodape}
-        <span className="fl-num">
-          página {numero} de {de}
-        </span>
+        {typeof rodape === 'function' ? (
+          rodape(numero, de)
+        ) : (
+          <>
+            {rodape}
+            <span className="fl-num">
+              página {numero} de {de}
+            </span>
+          </>
+        )}
       </footer>
     </section>
   )

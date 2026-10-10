@@ -15,6 +15,9 @@
      5. o Apagar mora nos três pontos e pergunta antes, com o Cancelar em foco
      6. as larguras de 390, 820, 1440 e 1920 nos dois temas: nada rola de lado
      7. que não houve erro de JavaScript
+     8. a página 1 da folha no template padrão (parte 5, FOURTIME OS - 14):
+        cabeçalho 4, resumo 22, condições 2, informes 2, aceite 2 e rodapé 1,
+        com valor e sem valor, e o resumo em duas tabelas acima de 10 layouts
 
    O banco é de mentira (testes/orcamento-dados.mjs).
 
@@ -40,9 +43,9 @@ mkdirSync(PASTA, { recursive: true })
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
 const abertos = new Set()
-async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6 }) {
+async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
-  const banco = F.bancoDoOrcamento({ papel, abertas })
+  const banco = F.bancoDoOrcamento({ papel, abertas, muitos })
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
@@ -421,6 +424,91 @@ for (const tema of ['light', 'dark']) {
       conta(!erros.length, `sem erro de JavaScript (${largura} ${tema}): ` + erros.join(' | '))
     })
   }
+}
+
+/* 6. A FOLHA, PÁGINA 1 (parte 5): o template padrão do FOURTIME OS - 14 */
+async function irFolha(pg, rota = '/cotacao/c1/folha') {
+  await pg.goto(SITE + rota, { waitUntil: 'networkidle' })
+  await pg.waitForSelector('.fl .dc-topo', { timeout: 15000 })
+  await pg.evaluate(() => document.fonts.ready)
+  await pg.waitForTimeout(700)
+}
+const pagina1 = (pg) => pg.evaluate(() => {
+  const f = document.querySelector('.fl')
+  const t = (s) => [...f.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim())
+  const corpo = f.querySelector('.fl-corpo')
+  return {
+    numg: t('.dc-numg').join(''), campos: t('.dc-cel'), titulos: t('.dc-t'), nums: t('.dc-num'), gens: t('.dc-gen'), linhas: f.querySelectorAll('.dc-tab tbody tr').length,
+    tabelas: f.querySelectorAll('.dc-tab').length, colunas: t('.dc-tab th'), totais: t('.dc-tf > div'), cond: t('.dc-cond > div'), inf: t('.dc-inf li'), aceite: t('.dc-ace').join(''),
+    pe: t('.dc-pe').join(''), texto: f.innerText, fonte: getComputedStyle(f.querySelector('.dc-n')).fontFamily, sobra: corpo.scrollHeight - corpo.clientHeight,
+    folhas: document.querySelectorAll('.fl').length, pes: [...document.querySelectorAll('.fl .dc-pe')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()),
+    corta: [...f.querySelectorAll('.dc-n *')].filter((e) => { const r = e.getBoundingClientRect(), c = corpo.getBoundingClientRect(); return r.width && (r.right > c.right + 1) }).length,
+  }
+})
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900 })
+  await irFolha(pg)
+  const p = await pagina1(pg)
+  conta(/Roboto/.test(p.fonte), 'a página 1 sai em Roboto (' + p.fonte + ')')
+  conta(/Cotação\s*CO2026-0131\s*criada em 01\/10\/2026/i.test(p.numg), 'cabeçalho 4: o número grande à direita, com a data (' + p.numg + ')')
+  conta(p.campos.length === 8 && /^Cliente Atlético Exemplo/i.test(p.campos[0]) && /^Total R\$ 9\.034,50/i.test(p.campos[7]) && !p.campos.some((x) => /^Pedido/i.test(x)), 'os campos com valor, na ordem do 14, sem o pedido que ainda não existe: ' + p.campos.map((x) => x.split(' ')[0]).join(', '))
+  conta(p.titulos.join('|') === 'Resumo do orçamento|Condições|Informes e termos|Aprovação'.toUpperCase(), 'as quatro partes na ordem: ' + p.titulos.join(' | '))
+  conta(p.linhas === 3 && p.nums.join(',') === '01,02,03' && p.gens.every((g) => /Masculino/i.test(g)), 'resumo 22: uma linha por layout, o número de borda e o gênero')
+  conta(p.colunas.join('|').toUpperCase() === 'LAYOUT|PRODUTO|GÊNERO|PEÇAS|POR PEÇA|VALOR', 'resumo 22: as seis colunas (' + p.colunas.join(', ') + ')')
+  conta(!/FT-010-000M/.test(p.texto), 'resumo 22: o nome sem a referência na frente')
+  conta(/R\$ 5\.536,00/.test(p.texto) && /R\$ 3\.382,00/.test(p.texto) && /R\$ 592,00/.test(p.texto), 'o valor de cada layout: 5.536, 3.382 e 592')
+  conta(p.totais.length === 4 && /Peças 186/i.test(p.totais[0]) && /Subtotal R\$ 9\.510,00/i.test(p.totais[1]) && /Fidelidade \(5%\) - R\$ 475,50/i.test(p.totais[2]) && /Total R\$ 9\.034,50/i.test(p.totais[3]), 'os totais em faixa: ' + p.totais.join(' | '))
+  conta(p.cond.length === 3 && /Envio TRANSPORTADORA/i.test(p.cond[0]) && /Tabela de preço Atacado 2026/i.test(p.cond[1]) && /Validade desta proposta 20\/10\/2026/i.test(p.cond[2]), 'condições 2: sem repetir o prazo e o pagamento do cabeçalho; a validade sem perder um dia: ' + p.cond.join(' | '))
+  conta(p.inf.length === 2 && /^1 A produção/.test(p.inf[0]) && /^2 Cores/.test(p.inf[1]), 'informes 2: só os marcados, numerados')
+  conta(/responda SIM no WhatsApp da Fourtime, citando a cotação CO2026-0131/i.test(p.aceite) && /Atlético Exemplo/.test(p.aceite) && /Data/.test(p.aceite), 'aceite 2: o WhatsApp e a assinatura lado a lado')
+  conta(/Fourtime · Goiânia, GO/.test(p.pe) && /186 peças · R\$ 9\.034,50 · página 1 de \d/.test(p.pe), 'rodapé 1: a empresa à esquerda; peças, total e página à direita (' + p.pe + ')')
+  conta(p.pes.length === p.folhas && p.pes.every((x, i) => new RegExp('R\\$ 9\\.034,50 · página ' + (i + 1) + ' de ' + p.folhas).test(x)), 'o rodapé com o total em TODA folha (' + p.folhas + ' folhas)')
+  conta(p.sobra <= 0 && p.corta === 0, `nada da página 1 passa da folha (sobra ${p.sobra}, ${p.corta} saindo de lado)`)
+  const lados = await pg.evaluate(() => { const a = document.querySelector('.dc-wa').getBoundingClientRect(), b = document.querySelector('.dc-caixa').getBoundingClientRect(); return [a.top, a.height, b.top, b.height].map(Math.round) })
+  conta(lados[0] === lados[2] && lados[1] === lados[3], 'o WhatsApp e a assinatura na mesma altura (' + lados.join(', ') + ')')
+  const risco = await pg.evaluate(() => { const c = document.querySelector('.dc-campos'); const s = getComputedStyle(c); return [s.borderTopWidth, s.borderBottomWidth] })
+  conta(risco.join() === '1px,1px', 'a faixa dos campos entre dois riscos de 1 px')
+  await foto(pg, 'folha-1440-com-valor')
+  await pg.getByRole('tab', { name: 'Sem valor' }).click()
+  await pausa(pg, 700)
+  const s = await pagina1(pg)
+  conta(/Folha da produção\s*CO2026-0131/i.test(s.numg), 'sem valor: o título vira Folha da produção')
+  conta(s.campos.map((x) => x.split(' ')[0]).join(',') === 'Cliente,CPF,Pedido,Vendedor,Contato,Departamento,Embalagem,Data,Peças'.toUpperCase() && /Data de envio 20\/10\/2026/i.test(s.campos[7]) && /Pedido -/i.test(s.campos[2]), 'sem valor: os campos da produção, com o pedido que falta à vista: ' + s.campos.join(' | '))
+  conta(!/R\$/.test(s.texto), 'sem valor: nenhum R$ na página 1')
+  conta(s.titulos.join('|') === 'Resumo do pedido|Condições|Informes à produção'.toUpperCase(), 'sem valor: sem aceite, e os títulos da produção (' + s.titulos.join(' | ') + ')')
+  conta(s.colunas.join('|').toUpperCase() === 'LAYOUT|PRODUTO|GÊNERO|PEÇAS', 'sem valor: o resumo sem preço')
+  conta(s.cond.length === 2 && /Prazo de produção 12 dias úteis/i.test(s.cond[0]) && /Envio TRANSPORTADORA/i.test(s.cond[1]), 'sem valor: as condições sem repetir departamento, embalagem e data: ' + s.cond.join(' | '))
+  conta(s.totais.length === 1 && /Peças 186/i.test(s.totais[0]), 'sem valor: a faixa só com as peças')
+  conta(s.pes.every((x) => /186 peças · página/.test(x) && !/R\$/.test(x)), 'sem valor: o rodapé sem o total em reais')
+  await foto(pg, 'folha-1440-sem-valor')
+  conta(!erros.length, 'sem erro de JavaScript (folha): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, muitos: true })
+  await irFolha(pg)
+  const p = await pagina1(pg)
+  conta(p.tabelas === 2 && p.linhas === 14, `14 layouts: o resumo vira duas tabelas (${p.tabelas} tabelas, ${p.linhas} linhas)`)
+  conta(!p.colunas.some((c) => /por peça/i.test(c)), '14 layouts: o preço por peça sai das tabelas pela metade')
+  conta(p.gens.some((g) => /Feminino/i.test(g)) && p.gens.some((g) => /Infantil/i.test(g)), '14 layouts: as tags de gênero de cada um')
+  const corte = await pg.evaluate(() => { const td = [...document.querySelectorAll('.fl .dc-tab-prod')].find((e) => /BABY LOOK/.test(e.textContent)); return td ? [td.scrollWidth > td.clientWidth, Math.round(td.getBoundingClientRect().height)] : null })
+  conta(corte && corte[0] && corte[1] < 30, '14 layouts: o nome comprido corta com reticência, sem quebrar a linha (' + corte + ')')
+  conta(p.sobra <= 0 && p.corta === 0, `14 layouts: nada da página 1 passa da folha (sobra ${p.sobra})`)
+  await foto(pg, 'folha-1440-14-layouts')
+  conta(!erros.length, 'sem erro de JavaScript (folha com 14): ' + erros.join(' | '))
+})
+
+for (const tema of ['light', 'dark']) {
+  await secao(async () => {
+    const { pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema })
+    await irFolha(pg)
+    conta(await sobra(pg) <= 0, `folha 390 ${tema}: nada rola de lado (${await sobra(pg)})`)
+    const fundo = await pg.evaluate(() => getComputedStyle(document.querySelector('.fl')).backgroundColor)
+    conta(fundo === 'rgb(255, 255, 255)', `folha 390 ${tema}: o papel é branco (${fundo})`)
+    await foto(pg, `folha-390-${tema}`)
+    conta(!erros.length, `sem erro de JavaScript (folha 390 ${tema}): ` + erros.join(' | '))
+  })
 }
 
 await nav.close()

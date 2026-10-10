@@ -85,7 +85,9 @@ export function cotacaoDoAtletico() {
 
 const NOMES = ['Atlético Exemplo', 'Academia Exemplo', 'Auto Peças Exemplo', 'Escola Exemplo', 'Clube Exemplo', 'Pelada dos Amigos', 'Colégio Exemplo', 'Time da Firma Exemplo']
 
-export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6 } = {}) {
+/* muitos: a CO2026-0131 com 14 layouts, para o resumo da folha virar duas
+   tabelas (acima de 10 layouts, FOURTIME OS - 14 seção 4) */
+export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false } = {}) {
   const lista = NOMES.slice(0, abertas).map((nome, i) => ({
     id: 'c' + (i + 1),
     numero: 'CO2026-0' + (131 - i),
@@ -104,7 +106,21 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6 }
     pedido_numero: null,
     teste: true,
   }))
-  const corpos = new Map(lista.map((l, i) => [l.id, i === 0 ? cotacaoDoAtletico() : { ...cotacaoDoAtletico(), numero: l.numero, cliente: { ...cotacaoDoAtletico().cliente, nome: l.cliente_nome } }]))
+  const primeira = () => {
+    const c = cotacaoDoAtletico()
+    if (!muitos) return c
+    const base = c.produtos
+    c.produtos = Array.from({ length: 14 }, (_, i) => {
+      const p = structuredClone(base[i % 3])
+      p.bloco.id = 'B' + (i + 1)
+      p.bloco.n = i + 1
+      if (i % 4 === 3) { p.bloco.genero = 'feminino'; p.bloco.nomeDaReferencia = 'CAMISETA BABY LOOK COM UM NOME COMPRIDO DE VERDADE' }
+      if (i % 5 === 4) p.bloco.genero = 'infantil'
+      return p
+    })
+    return c
+  }
+  const corpos = new Map(lista.map((l, i) => [l.id, i === 0 ? primeira() : { ...cotacaoDoAtletico(), numero: l.numero, cliente: { ...cotacaoDoAtletico().cliente, nome: l.cliente_nome } }]))
   const gravados = []
   const clientes = [
     { id: 'k1', nome: 'Atlético Exemplo', fantasia: '', tipo: 'J', documento: '12345678000190', contato: 'Marcos', telefone: '', celular: '62999990000', email: '', endereco: '', complemento: '', bairro: '', cidade: 'Goiânia', uf: 'GO', cep: '', tipo_de_contato: 'Cliente', segmento: '', vendedor: '', pedidos: 3, total: 1000, ultimo_pedido: null, criado_em: '2026-01-01' },

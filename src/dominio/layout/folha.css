@@ -228,6 +228,27 @@
   line-height: 1.35;
 }
 
+/* --- a folha nova da cotação (FOURTIME OS - 14, 10/10/2026) ---------------
+   A mesma caixa A4, com a margem do template padrão: 12 mm em cima e dos
+   lados e 7,5 mm embaixo, onde o rodapé mora. O risco do rodapé deixa de ser
+   da folha e passa a ser do próprio rodapé (o desenho 1, "risco e duas
+   pontas"), que a cotação escreve inteiro, com o número da página dentro.
+   A letra NÃO é desta classe: ela mora nas peças do papel novo (dc-n, em
+   modules/cotacao/documento.css), para os módulos de layout que ainda não
+   mudaram continuarem com a medida deles até a parte 6. */
+.fl.fl-nova {
+  padding: 45px 45px 28px;
+}
+.fl-nova .fl-topo {
+  margin-bottom: 16px;
+}
+.fl-nova .fl-pe {
+  display: block;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 0;
+}
+
 /* --- a impressão --------------------------------------------------------
    Não se esconde um ancestral da folha: um pai oculto leva junto tudo o que
    está dentro, e a folha sai em branco. Escondem-se os irmãos. */

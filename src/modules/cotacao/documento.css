@@ -21,76 +21,358 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- o resumo ------------------------------------------------------------ */
-.dc-resumo {
-  padding-top: 2mm;
-}
-/* a coluna do L-NN: estreita, e o numero nunca quebra em duas linhas */
-.dc-col-l {
-  width: 16mm;
-  white-space: nowrap;
-  font-weight: 700;
+/* ==========================================================================
+   A PÁGINA 1 DO TEMPLATE PADRÃO (FOURTIME OS - 14, seções 3 e 4).
+
+   As peças do protótipo "Folha A4" (a4n/papel.css), com o prefixo dc-. A
+   medida é a do protótipo, em pixel de papel a 96 dpi, e não em milímetro:
+   ela foi escolhida olhando a folha de 794 x 1123 px, e convertida para
+   milímetro ela sairia arredondada diferente em cada peça.
+
+   dc-n é a raiz da linguagem: as cores do papel (branco nos dois temas), a
+   Roboto, o corpo de 10,5 px. Cada parte da página 1 nasce dentro de um
+   dc-n, e o rodapé também; os módulos de layout ainda não, até a parte 6.
+   ========================================================================== */
+.dc-n {
+  --dc-k: #1a1d23;
+  --dc-t2: #5c6470;
+  --dc-t3: #8b929d;
+  --dc-ln: #d8dce3;
+  --dc-ln2: #c2c8d1;
+  --dc-sf: #f1f3f6;
+  --dc-red: #c6161b;
+  --dc-wa: #1f8a50;
+  --dc-wa-s: #e9f6ee;
+  color: var(--dc-k);
+  font-family: var(--font-doc);
+  font-size: 10.5px;
+  line-height: 1.38;
   font-variant-numeric: tabular-nums;
+  text-align: left;
 }
-.dc-tab tfoot td {
-  background: var(--fl-fundo-2);
+.dc-n p,
+.dc-n ol,
+.dc-n h3 {
+  margin: 0;
+  padding: 0;
 }
-.dc-tab tr.dc-total td {
-  font-size: 11pt;
+.dc-n ol {
+  list-style: none;
+}
+.dc-n b {
   font-weight: 700;
-  background: #fff;
-  border-top: 1.5px solid #161a20;
-  border-bottom: 0;
+}
+.dc-n small {
+  font-size: 8.5px;
+  font-weight: 400;
+  color: var(--dc-t2);
+}
+.dc-n svg {
+  display: block;
+  flex: none;
 }
 
-
-.dc-aceite p {
-  margin: 0 0 8mm;
-  font-size: 8.5pt;
-  color: var(--fl-fraco);
-  line-height: 1.4;
+/* o vão de 16 px entre as partes da página 1, DENTRO do bloco medido */
+.dc-parte {
+  padding-bottom: 16px;
 }
-.dc-assinaturas {
+
+/* o título de seção: 8 px, maiúsculo, com o risco fino até a margem. O risco
+   é uma BORDA de 1 px, e não um fundo de 1 px de altura: fundo fino sai com
+   espessura diferente em cada zoom, e a borda não. */
+.dc-t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--dc-k);
+}
+.dc-t::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--dc-ln);
+}
+/* o rótulo: 7,5 px, maiúsculo, cinza */
+.dc-r {
+  display: block;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--dc-t3);
+}
+
+/* --- 1. o cabeçalho 4: a marca à esquerda, o número grande à direita ------- */
+.dc-topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dc-marca small {
+  display: block;
+  margin-top: 4px;
+}
+.dc-numg {
+  text-align: right;
+}
+.dc-numg b {
+  display: block;
+  font-size: 16px;
+  line-height: 1.15;
+}
+.dc-numg small {
+  display: block;
+}
+.dc-campos {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6mm;
-  font-size: 8pt;
-  color: var(--fl-fraco);
-  text-align: center;
+  grid-template-columns: repeat(var(--dc-c, 5), minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid var(--dc-ln);
+  border-bottom: 1px solid var(--dc-ln);
 }
-.dc-assinaturas span {
+.dc-cel {
+  min-width: 0;
+}
+.dc-cel .dc-r {
+  margin-bottom: 1px;
+}
+.dc-cel b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.dc-cel-forte b {
+  font-size: 13px;
+}
+
+/* --- 2. o resumo 22 -------------------------------------------------------- */
+.dc-tab {
+  width: 100%;
+  border-collapse: collapse;
+}
+.dc-tab th,
+.dc-tab td {
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: middle;
+}
+.dc-tab th {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dc-t3);
+  border-bottom: 1px solid var(--dc-ln);
+}
+.dc-tab tbody td {
+  border-bottom: 1px solid var(--dc-ln);
+}
+.dc-tab .dc-nd {
+  text-align: right;
+  white-space: nowrap;
+}
+.dc-tab .dc-tab-n {
+  width: 1px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dc-tab .dc-tab-b {
+  font-weight: 700;
+}
+/* o número do layout só de borda, sem pintar (o 10 do protótipo, com borda) */
+.dc-num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1.5px solid var(--dc-k);
+  border-radius: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+/* a tag do gênero, na tinta dele */
+.dc-gen {
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dc-gen-m {
+  background: #e3eefb;
+  color: #12213f;
+}
+.dc-gen-f {
+  background: #fce7f1;
+  color: #7a123f;
+}
+.dc-gen-i {
+  background: #e4f3ec;
+  color: #0f5138;
+}
+/* acima de 10 layouts, duas tabelas lado a lado; o nome corta, não quebra */
+.dc-duas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.dc-duas .dc-tab-prod {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* os totais em faixa de células; o total numa célula preta */
+.dc-tf {
+  display: grid;
+  grid-template-columns: repeat(var(--dc-c, 1), minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid var(--dc-ln);
+  border-radius: 4px;
+  background: var(--dc-ln);
+}
+.dc-tf > div {
+  padding: 6px 10px;
+  background: #fff;
+}
+.dc-tf b {
+  display: block;
+}
+.dc-tf .dc-tf-tinta {
+  background: var(--dc-k);
+  color: #fff;
+}
+.dc-tf-tinta .dc-r {
+  color: rgba(255, 255, 255, 0.6);
+}
+.dc-tf-tinta b {
+  font-size: 13px;
+}
+
+/* --- 3. as condições 2: uma linha, riscos verticais, ícone vermelho solto --- */
+.dc-cond {
+  display: grid;
+  grid-template-columns: repeat(var(--dc-c, 3), minmax(0, 1fr));
+}
+.dc-cond > div {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 10px;
+  border-left: 1px solid var(--dc-ln);
+}
+.dc-cond > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.dc-cond b {
+  display: block;
+}
+.dc-ic {
+  flex: none;
+  margin-top: 1px;
+  color: var(--dc-red);
+}
+
+/* --- 4. os informes 2: numerados, em duas colunas -------------------------- */
+.dc-inf {
+  display: grid;
+  grid-template-columns: repeat(var(--dc-c, 2), minmax(0, 1fr));
+  column-gap: 24px;
+}
+.dc-inf ol {
   display: flex;
   flex-direction: column;
-  gap: 1.5mm;
+  gap: 3px;
 }
-.dc-assinaturas i {
-  display: block;
-  border-top: 1px solid var(--fl-texto);
+.dc-inf li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.dc-no {
+  flex: none;
+  min-width: 14px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--dc-k);
 }
 
-/* --- os informes na folha ------------------------------------------------ */
-/* OS INFORMES SAO NOVE PARAGRAFOS DE LETRA MIUDA, e eles nao competem com o
-   resumo nem com o aceite pela atencao de ninguem: quem le um orcamento le a
-   tabela e a assinatura, e passa o olho nas clausulas. Apertados, os tres
-   blocos da folha de dados cabem numa folha so ate um pedido de umas seis
-   pecas; dai para cima eles paginam, que e o certo. */
-.dc-informes {
-  margin-top: 4mm;
-}
-.dc-informes h3 {
-  margin: 0 0 2mm;
-  font-size: 9pt;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.dc-informes ol {
-  margin: 0;
-  padding-left: 4.5mm;
+/* --- 5. o aceite 2: o WhatsApp e a assinatura lado a lado ------------------ */
+.dc-ace {
   display: grid;
-  gap: 1mm;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: stretch;
 }
-.dc-informes li {
-  font-size: 8pt;
-  line-height: 1.35;
+.dc-wa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--dc-wa-s);
+}
+.dc-wa svg {
+  color: var(--dc-wa);
+}
+.dc-caixa {
+  display: flex;
+  align-items: flex-end;
+  padding: 8px 10px;
+  border: 1px solid var(--dc-ln);
+  border-radius: 4px;
+}
+.dc-ass {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+.dc-as {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dc-as i {
+  display: block;
+  height: 26px;
+  border-bottom: 1px solid var(--dc-k);
+}
+.dc-as small {
+  text-align: center;
+}
+
+/* --- 6. o rodapé 1: o risco fino e as duas pontas, em toda folha ----------- */
+.dc-pe {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--dc-ln);
+  font-size: 8.5px;
+  color: var(--dc-t2);
+}
+.dc-pe b {
+  color: var(--dc-k);
 }

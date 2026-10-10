@@ -1320,6 +1320,18 @@ dialog.modal.cheio .caixa {
   max-height: none;
 }
 
+/* A TELA DE TRABALHO (decisão 161): o modal dos dados do pedido e do
+   fechamento. Duas metades de formulário lado a lado, e por isso quase a tela
+   toda de largura, até 1760; a altura é a do conteúdo, com 24 de folga em
+   cima e embaixo, e o que passar rola por dentro. */
+dialog.modal.tela {
+  width: calc(100% - 48px);
+  max-width: 1760px;
+}
+dialog.modal.tela .caixa {
+  max-height: calc(100dvh - 48px);
+}
+
 /* O CORPO SOLTO tira o recheio e a rolagem do modal. Ele existe para a tela
    que rola por dentro, em colunas separadas: com a rolagem no corpo inteiro,
    a coluna da acao subiria junto com a lista de layouts e o botao Terminei

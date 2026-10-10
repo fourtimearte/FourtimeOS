@@ -46,45 +46,6 @@
   text-decoration-color: currentColor;
 }
 
-.ct-titulo {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-5);
-}
-.ct-sujo {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--warn);
-}
-
-.ct-bloco {
-  margin-bottom: var(--sp-5);
-  padding: var(--sp-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  min-width: 0;
-}
-.ct-h {
-  margin: 0 0 var(--sp-4);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.ct-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: var(--sp-4);
-  min-width: 0;
-}
-.ct-form .col-2 {
-  grid-column: span 2;
-}
-
 .ct-nada {
   margin: 0 0 var(--sp-4);
   font-size: 13.5px;
@@ -93,7 +54,6 @@
 
 /* --- um produto ---------------------------------------------------------- */
 .ct-produto {
-  margin-bottom: var(--sp-5);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -110,76 +70,10 @@
   min-width: 0;
 }
 
-.ct-produto-topo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-5);
-  padding: 12px var(--sp-5);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-  min-width: 0;
-}
-.ct-n {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 13px;
-  font-weight: 700;
-}
-.ct-produto-topo b {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ct-produto-resumo {
-  font-size: 13px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
 .ct-produto-bts {
   display: flex;
   gap: var(--re-4);
   margin-left: auto;
-}
-
-/* o arranjo: imagem à esquerda, técnica à direita, grade atravessando */
-.ct-produto-corpo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-5);
-  padding: var(--sp-5);
-  min-width: 0;
-}
-@media (min-width: 820px) {
-  .ct-produto-corpo {
-    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
-  }
-}
-.ct-esq,
-.ct-dir {
-  min-width: 0;
-}
-.ct-dir {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-.ct-grade {
-  padding: 0 var(--sp-5) var(--sp-5);
-  min-width: 0;
-}
-.ct-acoes-produto {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-btn);
-  margin-bottom: var(--sp-5);
 }
 
 /* --- ajustes ------------------------------------------------------------- */
@@ -220,6 +114,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: inherit;
+  font: inherit;
   min-width: 0;
 }
 .ct-ajuste-valor {
@@ -238,48 +133,8 @@
   color: var(--text-2);
 }
 
-/* --- o fechamento -------------------------------------------------------- */
-.ct-fecha {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-  gap: var(--sp-4);
-  margin: var(--sp-5) 0;
-  padding: var(--sp-4) var(--sp-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  min-width: 0;
-}
-.ct-fecha > div {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-2);
-  min-width: 0;
-}
-.ct-fecha .rot {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.ct-fecha b {
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
-}
-.ct-fecha .forte b {
-  font-size: 22px;
-  color: var(--brand);
-}
-
 /* --- celular ------------------------------------------------------------- */
 @media (max-width: 900px) {
-  .ct-produto-corpo {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ct-form .col-2 {
-    grid-column: auto;
-  }
   .ct-produto-bts {
     margin-left: 0;
     width: 100%;
@@ -288,7 +143,9 @@
 
 /* --- o que já foi enviado ------------------------------------------------ */
 .ct-envios {
-  margin-bottom: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
 }
 .ct-envios h4 {
   margin: 0 0 var(--re-5);
@@ -347,132 +204,6 @@
 .ct-ajuste-motivo-lido {
   flex: 1 1 200px;
   min-width: 0;
-}
-
-/* ==========================================================================
-   O arranjo do v5: a cotação à esquerda, o resumo fixo à direita.
-
-   A coluna da direita não rola junto. Quem está mexendo em preço na linha 40
-   precisa ver o total sem subir a página, porque é olhando o total que se
-   decide o desconto. Abaixo de 1024 px ela vira a última seção da página, e
-   os botões de fechar a venda continuam no topo, nas ações da página.
-   ========================================================================== */
-
-.ct-editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-4);
-  align-items: start;
-}
-@media (min-width: 1024px) {
-  .ct-editor {
-    grid-template-columns: minmax(0, 1fr) 300px;
-  }
-  .ct-lado {
-    position: sticky;
-    top: calc(var(--topbar-h) + var(--sp-4));
-  }
-}
-.ct-coluna,
-.ct-lado {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  min-width: 0;
-}
-
-/* --- a barra de abas ----------------------------------------------------- */
-.ct-barra {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-4);
-  margin-bottom: var(--sp-4);
-  min-width: 0;
-}
-.ct-abas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--re-2);
-  min-width: 0;
-}
-.ct-aba {
-  height: 32px;
-  padding: 0 var(--re-6);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  max-width: 190px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ct-aba:hover {
-  background: var(--surface-2);
-}
-.ct-aba.ligada {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
-}
-.ct-empurra {
-  flex: 1 1 auto;
-}
-.ct-chip {
-  height: 32px;
-  padding: 0 var(--re-6);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ct-chip.ligado {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
-}
-
-/* --- os cartões ---------------------------------------------------------- */
-.ct-cartao {
-  padding: var(--sp-5);
-  min-width: 0;
-}
-.ct-cab {
-  display: flex;
-  flex-wrap: wrap;
-  /* pelo centro, e não pela linha de base: o título agora leva um ícone */
-  align-items: center;
-  gap: var(--re-4);
-  margin-bottom: var(--sp-4);
-}
-.ct-cab h3 {
-  margin: 0;
-  font-size: 14.5px;
-  font-weight: 700;
-}
-.ct-cab span {
-  margin-left: auto;
-  font-size: 11.5px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.ct-eyebrow {
-  margin: var(--sp-2) 0 calc(var(--sp-2) * -1);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
 }
 
 /* --- os informes --------------------------------------------------------- */
@@ -534,28 +265,7 @@
 }
 
 /* --- o produto ----------------------------------------------------------- */
-.ct-selo {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  height: 26px;
-  padding: 0 var(--re-5);
-  border-radius: var(--radius-xs);
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-.ct-produto-travado {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-5);
-  padding: 12px var(--sp-5);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-}
+
 .ct-bt-icone {
   display: grid;
   place-items: center;
@@ -600,131 +310,6 @@
 .ct-mais-bt:hover {
   border-color: var(--ink);
   color: var(--text);
-}
-
-/* --- o resumo da direita ------------------------------------------------- */
-.ct-linha {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--re-5);
-  padding: var(--re-3) 0;
-  font-size: 13px;
-  color: var(--text-2);
-}
-.ct-linha b {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.ct-linha.grande {
-  margin-top: var(--re-3);
-  padding-top: var(--re-5);
-  border-top: 1.5px solid var(--ink);
-  font-size: 15px;
-}
-.ct-linha.grande b {
-  font-size: 20px;
-  letter-spacing: -0.01em;
-}
-.ct-miudo {
-  margin: var(--sp-2) 0 0;
-  font-size: 11.5px;
-  color: var(--text-3);
-}
-.ct-miudo b {
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
-.ct-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--re-3);
-}
-.ct-tags span {
-  height: 22px;
-  padding: 0 var(--re-4);
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: 11.5px;
-  line-height: 20px;
-  color: var(--text-3);
-}
-/* OS TRÊS BOTÕES QUE TÊM CONSEQUÊNCIA FORA DA TELA. Aprovar vira pedido,
-   Enviar registra o que o cliente viu, Salvar grava. O resto é ferramenta. */
-.ct-lado-bts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-}
-
-/* O CARTÃO DE FERRAMENTAS: um botão por linha, largura inteira. Eles estavam
-   em três lugares (a barra de abas, o topo da página e uma linha miúda no pé
-   da coluna) porque foram nascendo em momentos diferentes, e não porque
-   pertencessem a lugares diferentes. */
-.ct-ferramentas {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-}
-.ct-ferramentas > .ct-cab {
-  margin-bottom: var(--re-1);
-}
-/* o segmentado ocupa a linha inteira, como os botões abaixo dele. Só os
-   BOTÕES esticam: o indicador que desliza por trás deles é posicionado por
-   medida, e esticá-lo o tiraria do lugar. */
-.ct-ferramentas .seg {
-  width: 100%;
-}
-.ct-ferramentas .seg > button {
-  flex: 1;
-}
-
-
-/* a observação do produto virou texto rico: a moldura do campo continua
-   sendo a do formulário, e o miolo é a área editável */
-.ct-obs-rica {
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-.ct-obs-rica .rico {
-  min-height: 74px;
-}
-
-/* ==========================================================================
-   A FUSÃO: o cabeçalho do pedido e os campos sobre a peça
-
-   Ver claude/DECISAO-COTACAO-E-FICHA-UM-PEDIDO.md. O cabeçalho junta o que
-   era "Dados da cotação" com o cabeçalho da ficha de produção, em três
-   famílias separadas por um filete: quem compra, o que foi combinado, e o que
-   a fábrica precisa saber. A separação não é decoração: num orçamento em
-   montagem a terceira família está vazia, e misturar as três faria o vendedor
-   procurar o campo do cliente no meio de campo de galpão.
-   ========================================================================== */
-.ct-grupos {
-  display: flex;
-  flex-direction: column;
-}
-.ct-grupo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5);
-}
-.ct-grupo + .ct-grupo {
-  border-top: 1px solid var(--border);
-}
-.ct-grupo-nome {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.ct-form .estreito {
-  max-width: 92px;
 }
 
 /* as marcas do documento, que vieram da ficha */
@@ -840,4 +425,600 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
+}
+
+/* ==========================================================================
+   O EDITOR FECHADO (decisão 163, prancha 109): o cabeçalho com o resumo, os
+   botões em duas fileiras, a fileira das cotações abertas e o modal dos
+   dados. As medidas são as do protótipo da coluna: 84 px de cabeçalho, 40 px
+   por fileira de botão e 4 px entre elas.
+   ========================================================================== */
+.ct-ed {
+  container-type: inline-size;
+}
+.ct-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* --- o cabeçalho ----------------------------------------------------------- */
+.ct-topo {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.ct-cb {
+  flex: 1 1 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--re-4);
+  min-width: 0;
+  height: 84px;
+  font-size: 13px;
+  color: var(--text);
+}
+.ct-cb-tile {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--re-2);
+  min-width: 0;
+  padding: var(--re-5) var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.ct-cb-volta {
+  width: var(--btn-h);
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.ct-cb-volta:hover {
+  border-color: var(--text-3);
+  background: var(--surface-2);
+}
+.ct-cb-id {
+  flex: 0 1 260px;
+}
+.ct-cb-sobre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 15px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+.ct-cb-pilha {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ct-cb-v {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.ct-cb-s {
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ct-cb-cels {
+  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto) minmax(0, auto);
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-cb-cel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--re-1);
+  min-width: 0;
+  padding: 0 var(--re-7);
+  border-left: 1px solid var(--border);
+}
+.ct-cb-cel:first-child {
+  border-left: 0;
+}
+.ct-cb-cel > .ct-cb-sobre {
+  justify-content: flex-start;
+}
+.ct-cb-tot .ct-cb-v {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 24px;
+}
+
+/* as duas portas, Dados do pedido e Fechamento: cada uma abre o modal */
+.ct-cb-portas {
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--re-4);
+  padding: var(--re-4);
+}
+.ct-porta {
+  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  column-gap: var(--re-5);
+  row-gap: var(--re-1);
+  min-width: 0;
+  padding: 0 var(--re-6);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.ct-porta:not(.ct-porta-aberta):hover {
+  border-color: var(--text-3);
+  background: var(--surface-2);
+}
+.ct-porta-aberta {
+  border-color: transparent;
+}
+.ct-porta-ic {
+  grid-row: 1 / span 3;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.ct-porta-aberta .ct-porta-ic {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+}
+.ct-porta > b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-porta-fim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.ct-porta-ok {
+  display: inline-grid;
+  color: var(--ok);
+}
+.ct-porta > small {
+  grid-column: 2 / span 2;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ct-porta-aberta > small {
+  color: color-mix(in srgb, currentColor 76%, transparent);
+}
+
+/* os quatro botões: duas colunas de largura igual, duas fileiras de 40 */
+.ct-bts {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: var(--btn-h) var(--btn-h);
+  gap: var(--re-2) var(--gap-btn);
+}
+.ct-bts > * {
+  width: 100%;
+}
+.ct-salvar {
+  display: flex;
+  min-width: 0;
+}
+.ct-salvar > :first-child {
+  flex: 1 1 auto;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.ct-salvar > :last-child {
+  flex: none;
+  border-left-width: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.ct-ponto-sujo {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+}
+
+/* --- a fileira das cotações abertas --------------------------------------- */
+.ct-faixa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.ct-docs {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-width: 0;
+}
+.ct-docs-seg {
+  max-width: 100%;
+}
+/* a régua: uma caixa de tamanho zero que guarda a fileira escondida que mede
+   as abas. Sem ela a fileira, mesmo invisível, empurrava a página de lado */
+.ct-docs-regua {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ct-doc {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  white-space: nowrap;
+}
+.ct-doc-x {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-xs);
+  opacity: 0.6;
+  transition: opacity var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out);
+}
+.ct-doc-x:hover {
+  opacity: 1;
+  background: var(--surface-3);
+}
+.ct-doc-mais {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+}
+.ct-faixa-fim {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.ct-menu {
+  padding: var(--re-2);
+  min-width: 220px;
+}
+.ct-menu-rot {
+  display: block;
+  padding: var(--re-3) var(--re-5) var(--re-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-menu .ct-menu-risco {
+  color: var(--brand-text);
+}
+
+/* --- o modal dos dados do pedido e do fechamento (decisão 161) -------------- */
+.ct-md-topo {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--re-3) var(--re-6);
+  margin: 0;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ct-md-topo small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.ct-md {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+.ct-md-metade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  padding-right: var(--sp-6);
+}
+.ct-md-metade + .ct-md-metade {
+  padding-right: 0;
+  padding-left: var(--sp-6);
+  border-left: 1px solid var(--border);
+}
+.ct-md-tit p {
+  margin: var(--re-2) 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.ct-md-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.ct-mc {
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-mc-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 48px;
+  padding: var(--re-3) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.ct-mc-cab > button {
+  margin-left: auto;
+}
+.ct-mc-apoio {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+}
+.ct-mc-corpo {
+  padding: var(--re-7);
+  min-width: 0;
+}
+.ct-mc-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+}
+.ct-mc-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+}
+.ct-mc-toda {
+  grid-column: 1 / -1;
+}
+.ct-mc-meia {
+  grid-column: span 2;
+}
+.ct-mc-uf {
+  max-width: 92px;
+}
+.ct-mc-pilha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.ct-mc-pilha > .ct-ajustes {
+  align-self: stretch;
+  margin-bottom: 0;
+}
+.ct-mc-pilha > .ct-nada {
+  margin: 0;
+}
+
+/* a busca de cliente do cartão Quem compra */
+.ct-busca-cli {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  padding: var(--re-4);
+}
+.ct-busca-lista {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ct-busca-nada {
+  margin: 0;
+  padding: var(--re-5);
+  font-size: 13px;
+  color: var(--text-3);
+}
+.ct-busca-de {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* --- a pergunta antes de apagar (decisão 156) ------------------------------ */
+.ct-apagar p {
+  margin: 0 0 var(--sp-4);
+  color: var(--text-2);
+}
+.ct-apagar-qual {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--re-4) var(--sp-4);
+  margin: 0;
+  padding: var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.ct-apagar-qual dt {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.ct-apagar-qual dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- o cabeçalho em telas menores -------------------------------------------
+   Até 1560 de conteúdo cabe tudo numa linha (o desenho é de 1920 com o menu).
+   Abaixo disso os botões descem para uma fileira só, à direita; abaixo de
+   1000 o resumo quebra (os dois azulejos em cima, as células embaixo); no
+   celular as portas empilham e os botões ficam dois a dois. */
+@container (max-width: 1560px) {
+  .ct-topo {
+    flex-wrap: wrap;
+  }
+  .ct-cb {
+    flex-basis: 100%;
+  }
+  .ct-cb-id {
+    flex-basis: 220px;
+  }
+  .ct-bts {
+    flex-basis: 100%;
+    grid-template-columns: repeat(4, minmax(0, max-content));
+    grid-template-rows: var(--btn-h);
+    justify-content: end;
+  }
+}
+@container (max-width: 1000px) {
+  .ct-cb {
+    flex-wrap: wrap;
+    height: auto;
+  }
+  .ct-cb-tile {
+    height: 84px;
+  }
+  .ct-cb-id {
+    flex: 1 1 0;
+  }
+  .ct-cb-cels {
+    flex-basis: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ct-cb-portas {
+    grid-column: 1 / -1;
+    height: 84px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ct-cb-portas + .ct-cb-cel {
+    border-left: 0;
+  }
+  .ct-cb-cel {
+    padding-top: var(--re-6);
+    padding-bottom: var(--re-6);
+  }
+  .ct-bts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: var(--btn-h) var(--btn-h);
+  }
+}
+@container (max-width: 560px) {
+  .ct-cb-portas {
+    flex-direction: column;
+    height: auto;
+  }
+  .ct-porta {
+    min-height: 64px;
+  }
+  .ct-cb-cel {
+    padding-left: var(--re-5);
+    padding-right: var(--re-5);
+  }
+  .ct-cb-tot .ct-cb-v {
+    font-size: 16px;
+    line-height: 20px;
+  }
+  .ct-faixa {
+    flex-wrap: wrap;
+  }
+  /* no celular a coluna do botão é estreita: o texto fica, o ícone sai */
+  .ct-bts svg {
+    display: none;
+  }
+  .ct-salvar > :last-child svg {
+    display: inline;
+  }
+}
+
+/* o modal: abaixo de 1280 as metades empilham; abaixo de 900 os pares também */
+@media (max-width: 1279px) {
+  .ct-md {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-md-metade,
+  .ct-md-metade + .ct-md-metade {
+    padding: 0;
+    border-left: 0;
+  }
+  .ct-md-metade + .ct-md-metade {
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-6);
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 899px) {
+  .ct-md-par {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-mc-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .ct-mc-2,
+  .ct-mc-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-mc-meia {
+    grid-column: 1 / -1;
+  }
 }

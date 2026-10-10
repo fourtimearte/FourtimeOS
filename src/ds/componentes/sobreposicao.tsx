@@ -56,6 +56,8 @@ export function Modal({
   gigante,
   solto,
   cheio,
+  tela,
+  fechaFora = true,
   topo,
 }: Props & {
   /** o tamanho do cartão do kanban: duas colunas de conteúdo lado a lado */
@@ -64,6 +66,13 @@ export function Modal({
   solto?: boolean
   /** a tela quase inteira: 40px de folga dos lados e 32px em cima e embaixo */
   cheio?: boolean
+  /** a tela de trabalho: até 1760 px de largura, 24 px de folga em cima e
+      embaixo, a altura do que tiver dentro (o modal dos dados do pedido) */
+  tela?: boolean
+  /** false: clicar no escuro NÃO fecha. Para o modal em que a pessoa digita
+      muito: um clique de raspão fora jogava o trabalho fora (decisão 161).
+      Esc, o X e os botões continuam fechando. */
+  fechaFora?: boolean
   /** um cabeçalho próprio no lugar do título simples */
   topo?: ReactNode
 }) {
@@ -71,21 +80,21 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      className={['sobrepoe', 'modal', cheio ? 'cheio' : gigante ? 'gigante' : largo ? 'largo' : '']
+      className={['sobrepoe', 'modal', cheio ? 'cheio' : tela ? 'tela' : gigante ? 'gigante' : largo ? 'largo' : '']
         .filter(Boolean)
         .join(' ')}
-      onClick={(e) => cliqueNoEscuro(e, aoFechar)}
+      onClick={fechaFora ? (e) => cliqueNoEscuro(e, aoFechar) : undefined}
     >
       <div className="caixa">
         {topo ? (
           <header className="sobre-topo">
             {topo}
-            <BotaoFechar aoFechar={aoFechar} />
+            <BotaoFechar aoFechar={aoFechar} foco={tela} />
           </header>
         ) : titulo ? (
           <header className="sobre-topo">
             <h2 className="t">{titulo}</h2>
-            <BotaoFechar aoFechar={aoFechar} />
+            <BotaoFechar aoFechar={aoFechar} foco={tela} />
           </header>
         ) : null}
         <div className={solto ? 'sobre-corpo solto' : 'sobre-corpo'}>{children}</div>
@@ -115,9 +124,17 @@ export function Gaveta({ aberto, aoFechar, titulo, children, pe }: Props) {
   )
 }
 
-function BotaoFechar({ aoFechar }: { aoFechar: () => void }) {
+/* com foco, o X recebe o foco ao abrir: no modal de muitos campos o primeiro
+   campo focado de cara abria o teclado do tablet antes de a pessoa escolher */
+function BotaoFechar({ aoFechar, foco }: { aoFechar: () => void; foco?: boolean }) {
   return (
-    <button type="button" className="btn btn-limpo icone sm" aria-label="Fechar" onClick={aoFechar}>
+    <button
+      type="button"
+      className="btn btn-limpo icone sm"
+      aria-label="Fechar"
+      onClick={aoFechar}
+      data-foco-inicial={foco ? '' : undefined}
+    >
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       </svg>

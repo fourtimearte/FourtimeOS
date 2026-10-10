@@ -39,7 +39,8 @@
     "deposito-nomes": "node testes/deposito-nomes.mjs",
     "estoque": "node testes/estoque.mjs",
     "estoque-cadastro": "node testes/estoque-cadastro.mjs",
-    "produtos": "node testes/produtos.mjs"
+    "produtos": "node testes/produtos.mjs",
+    "orcamento": "node testes/orcamento.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

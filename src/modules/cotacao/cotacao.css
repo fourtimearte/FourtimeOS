@@ -9,27 +9,6 @@
    a página inteira de lado no celular.
    ========================================================================== */
 
-.ct-filtros {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--gap-btn);
-}
-.ct-filtros .busca {
-  flex: 1 1 280px;
-  min-width: 0;
-}
-
-.ct-num {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-1);
-}
-.ct-num span {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
 /* --- o editor ------------------------------------------------------------ */
 .ct-volta {
   border: 0;
@@ -2108,5 +2087,696 @@
   }
   .ct-fab-largo {
     grid-column: auto;
+  }
+}
+
+/* ==========================================================================
+   A PÁGINA DO ORÇAMENTO (pranchas 72, 72b e 73): a lista à esquerda, numa
+   coluna de 440 px, e à direita as estatísticas ou a cotação escolhida.
+   ========================================================================== */
+.ct-lt-caixa {
+  container-type: inline-size;
+  container-name: ct-lt;
+  min-width: 0;
+}
+.ct-lt {
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+.ct-lt-lista {
+  overflow: hidden;
+  min-width: 0;
+}
+.ct-lt-abas {
+  padding: var(--re-6) var(--re-6) 0;
+}
+.ct-lt-seg {
+  display: flex;
+  width: 100%;
+}
+.ct-lt-seg button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3);
+  min-width: 0;
+  padding: 0 var(--re-3);
+}
+.ct-lt-seg button small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.ct-lt-busca {
+  padding: var(--re-6);
+  border-bottom: 1px solid var(--border);
+}
+.ct-lt-espera {
+  padding: var(--pad-cartao);
+}
+.ct-lt-g {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-4);
+  padding: var(--re-4) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.ct-lt-g small {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+}
+.ct-lt-t {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  transition: background-color var(--t-fast);
+}
+.ct-lt-grupo:last-child > .ct-lt-t:last-child {
+  border-bottom: 0;
+}
+.ct-lt-t:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+.ct-lt-nome {
+  display: flex;
+  align-items: center;
+  gap: var(--re-6);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--re-3) var(--re-7);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ct-lt-ic {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+}
+.ct-lt-nomes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.ct-lt-nomes b {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.ct-lt-nomes small,
+.ct-lt-fim small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+.ct-lt-fim {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  font-variant-numeric: tabular-nums;
+}
+.ct-lt-fim b {
+  font-weight: 600;
+}
+.ct-lt-fim small.ct-lt-perto {
+  font-weight: 600;
+  color: var(--brand-text);
+}
+/* a escolhida se pinta igual ao item aberto do menu: o fundo vem de
+   LINHA_ESCOLHIDA, do Design System; aqui fica só o texto */
+.ct-lt-sel,
+.ct-lt-sel:hover {
+  color: var(--on-ink);
+}
+.ct-lt-sel .ct-lt-nomes small,
+.ct-lt-sel .ct-lt-fim small {
+  color: color-mix(in srgb, var(--on-ink) 72%, transparent);
+}
+.ct-lt-sel .ct-lt-fim small.ct-lt-perto {
+  color: var(--brand-no-ink);
+}
+.ct-lt-sel .ct-lt-ic {
+  border-color: transparent;
+}
+
+/* --- a direita: as estatísticas -------------------------------------------- */
+.ct-lt-direita,
+.ct-es {
+  container-type: inline-size;
+  container-name: ct-dir;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.ct-lt-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ct-lt-cartao {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-lt-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-3) var(--re-6);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-lt-nota {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ct-lt-vazio {
+  margin: 0;
+  padding: var(--pad-cartao);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.ct-lt-dois {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: stretch;
+}
+/* as últimas aprovadas, três lado a lado */
+.ct-ap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ct-ap-item {
+  display: flex;
+  gap: var(--re-6);
+  min-width: 0;
+  padding: var(--re-7);
+  border-right: 1px solid var(--border);
+}
+.ct-ap-item:last-child {
+  border-right: 0;
+}
+.ct-lt-ic.ct-ap-ic {
+  width: 48px;
+  height: 48px;
+}
+.ct-ap-txt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.ct-ap-txt b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ct-ap-txt small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-ap-valor {
+  margin-top: var(--re-2);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ct-ap-onde {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 12px;
+  color: var(--text-2);
+}
+/* a conversão: a taxa, três números ao lado, a barra e a legenda */
+.ct-cv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-8);
+  padding: var(--re-7);
+}
+.ct-cv-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--re-8);
+}
+.ct-cv-taxa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.ct-cv-taxa b {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ct-cv-taxa span {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ct-cv-taxa small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-cv-lado {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--re-6);
+  min-width: 260px;
+  margin: 0;
+}
+.ct-cv-lado > div {
+  padding-left: var(--re-6);
+  border-left: 1px solid var(--border);
+}
+.ct-cv-lado dt {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-cv-lado dd {
+  margin: var(--re-1) 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ct-cv-barra {
+  display: flex;
+  gap: var(--re-1);
+  height: 12px;
+}
+.ct-cv-barra i {
+  display: block;
+  flex: var(--ct-peso, 1) 1 0;
+  min-width: 4px;
+  border-radius: var(--radius-xs);
+}
+.ct-cv-ap i,
+i.ct-cv-ap {
+  background: var(--ink);
+}
+.ct-cv-es i,
+i.ct-cv-es {
+  background: var(--border-2);
+}
+.ct-cv-pe i,
+i.ct-cv-pe {
+  background: var(--brand);
+}
+.ct-cv-leg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--re-6);
+}
+.ct-cv-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  column-gap: var(--re-4);
+  align-items: baseline;
+}
+.ct-cv-item i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.ct-cv-item b {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ct-cv-item span {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--text-2);
+}
+/* aprovado por vendedor: uma barra por vendedor, a maior enche o trilho */
+.ct-gv {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: var(--re-6);
+  padding: var(--re-7);
+}
+.ct-gv-lin {
+  display: grid;
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--re-6);
+}
+.ct-gv-nome {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ct-gv-nome b {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ct-gv-nome small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-gv-trilho {
+  display: block;
+  height: 14px;
+  border-left: 1px solid var(--border-2);
+}
+.ct-gv-trilho i {
+  display: block;
+  width: var(--ct-parte, 0%);
+  height: 100%;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--ink);
+}
+.ct-gv-valor {
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- a direita: a cotação escolhida (73) ------------------------------------ */
+.ct-es-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-btn);
+}
+.ct-es-topo .ct-es-voltar {
+  display: none;
+  margin-right: auto;
+}
+.ct-es-contas {
+  display: flex;
+  flex-direction: column;
+  padding: var(--re-5) var(--re-7) var(--re-7);
+}
+.ct-es-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--re-6);
+  padding: var(--re-4) 0;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ct-es-linha span {
+  color: var(--text-2);
+}
+.ct-es-linha b {
+  font-weight: 600;
+}
+.ct-es-linha.ct-es-total {
+  margin-top: var(--re-4);
+  padding-top: var(--re-6);
+  border-top: 1.5px solid var(--text);
+}
+.ct-es-linha.ct-es-total span {
+  color: var(--text);
+  font-size: 15px;
+}
+.ct-es-linha.ct-es-total b {
+  font-size: 22px;
+}
+.ct-es-miudo {
+  margin: var(--re-4) 0 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-es-miudo b {
+  color: var(--text);
+  font-weight: 600;
+}
+.ct-es-dados {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--re-5) var(--re-7) var(--re-7);
+}
+.ct-es-dados > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--re-6);
+  padding: var(--re-4) 0;
+  font-size: 13.5px;
+}
+.ct-es-dados dt {
+  color: var(--text-2);
+}
+.ct-es-dados dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--re-2) var(--re-4);
+  margin: 0;
+  min-width: 0;
+}
+.ct-es-dados dd b {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ct-es-dados dd small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+/* um layout em linha: a arte, o nome, as técnicas com a grade, e o valor */
+.ct-es-lay {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1.25fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--re-7);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-es-lay:last-child {
+  border-bottom: 0;
+}
+.ct-es-arte {
+  display: grid;
+  place-items: center;
+  height: 70px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.ct-es-arte img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ct-es-arte small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ct-es-lay-nome,
+.ct-es-lay-meio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.ct-es-lay-nome b {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.ct-es-lay-nome small,
+.ct-es-lay-meio small,
+.ct-es-lay-fim small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-es-tecidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-2) var(--re-6);
+}
+.ct-es-tecidos > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+}
+.ct-es-lay-fim {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  font-variant-numeric: tabular-nums;
+}
+.ct-es-lay-fim b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ct-es-fim {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+/* o caminho do pedido: quatro passos lado a lado */
+.ct-es-passos {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ct-es-passo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+  padding: var(--re-7);
+  border-right: 1px solid var(--border);
+  color: var(--text-3);
+}
+.ct-es-passo:last-child {
+  border-right: 0;
+}
+.ct-es-passo b {
+  margin-top: var(--re-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ct-es-passo small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+.ct-es-passo.ct-es-feito {
+  color: var(--ok);
+}
+.ct-es-passo.ct-es-agora {
+  color: var(--text);
+}
+.ct-es-envio {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--re-6);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.ct-es-envio:last-child {
+  border-bottom: 0;
+}
+.ct-es-envio span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.ct-es-envio small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-es-envio b {
+  font-weight: 600;
+}
+
+/* --- as larguras --------------------------------------------------------------- */
+@container ct-lt (max-width: 1240px) {
+  .ct-lt {
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+}
+/* tablet e celular: a lista em cima, ou a escolhida no lugar dela, com o Voltar */
+@container ct-lt (max-width: 900px) {
+  .ct-lt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-lt.ct-lt-com > .ct-lt-lista {
+    display: none;
+  }
+  .ct-es-topo .ct-es-voltar {
+    display: inline-flex;
+  }
+  .ct-es-topo .ct-es-fechar {
+    display: none;
+  }
+}
+@container ct-dir (max-width: 880px) {
+  .ct-lt-dois,
+  .ct-es-fim {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-lt-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ct-ap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-ap-item {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ct-ap-item:last-child {
+    border-bottom: 0;
+  }
+}
+@container ct-dir (max-width: 640px) {
+  .ct-es-lay {
+    grid-template-columns: 80px minmax(0, 1fr) auto;
+  }
+  .ct-es-lay-meio {
+    grid-column: 2 / -1;
+  }
+  .ct-es-passos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ct-es-passo:nth-child(2) {
+    border-right: 0;
+  }
+  .ct-es-passo:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
+  }
+  .ct-cv-lado,
+  .ct-cv-leg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-es-topo .ct-es-botoes {
+    width: 100%;
+  }
+}
+@container ct-dir (max-width: 420px) {
+  .ct-lt-kpis {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

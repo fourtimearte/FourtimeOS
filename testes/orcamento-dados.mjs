@@ -91,6 +91,11 @@ const NOMES = ['Atlético Exemplo', 'Academia Exemplo', 'Auto Peças Exemplo', '
    mostrar: destaques na arte larga (L-01) e na alta (L-02), Silk e Bordado
    sem cor ao lado da Sublimação, e uma grade com infantil no L-03 */
 export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false } = {}) {
+  /* a lista mistura os estados para a página do orçamento (parte 8): três
+     enviadas (uma vence em 2 dias, outra amanhã), uma recusada, um rascunho
+     mexido ontem e uma aprovada, que virou o pedido PD004410 */
+  const ESTADOS = ['enviada', 'enviada', 'enviada', 'recusada', 'rascunho', 'aprovada']
+  const VALE = ['2026-10-20', '2026-10-12', '2026-10-11', '2026-10-05', '2026-10-25', '2026-10-15']
   const lista = NOMES.slice(0, abertas).map((nome, i) => ({
     id: 'c' + (i + 1),
     numero: 'CO2026-0' + (131 - i),
@@ -99,16 +104,23 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     cliente_cidade: 'Goiânia',
     cliente_uf: 'GO',
     lead_id: null,
-    estado: 'enviada',
+    estado: ESTADOS[i] ?? 'enviada',
     vendedor_nome: 'Dani',
     total: 9034.5 - i * 700,
     pecas: 186 - i * 10,
-    valida_ate: '2026-10-20',
+    valida_ate: VALE[i] ?? '2026-10-20',
     criada_em: new Date(Date.parse('2026-10-01T10:00:00-03:00') - i * 3600000).toISOString(),
-    atualizado_em: '2026-10-02T14:10:00-03:00',
-    pedido_numero: null,
+    atualizado_em: i === 4 ? '2026-10-09T16:00:00-03:00' : '2026-10-02T14:10:00-03:00',
+    pedido_numero: i === 5 ? 'PD004410' : null,
     teste: true,
   }))
+  /* os pedidos: o da c6 no PCP, um do Rafa de uma cotação que não está na
+     lista, e um de setembro, que não conta no mês */
+  const PEDIDOS = [
+    { numero: 'PD004410', cotacao_id: 'c6', estado: 'pcp', aprovado_em: '2026-10-08T11:00:00-03:00', pecas: 136, total: 5534.5, vendedor_nome: 'Dani' },
+    { numero: 'PD004401', cotacao_id: 'cx1', estado: 'producao', aprovado_em: '2026-10-03T09:00:00-03:00', pecas: 84, total: 2880, vendedor_nome: 'Rafa' },
+    { numero: 'PD004390', cotacao_id: 'cx2', estado: 'entregue', aprovado_em: '2026-09-20T09:00:00-03:00', pecas: 40, total: 1900, vendedor_nome: 'Dani' },
+  ]
   const primeira = () => {
     const c = cotacaoDoAtletico()
     if (rica) {
@@ -171,6 +183,10 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
       return { status: 200, corpo: MATERIAIS.filter((m) => ids.includes(m.referencia_id)) }
     }
     if (u.includes('/rest/v1/kit_na_ficha')) return { status: 200, corpo: [] }
+    if (u.includes('/rest/v1/pedido?')) {
+      const so = (u.match(/cotacao_id=eq\.([^&]+)/) || [])[1]
+      return { status: 200, corpo: so ? PEDIDOS.filter((p) => p.cotacao_id === so) : PEDIDOS }
+    }
     if (u.includes('/rest/v1/meu_perfil')) return { status: 200, corpo: perfilBase(papel) }
     if (u.includes('/rest/v1/regulagem')) return { status: 200, corpo: [{ valor: ensaio ? 'teste' : 'real' }] }
     if (u.includes('/rest/v1/cotacao_na_lista')) return { status: 200, corpo: lista.filter((l) => corpos.has(l.id)) }
@@ -180,7 +196,7 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
       if (metodo === 'GET') {
         const c = corpos.get(id)
         const l = lista.find((x) => x.id === id)
-        return { status: 200, corpo: c ? [{ id, numero: l.numero, corpo: c, versao_do_formato: 4, estado: c.estado, criada_em: l.criada_em, atualizado_em: l.atualizado_em }] : [] }
+        return { status: 200, corpo: c ? [{ id, numero: l.numero, corpo: c, versao_do_formato: 4, estado: l.estado === 'enviada' ? c.estado : l.estado, criada_em: l.criada_em, atualizado_em: l.atualizado_em }] : [] }
       }
       if (metodo === 'PATCH') {
         gravados.push({ metodo, u: 'cotacao', id, corpo })

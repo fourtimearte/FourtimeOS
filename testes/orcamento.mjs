@@ -580,6 +580,103 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (página inteira): ' + erros.join(' | '))
 })
 
+/* 9. A PÁGINA DO ORÇAMENTO (parte 8): a lista, as estatísticas e a escolhida */
+async function irLista(pg, rota = '/cotacao') {
+  await pg.goto(SITE + rota, { waitUntil: 'networkidle' })
+  await pg.waitForSelector('.ct-lt-lista .ct-lt-t', { timeout: 15000 })
+  await pg.evaluate(() => document.fonts.ready)
+  await pausa(pg, 400)
+}
+const linhasDaLista = (pg) => pg.evaluate(() => [...document.querySelectorAll('.ct-lt-t')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()))
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1920 })
+  await irLista(pg)
+  const abas = await pg.evaluate(() => [...document.querySelectorAll('.ct-lt-seg button')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()))
+  conta(abas.join('|') === 'Em aberto 4|Aprovadas 1|Perdidas 1|Todas 6', 'as abas com as contas: ' + abas.join(' | '))
+  const grupos = await pg.evaluate(() => [...document.querySelectorAll('.ct-lt-g')].map((g) => g.innerText.replace(/\s+/g, ' ').trim()))
+  conta(grupos.length === 2 && /ENVIADAS\s*3 · esperando o cliente/i.test(grupos[0]) && /RASCUNHOS\s*1/i.test(grupos[1]), 'em aberto: enviadas e rascunhos (' + grupos.join(' | ') + ')')
+  const ls = await linhasDaLista(pg)
+  conta(/Atlético Exemplo CO2026-0131 · Dani · 186 pçs R\$ 9\.034,50 vale até 20\/10/.test(ls[0]), 'a linha: cliente, número, vendedor, peças, valor e validade (' + ls[0] + ')')
+  conta(/vale até 12\/10/.test(ls[1]) && /vence amanhã/.test(ls[2]) && /mexida ontem/.test(ls[3]), 'a validade de cada uma e o rascunho mexido ontem')
+  const vermelhas = await pg.evaluate(() => [...document.querySelectorAll('.ct-lt-perto')].map((e) => e.textContent))
+  conta(vermelhas.join('|') === 'vale até 12/10|vence amanhã', 'em vermelho, só as que acabam em até 3 dias (' + vermelhas.join(', ') + ')')
+  const kpis = await pg.evaluate(() => [...document.querySelectorAll('.ct-lt-kpis .kpi')].map((k) => k.innerText.replace(/\s+/g, ' ').trim()))
+  conta(/Esperando o cliente R\$ 25\.003,50 3 cotações enviadas/i.test(kpis[0]), 'esperando o cliente: ' + kpis[0])
+  conta(/Vencem esta semana 2/i.test(kpis[1]) && await pg.locator('.ct-lt-kpis .kpi.aviso').count() === 1, 'vencem esta semana: 2, em aviso')
+  conta(/Aprovadas em outubro R\$ 8\.414,50 2 cotações viraram pedido/i.test(kpis[2]), 'aprovadas no mês, pelos pedidos: ' + kpis[2])
+  conta(/Rascunhos 1/i.test(kpis[3]), 'rascunhos: 1')
+  const ultimas = await pg.evaluate(() => [...document.querySelectorAll('.ct-ap-item')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()))
+  conta(ultimas.length === 3 && /Pelada dos Amigos CO2026-0126 · Dani · 136 pçs aprovada ontem? ?/.test(ultimas[0].replace('aprovada em 08/10', 'aprovada ontem')) && /no PCP/.test(ultimas[0]) && /na fábrica/.test(ultimas[1]), 'últimas aprovadas, com onde cada pedido está: ' + ultimas.map((u) => u.slice(0, 40)).join(' | '))
+  const conv = await texto(pg, '.ct-cv')
+  conta(/33% viraram pedido 2 de 6 cotações/.test(conv) && /Tempo médio até aprovar \d+ dias?/.test(conv) && /Maior cotação em aberto R\$ 9\.034,50/.test(conv), 'a conversão do mês: ' + conv.slice(0, 120))
+  const vend = await pg.evaluate(() => [...document.querySelectorAll('.ct-gv-lin')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()))
+  conta(vend.length === 2 && /Dani aprovou 1 de 5 R\$ 5\.534,50/.test(vend[0]) && /Rafa aprovou 1 de 1 R\$ 2\.880,00/.test(vend[1]), 'aprovado por vendedor: ' + vend.join(' | '))
+  const topo = await texto(pg, '.pagina-topo')
+  conta(/9|6 cotações · 3 esperando o cliente · R\$ 25\.003,50 em aberto/.test(topo) && /VENDEDOR/.test(topo) && /MÊS\s*Outubro de 2026/.test(topo), 'o topo: as contas, o vendedor e o mês')
+  await foto(pg, '1920-lista', false)
+  /* escolher uma cotação: ela abre ao lado, e o endereço guarda */
+  await pg.locator('.ct-lt-nome', { hasText: 'Atlético Exemplo' }).click()
+  await pg.waitForSelector('.ct-es-contas')
+  await pausa(pg, 500)
+  conta(/[?&]c=c1/.test(pg.url()), 'o endereço guarda a escolhida (' + pg.url().split('/').pop() + ')')
+  conta(await pg.locator('.ct-lt-sel').count() === 1 && !(await texto(pg, '.pagina-topo')).includes('MÊS'), 'a linha escolhida pintada, e o mês some do topo')
+  const resumo = await texto(pg, '.ct-es-contas')
+  conta(/Layouts 3 Peças 186 Subtotal R\$ 9\.510,00 Fidelidade, 5% - R\$ 475,50 Total R\$ 9\.034,50/.test(resumo), 'o resumo da escolhida: ' + resumo.slice(0, 110))
+  const dados = await texto(pg, '.ct-es-dados')
+  conta(/Contato Marcos \(62\) 99999-0000/.test(dados) && /Entrega TRANSPORTADORA envio em 20\/10/.test(dados), 'os dados do pedido')
+  conta(await pg.locator('.ct-es-lay').count() === 3 && /L-01 · CAMISETA MASC TRAD/.test(await texto(pg, '.ct-es-lay')), 'os três layouts em linha')
+  const passos = await pg.evaluate(() => [...document.querySelectorAll('.ct-es-passo')].map((p) => p.className.includes('agora') ? 'agora' : p.className.includes('feito') ? 'feito' : 'espera'))
+  conta(passos.join(',') === 'agora,espera,espera,espera', 'o caminho: ainda na cotação (' + passos + ')')
+  conta(/Envio 1 · para Marcos/.test(await texto(pg, '.ct-es-envio')), 'o envio que já saiu')
+  await foto(pg, '1920-escolhida', false)
+  /* a aprovada: o caminho mostra onde o pedido está */
+  await pg.locator('.ct-lt-seg button', { hasText: 'Aprovadas' }).click()
+  await pg.locator('.ct-lt-nome', { hasText: 'Pelada dos Amigos' }).click()
+  await pg.waitForFunction(() => /PD004410/.test(document.querySelector('.ct-es-passos')?.textContent ?? ''))
+  const p2 = await pg.evaluate(() => [...document.querySelectorAll('.ct-es-passo')].map((p) => p.className.includes('agora') ? 'agora' : p.className.includes('feito') ? 'feito' : 'espera'))
+  conta(p2.join(',') === 'feito,feito,agora,espera', 'a aprovada no PCP: cotação e separação feitas, PCP agora (' + p2 + ')')
+  await pg.locator('.ct-es-fechar').click()
+  await pausa(pg, 300)
+  conta(!/[?&]c=/.test(pg.url()) && await pg.locator('.ct-cv').count() === 1, 'Fechar volta às estatísticas')
+  await pg.locator('.ct-lt-seg button', { hasText: 'Todas' }).click()
+  await pg.locator('.ct-lt-busca input').fill('pelada')
+  await pausa(pg, 200)
+  conta((await linhasDaLista(pg)).length === 1, 'a busca acha pelo nome do cliente, sem acento')
+  conta(!erros.length, 'sem erro de JavaScript (lista): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, papel: 'vendedor' })
+  await irLista(pg)
+  const topo = await texto(pg, '.pagina-topo')
+  conta(!/VENDEDOR/.test(topo) && /cotações suas/.test(topo), 'o vendedor não vê o filtro de vendedor, e o topo diz "suas"')
+  conta(await pg.locator('.ct-gv').count() === 0 && await pg.locator('.ct-cv').count() === 1, 'o vendedor vê a conversão, e não o aprovado por vendedor')
+  conta(!(await linhasDaLista(pg))[0].includes('· Dani ·'), 'a linha do vendedor não repete o nome dele')
+  await foto(pg, '1440-lista-vendedor', false)
+  conta(!erros.length, 'sem erro de JavaScript (lista do vendedor): ' + erros.join(' | '))
+})
+
+for (const tema of ['light', 'dark']) {
+  for (const [largura, altura] of [[1440, 900], [820, 1180], [390, 844]]) {
+    await secao(async () => {
+      const { pg, erros } = await abrir(nav, { largura, altura, tema })
+      await irLista(pg)
+      conta(await sobra(pg) <= 0, `lista ${largura} ${tema}: nada rola de lado (${await sobra(pg)})`)
+      await foto(pg, `lista-${largura}-${tema}`)
+      await pg.locator('.ct-lt-nome', { hasText: 'Atlético Exemplo' }).click()
+      await pg.waitForSelector('.ct-es-contas')
+      await pausa(pg, 400)
+      conta(await sobra(pg) <= 0, `escolhida ${largura} ${tema}: nada rola de lado (${await sobra(pg)})`)
+      if (largura < 900) {
+        const vis = await pg.evaluate(() => [getComputedStyle(document.querySelector('.ct-lt-lista')).display, getComputedStyle(document.querySelector('.ct-es-voltar')).display])
+        conta(vis[0] === 'none' && vis[1] !== 'none', `escolhida ${largura}: a cotação toma o lugar da lista, com o Voltar (${vis})`)
+      }
+      await foto(pg, `escolhida-${largura}-${tema}`)
+      conta(!erros.length, `sem erro de JavaScript (lista ${largura} ${tema}): ` + erros.join(' | '))
+    })
+  }
+}
+
 for (const tema of ['light', 'dark']) {
   await secao(async () => {
     const { pg, erros } = await abrir(nav, { largura: 390, altura: 844, tema })

@@ -33,6 +33,7 @@ import { arranjo, empacotar, faixaDeDestaques, fileiraDeDestaques, colunaDeDesta
 import { etiquetaDoDesign, comEtiqueta } from './compilado/layout/etiqueta.js'
 import { fatiasDaCotacao, numerosDaFabrica } from './compilado/cotacao/fabrica.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
+import { estatisticasDoComercial, quandoDaCotacao, passoDoCaminho, ultimosMeses, diasEntre, naAba } from './compilado/cotacao/comercial.js'
 
 let falhas = 0
 const ok = (n, c) => { if (c) console.log('  ok   ' + n); else { falhas++; console.log('  FALHA ' + n) } }
@@ -301,6 +302,30 @@ ok('sem tag de etiqueta, sem etiqueta', etiquetaDoDesign([D('Silk', 'silk')]).ti
 const trocado = comEtiqueta([D('Eti. Fourtime'), D('Eti. Silk'), D('Subli', 'subli')], { tipo: 'cliente', tecnica: 'dtf' })
 ok('trocar a etiqueta deixa uma so, com a tecnica, na frente', trocado.map((d) => d.tag).join() === 'Eti. Cliente,Eti. DTF,Subli')
 ok('desligar a etiqueta leva a tecnica junto', comEtiqueta(trocado, { tipo: '', tecnica: 'dtf' }).map((d) => d.tag).join() === 'Subli')
+
+console.log('a página do orçamento')
+const CL = (id, estado, vendedor, total, validaAte, alteradaEm = '2026-10-02', criadaEm = '2026-10-01') => ({ id, estado, vendedor, total, validaAte, alteradaEm, criadaEm, pedido: '' })
+const cots = [CL('a', 'enviada', 'Dani', 100, '2026-10-20'), CL('b', 'enviada', 'Rafa', 300, '2026-10-12'), CL('c', 'rascunho', 'Dani', 50, ''), CL('d', 'recusada', 'Dani', 70, '', '2026-10-05'), CL('e', 'aprovada', 'Dani', 200, '', '2026-10-08', '2026-10-01'), CL('f', 'vencida', 'Rafa', 90, '', '2026-09-28')]
+const peds = [{ cotacaoId: 'e', estado: 'pcp', aprovadoEm: '2026-10-08T11:00:00', total: 200, vendedor: 'Dani' }, { cotacaoId: 'x', estado: 'entregue', aprovadoEm: '2026-09-20T11:00:00', total: 999, vendedor: 'Rafa' }, { cotacaoId: 'y', estado: 'cancelado', aprovadoEm: '2026-10-09T11:00:00', total: 500, vendedor: 'Rafa' }]
+const est = estatisticasDoComercial(cots, peds, '2026-10', '2026-10-10')
+ok('esperando: as enviadas e a soma', est.esperando.n === 2 && est.esperando.valor === 400)
+ok('vencem esta semana: só a que acaba em até 7 dias', est.vencemNaSemana === 1)
+ok('aprovadas no mês: pelo pedido, sem o cancelado e sem o de setembro', est.aprovadas.n === 1 && est.aprovadas.valor === 200)
+ok('perdidas no mês: a recusada de outubro, e não a vencida de setembro', est.perdidas.n === 1 && est.perdidas.valor === 70)
+ok('a taxa: 1 de 4 (aprovada, duas esperando, uma perdida)', est.saidas === 4 && est.taxa === 25)
+ok('tempo até aprovar: da criação da cotação ao pedido', est.diasAteAprovar === 7)
+ok('as últimas aprovadas, sem o cancelado, a mais nova primeiro', est.ultimas.length === 2 && est.ultimas[0].pedido.cotacaoId === 'e' && est.ultimas[0].cotacao.id === 'e')
+ok('por vendedor: Dani aprovou 1 de 3, Rafa 0 de 1', JSON.stringify(est.porVendedor) === '[{"nome":"Dani","valor":200,"aprovou":1,"de":3},{"nome":"Rafa","valor":0,"aprovou":0,"de":1}]')
+ok('sem nada no mês, a taxa é nula, e não zero', estatisticasDoComercial([], [], '2026-10', '2026-10-10').taxa === null)
+ok('a validade: vence amanhã, em vermelho', JSON.stringify(quandoDaCotacao(CL('z', 'enviada', '', 0, '2026-10-11'), '2026-10-10')) === '{"texto":"vence amanhã","perto":true}')
+ok('a validade: 3 dias é perto, 4 não', quandoDaCotacao(CL('z', 'enviada', '', 0, '2026-10-13'), '2026-10-10').perto && !quandoDaCotacao(CL('z', 'enviada', '', 0, '2026-10-14'), '2026-10-10').perto)
+ok('a validade passada: venceu', quandoDaCotacao(CL('z', 'enviada', '', 0, '2026-10-08'), '2026-10-10').texto === 'venceu em 08/10')
+ok('o rascunho mexido ontem', quandoDaCotacao(CL('z', 'rascunho', '', 0, '', '2026-10-09'), '2026-10-10').texto === 'mexida ontem')
+ok('o caminho: a cotação enviada está no passo 0', passoDoCaminho('enviada', null) === 0)
+ok('o caminho: o pedido no PCP está no passo 2, e o entregue passou de todos', passoDoCaminho('aprovada', { estado: 'pcp' }) === 2 && passoDoCaminho('aprovada', { estado: 'entregue' }) === 4)
+ok('os doze meses, virando o ano', ultimosMeses('2026-02-10', 3).join() === '2026-02,2026-01,2025-12')
+ok('dias entre datas, pelo calendário', diasEntre('2026-02-27', '2026-03-01') === 2)
+ok('as abas: perdidas são recusadas e vencidas', naAba(CL('z', 'vencida'), 'perdidas') && !naAba(CL('z', 'aprovada'), 'perdidas') && naAba(CL('z', 'rascunho'), 'aberto'))
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

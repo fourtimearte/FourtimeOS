@@ -266,3 +266,65 @@ export async function aprovarNoBanco(c: Cotacao, versao: number): Promise<Pedido
   })
   return Array.isArray(p) ? p[0] : p
 }
+
+/* --- os pedidos que as cotações viraram (a página do orçamento) ------------
+
+   A lista de cotações diz que uma foi aprovada, mas não QUANDO nem ONDE o
+   pedido está agora: isso mora no pedido. A página do orçamento lê os dois e
+   casa pelo id da cotação. Sem corpo, sem imagem: uma linha por pedido. A RLS
+   decide o que cada um vê (o vendedor, só os dele). */
+export type EstadoDoPedidoNoComercial =
+  | 'aprovado'
+  | 'separacao'
+  | 'pcp'
+  | 'producao'
+  | 'pronto'
+  | 'enviado'
+  | 'entregue'
+  | 'cancelado'
+
+export type PedidoDaCotacao = {
+  numero: string
+  cotacaoId: string
+  estado: EstadoDoPedidoNoComercial
+  aprovadoEm: string
+  pecas: number
+  total: number
+  vendedor: string
+}
+
+type LinhaDoPedidoDaCotacao = {
+  numero: string
+  cotacao_id: string | null
+  estado: EstadoDoPedidoNoComercial
+  aprovado_em: string | null
+  pecas: number | null
+  total: number | null
+  vendedor_nome: string | null
+}
+
+const dePedido = (l: LinhaDoPedidoDaCotacao): PedidoDaCotacao => ({
+  numero: l.numero,
+  cotacaoId: l.cotacao_id ?? '',
+  estado: l.estado,
+  aprovadoEm: l.aprovado_em ?? '',
+  pecas: Number(l.pecas) || 0,
+  total: Number(l.total) || 0,
+  vendedor: l.vendedor_nome ?? '',
+})
+
+const COLUNAS_DO_PEDIDO = 'numero,cotacao_id,estado,aprovado_em,pecas,total,vendedor_nome'
+
+export async function carregarPedidosDasCotacoes(): Promise<PedidoDaCotacao[]> {
+  const linhas = await tabela<LinhaDoPedidoDaCotacao[]>(
+    'pedido?select=' + COLUNAS_DO_PEDIDO + '&cotacao_id=not.is.null&order=aprovado_em.desc',
+  )
+  return linhas.map(dePedido)
+}
+
+export async function pedidoDaCotacao(cotacaoId: string): Promise<PedidoDaCotacao | null> {
+  const linhas = await tabela<LinhaDoPedidoDaCotacao[]>(
+    'pedido?select=' + COLUNAS_DO_PEDIDO + '&cotacao_id=eq.' + encodeURIComponent(cotacaoId) + '&limit=1',
+  )
+  return linhas.length ? dePedido(linhas[0]) : null
+}

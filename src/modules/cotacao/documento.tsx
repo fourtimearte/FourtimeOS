@@ -4,7 +4,15 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PencilSimple, Printer } from '@phosphor-icons/react'
 import { Aviso, Botao, Esqueleto, Pagina, Seletor, Vazio } from '@ds'
 import { empresaAConferir } from '@dominio/empresa'
-import { Folha, Medidor, Palco, imprimir, usarPaginacao, type BlocoDaFolha } from '@dominio/layout'
+import {
+  Folha,
+  Medidor,
+  Palco,
+  imprimir,
+  usarCoresDeImpressao,
+  usarPaginacao,
+  type BlocoDaFolha,
+} from '@dominio/layout'
 import type { Cotacao, VistaDaFolha } from '@dominio/cotacao'
 import './documento.css'
 import {
@@ -134,6 +142,10 @@ export function FolhaDaCotacao({
 }) {
   const comValor = vista.valor
   const { campos, fora } = vista
+  /* as cores de impressão do banco: o cartão de cada código na ficha do
+     layout sai na cor de verdade, e não no hex guardado no dia em que foi
+     lançado (hexDoBanco) */
+  usarCoresDeImpressao()
   const tem = (k: string) => !fora.includes(k)
 
   /* ==========================================================================

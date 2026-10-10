@@ -12,8 +12,9 @@ import {
   refGenero,
   REFS,
 } from '@ds/kit/banco-de-exemplo'
-import type { AbaDeCores, Referencia, SecaoDeTecnica, Tecnica as TecnicaDoDs } from '@ds'
+import type { Referencia, SecaoDeTecnica, Tecnica as TecnicaDoDs } from '@ds'
 import type { Tecnica } from './bloco'
+import { coresJaLidas } from './cores-de-impressao'
 
 /* A lista de tecnicas existe duas vezes de proposito: o ds precisa dela para
    pintar, e o dominio precisa dela sem depender do ds (bloco.ts e dado puro, e
@@ -127,15 +128,29 @@ export function hexDoTecido(nome: string): string {
    a maquina entende, e a cor e consequencia dele. */
 export function hexDaCor(cod: string): string {
   const c = String(cod || '').toUpperCase()
+  /* o banco primeiro (cores-de-impressao.ts); a lista de exemplo só serve
+     enquanto ele não foi lido, para o arquivo antigo não abrir todo cinza */
+  const lidas = coresJaLidas()
+  if (lidas.fase === 'pronto') {
+    const doBanco = (c.startsWith('S') ? lidas.sub : lidas.dtf).find((x) => x[0] === c)
+    if (doBanco) return doBanco[1]
+  }
   const tabela = c.startsWith('S') ? SB_CORES : DTF_CORES
   const achada = tabela.find((x) => x[0].toUpperCase() === c)
   return achada ? achada[1] : '#cccccc'
 }
 
-export const ABAS_DE_COR: AbaDeCores[] = [
-  { id: 'dtf', rotulo: 'DTF', cor: 'var(--tec-dtf-vivo)', cores: DTF_CORES },
-  { id: 'sub', rotulo: 'SUB', cor: 'var(--tec-subli-vivo)', cores: SB_CORES },
-]
+/* A COR QUE SE DESENHA para um código já lançado: a do banco, quando ele já
+   foi lido e tem o código; senão a que o layout guardou. O layout guarda o
+   hex do dia em que a cor foi lançada, e até 11/10/2026 esse hex vinha da
+   lista de exemplo: sem isto, o quadradinho do S14 seguiria azul de mentira
+   ao lado de um código certo. */
+export function hexDoBanco(cod: string, reserva: string): string {
+  const lidas = coresJaLidas()
+  if (lidas.fase !== 'pronto') return reserva
+  const c = String(cod || '').toUpperCase()
+  return (c.startsWith('S') ? lidas.sub : lidas.dtf).find((x) => x[0] === c)?.[1] ?? reserva
+}
 
 /* Quais tecnicas lancam codigo de cor.
 

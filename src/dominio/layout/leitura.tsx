@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { VisorDeImagem } from '@ds'
+import { hexDoBanco } from './banco'
 import type { Bloco } from './bloco'
 import { tamanhosNaOrdem, totalDaGrade } from './grade'
 import { sanitizarTextoRico } from './texto'
+import { usarCoresDeImpressao } from './usar-cores-de-impressao'
 import './leitura.css'
 
 /* ==========================================================================
@@ -48,6 +50,8 @@ export function LayoutDeLeitura({
   /** o que vai à direita do cabeçalho, antes das peças. Sem ele, as tags do design */
   tecnica?: string
 }) {
+  /* as cores do banco: o quadradinho de cada código sai na cor de verdade */
+  usarCoresDeImpressao()
   const [ampliada, setAmpliada] = useState(false)
   const tamanhos = tamanhosNaOrdem(bloco.faixa, bloco.grade).filter((t) => (bloco.grade[t] ?? 0) > 0)
   const total = totalDaGrade(bloco.grade)
@@ -130,7 +134,7 @@ export function LayoutDeLeitura({
                       <span className="lr-design-tag">{d.tag}</span>
                       {d.cores.map((c, j) => (
                         <span className="lr-cod" key={j}>
-                          <span className="lr-cod-amostra" style={{ background: c.hex || 'transparent' }} />
+                          <span className="lr-cod-amostra" style={{ background: hexDoBanco(c.cod, c.hex) || 'transparent' }} />
                           {c.cod}
                         </span>
                       ))}

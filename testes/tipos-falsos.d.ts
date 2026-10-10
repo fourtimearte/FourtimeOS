@@ -92,6 +92,7 @@ declare module 'react' {
   export function useRef<T>(inicial: T | null): { current: T | null }
   export function useEffect(f: () => void | (() => void), deps?: readonly unknown[]): void
   export function useLayoutEffect(f: () => void | (() => void), deps?: readonly unknown[]): void
+  export function useSyncExternalStore<T>(assinar: (aviso: () => void) => () => void, ler: () => T, lerNoServidor?: () => T): T
   export function useId(): string
   export function createContext<T>(inicial: T): any
   export function useContext<T = any>(ctx: any): T

@@ -202,6 +202,38 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (informes): ' + erros.join(' | '))
 })
 
+/* 2c. as cores de impressão do menu vêm do banco: 300 do DTF e 87 da sublimação (11/10/2026) */
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920, rica: true })
+  await ir(pg)
+  await pg.getByRole('button', { name: 'Acrescentar cor em Sub' }).first().click()
+  await pausa(pg, 400)
+  const sub = await pg.evaluate(() => [...document.querySelectorAll('.mn-cod')].map((b) => [b.querySelector('.cd').textContent, getComputedStyle(b.querySelector('.am')).getPropertyValue('--cor').trim(), b.title]))
+  const s14 = banco.CORES.find((c) => c.codigo === 'S14')
+  conta(sub.length === 87 && sub[0][0] === 'S01' && sub[86][0] === 'S87', `a tabela da sublimação é a do banco: ${sub.length} cores, de ${sub[0]?.[0]} a ${sub.at(-1)?.[0]}`)
+  conta(sub.find((x) => x[0] === 'S14')?.[1].toLowerCase() === s14.hex && /SUB DA PROVA 14/.test(sub.find((x) => x[0] === 'S14')?.[2] ?? ''), 'cada cor com o hex e o nome do banco (S14)')
+  const chip = await pg.evaluate(() => { const b = [...document.querySelectorAll('.ct-cartao-cor')].find((x) => x.textContent.trim() === 'S14'); return b ? getComputedStyle(b.querySelector('i')).getPropertyValue('--cor').trim().toLowerCase() : '' })
+  conta(chip === s14.hex, `a cor já lançada no layout se desenha com o hex do banco (S14 ${chip})`)
+  await foto(pg, '1920-menu-cor-sub', false)
+  await pg.keyboard.press('Escape')
+  await pausa(pg, 200)
+  await pg.locator('.ct-ly-linha').nth(1).click()
+  await pausa(pg, 400)
+  const dtf = pg.getByRole('button', { name: 'Acrescentar cor em DTF' }).first()
+  if (await dtf.count()) {
+    await dtf.click()
+    await pausa(pg, 400)
+    const n = await pg.locator('.mn-cod').count()
+    conta(n === 300, `a tabela do DTF é a do banco: ${n} cores`)
+    await pg.keyboard.press('Escape')
+  } else conta(false, 'o L-02 do exemplo tem DTF para abrir o menu')
+  await irFolha(pg)
+  await pausa(pg, 500)
+  const naFolhaS14 = await pg.evaluate(() => { const c = [...document.querySelectorAll('.fl .dc-cd')].find((x) => x.textContent.trim() === 'S14'); return c ? getComputedStyle(c.querySelector('i')).getPropertyValue('--dc-cor').trim().toLowerCase() : '' })
+  conta(naFolhaS14 === s14.hex, `na folha, o cartão do S14 sai na cor do banco (${naFolhaS14})`)
+  conta(!erros.length, 'sem erro de JavaScript (cores do banco): ' + erros.join(' | '))
+})
+
 /* 3. salvar, a seta, e apagar */
 await secao(async () => {
   const { pg, erros, banco } = await abrir(nav, { largura: 1920 })

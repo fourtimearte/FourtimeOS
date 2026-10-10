@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react'
 import { ArrowSquareOut, Check, ClipboardText, Minus, Plus, Warning } from '@phosphor-icons/react'
 import { MenuCodigoDeCor, MenuCorDeTecido, MenuTecido, TituloCartao } from '@ds'
 import {
-  ABAS_DE_COR,
+  hexDoBanco,
+  usarAbasDeCor,
   GRUPOS_DE_COR_DE_TECIDO,
   TIPOS_DE_TECIDO,
   comEtiqueta,
@@ -64,6 +65,8 @@ export function FichaDoLayout({
   aoMudar: (b: Bloco) => void
 }) {
   const [menu, setMenu] = useState<'' | 'tecido' | 'cor' | 'codigo'>('')
+  /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
+  const coresDoBanco = usarAbasDeCor()
   const [linha, setLinha] = useState(0)
   const [abaAberta, setAbaAberta] = useState<DaTecnica | null>(null)
   const ancora = useRef<HTMLElement | null>(null)
@@ -260,7 +263,7 @@ export function FichaDoLayout({
                         setMenu('codigo')
                       }}
                     >
-                      <i style={{ '--cor': c.hex } as CSSProperties} />
+                      <i style={{ '--cor': hexDoBanco(c.cod, c.hex) } as CSSProperties} />
                       <b>{c.cod}</b>
                     </button>
                   ))}
@@ -310,7 +313,8 @@ export function FichaDoLayout({
         aberto={menu === 'codigo'}
         ancora={ancora}
         aoFechar={() => setMenu('')}
-        abas={ABAS_DE_COR.filter((a) => !abaAberta || a.id === abaAberta.aba)}
+        abas={coresDoBanco.abas.filter((a) => !abaAberta || a.id === abaAberta.aba)}
+        semCores={coresDoBanco.fase === 'falhou' ? 'Não consegui ler as cores do banco: ' + coresDoBanco.falha : 'Carregando as cores do banco...'}
         noLayout={bloco.design.find((d) => d.tag === abaAberta?.tag)?.cores.map((c) => c.cod) ?? []}
         aoAlternar={(cod, hex) => {
           if (!abaAberta) return

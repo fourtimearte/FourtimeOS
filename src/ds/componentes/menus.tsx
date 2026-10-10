@@ -618,7 +618,8 @@ export function MenuTecnica({
 }
 
 /* --- 5. menu de codigo de cor -------------------------------------------- */
-export type AbaDeCores = { id: string; rotulo: string; cor: string; cores: [string, string][] }
+/** cada cor é [código, hex] ou [código, hex, nome]; o nome aparece ao parar o ponteiro */
+export type AbaDeCores = { id: string; rotulo: string; cor: string; cores: [string, string, string?][] }
 
 /* O menu NAO fecha ao escolher: quem lanca seis cores de uma arte nao reabre o
    menu seis vezes. Clique numa nao marcada lanca, clique numa marcada remove. */
@@ -629,10 +630,13 @@ export function MenuCodigoDeCor({
   abas,
   noLayout,
   aoAlternar,
+  semCores = 'Nenhuma cor nesta tabela',
 }: Base & {
   abas: AbaDeCores[]
   noLayout: string[]
   aoAlternar: (codigo: string, hex: string, aba: string) => void
+  /** o que o menu diz quando a tabela da aba está vazia (por exemplo, ainda carregando) */
+  semCores?: string
 }) {
   const [aba, setAba] = useState(abas[0]?.id ?? '')
   const [busca, setBusca] = useState('')
@@ -679,7 +683,7 @@ export function MenuCodigoDeCor({
       </div>
 
       {achadas.length === 0 ? (
-        <div className="mn-vazio">Nenhum código com esse número</div>
+        <div className="mn-vazio">{busca.trim() ? 'Nenhum código com esse número' : semCores}</div>
       ) : (
         <div className="mn-grade">
           {achadas.map((c) => (
@@ -688,7 +692,7 @@ export function MenuCodigoDeCor({
               key={c[0]}
               className={['mn-cod', noLayout.includes(c[0]) ? 'ja' : ''].filter(Boolean).join(' ')}
               onClick={() => aoAlternar(c[0], c[1], aba)}
-              title={noLayout.includes(c[0]) ? 'Clique de novo para tirar' : 'Lançar no layout'}
+              title={(c[2] ? c[0] + ' · ' + c[2] + '. ' : '') + (noLayout.includes(c[0]) ? 'Clique de novo para tirar' : 'Lançar no layout')}
             >
               <span className="am" style={{ '--cor': c[1] } as CSSProperties} />
               <span className="cd">{c[0]}</span>

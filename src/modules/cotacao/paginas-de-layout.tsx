@@ -9,6 +9,7 @@ import {
   etiquetaDoDesign,
   formato,
   fundo,
+  hexDoBanco,
   imagemDe,
   sanitizarTextoRico,
   type Bloco,
@@ -427,7 +428,7 @@ function Tecnicas({ b }: { b: Bloco }) {
           <span className="dc-tk-c">
             {d.cores.map((c, k) => (
               <span key={c.cod + k} className="dc-cd">
-                <i style={{ '--dc-cor': c.hex || '#fff' } as CSSProperties} />
+                <i style={{ '--dc-cor': hexDoBanco(c.cod, c.hex) || '#fff' } as CSSProperties} />
                 <b>{c.cod}</b>
               </span>
             ))}

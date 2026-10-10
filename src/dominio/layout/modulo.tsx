@@ -13,7 +13,6 @@ import {
   type ItemDeContexto,
 } from '@ds'
 import {
-  ABAS_DE_COR,
   CATEGORIAS,
   GRUPOS_DE_COR_DE_TECIDO,
   ORDEM_DAS_CATEGORIAS,
@@ -25,6 +24,7 @@ import {
   secaoDaTag,
   tecnicaDaTag,
 } from './banco'
+import { usarAbasDeCor } from './usar-cores-de-impressao'
 import type { Bloco, Design, TecidoDoBloco } from './bloco'
 import './modulo.css'
 
@@ -79,6 +79,8 @@ export function ModuloDeLayout({
   semValor?: boolean
 }) {
   const [menu, setMenu] = useState('')
+  /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
+  const coresDoBanco = usarAbasDeCor()
   const [ctx, setCtx] = useState<{ cabecalho: string; itens: ItemDeContexto[] } | null>(null)
   const [tagAberta, setTagAberta] = useState('')
   /* qual linha de tecido está com o menu aberto. Sem isso, abrir o menu da
@@ -445,7 +447,8 @@ export function ModuloDeLayout({
         aberto={menu === 'codigo'}
         ancora={ancoraSolta}
         aoFechar={fechar}
-        abas={ABAS_DE_COR}
+        abas={coresDoBanco.abas}
+        semCores={coresDoBanco.fase === 'falhou' ? 'Não consegui ler as cores do banco: ' + coresDoBanco.falha : 'Carregando as cores do banco...'}
         noLayout={aberta?.cores.map((c) => c.cod) ?? []}
         aoAlternar={(cod, hex) =>
           mudarDesign(tagAberta, (d) => ({

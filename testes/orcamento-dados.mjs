@@ -182,7 +182,16 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
   ]
   let nPreset = 1
 
+  /* as cores de impressão do banco (Configurações, Banco de dados): 300 do
+     DTF e 87 da sublimação, com um hex e um nome que a prova reconhece */
+  const hexDe = (n, k) => '#' + [n * 37 + k, n * 91 + 3 * k, n * 53 + 7 * k].map((v) => (v % 256).toString(16).padStart(2, '0')).join('')
+  const CORES = [
+    ...Array.from({ length: 300 }, (_, i) => ({ codigo: String(i + 1).padStart(3, '0'), tecnica: 'dtf', numero: i + 1, hex: hexDe(i + 1, 11), nome: 'DTF DA PROVA ' + (i + 1) })),
+    ...Array.from({ length: 87 }, (_, i) => ({ codigo: 'S' + String(i + 1).padStart(2, '0'), tecnica: 'sublimacao', numero: i + 1, hex: hexDe(i + 1, 29), nome: 'SUB DA PROVA ' + (i + 1) })),
+  ]
+
   function responder(metodo, u, corpo) {
+    if (u.includes('/rest/v1/cor_de_impressao')) return { status: 200, corpo: CORES }
     if (u.includes('/rest/v1/preset_de_impressao')) {
       if (!presets) return { status: 404, corpo: { code: 'PGRST205', message: "Could not find the table 'public.preset_de_impressao' in the schema cache" } }
       const so = (u.match(/id=eq\.([^&]+)/) || [])[1]
@@ -243,5 +252,5 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }
     return null
   }
-  return { responder, gravados, corpos, presets }
+  return { responder, gravados, corpos, presets, CORES }
 }

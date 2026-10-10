@@ -190,8 +190,26 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     ...Array.from({ length: 87 }, (_, i) => ({ codigo: 'S' + String(i + 1).padStart(2, '0'), tecnica: 'sublimacao', numero: i + 1, hex: hexDe(i + 1, 29), nome: 'SUB DA PROVA ' + (i + 1) })),
   ]
 
+  /* as referências e os grupos do banco (Configurações, Banco de dados): os
+     treze grupos de produção com os nomes de lá, as duas do exemplo, e o
+     resto até 122, como no banco de produção em 11/10/2026 */
+  const GRUPOS_REF = [['010', 'Camisetas e polos'], ['020', 'Raglan'], ['030', 'Regatas'], ['040', 'Moletom'], ['050', 'Cropped'], ['060', 'Tops'], ['070', 'Calças'], ['080', 'Bermudas'], ['090', 'Calções'], ['100', 'Shorts'], ['110', 'Uniformes e social'], ['120', 'Acessórios'], ['KIT', 'Kits (conjuntos)']].map(([cod, nome], i) => ({ cod, nome, ordem: (i + 1) * 10 }))
+  const REFERENCIAS_DO_BANCO = [
+    { cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD', grupo: '010', genero: 'M', ordem: 0 },
+    { cod: 'FT-090-000M', nome: 'CALÇAO MASC SEM BOLSO', grupo: '090', genero: 'M', ordem: 0 },
+    { cod: 'FT-120-001U', nome: 'BONÉ DA PROVA SÓ NO BANCO', grupo: '120', genero: 'U', ordem: 0 },
+    { cod: 'FT-KIT-010-000M-090-000M', nome: 'KIT CAMISETA E CALÇAO', grupo: 'KIT', genero: 'M', ordem: 0 },
+    ...Array.from({ length: 118 }, (_, i) => {
+      const g = GRUPOS_REF[i % 12].cod
+      const gen = ['M', 'F', 'C'][i % 3]
+      return { cod: 'FT-' + g + '-' + String(100 + i).padStart(3, '0') + gen, nome: 'REFERÊNCIA DA PROVA ' + (i + 1), grupo: g, genero: gen, ordem: 0 }
+    }),
+  ]
+
   function responder(metodo, u, corpo) {
     if (u.includes('/rest/v1/cor_de_impressao')) return { status: 200, corpo: CORES }
+    if (u.includes('/rest/v1/grupo_de_referencia')) return { status: 200, corpo: GRUPOS_REF }
+    if (u.includes('/rest/v1/referencia?')) return { status: 200, corpo: REFERENCIAS_DO_BANCO }
     if (u.includes('/rest/v1/preset_de_impressao')) {
       if (!presets) return { status: 404, corpo: { code: 'PGRST205', message: "Could not find the table 'public.preset_de_impressao' in the schema cache" } }
       const so = (u.match(/id=eq\.([^&]+)/) || [])[1]
@@ -252,5 +270,5 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }
     return null
   }
-  return { responder, gravados, corpos, presets, CORES }
+  return { responder, gravados, corpos, presets, CORES, REFERENCIAS_DO_BANCO }
 }

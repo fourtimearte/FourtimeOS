@@ -13,10 +13,7 @@ import {
   type ItemDeContexto,
 } from '@ds'
 import {
-  CATEGORIAS,
   GRUPOS_DE_COR_DE_TECIDO,
-  ORDEM_DAS_CATEGORIAS,
-  REFERENCIAS,
   SECOES_DE_TECNICA,
   TIPOS_DE_TECIDO,
   TODAS_AS_TAGS,
@@ -25,6 +22,7 @@ import {
   tecnicaDaTag,
 } from './banco'
 import { usarAbasDeCor } from './usar-cores-de-impressao'
+import { usarReferencias } from './usar-referencias'
 import type { Bloco, Design, TecidoDoBloco } from './bloco'
 import './modulo.css'
 
@@ -81,6 +79,8 @@ export function ModuloDeLayout({
   const [menu, setMenu] = useState('')
   /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
   const coresDoBanco = usarAbasDeCor()
+  /* as referências do banco, como no editor do orçamento */
+  const refsDoBanco = usarReferencias()
   const [ctx, setCtx] = useState<{ cabecalho: string; itens: ItemDeContexto[] } | null>(null)
   const [tagAberta, setTagAberta] = useState('')
   /* qual linha de tecido está com o menu aberto. Sem isso, abrir o menu da
@@ -399,9 +399,9 @@ export function ModuloDeLayout({
         aberto={menu === 'ref'}
         ancora={btRef}
         aoFechar={fechar}
-        refs={REFERENCIAS}
-        categorias={CATEGORIAS}
-        ordem={ORDEM_DAS_CATEGORIAS}
+        refs={refsDoBanco.refs}
+        categorias={refsDoBanco.categorias}
+        ordem={refsDoBanco.ordem}
         valor={bloco.referencia}
         aoEscolher={(r) =>
           mudar({

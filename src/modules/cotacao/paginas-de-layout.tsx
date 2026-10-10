@@ -2,16 +2,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Warning } from '@phosphor-icons/react'
 import {
-  CATEGORIAS,
-  REFERENCIAS,
   TAMANHOS_ADULTO,
   TAMANHOS_INFANTIL,
   etiquetaDoDesign,
   formato,
   fundo,
+  grupoDaReferencia,
   hexDoBanco,
   imagemDe,
   sanitizarTextoRico,
+  usarReferencias,
   type Bloco,
   type Caixa,
   type Imagem,
@@ -134,8 +134,8 @@ export function alturaNaturalDaArte(b: Bloco, im: Imagem | undefined, largura: n
    peça em sobrelinha, o nome embaixo e a linha miúda com o código.
    ========================================================================== */
 function CabecalhoDoLayout({ b, kit }: { b: Bloco; kit: boolean }) {
-  const ref = REFERENCIAS.find((r) => r.cod === b.referencia)
-  const grupo = ref ? CATEGORIAS[ref.categoria] : ''
+  /* o grupo vem das referências do BANCO (usar-referencias.ts) */
+  const grupo = grupoDaReferencia(usarReferencias(), b.referencia)
   const miuda = [b.referencia, GENERO[b.genero], b.faixa === 'infantil' ? 'grade infantil' : 'grade adulta']
     .filter(Boolean)
     .join(' · ')

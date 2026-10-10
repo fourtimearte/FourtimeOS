@@ -234,6 +234,41 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (cores do banco): ' + erros.join(' | '))
 })
 
+/* 2d. o menu de referência lê o banco, agrupado com o código do grupo numa caixa (11/10/2026) */
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  conta(/Camisetas e polos/.test(await texto(pg, '.ct-rf-cod')), 'a barra de referência diz o grupo do banco: ' + (await texto(pg, '.ct-rf-cod')))
+  await pg.getByRole('button', { name: 'Trocar a referência ou o kit' }).click()
+  await pausa(pg, 400)
+  const grupos = await pg.evaluate(() => [...document.querySelectorAll('.mn-g')].filter((g) => g.querySelector('.mn-gcod')).map((g) => [g.querySelector('.mn-gcod')?.textContent, g.querySelector('.mn-grupo .nm')?.textContent, g.querySelector('.qt')?.textContent, g.classList.contains('aberto'), g.querySelector('.mn-gcod')?.classList.contains('on')]))
+  conta(grupos.length === 13 && grupos[0][0] === '010' && grupos[0][1] === 'Camisetas e polos' && grupos[12][0] === 'KIT' && grupos.find((g) => g[0] === '120')?.[1] === 'Acessórios', 'treze grupos do banco, cada um com o código numa caixa: ' + grupos.map((g) => g[0]).join(' '))
+  const total = grupos.reduce((s, g) => s + Number(g[2] || 0), 0)
+  conta(total === banco.REFERENCIAS_DO_BANCO.length, `todas as ${banco.REFERENCIAS_DO_BANCO.length} referências do banco no menu (${total})`)
+  conta(grupos[0][3] && grupos[0][4] && grupos.filter((g) => g[4]).length === 1, 'o grupo da referência escolhida abre sozinho, com a caixa em tinta')
+  conta(await pg.locator('.mn-tarjas, .mn-ref .tarja').count() === 0, 'sem os traços coloridos de gênero')
+  await foto(pg, '1920-menu-referencia', false)
+  /* a que só existe no banco se acha pela busca e entra no layout com o grupo */
+  conta(await pg.evaluate(() => document.activeElement?.getAttribute('aria-label')) === 'Buscar referência ou código', 'ao abrir, o foco vai para a busca: é só digitar')
+  await pg.keyboard.type('boné')
+  await pausa(pg, 300)
+  await pg.locator('.mn-ref', { hasText: 'BONÉ DA PROVA' }).click()
+  await pausa(pg, 300)
+  const barra = await texto(pg, '.ct-rf')
+  conta(/BONÉ DA PROVA SÓ NO BANCO/.test(barra) && /FT-120-001U/.test(barra) && /Acessórios/.test(barra), 'a referência que só existe no banco entra no layout, com o grupo: ' + barra)
+  conta(!erros.length, 'sem erro de JavaScript (referências do banco): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  const { pg } = await abrir(nav, { largura: 1440, altura: 900, tema: 'dark' })
+  await ir(pg)
+  await pg.getByRole('button', { name: 'Trocar a referência ou o kit' }).click()
+  await pausa(pg, 400)
+  await foto(pg, '1440-menu-referencia-escuro', false)
+  const caixaEscura = await pg.evaluate(() => { const c = document.querySelector('.mn-gcod.on'); const s = c && getComputedStyle(c); return s ? [s.backgroundColor, s.color] : null })
+  conta(caixaEscura && caixaEscura[0] !== caixaEscura[1], 'no tema escuro a caixa do grupo escolhido continua legível (' + caixaEscura + ')')
+})
+
 /* 3. salvar, a seta, e apagar */
 await secao(async () => {
   const { pg, erros, banco } = await abrir(nav, { largura: 1920 })

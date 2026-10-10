@@ -78,8 +78,16 @@ function useFocoAoAbrir(
   useEffect(() => {
     if (!aberto) return
     limpar()
+    /* duas tentativas: o Flutuante pode montar a lista um quadro depois, e
+       aí na primeira o campo ainda não existe e o foco ficava no botão */
     const t = setTimeout(() => campo.current?.focus(), 20)
-    return () => clearTimeout(t)
+    const t2 = setTimeout(() => {
+      if (campo.current && document.activeElement !== campo.current) campo.current.focus()
+    }, 120)
+    return () => {
+      clearTimeout(t)
+      clearTimeout(t2)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto])
 }
@@ -107,6 +115,7 @@ export function MenuReferencia({
   valor,
   aoEscolher,
   aoCriar,
+  semRefs = 'Nenhuma referência',
 }: Base & {
   refs: Referencia[]
   categorias: Record<string, string>
@@ -114,6 +123,8 @@ export function MenuReferencia({
   valor?: string
   aoEscolher: (r: Referencia) => void
   aoCriar?: (texto: string) => void
+  /** o que o menu diz quando a lista está vazia sem busca (carregando, por exemplo) */
+  semRefs?: string
 }) {
   const [busca, setBusca] = useState('')
   const [abertos, setAbertos] = useState<string[]>([])
@@ -168,11 +179,10 @@ export function MenuReferencia({
 
       <div className="mn-lista">
         {grupos.length === 0 ? (
-          <div className="mn-vazio">Nenhuma referência com esse nome</div>
+          <div className="mn-vazio">{b ? 'Nenhuma referência com esse nome' : semRefs}</div>
         ) : (
           grupos.map((g) => {
             const temEscolhida = g.itens.some((r) => r.cod === valor)
-            const generos = [...new Set(g.itens.map((r) => r.genero))]
             const abertoG = efetivos.includes(g.cod)
             return (
               <div
@@ -188,13 +198,11 @@ export function MenuReferencia({
                     )
                   }
                 >
-                  <span className="mn-tarjas">
-                    {generos.map((x) => (
-                      <i key={x} style={{ '--c': COR_GENERO[x] } as CSSProperties} />
-                    ))}
-                  </span>
+                  {/* O GRUPO NUMA CAIXA COM O CÓDIGO (010, 020, KIT), pedido do
+                      Henrique em 11/10/2026 no lugar dos três traços coloridos
+                      de gênero. A caixa fica em tinta no grupo da escolhida. */}
+                  <span className={temEscolhida ? 'mn-gcod on' : 'mn-gcod'}>{g.cod}</span>
                   <span className="nm">{g.nome}</span>
-                  {temEscolhida ? <span className="marca" /> : null}
                   <span className="qt">{g.itens.length}</span>
                   <span className="seta">{SETA}</span>
                 </button>
@@ -213,10 +221,6 @@ export function MenuReferencia({
                       }
                       onMouseLeave={fecharDica}
                     >
-                      <span
-                        className="tarja"
-                        style={{ '--g': COR_GENERO[r.genero] } as CSSProperties}
-                      />
                       <span className="cod">{r.cod}</span>
                       <span className="nm">{r.nome}</span>
                       <span className="ok">{VISTO}</span>

@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowsClockwise, CaretLeft, CaretRight, Copy, Image as Imagem_, Lock, LockOpen, Selection, Trash } from '@phosphor-icons/react'
 import { Botao, MenuReferencia, TituloCartao } from '@ds'
 import {
-  CATEGORIAS,
   CaixaDeImagem,
   MAX_DESTAQUES,
-  ORDEM_DAS_CATEGORIAS,
-  REFERENCIAS,
+  grupoDaReferencia,
   imagemDe,
   muralVazio,
+  usarReferencias,
   type Bloco,
   type Imagem,
 } from '@dominio/layout'
@@ -130,8 +129,10 @@ export function CorpoDoEditor({
 function BarraDeReferencia({ bloco, travado, aoMudar }: { bloco: Bloco; travado: boolean; aoMudar: (b: Bloco) => void }) {
   const [aberto, setAberto] = useState(false)
   const bt = useRef<HTMLButtonElement>(null)
-  const ref = REFERENCIAS.find((r) => r.cod === bloco.referencia)
-  const grupo = ref ? CATEGORIAS[ref.categoria] : ''
+  /* as referências e os grupos do BANCO (usar-referencias.ts), e não a lista
+     de exemplo do /kit */
+  const doBanco = usarReferencias()
+  const grupo = grupoDaReferencia(doBanco, bloco.referencia)
   return (
     <div className="ct-rf">
       <button
@@ -176,9 +177,16 @@ function BarraDeReferencia({ bloco, travado, aoMudar }: { bloco: Bloco; travado:
         aberto={aberto}
         ancora={bt}
         aoFechar={() => setAberto(false)}
-        refs={REFERENCIAS}
-        categorias={CATEGORIAS}
-        ordem={ORDEM_DAS_CATEGORIAS}
+        refs={doBanco.refs}
+        categorias={doBanco.categorias}
+        ordem={doBanco.ordem}
+        semRefs={
+          doBanco.fase === 'falhou'
+            ? 'Não consegui ler as referências do banco: ' + doBanco.falha
+            : doBanco.fase === 'pronto'
+              ? 'Nenhuma referência no banco'
+              : 'Carregando as referências do banco...'
+        }
         valor={bloco.referencia}
         aoEscolher={(r) =>
           aoMudar({ ...bloco, referencia: r.cod, nomeDaReferencia: r.nome, genero: r.genero, faixa: r.genero === 'infantil' ? 'infantil' : 'adulto' })

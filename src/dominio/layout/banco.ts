@@ -1,6 +1,4 @@
 import {
-  CATS_ORDEM,
-  CATS_REF,
   DTF_CORES,
   GRUPOS_DE_COR,
   SB_CORES,
@@ -8,11 +6,8 @@ import {
   TAG_ETIQUETA,
   TAG_TECNICA,
   TIPOS_TECIDO,
-  refCategoria,
-  refGenero,
-  REFS,
 } from '@ds/kit/banco-de-exemplo'
-import type { Referencia, SecaoDeTecnica, Tecnica as TecnicaDoDs } from '@ds'
+import type { SecaoDeTecnica, Tecnica as TecnicaDoDs } from '@ds'
 import type { Tecnica } from './bloco'
 import { coresJaLidas } from './cores-de-impressao'
 
@@ -36,20 +31,8 @@ export type TravaDaTecnica = Confere<Tecnica, TecnicaDoDs> & Confere<TecnicaDoDs
    Quando o Supabase entrar, so este arquivo troca a origem das listas.
    ========================================================================== */
 
-/* o banco guarda a referencia como "codigo <traco> nome" numa linha so */
-const SEPARADOR = /\s*—\s*/
-
-export const REFERENCIAS: Referencia[] = REFS.map((linha) => {
-  const [cod, ...resto] = linha.split(SEPARADOR)
-  return { cod, nome: resto.join(' '), genero: refGenero(cod), categoria: refCategoria(cod) }
-})
-
-export function acharReferencia(cod: string): Referencia | null {
-  return REFERENCIAS.find((r) => r.cod === cod) ?? null
-}
-
-export const CATEGORIAS = CATS_REF
-export const ORDEM_DAS_CATEGORIAS = CATS_ORDEM
+/* AS REFERÊNCIAS E OS GRUPOS moram no banco desde 11/10/2026 (usar-referencias.ts):
+   a lista de exemplo do /kit tinha 62 e o banco, 122. */
 export const TIPOS_DE_TECIDO = TIPOS_TECIDO
 export const GRUPOS_DE_COR_DE_TECIDO = GRUPOS_DE_COR
 

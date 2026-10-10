@@ -59,7 +59,7 @@ export function cotacaoDoAtletico() {
       },
       {
         bloco: bloco(2, 'FT-090-000M', 'CALÇAO MASC SEM BOLSO', 'masculino', { P: 10, M: 32, G: 30, GG: 14, XG: 3 },
-          [{ tag: 'Subli', tecnica: 'subli', cores: [] }], 'DRYFIT POLIESTER 100%', 'Preto', '#111111', arte('#4338ca', true)),
+          [{ tag: 'Eti. Cliente', tecnica: 'etiqueta', cores: [] }, { tag: 'Eti. DTF', tecnica: 'etiqueta', cores: [] }, { tag: 'Subli', tecnica: 'subli', cores: [] }], 'DRYFIT POLIESTER 100%', 'Preto', '#111111', arte('#4338ca', true)),
         precoPorTamanho: preco(38, ADULTO),
         precoBase: 38,
       },
@@ -111,7 +111,28 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6 }
     { id: 'k2', nome: 'Clube Novo Exemplo', fantasia: '', tipo: 'J', documento: '98765432000110', contato: 'Ana', telefone: '', celular: '62988880000', email: 'ana@exemplo.com', endereco: '', complemento: '', bairro: '', cidade: 'Anápolis', uf: 'GO', cep: '', tipo_de_contato: 'Cliente', segmento: '', vendedor: '', pedidos: 0, total: 0, ultimo_pedido: null, criado_em: '2026-01-01' },
   ]
 
+  /* as fichas técnicas das duas referências do exemplo (a construção que o editor mostra) */
+  const REFS = [
+    { id: 'r010', cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD', detalhes: { gola: 'Redonda, ribana 1x1 de 2 cm', manga: 'Curta, com bainha de 2 cm', punho: 'Sem punho', barra: 'Bainha de 2 cm', costura: 'Overloque de 4 fios, galoneira na barra' }, observacao: 'Reforço de ombro a ombro.' },
+    { id: 'r090', cod: 'FT-090-000M', nome: 'CALÇAO MASC SEM BOLSO', detalhes: { barra: 'Bainha de 2 cm', costura: 'Overloque de 4 fios' }, observacao: '' },
+  ]
+  const MATERIAIS = [
+    { referencia_id: 'r010', material_id: null, nome: 'Ribana 1x1 · Preta', quantidade: 0.05, unidade: 'm' },
+    { referencia_id: 'r010', material_id: 'm2', nome: 'Linha poliéster 120', quantidade: 0.02, unidade: 'cone' },
+    { referencia_id: 'r010', material_id: 'm3', nome: 'Saco de embalagem 30x40', quantidade: 1, unidade: 'un' },
+    { referencia_id: 'r090', material_id: 'm4', nome: 'Elástico de 30 mm', quantidade: 0.8, unidade: 'm' },
+  ]
+
   function responder(metodo, u, corpo) {
+    if (u.includes('/rest/v1/referencia_na_ficha') && u.includes('cod=eq.')) {
+      const cod = u.split('cod=eq.')[1].split('&')[0]
+      return { status: 200, corpo: REFS.filter((r) => r.cod === cod) }
+    }
+    if (u.includes('/rest/v1/material_da_referencia')) {
+      const ids = (u.match(/referencia_id=in\.\(([^)]*)\)/) || [])[1]?.split(',') ?? []
+      return { status: 200, corpo: MATERIAIS.filter((m) => ids.includes(m.referencia_id)) }
+    }
+    if (u.includes('/rest/v1/kit_na_ficha')) return { status: 200, corpo: [] }
     if (u.includes('/rest/v1/meu_perfil')) return { status: 200, corpo: perfilBase(papel) }
     if (u.includes('/rest/v1/regulagem')) return { status: 200, corpo: [{ valor: ensaio ? 'teste' : 'real' }] }
     if (u.includes('/rest/v1/cotacao_na_lista')) return { status: 200, corpo: lista.filter((l) => corpos.has(l.id)) }

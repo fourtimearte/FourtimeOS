@@ -37,12 +37,19 @@ export function CaixaDeImagem({
   arte,
   aoMudarImagem,
   leitura,
+  caber,
+  controle,
 }: {
   imagem: string
   /** o nome do arquivo da arte. Hoje so serve de texto alternativo da imagem */
   arte: string
   aoMudarImagem?: (dataUrl: string) => void
   leitura?: boolean
+  /** a caixa tem altura de fora (o cartao da arte do editor): a imagem cabe
+      inteira nela, e os botoes Trocar e Remover moram no cabecalho do cartao */
+  caber?: boolean
+  /** por onde o cabecalho de fora pede para trocar a imagem */
+  controle?: { current: { trocar: () => void } | null }
 }) {
   const [sobre, setSobre] = useState(false)
   const [ampliada, setAmpliada] = useState(false)
@@ -68,6 +75,7 @@ export function CaixaDeImagem({
   }
 
   const naTela = previa || imagem
+  if (controle) controle.current = { trocar: () => arquivo.current?.click() }
 
   function ler(f: File | null | undefined) {
     if (!f || !aoMudarImagem) return
@@ -118,7 +126,7 @@ export function CaixaDeImagem({
   }, [leitura, aoMudarImagem])
 
   return (
-    <div className="img-caixa">
+    <div className={caber ? 'img-caixa cabe' : 'img-caixa'}>
       <div
         ref={area}
         className={['img-area', sobre ? 'sobre' : '', naTela ? 'tem' : '', leitura ? 'lendo' : '']
@@ -172,7 +180,7 @@ export function CaixaDeImagem({
         />
       </div>
 
-      {naTela && !leitura ? (
+      {naTela && !leitura && !caber ? (
         <div className="img-acoes">
           <button type="button" className="img-bt" onClick={() => arquivo.current?.click()}>
             Trocar

@@ -358,6 +358,11 @@
   --tec-etiqueta-vivo: #c2c8d1;
   --tec-etiqueta-soft: #f1f3f6;
   --tec-etiqueta-fg: #5c6470;
+  /* a etiqueta personalizada do CLIENTE, em fúcsia (decisão 153): a da
+     Fourtime é o vermelho da marca, e as duas não podem se confundir */
+  --eti-cliente: #a21caf;
+  --eti-cliente-soft: #f9eafb;
+  --eti-cliente-fg: #86198f;
 }
 
 [data-theme='dark'] {
@@ -393,6 +398,9 @@
   --tec-etiqueta-vivo: #c2c8d1;
   --tec-etiqueta-soft: #26292b;
   --tec-etiqueta-fg: #a2a8b1;
+  --eti-cliente: #c026d3;
+  --eti-cliente-soft: #3a1a3e;
+  --eti-cliente-fg: #e879f9;
 }
 
 /* ==========================================================================

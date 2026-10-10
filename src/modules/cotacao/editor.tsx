@@ -2,20 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { emEnsaio } from '@dominio/regulagem'
 import { souAdmin, useSessao } from '@dominio/sessao'
-import { Copy, Plus, Trash } from '@phosphor-icons/react'
 import { avisar, Aviso, Botao, Esqueleto, Pagina, Vazio } from '@ds'
-import {
-  CaixaDeImagem,
-  ModuloDeLayout,
-  GradeDeTamanhos,
-  blocoEmBranco,
-  colarBloco,
-  copiarBloco,
-  temCopia,
-  type Bloco,
-  type Faixa,
-  type Grade,
-} from '@dominio/layout'
+import { blocoEmBranco, colarBloco, copiarBloco, temCopia } from '@dominio/layout'
 import {
   apagarCotacao,
   aprovar,
@@ -24,13 +12,12 @@ import {
   montarKitDeTeste,
   registrarEnvio,
   travada,
-  pecasDoProduto,
   salvarCotacao,
-  totalDoProduto,
   type Cotacao,
   type ProdutoCotado,
 } from '@dominio/cotacao'
 import { AbasDoEditor } from './abas-do-editor'
+import { CorpoDoEditor } from './corpo-do-editor'
 import { ModalDosDados } from './modal-dos-dados'
 import { PerguntaDeApagar } from './pergunta-de-apagar'
 import { TopoDoEditor, type Porta } from './topo-do-editor'
@@ -51,8 +38,6 @@ import { usarCotacao } from './usar-cotacao'
    Salvar é explícito, não automático: o vendedor precisa poder mexer no
    preço, olhar, e desistir.
    ========================================================================== */
-
-const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 /* A porta: acha a cotacao e some do caminho. Quem edita e o Editor logo
    abaixo, e ele so nasce com uma cotacao na mao. */
@@ -99,6 +84,9 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const [sujo, setSujo] = useState(false)
   const [podeColar, setPodeColar] = useState(() => temCopia())
   const [porta, setPorta] = useState<Porta>('')
+  /* o layout aberto no corpo: um por vez, escolhido na coluna da direita */
+  const [escolhido, setEscolhido] = useState(0)
+  const atual = Math.min(escolhido, Math.max(0, c.produtos.length - 1))
   const [perguntaApagar, setPerguntaApagar] = useState(false)
   const [apagando, setApagando] = useState(false)
   const [gravando, setGravando] = useState(false)
@@ -130,12 +118,29 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const mudarProduto = (i: number, troca: (p: ProdutoCotado) => ProdutoCotado) =>
     mudar({ produtos: c.produtos.map((p, k) => (k === i ? troca(p) : p)) })
 
-  const mudarBloco = (i: number, b: Bloco) => mudarProduto(i, (p) => ({ ...p, bloco: b }))
-
   function novoProduto() {
     mudar({
       produtos: [...c.produtos, { bloco: blocoEmBranco(c.produtos.length + 1), precoPorTamanho: {}, precoBase: 0 }],
     })
+    setEscolhido(c.produtos.length)
+  }
+
+  /* DUPLICAR põe a cópia logo depois do layout, já aberta, e guarda também na
+     cópia do navegador: dá para colar o mesmo layout em outra cotação */
+  function duplicar(i: number) {
+    const origem = c.produtos[i]
+    if (!origem) return
+    copiarBloco(origem.bloco)
+    setPodeColar(true)
+    const copia: ProdutoCotado = {
+      ...origem,
+      precoPorTamanho: { ...origem.precoPorTamanho },
+      bloco: { ...origem.bloco, id: blocoEmBranco(0).id, grade: { ...origem.bloco.grade } },
+    }
+    const lista = [...c.produtos.slice(0, i + 1), copia, ...c.produtos.slice(i + 1)]
+    mudar({ produtos: lista.map((p, k) => ({ ...p, bloco: { ...p.bloco, n: k + 1 } })) })
+    setEscolhido(i + 1)
+    avisar('Layout duplicado. A cópia também pode ser colada em outra cotação.', 'ok')
   }
 
   function colar() {
@@ -145,6 +150,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
       return
     }
     mudar({ produtos: [...c.produtos, { bloco: b, precoPorTamanho: {}, precoBase: 0 }] })
+    setEscolhido(c.produtos.length)
     avisar('Layout colado como layout ' + (c.produtos.length + 1), 'ok')
   }
 
@@ -152,6 +158,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     mudar({
       produtos: c.produtos.filter((_, k) => k !== i).map((p, k) => ({ ...p, bloco: { ...p.bloco, n: k + 1 } })),
     })
+    setEscolhido(Math.max(0, i - 1))
   }
 
   /* GRAVAR E UMA COISA SO, E TODO MUNDO PASSA POR AQUI.
@@ -307,47 +314,32 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         </Aviso>
       ) : null}
 
-      <div className="ct-corpo">
-        {c.produtos.map((p, i) => (
-          <Produto
-            key={p.bloco.id}
-            produto={p}
-            travado={fechada}
-            aoMudarBloco={(b) => mudarBloco(i, b)}
-            aoMudarProduto={(troca) => mudarProduto(i, troca)}
-            aoCopiar={() => {
-              copiarBloco(p.bloco)
-              setPodeColar(true)
-              avisar('Layout copiado. Use Colar layout para repetir.', 'ok')
-            }}
-            aoRemover={() => removerProduto(i)}
-          />
-        ))}
-
-        {!c.produtos.length ? (
-          <Vazio
-            titulo="Nenhum layout ainda"
-            texto="Um layout é uma peça: referência, tecido, arte e grade de tamanhos."
-            acao={
+      {c.produtos.length ? (
+        <CorpoDoEditor
+          produtos={c.produtos}
+          escolhido={atual}
+          travado={fechada}
+          podeColar={podeColar}
+          aoEscolher={setEscolhido}
+          aoMudarProduto={mudarProduto}
+          aoAdicionar={novoProduto}
+          aoColar={colar}
+          aoDuplicar={duplicar}
+          aoRemover={removerProduto}
+        />
+      ) : (
+        <Vazio
+          titulo="Nenhum layout ainda"
+          texto="Um layout é uma peça: referência, tecido, arte e grade de tamanhos."
+          acao={
+            fechada ? null : (
               <Botao tom="primario" onClick={novoProduto}>
                 Primeiro layout
               </Botao>
-            }
-          />
-        ) : !fechada ? (
-          <div className="ct-mais">
-            <button type="button" className="ct-mais-bt" onClick={novoProduto}>
-              <Plus size={17} />
-              Adicionar layout
-            </button>
-            {podeColar ? (
-              <Botao tom="limpo" tamanho="sm" onClick={colar}>
-                Colar layout
-              </Botao>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+            )
+          }
+        />
+      )}
 
       <ModalDosDados
         aberto={porta !== ''}
@@ -366,157 +358,6 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         aoConfirmar={() => void apagar()}
         aoFechar={() => setPerguntaApagar(false)}
       />
-    </div>
-  )
-}
-
-/* --- um produto: selo, referencia, imagem, campos e grade ---------------- */
-function Produto({
-  produto,
-  travado,
-  aoMudarBloco,
-  aoMudarProduto,
-  aoCopiar,
-  aoRemover,
-}: {
-  produto: ProdutoCotado
-  travado?: boolean
-  aoMudarBloco: (b: Bloco) => void
-  aoMudarProduto: (troca: (p: ProdutoCotado) => ProdutoCotado) => void
-  aoCopiar: () => void
-  aoRemover: () => void
-}) {
-  const b = produto.bloco
-  /* O SELO SAIU DAQUI. O módulo desenha o dele a partir do `bloco.n`, e desde
-     a fusão o produto da cotação e o layout da ficha são a mesma peça: dois
-     números para a mesma coisa era o que fazia o vendedor falar em P-02 e a
-     produção em L-02 sobre a mesma camiseta. */
-  const acoes = (
-    <span className="ct-produto-bts">
-      <button type="button" className="ct-bt-icone" onClick={aoCopiar} title="Duplicar produto">
-        <Copy size={17} />
-      </button>
-      {!travado ? (
-        <button
-          type="button"
-          className="ct-bt-icone risco"
-          onClick={aoRemover}
-          title="Remover produto"
-        >
-          <Trash size={17} />
-        </button>
-      ) : null}
-    </span>
-  )
-
-  /* O MÓDULO DE LAYOUT DA v3.375 É O MESMO DOS DOIS LADOS desde a fusão. Ele
-     traz consigo o que a cotação não tinha: vários tecidos com a cor de cada
-     um, o cartão de design com as fileiras de etiqueta, técnica e acabamento,
-     e a observação em texto rico. Ver o comentário do topo deste arquivo. */
-  return (
-    <section className="cartao ct-produto">
-      {/* O MIOLO EXISTE POR CAUSA DA MARGEM. O corpo antigo do produto era um
-          .ct-produto-corpo, e era ELE que tinha o respiro de 20px. Quando o
-          corpo virou o modulo de layout, o respiro foi junto e o modulo passou
-          a encostar nas quatro bordas do cartao, enquanto todos os outros
-          cartoes da tela seguiam com 20px. O rodape fica de fora porque ele e
-          uma faixa que atravessa o cartao inteiro e tem o respiro dele. */}
-      <div className="ct-produto-miolo">
-        <ModuloDeLayout
-          bloco={b}
-          aoMudar={aoMudarBloco}
-          leitura={travado}
-          acoes={acoes}
-          arte={
-            <CaixaDeImagem
-              leitura={travado}
-              imagem={b.imagem}
-              arte={b.arte}
-              aoMudarImagem={(img) => aoMudarBloco({ ...b, imagem: img })}
-            />
-          }
-          /* O VALOR BASE SAIU DO MODULO. Ele era um campo a mais para dizer
-             o que a coluna VALOR da tabela ja diz: escreve o valor na
-             primeira linha, arrasta a alca para baixo, e todos os tamanhos
-             ficam com ele. Dois lugares para o mesmo numero e um convite a
-             divergencia, e quem digita num e esquece o outro descobre pelo
-             total errado.
-
-             O DADO continua vivo: orcamento antigo guardou precoBase, e ele
-             segue valendo para o tamanho que nao tem valor proprio. O que
-             saiu foi o campo, e nao o numero. */
-          tabela={
-            <GradeDeTamanhos
-              leitura={travado}
-              faixa={b.faixa}
-              grade={b.grade}
-              aoMudar={travado ? undefined : (g: Grade) => aoMudarBloco({ ...b, grade: g })}
-              aoTrocarFaixa={travado ? undefined : (f: Faixa) => aoMudarBloco({ ...b, faixa: f })}
-              precoBase={produto.precoBase}
-              precoPorTamanho={produto.precoPorTamanho}
-              aoMudarPreco={(tamanho, valor) =>
-                aoMudarProduto((p) => {
-                  const novo = { ...p.precoPorTamanho }
-                  if (valor === null) delete novo[tamanho]
-                  else novo[tamanho] = valor
-                  return { ...p, precoPorTamanho: novo }
-                })
-              }
-            />
-          }
-          pe={<SobreAPeca bloco={b} travado={travado} />}
-        />
-      </div>
-      <footer className="ct-produto-pe">
-        <span className="ct-selo-conta">
-          {pecasDoProduto(produto)} peças
-          {' · ' + dinheiro(totalDoProduto(produto))}
-        </span>
-      </footer>
-    </section>
-  )
-}
-
-/* --- os campos sobre a peça ----------------------------------------------
-   PROVISÓRIO, E DE PROPÓSITO. O Henrique ainda não decidiu se estes atributos
-   ficam como pílula ou como dropdown, e o encaixe existe para a decisão poder
-   ser tomada olhando para a tela, e não para uma descrição.
-
-   Eles NÃO guardam um dado novo: apontam para os mesmos campos que os cartões
-   de tecido e design já mostram logo acima. Duas formas de mexer na mesma
-   coisa é aceitável enquanto se escolhe uma; duas cópias do mesmo dado nunca
-   seria, porque uma delas começaria a mentir no dia seguinte. */
-function SobreAPeca({ bloco, travado }: { bloco: Bloco; travado?: boolean }) {
-  const tecido = bloco.tecidos[0]
-  const tecnicas = bloco.design.map((d) => d.tag)
-  const cores = bloco.design.reduce((n, d) => n + d.cores.length, 0)
-
-  const itens = [
-    ['Tecido', bloco.tecidos.length > 1 ? bloco.tecidos.length + ' tecidos' : tecido?.nome || ''],
-    ['Cor do tecido', bloco.tecidos.length > 1 ? 'por tecido' : tecido?.cor || ''],
-    ['Técnica de estampa', tecnicas.length ? tecnicas.join(' + ') : ''],
-    ['Cores da estampa', cores ? cores + (cores === 1 ? ' código' : ' códigos') : ''],
-    ['Gênero', bloco.genero],
-    ['Grade', bloco.faixa === 'infantil' ? 'Infantil' : 'Adulto'],
-  ] as const
-
-  return (
-    <div className="ct-sobre">
-      <span className="ct-sobre-rot">Sobre a peça</span>
-      <div className="ct-sobre-itens">
-        {itens.map(([rotulo, valor]) => (
-          <span key={rotulo} className={valor ? 'ct-atributo' : 'ct-atributo ct-sem'}>
-            <b>{rotulo}</b>
-            {valor || 'a definir'}
-          </span>
-        ))}
-      </div>
-      {travado ? null : (
-        <p className="ct-sobre-nota">
-          Provisório: estes atributos leem o que já foi escolhido nos cartões acima. Falta decidir
-          se aqui eles viram pílula ou campo com lista.
-        </p>
-      )}
     </div>
   )
 }

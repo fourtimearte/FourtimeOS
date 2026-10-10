@@ -52,30 +52,6 @@
   color: var(--text-3);
 }
 
-/* --- um produto ---------------------------------------------------------- */
-.ct-produto {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  overflow: hidden;
-  min-width: 0;
-}
-/* O RESPIRO DO PRODUTO. Ele estava no .ct-produto-corpo, que era o corpo
-   antigo; com o modulo de layout no lugar dele o respiro sumiu e o modulo
-   passou a encostar nas quatro bordas. Os 20px sao os mesmos de todo cartao
-   desta tela, e a ficha de producao usa o mesmo desenho no .fc-peca. O rodape
-   nao entra aqui: ele e faixa de borda a borda e tem o respiro dele. */
-.ct-produto-miolo {
-  padding: var(--sp-5);
-  min-width: 0;
-}
-
-.ct-produto-bts {
-  display: flex;
-  gap: var(--re-4);
-  margin-left: auto;
-}
-
 /* --- ajustes ------------------------------------------------------------- */
 .ct-ajustes {
   display: flex;
@@ -131,14 +107,6 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
-}
-
-/* --- celular ------------------------------------------------------------- */
-@media (max-width: 900px) {
-  .ct-produto-bts {
-    margin-left: 0;
-    width: 100%;
-  }
 }
 
 /* --- o que já foi enviado ------------------------------------------------ */
@@ -286,32 +254,6 @@
   color: var(--brand);
 }
 
-.ct-mais {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--gap-btn);
-}
-.ct-mais-bt {
-  flex: 1 1 260px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--re-4);
-  min-height: 48px;
-  border: 1.5px dashed var(--border-2);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--text-2);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ct-mais-bt:hover {
-  border-color: var(--ink);
-  color: var(--text);
-}
-
 /* as marcas do documento, que vieram da ficha */
 .ct-marcas {
   display: flex;
@@ -363,70 +305,6 @@
   color: var(--brand-text, var(--brand));
 }
 
-/* --- os campos sobre a peça, no pé do módulo ----------------------------- */
-.ct-sobre {
-  display: flex;
-  flex-direction: column;
-  gap: var(--re-4);
-  min-width: 0;
-}
-.ct-sobre-rot {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.ct-sobre-itens {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--re-3);
-}
-.ct-atributo {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--re-4);
-  min-width: 0;
-  padding: var(--re-3) var(--re-6);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  font-size: 12.5px;
-  color: var(--text);
-}
-.ct-atributo b {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.ct-atributo.ct-sem {
-  border-style: dashed;
-  color: var(--text-3);
-}
-.ct-sobre-nota {
-  margin: 0;
-  font-size: 11.5px;
-  line-height: 1.4;
-  color: var(--text-3);
-}
-
-/* --- o pé do produto ----------------------------------------------------- */
-.ct-produto-pe {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--sp-3) var(--sp-5);
-  border-top: 1px solid var(--border);
-  background: var(--surface-2);
-}
-.ct-selo-conta {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-2);
-}
-
 /* ==========================================================================
    O EDITOR FECHADO (decisão 163, prancha 109): o cabeçalho com o resumo, os
    botões em duas fileiras, a fileira das cotações abertas e o modal dos
@@ -435,12 +313,6 @@
    ========================================================================== */
 .ct-ed {
   container-type: inline-size;
-}
-.ct-corpo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  min-width: 0;
 }
 
 /* --- o cabeçalho ----------------------------------------------------------- */
@@ -1020,5 +892,993 @@
   }
   .ct-mc-meia {
     grid-column: 1 / -1;
+  }
+}
+
+/* ==========================================================================
+   O CORPO DO EDITOR (prancha 109): a arte e a grade em 680, a ficha no meio
+   e a coluna dos layouts em 360 na extrema direita. A barra de referência e
+   as ações ficam na primeira fileira, em cima das duas primeiras colunas.
+   ========================================================================== */
+.ct-ly {
+  display: grid;
+  grid-template-columns: minmax(0, 680px) minmax(0, 1fr) 360px;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+.ct-rf {
+  grid-column: 1;
+  grid-row: 1;
+}
+.ct-ly-acoes {
+  grid-column: 2;
+  grid-row: 1;
+}
+.ct-arte {
+  grid-column: 1;
+  grid-row: 2;
+}
+.ct-gd {
+  grid-column: 1;
+  grid-row: 3;
+}
+.ct-ly-ficha {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  min-width: 0;
+}
+.ct-ly-coluna {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  min-width: 0;
+}
+
+/* --- a barra de referência (decisão 160) ---------------------------------- */
+.ct-rf {
+  display: flex;
+  align-items: stretch;
+  height: var(--btn-h);
+  min-width: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.ct-rf-ref {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-width: 0;
+  padding: 0 var(--re-6) 0 var(--re-4);
+  border: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.ct-rf-ref:not([disabled]):hover {
+  background: var(--surface-2);
+}
+.ct-rf-ref[disabled] {
+  cursor: default;
+}
+.ct-rf-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ct-rf-nome {
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-rf-seta {
+  flex: none;
+  font-size: 9px;
+  color: var(--text-3);
+}
+.ct-rf-cod {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.ct-rf-gen {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  padding: 0 var(--re-5);
+  border-left: 1px solid var(--border-2);
+}
+.ct-rf-q {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+.ct-rf-q[disabled] {
+  cursor: default;
+}
+.ct-rf-q-sel {
+  border-color: var(--ink);
+}
+.ct-rf-q > i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+}
+.ct-g-sem {
+  background: var(--surface);
+}
+.ct-g-masc {
+  background: var(--gen-masc-bg);
+}
+.ct-g-fem {
+  background: var(--gen-fem-bg);
+}
+.ct-g-inf {
+  background: var(--gen-inf-bg);
+}
+
+/* --- as ações do layout: as setas, a conta no meio do vão, duplicar e remover */
+.ct-ly-acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+}
+.ct-ly-setas {
+  flex: none;
+  display: flex;
+  gap: var(--gap-btn);
+}
+.ct-ly-conta {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- a arte ------------------------------------------------------------------ */
+.ct-arte,
+.ct-gd,
+.ct-ft {
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-arte-cab,
+.ct-gd-cab,
+.ct-ft-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 52px;
+  padding: var(--re-3) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-arte-bts {
+  display: flex;
+  gap: var(--gap-btn);
+  margin-left: auto;
+}
+.ct-arte-quadro {
+  height: 372px;
+  padding: var(--re-7);
+}
+.ct-arte-alta {
+  height: 511px;
+}
+
+/* --- a grade deitada -------------------------------------------------------- */
+.ct-gd-cab > :last-child:not(:first-child) {
+  margin-left: auto;
+}
+.ct-gd-rolo {
+  overflow-x: auto;
+}
+.ct-gd-empe {
+  display: none;
+  padding: var(--re-7);
+}
+.ct-gd-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.ct-gd-tab th,
+.ct-gd-tab td {
+  padding: var(--re-3) var(--re-1);
+  text-align: center;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--border);
+}
+.ct-gd-tab thead th {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+.ct-gd-tab .ct-gd-rot {
+  padding-left: var(--re-7);
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ct-gd-tab .ct-gd-soma {
+  padding-right: var(--re-7);
+  text-align: right;
+}
+.ct-gd-cel {
+  position: relative;
+}
+.ct-gd-campo {
+  width: 100%;
+  min-width: 40px;
+  height: 32px;
+  padding: 0 var(--re-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ct-gd-campo:focus {
+  border-color: var(--ring);
+}
+.ct-gd-campo[disabled] {
+  background: transparent;
+  border-color: transparent;
+}
+.ct-gd-base {
+  color: var(--text-3);
+}
+.ct-gd-fora {
+  background: var(--fora-inf-bg);
+  color: var(--fora-inf-fg);
+}
+.ct-gd-alca-sel {
+  border-color: var(--ring);
+  background: var(--surface-2);
+}
+.ct-gd-alca {
+  position: absolute;
+  right: var(--re-1);
+  bottom: var(--re-2);
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  cursor: crosshair;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+  touch-action: none;
+}
+.ct-gd-cel:hover .ct-gd-alca,
+.ct-gd-cel:focus-within .ct-gd-alca {
+  opacity: 1;
+}
+.ct-gd-total td,
+.ct-gd-total th {
+  border-bottom: 0;
+  color: var(--text-2);
+}
+.ct-gd-total .ct-gd-soma b {
+  color: var(--brand-text);
+  font-size: 13.5px;
+}
+.ct-gd-nota {
+  margin: 0;
+  padding: var(--re-6) var(--re-7);
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* --- a ficha do layout (decisão 153) ------------------------------------------- */
+.ct-ft-cab > a {
+  margin-left: auto;
+  text-decoration: none;
+}
+.ct-ft-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+.ct-ft-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-width: 0;
+  padding: var(--re-7);
+}
+.ct-ft-lado + .ct-ft-lado {
+  border-left: 1px solid var(--border);
+}
+.ct-ft-rot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-ft-mais,
+.ct-ft-menos {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.ct-ft-mais:hover,
+.ct-ft-menos:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.ct-tc {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.ct-tc-q {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--cor, var(--surface));
+  cursor: pointer;
+}
+.ct-tc-q[disabled] {
+  cursor: default;
+}
+.ct-tc-vazio {
+  background: repeating-linear-gradient(45deg, var(--surface-2) 0 4px, var(--surface) 4px 8px);
+}
+.ct-tc-txt {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ct-tc-nome {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.ct-tc-nome[disabled] {
+  cursor: default;
+}
+.ct-tc-txt small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-ft-design {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  padding: var(--re-7);
+}
+
+/* o interruptor */
+.ct-chaves {
+  display: grid;
+  gap: var(--re-4);
+}
+.ct-chaves-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ct-chaves-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ct-chaves-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.ct-chave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-2);
+  min-width: 0;
+  height: var(--btn-h-sm);
+  padding: 0 var(--re-2);
+  border: 1px solid color-mix(in srgb, var(--tc) 45%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.ct-chave:not([disabled]):hover {
+  background: var(--surface-2);
+}
+.ct-chave-on,
+.ct-chave-on:not([disabled]):hover {
+  border-color: var(--tc);
+  background: var(--ts);
+  color: var(--tf);
+}
+.ct-chave[disabled] {
+  cursor: default;
+}
+.ct-chave[disabled]:not(.ct-chave-on) {
+  opacity: 0.55;
+}
+.ct-ch-subli {
+  --tc: var(--tec-subli);
+  --ts: var(--tec-subli-soft);
+  --tf: var(--tec-subli-fg);
+}
+.ct-ch-dtf {
+  --tc: var(--tec-dtf);
+  --ts: var(--tec-dtf-soft);
+  --tf: var(--tec-dtf-fg);
+}
+.ct-ch-silk {
+  --tc: var(--tec-silk);
+  --ts: var(--tec-silk-soft);
+  --tf: var(--tec-silk-fg);
+}
+.ct-ch-bordado {
+  --tc: var(--tec-bordado);
+  --ts: var(--tec-bordado-soft);
+  --tf: var(--tec-bordado-fg);
+}
+.ct-ch-patch {
+  --tc: var(--tec-patch);
+  --ts: var(--tec-patch-soft);
+  --tf: var(--tec-patch-fg);
+}
+.ct-ch-fourtime {
+  --tc: var(--brand);
+  --ts: var(--brand-soft);
+  --tf: var(--brand-text);
+}
+.ct-ch-cliente {
+  --tc: var(--eti-cliente);
+  --ts: var(--eti-cliente-soft);
+  --tf: var(--eti-cliente-fg);
+}
+
+/* a caixa de cores de cada técnica ligada que leva cor */
+.ct-paletas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-4);
+}
+.ct-paleta {
+  flex: 1 1 200px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-3);
+  min-width: 0;
+  padding: var(--re-4);
+  border-radius: var(--radius-sm);
+  background: var(--ts);
+}
+.ct-paleta-nome {
+  padding: 0 var(--re-2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tf);
+}
+.ct-cartao-cor {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 40px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.ct-cartao-cor[disabled] {
+  cursor: default;
+}
+.ct-cartao-cor > i {
+  display: block;
+  height: 24px;
+  background: var(--cor);
+}
+.ct-cartao-cor > b {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ct-cartao-mais {
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--tf);
+}
+
+/* a construção da peça, lida da ficha técnica */
+.ct-fab {
+  min-width: 0;
+}
+.ct-fab-faixa {
+  padding: var(--re-4) var(--re-7);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-fab-pares {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ct-fab-par {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+  min-width: 0;
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-fab-par:not(:nth-child(3n + 1)) {
+  border-left: 1px solid var(--border);
+}
+.ct-fab-largo {
+  grid-column: span 2;
+}
+.ct-fab-rot {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-fab-par > b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ct-fab-par > small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-fab-atencao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  padding: var(--re-6) var(--re-7);
+}
+.ct-fab-atencao p {
+  margin: 0;
+  font-size: 13px;
+}
+.ct-fab-avi {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ct-fab-av {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--re-4);
+  min-width: 0;
+  padding: var(--re-5) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ct-fab-av:nth-child(2n) {
+  border-left: 1px solid var(--border);
+}
+.ct-fab-av > b {
+  min-width: 0;
+  font-weight: 600;
+}
+.ct-fab-av > span {
+  flex: none;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ct-ft-vazio,
+.ct-ft-anexo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  margin: 0;
+  padding: var(--re-7);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* --- a coluna dos layouts (decisão 162) ---------------------------------------- */
+.ct-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-6);
+  min-width: 0;
+}
+.ct-lys {
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-lys-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 52px;
+  padding: var(--re-3) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-lys-conta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ct-lys-aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--re-3);
+  margin: 0;
+  padding: var(--re-4) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-lys-aviso svg,
+.ct-ly-placa {
+  color: var(--warn);
+}
+/* a altura de cinco linhas, sempre: de seis em diante a lista rola por dentro */
+.ct-lys-lista {
+  display: flex;
+  flex-direction: column;
+  height: calc(64px * 5);
+  overflow-y: auto;
+}
+.ct-ly-linha {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--re-6);
+  height: 64px;
+  min-width: 0;
+  padding: 0 var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ct-ly-linha:not(.ct-ly-sel):hover {
+  background: var(--surface-2);
+}
+.ct-ly-mini {
+  flex: none;
+  width: 60px;
+  height: 46px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--branco);
+}
+.ct-ly-mini img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ct-ly-txt {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ct-ly-txt b {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-ly-txt small {
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ct-ly-sel .ct-ly-txt small {
+  color: color-mix(in srgb, currentColor 76%, transparent);
+}
+.ct-ly-txt .ct-ly-falta {
+  color: var(--text);
+  font-weight: 600;
+}
+.ct-ly-placa {
+  flex: none;
+  display: inline-grid;
+}
+.ct-lys-pe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  padding: var(--re-6) var(--re-7);
+}
+.ct-lys-mais {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3);
+  height: var(--btn-h);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ct-lys-mais:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.ct-lys-colar {
+  align-self: center;
+  padding: var(--re-2) var(--re-4);
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* as sanfonas */
+.ct-sf {
+  min-width: 0;
+  overflow: hidden;
+}
+.ct-sf-cab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 48px;
+  padding: var(--re-3) var(--re-7);
+}
+.ct-sf-alvo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  cursor: pointer;
+}
+.ct-sf-alvo:hover {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.ct-sf-ponto {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+}
+.ct-sf-seta {
+  display: inline-grid;
+  margin-left: auto;
+  color: var(--text-2);
+  transition: transform var(--t-base) var(--ease-out);
+}
+.ct-sf-ponto + .ct-sf-seta {
+  margin-left: var(--re-4);
+}
+.ct-sf-aberta .ct-sf-seta {
+  transform: rotate(180deg);
+}
+.ct-sf-corpo {
+  padding: 0 var(--re-7) var(--re-7);
+}
+.ct-sf-texto {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* --- o corpo em telas menores -------------------------------------------------
+   Abaixo de 1500 de conteúdo a coluna dos layouts sobe para o topo, na largura
+   toda; abaixo de 900 tudo vira uma coluna só, na ordem de leitura. */
+@container (max-width: 1500px) {
+  .ct-ly {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+  .ct-ly-coluna {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .ct-rf {
+    grid-row: 2;
+  }
+  .ct-ly-acoes {
+    grid-row: 2;
+  }
+  .ct-arte {
+    grid-row: 3;
+  }
+  .ct-ly-ficha {
+    grid-row: 3;
+  }
+  /* a grade desce para a largura toda: em meia tela as doze colunas não cabem */
+  .ct-gd {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+  .ct-col {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+  }
+  .ct-lys {
+    grid-row: 1 / span 3;
+  }
+  .ct-lys-lista {
+    height: calc(64px * 3);
+  }
+}
+@container (max-width: 900px) {
+  .ct-ly {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-ly-coluna,
+  .ct-rf,
+  .ct-ly-acoes,
+  .ct-arte,
+  .ct-gd,
+  .ct-ly-ficha {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .ct-col {
+    display: flex;
+  }
+  /* no celular a lista vem primeiro: escolhe-se o layout, depois mexe nele */
+  .ct-ly-coluna {
+    order: -1;
+  }
+  .ct-ly-acoes {
+    flex-wrap: wrap;
+  }
+  .ct-arte-quadro,
+  .ct-arte-alta {
+    height: auto;
+    min-height: 220px;
+  }
+}
+@container (max-width: 560px) {
+  .ct-gd-rolo,
+  .ct-gd-nota {
+    display: none;
+  }
+  .ct-gd-empe {
+    display: block;
+  }
+  .ct-rf {
+    height: auto;
+    flex-wrap: wrap;
+  }
+  .ct-rf-ref {
+    flex-basis: 100%;
+    min-height: var(--btn-h);
+  }
+  .ct-rf-gen {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    min-height: var(--btn-h);
+    border-left: 0;
+    border-top: 1px solid var(--border-2);
+  }
+  .ct-ft-par {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-ft-lado + .ct-ft-lado {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .ct-chaves-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ct-fab-pares,
+  .ct-fab-avi {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-fab-par:not(:nth-child(3n + 1)),
+  .ct-fab-av:nth-child(2n) {
+    border-left: 0;
+  }
+  .ct-fab-largo {
+    grid-column: auto;
   }
 }

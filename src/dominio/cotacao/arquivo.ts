@@ -119,6 +119,36 @@ const DEGRAUS: ((c: Bruto) => Bruto)[] = [
       },
     }
   },
+
+  /* de 4 para 5: cada informe ganhou o GRUPO (Sobre a produção ou Termos).
+
+     Os termos da casa se reconhecem pelo texto, e a lista vai ESCRITA AQUI,
+     congelada, pelo mesmo motivo do degrau 2 para 3: se ela lesse os
+     informes padrão de hoje, um arquivo antigo abriria diferente toda vez
+     que alguém reescrevesse um padrão. O que alguém escreveu à mão vai para
+     "Sobre a produção", que é o nome antigo do cartão no editor: é ali que
+     a pessoa achava que estava escrevendo. Quem já tem grupo fica com o
+     dele. */
+  (c) => {
+    const TERMOS_DA_CASA_EM_4 = [
+      'Esta cotação é válida até a data indicada no cabeçalho.',
+      'Pagamento: 50% na aprovação e 50% na retirada ou envio.',
+      'A arte aprovada pelo cliente é de sua responsabilidade',
+      'Alterações de grade, cor, tecido ou arte depois da aprovação',
+      'Frete por conta do cliente, salvo combinação em contrário.',
+      'Garantia de 90 dias contra defeitos de fabricação',
+    ]
+    const informes = Array.isArray(c.informes) ? (c.informes as Bruto[]) : undefined
+    if (!informes) return c
+    return {
+      ...c,
+      informes: informes.map((i) => {
+        if (i.grupo === 'producao' || i.grupo === 'termos') return i
+        const texto = String(i.texto ?? '')
+        return { ...i, grupo: TERMOS_DA_CASA_EM_4.some((t) => texto.startsWith(t)) ? 'termos' : 'producao' }
+      }),
+    }
+  },
 ]
 
 export class ArquivoRecusado extends Error {}
@@ -220,8 +250,13 @@ export function arrumarCotacao(corpo: Bruto, versao: number, versaoDoBloco: numb
     cliente: { ...molde.cliente, ...((corpoAtual.cliente ?? {}) as object) },
     informe: { ...molde.informe, ...((corpoAtual.informe ?? {}) as object) },
     producao: { ...molde.producao, ...((corpoAtual.producao ?? {}) as object) },
+    /* grupo que não é um dos dois vira "Sobre a produção": a folha nunca
+       recebe um informe sem coluna */
     informes: Array.isArray(corpoAtual.informes)
-      ? (corpoAtual.informes as Cotacao['informes'])
+      ? (corpoAtual.informes as Cotacao['informes']).map((i) => ({
+          ...i,
+          grupo: i.grupo === 'termos' ? ('termos' as const) : ('producao' as const),
+        }))
       : molde.informes,
     ajustes: Array.isArray(corpoAtual.ajustes) ? (corpoAtual.ajustes as Cotacao['ajustes']) : [],
     enviadas: Array.isArray(corpoAtual.enviadas) ? (corpoAtual.enviadas as Cotacao['enviadas']) : [],

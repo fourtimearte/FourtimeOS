@@ -15,6 +15,7 @@ import {
   ResumoDaPaginaUm,
   RodapeDaFolhaNova,
   condicoesDaFolha,
+  informesNaFolha,
 } from './pagina-um'
 import {
   LARGURA_DA_COLUNA,
@@ -183,7 +184,7 @@ export function FolhaDaCotacao({
       ...(sai('cond') && condicoesDaFolha(c, comValor, campos).length
         ? [parte('d-condicoes', <CondicoesDaPaginaUm cotacao={c} comValor={comValor} campos={campos} />)]
         : []),
-      ...(sai('inf') && c.informes.some((x) => x.noDocumento && x.texto.trim())
+      ...(sai('inf') && informesNaFolha(c, comValor).length
         ? [parte('d-informes', <InformesDaPaginaUm cotacao={c} comValor={comValor} />)]
         : []),
       ...(comValor && sai('ace') ? [parte('d-aceite', <AceiteDaPaginaUm cotacao={c} />)] : []),

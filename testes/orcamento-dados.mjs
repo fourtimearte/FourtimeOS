@@ -73,9 +73,11 @@ export function cotacaoDoAtletico() {
     ajustes: [{ id: 'AJ1', descricao: 'fidelidade', tipo: 'porcento', valor: -5 }],
     informe: { prazo: '12 dias úteis', pagamento: '50% NA APROVAÇÃO, 50% NA ENTREGA', entrega: 'TRANSPORTADORA', tabelaDePreco: 'Atacado 2026' },
     informes: [
-      { id: 'IF1', texto: 'A produção começa depois da aprovação da arte e do pagamento da entrada.', noDocumento: true },
-      { id: 'IF2', texto: 'Cores de tela e de impressão podem ter pequena diferença.', noDocumento: true },
-      { id: 'IF3', texto: 'Pedido mínimo de 10 peças por layout.', noDocumento: false },
+      { id: 'IF1', texto: 'A produção começa depois da aprovação da arte e do pagamento da entrada.', noDocumento: true, grupo: 'producao' },
+      { id: 'IF2', texto: 'Cores de tela e de impressão podem ter pequena diferença.', noDocumento: true, grupo: 'producao' },
+      { id: 'IF3', texto: 'Pedido mínimo de 10 peças por layout.', noDocumento: false, grupo: 'termos' },
+      /* sem grupo, de propósito: o degrau 4 para 5 reconhece o termo da casa pelo texto */
+      { id: 'IF4', texto: 'Frete por conta do cliente, salvo combinação em contrário.', noDocumento: true },
     ],
     producao: { pedido: '', dataDeEnvio: '2026-10-20', departamento: 'ESPORTIVO', embalagem: 'CAIXA', marcas: ['URGENTE'], observacao: 'Entregar junto com o pedido do clube.' },
     enviadas: [{ numero: 1, data: '2026-10-02T14:10:00-03:00', total: 9870, pecas: 186, para: 'Marcos', observacao: '' }],

@@ -290,6 +290,11 @@
   grid-template-columns: repeat(var(--dc-c, 2), minmax(0, 1fr));
   column-gap: 24px;
 }
+/* os dois grupos lado a lado: cada coluna com o seu título, e o risco de
+   cada título para no fim da coluna, o que desenha o título dividido */
+.dc-inf-grupos > div {
+  min-width: 0;
+}
 .dc-inf ol {
   display: flex;
   flex-direction: column;

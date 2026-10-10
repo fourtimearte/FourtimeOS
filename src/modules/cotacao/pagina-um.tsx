@@ -1,10 +1,21 @@
 import type { CSSProperties } from 'react'
-import { Buildings, CalendarBlank, CreditCard, Hourglass, Package, Tag, Truck, WhatsappLogo } from '@phosphor-icons/react'
+import {
+  Buildings,
+  CalendarBlank,
+  CreditCard,
+  Hourglass,
+  Package,
+  Tag,
+  Truck,
+  WhatsappLogo,
+} from '@phosphor-icons/react'
 import { LogoFourtime, type IconeDoPacote } from '@ds'
 import { EMPRESA } from '@dominio/empresa'
 import {
   CAMPOS_DO_CABECALHO,
+  GRUPOS_DO_INFORME,
   NOME_DO_ESTADO_DA_COTACAO,
+  NOME_DO_GRUPO,
   pecasDaCotacao,
   pecasDoProduto,
   soComValor,
@@ -13,6 +24,7 @@ import {
   totalDoProduto,
   valorDoAjuste,
   type Cotacao,
+  type GrupoDoInforme,
 } from '@dominio/cotacao'
 import './documento.css'
 
@@ -32,7 +44,8 @@ import './documento.css'
    (p1.js e papel.css). As classes daqui são as de lá com o prefixo dc-.
    ========================================================================== */
 
-export const n2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export const n2 = (v: number) =>
+  v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 export const reais = (v: number) => 'R$ ' + n2(v)
 export const pecas = (n: number) => n + (n === 1 ? ' peça' : ' peças')
 
@@ -49,7 +62,8 @@ export function dataCurta(iso: string): string {
 
 /* quantas colunas uma faixa de n campos usa, até o teto: quatro ou menos
    ficam numa fileira só; até oito, duas fileiras iguais; mais, o teto */
-const colunasDe = (n: number, teto: number) => Math.max(1, Math.min(teto, n <= 4 ? n : n <= 8 ? Math.ceil(n / 2) : teto))
+const colunasDe = (n: number, teto: number) =>
+  Math.max(1, Math.min(teto, n <= 4 ? n : n <= 8 ? Math.ceil(n / 2) : teto))
 
 const pedidoDe = (c: Cotacao) => c.aprovacao?.pedido || c.producao.pedido
 
@@ -73,7 +87,11 @@ const pedidoDe = (c: Cotacao) => c.aprovacao?.pedido || c.producao.pedido
    ========================================================================== */
 export type CampoDaFolha = { k: string; r: string; v: string; forte?: boolean }
 
-export function camposDoCabecalho(c: Cotacao, comValor: boolean, campos: readonly string[]): CampoDaFolha[] {
+export function camposDoCabecalho(
+  c: Cotacao,
+  comValor: boolean,
+  campos: readonly string[],
+): CampoDaFolha[] {
   const pd = pedidoDe(c)
   const cidade = [c.cliente.cidade, c.cliente.uf].filter(Boolean).join('/')
   const valor: Record<string, Omit<CampoDaFolha, 'k' | 'r'>> = {
@@ -99,8 +117,9 @@ export function camposDoCabecalho(c: Cotacao, comValor: boolean, campos: readonl
     total: { v: reais(totalDaCotacao(c)), forte: true },
   }
   return CAMPOS_DO_CABECALHO.filter(
-    (x) => campos.includes(x.k) && (comValor || !soComValor(x.k)) && !(x.k === 'pd' && comValor && !pd),
-  ).map((x) => ({ k: x.k, r: x.r, ...valor[x.k] }))
+    x =>
+      campos.includes(x.k) && (comValor || !soComValor(x.k)) && !(x.k === 'pd' && comValor && !pd),
+  ).map(x => ({ k: x.k, r: x.r, ...valor[x.k] }))
 }
 
 export function Rotulo({ children }: { children: string }) {
@@ -143,14 +162,17 @@ export function CabecalhoDaPaginaUm({
         </div>
       </div>
       {campos.length ? (
-      <div className="dc-campos" style={{ '--dc-c': colunasDe(campos.length, 5) } as CSSProperties}>
-        {campos.map((x) => (
-          <div key={x.k} className={x.forte ? 'dc-cel dc-cel-forte' : 'dc-cel'}>
-            <Rotulo>{x.r}</Rotulo>
-            <b>{x.v || '-'}</b>
-          </div>
-        ))}
-      </div>
+        <div
+          className="dc-campos"
+          style={{ '--dc-c': colunasDe(campos.length, 5) } as CSSProperties}
+        >
+          {campos.map(x => (
+            <div key={x.k} className={x.forte ? 'dc-cel dc-cel-forte' : 'dc-cel'}>
+              <Rotulo>{x.r}</Rotulo>
+              <b>{x.v || '-'}</b>
+            </div>
+          ))}
+        </div>
       ) : null}
     </div>
   )
@@ -174,14 +196,21 @@ const GENERO: Record<string, [string, string]> = {
 
 export const CORTE_DO_RESUMO = 10
 
-export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const linhas = c.produtos.map((p) => {
+export function ResumoDaPaginaUm({
+  cotacao: c,
+  comValor,
+}: {
+  cotacao: Cotacao
+  comValor: boolean
+}) {
+  const linhas = c.produtos.map(p => {
     const n = pecasDoProduto(p)
     const total = totalDoProduto(p)
     return {
       id: p.bloco.id,
       num: String(p.bloco.n).padStart(2, '0'),
-      nome: p.bloco.nomeDaReferencia || p.bloco.referencia || p.bloco.arte || 'Layout sem referência',
+      nome:
+        p.bloco.nomeDaReferencia || p.bloco.referencia || p.bloco.arte || 'Layout sem referência',
       genero: GENERO[p.bloco.genero],
       pecas: n,
       porPeca: n ? total / n : 0,
@@ -204,7 +233,7 @@ export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; c
         </tr>
       </thead>
       <tbody>
-        {lista.map((l) => (
+        {lista.map(l => (
           <tr key={l.id}>
             <td className="dc-tab-n">
               <span className="dc-num">{l.num}</span>
@@ -229,11 +258,19 @@ export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; c
     ? [
         { r: 'Peças', v: String(pecasDaCotacao(c)) },
         ...(ajustes.length ? [{ r: 'Subtotal', v: reais(base) }] : []),
-        ...ajustes.map((a) => {
+        ...ajustes.map(a => {
           const v = valorDoAjuste(a, base)
-          const nome = a.descricao ? a.descricao.charAt(0).toUpperCase() + a.descricao.slice(1) : v < 0 ? 'Desconto' : 'Acréscimo'
+          const nome = a.descricao
+            ? a.descricao.charAt(0).toUpperCase() + a.descricao.slice(1)
+            : v < 0
+              ? 'Desconto'
+              : 'Acréscimo'
           return {
-            r: nome + (a.tipo === 'porcento' ? ' (' + Math.abs(a.valor).toLocaleString('pt-BR') + '%)' : ''),
+            r:
+              nome +
+              (a.tipo === 'porcento'
+                ? ' (' + Math.abs(a.valor).toLocaleString('pt-BR') + '%)'
+                : ''),
             v: (v < 0 ? '- ' : '+ ') + reais(Math.abs(v)),
           }
         }),
@@ -253,7 +290,7 @@ export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; c
         tabela(linhas)
       )}
       <div className="dc-tf" style={{ '--dc-c': celulas.length + 1 } as CSSProperties}>
-        {celulas.map((x) => (
+        {celulas.map(x => (
           <div key={x.r}>
             <Rotulo>{x.r}</Rotulo>
             <b>{x.v}</b>
@@ -279,24 +316,38 @@ export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; c
    ========================================================================== */
 type Condicao = { k: string; r: string; v: string; icone: IconeDoPacote }
 
-export function condicoesDaFolha(c: Cotacao, comValor: boolean, campos: readonly string[]): Condicao[] {
+export function condicoesDaFolha(
+  c: Cotacao,
+  comValor: boolean,
+  campos: readonly string[],
+): Condicao[] {
   const todas: Condicao[] = comValor
     ? [
         { k: 'prazo', r: 'Prazo de produção', v: c.informe.prazo, icone: Hourglass },
         { k: 'pagamento', r: 'Pagamento', v: c.informe.pagamento, icone: CreditCard },
         { k: 'entrega', r: 'Envio', v: c.informe.entrega, icone: Truck },
         { k: 'tabela', r: 'Tabela de preço', v: c.informe.tabelaDePreco, icone: Tag },
-        { k: 'vale', r: 'Validade desta proposta', v: dataCurta(c.validaAte), icone: CalendarBlank },
+        {
+          k: 'vale',
+          r: 'Validade desta proposta',
+          v: dataCurta(c.validaAte),
+          icone: CalendarBlank,
+        },
       ]
     : [
         { k: 'prazo', r: 'Prazo de produção', v: c.informe.prazo, icone: Hourglass },
         { k: 'entrega', r: 'Envio', v: c.informe.entrega, icone: Truck },
-        { k: 'envio', r: 'Data de envio', v: dataCurta(c.producao.dataDeEnvio), icone: CalendarBlank },
+        {
+          k: 'envio',
+          r: 'Data de envio',
+          v: dataCurta(c.producao.dataDeEnvio),
+          icone: CalendarBlank,
+        },
         { k: 'embalagem', r: 'Embalagem', v: c.producao.embalagem, icone: Package },
         { k: 'departamento', r: 'Departamento', v: c.producao.departamento, icone: Buildings },
       ]
-  const noTopo = new Set(camposDoCabecalho(c, comValor, campos).map((x) => x.k))
-  return todas.filter((x) => !noTopo.has(x.k) && x.v)
+  const noTopo = new Set(camposDoCabecalho(c, comValor, campos).map(x => x.k))
+  return todas.filter(x => !noTopo.has(x.k) && x.v)
 }
 
 export function CondicoesDaPaginaUm({
@@ -314,7 +365,7 @@ export function CondicoesDaPaginaUm({
     <section className="dc-n">
       <Titulo>Condições</Titulo>
       <div className="dc-cond" style={{ '--dc-c': itens.length } as CSSProperties}>
-        {itens.map((x) => (
+        {itens.map(x => (
           <div key={x.k}>
             <span className="dc-ic">
               <x.icone size={13} />
@@ -331,25 +382,74 @@ export function CondicoesDaPaginaUm({
 }
 
 /* ==========================================================================
-   4. INFORMES 2, "numerados": duas colunas numeradas, o número em negrito.
+   4. INFORMES 2, "numerados", com o TÍTULO DIVIDIDO (FOURTIME OS - 14, seção
+   4, e o protótipo, a4n/p1.js): com valor, duas colunas, "Sobre a produção"
+   à esquerda e "Termos" à direita, cada uma com o seu título e o risco até o
+   fim da coluna, e a numeração recomeçando em cada uma. Os subtítulos de
+   dentro não existem: o título é o subtítulo.
 
-   O padrão pede o título dividido "Sobre a produção | Termos". Hoje os
-   informes da cotação são UMA lista só, sem dizer de qual grupo cada um é, e
-   adivinhar pelo texto seria inventar. Então a lista corre em duas colunas,
-   numerada de ponta a ponta, sob um título só. O grupo de cada informe é a
-   pergunta que ficou para o Henrique (doc 12, item 41).
+   Com um grupo só, o título de seção é o de sempre ("Informes e termos"), e
+   a lista corre em duas colunas quando passa de três.
+
+   Sem valor, a folha é do galpão: só sai "Sobre a produção", sob "Informes à
+   produção". Termo de venda não é assunto de quem corta (A CONFIRMAR com o
+   Henrique: o protótipo tinha uma terceira lista, "Para a produção").
    ========================================================================== */
-export function InformesDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const lista = c.informes.filter((x) => x.noDocumento && x.texto.trim())
-  if (!lista.length) return null
+export function informesNaFolha(
+  c: Cotacao,
+  comValor: boolean,
+): { grupo: GrupoDoInforme; lista: Cotacao['informes'] }[] {
+  const sai = c.informes.filter(x => x.noDocumento && x.texto.trim())
+  return GRUPOS_DO_INFORME.filter(g => comValor || g === 'producao')
+    .map(grupo => ({ grupo, lista: sai.filter(x => x.grupo === grupo) }))
+    .filter(g => g.lista.length)
+}
+
+function ListaNumerada({ lista }: { lista: Cotacao['informes'] }) {
+  return (
+    <ol>
+      {lista.map((x, i) => (
+        <li key={x.id}>
+          <i className="dc-no">{i + 1}</i>
+          <span>{x.texto}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+export function InformesDaPaginaUm({
+  cotacao: c,
+  comValor,
+}: {
+  cotacao: Cotacao
+  comValor: boolean
+}) {
+  const grupos = informesNaFolha(c, comValor)
+  if (!grupos.length) return null
+  if (grupos.length === 2) {
+    return (
+      <section className="dc-n">
+        <div className="dc-inf dc-inf-grupos" style={{ '--dc-c': 2 } as CSSProperties}>
+          {grupos.map(g => (
+            <div key={g.grupo} data-grupo={g.grupo}>
+              <Titulo>{NOME_DO_GRUPO[g.grupo]}</Titulo>
+              <ListaNumerada lista={g.lista} />
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+  const lista = grupos[0].lista
   const metade = lista.length > 3 ? Math.ceil(lista.length / 2) : lista.length
-  const colunas = [lista.slice(0, metade), lista.slice(metade)].filter((l) => l.length)
+  const colunas = [lista.slice(0, metade), lista.slice(metade)].filter(l => l.length)
   return (
     <section className="dc-n">
       <Titulo>{comValor ? 'Informes e termos' : 'Informes à produção'}</Titulo>
       <div className="dc-inf" style={{ '--dc-c': colunas.length } as CSSProperties}>
         {colunas.map((col, k) => (
-          <ol key={k}>
+          <ol key={k} start={k ? metade + 1 : 1}>
             {col.map((x, i) => (
               <li key={x.id}>
                 <i className="dc-no">{(k ? metade : 0) + i + 1}</i>
@@ -375,8 +475,8 @@ export function AceiteDaPaginaUm({ cotacao: c }: { cotacao: Cotacao }) {
         <div className="dc-wa">
           <WhatsappLogo size={18} />
           <p>
-            Para aprovar, responda <b>SIM</b> no WhatsApp da Fourtime, citando a cotação <b>{c.numero}</b>. A
-            resposta vale como aprovação desta folha.
+            Para aprovar, responda <b>SIM</b> no WhatsApp da Fourtime, citando a cotação{' '}
+            <b>{c.numero}</b>. A resposta vale como aprovação desta folha.
           </p>
         </div>
         <div className="dc-caixa">

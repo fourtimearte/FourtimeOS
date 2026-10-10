@@ -20,6 +20,7 @@ import {
   aprovar,
   travada,
   VERSAO_DO_CFT,
+  informesEmBranco,
 } from './compilado/cotacao/tipos.js'
 import {
   paraCft,
@@ -170,6 +171,29 @@ ok('o pedido nao e inventado', daMemoria.producao.pedido === '')
 ok('o produto guardado continua la', daMemoria.produtos.length === 1)
 ok('o preco guardado continua la', daMemoria.produtos[0].precoBase === 52)
 ok('a lista de informes nunca chega indefinida', Array.isArray(daMemoria.informes))
+
+/* o degrau 4 para 5: cada informe ganha o grupo. Os termos da casa pelo
+   texto; o que alguem escreveu a mao vai para Sobre a producao; quem ja tem
+   grupo fica com o dele (11/10/2026) */
+console.log('os grupos dos informes')
+const comInformesV4 = arrumarCotacao(
+  { ...guardadaV3, versaoDoFormato: 4, informe: { entrega: 'CORREIOS' }, producao: { pedido: '', dataDeEnvio: '', departamento: '', embalagem: '', marcas: [], observacao: '' },
+    informes: [
+      { id: 'A', texto: 'Frete por conta do cliente, salvo combinação em contrário. Entregas em Goiânia.', noDocumento: true },
+      { id: 'B', texto: 'Garantia de 90 dias contra defeitos de fabricação, nos termos do CDC.', noDocumento: true },
+      { id: 'C', texto: 'Escrito a mão sobre a costura.', noDocumento: true },
+      { id: 'D', texto: 'Escrito a mão e já posto nos termos.', noDocumento: true, grupo: 'termos' },
+    ] },
+  4,
+  5,
+)
+const grupoDe = (id) => comInformesV4.informes.find((i) => i.id === id)?.grupo
+ok('o frete da casa vira termo', grupoDe('A') === 'termos')
+ok('a garantia da casa vira termo', grupoDe('B') === 'termos')
+ok('o informe escrito a mao vai para Sobre a producao', grupoDe('C') === 'producao')
+ok('quem ja tem grupo fica com o dele', grupoDe('D') === 'termos')
+ok('a cotacao nova nasce com os informes da casa agrupados', informesEmBranco().every((i) => i.grupo === 'producao' || i.grupo === 'termos') && informesEmBranco().some((i) => i.grupo === 'termos'))
+ok('grupo que nao existe vira Sobre a producao', arrumarCotacao({ ...guardadaV3, versaoDoFormato: VERSAO_DO_CFT, informes: [{ id: 'E', texto: 'x', noDocumento: true, grupo: 'outro' }] }, VERSAO_DO_CFT, 5).informes[0].grupo === 'producao')
 
 /* um registro JA no formato de hoje nao pode ser mexido pela escada */
 const deHoje = arrumarCotacao(

@@ -29,7 +29,11 @@ import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
       (CORREIOS, TRANSPORTADORA), e a ficha chamava de `envio` a DATA. Manter
       os dois com o mesmo nome no mesmo registro era a armadilha mais cara da
       fusão: um dia alguém leria a data e mostraria "CORREIOS" no lugar dela. */
-export const VERSAO_DO_CFT = 4
+export const VERSAO_DO_CFT = 5
+/*  5 (11/10/2026): cada informe ganhou o GRUPO, "Sobre a produção" ou
+      "Termos". A folha com valor mostra os dois em duas colunas, cada uma com
+      o seu título (FOURTIME OS - 14, seção 4, INFORMES 2); o editor monta os
+      dois grupos. O degrau 4 para 5 dá o grupo a quem não tem. */
 
 export type EstadoDaCotacao = 'rascunho' | 'enviada' | 'aprovada' | 'recusada' | 'vencida'
 
@@ -74,56 +78,80 @@ export type InformeDoDocumento = {
   id: string
   texto: string
   noDocumento: boolean
+  /** a coluna da folha: o que a produção precisa que o cliente saiba, ou os termos do negócio */
+  grupo: GrupoDoInforme
+}
+
+/* OS DOIS GRUPOS DOS INFORMES (pedido do Henrique, 10/10/2026, e o
+   protótipo da folha A4): "Sobre a produção" fala de como a peça é feita
+   (prazo, medida, cor); "Termos" é o combinado do negócio (validade,
+   pagamento, arte, frete, garantia). Na folha com valor são duas colunas; na
+   folha da produção só sai "Sobre a produção", porque termo de venda não é
+   assunto do galpão. */
+export type GrupoDoInforme = 'producao' | 'termos'
+export const GRUPOS_DO_INFORME: GrupoDoInforme[] = ['producao', 'termos']
+export const NOME_DO_GRUPO: Record<GrupoDoInforme, string> = {
+  producao: 'Sobre a produção',
+  termos: 'Termos',
 }
 
 /* Os nove informes que a Fourtime manda hoje. Eles nascem junto com a cotacao
    e cada uma leva a sua copia: mexer num informe de uma cotacao nao pode mexer
    na cotacao que ja foi enviada para outro cliente. */
-export const INFORMES_PADRAO: { texto: string; noDocumento: boolean }[] = [
+export const INFORMES_PADRAO: { texto: string; noDocumento: boolean; grupo: GrupoDoInforme }[] = [
   {
     texto:
       'O prazo de produção começa a contar a partir da aprovação da arte final e da confirmação do pagamento da entrada.',
     noDocumento: true,
+    grupo: 'producao',
   },
   {
     texto:
       'Esta cotação é válida até a data indicada no cabeçalho. Após o prazo, valores e disponibilidade de tecido podem ser revistos.',
     noDocumento: true,
+    grupo: 'termos',
   },
   {
     texto:
       'Pagamento: 50% na aprovação e 50% na retirada ou envio. Pedidos abaixo de R$ 500,00 são pagos integralmente na aprovação.',
     noDocumento: true,
+    grupo: 'termos',
   },
   {
     texto:
       'Tolerância de até 2 cm nas medidas de cada peça e variação de tonalidade entre lotes de tecido, conforme prática do setor têxtil.',
     noDocumento: true,
+    grupo: 'producao',
   },
   {
     texto:
       'A arte aprovada pelo cliente é de sua responsabilidade: nomes, números e textos aprovados com erro não geram refação sem custo.',
     noDocumento: true,
+    grupo: 'termos',
   },
   {
     texto:
       'Alterações de grade, cor, tecido ou arte depois da aprovação geram nova cotação e novo prazo de entrega.',
     noDocumento: true,
+    grupo: 'termos',
   },
   {
     texto:
       'Quantidade mínima por modelo: 10 peças. Tamanhos acima de GG têm acréscimo já incluído na tabela de valores.',
     noDocumento: true,
+    grupo: 'producao',
   },
   {
     texto:
       'Frete por conta do cliente, salvo combinação em contrário. Entregas em Goiânia e Aparecida de Goiânia por motoboy.',
     noDocumento: false,
+    grupo: 'termos',
   },
   {
     texto:
       'Garantia de 90 dias contra defeitos de fabricação, nos termos do Código de Defesa do Consumidor. Não cobre desgaste de uso ou lavagem inadequada.',
     noDocumento: true,
+    grupo: 'termos',
   },
 ]
 

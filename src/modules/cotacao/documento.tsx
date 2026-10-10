@@ -281,13 +281,36 @@ export function FolhaDaCotacao({
      que deita, a imagem que decodifica. Nada disso desenha a folha de novo,
      e sem o observador a coluna ficava passando da folha até o próximo
      desenho, que podia não vir. */
+  /* Um encaixe por quadro, no máximo, e só quando a ALTURA de algum módulo
+     mudou: trocar o zoom da folha (a janela que muda de tamanho) também
+     avisa o observador, e ali nada mudou no papel. */
   const nModulos = c.produtos.length
   useEffect(() => {
     const p = palco.current
     if (!p || typeof ResizeObserver === 'undefined') return
-    const olho = new ResizeObserver(() => encaixar())
+    const alturas = new WeakMap<Element, number>()
+    let pedido = 0
+    const olho = new ResizeObserver((mudas) => {
+      let mudou = false
+      for (const m of mudas) {
+        const h = (m.target as HTMLElement).offsetHeight
+        if (alturas.get(m.target) !== h) {
+          alturas.set(m.target, h)
+          mudou = true
+        }
+      }
+      if (mudou && !pedido) {
+        pedido = requestAnimationFrame(() => {
+          pedido = 0
+          encaixar()
+        })
+      }
+    })
     for (const m of p.querySelectorAll('.fl .dc-mod')) olho.observe(m)
-    return () => olho.disconnect()
+    return () => {
+      if (pedido) cancelAnimationFrame(pedido)
+      olho.disconnect()
+    }
   }, [encaixar, nModulos, folhas.length])
 
   return (

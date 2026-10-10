@@ -255,7 +255,9 @@ export function Palco({
     const medir = () => {
       const largura = caixa.current?.clientWidth ?? LARGURA_DA_FOLHA
       const e = Math.min(teto, largura / LARGURA_DA_FOLHA)
-      setEscala(e)
+      /* meio por cento não se vê, e cada troca de zoom refaz o layout da
+         folha inteira: troca pequena não vale o quadro */
+      setEscala((antes) => (Math.abs(antes - e) < 0.005 ? antes : e))
       if (zoom) return
       const h = pilha.current?.scrollHeight ?? 0
       setAltura(h ? Math.ceil(h * e) : undefined)
@@ -268,12 +270,24 @@ export function Palco({
          folha ele da zero e nada muda. */
       setRecuo(Math.max(0, Math.round((largura - LARGURA_DA_FOLHA * e) / 2)))
     }
+    /* ARRASTAR A BORDA DA JANELA NÃO PODE REFAZER A FOLHA A CADA QUADRO
+       (11/10/2026: o Henrique sentiu a janela travar ao redimensionar). Cada
+       escala nova é um layout inteiro de todas as folhas, uns 40 ms na folha
+       do orçamento, e o arrasto pede um por quadro. Agora a escala só muda
+       quando a janela para de mexer, 90 ms depois; durante o arrasto a folha
+       fica do tamanho de antes, presa no palco. */
+    let espera = 0
+    const pedir = () => {
+      window.clearTimeout(espera)
+      espera = window.setTimeout(medir, 90)
+    }
     medir()
-    window.addEventListener('resize', medir)
-    const obs = new ResizeObserver(medir)
+    window.addEventListener('resize', pedir)
+    const obs = new ResizeObserver(pedir)
     if (pilha.current) obs.observe(pilha.current)
     return () => {
-      window.removeEventListener('resize', medir)
+      window.clearTimeout(espera)
+      window.removeEventListener('resize', pedir)
       obs.disconnect()
     }
   }, [zoom, teto])

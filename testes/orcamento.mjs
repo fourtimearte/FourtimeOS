@@ -811,6 +811,14 @@ await secao(async () => {
   await pausa(pg, 600)
   conta(banco.gravados.some((g) => g.u === 'preset' && g.metodo === 'DELETE') && (await doTopo(pg)).map((x) => x[0]).join('|') === 'Cliente|Produção|Separação', 'apagar pergunta antes, tira do banco e do topo')
 
+  /* a janela que muda de tamanho: a folha acompanha quando ela para de mexer */
+  await pg.setViewportSize({ width: 1440, height: 900 })
+  await pausa(pg, 500)
+  const depois = await pg.evaluate(() => { const f = document.querySelector('.fl').getBoundingClientRect(), c = document.querySelector('.ct-pr-folhas').getBoundingClientRect(); return [Math.round(f.width), Math.round(c.width)] })
+  conta(depois[0] <= depois[1] && depois[0] >= depois[1] - 40 && await sobra(pg) <= 0, `depois de diminuir a janela a folha volta a caber na coluna (${depois.join(' em ')})`)
+  await pg.setViewportSize({ width: 1920, height: 1080 })
+  await pausa(pg, 300)
+
   /* na impressão, a barra some */
   await pg.evaluate(() => document.body.classList.add('imprimindo'))
   await pg.emulateMedia({ media: 'print' })

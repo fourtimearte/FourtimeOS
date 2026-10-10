@@ -1268,8 +1268,9 @@ dialog.sobrepoe {
   overflow: visible;
 }
 dialog.sobrepoe::backdrop {
+  /* sem desfoque: desfocar a tela inteira atrás do modal custa cada quadro
+     enquanto ele está aberto (o mesmo motivo do .topo, em casca.css) */
   background: var(--veu-escuro);
-  backdrop-filter: blur(3px);
   animation: a-surgir var(--t-base) var(--ease-out) both;
 }
 

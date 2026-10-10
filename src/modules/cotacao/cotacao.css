@@ -2780,3 +2780,438 @@ i.ct-cv-pe {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ==========================================================================
+   OS PRESETS DE IMPRESSÃO DA FOLHA A4 (pranchas 121 a 121c, segunda versão).
+   No topo, os presets salvos ao lado de Editar; na direita, a barra que edita
+   o escolhido, com o diagrama da folha. As folhas descem uma embaixo da outra
+   numa coluna larga (até 1000 px de papel na tela).
+   ========================================================================== */
+.ct-pr-topo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-4);
+  min-width: 0;
+  max-width: 100%;
+}
+.ct-pr-topo-rot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+/* no celular o segmentado rola por dentro em vez de empurrar a página para o
+   lado: o teto em vw é o que conta na largura mínima da fileira de ações */
+.ct-pr-topo-seg {
+  max-width: calc(100vw - var(--gutter) * 2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ct-pr-topo-seg button {
+  position: relative;
+  white-space: nowrap;
+}
+.ct-pr-topo-ponto {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.ct-pr-caixa {
+  container-type: inline-size;
+  container-name: ct-pr;
+  min-width: 0;
+}
+.ct-pr-tela {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: var(--sp-6);
+  align-items: start;
+}
+.ct-pr-folhas {
+  min-width: 0;
+}
+.ct-pr-barra {
+  position: sticky;
+  top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+@container ct-pr (max-width: 900px) {
+  .ct-pr-tela {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-pr-barra {
+    position: static;
+  }
+}
+@media print {
+  body.imprimindo .ct-pr-tela {
+    display: block;
+  }
+}
+
+.ct-pr-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-6);
+  padding: var(--re-4) var(--re-5) var(--re-4) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.ct-pr-cab .cartao-titulo {
+  margin: 0;
+  min-width: 0;
+}
+.ct-pr-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+  padding: var(--re-6) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.ct-pr-seg {
+  display: flex;
+  width: 100%;
+}
+.ct-pr-seg button {
+  flex: 1;
+}
+
+/* os valores: dois itens de escolher, salvos no preset */
+.ct-pr-valores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--re-4);
+}
+.ct-pr-v {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 52px;
+  padding: var(--re-3) var(--re-5);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+  color: var(--text-3);
+  text-align: left;
+  cursor: pointer;
+}
+.ct-pr-v span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.ct-pr-v b {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.ct-pr-v small {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.ct-pr-v.sim {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--text);
+}
+.ct-pr-v.sim b {
+  color: var(--text);
+}
+.ct-pr-v.sim small {
+  color: var(--text-2);
+}
+.ct-pr-v.mudou::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--re-2) * -1);
+  right: calc(var(--re-2) * -1);
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--warn);
+}
+.ct-pr-v:focus-visible,
+.ct-dg-b:focus-visible,
+.ct-dg-c:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* o diagrama da folha: uma página por vez, em tom normal; o que sai da folha
+   fica meio apagado e tracejado; o que mudou nesta impressão ganha o anel */
+.ct-dg-pag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  width: 284px;
+  max-width: 100%;
+  height: 402px;
+  margin: 0 auto;
+  padding: var(--re-7) var(--re-7) var(--re-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.ct-dg-b {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--re-1);
+  height: var(--h, 24px);
+  padding: var(--re-1) var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font: inherit;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--t-fast);
+}
+.ct-dg-b:hover:not(:disabled) {
+  border-color: var(--text-3);
+}
+.ct-dg-b:disabled {
+  cursor: default;
+}
+.ct-dg-n {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-1);
+  overflow: hidden;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ct-dg-l {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+}
+.ct-dg-l i {
+  display: block;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--border-2);
+}
+.ct-dg-l i:nth-child(2n) {
+  width: 72%;
+}
+.ct-dg-b.arte {
+  justify-content: center;
+  align-items: center;
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--surface-3) 6px 7px);
+}
+.ct-dg-b.fora,
+.ct-dg-c.fora {
+  opacity: 0.35;
+  border-style: dashed;
+}
+.ct-dg-b.fixo {
+  background: var(--surface-3);
+}
+.ct-dg-b em,
+.ct-dg-c em {
+  font-size: 8.5px;
+  font-style: normal;
+  color: var(--text-3);
+}
+.ct-dg-b.mudou,
+.ct-dg-c.mudou {
+  box-shadow: 0 0 0 2px var(--warn);
+}
+.ct-dg-ponto {
+  position: absolute;
+  top: calc(var(--re-2) * -1);
+  right: calc(var(--re-2) * -1);
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--warn);
+}
+.ct-dg-vao {
+  flex: 1;
+}
+.ct-dg-cab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  padding: var(--re-2) var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+}
+.ct-dg-cab-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ct-dg-marca {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+.ct-dg-num {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-1);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.ct-dg-campos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--re-1);
+}
+.ct-dg-c {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-1);
+  min-width: 0;
+  height: 18px;
+  padding: 0 var(--re-2);
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font: inherit;
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ct-dg-c span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-dg-c:disabled {
+  cursor: not-allowed;
+}
+.ct-dg-cab-rot {
+  font-size: 8.5px;
+  color: var(--text-3);
+}
+.ct-dg-dupla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--re-4);
+}
+.ct-dg-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.ct-dg-col.espelho {
+  pointer-events: none;
+  opacity: 0.55;
+}
+.ct-dg-col.espelho .ct-dg-b.fora {
+  opacity: 0.5;
+}
+.ct-pr-dica {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* o pé: igual ao preset, ou as mudanças desta impressão com os botões */
+.ct-pr-pe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+  padding: var(--re-6) var(--re-8);
+  background: var(--surface-2);
+}
+.ct-pr-igual {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-4);
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ct-pr-igual svg {
+  flex: none;
+  margin-top: var(--re-1);
+  color: var(--ok);
+}
+.ct-pr-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-4);
+  color: var(--warn);
+}
+.ct-pr-aviso svg {
+  flex: none;
+  margin-top: var(--re-1);
+}
+.ct-pr-aviso span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+}
+.ct-pr-aviso b {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ct-pr-aviso small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-pr-botoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}
+.ct-pr-cresce {
+  flex: 1;
+}
+.ct-pr-onde {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* o modal de salvar como novo e de renomear */
+.ct-pr-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-8);
+}
+.ct-pr-modal-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}

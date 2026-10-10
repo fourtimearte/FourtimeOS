@@ -43,9 +43,9 @@ mkdirSync(PASTA, { recursive: true })
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
 const abertos = new Set()
-async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false }) {
+async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false, semPresets = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
-  const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica })
+  const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica, semPresets })
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
@@ -433,6 +433,11 @@ async function irFolha(pg, rota = '/cotacao/c1/folha') {
   await pg.evaluate(() => document.fonts.ready)
   await pg.waitForTimeout(700)
 }
+/* 1 por página: o seletor LAYOUTS, que nasce em 2 e não é do preset */
+async function umPorPagina(pg) {
+  await pg.locator('.pagina-topo .sel', { hasText: 'LAYOUTS' }).locator('button.cb').click()
+  await pg.locator('.mn-item', { hasText: '1 por página' }).click()
+}
 const pagina1 = (pg) => pg.evaluate(() => {
   const f = document.querySelector('.fl')
   const t = (s) => [...f.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim())
@@ -467,10 +472,11 @@ await secao(async () => {
   conta(p.sobra <= 0 && p.corta === 0, `nada da página 1 passa da folha (sobra ${p.sobra}, ${p.corta} saindo de lado)`)
   const lados = await pg.evaluate(() => { const a = document.querySelector('.dc-wa').getBoundingClientRect(), b = document.querySelector('.dc-caixa').getBoundingClientRect(); return [a.top, a.height, b.top, b.height].map(Math.round) })
   conta(lados[0] === lados[2] && lados[1] === lados[3], 'o WhatsApp e a assinatura na mesma altura (' + lados.join(', ') + ')')
-  const risco = await pg.evaluate(() => { const c = document.querySelector('.dc-campos'); const s = getComputedStyle(c); return [s.borderTopWidth, s.borderBottomWidth] })
-  conta(risco.join() === '1px,1px', 'a faixa dos campos entre dois riscos de 1 px')
+  /* o palco amplia ou encolhe a folha com zoom: o risco de 1 px de papel vale 1 px vezes o zoom */
+  const risco = await pg.evaluate(() => { const c = document.querySelector('.dc-campos'); const s = getComputedStyle(c); const z = parseFloat(getComputedStyle(document.querySelector('.fl-pilha')).zoom) || 1; return [s.borderTopWidth, s.borderBottomWidth].map((x) => Math.round(parseFloat(x) * z * 10) / 10) })
+  conta(risco.every((x) => x >= 0.8 && x <= 1.3), 'a faixa dos campos entre dois riscos de 1 px (' + risco.join(', ') + ')')
   await foto(pg, 'folha-1440-com-valor')
-  await pg.getByRole('tab', { name: 'Sem valor' }).click()
+  await pg.getByRole('tab', { name: 'Produção' }).click()
   await pausa(pg, 700)
   const s = await pagina1(pg)
   conta(/Folha da produção\s*CO2026-0131/i.test(s.numg), 'sem valor: o título vira Folha da produção')
@@ -546,7 +552,7 @@ await secao(async () => {
   conta(l1.avi.length === 3 && /Ribana 1x1 · Preta · 0,05 m/.test(l1.avi[0]) && l2.avi.length === 1, 'aviamentos 11: a lista de conferência (' + l1.avi.length + ' e ' + l2.avi.length + ')')
   conta(l1.sm === '89 peças · R$ 5.536,00', 'soma 9: ' + l1.sm)
   await foto(pg, 'folha-1440-layouts')
-  await pg.getByRole('tab', { name: 'Sem valor' }).click()
+  await pg.getByRole('radio', { name: /Sem valor/ }).click()
   await pausa(pg, 800)
   const sv = await paginasDeLayout(pg)
   conta(sv.every((p) => p.mods.every((m) => !/R\$/.test(m.texto) && !m.precos.length && !m.vt.length)), 'sem valor: nenhum preço nas páginas de layout')
@@ -559,7 +565,7 @@ await secao(async () => {
 await secao(async () => {
   const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, rica: true })
   await irFolha(pg)
-  await pg.getByRole('tab', { name: 'Página inteira' }).click()
+  await umPorPagina(pg)
   await pausa(pg, 900)
   const pgs = await paginasDeLayout(pg)
   conta(pgs.length === 3 && pgs.every((p) => p.mods.length === 1), 'página inteira: um layout por página (' + pgs.length + ' páginas)')
@@ -571,12 +577,11 @@ await secao(async () => {
   const lado = await pg.evaluate(() => { const m = document.querySelector('.fl .dc-mod'); const fab = m.querySelector('.dc-mod-2 > div:first-child'), avi = m.querySelector('.dc-mod-2 > div:last-child'), obs = avi.querySelector('.dc-ne-obs'); const r = (e) => e.getBoundingClientRect(); return [r(fab).left < r(avi).left, Math.abs(r(fab).top - r(avi).top) < 1, !!obs, obs ? Math.abs(r(obs).bottom - r(avi).bottom) < 1.5 : false] })
   conta(lado.every(Boolean), 'embaixo, a fabricação à esquerda e os aviamentos à direita, com a observação no pé deles (' + lado + ')')
   conta(l1.faixa === 2 && pgs[1].mods[0].mural === 3, 'os destaques: a faixa na larga e a coluna na alta')
-  const guardado = await pg.evaluate(() => localStorage.getItem('ft.folha.modo'))
-  conta(guardado === 'cheia', 'a escolha fica guardada neste navegador (' + guardado + ')')
   await foto(pg, 'folha-1440-pagina-inteira')
   await pg.reload({ waitUntil: 'networkidle' })
   await pg.waitForSelector('.fl .dc-mod')
-  conta(await pg.evaluate(() => document.querySelectorAll('.fl .dc-dupla').length === 0 && document.querySelectorAll('.fl .dc-uma').length === 3), 'depois de recarregar, continua em página inteira')
+  await pausa(pg, 500)
+  conta(await pg.evaluate(() => document.querySelectorAll('.fl .dc-dupla').length === 2 && document.querySelectorAll('.fl .dc-uma').length === 0), 'depois de recarregar, volta a 2 por página: o padrão é sempre 2')
   conta(!erros.length, 'sem erro de JavaScript (página inteira): ' + erros.join(' | '))
 })
 
@@ -687,6 +692,174 @@ for (const tema of ['light', 'dark']) {
     await foto(pg, `folha-390-${tema}`)
     conta(!erros.length, `sem erro de JavaScript (folha 390 ${tema}): ` + erros.join(' | '))
   })
+}
+
+/* 10. OS PRESETS DE IMPRESSÃO (pranchas 121 a 121c, segunda versão) */
+const doTopo = (pg) => pg.evaluate(() => [...document.querySelectorAll('.ct-pr-topo-seg button')].map((b) => [b.innerText.trim(), b.classList.contains('ligado'), !!b.querySelector('.ct-pr-topo-ponto')]))
+const pe = (pg) => texto(pg, '.ct-pr-pe')
+const naFolha = (pg) => pg.evaluate(() => ({
+  campos: [...document.querySelectorAll('.fl .dc-cel .dc-r')].map((e) => e.textContent.trim()),
+  titulos: [...document.querySelectorAll('.fl .dc-t')].map((e) => e.textContent.trim().toUpperCase()),
+  cond: document.querySelectorAll('.fl .dc-cond').length, obs: document.querySelectorAll('.fl .dc-ne-obs').length,
+  artes: document.querySelectorAll('.fl .dc-arte').length, fab: document.querySelectorAll('.fl .dc-fb').length,
+  rs: /R\$/.test([...document.querySelectorAll('.fl')].map((f) => f.innerText).join(' ')), folhas: document.querySelectorAll('.fl').length,
+}))
+const bloco = (pg, k) => pg.locator(`.ct-dg-b[data-modulo="${k}"]`).first()
+const chip = (pg, k) => pg.locator(`.ct-dg-c[data-campo="${k}"]`)
+
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920, altura: 1080, rica: true })
+  await irFolha(pg)
+  await pausa(pg, 500)
+  const topo = await doTopo(pg)
+  conta(topo.map((x) => x[0]).join('|') === 'Cliente|Produção|Separação' && topo[0][1], 'no topo, os presets salvos num segmentado, com o Cliente escolhido: ' + topo.map((x) => x[0]).join(', '))
+  conta(/LAYOUTS\s*2 por página/i.test(await texto(pg, '.pagina-topo .sel')), 'o seletor LAYOUTS nasce em 2 por página')
+  const ordem = await pg.evaluate(() => [...document.querySelector('.pagina-topo > div:last-child').children].map((e) => e.className.split(' ')[0]))
+  conta(ordem[0] === 'ct-pr-topo' && ordem[1] === 'sel' && /btn/.test(ordem[2]) && /btn/.test(ordem[3]), 'presets, LAYOUTS, Editar e Imprimir, nessa ordem (' + ordem.join(', ') + ')')
+  const barra = await caixa(pg, '.ct-pr-barra')
+  const fls = await pg.evaluate(() => [...document.querySelectorAll('.fl')].map((f) => { const r = f.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width), Math.round(r.top)] }))
+  conta(barra && Math.round(barra.w) === 400 && fls.every((f) => f[0] + f[1] < barra.x), `a barra de 400 px à direita das folhas (${barra && Math.round(barra.w)})`)
+  conta(fls.length >= 3 && fls.every((f) => f[0] === fls[0][0]) && fls.every((f, i) => !i || f[2] > fls[i - 1][2]), 'as folhas uma embaixo da outra, na mesma coluna (' + fls.length + ')')
+  conta(fls.every((f) => f[1] >= 990 && f[1] <= 1001), `as folhas com uma largura boa: ${fls[0][1]} px na tela`)
+  conta(/Igual ao preset salvo/.test(await pe(pg)), 'o pé diz que a folha está igual ao preset')
+  conta(await pg.getByRole('radio', { name: /Com valor/ }).getAttribute('aria-checked') === 'true', 'o Cliente sai com valor')
+  conta(await chip(pg, 'cliente').getAttribute('aria-pressed') === 'true' && await chip(pg, 'telefone').getAttribute('aria-pressed') === 'false' && await pg.locator('.ct-dg-c').count() === 20, 'no diagrama, os 20 campos do cabeçalho, ligados os do preset')
+  await foto(pg, 'presets-1920-cliente', false)
+
+  /* tirar as condições e pôr o telefone: vale para esta impressão */
+  await bloco(pg, 'cond').click()
+  await chip(pg, 'telefone').click()
+  await pausa(pg, 600)
+  let f = await naFolha(pg)
+  conta(f.cond === 0 && f.campos.includes('Telefone'), 'apertar tira as condições da folha e põe o telefone no cabeçalho')
+  conta(await bloco(pg, 'cond').evaluate((e) => e.classList.contains('fora') && e.classList.contains('mudou') && getComputedStyle(e).opacity < 0.5), 'o bloco tirado fica meio apagado, com o anel de mudança')
+  conta(/2 mudanças nesta impressão/.test(await pe(pg)) && (await doTopo(pg))[0][2], 'o pé conta 2 mudanças, e o Cliente ganha o ponto âmbar no topo')
+  conta(await pg.locator('.ct-pr-pe').getByRole('button', { name: 'Salvar', exact: true }).count() === 0 && await pg.getByRole('button', { name: 'Salvar como novo' }).count() === 1, 'o preset da fábrica não tem Salvar: só Salvar como novo')
+  await foto(pg, 'presets-1920-mudado', false)
+  await pg.getByRole('button', { name: 'Desfazer: volta ao preset' }).click()
+  await pausa(pg, 600)
+  f = await naFolha(pg)
+  conta(f.cond === 1 && !f.campos.includes('Telefone') && /Igual ao preset salvo/.test(await pe(pg)), 'Desfazer volta a folha ao preset')
+
+  /* sem valor: os campos de dinheiro travam, e nada de R$ no papel */
+  await pg.getByRole('radio', { name: /Sem valor/ }).click()
+  await pausa(pg, 700)
+  f = await naFolha(pg)
+  conta(!f.rs && !f.campos.includes('Total') && !f.titulos.includes('APROVAÇÃO'), 'sem valor: nenhum R$, nem o total, nem o aceite')
+  conta(await chip(pg, 'total').isDisabled() && await bloco(pg, 'ace').isDisabled(), 'sem valor: o total e o aceite travam no diagrama')
+
+  /* a página de layout: tirar a observação e a arte */
+  await pg.getByRole('tab', { name: 'Página de layout' }).click()
+  await bloco(pg, 'obs').click()
+  await bloco(pg, 'arte').click()
+  await pausa(pg, 800)
+  f = await naFolha(pg)
+  conta(f.obs === 0 && f.artes === 0 && f.fab > 0, 'na página de layout, a observação e a arte saem de todos os layouts')
+  conta(await pg.locator('.ct-dg-col.espelho .ct-dg-b.fora').count() === 2, 'a coluna espelho repete o que saiu')
+  await foto(pg, 'presets-1920-layout', false)
+
+  /* salvar como novo: só eu, abre na folha do cliente */
+  await pg.getByRole('button', { name: 'Salvar como novo' }).click()
+  const modal = naModal(pg)
+  await modal.waitFor()
+  conta(/sem valor, 7 campos no cabeçalho, 9 módulos/.test(await modal.innerText()), 'o modal diz o que vai no preset: ' + (await modal.locator('.ct-pr-modal-sub').innerText()))
+  await modal.locator('input.entrada').fill('Arquivo')
+  await modal.getByRole('tab', { name: 'Só eu' }).click()
+  await modal.locator('.sel button.cb').click()
+  await pg.locator('.mn-item', { hasText: 'A folha do cliente' }).click()
+  await foto(pg, 'presets-1920-salvar-novo', false)
+  await modal.getByRole('button', { name: 'Salvar preset' }).click()
+  await pausa(pg, 600)
+  const post = banco.gravados.find((g) => g.u === 'preset' && g.metodo === 'POST')
+  conta(post && post.corpo.nome === 'Arquivo' && post.corpo.valor === false && post.corpo.equipe === false && post.corpo.abre === 'cliente' && post.corpo.fora.join() === 'arte,obs', 'o banco recebe o preset novo: ' + JSON.stringify(post?.corpo ?? null).slice(0, 160))
+  const t2 = await doTopo(pg)
+  conta(t2.map((x) => x[0]).join('|') === 'Cliente|Produção|Arquivo|Separação' && t2[2][1] && /Igual ao preset salvo/.test(await pe(pg)), 'o Arquivo entra no topo, escolhido e igual ao salvo')
+
+  /* o próprio preset tem Salvar */
+  await bloco(pg, 'obs').click()
+  await pg.locator('.ct-pr-pe').getByRole('button', { name: 'Salvar', exact: true }).click()
+  await pausa(pg, 500)
+  const patch = banco.gravados.find((g) => g.u === 'preset' && g.metodo === 'PATCH')
+  conta(patch && patch.corpo.fora.join() === 'arte' && /Igual ao preset salvo/.test(await pe(pg)), 'Salvar grava no preset escolhido, e o pé volta a igual')
+
+  /* a Separação, de equipe: o preset troca a folha inteira */
+  await pg.getByRole('tab', { name: 'Separação' }).click()
+  await pausa(pg, 800)
+  f = await naFolha(pg)
+  conta(!f.rs && f.cond === 0 && f.fab === 0 && f.campos.includes('Departamento'), 'escolher a Separação troca a folha: sem valor, sem condições, sem fabricação, com o departamento')
+
+  /* abre sozinho: o Arquivo foi marcado para a folha do cliente */
+  await pg.reload({ waitUntil: 'networkidle' })
+  await pg.waitForSelector('.fl .dc-topo')
+  await pausa(pg, 600)
+  conta((await doTopo(pg)).find((x) => x[1])?.[0] === 'Arquivo', 'recarregar a folha do cliente abre o Arquivo, que foi marcado para abrir ali')
+  conta(await pg.evaluate(() => document.querySelectorAll('.fl .dc-dupla').length > 0), 'e os layouts voltam a 2 por página, que não é do preset')
+
+  /* apagar: pelos três pontos, com a pergunta antes */
+  await pg.getByRole('button', { name: 'Renomear, duplicar ou apagar o preset' }).click()
+  await pg.locator('.mn-item', { hasText: 'Apagar o preset' }).click()
+  await naModal(pg).getByRole('button', { name: 'Apagar preset' }).click()
+  await pausa(pg, 600)
+  conta(banco.gravados.some((g) => g.u === 'preset' && g.metodo === 'DELETE') && (await doTopo(pg)).map((x) => x[0]).join('|') === 'Cliente|Produção|Separação', 'apagar pergunta antes, tira do banco e do topo')
+
+  /* na impressão, a barra some */
+  await pg.evaluate(() => document.body.classList.add('imprimindo'))
+  await pg.emulateMedia({ media: 'print' })
+  conta(await pg.evaluate(() => getComputedStyle(document.querySelector('.ct-pr-barra')).display) === 'none', 'na impressão a barra some e só as folhas saem')
+  await pg.emulateMedia({ media: 'screen' })
+  conta(!erros.length, 'sem erro de JavaScript (presets): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  /* a folha da produção abre o Produção; e ?preset= escolhe outro */
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, papel: 'vendedor' })
+  await irFolha(pg, '/cotacao/c1/producao')
+  conta((await doTopo(pg)).find((x) => x[1])?.[0] === 'Produção', 'a folha da produção abre o preset Produção')
+  await irFolha(pg, '/cotacao/c1/folha?preset=pr1')
+  conta((await doTopo(pg)).find((x) => x[1])?.[0] === 'Separação', 'com ?preset= a folha abre o preset pedido')
+  await bloco(pg, 'res').click()
+  await pausa(pg, 400)
+  conta(await pg.locator('.ct-pr-pe').getByRole('button', { name: 'Salvar', exact: true }).count() === 0 && /de outra pessoa/.test(await pe(pg)), 'o preset de equipe de outra pessoa não tem Salvar para o vendedor')
+  await pg.getByRole('button', { name: 'Renomear, duplicar ou apagar o preset' }).click()
+  await pausa(pg, 300)
+  const itens = await pg.locator('.mn-item:visible').allInnerTexts()
+  conta(itens.join('|') === 'Duplicar', 'nos três pontos, só Duplicar (' + itens.join(', ') + ')')
+  await foto(pg, 'presets-1440-vendedor', false)
+  conta(!erros.length, 'sem erro de JavaScript (presets do vendedor): ' + erros.join(' | '))
+})
+
+await secao(async () => {
+  /* antes da migração 059: os presets moram no navegador, e a barra avisa */
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, semPresets: true })
+  await irFolha(pg)
+  conta(/só neste navegador/.test(await pe(pg)), 'sem a tabela no banco, a barra diz que os presets ficam neste navegador')
+  await bloco(pg, 'inf').click()
+  await pg.getByRole('button', { name: 'Salvar como novo' }).click()
+  await naModal(pg).locator('input.entrada').fill('Sem informes')
+  await naModal(pg).getByRole('button', { name: 'Salvar preset' }).click()
+  await pausa(pg, 500)
+  const guardado = await pg.evaluate(() => JSON.parse(localStorage.getItem('ft.folha.presets') || '[]'))
+  conta(guardado.length === 1 && guardado[0].nome === 'Sem informes' && guardado[0].fora.join() === 'inf', 'o preset novo fica guardado no navegador')
+  await pg.reload({ waitUntil: 'networkidle' })
+  await pg.waitForSelector('.ct-pr-topo-seg')
+  await pausa(pg, 400)
+  conta((await doTopo(pg)).some((x) => x[0] === 'Sem informes'), 'e volta depois de recarregar')
+  conta(!erros.length, 'sem erro de JavaScript (presets no navegador): ' + erros.join(' | '))
+})
+
+for (const tema of ['light', 'dark']) {
+  for (const [largura, altura] of [[1440, 900], [820, 1180], [390, 844]]) {
+    await secao(async () => {
+      const { pg, erros } = await abrir(nav, { largura, altura, tema })
+      await irFolha(pg)
+      await pausa(pg, 400)
+      conta(await sobra(pg) <= 0, `presets ${largura} ${tema}: nada rola de lado (${await sobra(pg)})`)
+      const b = await caixa(pg, '.ct-pr-barra'), fl = await caixa(pg, '.fl')
+      if (largura < 1200) conta(b && fl && b.y > fl.y && b.w > fl.w - 2, `presets ${largura}: a barra desce para baixo das folhas, na largura toda`)
+      await foto(pg, `presets-${largura}-${tema}`, largura < 1200)
+      conta(!erros.length, `sem erro de JavaScript (presets ${largura} ${tema}): ` + erros.join(' | '))
+    })
+  }
 }
 
 await nav.close()

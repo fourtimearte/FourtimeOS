@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react'
 import { ArrowSquareOut } from '@phosphor-icons/react'
-import { Botao, Esqueleto, Modal, Segmentado, Vazio } from '@ds'
+import { Botao, Esqueleto, Modal, Seletor, Vazio } from '@ds'
+import { PRESET_PRODUCAO } from '@dominio/cotacao'
 import { FolhaDaCotacao } from './documento'
-import { OPCOES_DO_MODO, usarModoDaFolha } from './paginas-de-layout'
+import { usarModoDaFolha } from './paginas-de-layout'
+import { usarPresetsDaFolha } from './presets-da-folha'
 import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
@@ -39,10 +41,11 @@ export function ModalDaFolha({
 }) {
   const { cotacao: c, carregando, falha } = usarCotacao(cotacaoId)
 
-  /* NASCE SEM VALOR. Quem abre a folha a partir do PCP está conferindo o que
-     vai para o chão de fábrica, e preço não é assunto de lá. A regra está em
-     claude/REGRA-COM-VALOR-E-SEM-VALOR.md, e o botão continua trocando. */
-  const [comValor, setComValor] = useState(false)
+  /* NASCE NO PRESET PRODUÇÃO. Quem abre a folha a partir do PCP está
+     conferindo o que vai para o chão de fábrica, e preço não é assunto de lá.
+     A regra está em claude/REGRA-COM-VALOR-E-SEM-VALOR.md. Os outros presets
+     se escolhem aqui; editar um preset é na página de impressão. */
+  const presets = usarPresetsDaFolha('producao')
   const [modo, setModo] = usarModoDaFolha()
   const [paginas, setPaginas] = useState(0)
   const contar = useCallback((n: number) => setPaginas(n), [])
@@ -59,15 +62,22 @@ export function ModalDaFolha({
       }
       pe={
         <>
-          <Segmentado
-            valor={comValor ? 'com' : 'sem'}
-            opcoes={[
-              { valor: 'sem', rotulo: 'Sem valor' },
-              { valor: 'com', rotulo: 'Com valor' },
-            ]}
-            aoMudar={(v) => setComValor(v === 'com')}
+          <Seletor
+            rotulo="PRESET"
+            valor={presets.escolhido.id === PRESET_PRODUCAO.id ? '' : presets.escolhido.id}
+            vazio={PRESET_PRODUCAO.nome}
+            opcoes={presets.lista
+              .filter((x) => x.id !== PRESET_PRODUCAO.id)
+              .map((x) => ({ valor: x.id, rotulo: x.nome }))}
+            aoEscolher={(v) => presets.escolher(v || PRESET_PRODUCAO.id)}
           />
-          <Segmentado valor={modo} opcoes={OPCOES_DO_MODO} aoMudar={(v) => setModo(v === 'cheia' ? 'cheia' : 'dupla')} />
+          <Seletor
+            rotulo="LAYOUTS"
+            valor={modo === 'cheia' ? 'cheia' : ''}
+            vazio="2 por página"
+            opcoes={[{ valor: 'cheia', rotulo: '1 por página' }]}
+            aoEscolher={(v) => setModo(v === 'cheia' ? 'cheia' : 'dupla')}
+          />
           <Botao tom="contorno" onClick={aoFechar}>
             Fechar
           </Botao>
@@ -76,7 +86,11 @@ export function ModalDaFolha({
               tom="primario"
               onClick={() =>
                 window.open(
-                  '/cotacao/' + c.id + (comValor ? '/folha' : '/producao'),
+                  '/cotacao/' +
+                    c.id +
+                    (presets.vista.valor ? '/folha' : '/producao') +
+                    '?preset=' +
+                    encodeURIComponent(presets.escolhido.id),
                   '_blank',
                   'noopener',
                 )
@@ -98,7 +112,7 @@ export function ModalDaFolha({
         />
       ) : null}
 
-      {c ? <FolhaDaCotacao key={modo} cotacao={c} comValor={comValor} modo={modo} aoContar={contar} /> : null}
+      {c ? <FolhaDaCotacao key={modo} cotacao={c} vista={presets.vista} modo={modo} aoContar={contar} /> : null}
     </Modal>
   )
 }

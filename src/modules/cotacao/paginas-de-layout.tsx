@@ -38,33 +38,16 @@ import './documento.css'
 
 export type ModoDaFolha = 'dupla' | 'cheia'
 
-/* A ESCOLHA DA ARRUMAÇÃO (parte 7): dois por página ou página inteira. É
-   gosto de quem imprime, e não da cotação: fica guardada neste navegador e
-   vale para a página da folha e para o modal do PCP. */
-const CHAVE_DO_MODO = 'ft.folha.modo'
+/* A ESCOLHA DA ARRUMAÇÃO: dois por página ou um por página. Não é do
+   preset de impressão, por pedido do Henrique (11/10/2026): "independente do
+   preset eu decido se quero 1 por página ou 2 na hora da impressão, mas por
+   default vão ser sempre 2". Por isso ela nasce em 2 toda vez que a folha
+   abre, e não fica guardada (até a parte 9 ficava, no navegador). */
 export function usarModoDaFolha(): [ModoDaFolha, (m: ModoDaFolha) => void] {
-  const [modo, setModo] = useState<ModoDaFolha>(() => {
-    try {
-      return localStorage.getItem(CHAVE_DO_MODO) === 'cheia' ? 'cheia' : 'dupla'
-    } catch {
-      return 'dupla'
-    }
-  })
-  const mudar = (m: ModoDaFolha) => {
-    setModo(m)
-    try {
-      localStorage.setItem(CHAVE_DO_MODO, m)
-    } catch {
-      /* sem armazenamento, vale só nesta visita */
-    }
-  }
-  return [modo, mudar]
+  const [modo, setModo] = useState<ModoDaFolha>('dupla')
+  return [modo, setModo]
 }
 
-export const OPCOES_DO_MODO = [
-  { valor: 'dupla', rotulo: '2 por página' },
-  { valor: 'cheia', rotulo: 'Página inteira' },
-]
 
 /** a largura útil de uma coluna: 704 px de folha menos 24 de vão, ao meio */
 export const LARGURA_DA_COLUNA = 340
@@ -137,10 +120,10 @@ export function usarImagens(srcs: string[]): Record<string, Imagem> {
 const ehAlta = (im: Imagem | undefined) => !!im && im.a < 1
 
 /** a altura em que a imagem enche a largura (com a sobra da coluna dos destaques, na alta) */
-export function alturaNaturalDaArte(b: Bloco, im: Imagem | undefined, largura: number): number {
+export function alturaNaturalDaArte(b: Bloco, im: Imagem | undefined, largura: number, comDestaques = true): number {
   if (!b.imagem) return 0
   if (!im) return 240
-  const comColuna = ehAlta(im) && b.destaques.regs.length > 0
+  const comColuna = comDestaques && ehAlta(im) && b.destaques.regs.length > 0
   const util = comColuna ? largura * PARTE_DA_ARTE_ALTA - largura * 0.012 : largura
   return Math.round(util / im.a + MOLDURA_DA_ARTE)
 }
@@ -198,11 +181,24 @@ function Destaque({ b, im, i, c, dx = 0, dy = 0 }: { b: Bloco; im: Imagem; i: nu
   )
 }
 
-function ArteDoLayout({ b, im, altura, largura }: { b: Bloco; im: Imagem | undefined; altura: number; largura: number }) {
+function ArteDoLayout({
+  b,
+  im,
+  altura,
+  largura,
+  comDestaques = true,
+}: {
+  b: Bloco
+  im: Imagem | undefined
+  altura: number
+  largura: number
+  /** false quando o preset tirou os destaques: a arte alta volta a ser só a arte */
+  comDestaques?: boolean
+}) {
   if (!b.imagem) {
     return <div className="dc-arte dc-arte-vazia">sem arte neste layout</div>
   }
-  const regs = b.destaques.regs
+  const regs = comDestaques ? b.destaques.regs : []
   const H = altura - MOLDURA_DA_ARTE
   if (im && ehAlta(im) && regs.length) {
     const W = largura
@@ -619,6 +615,7 @@ export function ModuloNaFolha({
   construcao,
   imagem,
   alturaDaArte,
+  fora = [],
 }: {
   produto: ProdutoCotado
   comValor: boolean
@@ -626,11 +623,14 @@ export function ModuloNaFolha({
   construcao: ConstrucaoDoLayout | null | undefined
   imagem: Imagem | undefined
   alturaDaArte: number
+  /** os módulos que o preset tirou da folha (arte, dest, grade, ficha, fab, avi, obs, soma) */
+  fora?: readonly string[]
 }) {
   const b = p.bloco
+  const tem = (k: string) => !fora.includes(k)
   const largura = modo === 'dupla' ? LARGURA_DA_COLUNA : LARGURA_DA_PAGINA
   const kit = construcao?.tipo === 'kit'
-  const soma = (
+  const soma = !tem('soma') ? null : (
     <p className="dc-sm">
       {pecas(pecasDoProduto(p))}
       {comValor ? (
@@ -646,20 +646,22 @@ export function ModuloNaFolha({
     return (
       <article className="dc-n dc-mod" data-id={b.id}>
         <CabecalhoDoLayout b={b} kit={false} />
-        {b.imagem ? <ArteDoLayout b={b} im={imagem} altura={alturaDaArte} largura={largura} /> : null}
-        <Observacao b={b} />
+        {b.imagem && tem('arte') ? <ArteDoLayout b={b} im={imagem} altura={alturaDaArte} largura={largura} comDestaques={tem('dest')} /> : null}
+        {tem('obs') ? <Observacao b={b} /> : null}
       </article>
     )
   }
 
   const cab = <CabecalhoDoLayout b={b} kit={kit} />
-  const arte = <ArteDoLayout b={b} im={imagem} altura={alturaDaArte} largura={largura} />
-  const dest = <FaixaDeDestaques b={b} im={imagem} largura={largura} modo={modo} />
-  const grade = <GradeVendida p={p} comValor={comValor} modo={modo} />
-  const ficha = <FichaDoLayoutNaFolha b={b} modo={modo} />
-  const fab = construcao ? <Fabricacao c={construcao} kit={kit} /> : null
-  const avi = construcao ? <Aviamentos c={construcao} /> : null
-  const obs = <Observacao b={b} />
+  const arte = tem('arte') ? (
+    <ArteDoLayout b={b} im={imagem} altura={alturaDaArte} largura={largura} comDestaques={tem('dest')} />
+  ) : null
+  const dest = tem('dest') ? <FaixaDeDestaques b={b} im={imagem} largura={largura} modo={modo} /> : null
+  const grade = tem('grade') ? <GradeVendida p={p} comValor={comValor} modo={modo} /> : null
+  const ficha = tem('ficha') ? <FichaDoLayoutNaFolha b={b} modo={modo} /> : null
+  const fab = construcao && tem('fab') ? <Fabricacao c={construcao} kit={kit} /> : null
+  const avi = construcao && tem('avi') ? <Aviamentos c={construcao} /> : null
+  const obs = tem('obs') ? <Observacao b={b} /> : null
 
   if (modo === 'cheia') {
     return (
@@ -669,13 +671,15 @@ export function ModuloNaFolha({
         {dest}
         {grade}
         {ficha}
-        <div className="dc-mod-2">
-          <div>{fab}</div>
-          <div>
-            {avi}
-            {obs}
+        {fab || avi || obs ? (
+          <div className="dc-mod-2">
+            <div>{fab}</div>
+            <div>
+              {avi}
+              {obs}
+            </div>
           </div>
-        </div>
+        ) : null}
         {soma}
       </article>
     )

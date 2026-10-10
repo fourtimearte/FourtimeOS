@@ -3,9 +3,11 @@ import { Buildings, CalendarBlank, CreditCard, Hourglass, Package, Tag, Truck, W
 import { LogoFourtime, type IconeDoPacote } from '@ds'
 import { EMPRESA } from '@dominio/empresa'
 import {
+  CAMPOS_DO_CABECALHO,
   NOME_DO_ESTADO_DA_COTACAO,
   pecasDaCotacao,
   pecasDoProduto,
+  soComValor,
   subtotal,
   totalDaCotacao,
   totalDoProduto,
@@ -54,10 +56,15 @@ const pedidoDe = (c: Cotacao) => c.aprovacao?.pedido || c.producao.pedido
 /* ==========================================================================
    OS CAMPOS DO CABEÇALHO, na ordem da seção 2 do 14.
 
-   Com valor: cliente, CPF ou CNPJ, cotação, pedido, vendedor, contato,
-   situação, prazo, pagamento e total. Sem valor: cliente, CPF ou CNPJ,
-   cotação, pedido, vendedor, contato, departamento, embalagem, data de envio e
-   peças. A cotação sai da faixa e vira o número grande à direita.
+   QUEM ESCOLHE É O PRESET (presets de impressão, 11/10/2026): o catálogo tem
+   vinte campos, e cada preset diz quais saem. Os dois da fábrica repetem o
+   padrão de antes: com valor, cliente, CPF ou CNPJ, pedido, vendedor,
+   contato, situação, prazo, pagamento e total; sem valor, cliente, CPF ou
+   CNPJ, pedido, vendedor, contato, departamento, embalagem, data de envio e
+   peças. A cotação não é campo: ela é o número grande à direita, e sai sempre.
+
+   Campo de dinheiro (vale até, pagamento, tabela e total) não sai na folha
+   sem valor, mesmo marcado: quem corta não lê preço.
 
    O pedido só aparece na folha com valor depois que existe: antes do sim do
    cliente ele não tem número, e um "-" ali parece esquecimento. Na folha da
@@ -66,32 +73,34 @@ const pedidoDe = (c: Cotacao) => c.aprovacao?.pedido || c.producao.pedido
    ========================================================================== */
 export type CampoDaFolha = { k: string; r: string; v: string; forte?: boolean }
 
-export function camposDoCabecalho(c: Cotacao, comValor: boolean): CampoDaFolha[] {
+export function camposDoCabecalho(c: Cotacao, comValor: boolean, campos: readonly string[]): CampoDaFolha[] {
   const pd = pedidoDe(c)
-  if (comValor) {
-    return [
-      { k: 'cliente', r: 'Cliente', v: c.cliente.nome },
-      { k: 'cnpj', r: 'CPF ou CNPJ', v: c.cliente.documento },
-      ...(pd ? [{ k: 'pd', r: 'Pedido', v: pd }] : []),
-      { k: 'vendedor', r: 'Vendedor', v: c.vendedor },
-      { k: 'contato', r: 'Contato', v: c.cliente.contato },
-      { k: 'situacao', r: 'Situação', v: NOME_DO_ESTADO_DA_COTACAO[c.estado] },
-      { k: 'prazo', r: 'Prazo', v: c.informe.prazo },
-      { k: 'pagamento', r: 'Pagamento', v: c.informe.pagamento },
-      { k: 'total', r: 'Total', v: reais(totalDaCotacao(c)), forte: true },
-    ]
+  const cidade = [c.cliente.cidade, c.cliente.uf].filter(Boolean).join('/')
+  const valor: Record<string, Omit<CampoDaFolha, 'k' | 'r'>> = {
+    cliente: { v: c.cliente.nome },
+    cnpj: { v: c.cliente.documento },
+    pd: { v: pd },
+    criada: { v: dataCurta(c.criadaEm) },
+    vendedor: { v: c.vendedor },
+    contato: { v: c.cliente.contato },
+    telefone: { v: c.cliente.telefone },
+    email: { v: c.cliente.email },
+    cidade: { v: cidade },
+    vale: { v: dataCurta(c.validaAte) },
+    situacao: { v: NOME_DO_ESTADO_DA_COTACAO[c.estado] },
+    prazo: { v: c.informe.prazo },
+    pagamento: { v: c.informe.pagamento },
+    entrega: { v: c.informe.entrega },
+    tabela: { v: c.informe.tabelaDePreco },
+    departamento: { v: c.producao.departamento },
+    embalagem: { v: c.producao.embalagem },
+    envio: { v: dataCurta(c.producao.dataDeEnvio) },
+    pecas: { v: String(pecasDaCotacao(c)), forte: true },
+    total: { v: reais(totalDaCotacao(c)), forte: true },
   }
-  return [
-    { k: 'cliente', r: 'Cliente', v: c.cliente.nome },
-    { k: 'cnpj', r: 'CPF ou CNPJ', v: c.cliente.documento },
-    { k: 'pd', r: 'Pedido', v: pd },
-    { k: 'vendedor', r: 'Vendedor', v: c.vendedor },
-    { k: 'contato', r: 'Contato', v: c.cliente.contato },
-    { k: 'departamento', r: 'Departamento', v: c.producao.departamento },
-    { k: 'embalagem', r: 'Embalagem', v: c.producao.embalagem },
-    { k: 'envio', r: 'Data de envio', v: dataCurta(c.producao.dataDeEnvio) },
-    { k: 'pecas', r: 'Peças', v: String(pecasDaCotacao(c)), forte: true },
-  ]
+  return CAMPOS_DO_CABECALHO.filter(
+    (x) => campos.includes(x.k) && (comValor || !soComValor(x.k)) && !(x.k === 'pd' && comValor && !pd),
+  ).map((x) => ({ k: x.k, r: x.r, ...valor[x.k] }))
 }
 
 export function Rotulo({ children }: { children: string }) {
@@ -110,8 +119,16 @@ export function Titulo({ children }: { children: string }) {
    1. CABEÇALHO 4, "número grande à direita": a marca à esquerda e o número da
    cotação grande à direita; os outros campos numa faixa entre dois riscos.
    ========================================================================== */
-export function CabecalhoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const campos = camposDoCabecalho(c, comValor)
+export function CabecalhoDaPaginaUm({
+  cotacao: c,
+  comValor,
+  campos: escolhidos,
+}: {
+  cotacao: Cotacao
+  comValor: boolean
+  campos: readonly string[]
+}) {
+  const campos = camposDoCabecalho(c, comValor, escolhidos)
   return (
     <div className="dc-n">
       <div className="dc-topo">
@@ -125,6 +142,7 @@ export function CabecalhoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao
           {c.criadaEm ? <small>criada em {dataCurta(c.criadaEm)}</small> : null}
         </div>
       </div>
+      {campos.length ? (
       <div className="dc-campos" style={{ '--dc-c': colunasDe(campos.length, 5) } as CSSProperties}>
         {campos.map((x) => (
           <div key={x.k} className={x.forte ? 'dc-cel dc-cel-forte' : 'dc-cel'}>
@@ -133,6 +151,7 @@ export function CabecalhoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao
           </div>
         ))}
       </div>
+      ) : null}
     </div>
   )
 }
@@ -256,11 +275,11 @@ export function ResumoDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; c
    REGRA DE SISTEMA (seção 2 do 14): as condições não repetem o que o
    cabeçalho já mostra, e somem se nada sobrar. Com o prazo e o pagamento no
    cabeçalho, sobram o envio, a tabela e a validade; na folha da produção,
-   sobram o prazo e o envio.
+   sobram o prazo e o envio. Quem diz o que o cabeçalho mostra é o preset.
    ========================================================================== */
 type Condicao = { k: string; r: string; v: string; icone: IconeDoPacote }
 
-export function condicoesDaFolha(c: Cotacao, comValor: boolean): Condicao[] {
+export function condicoesDaFolha(c: Cotacao, comValor: boolean, campos: readonly string[]): Condicao[] {
   const todas: Condicao[] = comValor
     ? [
         { k: 'prazo', r: 'Prazo de produção', v: c.informe.prazo, icone: Hourglass },
@@ -276,12 +295,20 @@ export function condicoesDaFolha(c: Cotacao, comValor: boolean): Condicao[] {
         { k: 'embalagem', r: 'Embalagem', v: c.producao.embalagem, icone: Package },
         { k: 'departamento', r: 'Departamento', v: c.producao.departamento, icone: Buildings },
       ]
-  const noTopo = new Set(camposDoCabecalho(c, comValor).map((x) => x.k))
+  const noTopo = new Set(camposDoCabecalho(c, comValor, campos).map((x) => x.k))
   return todas.filter((x) => !noTopo.has(x.k) && x.v)
 }
 
-export function CondicoesDaPaginaUm({ cotacao: c, comValor }: { cotacao: Cotacao; comValor: boolean }) {
-  const itens = condicoesDaFolha(c, comValor)
+export function CondicoesDaPaginaUm({
+  cotacao: c,
+  comValor,
+  campos,
+}: {
+  cotacao: Cotacao
+  comValor: boolean
+  campos: readonly string[]
+}) {
+  const itens = condicoesDaFolha(c, comValor, campos)
   if (!itens.length) return null
   return (
     <section className="dc-n">

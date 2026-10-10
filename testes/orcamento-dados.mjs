@@ -90,7 +90,7 @@ const NOMES = ['Atlético Exemplo', 'Academia Exemplo', 'Auto Peças Exemplo', '
 /* rica: a CO2026-0131 com o que a folha das páginas de layout precisa
    mostrar: destaques na arte larga (L-01) e na alta (L-02), Silk e Bordado
    sem cor ao lado da Sublimação, e uma grade com infantil no L-03 */
-export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false } = {}) {
+export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false, semPresets = false } = {}) {
   /* a lista mistura os estados para a página do orçamento (parte 8): três
      enviadas (uma vence em 2 dias, outra amanhã), uma recusada, um rascunho
      mexido ontem e uma aprovada, que virou o pedido PD004410 */
@@ -173,7 +173,37 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     { referencia_id: 'r090', material_id: 'm4', nome: 'Elástico de 30 mm', quantidade: 0.8, unidade: 'm' },
   ]
 
+  /* os presets de impressão salvos (migração 059): um de equipe que outra
+     pessoa salvou, e o banco grava o que a tela mandar */
+  const presets = semPresets ? null : [
+    { id: 'pr1', dono: '9', nome: 'Separação', equipe: true, valor: false, campos: ['cliente', 'cnpj', 'pd', 'vendedor', 'contato', 'departamento', 'embalagem', 'envio', 'pecas'], fora: ['cond', 'inf', 'dest', 'fab', 'obs'], abre: '', alterado_em: '2026-10-09T10:00:00Z' },
+  ]
+  let nPreset = 1
+
   function responder(metodo, u, corpo) {
+    if (u.includes('/rest/v1/preset_de_impressao')) {
+      if (!presets) return { status: 404, corpo: { code: 'PGRST205', message: "Could not find the table 'public.preset_de_impressao' in the schema cache" } }
+      const so = (u.match(/id=eq\.([^&]+)/) || [])[1]
+      if (metodo === 'GET') return { status: 200, corpo: presets }
+      if (metodo === 'POST') {
+        const novo = { ...corpo, id: 'pr-novo-' + ++nPreset, dono: '1', alterado_em: '2026-10-10T16:00:00Z' }
+        presets.push(novo); gravados.push({ metodo, u: 'preset', corpo })
+        return { status: 201, corpo: [novo] }
+      }
+      if (metodo === 'PATCH') {
+        const i = presets.findIndex((x) => x.id === so)
+        gravados.push({ metodo, u: 'preset', id: so, corpo })
+        if (i < 0 || presets[i].dono !== '1') return { status: 200, corpo: [] }
+        presets[i] = { ...presets[i], ...corpo }
+        return { status: 200, corpo: [presets[i]] }
+      }
+      if (metodo === 'DELETE') {
+        const i = presets.findIndex((x) => x.id === so)
+        if (i >= 0 && presets[i].dono === '1') presets.splice(i, 1)
+        gravados.push({ metodo, u: 'preset', id: so })
+        return { status: 204, corpo: null }
+      }
+    }
     if (u.includes('/rest/v1/referencia_na_ficha') && u.includes('cod=eq.')) {
       const cod = u.split('cod=eq.')[1].split('&')[0]
       return { status: 200, corpo: REFS.filter((r) => r.cod === cod) }
@@ -211,5 +241,5 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }
     return null
   }
-  return { responder, gravados, corpos }
+  return { responder, gravados, corpos, presets }
 }

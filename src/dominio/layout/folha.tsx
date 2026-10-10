@@ -226,7 +226,16 @@ export function CabecalhoDaFolha({ sub, celulas }: { sub: string; celulas: Celul
    ainda é escolha de quem chama: a ficha técnica impressa mede a folha com a
    compressão antiga, que mistura medidas da tela e do papel, e continua no
    transform até ser refeita. */
-export function Palco({ children, zoom = false }: { children: ReactNode; zoom?: boolean }) {
+export function Palco({
+  children,
+  zoom = false,
+  teto = 1,
+}: {
+  children: ReactNode
+  zoom?: boolean
+  /** até quanto a folha amplia na tela quando sobra largura (1: nunca passa do tamanho real) */
+  teto?: number
+}) {
   const caixa = useRef<HTMLDivElement>(null)
   const pilha = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
@@ -245,7 +254,7 @@ export function Palco({ children, zoom = false }: { children: ReactNode; zoom?: 
   useEffect(() => {
     const medir = () => {
       const largura = caixa.current?.clientWidth ?? LARGURA_DA_FOLHA
-      const e = Math.min(1, largura / LARGURA_DA_FOLHA)
+      const e = Math.min(teto, largura / LARGURA_DA_FOLHA)
       setEscala(e)
       if (zoom) return
       const h = pilha.current?.scrollHeight ?? 0
@@ -267,7 +276,7 @@ export function Palco({ children, zoom = false }: { children: ReactNode; zoom?: 
       window.removeEventListener('resize', medir)
       obs.disconnect()
     }
-  }, [zoom])
+  }, [zoom, teto])
 
   if (zoom) {
     return (

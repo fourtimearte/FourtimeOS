@@ -643,7 +643,7 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
           <Secao
             id="sobreposicoes"
             titulo="Modal e folha lateral"
-            texto="As duas usam a camada do topo do navegador, acima de qualquer corte e de qualquer empilhamento. Foco preso dentro, Esc para sair, clique no escuro fecha. No celular as duas viram folha de baixo, que é onde o polegar alcança."
+            texto="As duas usam a camada do topo do navegador, acima de qualquer corte e de qualquer empilhamento. Foco preso dentro, Esc para sair, clique no escuro fecha (menos no modal de tela, que guarda um rascunho). No celular as duas viram folha de baixo, que é onde o polegar alcança."
           >
             <div className="kit-bancada">
               <SobreposicaoDemo />
@@ -847,6 +847,7 @@ function MarcacaoDemo() {
 function SegmentadoDemo() {
   const [visao, setVisao] = useState<'lista' | 'grade' | 'kanban'>('lista')
   const [periodo, setPeriodo] = useState<'7' | '30' | 'tudo'>('30')
+  const [aba, setAba] = useState<'aberto' | 'aprovadas' | 'perdidas' | 'todas'>('aberto')
   return (
     <>
       <Segmentado
@@ -865,6 +866,19 @@ function SegmentadoDemo() {
           { valor: '7', rotulo: '7 dias' },
           { valor: '30', rotulo: '30 dias' },
           { valor: 'tudo', rotulo: 'Tudo' },
+        ]}
+      />
+      {/* COMO ABAS DE COLUNA, com a conta de cada uma em miúdo (a lista do
+          orçamento e a árvore das Fichas técnicas): o rótulo aceita mais que
+          texto, e a conta é um <small> dentro do botão */}
+      <Segmentado
+        valor={aba}
+        aoMudar={setAba}
+        opcoes={[
+          { valor: 'aberto', rotulo: <>Em aberto <small className="kit-conta">4</small></> },
+          { valor: 'aprovadas', rotulo: <>Aprovadas <small className="kit-conta">1</small></> },
+          { valor: 'perdidas', rotulo: <>Perdidas <small className="kit-conta">1</small></> },
+          { valor: 'todas', rotulo: <>Todas <small className="kit-conta">6</small></> },
         ]}
       />
     </>
@@ -947,6 +961,7 @@ function SobreposicaoDemo() {
   const [modal, setModal] = useState(false)
   const [gaveta, setGaveta] = useState(false)
   const [largo, setLargo] = useState(false)
+  const [tela, setTela] = useState(false)
   return (
     <>
       <Botao tom="forte" onClick={() => setModal(true)}>
@@ -955,6 +970,37 @@ function SobreposicaoDemo() {
       <Botao tom="contorno" onClick={() => setLargo(true)}>
         Abrir modal largo
       </Botao>
+      <Botao tom="contorno" onClick={() => setTela(true)}>
+        Abrir modal de tela
+      </Botao>
+
+      {/* A VARIANTE DE TELA (decisão 161): quase a tela inteira, até 1760 px,
+          para o rascunho que se preenche com calma, como os Dados do pedido
+          do editor de orçamento. Clicar no escuro NÃO fecha (fechaFora={false}):
+          um clique de raspão jogava fora o que foi digitado. Esc, o X, o
+          Cancelar e o Concluir fecham. */}
+      <Modal
+        aberto={tela}
+        tela
+        fechaFora={false}
+        aoFechar={() => setTela(false)}
+        titulo="Modal de tela, que não fecha no clique fora"
+        pe={
+          <>
+            <Botao tom="contorno" onClick={() => setTela(false)}>
+              Cancelar
+            </Botao>
+            <Botao tom="primario" onClick={() => setTela(false)}>
+              Concluir
+            </Botao>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-2)' }}>
+          Ocupa a tela menos 24 px de cada lado. O foco nasce no X. Clique no escuro em volta: nada
+          acontece. Use Esc, o X, o Cancelar ou o Concluir.
+        </p>
+      </Modal>
       <Botao tom="contorno" onClick={() => setGaveta(true)}>
         Abrir folha lateral
       </Botao>

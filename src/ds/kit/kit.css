@@ -408,3 +408,11 @@
 .kit-lista-linha.tinta small {
   font-size: 12px;
 }
+
+/* a conta miúda dentro de uma aba do segmentado */
+.kit-conta {
+  margin-left: var(--re-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}

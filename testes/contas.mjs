@@ -28,7 +28,9 @@ import {
   arrumarCotacao,
   ArquivoRecusado,
 } from './compilado/cotacao/arquivo.js'
-import { blocoEmBranco } from './compilado/layout/bloco.js'
+import { blocoEmBranco, migrarBloco, VERSAO_DO_BLOCO } from './compilado/layout/bloco.js'
+import { arranjo, empacotar, faixaDeDestaques, fileiraDeDestaques, colunaDeDestaques, formato, imagemDe, limparMural, MAX_DESTAQUES } from './compilado/layout/destaques.js'
+import { etiquetaDoDesign, comEtiqueta } from './compilado/layout/etiqueta.js'
 import { fatiasDaCotacao, numerosDaFabrica } from './compilado/cotacao/fabrica.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
 
@@ -242,6 +244,63 @@ ok('cotacao sem tecnica de producao nao tem o que liberar',
 const dinheiro = numerosDaFabrica(comProdutos(produto(1, { M: 12 }, ['subli', 'bordado'])))
 ok('um layout com sublimacao e um layout de sublimacao, mesmo com bordado junto',
   dinheiro.pecasSubli === 12 && dinheiro.pecasPersonalizadas === 0)
+
+
+/* --- o mural dos destaques (decisao 164) e o bloco 6 --- */
+console.log('destaques')
+const larga = imagemDe(2800, 2400), alta = imagemDe(2800, 3299)
+const R = (x, y, w, h) => ({ x, y, w, h, z: 1, dx: 0, dy: 0 })
+const erroDeFormato = (caixas, regs, im) => Math.max(...caixas.map((c, i) => Math.abs(c.w / c.h - formato(regs[i], im)) / formato(regs[i], im)))
+/* o caso dele: dois deitados e dois em pe. Os deitados primeiro, um embaixo do outro; os em pe embaixo, lado a lado */
+const caso = [R(0.6, 0.55, 0.2, 0.35), R(0.1, 0.1, 0.4, 0.1), R(0.1, 0.5, 0.15, 0.4), R(0.5, 0.3, 0.4, 0.12)]
+const ed = arranjo(650, 511, alta, caso)
+const [p1, d1, p2, d2] = ed.thumbs
+ok('no editor, cada destaque com o formato da regiao (erro < 3%)', erroDeFormato(ed.thumbs, caso, alta) < 0.03)
+ok('deitados primeiro, um embaixo do outro', d1.y + d1.h <= d2.y + 1 && d2.y + d2.h <= p1.y + 1)
+ok('em pe embaixo, lado a lado', Math.abs(p1.y - p2.y) <= 1 && p1.x + p1.w <= p2.x + 1)
+ok('a arte desliza para a esquerda', ed.arte.x === 0)
+{ const [a, b] = empacotar(600, 400, [4, 0.25], 6, false, [1, -1]).caixas
+  ok('fileira nunca mistura deitado com em pe', a.y + a.h <= b.y + 0.5) }
+ok('nada sai da caixa do editor', ed.thumbs.every((t) => t.x >= ed.arte.w - 0.5 && t.x + t.w <= 650.5 && t.y >= -0.5 && t.y + t.h <= 511.5))
+const fx = faixaDeDestaques(340, larga, caso, 140)
+ok('na folha, a faixa mantem o formato e cabe na altura', erroDeFormato(fx.thumbs, caso, larga) < 0.03 && fx.H <= 140.5)
+const fi = fileiraDeDestaques(340, larga, caso, 4, 90)
+ok('a fileira so (estilo 14): mesma altura, formato certo, dentro da largura', fi.thumbs.every((t) => Math.abs(t.h - fi.H) < 0.01) && erroDeFormato(fi.thumbs, caso, larga) < 0.03 && fi.thumbs.at(-1).x + fi.thumbs.at(-1).w <= 340.5)
+const co = colunaDeDestaques(90, alta, caso, 4)
+ok('a coluna (arte alta): mesma largura, formato certo', co.thumbs.every((t) => t.w === 90) && erroDeFormato(co.thumbs, caso, alta) < 0.03)
+const sujo = limparMural({ regs: [{ x: -1, y: 0.2, w: 2, h: 0.1, z: 9, dx: 5, dy: 0 }, { x: 0.5, y: 0.5, w: 0, h: 0.2 }, ...Array(12).fill(R(0.1, 0.1, 0.2, 0.2))], travado: 'sim' })
+ok('mural de fora: numero fora da faixa vai para a beira', sujo.regs[0].x === 0 && sujo.regs[0].w === 1 && sujo.regs[0].z === 4 && sujo.regs[0].dx === 0.5)
+ok('mural de fora: regiao sem tamanho sai, e passam no maximo oito', sujo.regs.length === MAX_DESTAQUES && sujo.regs.every((r) => r.w > 0 && r.h > 0))
+ok('mural de fora: trava so com true', sujo.travado === false)
+ok('limparMural de lixo e um mural vazio', limparMural('x').regs.length === 0 && limparMural(null).travado === false)
+
+console.log('bloco 6')
+ok('o bloco esta na versao 6', VERSAO_DO_BLOCO === 6)
+ok('bloco novo nasce com o mural vazio', blocoEmBranco(1).destaques.regs.length === 0 && blocoEmBranco(1).destaques.travado === false)
+const b5 = { ...blocoEmBranco(1), versao: 5 }
+delete b5.destaques
+const b6 = migrarBloco(b5)
+ok('bloco da versao 5 sobe com o mural vazio e carimbado', b6.destaques.regs.length === 0 && b6.versao === 6)
+const semCarimbo = { ...blocoEmBranco(1) }
+delete semCarimbo.destaques
+delete semCarimbo.versao
+ok('bloco sem carimbo e sem mural (tratado como de hoje) nao cai', migrarBloco({ ...semCarimbo, versao: 6 }).destaques.regs.length === 0)
+const comMural = migrarBloco({ ...blocoEmBranco(1), versao: 6, destaques: { regs: [R(0.1, 0.1, 0.3, 0.2)], travado: true } })
+ok('o mural de hoje passa inteiro', comMural.destaques.regs.length === 1 && comMural.destaques.travado === true)
+const cc = cotacaoEmBranco('2026-9002')
+cc.produtos = [{ bloco: comMural, precoPorTamanho: {}, precoBase: 0 }]
+const voltaMural = deCft(paraCft(cc))
+ok('o mural vai e volta no .cft', voltaMural.produtos[0].bloco.destaques.regs[0].w === 0.3 && voltaMural.produtos[0].bloco.destaques.travado === true)
+
+console.log('etiqueta')
+const D = (tag, tecnica = 'etiqueta') => ({ tag, tecnica, cores: [] })
+ok('Eti. Fourtime com Eti. Silk', JSON.stringify(etiquetaDoDesign([D('Eti. Fourtime'), D('Eti. Silk'), D('DTF', 'dtf')])) === '{"tipo":"fourtime","tecnica":"silk"}')
+ok('o cliente ganha da Fourtime na ficha antiga com as duas', etiquetaDoDesign([D('Eti. Fourtime'), D('Eti. Cliente')]).tipo === 'cliente')
+ok('tecnica de etiqueta sem o tipo e a da Fourtime', etiquetaDoDesign([D('Eti. DTF')]).tipo === 'fourtime')
+ok('sem tag de etiqueta, sem etiqueta', etiquetaDoDesign([D('Silk', 'silk')]).tipo === '')
+const trocado = comEtiqueta([D('Eti. Fourtime'), D('Eti. Silk'), D('Subli', 'subli')], { tipo: 'cliente', tecnica: 'dtf' })
+ok('trocar a etiqueta deixa uma so, com a tecnica, na frente', trocado.map((d) => d.tag).join() === 'Eti. Cliente,Eti. DTF,Subli')
+ok('desligar a etiqueta leva a tecnica junto', comEtiqueta(trocado, { tipo: '', tecnica: 'dtf' }).map((d) => d.tag).join() === 'Subli')
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

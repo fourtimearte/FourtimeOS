@@ -1,6 +1,7 @@
 import { chamar, tabela } from '@shared/supabase'
 import { semAcento } from '@shared/formatar'
 import {
+  detalhesDaPecaDoKit,
   kitParaOBanco,
   type DesignDaPeca,
   type EtiquetaDoKit,
@@ -19,6 +20,7 @@ import {
   type Detalhes,
   type Ficha,
   type GrupoDeReferencia,
+  type MaterialDaPeca,
   type MaterialDoEstoque,
   type ReferenciaNaFicha,
   type TecidoDeConta,
@@ -488,4 +490,78 @@ export async function carregarPecasDosKits(): Promise<PecasDosKits> {
   const kits: PecasDosKits = {}
   for (const l of linhas) (kits[l.kit_id] ??= []).push({ referenciaId: l.referencia_id, cod: l.cod, nome: l.nome })
   return kits
+}
+
+/* --- a construção da peça, para o editor do orçamento e a folha A4 ------------- */
+
+/** Uma peça como o orçamento mostra: o que a ficha técnica diz de como ela é feita. */
+export type PecaConstruida = {
+  /** no kit, o papel da peça (camisa, calção); na referência, vazio */
+  papel: string
+  cod: string
+  nome: string
+  /** gola, manga, punho, barra e costura: no kit, já com o que o kit escolheu por cima */
+  detalhes: Detalhes
+  /** a observação da ficha, que a folha mostra como a atenção da costura */
+  atencao: string
+  aviamentos: MaterialDaPeca[]
+}
+
+/** O que a ficha técnica diz do código do layout: uma peça (referência) ou várias (kit). */
+export type ConstrucaoDoLayout = { tipo: 'referencia' | 'kit' | 'nenhuma'; pecas: PecaConstruida[] }
+
+const materiaisDa = async (referenciaIds: string[]): Promise<Map<string, MaterialDaPeca[]>> => {
+  const mapa = new Map<string, MaterialDaPeca[]>()
+  if (!referenciaIds.length) return mapa
+  const linhas = await tabela<
+    { referencia_id: string; material_id: string | null; nome: string; quantidade: number; unidade: string }[]
+  >(
+    `material_da_referencia?select=referencia_id,material_id,nome,quantidade,unidade&referencia_id=in.(${referenciaIds.join(',')})&order=ordem.asc`,
+  )
+  for (const m of linhas) {
+    const lista = mapa.get(m.referencia_id) ?? []
+    lista.push({ materialId: m.material_id, nome: m.nome, quantidade: Number(m.quantidade), unidade: m.unidade })
+    mapa.set(m.referencia_id, lista)
+  }
+  return mapa
+}
+
+/* A CONSTRUÇÃO DO LAYOUT, PELO CÓDIGO (decisão 133): o editor do orçamento e a
+   folha A4 mostram gola, manga, punho, barra, costura, a atenção e os
+   aviamentos que a ficha técnica tem, sem copiar nada para dentro da cotação.
+   O código do layout é de uma referência ou de um kit; código que não existe
+   (digitado à mão, ou de referência que saiu) volta "nenhuma", e a tela diz
+   que a ficha não foi achada. */
+export async function carregarConstrucao(cod: string): Promise<ConstrucaoDoLayout> {
+  const c = cod.trim()
+  if (!c) return { tipo: 'nenhuma', pecas: [] }
+  const filtro = 'cod=eq.' + encodeURIComponent(c)
+  const refs = await tabela<{ id: string; cod: string; nome: string; detalhes: Detalhes | null; observacao: string | null }[]>(
+    `referencia_na_ficha?select=id,cod,nome,detalhes,observacao&${filtro}&limit=1`,
+  )
+  if (refs.length) {
+    const r = refs[0]
+    const mats = await materiaisDa([r.id])
+    return {
+      tipo: 'referencia',
+      pecas: [
+        { papel: '', cod: r.cod, nome: r.nome, detalhes: r.detalhes ?? {}, atencao: r.observacao ?? '', aviamentos: mats.get(r.id) ?? [] },
+      ],
+    }
+  }
+  const kits = await tabela<{ id: string }[]>(`kit_na_ficha?select=id&${filtro}&limit=1`)
+  if (!kits.length) return { tipo: 'nenhuma', pecas: [] }
+  const pecas = await carregarPecasDoKit(kits[0].id)
+  const mats = await materiaisDa([...new Set(pecas.map(p => p.referenciaId))])
+  return {
+    tipo: 'kit',
+    pecas: pecas.map(p => ({
+      papel: p.papel,
+      cod: p.cod,
+      nome: p.nome,
+      detalhes: detalhesDaPecaDoKit(p),
+      atencao: p.observacao,
+      aviamentos: mats.get(p.referenciaId) ?? [],
+    })),
+  }
 }

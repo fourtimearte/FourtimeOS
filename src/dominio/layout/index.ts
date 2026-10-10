@@ -9,6 +9,8 @@ export * from './grade'
 /* bloco.ts ja exporta blocoEmBranco, migrarBloco e os tipos */
 export * from './bloco'
 export * from './banco'
+export * from './destaques'
+export * from './etiqueta'
 export { sanitizarTextoRico } from './texto'
 export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'

@@ -8,6 +8,8 @@ rm -rf "$saida"
 tsc --ignoreConfig \
   "$raiz/src/dominio/layout/grade.ts" \
   "$raiz/src/dominio/layout/bloco.ts" \
+  "$raiz/src/dominio/layout/destaques.ts" \
+  "$raiz/src/dominio/layout/etiqueta.ts" \
   "$raiz/src/dominio/cotacao/tipos.ts" \
   "$raiz/src/dominio/cotacao/arquivo.ts" \
   "$raiz/src/dominio/cotacao/fabrica.ts" \

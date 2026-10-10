@@ -1,5 +1,6 @@
 import { hexDaCor, hexDoTecido } from '../layout/banco'
 import type { Bloco, Design } from '../layout/bloco'
+import { muralVazio } from '../layout/destaques'
 import type { Grade } from '../layout/grade'
 import { VERSAO_DO_CFT, informesEmBranco, type Cotacao, type ProdutoCotado } from './tipos'
 
@@ -259,6 +260,7 @@ function blocoDaReceita(r: Receita, n: number, imagem: string): Bloco {
     arte: r.arte,
     imagem,
     observacao: r.observacao,
+    destaques: muralVazio(),
   }
 }
 

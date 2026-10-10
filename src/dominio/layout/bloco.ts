@@ -1,4 +1,5 @@
 import { sanitizarTextoRico } from './texto'
+import { limparMural, muralVazio, type Mural } from './destaques'
 import type { Faixa, Grade } from './grade'
 
 /* ==========================================================================
@@ -24,8 +25,13 @@ import type { Faixa, Grade } from './grade'
       pedido: ele nao tem tecido, design nem grade, e nao entra em soma
       nenhuma. Ate a v3.330 o editor adivinhava isso pela imagem, e
       atrapalhava quem estava montando; virou botao, e a decisao fica
-      gravada. */
-export const VERSAO_DO_BLOCO = 5
+      gravada.
+   5: a observacao virou HTML.
+   6: entrou o MURAL DOS DESTAQUES (o highlight do mockup, decisao 164): as
+      regioes da arte que viram miniatura, com o zoom e a posicao de cada uma,
+      e a trava. Mora no bloco porque e da arte daquele layout, e vai junto
+      para o .cft, para a copia de layout e para a folha A4. */
+export const VERSAO_DO_BLOCO = 6
 
 export type Tecnica =
   | 'dtf'
@@ -71,6 +77,10 @@ export type Bloco = {
   /** a imagem em data URL, ou vazio */
   imagem: string
   observacao: string
+  /** as regioes da arte que viram destaque, em fracoes da imagem original */
+  destaques: Mural
+  /** o formato em que o bloco foi gravado; carimbado na leitura */
+  versao?: number
 }
 
 export function blocoEmBranco(n: number): Bloco {
@@ -88,6 +98,7 @@ export function blocoEmBranco(n: number): Bloco {
     arte: '',
     imagem: '',
     observacao: '',
+    destaques: muralVazio(),
   }
 }
 
@@ -156,6 +167,10 @@ const DEGRAUS: ((b: Bruto) => Bruto)[] = [
       .replace(/\n/g, '<br>')
     return { ...b, observacao: html }
   },
+
+  /* de 5 para 6: o mural dos destaques entra vazio. Arte antiga nunca teve
+     regiao escolhida, e chutar uma seria inventar o que o vendedor nao fez. */
+  (b) => ({ destaques: muralVazio(), ...b }),
 ]
 
 export function migrarBloco(bruto: Bruto): Bloco {
@@ -170,5 +185,12 @@ export function migrarBloco(bruto: Bruto): Bloco {
      passa por degrau nenhum, e e justamente ele que pode trazer HTML escrito
      por outra mao: a faxina vale para todos, e nao so para os antigos. */
   b.observacao = sanitizarTextoRico(b.observacao)
+  /* O MURAL TAMBEM PASSA PELA PENEIRA, sempre. Bloco que chega sem a versao
+     gravada e tratado como sendo de hoje (a leitura do banco faz isso com os
+     blocos novos, que nasciam sem carimbo), e ai nenhum degrau roda: sem esta
+     linha ele chegaria sem mural e a tela cairia no primeiro b.destaques.regs.
+     E o mural que veio de fora pode trazer numero fora da faixa. */
+  b.destaques = limparMural(b.destaques)
+  b.versao = VERSAO_DO_BLOCO
   return b
 }

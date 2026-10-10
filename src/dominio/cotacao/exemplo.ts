@@ -6,6 +6,7 @@ import {
   refGenero,
 } from '@ds/kit/banco-de-exemplo'
 import type { Bloco, Design, Tecnica } from '../layout/bloco'
+import { muralVazio } from '../layout/destaques'
 import { DEPARTAMENTOS, EMBALAGENS, ENTREGAS, PAGAMENTOS } from '../banco/dados'
 import type { Faixa, Grade } from '../layout/grade'
 import {
@@ -124,6 +125,7 @@ function blocoSorteado(n: number, semente: number): Bloco {
     arte: ARTES[Math.floor(r() * ARTES.length)],
     imagem: '',
     observacao: '',
+    destaques: muralVazio(),
   }
 }
 

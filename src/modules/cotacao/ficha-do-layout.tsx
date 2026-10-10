@@ -45,7 +45,7 @@ const SEM_COR = { nome: 'sem cor', hex: '' }
 
 /* a construção lida uma vez por código: trocar de layout e voltar não lê de novo */
 const lidas = new Map<string, Promise<ConstrucaoDoLayout>>()
-function construcaoDe(cod: string): Promise<ConstrucaoDoLayout> {
+export function construcaoDe(cod: string): Promise<ConstrucaoDoLayout> {
   if (!lidas.has(cod)) {
     const p = carregarConstrucao(cod)
     p.catch(() => lidas.delete(cod))

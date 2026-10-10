@@ -3,19 +3,8 @@ import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, Esqueleto, Pagina, Segmentado, Vazio } from '@ds'
 import { empresaAConferir } from '@dominio/empresa'
-import {
-  CaixaDeImagem,
-  Folha,
-  Medidor,
-  GradeDeTamanhos,
-  ModuloDeLayout,
-  Palco,
-  compactarPalco,
-  imprimir,
-  usarPaginacao,
-  type BlocoDaFolha,
-} from '@dominio/layout'
-import { pecasDoProduto, totalDoProduto, type Cotacao, type ProdutoCotado } from '@dominio/cotacao'
+import { Folha, Medidor, Palco, imprimir, usarPaginacao, type BlocoDaFolha } from '@dominio/layout'
+import type { Cotacao } from '@dominio/cotacao'
 import './documento.css'
 import {
   AceiteDaPaginaUm,
@@ -26,6 +15,17 @@ import {
   RodapeDaFolhaNova,
   condicoesDaFolha,
 } from './pagina-um'
+import {
+  LARGURA_DA_COLUNA,
+  LARGURA_DA_PAGINA,
+  ModuloNaFolha,
+  PISO_DA_ARTE,
+  alturaNaturalDaArte,
+  encaixarArtes,
+  usarConstrucoes,
+  usarImagens,
+  type ModoDaFolha,
+} from './paginas-de-layout'
 import { usarCotacao } from './usar-cotacao'
 
 /* ==========================================================================
@@ -66,7 +66,6 @@ const LAYOUTS_POR_FOLHA = 2
    dá perto de 880. Continua sendo só o primeiro palpite. */
 const ALTURA_COM_CABECALHO = 880
 
-const dinheiro = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 /* ==========================================================================
    PARA QUEM A FOLHA VAI, E POR QUE ISSO DECIDE O DINHEIRO.
@@ -105,10 +104,13 @@ export type DestinoDaFolha = 'cliente' | 'producao'
 export function FolhaDaCotacao({
   cotacao: c,
   comValor,
+  modo = 'dupla',
   aoContar,
 }: {
   cotacao: Cotacao
   comValor: boolean
+  /** dois layouts por página, ou um por página inteira (FOURTIME OS - 14) */
+  modo?: ModoDaFolha
   aoContar?: (paginas: number) => void
 }) {
 
@@ -165,30 +167,48 @@ export function FolhaDaCotacao({
     ]
   }, [c, comValor])
 
-  const blocosDeLayout: BlocoDaFolha[] = useMemo(
-    () =>
-      c.produtos.map((p) => ({
-        id: p.bloco.id,
-        conteudo: <ProdutoNaFolha produto={p} comValor={comValor} />,
-      })),
-    [c, comValor],
-  )
+  /* O QUE CADA MÓDULO PRECISA DE FORA: a construção de cada código e o
+     tamanho de cada arte. Chegam depois do primeiro desenho. */
+  const construcoes = usarConstrucoes(c.produtos.map((p) => p.bloco.referencia))
+  const imagens = usarImagens(c.produtos.map((p) => p.bloco.imagem))
+  const largura = modo === 'dupla' ? LARGURA_DA_COLUNA : LARGURA_DA_PAGINA
+  const natural = (id: string) => {
+    const b = c.produtos.find((p) => p.bloco.id === id)?.bloco
+    return b ? alturaNaturalDaArte(b, imagens[b.imagem], largura) : 0
+  }
+  /* a altura da arte que o encaixe tirou de cada layout, por id */
+  const [apertos, setApertos] = useState<Record<string, number>>({})
+
+  const blocosDeLayout: BlocoDaFolha[] = c.produtos.map((p) => ({
+    id: p.bloco.id,
+    conteudo: (
+      <ModuloNaFolha
+        produto={p}
+        comValor={comValor}
+        modo={modo}
+        construcao={construcoes[p.bloco.referencia.trim()]}
+        imagem={imagens[p.bloco.imagem]}
+        alturaDaArte={apertos[p.bloco.id] ?? natural(p.bloco.id)}
+      />
+    ),
+  }))
 
   const [altoComCab, setAltoComCab] = useState(ALTURA_COM_CABECALHO)
   const dados = usarPaginacao(blocosDeDados, altoComCab, 'dados:' + chave)
 
-  /* OS LAYOUTS NÃO SÃO MEDIDOS: eles são CONTADOS. Dois por folha, sempre,
-     qualquer que seja a combinação. Quando os dois não cabem em 297 mm, quem
-     resolve é a compressão vertical, e não a paginação: a folha aperta até
-     caber. Ver dominio/layout/compactar.ts para a ordem de quem cede. */
+  /* OS LAYOUTS NÃO SÃO MEDIDOS: eles são CONTADOS. Dois por folha (ou um, na
+     página inteira), qualquer que seja a combinação. Quando não cabem em 297
+     mm, quem cede é a ARTE, até o piso (o encaixe, mais abaixo), e não a
+     paginação: o cliente sabe que a folha 3 tem os layouts 3 e 4. */
+  const porFolha = modo === 'dupla' ? LAYOUTS_POR_FOLHA : 1
   const folhasDeLayout: BlocoDaFolha[][] = []
-  for (let i = 0; i < blocosDeLayout.length; i += LAYOUTS_POR_FOLHA) {
-    folhasDeLayout.push(blocosDeLayout.slice(i, i + LAYOUTS_POR_FOLHA))
+  for (let i = 0; i < blocosDeLayout.length; i += porFolha) {
+    folhasDeLayout.push(blocosDeLayout.slice(i, i + porFolha))
   }
 
   const folhas = [
-    ...dados.paginas.map((blocos, i) => ({ blocos, comCabecalho: i === 0 })),
-    ...folhasDeLayout.map((blocos) => ({ blocos, comCabecalho: false })),
+    ...dados.paginas.map((blocos, i) => ({ blocos, comCabecalho: i === 0, layouts: false })),
+    ...folhasDeLayout.map((blocos) => ({ blocos, comCabecalho: false, layouts: true })),
   ].filter((f) => f.blocos.length)
 
   /* Quem escreve "3 paginas" esta do lado de fora, e o numero so existe
@@ -212,29 +232,16 @@ export function FolhaDaCotacao({
     if (comCab > 200 && Math.abs(comCab - altoComCab) > 2) setAltoComCab(comCab)
   })
 
-  /* A COMPRESSÃO RODA DEPOIS DE TODO DESENHO, e não uma vez só. Trocar com
-     valor por sem valor, acrescentar um produto ou uma imagem terminar de
-     carregar muda a altura de todas as folhas, e uma folha que passou a caber
-     folgada não pode continuar com a tabela espremida do desenho anterior.
-     A própria função devolve o estado limpo antes de apertar, então rodar de
-     novo sem necessidade não custa nada além de uma medição. */
+  /* O ENCAIXE RODA DEPOIS DE TODO DESENHO, e não uma vez só: a construção
+     que chega, a arte que carrega e a troca de com valor por sem valor mudam
+     a altura de cada módulo. Ele só mexe no estado quando alguma arte muda
+     de altura, então rodar de novo à toa custa só uma medição. Ver
+     encaixarArtes, em paginas-de-layout.tsx. */
   useEffect(() => {
     const p = palco.current
     if (!p) return
-    compactarPalco(p)
-    /* E DE NOVO QUANDO A ARTE CHEGAR. Decodificar imagem não é evento do
-       React: a altura da folha muda sem nenhuma re-renderização acontecer, e
-       sem isto a folha ficaria apertada pela medida de quando a arte ainda
-       não existia. */
-    let vivo = true
-    const artes = [...p.querySelectorAll('img')].filter((im) => !im.complete)
-    if (!artes.length) return
-    Promise.all(artes.map((im) => im.decode().catch(() => undefined))).then(() => {
-      if (vivo) compactarPalco(p)
-    })
-    return () => {
-      vivo = false
-    }
+    const novo = encaixarArtes(p, apertos, natural, PISO_DA_ARTE[modo])
+    if (novo) setApertos(novo)
   })
 
   return (
@@ -277,9 +284,15 @@ export function FolhaDaCotacao({
               }
               rodape={(n, de) => <RodapeDaFolhaNova cotacao={c} comValor={comValor} numero={n} de={de} />}
             >
-              {folha.blocos.map((b) => (
-                <div key={b.id}>{b.conteudo}</div>
-              ))}
+              {folha.layouts ? (
+                <div className={modo === 'dupla' ? 'dc-dupla' : 'dc-uma'}>
+                  {folha.blocos.map((b) => (
+                    <div key={b.id}>{b.conteudo}</div>
+                  ))}
+                </div>
+              ) : (
+                folha.blocos.map((b) => <div key={b.id}>{b.conteudo}</div>)
+              )}
             </Folha>
           ))}
         </Palco>
@@ -363,49 +376,5 @@ export function DocumentoDaCotacao({ para = 'cliente' }: { para?: DestinoDaFolha
     >
       <FolhaDaCotacao cotacao={c} comValor={comValor} aoContar={contar} />
     </Pagina>
-  )
-}
-
-/* --- um produto na folha -------------------------------------------------
-   O MESMO MODULO DA TELA, EM LEITURA. Nao e economia de codigo: e a promessa
-   de que o que o cliente le no papel e o que o vendedor viu na tela. Duas
-   montagens diferentes para a mesma peca e como nasce a cotacao que "na tela
-   estava certo".
-
-   A ARTE MANDA NO PAPEL. Quem confere um uniforme impresso olha a estampa
-   primeiro, e por isso a coluna da arte fica com 1.7 contra 1.3 da ficha, que
-   e a conta da v3.375: mais da metade da largura da folha. O bloco compacto
-   que morava aqui dava 48 mm de arte numa folha de 190 mm, e ninguem conferia
-   estampa nenhuma naquele selo. A medida esta no CSS, em .fl .mod. */
-function ProdutoNaFolha({ produto, comValor }: { produto: ProdutoCotado; comValor: boolean }) {
-  const b = produto.bloco
-  return (
-    <ModuloDeLayout
-      bloco={b}
-      aoMudar={() => {}}
-      leitura
-      semValor={!comValor}
-      arte={<CaixaDeImagem imagem={b.imagem} arte={b.arte} leitura />}
-      tabela={
-        <GradeDeTamanhos
-          leitura
-          faixa={b.faixa}
-          grade={b.grade}
-          precoBase={comValor ? produto.precoBase : undefined}
-          precoPorTamanho={produto.precoPorTamanho}
-        />
-      }
-      pe={
-        <div className="dc-prod-soma">
-          {pecasDoProduto(produto)} peças
-          {comValor ? (
-            <>
-              {' · '}
-              <b>{dinheiro(totalDoProduto(produto))}</b>
-            </>
-          ) : null}
-        </div>
-      }
-    />
   )
 }

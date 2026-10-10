@@ -87,7 +87,10 @@ const NOMES = ['Atlético Exemplo', 'Academia Exemplo', 'Auto Peças Exemplo', '
 
 /* muitos: a CO2026-0131 com 14 layouts, para o resumo da folha virar duas
    tabelas (acima de 10 layouts, FOURTIME OS - 14 seção 4) */
-export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false } = {}) {
+/* rica: a CO2026-0131 com o que a folha das páginas de layout precisa
+   mostrar: destaques na arte larga (L-01) e na alta (L-02), Silk e Bordado
+   sem cor ao lado da Sublimação, e uma grade com infantil no L-03 */
+export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, muitos = false, rica = false } = {}) {
   const lista = NOMES.slice(0, abertas).map((nome, i) => ({
     id: 'c' + (i + 1),
     numero: 'CO2026-0' + (131 - i),
@@ -108,6 +111,25 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
   }))
   const primeira = () => {
     const c = cotacaoDoAtletico()
+    if (rica) {
+      const [l1, l2, l3] = c.produtos.map((p) => p.bloco)
+      l1.destaques = { travado: true, regs: [
+        { x: 0.3, y: 0.12, w: 0.4, h: 0.2, z: 1, dx: 0, dy: 0 },
+        { x: 0.38, y: 0.38, w: 0.24, h: 0.3, z: 1.2, dx: 0, dy: 0 },
+      ] }
+      l1.design.push({ tag: 'Silk', tecnica: 'silk', cores: [] }, { tag: 'Bordado', tecnica: 'bordado', cores: [] })
+      l1.design[2].cores.push({ cod: 'S03', hex: '#c6161b' }, { cod: 'S40', hex: '#111111' })
+      l2.destaques = { travado: true, regs: [
+        { x: 0.3, y: 0.1, w: 0.4, h: 0.15, z: 1, dx: 0, dy: 0 },
+        { x: 0.32, y: 0.4, w: 0.36, h: 0.36, z: 1, dx: 0, dy: 0 },
+        { x: 0.2, y: 0.05, w: 0.2, h: 0.3, z: 1, dx: 0, dy: 0 },
+      ] }
+      l2.design.push({ tag: 'DTF', tecnica: 'dtf', cores: [{ cod: '012', hex: '#f5b800' }] })
+      l3.genero = 'infantil'
+      l3.grade = { M: 4, G: 4, '4A': 6, '6A': 8, '8A': 5, '12A': 2 }
+      c.produtos[2].precoPorTamanho = { ...c.produtos[2].precoPorTamanho, '4A': 55, '6A': 55, '8A': 55, '12A': 58 }
+      return c
+    }
     if (!muitos) return c
     const base = c.produtos
     c.produtos = Array.from({ length: 14 }, (_, i) => {

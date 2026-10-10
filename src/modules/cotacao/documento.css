@@ -8,19 +8,6 @@
    Tudo em cores próprias: a folha é clara nos dois temas.
    ========================================================================== */
 
-/* --- um produto na folha --------------------------------------------------
-   O bloco compacto que morava aqui saiu inteiro. No lugar dele entrou o
-   proprio modulo de layout em leitura, e o que resta aqui e a roupa de papel
-   dele: as medidas em milimetro que a tela nao tem.
-
-   Ver o comentario de .papel .mod em dominio/layout/modulo.css para a conta das
-   colunas e do teto da imagem. */
-.dc-prod-soma {
-  text-align: right;
-  font-size: 9pt;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ==========================================================================
    A PÁGINA 1 DO TEMPLATE PADRÃO (FOURTIME OS - 14, seções 3 e 4).
 
@@ -43,6 +30,11 @@
   --dc-red: #c6161b;
   --dc-wa: #1f8a50;
   --dc-wa-s: #e9f6ee;
+  --dc-red-s: #fdecec;
+  --dc-am: #f5b800;
+  --dc-inf: #1f8449;
+  --dc-inf-s: #e4f3ec;
+  --dc-inf-f: #0f5138;
   color: var(--dc-k);
   font-family: var(--font-doc);
   font-size: 10.5px;
@@ -375,4 +367,534 @@
 }
 .dc-pe b {
   color: var(--dc-k);
+}
+
+/* ==========================================================================
+   AS PÁGINAS DE LAYOUT DO TEMPLATE PADRÃO (FOURTIME OS - 14, seções 5 a 9).
+   ========================================================================== */
+.dc-dupla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.dc-uma {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.dc-mod {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.dc-ne {
+  min-width: 0;
+}
+.dc-sub {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- o cabeçalho do layout 16 ------------------------------------------------ */
+.dc-lc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dc-lc > div {
+  flex: 1;
+  min-width: 0;
+}
+.dc-lc b {
+  font-size: 13px;
+  line-height: 1.2;
+}
+.dc-lc small {
+  display: block;
+  margin-top: 1px;
+}
+.dc-num.dc-num-g {
+  min-width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--dc-k);
+  color: #fff;
+  font-size: 13px;
+}
+.dc-kit {
+  display: inline-flex;
+  align-items: center;
+  height: 14px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--dc-k);
+  color: #fff;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+/* --- a arte 9: sem caixa, entre dois riscos -------------------------------- */
+.dc-arte {
+  position: relative;
+  overflow: hidden;
+  padding: 6px 0;
+  border-top: 1px solid var(--dc-ln);
+  border-bottom: 1px solid var(--dc-ln);
+}
+.dc-arte > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.dc-arte-vazia {
+  display: grid;
+  place-items: center;
+  height: 60px;
+  font-size: 8.5px;
+  color: var(--dc-t3);
+}
+/* a arte alta com a coluna dos destaques: a arte à esquerda, eles à direita */
+.dc-mural {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.dc-mural > img {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+}
+/* um destaque: a mesma arte recortada pelo fundo do CSS */
+.dc-dt {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  border-radius: 3px;
+  outline: 1px solid var(--dc-ln);
+  outline-offset: -1px;
+  background-color: #fff;
+  background-repeat: no-repeat;
+}
+/* a faixa dos destaques da arte larga, logo embaixo dela */
+.dc-faixa {
+  position: relative;
+  margin-top: -4px;
+}
+
+/* --- a grade vendida 21 ---------------------------------------------------- */
+.dc-gr {
+  width: calc(100% + 6px);
+  margin: -3px;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+.dc-gr td,
+.dc-gr th {
+  padding: 0 1px;
+  text-align: center;
+  white-space: nowrap;
+}
+.dc-gr .dc-gr-fam {
+  width: 32px;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--dc-t3);
+}
+.dc-gr .dc-gr-fam.dc-gr-inf {
+  color: var(--dc-inf-f);
+}
+.dc-gr .dc-gx {
+  border: 0;
+  background: none;
+}
+.dc-gr-dt,
+.dc-gr-soma {
+  padding: 3px 1px;
+  border: 1px solid var(--dc-ln2);
+  border-radius: 3px;
+}
+.dc-gr-dt span,
+.dc-gr-soma span {
+  display: block;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dc-t3);
+}
+.dc-gr-dt b,
+.dc-gr-soma b {
+  display: block;
+  min-height: 13px;
+  font-size: 10.5px;
+}
+.dc-gr-dt small {
+  display: block;
+  font-size: 7px;
+  letter-spacing: -0.02em;
+}
+.dc-gr-dt.dc-gr-z {
+  border-color: var(--dc-ln);
+}
+.dc-gr-dt.dc-gr-inf {
+  border-color: var(--dc-inf);
+}
+.dc-gr-dt.dc-gr-inf.dc-gr-z {
+  border-color: color-mix(in srgb, var(--dc-inf) 40%, #fff);
+}
+.dc-gr-dt.dc-gr-inf span {
+  color: var(--dc-inf-f);
+}
+/* a soma em tinta, sempre na última coluna */
+.dc-gr .dc-gr-soma {
+  width: 46px;
+  border-color: var(--dc-k);
+  background: var(--dc-k);
+  color: #fff;
+}
+.dc-gr .dc-gr-soma span {
+  color: rgba(255, 255, 255, 0.7);
+}
+/* o valor de cada tamanho, embaixo e fora das células; o total sob a soma */
+.dc-gr-vf td {
+  padding-top: 1px;
+  font-size: 8px;
+  letter-spacing: -0.01em;
+  color: var(--dc-t2);
+}
+.dc-gr-v i {
+  font-size: 0.8em;
+  font-style: normal;
+}
+.dc-gr .dc-gr-vt {
+  font-weight: 700;
+  color: var(--dc-k);
+}
+.dc-gr-apertada .dc-gr-dt small {
+  font-size: 6px;
+}
+.dc-gr-apertada .dc-gr-vf td {
+  font-size: 6.5px;
+  letter-spacing: -0.03em;
+}
+/* com 8 tamanhos ou mais na coluna, o R$ sobe para cima do número */
+.dc-gr-rs-cima .dc-gr-vf td {
+  line-height: 1.15;
+}
+.dc-gr-rs-cima .dc-gr-v i {
+  display: block;
+}
+
+/* --- a ficha 21 ------------------------------------------------------------ */
+/* o título dividido: "Etiqueta" começa no risco vertical que separa as colunas */
+.dc-ft2 {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  column-gap: 10px;
+}
+.dc-ff {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dc-fg {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.dc-fe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--dc-ln);
+}
+.dc-fa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dc-fa > div {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+}
+.dc-fa b {
+  display: block;
+  font-size: 11.5px;
+}
+.dc-fa small {
+  display: block;
+}
+.dc-q {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: 1px solid rgba(26, 29, 35, 0.2);
+  border-radius: 3px;
+  background: var(--dc-cor, #fff);
+}
+/* as pílulas: a etiqueta e as técnicas sem cor, com a mesma altura */
+.dc-pils {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.dc-pil {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  border: 1px solid var(--dc-pc, var(--dc-k));
+  border-radius: 3px;
+  background: var(--dc-ps, #fff);
+  color: var(--dc-pf, var(--dc-k));
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dc-pil-fourtime {
+  --dc-pc: var(--dc-red);
+  --dc-ps: var(--dc-red-s);
+  --dc-pf: var(--dc-red);
+}
+.dc-pil-cliente {
+  --dc-pc: #a21caf;
+  --dc-ps: #f9eafb;
+  --dc-pf: #86198f;
+}
+/* as cores das técnicas no papel, as do tema claro nos dois temas */
+.dc-tec-subli {
+  --dc-pc: #1f8449;
+  --dc-ps: #eaf8f0;
+  --dc-pf: #187c42;
+}
+.dc-tec-dtf {
+  --dc-pc: #147bb3;
+  --dc-ps: #e7f4fb;
+  --dc-pf: #0b71a8;
+}
+.dc-tec-silk {
+  --dc-pc: #af5e0d;
+  --dc-ps: #fbf1e7;
+  --dc-pf: #a95705;
+}
+.dc-tec-bordado {
+  --dc-pc: #7b5ceb;
+  --dc-ps: #ece8fa;
+  --dc-pf: #6b46f1;
+}
+.dc-tec-patch {
+  --dc-pc: #333a42;
+  --dc-ps: #f0f1f2;
+  --dc-pf: #4a545f;
+}
+/* o design: Sublimação e DTF em caixas lado a lado, as pílulas no que sobra */
+.dc-tks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--dc-ln);
+}
+.dc-tk {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px 6px 6px;
+  border: 1px solid var(--dc-pc);
+  border-radius: 4px;
+  background: var(--dc-ps);
+}
+.dc-tk-t {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dc-pf);
+}
+.dc-tk-c {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.dc-cd {
+  display: inline-flex;
+  flex-direction: column;
+  width: 30px;
+  overflow: hidden;
+  border: 1px solid var(--dc-ln);
+  border-radius: 3px;
+  background: #fff;
+}
+.dc-cd i {
+  display: block;
+  height: 16px;
+  border-bottom: 1px solid var(--dc-ln);
+  background: var(--dc-cor, #fff);
+}
+.dc-cd b {
+  padding: 1px 0;
+  font-size: 7.5px;
+  text-align: center;
+}
+.dc-tk-pils {
+  display: flex;
+  flex: none;
+  align-items: center;
+  align-self: stretch;
+  gap: 3px;
+  margin-left: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--dc-ln);
+}
+.dc-tk-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.dc-tk-pils.dc-tk-deitada {
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+/* a ficha deitada da página inteira: tecido | etiqueta | design */
+.dc-fh {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(0, 2fr);
+  column-gap: 16px;
+  align-items: start;
+}
+.dc-fh > div {
+  min-width: 0;
+}
+.dc-fh .dc-tks {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* --- a fabricação 13, os aviamentos 11 e a observação 14 ------------------- */
+.dc-fab + .dc-fab {
+  margin-top: 8px;
+}
+.dc-fb {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+.dc-fb > div {
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--dc-ln);
+}
+.dc-fb > div:nth-child(3n + 1) {
+  padding-left: 0;
+  border-left: 0;
+}
+.dc-fb b {
+  display: block;
+}
+.dc-fb small {
+  display: block;
+}
+.dc-fab .dc-ob {
+  margin-top: 6px;
+}
+.dc-av {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dc-av li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.dc-av li > i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 2px;
+  border: 1px solid var(--dc-k);
+  border-radius: 2px;
+}
+.dc-av small {
+  display: block;
+}
+/* a placa preta e amarela: a observação e a atenção da costura */
+.dc-ob {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--dc-k);
+  border-radius: 4px;
+  color: var(--dc-k);
+}
+.dc-ob > i {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--dc-am);
+}
+.dc-ob-texto p {
+  margin: 0;
+}
+/* a soma 9: uma linha miúda à direita */
+.dc-sm {
+  text-align: right;
+  color: var(--dc-t2);
+}
+.dc-sm b {
+  color: var(--dc-k);
+}
+/* página inteira: a fabricação à esquerda, os aviamentos e a observação à direita */
+.dc-mod-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+.dc-mod-2 > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.dc-mod-2 > div > .dc-ne-obs:last-child {
+  margin-top: auto;
 }

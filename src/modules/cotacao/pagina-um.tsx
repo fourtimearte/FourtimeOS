@@ -30,9 +30,9 @@ import './documento.css'
    (p1.js e papel.css). As classes daqui são as de lá com o prefixo dc-.
    ========================================================================== */
 
-const n2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const reais = (v: number) => 'R$ ' + n2(v)
-const pecas = (n: number) => n + (n === 1 ? ' peça' : ' peças')
+export const n2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export const reais = (v: number) => 'R$ ' + n2(v)
+export const pecas = (n: number) => n + (n === 1 ? ' peça' : ' peças')
 
 /* A DATA SEM FUSO. '2026-10-20' lido como Date é meia-noite em Greenwich, que
    em Goiânia ainda é o dia 19: a validade sairia um dia antes no papel. Data
@@ -94,11 +94,11 @@ export function camposDoCabecalho(c: Cotacao, comValor: boolean): CampoDaFolha[]
   ]
 }
 
-function Rotulo({ children }: { children: string }) {
+export function Rotulo({ children }: { children: string }) {
   return <span className="dc-r">{children}</span>
 }
 
-function Titulo({ children }: { children: string }) {
+export function Titulo({ children }: { children: string }) {
   return (
     <h3 className="dc-t">
       <span>{children}</span>

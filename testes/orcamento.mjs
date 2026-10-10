@@ -43,9 +43,9 @@ mkdirSync(PASTA, { recursive: true })
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
 const abertos = new Set()
-async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false }) {
+async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
-  const banco = F.bancoDoOrcamento({ papel, abertas, muitos })
+  const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica })
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
@@ -497,6 +497,62 @@ await secao(async () => {
   conta(p.sobra <= 0 && p.corta === 0, `14 layouts: nada da página 1 passa da folha (sobra ${p.sobra})`)
   await foto(pg, 'folha-1440-14-layouts')
   conta(!erros.length, 'sem erro de JavaScript (folha com 14): ' + erros.join(' | '))
+})
+
+/* 7. AS PÁGINAS DE LAYOUT, DOIS POR PÁGINA (parte 6) */
+const paginasDeLayout = (pg) => pg.evaluate(() => [...document.querySelectorAll('.fl')].filter((f) => f.querySelector('.dc-mod')).map((f) => {
+  const corpo = f.querySelector('.fl-corpo'), rc = corpo.getBoundingClientRect(), k = rc.height / corpo.offsetHeight
+  return {
+    mods: [...f.querySelectorAll('.dc-mod')].map((m) => {
+      const t = (s) => [...m.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim())
+      const arte = m.querySelector('.dc-arte'), ra = arte?.getBoundingClientRect()
+      return {
+        id: m.dataset.id, cab: t('.dc-lc').join(''), titulos: t('.dc-t'), texto: m.innerText, arte: arte ? Math.round(arte.offsetHeight) : 0,
+        fundo: (m.getBoundingClientRect().bottom - rc.top) / k, limite: corpo.clientHeight, largura: Math.round(m.getBoundingClientRect().width / k),
+        faixa: m.querySelectorAll('.dc-faixa .dc-dt').length, mural: m.querySelectorAll('.dc-mural .dc-dt').length,
+        dtFora: [...m.querySelectorAll('.dc-dt')].filter((d) => { const r = d.getBoundingClientRect(); return r.right > (ra ? ra.right : 0) + 1 || r.left < (ra ? ra.left : 0) - 1 }).length,
+        fams: t('.dc-gr-fam').filter(Boolean), inf: m.querySelectorAll('.dc-gr-dt.dc-gr-inf').length, soma: t('.dc-gr-soma'), vt: t('.dc-gr-vt'), precos: t('.dc-gr-dt small'),
+        pils: t('.dc-fe .dc-pil'), caixas: t('.dc-tk-t'), cartoes: t('.dc-cd b'), pilsTec: t('.dc-tk-pils .dc-pil'), deitada: !!m.querySelector('.dc-tk-deitada'),
+        fab: t('.dc-fb > div'), placas: t('.dc-ob'), avi: t('.dc-av li'), sm: t('.dc-sm').join(''),
+      }
+    }),
+  }
+}))
+
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900, rica: true })
+  await irFolha(pg)
+  await pausa(pg, 800)
+  const pgs = await paginasDeLayout(pg)
+  conta(pgs.length === 2 && pgs[0].mods.length === 2 && pgs[1].mods.length === 1, 'dois layouts por página: ' + pgs.map((p) => p.mods.length).join(' + '))
+  conta(pgs.every((p) => p.mods.every((m) => m.largura === 340)), 'cada layout numa coluna de 340 px (' + pgs.flatMap((p) => p.mods.map((m) => m.largura)).join(', ') + ')')
+  const [l1, l2] = pgs[0].mods, l3 = pgs[1].mods[0]
+  conta(/^01/.test(l1.cab) && /CAMISETA MASC TRAD/.test(l1.cab) && /FT-010-000M · Masculino · grade adulta/.test(l1.cab), 'cabeçalho 16: número, nome e a linha miúda (' + l1.cab + ')')
+  conta(l1.titulos.join('|') === 'GRADE VENDIDA|FICHA TÉCNICA DO LAYOUT|ETIQUETA|FABRICAÇÃO DA PEÇA|AVIAMENTOS E INSUMOS', 'as partes do L-01 na ordem: ' + l1.titulos.join(' | '))
+  conta(l1.faixa === 2 && l1.mural === 0, `arte larga: os 2 destaques numa faixa embaixo (${l1.faixa})`)
+  conta(l2.mural === 3 && l2.faixa === 0, `arte alta: os 3 destaques na coluna da direita, dentro da arte (${l2.mural})`)
+  conta(l1.dtFora === 0 && l2.dtFora === 0, 'nenhum destaque sai da largura da arte')
+  conta(pgs.every((p) => p.mods.every((m) => m.fundo <= m.limite - 11)), 'nenhum layout passa da folha: ' + pgs.flatMap((p) => p.mods.map((m) => Math.round(m.limite - m.fundo))).join(', ') + ' px de sobra')
+  conta(l1.arte >= 150 && l2.arte >= 150, `a arte não fica abaixo do piso de 150 px (${l1.arte}, ${l2.arte})`)
+  conta(l1.soma.join() === 'SOMA 89' && l1.vt.join() === 'R$ 5.536,00' && l1.precos.includes('62,00') && l1.precos.includes('68,00'), 'grade 21: o preço inteiro na célula, a soma em tinta e o total embaixo (' + l1.vt + ')')
+  conta(/R\$ 620/.test(l1.texto), 'grade 21: o valor de cada tamanho embaixo, com R$')
+  conta(l3.fams.join('|').toUpperCase() === 'ADULTA|INFANTIL' && l3.inf === 7 && l3.soma.length === 2, `grade com infantil: duas fileiras, a infantil em verde, a soma no fim de cada uma (${l3.fams.join(', ')}, ${l3.inf} verdes)`)
+  conta(l1.pils.join(',').toUpperCase() === 'FOURTIME,SILK' && l2.pils.join(',').toUpperCase() === 'CLIENTE,DTF', 'a etiqueta em pílulas: ' + l1.pils.join(' + ') + ' e ' + l2.pils.join(' + '))
+  conta(l1.caixas.join(',').toUpperCase() === 'SUBLIMAÇÃO' && l1.cartoes.join(',') === 'S14,S03,S40', 'a Sublimação em caixa com os cartões de cor: ' + l1.cartoes.join(', '))
+  conta(l1.pilsTec.join(',').toUpperCase() === 'SILK,BORDADO' && !l1.deitada, 'Silk e Bordado em pílulas ao lado da caixa, empilhadas')
+  conta(l2.caixas.join(',').toUpperCase() === 'DTF' && l2.pilsTec.join(',').toUpperCase() === 'SUBLIMAÇÃO', 'L-02: DTF com cor em caixa, Sublimação sem cor em pílula')
+  conta(l1.fab.length === 5 && /GOLA Redonda ribana 1x1 de 2 cm/i.test(l1.fab[0]), 'fabricação 13: os cinco detalhes da ficha em colunas (' + l1.fab[0] + ')')
+  conta(l1.placas.length === 2 && l1.placas.every((x) => /Reforço de ombro a ombro/.test(x)), 'a atenção da costura e a observação na placa preta e amarela')
+  conta(l1.avi.length === 3 && /Ribana 1x1 · Preta · 0,05 m/.test(l1.avi[0]) && l2.avi.length === 1, 'aviamentos 11: a lista de conferência (' + l1.avi.length + ' e ' + l2.avi.length + ')')
+  conta(l1.sm === '89 peças · R$ 5.536,00', 'soma 9: ' + l1.sm)
+  await foto(pg, 'folha-1440-layouts')
+  await pg.getByRole('tab', { name: 'Sem valor' }).click()
+  await pausa(pg, 800)
+  const sv = await paginasDeLayout(pg)
+  conta(sv.every((p) => p.mods.every((m) => !/R\$/.test(m.texto) && !m.precos.length && !m.vt.length)), 'sem valor: nenhum preço nas páginas de layout')
+  conta(sv[0].mods[0].sm === '89 peças', 'sem valor: a soma só com as peças')
+  await foto(pg, 'folha-1440-layouts-sem-valor')
+  conta(!erros.length, 'sem erro de JavaScript (páginas de layout): ' + erros.join(' | '))
 })
 
 for (const tema of ['light', 'dark']) {

@@ -879,7 +879,8 @@
 /* --- o WhatsApp dentro do Fourtime OS (pranchas 131 a 133) ---------------- */
 /* guardado e nao desmontado: o quadro do WhatsApp continua vivo escondido */
 .fn-guardado,
-.fn-mesa.fn-guardado {
+.fn-mesa.fn-guardado,
+.fn-wa.fn-guardado {
   display: none;
 }
 /* o icone e o nome do modo na mesma linha, dentro do segmentado */

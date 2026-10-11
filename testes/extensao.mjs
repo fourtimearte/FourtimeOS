@@ -179,6 +179,21 @@ conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.tex
 conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
 
+/* trocar de modo esconde um e mostra o outro (o defeito que o Henrique achou em 11/10/2026:
+   o WhatsApp ficava sempre e o quadro ia para baixo dele) */
+const visto = () => os.evaluate(() => {
+  const vis = (el) => !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0
+  return { wa: vis(document.querySelector('.fn-wa')), quadro: vis(document.querySelector('.fn-quadro')) }
+})
+await os.evaluate(() => [...document.querySelectorAll('.seg button')].find(b => /Quadro/.test(b.innerText)).click())
+await os.waitForTimeout(500)
+const noQuadro = await visto()
+conta(!noQuadro.wa && noQuadro.quadro, 'no modo Quadro o WhatsApp some e o quadro aparece (' + JSON.stringify(noQuadro) + ')')
+await os.evaluate(() => [...document.querySelectorAll('.seg button')].find(b => /WhatsApp/.test(b.innerText)).click())
+await os.waitForTimeout(500)
+const noZap = await visto()
+conta(noZap.wa && !noZap.quadro, 'no modo WhatsApp o quadro some e o WhatsApp volta (' + JSON.stringify(noZap) + ')')
+
 
 /* --- 6, 7: a coluna lateral ------------------------------------------ */
 const lado = await ctx.newPage()

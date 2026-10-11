@@ -20,7 +20,7 @@ VERSAO=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' extensao/manifest.json)
 PASTA="dist-extensao/fourtime-os-$VERSAO"
 rm -rf "$PASTA" "$PASTA.zip"
 mkdir -p "$PASTA"
-cp extensao/manifest.json extensao/*.js extensao/*.css extensao/*.html extensao/icone.png "$PASTA"/
+cp extensao/manifest.json extensao/regras.json extensao/*.js extensao/*.css extensao/*.html extensao/icone.png "$PASTA"/
 rm -f "$PASTA/config.exemplo.js" "$PASTA/config.js"
 cat > "$PASTA/config.js" <<EOF
 self.FOURTIME = {

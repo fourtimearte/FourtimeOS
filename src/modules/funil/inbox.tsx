@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { PencilSimple, WhatsappLogo } from '@phosphor-icons/react'
-import { Botao, avisar } from '@ds'
+import { Botao, Segmentado, avisar } from '@ds'
 import { formatarTelefone } from '@shared'
 import {
   RESPOSTAS,
+  fichaDoSite,
   iniciais,
   janelaApertada,
   janelaDaConversa,
@@ -12,9 +13,19 @@ import {
   minutosDesde,
   preencher,
   tempoCurto,
+  temFichaDoSite,
   type Lead,
   type Mensagem,
 } from '@dominio/funil'
+
+/* ONDE A FALA ACONTECEU (065). A separacao so aparece quando a conversa tem
+   mais de um canal, ou um canal que nao e o WhatsApp da Fourtime: lead que so
+   falou pelo WhatsApp continua igual a antes. */
+const NOME_DO_CANAL: Record<Mensagem['canal'], string> = {
+  whatsapp: 'WhatsApp da Fourtime',
+  site: 'No site, pelo chat da loja',
+  whatsapp_vendedor: 'WhatsApp do vendedor',
+}
 
 /* ==========================================================================
    O inbox do WhatsApp, colado no funil.
@@ -59,11 +70,13 @@ export function Inbox({
   aoRegistrar: (l: Lead, texto: string) => void
 }) {
   const [texto, setTexto] = useState('')
+  const [aba, setAba] = useState<'conversa' | 'ficha'>('conversa')
 
   /* trocar de lead limpa o que estava escrito: mandar para o errado e o tipo
-     de erro que nao tem desfazer */
+     de erro que nao tem desfazer. E volta para a conversa. */
   useEffect(() => {
     setTexto('')
+    setAba('conversa')
   }, [lead?.id])
 
   /* Esc fecha, como qualquer coisa que abre por cima */
@@ -137,25 +150,53 @@ export function Inbox({
           passa a valer. */}
       <Janela lead={l} />
 
-      <div className="fn-in-msgs">
-        {carregandoConversa ? (
-          <p className="fn-in-vazio">Buscando a conversa...</p>
-        ) : conversa.length ? (
-          conversa.map((m) => (
-            <div key={m.id} className={m.quem === 'nos' ? 'fn-balao nos' : 'fn-balao'}>
-              {m.texto}
-              <time>
-                {m.quem === 'nos' && m.lida ? 'lida' : 'há ' + tempoCurto(minutosDesde(m.em))}
-              </time>
-            </div>
-          ))
-        ) : (
-          <p className="fn-in-vazio">
-            Nenhuma mensagem registrada ainda. O que você mandar por aqui fica gravado na
-            conversa.
-          </p>
-        )}
-      </div>
+      {/* A FICHA DO SITE (prancha 127): so para o lead que veio do chat da
+          loja. O que o cliente escolheu no orcamento, de onde veio e o aceite
+          da LGPD, em vez de o vendedor perguntar tudo de novo. */}
+      {temFichaDoSite(l) ? (
+        <div className="fn-in-abas">
+          <Segmentado<'conversa' | 'ficha'>
+            valor={aba}
+            aoMudar={setAba}
+            opcoes={[
+              { valor: 'conversa', rotulo: 'Conversa' },
+              { valor: 'ficha', rotulo: 'Ficha do site' },
+            ]}
+          />
+        </div>
+      ) : null}
+
+      {aba === 'ficha' && temFichaDoSite(l) ? (
+        <FichaDoSite lead={l} />
+      ) : (
+        <div className="fn-in-msgs">
+          {carregandoConversa ? (
+            <p className="fn-in-vazio">Buscando a conversa...</p>
+          ) : conversa.length ? (
+            conversa.map((m, i) => {
+              const separa =
+                conversa.some((x) => x.canal !== 'whatsapp') && (i === 0 || conversa[i - 1].canal !== m.canal)
+              return (
+                <div key={m.id} className="fn-fala">
+                  {separa ? <p className="fn-canal">{NOME_DO_CANAL[m.canal]}</p> : null}
+                  <div className={m.quem === 'nos' ? 'fn-balao nos' : m.quem === 'sistema' ? 'fn-balao robo' : 'fn-balao'}>
+                    {m.texto}
+                    <time>
+                      {m.quem === 'sistema' ? 'roteiro do chat · ' : ''}
+                      {m.quem === 'nos' && m.lida ? 'lida' : 'há ' + tempoCurto(minutosDesde(m.em))}
+                    </time>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            <p className="fn-in-vazio">
+              Nenhuma mensagem registrada ainda. O que você mandar por aqui fica gravado na
+              conversa.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="fn-in-rapidas">
         {RESPOSTAS.map((r) => (
@@ -213,6 +254,41 @@ export function Inbox({
         )}
       </div>
     </aside>
+  )
+}
+
+/* --- a ficha do site ------------------------------------------------------ */
+function FichaDoSite({ lead }: { lead: Lead }) {
+  const blocos = fichaDoSite(lead)
+  return (
+    <div className="fn-in-ficha">
+      {lead.prioridade ? <p className="fn-in-prioridade">O cliente marcou como prioridade.</p> : null}
+      {blocos.length ? (
+        blocos.map((b) => (
+          <section key={b.titulo} className="fn-ficha-bloco">
+            <h3>{b.titulo}</h3>
+            <dl>
+              {b.linhas.map((x) => (
+                <div key={x.rotulo} className="fn-ficha-linha">
+                  <dt>{x.rotulo}</dt>
+                  <dd>
+                    {x.link ? (
+                      <a href={x.link} target="_blank" rel="noopener noreferrer">
+                        {x.valor}
+                      </a>
+                    ) : (
+                      x.valor
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))
+      ) : (
+        <p className="fn-in-vazio">O cliente veio pelo site, mas a ficha chegou sem o orçamento.</p>
+      )}
+    </div>
   )
 }
 

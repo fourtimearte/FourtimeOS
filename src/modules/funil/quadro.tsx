@@ -298,6 +298,8 @@ function Cartao({
         {/* DE ONDE VEIO (prancha 125): so a origem que diz alguma coisa, como
             "Site". O padrao "WhatsApp" fica de fora (seloDaOrigem). */}
         {seloDaOrigem(lead) ? <span className="fn-origem">{seloDaOrigem(lead)}</span> : null}
+        {lead.prioridade ? <span className="fn-origem prioridade">PRIORIDADE</span> : null}
+        {lead.teste ? <span className="fn-origem teste">TESTE</span> : null}
       </span>
 
       <p className="fn-msg">{lead.msg}</p>

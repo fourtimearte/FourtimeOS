@@ -766,3 +766,112 @@
   background: var(--surface-2);
   font-size: 13px;
 }
+
+/* --- 065: a ficha do site, o canal da fala e o robo do chat (prancha 127) -- */
+.fn-in-abas {
+  padding: var(--re-5) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.fn-fala {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+}
+.fn-canal {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  margin: var(--re-3) 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.fn-canal::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+/* o roteiro do chat nao e gente: borda tracejada e texto de apoio */
+.fn-balao.robo {
+  border-style: dashed;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-2);
+}
+.fn-in-ficha {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-8);
+  padding: var(--re-8);
+}
+.fn-in-prioridade {
+  margin: 0;
+  padding: var(--re-4) var(--re-6);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.fn-ficha-bloco h3 {
+  margin: 0 0 var(--re-4);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.fn-ficha-bloco dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+}
+.fn-ficha-linha {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--re-6);
+  font-size: 13.5px;
+}
+.fn-ficha-linha dt {
+  color: var(--text-2);
+}
+.fn-ficha-linha dd {
+  margin: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.fn-ficha-linha a {
+  color: inherit;
+  text-decoration: underline;
+}
+/* os selos de estado no cartao: PRIORIDADE e TESTE. Com selo, a linha da
+   etapa quebra em vez de cortar o nome da etapa em "No..." */
+.fn-etapa:has(.fn-origem) {
+  flex-wrap: wrap;
+  row-gap: var(--re-2);
+}
+.fn-origem.prioridade {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.fn-origem.teste {
+  border-style: dashed;
+}
+/* a conversa aberta nao tapa mais os cartoes no computador largo: a mesa
+   encolhe a largura da conversa, e o quadro rola por dentro */
+.fn-mesa {
+  /* os blocos daqui de dentro sao blocos de pagina: o mesmo ritmo da .pagina */
+  gap: var(--sp-4);
+}
+@media (min-width: 1280px) {
+  .fn-mesa.com-inbox {
+    margin-right: calc(400px + var(--sp-4) - var(--gutter));
+  }
+}

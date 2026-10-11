@@ -103,6 +103,16 @@ export function TelaFunil() {
     void recarregar()
   }, [recarregar])
 
+  /* O FUNIL SE RELE SOZINHO a cada 30 segundos enquanto esta na frente (plano
+     15, C3): o lead do site chega sem ninguem apertar nada. Aba escondida nao
+     rele: ninguem esta olhando, e o sino avisa. */
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') void recarregar()
+    }, 30_000)
+    return () => clearInterval(t)
+  }, [recarregar])
+
   /* ?lead=<id> ABRE AQUELE LEAD. E por onde a coluna lateral da extensao, no
      WhatsApp, traz o vendedor para o cartao da conversa que ele esta lendo.
      O parametro sai da barra depois de usado, senao fechar o inbox e o React
@@ -324,63 +334,64 @@ export function TelaFunil() {
         </>
       }
     >
-      <AvisoDaExtensao />
-
-      {!falha && !carregando && leads.length ? (
-        <BarraDoFunil
-          filtro={filtroValendo}
-          aoMudar={(m) => setFiltro((f) => ({ ...f, ...m }))}
-          contas={contas}
-          vendedores={vendedores}
-        />
-      ) : null}
-
-      {falha ? (
-        <Vazio
-          titulo="Não consegui carregar o funil"
-          texto={falha}
-          acao={
-            <Botao
-              tom="forte"
-              onClick={() => {
-                setCarregando(true)
-                void recarregar()
-              }}
-            >
-              Tentar de novo
-            </Botao>
-          }
-        />
-      ) : (
-        <>
-          {/* O FILTRO QUE NAO ACHOU NADA DIZ ISSO, em vez de mostrar seis
-              colunas vazias que parecem um funil sem lead nenhum. */}
-          {leads.length && !visiveis.length ? (
-            <Vazio
-              titulo={filtroValendo.quem === 'esperando' && !filtrando ? 'Ninguém esperando resposta' : 'Nada com esse filtro'}
-              texto={
-                filtroValendo.quem === 'meus' && !filtrando
-                  ? 'Nenhum lead seu no funil. Os de todo mundo estão em Todos.'
-                  : 'Troque o filtro para ver os outros leads.'
-              }
-              acao={
-                <Botao tom="contorno" onClick={() => setFiltro({ quem: 'todos', busca: '', origem: '', vendedor: '' })}>
-                  Ver todos
-                </Botao>
-              }
-            />
-          ) : null}
-          <Quadro
-            leads={visiveis}
-            aberto={abertoId}
-            podeMexer={podeMexer}
-            aoMover={mover}
-            aoAbrir={abrir}
-            aoEditar={(l) => setEditando(l)}
-            relogio={agora}
+      <div className={aberto ? 'pilha fn-mesa com-inbox' : 'pilha fn-mesa'}>
+        <AvisoDaExtensao />
+        {!falha && !carregando && leads.length ? (
+          <BarraDoFunil
+            filtro={filtroValendo}
+            aoMudar={(m) => setFiltro((f) => ({ ...f, ...m }))}
+            contas={contas}
+            vendedores={vendedores}
           />
-        </>
-      )}
+        ) : null}
+
+        {falha ? (
+          <Vazio
+            titulo="Não consegui carregar o funil"
+            texto={falha}
+            acao={
+              <Botao
+                tom="forte"
+                onClick={() => {
+                  setCarregando(true)
+                  void recarregar()
+                }}
+              >
+                Tentar de novo
+              </Botao>
+            }
+          />
+        ) : (
+          <>
+            {/* O FILTRO QUE NAO ACHOU NADA DIZ ISSO, em vez de mostrar seis
+                colunas vazias que parecem um funil sem lead nenhum. */}
+            {leads.length && !visiveis.length ? (
+              <Vazio
+                titulo={filtroValendo.quem === 'esperando' && !filtrando ? 'Ninguém esperando resposta' : 'Nada com esse filtro'}
+                texto={
+                  filtroValendo.quem === 'meus' && !filtrando
+                    ? 'Nenhum lead seu no funil. Os de todo mundo estão em Todos.'
+                    : 'Troque o filtro para ver os outros leads.'
+                }
+                acao={
+                  <Botao tom="contorno" onClick={() => setFiltro({ quem: 'todos', busca: '', origem: '', vendedor: '' })}>
+                    Ver todos
+                  </Botao>
+                }
+              />
+            ) : null}
+            <Quadro
+              leads={visiveis}
+              aberto={abertoId}
+              podeMexer={podeMexer}
+              aoMover={mover}
+              aoAbrir={abrir}
+              aoEditar={(l) => setEditando(l)}
+              relogio={agora}
+            />
+          </>
+        )}
+      </div>
 
       <EditarLead
         lead={editando}

@@ -47,7 +47,7 @@ const atras = (min) => new Date(Date.now() - min*60000).toISOString()
 const LEADS = [
   { id:'L1', nome:'Futsal Vila Nova', contato:'Rafa', telefone:'62999990001', cliente_id:null,
     estagio:'novo', valor:1620, vendedor_id:null, ultima_msg:'Boa tarde, quanto fica 18 camisas?',
-    ultima_msg_em:atras(30), nao_lidas:2, janela_ate:daqui(1380), teste:true, origem:'site-chat',
+    ultima_msg_em:atras(30), nao_lidas:2, janela_ate:daqui(1380), teste:true, origem:'site-chat', prioridade:true, email:'rafa@futsal.exemplo', consentimento_em:atras(40), consentimento_texto:'politica-2026-09', briefing:{ tipo_peca:'kit_camiseta_short', quantidade_faixa:'50_100', prazo:'urgente', detalhe:'<b>logo</b> nas costas', produto:{ titulo:'Camiseta Raglan', url:'https://fourtimefit.com.br/products/raglan' }, utm:{ source:'instagram', campaign:'outubro' }, envio_numero:1 },
     equipe:null, cotacao:[], pedido:[] },
   { id:'L2', nome:'Supermercado Bom Preço', contato:'Ana', telefone:'62999990002', cliente_id:null,
     estagio:'atendimento', valor:2800, vendedor_id:null, ultima_msg:'Pode ser 40 camisetas polo',
@@ -104,6 +104,11 @@ for (const tema of ['light', 'dark']) {
         corpo = [{ id:'L9' }]
       }
       else if (u.includes('/lead?')) corpo = LEADS
+      else if (u.includes('/mensagem?') && u.includes('lead_id=eq.L1')) corpo = [
+        { id:'s1', quem:'cliente', tipo:'texto', texto:'Quero um orçamento', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(45), canal:'site' },
+        { id:'s2', quem:'sistema', tipo:'texto', texto:'Ótimo! Qual peça?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(44), canal:'site' },
+        { id:'s3', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(30), canal:'whatsapp' },
+      ]
       else if (u.includes('/mensagem?')) corpo = [
         { id:'m1', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?',
           arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(30) },
@@ -136,7 +141,7 @@ for (const tema of ['light', 'dark']) {
       return {
         seg, cards: cards(),
         origem: futsal?.querySelector('.fn-origem')?.textContent ?? '',
-        semSeloNoPadrao: !super_?.querySelector('.fn-origem'),
+        semSeloNoPadrao: ![...(super_?.querySelectorAll('.fn-origem') ?? [])].some(x => /WhatsApp/.test(x.textContent)),
         esperando: super_?.querySelector('.fn-tempo')?.textContent ?? '',
         aviso: document.body.innerText.includes('Você precisa da extensão Fourtime OS'),
         titulo: document.querySelector('h1')?.textContent ?? '',
@@ -166,6 +171,49 @@ for (const tema of ['light', 'dark']) {
     await pg.fill('.fn-barra input[type=search]', '')
     await pg.waitForTimeout(400)
     await pg.screenshot({ path: `${PASTA}/funil-barra-${tema}-${nome}.png`, fullPage:false })
+
+    /* --- 065: os selos, a ficha do site e o canal da fala (prancha 127) --- */
+    const selos = await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Futsal'))
+      return [...c.querySelectorAll('.fn-origem')].map(x => x.textContent)
+    })
+    conta(selos.join() === 'Site,PRIORIDADE,TESTE', `${tema} ${nome}: o lead do site leva Site, PRIORIDADE e TESTE (${selos.join(', ')})`)
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Futsal')).click())
+    await pg.waitForTimeout(900)
+    const site = await pg.evaluate(() => ({
+      abas: [...document.querySelectorAll('.fn-in-abas .seg button')].map(b => b.innerText.trim()),
+      canais: [...document.querySelectorAll('.fn-canal')].map(c => c.textContent),
+      robo: !!document.querySelector('.fn-balao.robo'),
+    }))
+    conta(site.abas.join() === 'Conversa,Ficha do site', `${tema} ${nome}: o lead do site tem as abas Conversa e Ficha do site`)
+    conta(site.canais.join('|') === 'No site, pelo chat da loja|WhatsApp da Fourtime', `${tema} ${nome}: a conversa separa o site do WhatsApp (${site.canais.join(' | ')})`)
+    conta(site.robo, `${tema} ${nome}: a fala do roteiro do chat aparece como robô`)
+    if (nome === 'computador') {
+      const mesa = await pg.evaluate(() => {
+        const q = document.querySelector('.fn-quadro').getBoundingClientRect()
+        const i = document.querySelector('.fn-inbox').getBoundingClientRect()
+        return { q: Math.round(q.right), i: Math.round(i.left) }
+      })
+      conta(mesa.q <= mesa.i, `${tema} ${nome}: a conversa aberta não tapa o quadro (quadro até ${mesa.q}, conversa de ${mesa.i})`)
+    }
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-in-abas .seg button')].find(b => /Ficha/.test(b.innerText)).click())
+    await pg.waitForTimeout(400)
+    const ficha = await pg.evaluate(() => ({
+      texto: document.querySelector('.fn-in-ficha')?.innerText ?? '',
+      link: document.querySelector('.fn-in-ficha a')?.getAttribute('href') ?? '',
+      html: !!document.querySelector('.fn-in-ficha b'),
+    }))
+    conta(/Kit camiseta e short/.test(ficha.texto) && /50 a 100 peças/.test(ficha.texto) && /Urgente/.test(ficha.texto),
+      `${tema} ${nome}: a ficha mostra o nome de cada código do orçamento`)
+    conta(/politica-2026-09/.test(ficha.texto) && /rafa@futsal/.test(ficha.texto) && /instagram · outubro/.test(ficha.texto),
+      `${tema} ${nome}: a ficha traz o aceite da LGPD, o e-mail e o anúncio`)
+    conta(ficha.link === 'https://fourtimefit.com.br/products/raglan' && /<b>logo<\/b>/.test(ficha.texto) && !ficha.html,
+      `${tema} ${nome}: o produto tem link, e o texto do cliente aparece como texto, nunca HTML`)
+    await pg.screenshot({ path: `${PASTA}/funil-ficha-${tema}-${nome}.png`, fullPage:false })
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Supermercado')).click())
+    await pg.waitForTimeout(900)
+    const zap = await pg.evaluate(() => ({ abas: !!document.querySelector('.fn-in-abas'), canais: document.querySelectorAll('.fn-canal').length }))
+    conta(!zap.abas && zap.canais === 0, `${tema} ${nome}: lead só do WhatsApp fica como antes, sem abas e sem separação`)
 
     /* --- a janela, nos quatro casos --- */
     const janela = async (texto) => {

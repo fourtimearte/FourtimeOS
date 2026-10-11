@@ -75,6 +75,9 @@ export type Mensagem = {
   /** QUANDO, em ISO. Nao "ha quantos minutos". */
   em: string
   lida?: boolean
+  /** onde a fala aconteceu (065): o WhatsApp da Fourtime, o chat do site ou o
+      WhatsApp do vendedor registrado pela extensao. Antes da 065, whatsapp. */
+  canal: 'whatsapp' | 'site' | 'whatsapp_vendedor'
 }
 
 export type Lead = {
@@ -111,6 +114,13 @@ export type Lead = {
   /** de onde o lead veio: site-chat, whatsapp, indicacao, manual, instagram */
   origem: string
   teste: boolean
+  /** o selo PRIORIDADE (065): reclamacao ou pergunta marcada como prioridade no chat */
+  prioridade: boolean
+  email: string
+  /** a ficha do chat da loja (065). Vazio para quem nao veio do site. */
+  briefing: Record<string, unknown>
+  consentimentoEm: string
+  consentimentoTexto: string
 }
 
 /** Quantos minutos desde um instante em ISO. Vazio devolve zero. */
@@ -214,6 +224,11 @@ export function leadEmBranco(): Lead {
     vendedorNome: '',
     origem: 'manual',
     teste: false,
+    prioridade: false,
+    email: '',
+    briefing: {},
+    consentimentoEm: '',
+    consentimentoTexto: '',
   }
 }
 

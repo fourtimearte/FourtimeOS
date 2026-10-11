@@ -33,6 +33,11 @@ type LinhaDoLead = {
   janela_ate: string | null
   origem: string | null
   teste: boolean
+  prioridade?: boolean
+  email?: string
+  briefing?: Record<string, unknown> | null
+  consentimento_em?: string | null
+  consentimento_texto?: string
   equipe: { nome: string } | null
   cotacao: { id: string }[] | null
   pedido: { numero: string }[] | null
@@ -42,10 +47,31 @@ type LinhaDoLead = {
    `pedido(numero)` vêm como lista porque a chave estrangeira está do lado
    deles: um lead pode ter mais de uma cotação, e é a mais recente que o cartão
    mostra. */
-const COLUNAS =
+const COLUNAS_ANTES_DA_065 =
   'id,nome,contato,telefone,cliente_id,estagio,valor,vendedor_id,ultima_msg,' +
   'ultima_msg_em,nao_lidas,janela_ate,origem,teste,equipe(nome),' +
   'cotacao(id),pedido(numero)'
+const COLUNAS_DA_065 = ',prioridade,email,briefing,consentimento_em,consentimento_texto'
+
+/* A 065 RODA DEPOIS DO CODIGO SUBIR. Ate o Henrique apertar Run, as colunas
+   do lead do site nao existem, e pedir coluna que nao existe derruba a leitura
+   inteira: o funil abriria vazio. Entao pergunta com elas e, se o banco disser
+   que nao conhece, pergunta sem elas e lembra disso ate recarregar a pagina. */
+let semA065 = false
+const naoConhece = (e: unknown) =>
+  e instanceof Error && /42703|PGRST204|does not exist|não existe|column/i.test(e.message)
+
+async function lerLeads(filtro: string): Promise<LinhaDoLead[]> {
+  if (!semA065) {
+    try {
+      return await tabela<LinhaDoLead[]>(`lead?select=${COLUNAS_ANTES_DA_065}${COLUNAS_DA_065}${filtro}`)
+    } catch (e) {
+      if (!naoConhece(e)) throw e
+      semA065 = true
+    }
+  }
+  return tabela<LinhaDoLead[]>(`lead?select=${COLUNAS_ANTES_DA_065}${filtro}`)
+}
 
 function deLinha(l: LinhaDoLead): Lead {
   return {
@@ -66,6 +92,11 @@ function deLinha(l: LinhaDoLead): Lead {
     vendedorNome: l.equipe?.nome ?? '',
     origem: l.origem ?? 'whatsapp',
     teste: !!l.teste,
+    prioridade: !!l.prioridade,
+    email: l.email ?? '',
+    briefing: l.briefing && typeof l.briefing === 'object' ? l.briefing : {},
+    consentimentoEm: l.consentimento_em ?? '',
+    consentimentoTexto: l.consentimento_texto ?? '',
   }
 }
 
@@ -82,16 +113,12 @@ function paraLinha(l: Lead) {
 }
 
 export async function carregarLeads(): Promise<Lead[]> {
-  const linhas = await tabela<LinhaDoLead[]>(
-    `lead?select=${COLUNAS}&order=ultima_msg_em.desc.nullslast,criado_em.desc`,
-  )
+  const linhas = await lerLeads('&order=ultima_msg_em.desc.nullslast,criado_em.desc')
   return linhas.map(deLinha)
 }
 
 export async function acharLead(id: string): Promise<Lead | null> {
-  const linhas = await tabela<LinhaDoLead[]>(
-    `lead?select=${COLUNAS}&id=eq.${encodeURIComponent(id)}`,
-  )
+  const linhas = await lerLeads(`&id=eq.${encodeURIComponent(id)}`)
   return linhas.length ? deLinha(linhas[0]) : null
 }
 
@@ -196,16 +223,21 @@ type LinhaDaMensagem = {
   nome_do_arquivo: string
   situacao: string
   em: string
+  canal?: 'whatsapp' | 'site' | 'whatsapp_vendedor'
 }
 
 export async function carregarConversa(leadId: string): Promise<Mensagem[]> {
   if (!leadId) return []
-  const linhas = await tabela<LinhaDaMensagem[]>(
-    'mensagem?select=id,quem,tipo,texto,arquivo,nome_do_arquivo,situacao,em' +
-      '&lead_id=eq.' +
-      encodeURIComponent(leadId) +
-      '&order=em.asc',
-  )
+  const resto = '&lead_id=eq.' + encodeURIComponent(leadId) + '&order=em.asc'
+  const campos = 'id,quem,tipo,texto,arquivo,nome_do_arquivo,situacao,em'
+  let linhas: LinhaDaMensagem[]
+  try {
+    linhas = await tabela<LinhaDaMensagem[]>('mensagem?select=' + campos + (semA065 ? '' : ',canal') + resto)
+  } catch (e) {
+    if (semA065 || !naoConhece(e)) throw e
+    semA065 = true
+    linhas = await tabela<LinhaDaMensagem[]>('mensagem?select=' + campos + resto)
+  }
   return linhas.map((m) => ({
     id: m.id,
     quem: m.quem,
@@ -215,6 +247,7 @@ export async function carregarConversa(leadId: string): Promise<Mensagem[]> {
     nomeDoArquivo: m.nome_do_arquivo ?? '',
     em: m.em,
     lida: m.situacao === 'lida',
+    canal: m.canal ?? 'whatsapp',
   }))
 }
 

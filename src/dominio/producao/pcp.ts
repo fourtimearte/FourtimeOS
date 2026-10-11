@@ -50,6 +50,8 @@ export type PedidoNoPcp = {
   vendedorMotivo: string
   vendedorEm: string
   vendedorPor: string
+  /** o vendedor como pessoa (064): a conversa do pedido abre nele */
+  vendedorId: string
 }
 
 /** um pedido que já passou pelo portão (063) */
@@ -101,6 +103,7 @@ type LinhaDoPcp = {
   vendedor_motivo?: string
   vendedor_em?: string | null
   vendedor_por_nome?: string
+  vendedor_id?: string | null
 }
 
 function daLinha(l: LinhaDoPcp): PedidoNoPcp {
@@ -136,6 +139,7 @@ function daLinha(l: LinhaDoPcp): PedidoNoPcp {
     vendedorMotivo: l.vendedor_motivo || '',
     vendedorEm: l.vendedor_em ?? '',
     vendedorPor: l.vendedor_por_nome || '',
+    vendedorId: l.vendedor_id ?? '',
   }
 }
 

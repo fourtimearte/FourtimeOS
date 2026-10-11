@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ArrowFatLineDown } from '@phosphor-icons/react'
 import {
   Botao,
@@ -135,6 +136,24 @@ export function TelaPcp() {
       vivo = false
     }
   }, [recarregar])
+
+  /* O PEDIDO DO ENDEREÇO (?pedido=<id>): é por aí que o sino chega aqui. Na
+     fila, ele abre na aba dele; nos liberados, na aba Liberados. */
+  const [parametros] = useSearchParams()
+  const doEndereco = parametros.get('pedido') ?? ''
+  const abertoPeloEndereco = useRef('')
+  useEffect(() => {
+    if (carregando || !doEndereco || abertoPeloEndereco.current === doEndereco) return
+    abertoPeloEndereco.current = doEndereco
+    const p = fila.find(x => x.id === doEndereco)
+    if (p) {
+      setAba(p.comOVendedor ? 'devolvidos' : 'portao')
+      setEscolhido(p.id)
+    } else if ((liberados ?? []).some(x => x.id === doEndereco)) {
+      setAba('liberados')
+      setEscolhido(doEndereco)
+    }
+  }, [carregando, doEndereco, fila, liberados])
 
   const b = semAcento(busca.trim())
   const bate = (numero: string, cliente: string) =>
@@ -383,6 +402,8 @@ export function TelaPcp() {
                   key={aberto.id}
                   p={aberto}
                   eu={eu.nome}
+                  euId={eu.id}
+                  doPcp={podeMarcar}
                   podeMarcar={podeMarcar}
                   podeDevolverAoVendedor={podeMarcar}
                   podeAprovar={podeAprovar}

@@ -1,0 +1,101 @@
+/* ==========================================================================
+   O sino do topo: a caixa que abre debaixo do botão.
+   ========================================================================== */
+.sn-caixa {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sn-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--re-4);
+  padding: var(--re-5) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.sn-ler {
+  min-height: 34px;
+  padding: 0 var(--re-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.sn-ler:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.sn-ler:focus-visible,
+.sn-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.sn-nada {
+  margin: 0;
+  padding: var(--re-7);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.sn-lista {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.sn-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-5);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--re-5) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.sn-item:last-child {
+  border-bottom: 0;
+}
+.sn-item:hover {
+  background-color: var(--surface-2);
+}
+.sn-novo {
+  color: var(--text);
+}
+.sn-novo .sn-texto {
+  font-weight: 600;
+}
+.sn-ic {
+  display: inline-flex;
+  flex: none;
+  margin-top: var(--re-1);
+  color: var(--text-3);
+}
+.sn-novo .sn-ic {
+  color: var(--icon-accent);
+}
+.sn-meio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--re-1);
+  min-width: 0;
+}
+.sn-texto {
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.sn-meio small {
+  font-size: 12px;
+  color: var(--text-3);
+}

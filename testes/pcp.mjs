@@ -14,6 +14,7 @@
         Devolver ao vendedor (com motivo); no marcado, Aprovar para a
         produção, Devolver ao PCP e Tirar a marca
      4. Devolvidos (Voltar a conferir) e Liberados (quem aprovou)
+     4d. P4: a conversa do pedido e o sino do topo
      4c. P3: a comparação dos componentes por layout, com as diferenças
      4b. P2: o orçamento e os layouts com valor no meio, as aprovações ao
         lado; no celular, as abas Conferência e Orçamento
@@ -58,7 +59,7 @@ const linha = (n, numero, cliente, pecas, entrega, extra = {}) => ({
   com_o_vendedor: false, vendedor_motivo: '', vendedor_em: null, vendedor_por_nome: '', ...extra,
 })
 const FILA = [
-  linha(413, 'PD004413', 'Atlético Exemplo', 186, dia(14), { conferindo_em: AGORA, conferindo_por_nome: 'Bruna' }),
+  linha(413, 'PD004413', 'Atlético Exemplo', 186, dia(14), { conferindo_em: AGORA, conferindo_por_nome: 'Bruna', vendedor_id: '00000000-0000-4000-7000-000000000002' }),
   linha(409, 'PD004409', 'Banda Exemplo', 52, dia(10)),
   linha(410, 'PD004410', 'Grêmio Exemplo', 90, dia(13), { devolvido_motivo: 'Falta conferir a grade do goleiro.', devolvido_em: AGORA, devolvido_por_nome: 'Henrique', conferindo_por_nome: 'Bruna', conferindo_em: AGORA }),
   linha(401, 'PD004401', 'Auto Peças Exemplo', 36, dia(6), { marcado: true, marcado_em: AGORA, marcado_por_nome: 'Bruna' }),
@@ -88,6 +89,18 @@ const CONSUMO = [
 const RES = (material_id, material, quantidade, separado) => ({ id: 'res-' + material_id, pedido_id: ID(413), pedido: 'PD004413', material_id, material, categoria: 'tecido', quantidade, unidade: 'kg', pecas: 10, sem_consumo: false, baixada: true, separado, saldo: 50, o_estoque_cobre: true })
 const RESERVAS = [RES('m1', 'DRYFIT POLIESTER 100% · Azul Royal', 4, 4), RES('m2', 'DRYFIT POLIESTER 100% · Preto', 3, 2.5), RES('m3', 'ALGODAO 100% · Branco', 0.6, 0.6)]
 
+/* a conversa (064) do PD004413 com a Dani, e o sino */
+const PESSOA = { dani: '00000000-0000-4000-7000-000000000002', leo: '00000000-0000-4000-7000-000000000003', eu: '1' }
+const CONVERSA = [
+  { id: 'c1', pedido_id: ID(413), com: PESSOA.dani, com_nome: 'Dani Exemplo', com_papel: 'vendedor', quem: PESSOA.eu, quem_nome: 'Bruna', texto: 'Dani, o L-03 está sem etiqueta. É a Eti. Fourtime, igual às outras duas?', em: AGORA },
+  { id: 'c2', pedido_id: ID(413), com: PESSOA.dani, com_nome: 'Dani Exemplo', com_papel: 'vendedor', quem: PESSOA.dani, quem_nome: 'Dani Exemplo', texto: 'É sim, igual às outras. Esqueci de marcar.', em: AGORA },
+]
+const EQUIPE = [{ id: PESSOA.dani, nome: 'Dani Exemplo', papel: 'vendedor' }, { id: PESSOA.leo, nome: 'Léo Arte', papel: 'producao' }]
+const AVISOS = [
+  { id: 'a1', tipo: 'conversa', texto: 'PD004413: É sim, igual às outras.', link: '/pcp?pedido=' + ID(413), pedido_id: ID(413), de_nome: 'Dani Exemplo', criado_em: AGORA, lido_em: null },
+  { id: 'a2', tipo: 'devolvido', texto: 'PD004420 voltou do PCP: O L-03 está sem etiqueta.', link: '/pcp?pedido=' + ID(420), pedido_id: ID(420), de_nome: 'Bruna', criado_em: AGORA, lido_em: AGORA },
+]
+
 const PAGINAS = ['inicio', 'funil', 'clientes', 'cotacao', 'separacao', 'pcp', 'ficha', 'kanban', 'produtos', 'estoque', 'atividades', 'relatorio', 'transporte', 'banco', 'config', 'kit']
 function perfil(papel) {
   const permissoes = {}
@@ -99,7 +112,7 @@ function perfil(papel) {
         : { ver: true, editar: false, deletar: false, total: false }
   }
   const nome = { admin: 'Henrique', producao: 'Bruna', vendedor: 'Dani' }[papel]
-  return [{ id: '1', nome, papel, situacao: 'aprovado', paineis: PAGINAS, permissoes, email: 't@f', foto_em: null }]
+  return [{ id: papel === 'vendedor' ? PESSOA.dani : '1', nome, papel, situacao: 'aprovado', paineis: PAGINAS, permissoes, email: 't@f', foto_em: null }]
 }
 
 const abertos = new Set()
@@ -119,6 +132,16 @@ async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admi
     } else if (u.includes('/rest/v1/cotacao?') && u.includes('id=eq.')) {
       const id = u.split('id=eq.')[1].split('&')[0]
       corpo = [{ id, numero: 'CO2026-0131', corpo: cotacaoDoAtletico(), versao_do_formato: 6, estado: 'aprovada', criada_em: AGORA, atualizado_em: AGORA }]
+    } else if (u.includes('/rest/v1/conversa_na_lista')) {
+      if (sem063) return json({ code: 'PGRST205', message: "Could not find the table 'public.conversa_na_lista' in the schema cache" }, 404)
+      corpo = CONVERSA.filter((c) => u.includes(c.pedido_id) && (papel !== 'vendedor' || c.com === PESSOA.dani))
+    } else if (u.includes('/rest/v1/aviso_na_lista')) {
+      if (sem063) return json({ code: 'PGRST205', message: "Could not find the table 'public.aviso_na_lista' in the schema cache" }, 404)
+      corpo = AVISOS
+    } else if (u.includes('/rest/v1/papel_do_sistema')) {
+      corpo = [['admin', 'Administrador'], ['gerente', 'Gerente'], ['vendedor', 'Vendedor'], ['producao', 'Produção']].map(([chave, nome], ordem) => ({ chave, nome, linha: '', fixo: chave === 'admin', ordem }))
+    } else if (u.includes('/rest/v1/equipe?')) {
+      corpo = EQUIPE
     } else if (u.includes('/rest/v1/referencia_na_ficha')) {
       corpo = FICHAS.filter((f) => u.includes('"' + f.cod + '"'))
     } else if (u.includes('/rest/v1/consumo_do_layout')) {
@@ -336,6 +359,66 @@ await secao(async () => {
   await pausa(pg)
   conta(/Com diferença ou falta 3/.test(await texto(pg, '.pc-kpis')), 'os números contam o pedido com diferença')
   conta(!erros.length, 'sem erro de JavaScript (P3): ' + erros.join(' | '))
+})
+
+
+/* P4: a conversa do pedido e o sino */
+await secao(async () => {
+  const { pg, erros, gravados } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  conta(await pg.locator('[data-sino-sinal]').count() === 1 && (await pg.getByRole('button', { name: 'Avisos, 1 sem ler' }).count()) === 1, 'o sino acende com o aviso sem ler')
+  await pg.getByRole('button', { name: /^Avisos/ }).click()
+  await pausa(pg)
+  const avs = await pg.evaluate(() => [...document.querySelectorAll('.sn-item')].map((b) => [b.className, b.innerText.replace(/\s+/g, ' ').trim()]))
+  conta(avs.length === 2 && /sn-novo/.test(avs[0][0]) && /PD004413: É sim/.test(avs[0][1]) && /Dani Exemplo/.test(avs[0][1]) && !/sn-novo/.test(avs[1][0]), 'a lista do sino: o novo em negrito, o lido apagado: ' + avs.map((a) => a[1]).join(' | '))
+  await foto(pg, '1920-sino', false)
+  await pg.locator('.sn-item').first().click()
+  await pausa(pg, 800)
+  conta(new URL(pg.url()).search === '?pedido=' + ID(413) && await pg.locator('[data-pedido="PD004413"].escolhido').count() === 1, 'clicar no aviso abre o pedido: ' + new URL(pg.url()).search)
+  conta(gravados.some((g) => g.rpc === 'ler_avisos' && JSON.stringify(g.corpo.p_ids) === '["a1"]') && await pg.locator('[data-sino-sinal]').count() === 0, 'e marca o aviso como lido, e a bolinha apaga')
+  await pg.waitForSelector('.pc-msg', { timeout: 8000 })
+  const conv = await texto(pg, '.pc-conversa')
+  conta(/Conversa deste pedido/.test(conv) && /Vendedor · Dani/.test(conv) && /Bruna hoje, \d\d:\d\d Dani, o L-03 está sem etiqueta/.test(conv) && /Dani Exemplo hoje/.test(conv), 'a conversa com o vendedor: ' + conv.slice(0, 160))
+  conta(/A mensagem fica guardada no pedido e avisa a pessoa no sino do sistema\./.test(conv), 'o recado do pé da conversa')
+  const lado = await pg.evaluate(() => { const l = document.querySelector('.pc-ped-lado').getBoundingClientRect(); const c = document.querySelector('.pc-ped-conversa').getBoundingClientRect(); return { x: Math.round(c.left - l.left), embaixo: c.top >= l.bottom } })
+  conta(lado.x === 0 && lado.embaixo, 'a conversa na coluna da direita, embaixo das aprovações e da comparação')
+  const caixa = pg.getByLabel('Escrever para Dani')
+  await caixa.fill('Marquei a Eti. Fourtime.')
+  await caixa.press('Enter')
+  await pausa(pg, 500)
+  conta(gravados.some((g) => g.rpc === 'falar_no_pedido' && g.corpo.p_com === PESSOA.dani && g.corpo.p_texto === 'Marquei a Eti. Fourtime.' && g.corpo.p_pedido === ID(413)), 'Enter manda a mensagem para a Dani')
+  /* outra pessoa */
+  await pg.locator('.pc-conversa .sel button.cb').click()
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Léo Arte' }).click()
+  await pausa(pg)
+  conta(/Produção · Léo/.test(await texto(pg, '.pc-conversa-abas')) && /Nenhuma mensagem com Léo ainda\./.test(await texto(pg, '.pc-conversa')), 'Outra pessoa abre a conversa com o Léo: ' + (await texto(pg, '.pc-conversa-abas')))
+  await foto(pg, '1920-conversa', true)
+  conta(!erros.length, 'sem erro de JavaScript (P4): ' + erros.join(' | '))
+})
+await secao(async () => {
+  const { pg, erros, gravados } = await abrir(nav, { largura: 1440, papel: 'vendedor' })
+  await pg.goto(SITE + '/pcp?pedido=' + ID(413), { waitUntil: 'networkidle' })
+  await pg.waitForSelector('.pc-msg', { timeout: 15000 })
+  await pausa(pg, 400)
+  conta(await pg.locator('.pc-conversa .sel').count() === 0 && /Vendedor · Dani/.test(await texto(pg, '.pc-conversa')) === false, 'o vendedor chega pelo endereço e vê só a conversa dele, sem Outra pessoa')
+  await pg.getByLabel('Escrever para o PCP').fill('Pode seguir.')
+  await pg.getByRole('button', { name: 'Enviar a mensagem' }).click()
+  await pausa(pg, 400)
+  conta(gravados.some((g) => g.rpc === 'falar_no_pedido' && g.corpo.p_com === PESSOA.dani), 'o vendedor responde na conversa dele (' + JSON.stringify(gravados.find((g) => g.rpc === 'falar_no_pedido')?.corpo ?? {}) + ')')
+  conta(!erros.length, 'sem erro de JavaScript (vendedor na conversa): ' + erros.join(' | '))
+})
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await ir(pg)
+  await pg.locator('[data-pedido="PD004413"]').click()
+  await pausa(pg, 600)
+  await pg.locator('.pc-ped-abas button', { hasText: 'Conversa' }).click()
+  await pg.waitForSelector('.pc-msg', { timeout: 8000 })
+  await pausa(pg)
+  conta(await pg.locator('.pc-conversa').isVisible() && !(await pg.locator('.pc-aprovacoes').isVisible()) && /Conversa 2/.test(await texto(pg, '.pc-ped-abas')), 'no celular, a aba Conversa com a conta das mensagens')
+  conta(await sobra(pg) <= 0, '390: a conversa não rola de lado')
+  await foto(pg, '390-p4-conversa')
+  conta(!erros.length, 'sem erro de JavaScript (P4 no celular): ' + erros.join(' | '))
 })
 
 /* 5: a produção confere e não aprova; o vendedor só olha */

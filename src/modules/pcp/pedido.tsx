@@ -30,6 +30,7 @@ import {
 import { ModalDaFolha } from '@modules/cotacao'
 import { dataCurta, emDias, quando, temFalta } from './fila'
 import { CartaoDaComparacao } from './comparacao'
+import { CartaoDaConversa } from './conversa'
 import { CartaoDoLayoutNoPcp, CartaoDoOrcamento } from './orcamento'
 
 /* ==========================================================================
@@ -121,6 +122,8 @@ function linhaDoPedido(p: {
 export function PedidoAberto({
   p,
   eu,
+  euId,
+  doPcp,
   podeMarcar,
   podeDevolverAoVendedor,
   podeAprovar,
@@ -132,6 +135,9 @@ export function PedidoAberto({
   p: PedidoNoPcp
   /** o nome de quem está olhando, para "Henrique decide" */
   eu: string
+  euId: string
+  /** vê a página do PCP: conversa com qualquer pessoa */
+  doPcp: boolean
   podeMarcar: boolean
   podeDevolverAoVendedor: boolean
   podeAprovar: boolean
@@ -150,7 +156,11 @@ export function PedidoAberto({
   /* undefined: lendo; null: não achou */
   const [cotacao, setCotacao] = useState<Cotacao | null | undefined>(undefined)
   /* no celular e no tablet, uma parte por vez (pranchas 91 e 92) */
-  const [aba, setAba] = useState<'conferencia' | 'orcamento'>('conferencia')
+  const [aba, setAba] = useState<'conferencia' | 'orcamento' | 'conversa'>(
+    /* quem não confere (o vendedor que chegou pelo sino) começa pela conversa */
+    doPcp ? 'conferencia' : 'conversa',
+  )
+  const [mensagens, setMensagens] = useState(0)
 
   useEffect(() => {
     let vivo = true
@@ -292,8 +302,15 @@ export function PedidoAberto({
           valor={aba}
           aoMudar={setAba}
           opcoes={[
-            { valor: 'conferencia', rotulo: 'Conferência' },
+            {
+              valor: 'conferencia',
+              rotulo: <>Conferência {diferencas ? <small>{diferencas}</small> : null}</>,
+            },
             { valor: 'orcamento', rotulo: 'Orçamento' },
+            {
+              valor: 'conversa',
+              rotulo: <>Conversa {mensagens ? <small>{mensagens}</small> : null}</>,
+            },
           ]}
         />
         <div className="pc-ped-orcamento">
@@ -460,6 +477,9 @@ export function PedidoAberto({
           </div>
         </section>
         <CartaoDaComparacao layouts={comparacao} aceitas={p.marcado} />
+      </div>
+      <div className="pc-ped-conversa">
+        <CartaoDaConversa p={p} eu={{ id: euId, nome: eu }} doPcp={doPcp} aoContar={setMensagens} />
       </div>
 
       {folha ? (

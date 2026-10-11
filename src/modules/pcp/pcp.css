@@ -459,7 +459,8 @@
 }
 .pc-ped-meio,
 .pc-ped-orcamento,
-.pc-ped-lado {
+.pc-ped-lado,
+.pc-ped-conversa {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
@@ -471,20 +472,49 @@
 }
 .pc-ped-abas button {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--re-3);
+}
+.pc-ped-abas button small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
 }
 .pc-ped[data-aba='conferencia'] .pc-ped-orcamento,
-.pc-ped[data-aba='orcamento'] .pc-ped-lado {
+.pc-ped[data-aba='conferencia'] .pc-ped-conversa,
+.pc-ped[data-aba='orcamento'] .pc-ped-lado,
+.pc-ped[data-aba='orcamento'] .pc-ped-conversa,
+.pc-ped[data-aba='conversa'] .pc-ped-orcamento,
+.pc-ped[data-aba='conversa'] .pc-ped-lado {
   display: none;
 }
 @container pedido-pcp (min-width: 900px) {
+  /* o meio ocupa as duas fileiras; à direita, as aprovações e a comparação
+     em cima, a conversa embaixo */
   .pc-ped {
     grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'meio lado'
+      'meio conversa';
+  }
+  .pc-ped-meio {
+    grid-area: meio;
+  }
+  .pc-ped-lado {
+    grid-area: lado;
+  }
+  .pc-ped-conversa {
+    grid-area: conversa;
   }
   .pc-ped .pc-ped-abas {
     display: none;
   }
   .pc-ped[data-aba] .pc-ped-orcamento,
-  .pc-ped[data-aba] .pc-ped-lado {
+  .pc-ped[data-aba] .pc-ped-lado,
+  .pc-ped[data-aba] .pc-ped-conversa {
     display: flex;
   }
 }
@@ -728,4 +758,89 @@
 }
 .pc-cab-apoio.pc-alerta {
   color: var(--brand-text);
+}
+
+/* --- a conversa do pedido (parte P4) --------------------------------------- */
+.pc-conversa {
+  overflow: hidden;
+  min-width: 0;
+}
+.pc-conversa-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--re-7);
+}
+.pc-conversa-corpo > .pc-nada {
+  padding: 0;
+}
+.pc-conversa-quem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.pc-conversa-abas {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.pc-conversa-abas button {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-height: 420px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.pc-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-5);
+}
+.pc-msg-meio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--re-1);
+  min-width: 0;
+}
+.pc-msg-quem {
+  font-size: 13px;
+}
+.pc-msg-quem small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.pc-msg-meio p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pc-escrever {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--gap-btn);
+}
+.pc-escrever textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+}
+.pc-enviar {
+  flex: none;
+}
+.pc-conversa-pe {
+  font-size: 12px;
 }

@@ -53,6 +53,8 @@ export type { FatiaNoQuadro, PedidoNoTrilho, Rota } from './kanban'
 export { BlocoDaFatia } from './degraus'
 
 export { compararOsComponentes, quanto } from './comparacao'
+export { carregarConversa, carregarEquipeParaConversa, falarNoPedido } from './conversa'
+export type { MensagemDoPedido, PessoaDaEquipe } from './conversa'
 export type {
   ComparacaoDoLayout,
   ConsumoParaComparar,

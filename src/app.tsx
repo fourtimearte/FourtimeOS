@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Barcode,
-  Bell,
   Calculator,
   CalendarCheck,
   ChartBar,
@@ -53,6 +52,7 @@ import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
 import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
 import { abasDaConfigDe, ICONE_DA_ABA } from '@modules/config'
+import { Sino } from '@modules/sino'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
    roteador e a lista de modulos ao mesmo tempo. A casca em si nao sabe o que e
@@ -509,10 +509,9 @@ export function App() {
             {/* Quem está usando o sistema mora no pé do menu, com nome e papel
                 à vista. A bolinha aqui em cima era a segunda vez que a mesma
                 coisa aparecia na mesma tela, e a pior das duas. */}
-            <button type="button" className="bt-icone" aria-label="Avisos" title="Avisos">
-              <Bell size={20} />
-              <span className="sinal" />
-            </button>
+            {/* O sino lê os avisos da pessoa (064): a bolinha só acende com
+                aviso sem ler. */}
+            <Sino />
           </>
         }
         peDoLado={

@@ -1,0 +1,201 @@
+/* A coluna lateral com as medidas e as cores do Design System V7 (Gelo e
+   Grafite), copiadas aqui porque a extensao nao carrega o CSS do sistema. */
+:root {
+  --bg: #ebedf1;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --border: #d8dce3;
+  --border-2: #c2c8d1;
+  --text: #1a1d23;
+  --text-2: #5c6470;
+  --text-3: #8b929d;
+  --brand: #c6161b;
+  --brand-text: #b3121a;
+  --brand-soft: #fdecec;
+  --ink: #1a1d23;
+  --on-ink: #ffffff;
+  --ok: #1f8a50;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131416;
+    --surface: #1c1e21;
+    --surface-2: #25282c;
+    --border: #2b2f35;
+    --border-2: #3b4048;
+    --text: #edeef0;
+    --text-2: #a2a8b1;
+    --text-3: #6f7680;
+    --brand: #e0262e;
+    --brand-text: #ff6b70;
+    --brand-soft: #3b1b1d;
+    --ink: #edeef0;
+    --on-ink: #131416;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 14.5px/1.4 'Urbanist', system-ui, sans-serif;
+}
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.marca {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.quem {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.cartao {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sobre {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.apoio {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.linha span {
+  color: var(--text-2);
+}
+.linha b {
+  font-weight: 600;
+  text-align: right;
+}
+.selo {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn.forte {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+.btn.limpo {
+  border-color: transparent;
+  background: none;
+  color: var(--text-2);
+  height: 34px;
+  padding: 0 8px;
+}
+.btn:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-family: inherit;
+}
+.erro {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pe {
+  padding: 8px 16px 12px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}

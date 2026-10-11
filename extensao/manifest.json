@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Fourtime OS",
+  "version": "0.1.0",
+  "description": "Prova: o WhatsApp Web do vendedor com a cara do Fourtime OS e o lead da conversa aberta ao lado.",
+  "permissions": ["sidePanel", "storage", "tabs"],
+  "host_permissions": ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
+  "background": { "service_worker": "fundo.js" },
+  "side_panel": { "default_path": "lado.html" },
+  "action": { "default_title": "Fourtime OS" },
+  "icons": { "128": "icone.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://fourtimeos.arte-adc.workers.dev/*", "http://127.0.0.1/*", "http://localhost/*"],
+      "js": ["anuncio.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["whatsapp.js"],
+      "css": ["whatsapp.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

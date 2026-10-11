@@ -93,7 +93,24 @@ export function linkDoWhatsAppWeb(telefone: string, mensagem = '') {
   )
 }
 
+/** A versao da extensao Fourtime OS neste Chrome, ou '' sem ela. Quem marca e
+    a propria extensao (extensao/anuncio.js), na raiz da pagina. */
+export function versaoDaExtensao(): string {
+  if (typeof document === 'undefined') return ''
+  return document.documentElement.dataset.fourtimeExtensao ?? ''
+}
+
 export function abrirNoWhatsApp(telefone: string, mensagem = '') {
+  /* COM A EXTENSAO, a conversa troca na aba do WhatsApp que ja esta aberta,
+     sem aba nova e, se o WhatsApp aceitar, sem recarregar. O pedido vai para a
+     propria janela; a extensao pega e leva. */
+  if (noComputador() && versaoDaExtensao()) {
+    window.postMessage(
+      { fourtime: 'abrir-whatsapp', telefone: numeroComPais(telefone), texto: mensagem },
+      window.location.origin,
+    )
+    return
+  }
   const link = noComputador()
     ? linkDoWhatsAppWeb(telefone, mensagem)
     : mensagem

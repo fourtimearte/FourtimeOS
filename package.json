@@ -41,7 +41,8 @@
     "produtos": "node testes/produtos.mjs",
     "orcamento": "node testes/orcamento.mjs",
     "separacao": "node testes/separacao.mjs",
-    "pcp": "node testes/pcp.mjs"
+    "pcp": "node testes/pcp.mjs",
+    "extensao": "node testes/extensao.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

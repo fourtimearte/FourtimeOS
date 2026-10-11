@@ -1,0 +1,16 @@
+/* A cara do Fourtime OS no WhatsApp Web. Na prova, so a letra e a faixa
+   vermelha no topo: o bastante para saber que o CSS entra e nao quebra nada.
+   Cores e cantos sao da W2, depois de a prova passar. */
+html.fourtime-os body,
+html.fourtime-os body * {
+  font-family: 'Urbanist', system-ui, sans-serif !important;
+}
+html.fourtime-os body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: #c6161b;
+  z-index: 2147483647;
+  pointer-events: none;
+}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus } from '@phosphor-icons/react'
 import { Botao, Pagina, Vazio, avisar } from '@ds'
 import { cotacaoNovaDaCasa, proximoNumero, salvarCotacao } from '@dominio/cotacao'
@@ -98,6 +98,26 @@ export function TelaFunil() {
   useEffect(() => {
     void recarregar()
   }, [recarregar])
+
+  /* ?lead=<id> ABRE AQUELE LEAD. E por onde a coluna lateral da extensao, no
+     WhatsApp, traz o vendedor para o cartao da conversa que ele esta lendo.
+     O parametro sai da barra depois de usado, senao fechar o inbox e o React
+     redesenhar abriria o mesmo lead de novo (o mesmo cuidado de ?abrir= nos
+     clientes). */
+  const [parametros, setParametros] = useSearchParams()
+  const pedidoDeLead = parametros.get('lead') ?? ''
+  useEffect(() => {
+    if (!pedidoDeLead || carregando) return
+    if (leads.some((l) => l.id === pedidoDeLead)) setAbertoId(pedidoDeLead)
+    else avisar('Esse lead não está no seu funil', 'warn')
+    setParametros(
+      (p) => {
+        p.delete('lead')
+        return p
+      },
+      { replace: true },
+    )
+  }, [pedidoDeLead, carregando, leads, setParametros])
 
   const aberto = leads.find((l) => l.id === abertoId) ?? null
 

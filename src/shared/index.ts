@@ -12,6 +12,7 @@ export {
   linkDoWhatsAppWeb,
   abrirNoWhatsApp,
   noComputador,
+  versaoDaExtensao,
   semAcento,
 } from './formatar'
 

@@ -15,3 +15,9 @@ export {
   salvarLead,
 } from './repositorio'
 export type { DonoPossivel } from './repositorio'
+export {
+  carregarRegraDoLeadDoSite,
+  salvarRegraDoLeadDoSite,
+  type ModoDoLeadDoSite,
+  type RegraDoLeadDoSite,
+} from './regra'

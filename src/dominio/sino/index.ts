@@ -2,13 +2,14 @@ import { chamar, tabela } from '@shared/supabase'
 
 /* ==========================================================================
    O SINO DO TOPO (064). Cada pessoa lê só os avisos dela: a mensagem nova
-   na conversa de um pedido, e o pedido que o PCP devolveu ao vendedor.
+   na conversa de um pedido, o pedido que o PCP devolveu ao vendedor e,
+   desde a 065, o lead que chegou pelo chat do site.
    Quem escreve aviso é o banco (função e gatilho), nunca a tela.
    ========================================================================== */
 
 export type AvisoDoSino = {
   id: string
-  tipo: 'conversa' | 'devolvido'
+  tipo: 'conversa' | 'devolvido' | 'lead'
   texto: string
   /** para onde o clique leva, dentro do sistema */
   link: string
@@ -19,7 +20,7 @@ export type AvisoDoSino = {
 
 type LinhaDoAviso = {
   id: string
-  tipo: 'conversa' | 'devolvido'
+  tipo: 'conversa' | 'devolvido' | 'lead'
   texto: string
   link: string
   de_nome: string

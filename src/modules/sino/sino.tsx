@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowUUpLeft, Bell, ChatCircleText } from '@phosphor-icons/react'
+import { ArrowUUpLeft, Bell, ChatCircleText, Globe } from '@phosphor-icons/react'
 import { Flutuante } from '@ds'
 import { carregarMeusAvisos, lerAvisos, type AvisoDoSino } from '@dominio/sino'
 import './sino.css'
@@ -133,6 +133,8 @@ export function Sino() {
                   <span className="sn-ic" aria-hidden="true">
                     {a.tipo === 'devolvido' ? (
                       <ArrowUUpLeft size={17} />
+                    ) : a.tipo === 'lead' ? (
+                      <Globe size={17} />
                     ) : (
                       <ChatCircleText size={17} />
                     )}

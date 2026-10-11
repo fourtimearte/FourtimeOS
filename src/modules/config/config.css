@@ -408,3 +408,13 @@
 .cfg-ruim {
   color: var(--brand-text);
 }
+
+/* quem recebe o lead do site (065): o texto, o seletor e a nota numa coluna */
+.cfg-lead-do-site {
+  gap: var(--gap-dentro);
+  margin-top: var(--sp-3);
+}
+.cfg-lead-do-site p,
+.cfg-lead-do-site small {
+  margin: 0;
+}

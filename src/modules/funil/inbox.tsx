@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PencilSimple } from '@phosphor-icons/react'
+import { PencilSimple, WhatsappLogo } from '@phosphor-icons/react'
 import { Botao, avisar } from '@ds'
 import { formatarTelefone } from '@shared'
 import {
@@ -7,7 +7,7 @@ import {
   iniciais,
   janelaApertada,
   janelaDaConversa,
-  linkDoWhatsApp,
+  abrirLeadNoWhatsApp,
   nomeDoLead,
   minutosDesde,
   preencher,
@@ -25,7 +25,9 @@ import {
    trabalha: quem responde WhatsApp o dia inteiro nao quer abrir e fechar nada.
 
    Nada e enviado daqui. O botao abre a conversa no WhatsApp com o texto
-   pronto, que foi a decisao 1 do passo 1: wa.me agora, API oficial depois.
+   pronto, que foi a decisao 1 do passo 1. Desde o W1 (plano 16, 11/10/2026)
+   o computador vai direto ao WhatsApp Web, sem a pagina do meio do wa.me, e
+   o icone do topo abre a conversa sem texto nenhum.
    ========================================================================== */
 
 export function Inbox({
@@ -92,6 +94,17 @@ export function Inbox({
         {/* O LÁPIS FICA AO LADO DO NOME porque é o nome que ele muda. No
             rodapé, junto de Criar cliente e Criar cotação, ele viraria a
             terceira ação de uma fileira e ninguém ligaria ele ao cabeçalho. */}
+        {/* ABRIR SEM TEXTO. Quem so quer ver a conversa (a arte que chegou, o
+            audio) nao deveria ter que escrever alguma coisa para chegar la. */}
+        <button
+          type="button"
+          className="fn-in-fechar fn-in-wa"
+          onClick={() => abrirLeadNoWhatsApp(l)}
+          aria-label={'Abrir a conversa com ' + nomeDoLead(l) + ' no WhatsApp'}
+          title="Abrir no WhatsApp"
+        >
+          <WhatsappLogo size={18} weight="bold" />
+        </button>
         {podeMexer ? (
           <button
             type="button"
@@ -170,7 +183,7 @@ export function Inbox({
               avisar('Escreva ou escolha uma resposta rápida antes', 'warn')
               return
             }
-            window.open(linkDoWhatsApp(l, t), '_blank', 'noopener')
+            abrirLeadNoWhatsApp(l, t)
             aoRegistrar(l, t)
             setTexto('')
           }}

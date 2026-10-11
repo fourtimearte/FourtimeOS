@@ -710,3 +710,18 @@
   gap: var(--gap-btn);
   flex-wrap: wrap;
 }
+
+/* o icone do WhatsApp no topo do inbox: verde de "ok", e nao o --wa, que e
+   claro demais para um icone fino em fundo branco (so serve de ponto) */
+.fn-in-fechar.fn-in-wa {
+  color: var(--ok);
+}
+
+/* no toque, os icones do topo do inbox ganham o alvo de 44 px do V7: sao tres
+   lado a lado (WhatsApp, lapis, fechar), e errar um deles abre outra coisa */
+@media (pointer: coarse) {
+  .fn-in-fechar {
+    width: 44px;
+    height: 44px;
+  }
+}

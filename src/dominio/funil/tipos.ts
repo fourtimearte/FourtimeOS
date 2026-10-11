@@ -1,4 +1,4 @@
-import { formatarDinheiro as dinheiro, linkDoWhatsApp as linkDoZap } from '@shared'
+import { abrirNoWhatsApp, formatarDinheiro as dinheiro, linkDoWhatsApp as linkDoZap } from '@shared'
 
 /* ==========================================================================
    O funil de vendas, do jeito que o mockup v5 desenhou.
@@ -252,6 +252,11 @@ export function preencher(texto: string, l: Lead): string {
 
 export function linkDoWhatsApp(l: Lead, mensagem: string): string {
   return linkDoZap(l.telefone, mensagem)
+}
+
+/** Abre a conversa do lead: WhatsApp Web no computador, o aplicativo no celular. */
+export function abrirLeadNoWhatsApp(l: Lead, mensagem = '') {
+  abrirNoWhatsApp(l.telefone, mensagem)
 }
 
 /** O v5 escreve dinheiro sem centavos no cartao e no topo da coluna. */

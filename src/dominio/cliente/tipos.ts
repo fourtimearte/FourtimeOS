@@ -1,4 +1,4 @@
-import { linkDoWhatsApp as linkDoZap } from '@shared'
+import { abrirNoWhatsApp, linkDoWhatsApp as linkDoZap } from '@shared'
 
 /* O que e um cliente para o sistema.
 
@@ -158,5 +158,10 @@ export {
 /* O link do WhatsApp com a mensagem pronta, que foi a decisao 1 do passo 1. */
 export function linkDoWhatsApp(c: Cliente, mensagem: string) {
   return linkDoZap(numeroDeWhatsApp(c) || c.celular || c.telefone, mensagem)
+}
+
+/** Abre a conversa do cliente: WhatsApp Web no computador, o aplicativo no celular. */
+export function abrirClienteNoWhatsApp(c: Cliente, mensagem = '') {
+  abrirNoWhatsApp(numeroDeWhatsApp(c) || c.celular || c.telefone, mensagem)
 }
 

@@ -9,6 +9,9 @@ export {
   formatarDocumento,
   formatarTelefone,
   linkDoWhatsApp,
+  linkDoWhatsAppWeb,
+  abrirNoWhatsApp,
+  noComputador,
   semAcento,
 } from './formatar'
 

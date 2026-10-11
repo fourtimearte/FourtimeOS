@@ -167,6 +167,28 @@ for (const tema of ['light', 'dark']) {
     const j4 = await janela('Studio Pilates Flor')
     conta(!j4.tem, `${tema} ${nome}: lead sem fala de cliente não desenha faixa de janela`)
 
+    /* --- W1: o icone do WhatsApp no topo do inbox (plano 16, 11/10/2026) ---
+       No computador vai direto ao WhatsApp Web, sem a pagina do meio do wa.me;
+       no toque, o wa.me, que abre o aplicativo. O window.open e trocado por um
+       gravador: o teste quer saber PARA ONDE iria, e nao abrir aba nenhuma. */
+    const wa = await pg.evaluate(() => {
+      window.__abriu = []
+      window.open = (u, alvo, jeito) => { window.__abriu.push([u, alvo, jeito]); return null }
+      const b = document.querySelector('.fn-in-wa')
+      if (!b) return null
+      const r = b.getBoundingClientRect()
+      b.click()
+      return { abriu: window.__abriu, rotulo: b.getAttribute('aria-label') || '', w: r.width, h: r.height }
+    })
+    conta(!!wa && wa.abriu.length === 1, `${tema} ${nome}: o ícone do WhatsApp existe e abre uma aba só`)
+    const destino = wa?.abriu[0]?.[0] || ''
+    conta(nome === 'computador'
+      ? destino === 'https://web.whatsapp.com/send?phone=5562999990004'
+      : destino === 'https://wa.me/5562999990004',
+      `${tema} ${nome}: abre ${nome === 'computador' ? 'o WhatsApp Web direto' : 'o aplicativo (wa.me)'}, sem texto (${destino})`)
+    conta(wa?.abriu[0]?.[2] === 'noopener', `${tema} ${nome}: a aba nova não fica presa ao sistema (noopener)`)
+    conta(/Studio Pilates Flor/.test(wa?.rotulo || ''), `${tema} ${nome}: o ícone diz com quem é a conversa`)
+
     /* --- o dono no cartao --- */
     const donos = await pg.evaluate(() => {
       const ler = (t) => {

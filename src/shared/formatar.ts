@@ -56,9 +56,50 @@ export function formatarCep(cep: string) {
 /* O link do WhatsApp com a mensagem pronta, que foi a decisao 1 do passo 1:
    wa.me agora, API oficial depois. O numero pode vir com ou sem o 55. */
 export function linkDoWhatsApp(telefone: string, mensagem: string) {
+  return 'https://wa.me/' + numeroComPais(telefone) + '?text=' + encodeURIComponent(mensagem)
+}
+
+function numeroComPais(telefone: string) {
   const n = telefone.replace(/\D/g, '')
-  const numero = n.startsWith('55') ? n : '55' + n
-  return 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensagem)
+  return n.startsWith('55') ? n : '55' + n
+}
+
+/* NO COMPUTADOR, O WHATSAPP WEB DIRETO (W1 do plano 16, 11/10/2026).
+
+   O wa.me no computador para numa pagina do meio ("Continuar para a
+   conversa", "usar o WhatsApp Web") antes de chegar na conversa: um clique a
+   mais, cem vezes por dia. O /send do WhatsApp Web pula essa pagina.
+
+   No celular e no tablet do galpao continua o wa.me, que abre o aplicativo.
+   Ponteiro grosso e o sinal, e nao a largura: tablet deitado passa de 1024 px
+   e continua sem WhatsApp Web.
+
+   SEMPRE UMA ABA NOVA, e nao a mesma aba de antes. O WhatsApp Web corta o laco
+   com a pagina que o abriu (Cross-Origin-Opener-Policy), entao uma janela com
+   nome nunca e achada de novo: o segundo clique abriria outra aba do mesmo
+   jeito, so que fingindo que nao. Trocar de conversa sem recarregar e trabalho
+   da extensao Fourtime OS (W2). */
+export function noComputador(): boolean {
+  if (typeof window === 'undefined') return false
+  const fino = window.matchMedia?.('(pointer: fine)').matches ?? false
+  return fino && !/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+}
+
+export function linkDoWhatsAppWeb(telefone: string, mensagem = '') {
+  return (
+    'https://web.whatsapp.com/send?phone=' +
+    numeroComPais(telefone) +
+    (mensagem ? '&text=' + encodeURIComponent(mensagem) : '')
+  )
+}
+
+export function abrirNoWhatsApp(telefone: string, mensagem = '') {
+  const link = noComputador()
+    ? linkDoWhatsAppWeb(telefone, mensagem)
+    : mensagem
+      ? linkDoWhatsApp(telefone, mensagem)
+      : 'https://wa.me/' + numeroComPais(telefone)
+  window.open(link, '_blank', 'noopener')
 }
 
 /** Texto sem acento e sem caixa, que e como a fabrica digita na busca. */

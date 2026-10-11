@@ -23,7 +23,7 @@ import {
   formatarDocumento,
   formatarTelefone,
   historicoAntigo,
-  linkDoWhatsApp,
+  abrirClienteNoWhatsApp,
   pedidosDoCliente,
   salvarCliente,
   situacaoDoCliente,
@@ -219,7 +219,7 @@ export function FichaDoCliente({
           <>
             <Botao
               tom="wa"
-              onClick={() => window.open(linkDoWhatsApp(c, mensagem), '_blank', 'noopener')}
+              onClick={() => abrirClienteNoWhatsApp(c, mensagem)}
             >
               WhatsApp
             </Botao>

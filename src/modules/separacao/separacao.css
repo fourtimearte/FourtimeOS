@@ -504,3 +504,122 @@
     padding-inline: var(--re-5);
   }
 }
+
+/* --- um layout do pedido (prancha 83, parte S2) ---------------------------
+   À esquerda o que foi negociado; à direita o material deste layout. */
+.sp-lay {
+  overflow: hidden;
+  min-width: 0;
+}
+.sp-lay-tit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-4);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.sp-lay-tit svg {
+  color: var(--icon-accent);
+}
+.sp-lay-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+@container mesa (min-width: 1100px) {
+  .sp-lay-corpo {
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  }
+  .sp-lay-dir {
+    border-left: 1px solid var(--border);
+  }
+}
+.sp-lay-esq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--re-7);
+  min-width: 0;
+}
+.sp-lay-arte {
+  display: grid;
+  place-items: center;
+  height: 180px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.sp-lay-arte img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.sp-lay-dados {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--re-4) var(--re-6);
+  margin: 0;
+  font-size: 13px;
+}
+.sp-lay-dados dt {
+  color: var(--text-3);
+}
+.sp-lay-dados dd {
+  margin: 0;
+  min-width: 0;
+}
+.sp-lay-tec {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+}
+.sp-lay-tec .sp-q {
+  width: 14px;
+  height: 14px;
+}
+.sp-lay-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-3);
+}
+.sp-lay-grade {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-2) var(--re-6);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.sp-lay-grade b {
+  color: var(--text);
+}
+.sp-lay-obs {
+  color: var(--text-2);
+  line-height: 1.45;
+}
+.sp-lay-dir {
+  min-width: 0;
+  overflow-x: auto;
+}
+.sp-lay-tabela small {
+  font-size: 12px;
+}
+.sp-como {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-3);
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.sp-como.sp-separado {
+  color: var(--ok);
+  font-weight: 600;
+}
+.sp-como.falta {
+  color: var(--brand-text);
+  font-weight: 600;
+}

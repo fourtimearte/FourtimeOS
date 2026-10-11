@@ -22,6 +22,7 @@ import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'
 import * as D from './materiais-dados.mjs'
 import * as E from './estoque-dados.mjs'
+import { cotacaoDoAtletico } from './orcamento-dados.mjs'
 
 const require = createRequire(import.meta.url)
 function pegarPlaywright() {
@@ -62,6 +63,22 @@ const separados = [
   { id: D.idDoPedido('PD-0409'), numero: 'PD-0409', cliente: 'Banda Exemplo', estado: 'producao', aviso: 'falta-material', pecas: 52, layouts: 2, entrega_em: null, cotacao_id: COTACAO('PD-0409'), materiais: 2, separados: 1, separado_em: '2026-10-08T10:00:00Z' },
 ]
 
+/* o material de cada layout (062) do PD-0415: o tecido do L-01 já separado,
+   o algodão do L-02 a separar, e a linha nos dois */
+const M = (nome) => D.materiais.find((m) => m.nome === nome)
+const consumo = (ordem, nome, quantidade, como, extra = {}) => {
+  const m = M(nome)
+  return { ordem, material_id: m.id, quantidade, unidade: m.unidade, sem_consumo: !!extra.sem, como, material: { nome: m.nome, categoria: m.categoria, cor_de_tecido: m.cor_hex ? { hex: m.cor_hex } : null } }
+}
+const CONSUMO = {
+  [D.idDoPedido('PD-0415')]: [
+    consumo(1, 'DRYFIT POLIESTER 100% · Azul Marinho', 4, 'Tecido · a peça inteira · 25,0 m² pela ficha'),
+    consumo(1, 'Linha poliéster 120 preta', 1.78, 'Aviamento · 0,02 cone por peça'),
+    consumo(2, 'ALGODAO 100% · Preto', 8, 'Tecido · a peça inteira · pelo consumo cadastrado'),
+    consumo(2, 'Linha poliéster 120 preta', 1.78, 'Aviamento · 0,02 cone por peça'),
+  ],
+}
+
 const abertos = new Set()
 async function abrir(nav, { largura, altura = 946, tema = 'light', sem061 = false }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo' })
@@ -81,6 +98,15 @@ async function abrir(nav, { largura, altura = 946, tema = 'light', sem061 = fals
     else if (u.includes('/rest/v1/pedido_separado')) { if (sem061) return falta('pedido_separado'); corpo = separados }
     else if (u.includes('/rest/v1/reserva_do_pedido')) { const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]; corpo = E.reservasDoPedido.filter((x) => x.pedido_id === id) }
     else if (u.includes('/rest/v1/cotacao?') && u.includes('imagem:')) corpo = fila.slice(0, 3).map((p) => ({ id: p.cotacao_id, imagem: PNG }))
+    else if (u.includes('/rest/v1/cotacao?') && u.includes('id=eq.')) {
+      const id = u.split('id=eq.')[1].split('&')[0]
+      const c = cotacaoDoAtletico()
+      corpo = [{ id, numero: 'CO2026-0131', corpo: { ...c, produtos: c.produtos.slice(0, 2) }, versao_do_formato: 6, estado: 'aprovada', criada_em: '2026-10-01T12:00:00Z', atualizado_em: '2026-10-02T12:00:00Z' }]
+    } else if (u.includes('/rest/v1/consumo_do_layout')) {
+      if (sem061) return falta('consumo_do_layout')
+      const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]
+      corpo = CONSUMO[id] ?? []
+    }
     else if (u.includes('/rest/v1/rpc/')) { gravados.push({ rpc: u.split('/rpc/')[1].split('?')[0], corpo: req.postDataJSON() }); corpo = u.includes('concluir') ? 'Separação concluída.' : null }
     else corpo = []
     return json(corpo)
@@ -144,6 +170,13 @@ await secao(async () => {
   conta(/em separação/.test(cab) && /PD-0415 › 2 layouts/.test(cab) && /Auto Peças Exemplo/.test(cab) && /230 peças · Comercial · entrega/.test(cab) && /vendido por Lucas/.test(cab), 'o cabeçalho do pedido: ' + cab.slice(0, 160))
   conta(await pg.getByRole('button', { name: 'Ver o orçamento' }).count() === 1 && await pg.getByRole('button', { name: 'Concluir a separação' }).count() === 1, 'Ver o orçamento e Concluir a separação')
   conta(await pg.locator('.sp-kpis').count() === 0 && await pg.locator('.sp-item.escolhido').count() === 1, 'com um pedido escolhido, o resumo da fila sai e a linha fica escolhida')
+  /* S2: um cartão por layout, com o material dele */
+  const lays = await pg.evaluate(() => [...document.querySelectorAll('.sp-lay')].map((l) => ({ cab: l.querySelector('.sp-cab').innerText.replace(/\s+/g, ' ').trim(), linhas: [...l.querySelectorAll('tbody tr')].map((t) => t.innerText.replace(/\s+/g, ' ').trim()), img: !!l.querySelector('.sp-lay-arte img'), dados: l.querySelector('.sp-lay-dados').innerText.replace(/\s+/g, ' ').trim() })))
+  conta(lays.length === 2 && /^L-01 · CAMISETA MASC TRAD 89 peças · FT-010-000M/.test(lays[0].cab), 'um cartão por layout, com o nome, as peças e a referência: ' + lays.map((l) => l.cab).join(' | '))
+  conta(/Tecido DRYFIT POLIESTER 100%/.test(lays[0].dados) && /Grade/.test(lays[0].dados) && /G 30/.test(lays[0].dados), 'à esquerda o que foi negociado: tecido, design e grade: ' + lays[0].dados.slice(0, 120))
+  conta(lays[0].linhas.length === 2 && /DRYFIT POLIESTER 100% · Azul Marinho Tecido · a peça inteira · 25,0 m² pela ficha 4,0 kg separado/.test(lays[0].linhas[0]) && /0,02 cone por peça/.test(lays[0].linhas[1]), 'o material deste layout com a conta e como está: ' + lays[0].linhas[0])
+  conta(/a separar/.test(lays[1].linhas[0]), 'o tecido do L-02 ainda a separar: ' + lays[1].linhas[0])
+  conta(/Soma de tudo/.test(await texto(pg, '.sp-quadro .sp-cab')), 'a Soma de tudo no fim')
   await foto(pg, '1920-pedido', false)
   await pg.getByRole('button', { name: 'Separar' }).first().click()
   await pausa(pg, 500)

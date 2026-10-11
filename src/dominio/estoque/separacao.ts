@@ -267,3 +267,61 @@ export async function desfazerASeparacao(reservaId: string): Promise<void> {
 export async function concluirASeparacao(pedidoId: string): Promise<string> {
   return chamar<string>('concluir_a_separacao', { p_pedido: pedidoId })
 }
+
+/* ==========================================================================
+   O MATERIAL DE CADA LAYOUT (062, prancha 83): o que cada layout do pedido
+   pede de cada material, com a explicação da conta ("Tecido · a peça
+   inteira · 8,0 m² pela ficha", "Aviamento · 0,02 cone por peça").
+   ========================================================================== */
+export type MaterialDoLayout = {
+  /** a posição do layout no orçamento, começando em 1 */
+  ordem: number
+  materialId: string
+  material: string
+  categoria: string
+  corHex: string
+  quantidade: number
+  unidade: string
+  semConsumo: boolean
+  como: string
+}
+
+type LinhaDoConsumo = {
+  ordem: number
+  material_id: string
+  quantidade: number | string
+  unidade: string
+  sem_consumo: boolean
+  como: string
+  material: { nome: string; categoria: string; cor_de_tecido: { hex: string } | null } | null
+}
+
+/** null quando a tabela ainda não existe (a 062 não rodou) */
+export async function carregarMaterialDosLayouts(pedidoId: string): Promise<MaterialDoLayout[] | null> {
+  try {
+    const linhas = await tabela<LinhaDoConsumo[]>(
+      'consumo_do_layout?select=ordem,material_id,quantidade,unidade,sem_consumo,como,' +
+        'material(nome,categoria,cor_de_tecido(hex))&pedido_id=eq.' +
+        encodeURIComponent(pedidoId) +
+        '&order=ordem.asc',
+    )
+    const ordemDaCategoria: Record<string, number> = { tecido: 0, aviamento: 1, insumo: 2 }
+    return linhas
+      .map((l) => ({
+        ordem: l.ordem,
+        materialId: l.material_id,
+        material: l.material?.nome ?? 'material apagado',
+        categoria: l.material?.categoria ?? '',
+        corHex: l.material?.cor_de_tecido?.hex ?? '',
+        quantidade: real(l.quantidade),
+        unidade: l.unidade ?? '',
+        semConsumo: !!l.sem_consumo,
+        como: l.como ?? '',
+      }))
+      .sort((a, b) => a.ordem - b.ordem || (ordemDaCategoria[a.categoria] ?? 9) - (ordemDaCategoria[b.categoria] ?? 9) || a.material.localeCompare(b.material, 'pt-BR'))
+  } catch (e) {
+    const recado = e instanceof Error ? e.message : String(e)
+    if (/Não encontrei|schema cache|consumo_do_layout/i.test(recado)) return null
+    throw e
+  }
+}

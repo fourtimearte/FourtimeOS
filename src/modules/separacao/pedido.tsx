@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle, FileText, X } from '@phosphor-icons/react'
-import { Botao, Entrada, Esqueleto, Selo, Tabela, Vazio, avisar, type Coluna } from '@ds'
+import { CheckCircle, FileText, Sigma, X } from '@phosphor-icons/react'
+import { Botao, Entrada, Esqueleto, Selo, Tabela, TituloCartao, Vazio, avisar, type Coluna } from '@ds'
+import { acharCotacao } from '@dominio/cotacao'
+import type { Bloco } from '@dominio/layout'
 import {
+  carregarMaterialDosLayouts,
   carregarReservasDoPedido,
   casasDaUnidade,
   comecarASeparacao,
@@ -9,18 +12,20 @@ import {
   desfazerASeparacao,
   numeroNaUnidade,
   separarMaterial,
+  type MaterialDoLayout,
   type PedidoNaSeparacao,
   type ReservaDoPedido,
 } from '@dominio/estoque'
 import { ModalDaFolha } from '@modules/cotacao'
 import { dataCurta } from './fila'
+import { CartaoDoLayout } from './layout'
 
 /* ==========================================================================
-   O PEDIDO ESCOLHIDO (prancha 83). Nesta parte (S1) o cabeçalho já é o do
-   wireframe: o estado, o pedido e os layouts, o cliente, a linha com peças,
-   departamento, entrega e vendedor, e Ver o orçamento, Concluir a separação e
-   Fechar. Embaixo, a lista do material que já existia. Os cartões de cada
-   layout e a Soma de tudo do wireframe são as partes S2 e S3.
+   O PEDIDO ESCOLHIDO (prancha 83). O cabeçalho (S1): o estado, o pedido e os
+   layouts, o cliente, a linha com peças, departamento, entrega e vendedor, e
+   Ver o orçamento, Concluir a separação e Fechar. Depois um cartão por layout
+   (S2): o que foi negociado e o material daquele layout, com a conta. No fim
+   a Soma de tudo, onde se marca o que saiu (S3 redesenha).
 
    A TELA SEMPRE PERGUNTA QUANTO SAIU. O número reservado já vem escrito no
    campo, mas quem separa confirma ou corrige: a reserva é uma conta e a
@@ -55,6 +60,25 @@ export function PedidoAberto({
   const [erro, setErro] = useState('')
   const [pesado, setPesado] = useState<Record<string, string>>({})
   const [folha, setFolha] = useState(false)
+  /* os layouts como o orçamento diz, e o material de cada um (062) */
+  const [blocos, setBlocos] = useState<Bloco[] | null>(null)
+  const [porLayout, setPorLayout] = useState<MaterialDoLayout[] | null>([])
+
+  useEffect(() => {
+    let vivo = true
+    setBlocos(null)
+    Promise.all([
+      p.cotacaoId ? acharCotacao(p.cotacaoId).catch(() => null) : Promise.resolve(null),
+      carregarMaterialDosLayouts(p.id).catch(() => [] as MaterialDoLayout[]),
+    ]).then(([c, m]) => {
+      if (!vivo) return
+      setBlocos(c ? c.produtos.map((x) => x.bloco).filter((b) => !b.informacoes) : [])
+      setPorLayout(m)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [p.id, p.cotacaoId])
 
   const abrir = useCallback(async () => {
     setErro('')
@@ -254,7 +278,26 @@ export function PedidoAberto({
         </div>
       </header>
 
+      {blocos === null ? (
+        <Esqueleto altura={260} />
+      ) : (
+        blocos.map((b, i) => (
+          <CartaoDoLayout
+            key={b.id}
+            bloco={b}
+            materiais={porLayout === null ? null : porLayout.filter((m) => m.ordem === posicaoNoOrcamento(blocos, i))}
+            reservas={linhas}
+          />
+        ))
+      )}
+
       <section className="cartao sp-quadro">
+        <header className="sp-cab">
+          <TituloCartao icone={Sigma}>Soma de tudo</TituloCartao>
+          <span className="sp-cab-apoio">
+            {blocos && blocos.length > 1 ? `os ${blocos.length} layouts juntos · ` : ''}aqui se marca o que saiu
+          </span>
+        </header>
         {abrindo ? (
           <div className="sp-espera">
             <Esqueleto altura={18} />
@@ -293,4 +336,10 @@ export function PedidoAberto({
       {folha && p.cotacaoId ? <ModalDaFolha cotacaoId={p.cotacaoId} numeroDoPedido={p.numero} aoFechar={() => setFolha(false)} /> : null}
     </div>
   )
+}
+
+/* a posição do layout no orçamento conta também o módulo de informações, que
+   não aparece aqui: o consumo (062) guarda a posição de verdade */
+function posicaoNoOrcamento(blocos: Bloco[], i: number): number {
+  return blocos[i].n || i + 1
 }

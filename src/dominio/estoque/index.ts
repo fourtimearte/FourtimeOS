@@ -1143,12 +1143,13 @@ export {
   comecarASeparacao,
   carregarFilaDaSeparacao,
   carregarMaterialDaFila,
+  carregarMaterialDosLayouts,
   carregarMiniaturas,
   carregarSeparados,
   desfazerASeparacao,
   separarMaterial,
 } from './separacao'
-export type { MaterialDaFila, PedidoNaSeparacao, PedidoSeparado } from './separacao'
+export type { MaterialDaFila, MaterialDoLayout, PedidoNaSeparacao, PedidoSeparado } from './separacao'
 
 /* ---------- as estatísticas: o que saiu, por tecido e por cor -------------- */
 

@@ -325,3 +325,22 @@ export async function carregarMaterialDosLayouts(pedidoId: string): Promise<Mate
     throw e
   }
 }
+
+/* ONDE FICA CADA MATERIAL (Soma de tudo, prancha 83): o lugar principal no
+   depósito (047) e, sem ele, o texto livre do cadastro (041). Quem separa
+   anda até lá com o carrinho. */
+export async function carregarOndeFica(materiais: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(materiais.filter(Boolean))]
+  if (!ids.length) return new Map()
+  const lista = ids.map(encodeURIComponent).join(',')
+  const [lugares, cadastros] = await Promise.all([
+    tabela<{ material_id: string; codigo: string | null; principal: boolean }[]>(
+      `lugar_do_material_na_lista?select=material_id,codigo,principal&material_id=in.(${lista})&order=principal.desc`,
+    ).catch(() => []),
+    tabela<{ id: string; onde_fica: string | null }[]>(`material?select=id,onde_fica&id=in.(${lista})`).catch(() => []),
+  ])
+  const onde = new Map<string, string>()
+  for (const c of cadastros) if (c.onde_fica) onde.set(c.id, c.onde_fica)
+  for (const l of [...lugares].reverse()) if (l.codigo) onde.set(l.material_id, l.codigo)
+  return onde
+}

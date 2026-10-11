@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Sigma, Warning } from '@phosphor-icons/react'
+import { useNavigate } from 'react-router-dom'
+import { ShoppingCart, Sigma, Warning } from '@phosphor-icons/react'
 import { Aviso, Botao, Kpi, TituloCartao } from '@ds'
 import { numeroNaUnidade, type MaterialDaFila, type PedidoNaSeparacao } from '@dominio/estoque'
 import { dataCurta, diasAte } from './fila'
@@ -31,6 +32,7 @@ export function ResumoDaFila({
   aoAbrirPedido: (numero: string) => void
 }) {
   const [tudo, setTudo] = useState(false)
+  const navegar = useNavigate()
   const pecas = fila.reduce((s, p) => s + p.pecas, 0)
   const layouts = fila.reduce((s, p) => s + p.layouts, 0)
   const proxima = fila.filter((p) => p.entregaEm).sort((a, b) => a.entregaEm.localeCompare(b.entregaEm))[0]
@@ -161,10 +163,16 @@ export function ResumoDaFila({
               </ul>
               <div className="sp-falta-pe">
                 <p>
-                  O pedido pode descer com falta: quem decide é o PCP e o diretor. Pedir a compra põe o material em
-                  Para comprar, no Estoque.
+                  O pedido pode descer com falta: quem decide é o PCP e o diretor. O material que falta já está em
+                  Para comprar, no Estoque: Pedir a compra abre ele lá.
                 </p>
                 <div className="fileira">
+                  {/* a falta já tira o livre abaixo do mínimo, e é isso que põe o
+                      material em Para comprar: o botão leva até ele, filtrado */}
+                  <Botao tom="forte" onClick={() => navegar('/estoque?busca=' + encodeURIComponent(faltas[0].material))}>
+                    <ShoppingCart size={17} />
+                    Pedir a compra
+                  </Botao>
                   <Botao tom="contorno" onClick={() => aoAbrirPedido(faltas[0].numeros[faltas[0].numeros.length - 1] ?? '')}>
                     Abrir o pedido
                   </Botao>

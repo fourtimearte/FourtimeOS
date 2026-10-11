@@ -244,6 +244,11 @@
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
+/* o nome do cartão não quebra: quem encolhe é o apoio ao lado */
+.sp-cab > :first-child {
+  flex: none;
+  white-space: nowrap;
+}
 .sp-cab-apoio {
   margin-left: auto;
   font-size: 12px;
@@ -461,6 +466,15 @@
    prateleira, que e conferencia e nao trabalho; depois a conta, que desce para
    a linha de baixo do nome. O que nunca sai e o nome, o campo e o botao, que
    sao a tarefa inteira de quem esta com o carrinho na mao. */
+/* 1 material, 2 precisa, 3 na prateleira, 4 onde fica, 5 saiu, 6 ação.
+   Primeiro sai onde fica, depois a prateleira, depois a conta (que desce
+   para baixo do nome). Nunca saem o nome, o campo e o botão. */
+@media (max-width: 1280px) {
+  .sp-quadro .tabela th:nth-child(4),
+  .sp-quadro .tabela td:nth-child(4) {
+    display: none;
+  }
+}
 @media (max-width: 900px) {
   .sp-quadro .tabela th:nth-child(3),
   .sp-quadro .tabela td:nth-child(3) {
@@ -472,6 +486,9 @@
   .sp-no-celular {
     display: inline;
   }
+  .sp-fora-do-celular {
+    display: none;
+  }
   .sp-nome {
     white-space: normal;
     overflow: visible;
@@ -480,8 +497,8 @@
   .sp-quadro .tabela td:nth-child(2) {
     display: none;
   }
-  .sp-campo {
-    width: 68px;
+  .sp-quadro .sp-campo {
+    width: 64px;
   }
 }
 
@@ -622,4 +639,25 @@
 .sp-como.falta {
   color: var(--brand-text);
   font-weight: 600;
+}
+
+/* --- a Soma de tudo e a ficha do layout (parte S3) ------------------------ */
+.sp-pe-fim {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+}
+.sp-fim {
+  align-items: flex-end;
+}
+.sp-lay-ficha {
+  align-self: flex-start;
+}
+.sp-ficha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
 }

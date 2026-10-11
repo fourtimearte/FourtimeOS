@@ -1145,6 +1145,7 @@ export {
   carregarMaterialDaFila,
   carregarMaterialDosLayouts,
   carregarMiniaturas,
+  carregarOndeFica,
   carregarSeparados,
   desfazerASeparacao,
   separarMaterial,

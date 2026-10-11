@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { CheckCircle, FileText, Sigma, X } from '@phosphor-icons/react'
 import { Botao, Entrada, Esqueleto, Selo, Tabela, TituloCartao, Vazio, avisar, type Coluna } from '@ds'
 import { acharCotacao } from '@dominio/cotacao'
 import type { Bloco } from '@dominio/layout'
 import {
   carregarMaterialDosLayouts,
+  carregarOndeFica,
   carregarReservasDoPedido,
   casasDaUnidade,
   comecarASeparacao,
@@ -18,7 +20,7 @@ import {
 } from '@dominio/estoque'
 import { ModalDaFolha } from '@modules/cotacao'
 import { dataCurta } from './fila'
-import { CartaoDoLayout } from './layout'
+import { CartaoDoLayout, FichaDoLayoutNaSeparacao } from './layout'
 
 /* ==========================================================================
    O PEDIDO ESCOLHIDO (prancha 83). O cabeçalho (S1): o estado, o pedido e os
@@ -37,6 +39,7 @@ import { CartaoDoLayout } from './layout'
    escrita.
    ========================================================================== */
 
+const NOME_DA_CATEGORIA: Record<string, string> = { tecido: 'Tecido', aviamento: 'Aviamento', insumo: 'Insumo' }
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
 export function PedidoAberto({
@@ -63,6 +66,9 @@ export function PedidoAberto({
   /* os layouts como o orçamento diz, e o material de cada um (062) */
   const [blocos, setBlocos] = useState<Bloco[] | null>(null)
   const [porLayout, setPorLayout] = useState<MaterialDoLayout[] | null>([])
+  /* onde fica cada material no depósito */
+  const [onde, setOnde] = useState<Map<string, string>>(new Map())
+  const [ficha, setFicha] = useState<Bloco | null>(null)
 
   useEffect(() => {
     let vivo = true
@@ -85,6 +91,7 @@ export function PedidoAberto({
     try {
       const r = await carregarReservasDoPedido(p.id)
       setLinhas(r)
+      void carregarOndeFica(r.map((x) => x.materialId)).then(setOnde)
       setPesado((antes) => {
         const novo: Record<string, string> = {}
         r.forEach((x) => {
@@ -113,9 +120,9 @@ export function PedidoAberto({
     return Number.isFinite(n) ? n : 0
   }
 
-  async function separar(l: ReservaDoPedido) {
+  async function separar(l: ReservaDoPedido, fixo?: number) {
     if (ocupado) return
-    const quanto = lido(pesado[l.id] ?? '')
+    const quanto = fixo ?? lido(pesado[l.id] ?? '')
     if (quanto <= 0) {
       avisar('Escreva quanto saiu da prateleira.', 'warn')
       return
@@ -165,19 +172,37 @@ export function PedidoAberto({
 
   const separados = linhas.filter((l) => l.baixada).length
 
+  /* de quais layouts vem cada material, e a cor dele, pelo consumo (062) */
+  const layoutsDe = (materialId: string) =>
+    [...new Set((porLayout ?? []).filter((m) => m.materialId === materialId).map((m) => 'L-' + String(m.ordem).padStart(2, '0')))].join(' + ')
+  const corDe = (materialId: string) => (porLayout ?? []).find((m) => m.materialId === materialId)?.corHex ?? ''
+  const curto = (l: ReservaDoPedido) => !l.baixada && !l.semConsumo && l.saldo < l.quantidade
+
+  /* SEPARAR O QUE TEM: a prateleira não cobre, então sai o que há nela e o
+     resto vira a falta que o PCP lê. É a mesma pesagem, só que com o campo
+     já no saldo. */
+  function separarOQueTem(l: ReservaDoPedido) {
+    setPesado((x) => ({ ...x, [l.id]: String(l.saldo).replace('.', ',') }))
+    void separar(l, l.saldo)
+  }
+
   const colunas: Coluna<ReservaDoPedido>[] = [
     {
       chave: 'material',
       titulo: 'Material',
       celula: (l) => (
-        <span className="pilha colada">
-          <b className="sp-nome">{l.material}</b>
-          <small className="sp-apoio sp-nome">
-            {l.categoria}
-            {l.semConsumo ? ' · consumo não cadastrado' : ''}
-            {/* no celular a coluna Precisa some e o número desce para cá */}
-            {l.semConsumo ? null : <span className="sp-no-celular">{' · precisa ' + numeroNaUnidade(l.quantidade, l.unidade)}</span>}
-          </small>
+        <span className="sp-mat">
+          {l.categoria === 'tecido' && corDe(l.materialId) ? <i className="sp-q" style={{ '--cor': corDe(l.materialId) } as CSSProperties} /> : null}
+          <span className="pilha colada">
+            <b className="sp-nome">{l.material}</b>
+            <small className="sp-apoio sp-nome">
+              {NOME_DA_CATEGORIA[l.categoria] ?? l.categoria}
+              {layoutsDe(l.materialId) ? ' · ' + layoutsDe(l.materialId) : ''}
+              {l.semConsumo ? ' · consumo não cadastrado' : ''}
+              {/* no celular a coluna Precisa some e o número desce para cá */}
+              {l.semConsumo ? null : <span className="sp-no-celular">{' · precisa ' + numeroNaUnidade(l.quantidade, l.unidade)}</span>}
+            </small>
+          </span>
         </span>
       ),
     },
@@ -191,9 +216,20 @@ export function PedidoAberto({
       chave: 'tem',
       titulo: 'Na prateleira',
       numero: true,
-      celula: (l) => (
-        <span className={!l.semConsumo && l.saldo < l.quantidade ? 'sp-pouco' : 'sp-apoio'}>{numeroNaUnidade(l.saldo, l.unidade)}</span>
-      ),
+      celula: (l) =>
+        curto(l) ? (
+          <span className="pilha colada sp-fim">
+            <b className="sp-pouco">{numeroNaUnidade(l.saldo, l.unidade)}</b>
+            <small className="sp-pouco">falta {numeroNaUnidade(l.quantidade - l.saldo, l.unidade)}</small>
+          </span>
+        ) : (
+          <span className="sp-apoio">{numeroNaUnidade(l.saldo, l.unidade)}</span>
+        ),
+    },
+    {
+      chave: 'onde',
+      titulo: 'Onde fica',
+      celula: (l) => <span className="sp-apoio">{onde.get(l.materialId) || 'sem lugar'}</span>,
     },
     {
       chave: 'saiu',
@@ -225,6 +261,11 @@ export function PedidoAberto({
         l.baixada ? (
           <Botao tom="limpo" tamanho="sm" onClick={() => void desfazer(l)} disabled={!!ocupado}>
             Desfazer
+          </Botao>
+        ) : curto(l) && l.saldo > 0 ? (
+          <Botao tom="contorno" tamanho="sm" onClick={() => separarOQueTem(l)} carregando={ocupado === l.id} disabled={!!ocupado}>
+            <span className="sp-fora-do-celular">Separar o que tem</span>
+            <span className="sp-no-celular">O que tem</span>
           </Botao>
         ) : (
           <Botao tom="forte" tamanho="sm" onClick={() => void separar(l)} carregando={ocupado === l.id} disabled={!!ocupado}>
@@ -287,6 +328,7 @@ export function PedidoAberto({
             bloco={b}
             materiais={porLayout === null ? null : porLayout.filter((m) => m.ordem === posicaoNoOrcamento(blocos, i))}
             reservas={linhas}
+            aoVerFicha={() => setFicha(b)}
           />
         ))
       )}
@@ -309,7 +351,6 @@ export function PedidoAberto({
             colunas={colunas}
             linhas={linhas}
             chaveDaLinha={(l) => l.id}
-            marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
             vazio={
               erro ? (
                 <Vazio
@@ -325,14 +366,24 @@ export function PedidoAberto({
             }
           />
         )}
-        <footer className="sp-pe">
+        <footer className="sp-pe sp-pe-fim">
           <small className="sp-apoio">
             {erro ? 'a lista de material não abriu' : linhas.length ? `${separados} de ${linhas.length} materiais separados` : 'sem material para separar'}.
             Concluir move o pedido para o PCP, com falta ou sem.
           </small>
+          <Botao tom="primario" onClick={() => void concluir()} carregando={ocupado === 'concluir'} disabled={!!ocupado || !!erro || abrindo}>
+            <CheckCircle size={17} />
+            Concluir a separação
+          </Botao>
         </footer>
       </section>
 
+      <FichaDoLayoutNaSeparacao
+        bloco={ficha}
+        materiais={ficha && porLayout ? porLayout.filter((m) => m.ordem === ficha.n) : null}
+        reservas={linhas}
+        aoFechar={() => setFicha(null)}
+      />
       {folha && p.cotacaoId ? <ModalDaFolha cotacaoId={p.cotacaoId} numeroDoPedido={p.numero} aoFechar={() => setFolha(false)} /> : null}
     </div>
   )

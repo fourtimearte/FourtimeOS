@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
-import { CheckCircle, Circle, TShirt, WarningCircle } from '@phosphor-icons/react'
-import { PilulaTecnica } from '@ds'
-import { tamanhosNaOrdem, totalDaGrade, type Bloco } from '@dominio/layout'
+import { ArrowsOut, CheckCircle, Circle, TShirt, WarningCircle } from '@phosphor-icons/react'
+import { Botao, Modal, PilulaTecnica } from '@ds'
+import { LayoutDeLeitura, tamanhosNaOrdem, totalDaGrade, type Bloco } from '@dominio/layout'
 import { numeroNaUnidade, type MaterialDoLayout, type ReservaDoPedido } from '@dominio/estoque'
 
 /* ==========================================================================
@@ -44,16 +44,17 @@ export function CartaoDoLayout({
   bloco,
   materiais,
   reservas,
+  aoVerFicha,
 }: {
   bloco: Bloco
   /** null: a 062 não rodou e o material por layout não existe ainda */
   materiais: MaterialDoLayout[] | null
   reservas: ReservaDoPedido[]
+  aoVerFicha?: () => void
 }) {
   const pecas = totalDaGrade(bloco.grade)
   const tamanhos = tamanhosNaOrdem(bloco.faixa, bloco.grade).filter((t) => (bloco.grade[t] ?? 0) > 0)
   const nome = bloco.nomeDaReferencia || bloco.referencia || 'sem referência'
-  const daReserva = (id: string) => reservas.find((r) => r.materialId === id)
 
   return (
     <section className="cartao sp-lay" data-layout={bloco.n}>
@@ -107,6 +108,12 @@ export function CartaoDoLayout({
               </>
             ) : null}
           </dl>
+          {aoVerFicha ? (
+            <Botao tom="contorno" tamanho="sm" className="sp-lay-ficha" onClick={aoVerFicha}>
+              <ArrowsOut size={15} />
+              Ver a ficha do layout
+            </Botao>
+          ) : null}
         </div>
 
         <div className="sp-lay-dir">
@@ -117,7 +124,18 @@ export function CartaoDoLayout({
               Nenhum material calculado para este layout: o tecido não está cadastrado no Estoque, ou a referência não tem ficha técnica.
             </p>
           ) : (
-            <table className="sp-tabela sp-lay-tabela">
+            <TabelaDoMaterial materiais={materiais} reservas={reservas} />
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TabelaDoMaterial({ materiais, reservas }: { materiais: MaterialDoLayout[]; reservas: ReservaDoPedido[] }) {
+  const daReserva = (id: string) => reservas.find((r) => r.materialId === id)
+  return (
+    <table className="sp-tabela sp-lay-tabela">
               <thead>
                 <tr>
                   <th>Material deste layout</th>
@@ -149,9 +167,34 @@ export function CartaoDoLayout({
                 })}
               </tbody>
             </table>
+  )
+}
+
+/* A FICHA DO LAYOUT POR CIMA (prancha 84): o layout como o orçamento diz,
+   sem valor, e o material que ele pede. Só para ler. */
+export function FichaDoLayoutNaSeparacao({
+  bloco,
+  materiais,
+  reservas,
+  aoFechar,
+}: {
+  bloco: Bloco | null
+  materiais: MaterialDoLayout[] | null
+  reservas: ReservaDoPedido[]
+  aoFechar: () => void
+}) {
+  return (
+    <Modal aberto={!!bloco} aoFechar={aoFechar} largo titulo={bloco ? 'Ficha do layout L-' + String(bloco.n).padStart(2, '0') : ''}>
+      {bloco ? (
+        <div className="sp-ficha">
+          <LayoutDeLeitura bloco={bloco} />
+          {materiais && materiais.length ? (
+            <TabelaDoMaterial materiais={materiais} reservas={reservas} />
+          ) : (
+            <p className="ct-nada">Nenhum material calculado para este layout.</p>
           )}
         </div>
-      </div>
-    </section>
+      ) : null}
+    </Modal>
   )
 }

@@ -102,6 +102,10 @@ async function abrir(nav, { largura, altura = 946, tema = 'light', sem061 = fals
       const id = u.split('id=eq.')[1].split('&')[0]
       const c = cotacaoDoAtletico()
       corpo = [{ id, numero: 'CO2026-0131', corpo: { ...c, produtos: c.produtos.slice(0, 2) }, versao_do_formato: 6, estado: 'aprovada', criada_em: '2026-10-01T12:00:00Z', atualizado_em: '2026-10-02T12:00:00Z' }]
+    } else if (u.includes('/rest/v1/lugar_do_material_na_lista')) {
+      corpo = D.materiais.slice(0, 40).map((m, i) => ({ material_id: m.id, codigo: 'Palete A' + (i + 1), principal: true }))
+    } else if (u.includes('/rest/v1/material?select=id,onde_fica')) {
+      corpo = []
     } else if (u.includes('/rest/v1/consumo_do_layout')) {
       if (sem061) return falta('consumo_do_layout')
       const id = (u.match(/pedido_id=eq\.([^&]+)/) ?? [])[1]
@@ -168,7 +172,7 @@ await secao(async () => {
   await pausa(pg, 500)
   const cab = await texto(pg, '.sp-ped-topo')
   conta(/em separação/.test(cab) && /PD-0415 › 2 layouts/.test(cab) && /Auto Peças Exemplo/.test(cab) && /230 peças · Comercial · entrega/.test(cab) && /vendido por Lucas/.test(cab), 'o cabeçalho do pedido: ' + cab.slice(0, 160))
-  conta(await pg.getByRole('button', { name: 'Ver o orçamento' }).count() === 1 && await pg.getByRole('button', { name: 'Concluir a separação' }).count() === 1, 'Ver o orçamento e Concluir a separação')
+  conta(await pg.getByRole('button', { name: 'Ver o orçamento' }).count() === 1 && await pg.locator('.sp-ped-topo').getByRole('button', { name: 'Concluir a separação' }).count() === 1, 'Ver o orçamento e Concluir a separação')
   conta(await pg.locator('.sp-kpis').count() === 0 && await pg.locator('.sp-item.escolhido').count() === 1, 'com um pedido escolhido, o resumo da fila sai e a linha fica escolhida')
   /* S2: um cartão por layout, com o material dele */
   const lays = await pg.evaluate(() => [...document.querySelectorAll('.sp-lay')].map((l) => ({ cab: l.querySelector('.sp-cab').innerText.replace(/\s+/g, ' ').trim(), linhas: [...l.querySelectorAll('tbody tr')].map((t) => t.innerText.replace(/\s+/g, ' ').trim()), img: !!l.querySelector('.sp-lay-arte img'), dados: l.querySelector('.sp-lay-dados').innerText.replace(/\s+/g, ' ').trim() })))
@@ -178,7 +182,20 @@ await secao(async () => {
   conta(/a separar/.test(lays[1].linhas[0]), 'o tecido do L-02 ainda a separar: ' + lays[1].linhas[0])
   conta(/Soma de tudo/.test(await texto(pg, '.sp-quadro .sp-cab')), 'a Soma de tudo no fim')
   await foto(pg, '1920-pedido', false)
-  await pg.getByRole('button', { name: 'Separar' }).first().click()
+  const cabSoma = await pg.evaluate(() => [...document.querySelectorAll('.sp-quadro thead th')].map((t) => t.innerText.trim()))
+  conta(cabSoma.join('|') === 'Material|Precisa|Na prateleira|Onde fica|Saiu|', 'a Soma de tudo com onde fica: ' + cabSoma.join(' | '))
+  const linhaSoma = await texto(pg, '.sp-quadro tbody tr:last-child')
+  conta(/ALGODAO 100% · Preto/.test(linhaSoma) && /Tecido · L-02/.test(linhaSoma) && /Palete A/.test(linhaSoma), 'cada material diz de quais layouts vem e onde fica: ' + linhaSoma)
+  conta(await pg.locator('.sp-pe-fim').getByRole('button', { name: 'Concluir a separação' }).count() === 1, 'Concluir também no pé da Soma de tudo')
+  /* a ficha do layout por cima */
+  await pg.getByRole('button', { name: 'Ver a ficha do layout' }).first().click()
+  await pausa(pg, 400)
+  const modal = pg.locator('dialog.modal[open]')
+  conta(await modal.count() === 1 && await modal.locator('.lr').count() === 1 && /DRYFIT POLIESTER 100% · Azul Marinho/.test(await modal.innerText()), 'Ver a ficha do layout abre o layout sem valor e o material dele, por cima')
+  await foto(pg, '1920-ficha-do-layout', false)
+  await pg.keyboard.press('Escape')
+  await pausa(pg)
+  await pg.getByRole('button', { name: 'Separar', exact: true }).first().click()
   await pausa(pg, 500)
   const g = gravados.find((x) => x.rpc === 'separar_material')
   conta(g && g.corpo.p_quantidade === 8, 'Separar manda a pesagem do campo (' + JSON.stringify(g?.corpo ?? {}) + ')')
@@ -204,6 +221,27 @@ await secao(async () => {
   conta(/PIQUET 100% · Branco/.test(await texto(pg, '.sp-direita [data-passado]')), 'a concluída abre o que saiu da prateleira para ela, só para ler')
   await foto(pg, '1920-concluidas', false)
   conta(!erros.length, 'sem erro de JavaScript: ' + erros.join(' | '))
+})
+
+/* S3: separar o que tem, e pedir a compra */
+await secao(async () => {
+  const { pg, erros, gravados } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  await pg.locator('[data-pedido="PD-0412"]').click()
+  await pausa(pg, 600)
+  const curta = pg.locator('.sp-quadro tbody tr', { hasText: 'DRYFIT POLIESTER 100% · Preto' })
+  conta(/falta 14,6 kg/.test(await curta.innerText()) && await curta.getByRole('button', { name: 'Separar o que tem' }).count() === 1, 'a linha que a prateleira não cobre mostra a falta e oferece Separar o que tem')
+  await curta.getByRole('button', { name: 'Separar o que tem' }).click()
+  await pausa(pg, 500)
+  const g = gravados.find((x) => x.rpc === 'separar_material')
+  conta(g && g.corpo.p_quantidade === 9, 'Separar o que tem manda o saldo da prateleira (' + JSON.stringify(g?.corpo ?? {}) + ')')
+  await pg.locator('.sp-ped-topo').getByRole('button', { name: 'Fechar' }).click()
+  await pausa(pg)
+  await pg.getByRole('button', { name: 'Pedir a compra' }).click()
+  await pausa(pg, 400)
+  const u = new URL(pg.url())
+  conta(u.pathname === '/estoque' && u.searchParams.get('busca') === 'DRYFIT POLIESTER 100% · Preto', 'Pedir a compra abre o material no Estoque: ' + u.pathname + u.search)
+  conta(!erros.length, 'sem erro de JavaScript (S3): ' + erros.join(' | '))
 })
 
 await secao(async () => {

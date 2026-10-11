@@ -52,6 +52,16 @@ export type { FatiaNoQuadro, PedidoNoTrilho, Rota } from './kanban'
 
 export { BlocoDaFatia } from './degraus'
 
+export { compararOsComponentes, quanto } from './comparacao'
+export type {
+  ComparacaoDoLayout,
+  ConsumoParaComparar,
+  EstadoDaLinha,
+  FichaParaComparar,
+  LinhaDaComparacao,
+  ReservaParaComparar,
+} from './comparacao'
+
 export {
   TONS_DE_TAG,
   TOM_DA_MARCA,

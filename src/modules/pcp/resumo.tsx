@@ -37,6 +37,7 @@ function nomes(lista: string[]): string {
 export function ResumoDoPcp({
   portao,
   todos,
+  diferencas = {},
   mesa,
   podeAprovar,
   escolhidos,
@@ -49,6 +50,8 @@ export function ResumoDoPcp({
   portao: PedidoNoPcp[]
   /** tudo que está no PCP, para as entregas */
   todos: PedidoNoPcp[]
+  /** as diferenças da comparação dos pedidos já abertos */
+  diferencas?: Record<string, number>
   mesa: PedidoNoPcp[]
   podeAprovar: boolean
   escolhidos: string[]
@@ -57,21 +60,33 @@ export function ResumoDoPcp({
   aoAprovar: () => void
   aoAbrir: (id: string) => void
 }) {
-  const comProblema = portao.filter((p) => temFalta(p) || (!p.marcado && !!p.devolvidoMotivo)).length
-  const atrasados = todos.filter((p) => emDias(p.entregaEm).atrasado).length
+  const comProblema = portao.filter(
+    p => temFalta(p) || (!p.marcado && (!!p.devolvidoMotivo || (diferencas[p.id] ?? 0) > 0)),
+  ).length
+  const atrasados = todos.filter(p => emDias(p.entregaEm).atrasado).length
   const entregas = todos
-    .filter((p) => p.entregaEm)
+    .filter(p => p.entregaEm)
     .sort((a, b) => a.entregaEm.localeCompare(b.entregaEm) || a.numero.localeCompare(b.numero))
     .slice(0, VISIVEIS)
   const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-  const marcadosNaMesa = mesa.filter((p) => escolhidos.includes(p.id))
+  const marcadosNaMesa = mesa.filter(p => escolhidos.includes(p.id))
   const comFaltaNaMesa = mesa.filter(temFalta).length
 
   return (
     <div className="pc-resumo">
       <div className="pc-kpis">
-        <Kpi rotulo="No portão" valor={portao.length} unidade={portao.length === 1 ? 'pedido' : 'pedidos'} sub="conferindo e esperando" />
-        <Kpi rotulo="Na mesa do diretor" valor={mesa.length} unidade={mesa.length === 1 ? 'pedido' : 'pedidos'} sub="já conferidos pelo PCP" />
+        <Kpi
+          rotulo="No portão"
+          valor={portao.length}
+          unidade={portao.length === 1 ? 'pedido' : 'pedidos'}
+          sub="conferindo e esperando"
+        />
+        <Kpi
+          rotulo="Na mesa do diretor"
+          valor={mesa.length}
+          unidade={mesa.length === 1 ? 'pedido' : 'pedidos'}
+          sub="já conferidos pelo PCP"
+        />
         <Kpi
           rotulo="Com diferença ou falta"
           valor={comProblema}
@@ -97,11 +112,16 @@ export function ResumoDoPcp({
             <p className="pc-nada">Nenhum pedido do PCP tem data de entrega.</p>
           ) : (
             <ul className="pc-lista">
-              {entregas.map((p) => {
+              {entregas.map(p => {
                 const d = emDias(p.entregaEm)
                 return (
                   <li key={p.id}>
-                    <button type="button" className="pc-linha" data-entrega={p.numero} onClick={() => aoAbrir(p.id)}>
+                    <button
+                      type="button"
+                      className="pc-linha"
+                      data-entrega={p.numero}
+                      onClick={() => aoAbrir(p.id)}
+                    >
                       <span className="pilha colada pc-linha-meio">
                         <b className="pc-cliente">{p.cliente || 'sem cliente'}</b>
                         <small>
@@ -121,14 +141,18 @@ export function ResumoDoPcp({
         <section className="cartao pc-mesa-diretor" aria-label="Mesa do diretor">
           <header className="pc-cab">
             <TituloCartao icone={UserCheck}>Mesa do diretor</TituloCartao>
-            <span className="pc-cab-apoio">{podeAprovar ? 'só o diretor vê os botões' : 'quem aprova é o diretor'}</span>
+            <span className="pc-cab-apoio">
+              {podeAprovar ? 'só o diretor vê os botões' : 'quem aprova é o diretor'}
+            </span>
           </header>
           {!mesa.length ? (
-            <p className="pc-nada">Nada esperando o diretor. O pedido chega aqui quando o PCP marca como conferido.</p>
+            <p className="pc-nada">
+              Nada esperando o diretor. O pedido chega aqui quando o PCP marca como conferido.
+            </p>
           ) : (
             <>
               <ul className="pc-lista">
-                {mesa.map((p) => (
+                {mesa.map(p => (
                   <li key={p.id} className="pc-mesa-linha" data-mesa={p.numero}>
                     {podeAprovar ? (
                       <Marcacao
@@ -160,15 +184,21 @@ export function ResumoDoPcp({
               </ul>
               <div className="pc-mesa-pe">
                 <p>
-                  {mesa.length === 1 ? 'Ele já foi conferido ' : `Os ${mesa.length} já foram conferidos `}
-                  {nomes(mesa.map((p) => p.marcadoPor))}
+                  {mesa.length === 1
+                    ? 'Ele já foi conferido '
+                    : `Os ${mesa.length} já foram conferidos `}
+                  {nomes(mesa.map(p => p.marcadoPor))}
                   {comFaltaNaMesa
                     ? `, e ${comFaltaNaMesa === 1 ? 'um desce' : comFaltaNaMesa + ' descem'} com falta de material`
                     : ' e não têm falta de material'}
                   . Aprovar cria as fatias no kanban e põe o pedido na produção.
                 </p>
                 {podeAprovar ? (
-                  <Botao tom="primario" disabled={!marcadosNaMesa.length || ocupado} onClick={aoAprovar}>
+                  <Botao
+                    tom="primario"
+                    disabled={!marcadosNaMesa.length || ocupado}
+                    onClick={aoAprovar}
+                  >
                     <Check size={17} />
                     {marcadosNaMesa.length
                       ? `Aprovar ${marcadosNaMesa.length === 1 ? 'o marcado' : `os ${marcadosNaMesa.length} marcados`}`

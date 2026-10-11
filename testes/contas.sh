@@ -14,6 +14,7 @@ tsc --ignoreConfig \
   "$raiz/src/dominio/cotacao/arquivo.ts" \
   "$raiz/src/dominio/cotacao/fabrica.ts" \
   "$raiz/src/dominio/cotacao/comercial.ts" \
+  "$raiz/src/dominio/producao/comparacao.ts" \
   --target ES2022 --module ESNext --moduleResolution bundler \
   --lib ES2022,DOM --skipLibCheck --outDir "$saida"
 # node exige a extensao no import; o tsc nao a escreve

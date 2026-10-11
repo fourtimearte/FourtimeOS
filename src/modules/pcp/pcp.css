@@ -612,3 +612,120 @@
 .pc-lay-arte {
   max-height: 240px;
 }
+
+/* --- a comparação dos componentes (parte P3) ------------------------------- */
+.pc-cmp {
+  overflow: hidden;
+  min-width: 0;
+}
+.pc-cmp-lay {
+  border-bottom: 1px solid var(--border);
+}
+.pc-cmp-lay:last-child {
+  border-bottom: 0;
+}
+.pc-cmp-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pc-cmp-topo:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+.pc-cmp-topo:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pc-cmp-nome {
+  flex: 1;
+  min-width: 0;
+}
+.pc-cmp-conta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pc-cmp-conta.diferenca {
+  color: var(--brand-text);
+}
+.pc-cmp-ic {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-2);
+}
+.pc-cmp-ic.diferenca {
+  color: var(--brand-text);
+}
+.pc-cmp-ic.pc-so-aviso {
+  color: var(--text-3);
+}
+.pc-cmp-linhas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pc-cmp-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-5);
+  padding: var(--re-6) var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.pc-cmp-linha.pc-e-diferenca {
+  background: color-mix(in srgb, var(--brand-soft) 60%, var(--surface));
+}
+.pc-cmp-linha > .pc-cmp-ic {
+  margin-top: var(--re-1);
+}
+.pc-cmp-meio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.pc-cmp-meio b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pc-cmp-meio dl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+  margin: 0;
+}
+.pc-cmp-lado {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: var(--re-4);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.pc-cmp-lado dt {
+  color: var(--text-3);
+}
+.pc-cmp-lado dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.pc-cab-apoio.pc-alerta {
+  color: var(--brand-text);
+}

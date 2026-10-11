@@ -112,6 +112,19 @@ export async function carregarReferencia(id: string): Promise<ReferenciaNaFicha 
   return linhas.length ? daLista(linhas[0]) : null
 }
 
+/* AS FICHAS DE UM PEDIDO, PELO CÓDIGO (a comparação do PCP): o orçamento
+   guarda o código da referência, e não o id. Código que não está no
+   catálogo simplesmente não volta. */
+export async function carregarFichasPorCodigo(cods: string[]): Promise<ReferenciaNaFicha[]> {
+  const unicos = [...new Set(cods.map((c) => c.trim()).filter(Boolean))]
+  if (!unicos.length) return []
+  const lista = unicos.map((c) => '"' + c.replace(/"/g, '') + '"').join(',')
+  const linhas = await tabela<LinhaDaLista[]>(
+    `referencia_na_ficha?select=${COLUNAS_DA_LISTA}&cod=in.(${encodeURIComponent(lista)})`,
+  )
+  return linhas.map(daLista)
+}
+
 /** A ficha inteira de uma referência. */
 export async function carregarFicha(r: ReferenciaNaFicha): Promise<Ficha> {
   const [medidas, partes, materiais] = await Promise.all([

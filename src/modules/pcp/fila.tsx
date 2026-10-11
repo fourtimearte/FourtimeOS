@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react'
-import { ArrowUUpLeft, CheckCircle, Clock, MagnifyingGlass, WarningCircle } from '@phosphor-icons/react'
+import {
+  ArrowUUpLeft,
+  CheckCircle,
+  Clock,
+  MagnifyingGlass,
+  WarningCircle,
+} from '@phosphor-icons/react'
 import { LINHA_ESCOLHIDA, type IconeDoPacote } from '@ds'
 import { diasAte, type PedidoLiberado, type PedidoNoPcp } from '@dominio/producao'
 
@@ -37,7 +43,8 @@ export function quando(iso: string, agora = new Date()): string {
 export function emDias(iso: string): { texto: string; perto: boolean; atrasado: boolean } {
   const d = diasAte(iso)
   if (d === null) return { texto: 'sem data', perto: false, atrasado: false }
-  if (d < 0) return { texto: `${-d} ${-d === 1 ? 'dia' : 'dias'} atrasado`, perto: true, atrasado: true }
+  if (d < 0)
+    return { texto: `${-d} ${-d === 1 ? 'dia' : 'dias'} atrasado`, perto: true, atrasado: true }
   if (d === 0) return { texto: 'hoje', perto: true, atrasado: false }
   if (d === 1) return { texto: 'amanhã', perto: true, atrasado: false }
   return { texto: `em ${d} dias`, perto: d <= 7, atrasado: false }
@@ -46,27 +53,51 @@ export function emDias(iso: string): { texto: string; perto: boolean; atrasado: 
 export const temFalta = (p: PedidoNoPcp) => p.faltando > 0 || p.aviso === 'falta-material'
 
 /** em que pé está: o ícone, a linha e se é vermelho */
-export function situacao(p: PedidoNoPcp): { icone: IconeDoPacote; linha: string; alerta: boolean } {
+/** diferencas: o que a comparação achou quando o pedido foi aberto nesta visita */
+export function situacao(
+  p: PedidoNoPcp,
+  diferencas = 0,
+): { icone: IconeDoPacote; linha: string; alerta: boolean } {
   if (p.comOVendedor) {
-    return { icone: ArrowUUpLeft, linha: 'com ' + (p.vendedor || 'o vendedor') + ': ' + p.vendedorMotivo, alerta: true }
+    return {
+      icone: ArrowUUpLeft,
+      linha: 'com ' + (p.vendedor || 'o vendedor') + ': ' + p.vendedorMotivo,
+      alerta: true,
+    }
   }
-  if (p.marcado) return { icone: CheckCircle, linha: 'conferido por ' + (p.marcadoPor || 'alguém'), alerta: false }
-  if (p.devolvidoMotivo) return { icone: WarningCircle, linha: 'devolvido pelo diretor', alerta: true }
-  if (temFalta(p)) return { icone: WarningCircle, linha: 'desce com falta de material', alerta: true }
-  if (p.conferindoPor) return { icone: MagnifyingGlass, linha: 'com ' + p.conferindoPor, alerta: false }
+  if (p.marcado)
+    return {
+      icone: CheckCircle,
+      linha: 'conferido por ' + (p.marcadoPor || 'alguém'),
+      alerta: false,
+    }
+  if (p.devolvidoMotivo)
+    return { icone: WarningCircle, linha: 'devolvido pelo diretor', alerta: true }
+  if (diferencas)
+    return {
+      icone: WarningCircle,
+      linha: diferencas === 1 ? '1 diferença' : diferencas + ' diferenças',
+      alerta: true,
+    }
+  if (temFalta(p))
+    return { icone: WarningCircle, linha: 'desce com falta de material', alerta: true }
+  if (p.conferindoPor)
+    return { icone: MagnifyingGlass, linha: 'com ' + p.conferindoPor, alerta: false }
   return { icone: Clock, linha: 'ainda não aberto', alerta: false }
 }
 
 export function LinhaDoPcp({
   p,
+  diferencas,
   escolhido,
   aoEscolher,
 }: {
   p: PedidoNoPcp
+  diferencas?: number
   escolhido: boolean
   aoEscolher: () => void
 }) {
-  const s = situacao(p)
+  const s = situacao(p, diferencas)
   const Icone = s.icone
   const perto = emDias(p.entregaEm).perto
   return (
@@ -125,7 +156,9 @@ export function LinhaDoLiberado({
         <small>
           {p.numero} · {p.pecas} pçs · {NOME_DO_ESTADO[p.estado] ?? p.estado}
         </small>
-        <small className="pc-corta">{p.liberadoPor ? 'aprovado por ' + p.liberadoPor : 'aprovado antes do registro'}</small>
+        <small className="pc-corta">
+          {p.liberadoPor ? 'aprovado por ' + p.liberadoPor : 'aprovado antes do registro'}
+        </small>
       </span>
       <span className="pc-item-fim">
         <b>{dataCurta(p.liberadoEm)}</b>
@@ -135,7 +168,15 @@ export function LinhaDoLiberado({
   )
 }
 
-export function GrupoDaFila({ nome, apoio, children }: { nome: string; apoio: string; children: ReactNode }) {
+export function GrupoDaFila({
+  nome,
+  apoio,
+  children,
+}: {
+  nome: string
+  apoio: string
+  children: ReactNode
+}) {
   return (
     <div className="pc-grupo">
       <div className="pc-g">

@@ -14,6 +14,7 @@
         Devolver ao vendedor (com motivo); no marcado, Aprovar para a
         produção, Devolver ao PCP e Tirar a marca
      4. Devolvidos (Voltar a conferir) e Liberados (quem aprovou)
+     4c. P3: a comparação dos componentes por layout, com as diferenças
      4b. P2: o orçamento e os layouts com valor no meio, as aprovações ao
         lado; no celular, as abas Conferência e Orçamento
      5. a produção confere e não aprova; o vendedor só olha
@@ -71,6 +72,22 @@ const LIBERADOS = [
   { id: ID(390), numero: 'PD004390', cotacao_id: COT(390), cliente: 'Oficina Exemplo', estado: 'pronto', etapa: 'finalizado', pecas: 30, total: 1500, entrega_em: dia(-2), layouts: 1, tecnicas: ['dtf'], teste: false, aviso: 'falta-material', liberado_em: '2026-09-20T12:00:00Z', liberado_por_nome: '', marcado_por_nome: '' },
 ]
 
+
+/* a comparação (P3) do PD004413: a ficha das duas referências, o material de
+   cada layout (062) e o que saiu da prateleira */
+const FICHAS = [
+  { id: 'r1', cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD', grupo: '010', genero: 'M', ordem: 1, ativo: true, detalhes: {}, observacao: '', tamanhos: ['PP', 'P', 'M', 'G', 'GG', 'XG'], ficha_em: AGORA, medidas: 4, partes_com_tecido: 2, materiais: 1, tem_molde: true },
+  { id: 'r2', cod: 'FT-090-000M', nome: 'CALÇAO MASC SEM BOLSO', grupo: '090', genero: 'M', ordem: 1, ativo: true, detalhes: {}, observacao: '', tamanhos: [], ficha_em: null, medidas: 0, partes_com_tecido: 0, materiais: 0, tem_molde: false },
+]
+const MAT = (id, nome) => ({ nome, categoria: 'tecido', cor_de_tecido: null })
+const CONSUMO = [
+  { ordem: 1, material_id: 'm1', quantidade: 4, unidade: 'kg', sem_consumo: false, como: '', material: MAT('m1', 'DRYFIT POLIESTER 100% · Azul Royal') },
+  { ordem: 2, material_id: 'm2', quantidade: 3, unidade: 'kg', sem_consumo: false, como: '', material: MAT('m2', 'DRYFIT POLIESTER 100% · Preto') },
+  { ordem: 3, material_id: 'm3', quantidade: 0.6, unidade: 'kg', sem_consumo: false, como: '', material: MAT('m3', 'ALGODAO 100% · Branco') },
+]
+const RES = (material_id, material, quantidade, separado) => ({ id: 'res-' + material_id, pedido_id: ID(413), pedido: 'PD004413', material_id, material, categoria: 'tecido', quantidade, unidade: 'kg', pecas: 10, sem_consumo: false, baixada: true, separado, saldo: 50, o_estoque_cobre: true })
+const RESERVAS = [RES('m1', 'DRYFIT POLIESTER 100% · Azul Royal', 4, 4), RES('m2', 'DRYFIT POLIESTER 100% · Preto', 3, 2.5), RES('m3', 'ALGODAO 100% · Branco', 0.6, 0.6)]
+
 const PAGINAS = ['inicio', 'funil', 'clientes', 'cotacao', 'separacao', 'pcp', 'ficha', 'kanban', 'produtos', 'estoque', 'atividades', 'relatorio', 'transporte', 'banco', 'config', 'kit']
 function perfil(papel) {
   const permissoes = {}
@@ -102,6 +119,13 @@ async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admi
     } else if (u.includes('/rest/v1/cotacao?') && u.includes('id=eq.')) {
       const id = u.split('id=eq.')[1].split('&')[0]
       corpo = [{ id, numero: 'CO2026-0131', corpo: cotacaoDoAtletico(), versao_do_formato: 6, estado: 'aprovada', criada_em: AGORA, atualizado_em: AGORA }]
+    } else if (u.includes('/rest/v1/referencia_na_ficha')) {
+      corpo = FICHAS.filter((f) => u.includes('"' + f.cod + '"'))
+    } else if (u.includes('/rest/v1/consumo_do_layout')) {
+      if (sem063) return json({ code: 'PGRST205', message: "Could not find the table 'public.consumo_do_layout' in the schema cache" }, 404)
+      corpo = u.includes(ID(413)) ? CONSUMO : []
+    } else if (u.includes('/rest/v1/reserva_do_pedido')) {
+      corpo = u.includes(ID(413)) ? RESERVAS : []
     } else if (u.includes('/rest/v1/rpc/')) {
       const rpc = u.split('/rpc/')[1].split('?')[0]
       gravados.push({ rpc, corpo: req.postDataJSON() })
@@ -282,6 +306,36 @@ await secao(async () => {
   conta(await sobra(pg) <= 0, '390: o orçamento aberto não rola de lado')
   await foto(pg, '390-p2-orcamento')
   conta(!erros.length, 'sem erro de JavaScript (P2 no celular): ' + erros.join(' | '))
+})
+
+
+/* P3: a comparação dos componentes */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  await pg.locator('[data-pedido="PD004413"]').click()
+  await pg.waitForSelector('.pc-cmp-lay', { timeout: 8000 })
+  await pausa(pg, 400)
+  conta(/Comparação dos componentes 2 diferenças/.test(await texto(pg, '.pc-cmp .pc-cab')), 'o título conta as diferenças: ' + (await texto(pg, '.pc-cmp .pc-cab')))
+  const topos = await pg.evaluate(() => [...document.querySelectorAll('.pc-cmp-topo')].map((b) => [b.innerText.replace(/\s+/g, ' ').trim(), b.getAttribute('aria-expanded')]))
+  conta(JSON.stringify(topos) === JSON.stringify([['L-01 · CAMISETA MASC TRAD 6 de 6', 'false'], ['L-02 · CALÇAO MASC SEM BOLSO 3 de 6', 'true'], ['L-03 · CAMISETA MASC TRAD 5 de 6', 'true']]), 'um layout por linha, e o que tem diferença já aberto: ' + JSON.stringify(topos))
+  const tec = await texto(pg, '[data-comparacao="L-02"] [data-linha="tecido-0"]')
+  conta(/Tecido orçamento DRYFIT POLIESTER 100% · Preto ficha técnica pede 3 kg separação saiu 2,5 kg · falta 0,5 kg/.test(tec) && await pg.locator('[data-comparacao="L-02"] [data-linha="tecido-0"].pc-e-diferenca').count() === 1, 'o tecido que desceu com falta, em vermelho: ' + tec)
+  const ref = await texto(pg, '[data-comparacao="L-02"] [data-linha="referencia"]')
+  conta(/em branco/.test(ref) && await pg.locator('[data-comparacao="L-02"] [data-linha="referencia"].pc-e-diferenca').count() === 0, 'a ficha em branco é aviso, e não diferença: ' + ref)
+  const eti = await texto(pg, '[data-comparacao="L-03"] [data-linha="etiqueta"]')
+  conta(/orçamento sem etiqueta/.test(eti) && /os outros L-01 Eti\. Fourtime em Silk · L-02 Eti\. Cliente em DTF/.test(eti), 'a etiqueta que falta, com a dos outros: ' + eti)
+  conta(/vira 1 fatia: DTF/.test(await texto(pg, '[data-comparacao="L-03"] [data-linha="design"]')), 'o design contra as fatias do kanban')
+  await pg.locator('[data-comparacao="L-01"] .pc-cmp-topo').click()
+  await pausa(pg)
+  conta(/completa: molde, medidas e tecido/.test(await texto(pg, '[data-comparacao="L-01"]')) && /saiu 4 kg, o que a ficha pede/.test(await texto(pg, '[data-comparacao="L-01"]')) && /os 5 tamanhos existem/.test(await texto(pg, '[data-comparacao="L-01"]')), 'o L-01 aberto: tudo confere')
+  conta(/Bruna está conferindo desde hoje, \d\d:\d\d\. Há 2 diferenças abertas\./.test(await texto(pg, '[data-passo="pcp"]')), 'as aprovações dizem quantas diferenças estão abertas')
+  conta(/2 diferenças/.test(await texto(pg, '[data-pedido="PD004413"]')), 'a linha da fila passa a dizer as diferenças: ' + (await texto(pg, '[data-pedido="PD004413"]')))
+  await foto(pg, '1920-p3', true)
+  await pg.locator('.pc-ped-topo').getByRole('button', { name: 'Fechar' }).click()
+  await pausa(pg)
+  conta(/Com diferença ou falta 3/.test(await texto(pg, '.pc-kpis')), 'os números contam o pedido com diferença')
+  conta(!erros.length, 'sem erro de JavaScript (P3): ' + erros.join(' | '))
 })
 
 /* 5: a produção confere e não aprova; o vendedor só olha */

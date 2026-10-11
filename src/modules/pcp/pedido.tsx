@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowUUpLeft,
   Check,
@@ -11,18 +11,25 @@ import {
 } from '@phosphor-icons/react'
 import { AreaTexto, Botao, Segmentado, Selo, TituloCartao, avisar } from '@ds'
 import { acharCotacao, type Cotacao } from '@dominio/cotacao'
+import { carregarMaterialDosLayouts, carregarReservasDoPedido } from '@dominio/estoque'
+import { carregarFichasPorCodigo } from '@dominio/produto'
 import {
   abrirNoPcp,
+  compararOsComponentes,
   desmarcarDoPcp,
   devolverAoVendedor,
   devolverDoPcp,
   marcarParaAprovacao,
   voltarAConferir,
+  type ConsumoParaComparar,
+  type FichaParaComparar,
   type PedidoLiberado,
+  type ReservaParaComparar,
   type PedidoNoPcp,
 } from '@dominio/producao'
 import { ModalDaFolha } from '@modules/cotacao'
 import { dataCurta, emDias, quando, temFalta } from './fila'
+import { CartaoDaComparacao } from './comparacao'
 import { CartaoDoLayoutNoPcp, CartaoDoOrcamento } from './orcamento'
 
 /* ==========================================================================
@@ -119,6 +126,7 @@ export function PedidoAberto({
   podeAprovar,
   aoMexer,
   aoAprovar,
+  aoContar,
   aoFechar,
 }: {
   p: PedidoNoPcp
@@ -129,6 +137,8 @@ export function PedidoAberto({
   podeAprovar: boolean
   aoMexer: () => Promise<unknown>
   aoAprovar: (p: PedidoNoPcp) => void
+  /** quantas diferenças a comparação achou, para a fila e os números */
+  aoContar?: (id: string, diferencas: number) => void
   aoFechar: () => void
 }) {
   const [folha, setFolha] = useState(false)
@@ -156,6 +166,41 @@ export function PedidoAberto({
       vivo = false
     }
   }, [p.cotacaoId])
+
+  /* O QUE A COMPARAÇÃO LÊ ALÉM DA COTAÇÃO: a ficha de cada referência, o
+     material de cada layout (062) e o que saiu da prateleira */
+  const [fichas, setFichas] = useState<Map<string, FichaParaComparar> | undefined>(undefined)
+  const [consumo, setConsumo] = useState<ConsumoParaComparar[] | null | undefined>(undefined)
+  const [reservas, setReservas] = useState<ReservaParaComparar[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!cotacao) return
+    let vivo = true
+    const cods = cotacao.produtos.map(x => x.bloco.referencia || '')
+    void carregarFichasPorCodigo(cods)
+      .catch(() => [])
+      .then(l => vivo && setFichas(new Map(l.map(f => [f.cod, f]))))
+    void carregarMaterialDosLayouts(p.id)
+      .catch(() => null)
+      .then(c => vivo && setConsumo(c))
+    void carregarReservasDoPedido(p.id)
+      .catch(() => [])
+      .then(r => vivo && setReservas(r))
+    return () => {
+      vivo = false
+    }
+  }, [cotacao, p.id])
+
+  const comparacao = useMemo(() => {
+    if (cotacao === null) return null
+    if (!cotacao || !fichas || consumo === undefined || !reservas) return undefined
+    return compararOsComponentes({ cotacao, fichas, consumo, reservas })
+  }, [cotacao, fichas, consumo, reservas])
+  const diferencas = (comparacao ?? []).reduce((s, l) => s + l.diferencas, 0)
+
+  useEffect(() => {
+    if (comparacao) aoContar?.(p.id, diferencas)
+  }, [comparacao, diferencas, p.id, aoContar])
 
   /* ABRIR É CONFERIR: uma vez por pedido, e só para quem pode marcar */
   useEffect(() => {
@@ -191,6 +236,11 @@ export function PedidoAberto({
           (falta ? ' A separação deixou falta de material.' : '')
         : 'Ainda não aberto por quem confere.' +
           (falta ? ' A separação deixou falta de material.' : '')
+  /* a conta da comparação entra na frase de quem confere, e não na do diretor */
+  const textoDasDiferencas =
+    !p.marcado && !p.comOVendedor && diferencas
+      ? ` Há ${diferencas} ${diferencas === 1 ? 'diferença aberta' : 'diferenças abertas'}.`
+      : ''
 
   const formulario = (
     para: 'vendedor' | 'pcp',
@@ -273,7 +323,10 @@ export function PedidoAberto({
             )}
             <div className="pilha pc-passo-meio">
               <b>1. PCP</b>
-              <p className="pc-apoio">{textoDoPcp}</p>
+              <p className="pc-apoio">
+                {textoDoPcp}
+                {textoDasDiferencas}
+              </p>
               {p.comOVendedor ? <p className="pc-motivo">{p.vendedorMotivo}</p> : null}
               {!p.marcado && !p.comOVendedor && p.devolvidoMotivo ? (
                 <p className="pc-motivo">
@@ -406,6 +459,7 @@ export function PedidoAberto({
             </div>
           </div>
         </section>
+        <CartaoDaComparacao layouts={comparacao} aceitas={p.marcado} />
       </div>
 
       {folha ? (

@@ -34,6 +34,7 @@ import { arranjo, empacotar, faixaDeDestaques, fileiraDeDestaques, colunaDeDesta
 import { etiquetaDoDesign, comEtiqueta } from './compilado/layout/etiqueta.js'
 import { fatiasDaCotacao, numerosDaFabrica } from './compilado/cotacao/fabrica.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
+import { compararOsComponentes, quanto } from './compilado/producao/comparacao.js'
 import { estatisticasDoComercial, quandoDaCotacao, passoDoCaminho, ultimosMeses, diasEntre, naAba } from './compilado/cotacao/comercial.js'
 
 let falhas = 0
@@ -350,6 +351,66 @@ ok('o caminho: o pedido no PCP está no passo 2, e o entregue passou de todos', 
 ok('os doze meses, virando o ano', ultimosMeses('2026-02-10', 3).join() === '2026-02,2026-01,2025-12')
 ok('dias entre datas, pelo calendário', diasEntre('2026-02-27', '2026-03-01') === 2)
 ok('as abas: perdidas são recusadas e vencidas', naAba(CL('z', 'vencida'), 'perdidas') && !naAba(CL('z', 'aprovada'), 'perdidas') && naAba(CL('z', 'rascunho'), 'aberto'))
+
+/* ---------- a comparação dos componentes do PCP (parte P3) ---------------- */
+console.log('\na comparação dos componentes')
+{
+  const c = cotacaoEmBranco('CO-CMP')
+  const lay = (n, ref, nome, grade, design, tecidos, imagem = 'data:x') => {
+    const b = blocoEmBranco(n)
+    return { bloco: { ...b, n, referencia: ref, nomeDaReferencia: nome, faixa: 'adulto', grade, design, tecidos, imagem }, precoPorTamanho: {}, precoBase: 10 }
+  }
+  const FT = [{ tag: 'Eti. Fourtime', tecnica: 'etiqueta', cores: [] }]
+  c.produtos = [
+    lay(1, 'FT-010-000M', 'CAMISETA', { P: 10, M: 5 }, [...FT, { tag: 'Subli', tecnica: 'subli', cores: [{ cod: 'S1', hex: '#000' }] }], [{ nome: 'DRYFIT', cor: 'Azul', hex: '#00f', materialId: 'm1' }]),
+    lay(2, 'FT-090-000M', 'CALCAO', { M: 4 }, [...FT, { tag: 'Subli', tecnica: 'subli', cores: [] }], [{ nome: 'DRYFIT', cor: 'Preto', hex: '#000' }]),
+    lay(3, 'FT-010-000M', 'GOLEIRO', { M: 2, XG: 1 }, [{ tag: 'Subli', tecnica: 'subli', cores: [] }, { tag: 'Patch', tecnica: 'patch', cores: [] }],
+      [{ nome: 'DRYFIT', cor: 'Verde', hex: '#0f0' }, { nome: 'JAKAR', cor: 'Preto', hex: '#000' }], ''),
+    { bloco: { ...blocoEmBranco(4), n: 4, informacoes: true }, precoPorTamanho: {}, precoBase: 0 },
+  ]
+  const ficha = (cod, tamanhos, extra = {}) => [cod, { cod, fichaEm: '2026-10-01', tamanhos, medidas: 3, partesComTecido: 2, temMolde: true, ...extra }]
+  const fichas = new Map([ficha('FT-010-000M', ['P', 'M', 'G']), ficha('FT-090-000M', [], { fichaEm: null })])
+  const consumo = [
+    { ordem: 1, materialId: 'm1', material: 'DRYFIT · Azul', quantidade: 1.3, unidade: 'kg', semConsumo: false },
+    { ordem: 2, materialId: 'm2', material: 'DRYFIT · Preto', quantidade: 0.4, unidade: 'kg', semConsumo: false },
+    { ordem: 3, materialId: 'm3', material: 'DRYFIT · Verde', quantidade: 0.3, unidade: 'kg', semConsumo: false },
+    { ordem: 3, materialId: 'm4', material: 'JAKAR · Preto', quantidade: 0.46, unidade: 'kg', semConsumo: false },
+  ]
+  const reservas = [
+    { materialId: 'm1', quantidade: 1.3, unidade: 'kg', baixada: true, separado: 1.3, semConsumo: false },
+    { materialId: 'm2', quantidade: 0.4, unidade: 'kg', baixada: false, separado: 0, semConsumo: false },
+    { materialId: 'm3', quantidade: 0.3, unidade: 'kg', baixada: true, separado: 0.3, semConsumo: false },
+    { materialId: 'm4', quantidade: 0.46, unidade: 'kg', baixada: true, separado: 0.3, semConsumo: false },
+  ]
+  const r = compararOsComponentes({ cotacao: c, fichas, consumo, reservas })
+  const linha = (l, chave) => r[l].linhas.find((x) => x.chave === chave)
+  const textos = (x) => x.lados.map((y) => y.rotulo + ': ' + y.texto).join(' | ')
+  ok('o módulo de informações não entra: 3 layouts', r.length === 3)
+  ok('L-01 confere inteiro: 6 de 6', r[0].confere === 6 && r[0].total === 6 && r[0].diferencas === 0)
+  ok('a referência completa', textos(linha(0, 'referencia')) === 'orçamento: FT-010-000M | ficha técnica: completa: molde, medidas e tecido')
+  ok('o tecido separado pelo materialId: "saiu 1,3 kg, o que a ficha pede"', linha(0, 'tecido-0').estado === 'ok' && /saiu 1,3 kg, o que a ficha pede/.test(textos(linha(0, 'tecido-0'))))
+  ok('o design vira a fatia da sublimação', textos(linha(0, 'design')) === 'orçamento: Subli, 1 cor | produção: vira 1 fatia: Sublimação')
+  ok('a etiqueta igual à dos outros', linha(0, 'etiqueta').estado === 'ok' && /os outros: L-02 leva Eti. Fourtime/.test(textos(linha(0, 'etiqueta'))))
+  ok('a ficha em branco é aviso, e não diferença', linha(1, 'referencia').estado === 'aviso' && r[1].diferencas === 1)
+  ok('o tecido que não saiu da prateleira é diferença, achado pelo nome', linha(1, 'tecido-0').estado === 'diferenca' && /não saiu da prateleira/.test(textos(linha(1, 'tecido-0'))))
+  ok('a grade sem tamanhos na ficha é aviso', linha(1, 'grade').estado === 'aviso')
+  ok('L-03: dois tecidos, a falta no segundo', linha(2, 'tecido-0').estado === 'ok' && linha(2, 'tecido-1').estado === 'diferenca' && /saiu 0,3 kg · falta 0,16 kg/.test(textos(linha(2, 'tecido-1'))))
+  ok('L-03: duas fatias, Sublimação e Patch', /vira 2 fatias: Sublimação e Patch/.test(textos(linha(2, 'design'))))
+  ok('L-03: sem etiqueta, e os outros levam a Fourtime', linha(2, 'etiqueta').estado === 'diferenca' && /L-01 e L-02 levam Eti. Fourtime/.test(textos(linha(2, 'etiqueta'))))
+  ok('L-03: o XG que a ficha não tem', linha(2, 'grade').estado === 'diferenca' && /não tem XG/.test(textos(linha(2, 'grade'))))
+  ok('L-03: sem arte', linha(2, 'arte').estado === 'diferenca')
+  ok('L-03: 3 de 7, 4 diferenças', r[2].confere === 3 && r[2].total === 7 && r[2].diferencas === 4)
+  const sem062 = compararOsComponentes({ cotacao: c, fichas, consumo: null, reservas: [] })
+  ok('antes da 062 o tecido é aviso', sem062[0].linhas.find((x) => x.chave === 'tecido-0').estado === 'aviso')
+  const semRef = compararOsComponentes({ cotacao: c, fichas: new Map(), consumo, reservas })
+  ok('a referência fora do catálogo é diferença', semRef[0].linhas[0].estado === 'diferenca' && /não está no catálogo/.test(textos(semRef[0].linhas[0])))
+  const c2 = JSON.parse(JSON.stringify(c))
+  c2.produtos[0].bloco.design = [{ tag: 'Eti. Cliente', tecnica: 'etiqueta', cores: [] }, { tag: 'Subli', tecnica: 'subli', cores: [] }]
+  c2.produtos[2].bloco.design.push({ tag: 'Eti. Fourtime', tecnica: 'etiqueta', cores: [] })
+  const r2 = compararOsComponentes({ cotacao: c2, fichas, consumo, reservas })
+  ok('a etiqueta diferente de dois que concordam é aviso; de um só, não', r2[0].linhas.find((x) => x.chave === 'etiqueta').estado === 'aviso' && r[1].linhas.find((x) => x.chave === 'etiqueta').estado === 'ok')
+  ok('quanto: a casa decimal só quando existe', quanto(1.3, 'kg') === '1,3 kg' && quanto(12, 'un') === '12 un' && quanto(0.456, 'kg') === '0,46 kg')
+}
 
 console.log(falhas ? '\n' + falhas + ' falha(s)' : '\ntudo passou')
 process.exit(falhas ? 1 : 0)

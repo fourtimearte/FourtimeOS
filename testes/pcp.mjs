@@ -14,6 +14,8 @@
         Devolver ao vendedor (com motivo); no marcado, Aprovar para a
         produção, Devolver ao PCP e Tirar a marca
      4. Devolvidos (Voltar a conferir) e Liberados (quem aprovou)
+     4b. P2: o orçamento e os layouts com valor no meio, as aprovações ao
+        lado; no celular, as abas Conferência e Orçamento
      5. a produção confere e não aprova; o vendedor só olha
      6. antes da 063: a fila funciona e os Liberados avisam
      7. 1920, 1440, 820 e 390 nos dois temas: nada rola de lado
@@ -248,6 +250,38 @@ await secao(async () => {
   await pausa(pg, 400)
   conta(/Aprovado por Henrique, hoje/.test(await texto(pg, '.pc-aprovacoes')) && /Conferido por Bruna/.test(await texto(pg, '.pc-aprovacoes')), 'o liberado aberto: quem conferiu e quem aprovou')
   conta(!erros.length, 'sem erro de JavaScript (pedido): ' + erros.join(' | '))
+})
+
+/* P2: o orçamento no meio e as aprovações ao lado; no celular, uma parte por vez */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  await pg.locator('[data-pedido="PD004413"]').click()
+  await pg.waitForSelector('.pc-lay', { timeout: 8000 })
+  await pausa(pg, 400)
+  const orc = await texto(pg, '.pc-orc')
+  conta(/O orçamento URGENTE/.test(orc) && /Vendedor Dani/.test(orc) && /Pagamento 50% NA APROVAÇÃO, 50% NA ENTREGA/.test(orc) && /Envio TRANSPORTADORA sai em 20\/10/.test(orc) && /Embalagem CAIXA/.test(orc) && /Observação Entregar junto com o pedido do clube\./.test(orc), 'o cartão do orçamento: vendedor, pagamento, envio, embalagem, observação e a marca: ' + orc.slice(0, 160))
+  const lays = await pg.evaluate(() => [...document.querySelectorAll('.pc-lay')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()))
+  conta(lays.length === 3 && /^L-01 · CAMISETA MASC TRAD 89 pçs · R\$\s?5\.536,00/.test(lays[0]) && /Tecido DRYFIT POLIESTER 100% · Azul Royal/.test(lays[0]) && /Grade P 10 M 32 G 30 GG 14 XG 3/.test(lays[0]), 'um cartão por layout, com o valor: ' + lays[0].slice(0, 140))
+  const lado = await pg.evaluate(() => { const m = document.querySelector('.pc-ped-meio').getBoundingClientRect(); const l = document.querySelector('.pc-ped-lado').getBoundingClientRect(); return { meio: Math.round(m.left), lado: Math.round(l.left), topo: Math.round(l.top - m.top), largura: Math.round(l.width) } })
+  conta(lado.lado > lado.meio && lado.topo === 0 && lado.largura >= 360, 'as aprovações na coluna da direita, alinhadas ao topo: ' + JSON.stringify(lado))
+  conta(!(await pg.locator('.pc-ped-abas').isVisible()), 'no computador, sem as abas do celular')
+  await foto(pg, '1920-p2', false)
+  conta(!erros.length, 'sem erro de JavaScript (P2): ' + erros.join(' | '))
+})
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 390, altura: 844 })
+  await ir(pg)
+  await pg.locator('[data-pedido="PD004413"]').click()
+  await pausa(pg, 600)
+  conta(await pg.locator('.pc-ped-abas').isVisible() && await pg.locator('.pc-aprovacoes').isVisible() && !(await pg.locator('.pc-orc').isVisible()), 'no celular, a Conferência primeiro, sem o orçamento')
+  await pg.locator('.pc-ped-abas button', { hasText: 'Orçamento' }).click()
+  await pg.waitForSelector('.pc-lay', { timeout: 8000 })
+  await pausa(pg)
+  conta(await pg.locator('.pc-orc').isVisible() && !(await pg.locator('.pc-aprovacoes').isVisible()) && await pg.locator('.pc-lay').count() === 3, 'a aba Orçamento mostra o orçamento e os layouts')
+  conta(await sobra(pg) <= 0, '390: o orçamento aberto não rola de lado')
+  await foto(pg, '390-p2-orcamento')
+  conta(!erros.length, 'sem erro de JavaScript (P2 no celular): ' + erros.join(' | '))
 })
 
 /* 5: a produção confere e não aprova; o vendedor só olha */

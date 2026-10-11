@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUUpLeft, Check, CheckCircle, Circle, Clock, Printer, Stamp, X } from '@phosphor-icons/react'
-import { AreaTexto, Botao, Selo, TituloCartao, avisar } from '@ds'
+import {
+  ArrowUUpLeft,
+  Check,
+  CheckCircle,
+  Circle,
+  Clock,
+  Printer,
+  Stamp,
+  X,
+} from '@phosphor-icons/react'
+import { AreaTexto, Botao, Segmentado, Selo, TituloCartao, avisar } from '@ds'
+import { acharCotacao, type Cotacao } from '@dominio/cotacao'
 import {
   abrirNoPcp,
   desmarcarDoPcp,
@@ -13,6 +23,7 @@ import {
 } from '@dominio/producao'
 import { ModalDaFolha } from '@modules/cotacao'
 import { dataCurta, emDias, quando, temFalta } from './fila'
+import { CartaoDoLayoutNoPcp, CartaoDoOrcamento } from './orcamento'
 
 /* ==========================================================================
    O PEDIDO ESCOLHIDO NO PCP (pranchas 88 e 89).
@@ -87,7 +98,12 @@ function Cabecalho({
   )
 }
 
-function linhaDoPedido(p: { pecas: number; layouts: number; total: number; entregaEm: string }): string {
+function linhaDoPedido(p: {
+  pecas: number
+  layouts: number
+  total: number
+  entregaEm: string
+}): string {
   const d = emDias(p.entregaEm)
   return (
     `${p.pecas} peças · ${plural(p.layouts, 'layout', 'layouts')} · ${dinheiro(p.total)} · ` +
@@ -121,13 +137,32 @@ export function PedidoAberto({
   const [devolvendo, setDevolvendo] = useState<'' | 'vendedor' | 'pcp'>('')
   const [motivo, setMotivo] = useState('')
   const abriu = useRef('')
+  /* undefined: lendo; null: não achou */
+  const [cotacao, setCotacao] = useState<Cotacao | null | undefined>(undefined)
+  /* no celular e no tablet, uma parte por vez (pranchas 91 e 92) */
+  const [aba, setAba] = useState<'conferencia' | 'orcamento'>('conferencia')
+
+  useEffect(() => {
+    let vivo = true
+    setCotacao(undefined)
+    if (!p.cotacaoId) {
+      setCotacao(null)
+      return
+    }
+    acharCotacao(p.cotacaoId)
+      .then(c => vivo && setCotacao(c ?? null))
+      .catch(() => vivo && setCotacao(null))
+    return () => {
+      vivo = false
+    }
+  }, [p.cotacaoId])
 
   /* ABRIR É CONFERIR: uma vez por pedido, e só para quem pode marcar */
   useEffect(() => {
     if (abriu.current === p.id) return
     abriu.current = p.id
     if (!podeMarcar || p.marcado || p.comOVendedor || p.conferindoPor) return
-    void abrirNoPcp(p.id).then((ok) => (ok ? aoMexer() : null))
+    void abrirNoPcp(p.id).then(ok => (ok ? aoMexer() : null))
   }, [p.id, p.marcado, p.comOVendedor, p.conferindoPor, podeMarcar, aoMexer])
 
   async function fazer(chave: string, acao: () => Promise<void>, recado: string) {
@@ -149,10 +184,13 @@ export function PedidoAberto({
   const textoDoPcp = p.comOVendedor
     ? `Devolvido ao vendedor${p.vendedor ? ' (' + p.vendedor + ')' : ''} por ${p.vendedorPor || 'alguém'}, ${quando(p.vendedorEm)}.`
     : p.marcado
-      ? `Conferido por ${p.marcadoPor || 'alguém'}, ${quando(p.marcadoEm)}.` + (falta ? ' Desce com falta de material.' : '')
+      ? `Conferido por ${p.marcadoPor || 'alguém'}, ${quando(p.marcadoEm)}.` +
+        (falta ? ' Desce com falta de material.' : '')
       : p.conferindoPor
-        ? `${p.conferindoPor} está conferindo desde ${quando(p.conferindoEm)}.` + (falta ? ' A separação deixou falta de material.' : '')
-        : 'Ainda não aberto por quem confere.' + (falta ? ' A separação deixou falta de material.' : '')
+        ? `${p.conferindoPor} está conferindo desde ${quando(p.conferindoEm)}.` +
+          (falta ? ' A separação deixou falta de material.' : '')
+        : 'Ainda não aberto por quem confere.' +
+          (falta ? ' A separação deixou falta de material.' : '')
 
   const formulario = (
     para: 'vendedor' | 'pcp',
@@ -167,11 +205,16 @@ export function PedidoAberto({
           rows={3}
           aria-label="Motivo da devolução"
           placeholder={dica}
-          onChange={(e) => setMotivo(e.currentTarget.value)}
+          onChange={e => setMotivo(e.currentTarget.value)}
           autoFocus
         />
         <div className="fileira">
-          <Botao tom="primario" carregando={ocupado === para} disabled={motivo.trim().length < 3 || !!ocupado} onClick={enviar}>
+          <Botao
+            tom="primario"
+            carregando={ocupado === para}
+            disabled={motivo.trim().length < 3 || !!ocupado}
+            onClick={enviar}
+          >
             <ArrowUUpLeft size={16} />
             {rotulo}
           </Botao>
@@ -183,136 +226,195 @@ export function PedidoAberto({
     ) : null
 
   return (
-    <div className="pc-aberto">
-      <Cabecalho
-        numero={p.numero}
-        cotacao={p.cotacaoNumero}
-        selo={estadoDoPedido(p)}
-        cliente={p.cliente}
-        linha={linhaDoPedido(p)}
-        aoAbrirAFolha={p.cotacaoId ? () => setFolha(true) : undefined}
-        aoFechar={aoFechar}
-      />
+    <div className="pc-aberto pc-ped" data-aba={aba}>
+      <div className="pc-ped-meio">
+        <Cabecalho
+          numero={p.numero}
+          cotacao={p.cotacaoNumero}
+          selo={estadoDoPedido(p)}
+          cliente={p.cliente}
+          linha={linhaDoPedido(p)}
+          aoAbrirAFolha={p.cotacaoId ? () => setFolha(true) : undefined}
+          aoFechar={aoFechar}
+        />
+        <Segmentado
+          className="pc-ped-abas"
+          valor={aba}
+          aoMudar={setAba}
+          opcoes={[
+            { valor: 'conferencia', rotulo: 'Conferência' },
+            { valor: 'orcamento', rotulo: 'Orçamento' },
+          ]}
+        />
+        <div className="pc-ped-orcamento">
+          <CartaoDoOrcamento c={cotacao} vendedor={p.vendedor} />
+          {cotacao
+            ? cotacao.produtos
+                .filter(x => !x.bloco.informacoes)
+                .map((x, i) => <CartaoDoLayoutNoPcp key={x.bloco.n || i} p={x} />)
+            : null}
+        </div>
+      </div>
+      <div className="pc-ped-lado">
+        <section className="cartao pc-aprovacoes" aria-label="Aprovações">
+          <header className="pc-cab">
+            <TituloCartao icone={Stamp}>Aprovações</TituloCartao>
+            <span className="pc-cab-apoio">
+              {p.marcado ? 'falta a do diretor' : 'as duas, nesta ordem'}
+            </span>
+          </header>
 
-      <section className="cartao pc-aprovacoes" aria-label="Aprovações">
-        <header className="pc-cab">
-          <TituloCartao icone={Stamp}>Aprovações</TituloCartao>
-          <span className="pc-cab-apoio">{p.marcado ? 'falta a do diretor' : 'as duas, nesta ordem'}</span>
-        </header>
+          {/* 1. O PCP */}
+          <div className={'pc-passo' + (p.marcado ? ' feito' : '')} data-passo="pcp">
+            {p.marcado ? (
+              <CheckCircle size={20} className="pc-ic" aria-hidden="true" />
+            ) : (
+              <Clock size={20} className="pc-ic" aria-hidden="true" />
+            )}
+            <div className="pilha pc-passo-meio">
+              <b>1. PCP</b>
+              <p className="pc-apoio">{textoDoPcp}</p>
+              {p.comOVendedor ? <p className="pc-motivo">{p.vendedorMotivo}</p> : null}
+              {!p.marcado && !p.comOVendedor && p.devolvidoMotivo ? (
+                <p className="pc-motivo">
+                  Devolvido pelo diretor{p.devolvidoPor ? ' (' + p.devolvidoPor + ')' : ''}:{' '}
+                  {p.devolvidoMotivo}
+                </p>
+              ) : null}
 
-        {/* 1. O PCP */}
-        <div className={'pc-passo' + (p.marcado ? ' feito' : '')} data-passo="pcp">
-          {p.marcado ? (
-            <CheckCircle size={20} className="pc-ic" aria-hidden="true" />
-          ) : (
-            <Clock size={20} className="pc-ic" aria-hidden="true" />
-          )}
-          <div className="pilha pc-passo-meio">
-            <b>1. PCP</b>
-            <p className="pc-apoio">{textoDoPcp}</p>
-            {p.comOVendedor ? <p className="pc-motivo">{p.vendedorMotivo}</p> : null}
-            {!p.marcado && !p.comOVendedor && p.devolvidoMotivo ? (
-              <p className="pc-motivo">
-                Devolvido pelo diretor{p.devolvidoPor ? ' (' + p.devolvidoPor + ')' : ''}: {p.devolvidoMotivo}
-              </p>
-            ) : null}
-
-            {p.comOVendedor && podeMarcar ? (
-              <div className="fileira">
-                <Botao
-                  tom="forte"
-                  carregando={ocupado === 'voltar'}
-                  disabled={!!ocupado}
-                  onClick={() => void fazer('voltar', () => voltarAConferir(p.id), `${p.numero} voltou para Conferindo.`)}
-                >
-                  <ArrowUUpLeft size={16} />
-                  Voltar a conferir
-                </Botao>
-              </div>
-            ) : null}
-
-            {!p.marcado && !p.comOVendedor && (podeMarcar || podeDevolverAoVendedor) && devolvendo !== 'vendedor' ? (
-              <div className="fileira pc-passo-botoes">
-                {podeMarcar ? (
+              {p.comOVendedor && podeMarcar ? (
+                <div className="fileira">
                   <Botao
                     tom="forte"
-                    carregando={ocupado === 'marcar'}
+                    carregando={ocupado === 'voltar'}
                     disabled={!!ocupado}
-                    onClick={() => void fazer('marcar', () => marcarParaAprovacao(p.id), `${p.numero} foi para a mesa do diretor.`)}
+                    onClick={() =>
+                      void fazer(
+                        'voltar',
+                        () => voltarAConferir(p.id),
+                        `${p.numero} voltou para Conferindo.`,
+                      )
+                    }
                   >
-                    <Check size={16} />
-                    Marcar como conferido
-                  </Botao>
-                ) : null}
-                {podeDevolverAoVendedor ? (
-                  <Botao tom="contorno" disabled={!!ocupado} onClick={() => setDevolvendo('vendedor')}>
                     <ArrowUUpLeft size={16} />
-                    Devolver ao vendedor
+                    Voltar a conferir
                   </Botao>
-                ) : null}
-              </div>
-            ) : null}
-            {formulario(
-              'vendedor',
-              () =>
-                void fazer(
-                  'vendedor',
-                  () => devolverAoVendedor(p.id, motivo),
-                  `${p.numero} está nos Devolvidos, com o motivo para o vendedor.`,
-                ),
-              'O L-03 está sem etiqueta. É a Eti. Fourtime, igual às outras duas?',
-              'Devolver com este motivo',
-            )}
-          </div>
-        </div>
+                </div>
+              ) : null}
 
-        {/* 2. O DIRETOR */}
-        <div className={'pc-passo' + (p.marcado ? '' : ' fechado')} data-passo="diretor">
-          <Circle size={20} className="pc-ic" aria-hidden="true" />
-          <div className="pilha pc-passo-meio">
-            <b>2. Diretor</b>
-            <p className="pc-apoio">
-              {!p.marcado
-                ? 'Só abre depois que o PCP marcar.'
-                : `${podeAprovar && eu ? eu : 'O diretor'} decide. Aprovar cria as fatias no kanban e põe o pedido na produção.`}
-            </p>
-            {p.marcado && (podeAprovar || podeMarcar) && devolvendo !== 'pcp' ? (
-              <div className="fileira pc-passo-botoes">
-                {podeAprovar ? (
-                  <Botao tom="primario" disabled={!!ocupado} onClick={() => aoAprovar(p)}>
-                    <Check size={16} />
-                    Aprovar para a produção
-                  </Botao>
-                ) : null}
-                {podeAprovar ? (
-                  <Botao tom="contorno" disabled={!!ocupado} onClick={() => setDevolvendo('pcp')}>
-                    <ArrowUUpLeft size={16} />
-                    Devolver ao PCP
-                  </Botao>
-                ) : null}
-                {podeMarcar ? (
-                  <Botao
-                    tom="limpo"
-                    carregando={ocupado === 'desmarcar'}
-                    disabled={!!ocupado}
-                    onClick={() => void fazer('desmarcar', () => desmarcarDoPcp(p.id), `A marca de ${p.numero} saiu.`)}
-                  >
-                    Tirar a marca
-                  </Botao>
-                ) : null}
-              </div>
-            ) : null}
-            {formulario(
-              'pcp',
-              () => void fazer('pcp', () => devolverDoPcp(p.id, motivo), `${p.numero} voltou ao PCP com o motivo escrito.`),
-              'Falta confirmar a malha com o cliente antes de cortar.',
-              'Devolver ao PCP com este motivo',
-            )}
+              {!p.marcado &&
+              !p.comOVendedor &&
+              (podeMarcar || podeDevolverAoVendedor) &&
+              devolvendo !== 'vendedor' ? (
+                <div className="fileira pc-passo-botoes">
+                  {podeMarcar ? (
+                    <Botao
+                      tom="forte"
+                      carregando={ocupado === 'marcar'}
+                      disabled={!!ocupado}
+                      onClick={() =>
+                        void fazer(
+                          'marcar',
+                          () => marcarParaAprovacao(p.id),
+                          `${p.numero} foi para a mesa do diretor.`,
+                        )
+                      }
+                    >
+                      <Check size={16} />
+                      Marcar como conferido
+                    </Botao>
+                  ) : null}
+                  {podeDevolverAoVendedor ? (
+                    <Botao
+                      tom="contorno"
+                      disabled={!!ocupado}
+                      onClick={() => setDevolvendo('vendedor')}
+                    >
+                      <ArrowUUpLeft size={16} />
+                      Devolver ao vendedor
+                    </Botao>
+                  ) : null}
+                </div>
+              ) : null}
+              {formulario(
+                'vendedor',
+                () =>
+                  void fazer(
+                    'vendedor',
+                    () => devolverAoVendedor(p.id, motivo),
+                    `${p.numero} está nos Devolvidos, com o motivo para o vendedor.`,
+                  ),
+                'O L-03 está sem etiqueta. É a Eti. Fourtime, igual às outras duas?',
+                'Devolver com este motivo',
+              )}
+            </div>
           </div>
-        </div>
-      </section>
 
-      {folha ? <ModalDaFolha cotacaoId={p.cotacaoId} numeroDoPedido={p.numero} aoFechar={() => setFolha(false)} /> : null}
+          {/* 2. O DIRETOR */}
+          <div className={'pc-passo' + (p.marcado ? '' : ' fechado')} data-passo="diretor">
+            <Circle size={20} className="pc-ic" aria-hidden="true" />
+            <div className="pilha pc-passo-meio">
+              <b>2. Diretor</b>
+              <p className="pc-apoio">
+                {!p.marcado
+                  ? 'Só abre depois que o PCP marcar.'
+                  : `${podeAprovar && eu ? eu : 'O diretor'} decide. Aprovar cria as fatias no kanban e põe o pedido na produção.`}
+              </p>
+              {p.marcado && (podeAprovar || podeMarcar) && devolvendo !== 'pcp' ? (
+                <div className="fileira pc-passo-botoes">
+                  {podeAprovar ? (
+                    <Botao tom="primario" disabled={!!ocupado} onClick={() => aoAprovar(p)}>
+                      <Check size={16} />
+                      Aprovar para a produção
+                    </Botao>
+                  ) : null}
+                  {podeAprovar ? (
+                    <Botao tom="contorno" disabled={!!ocupado} onClick={() => setDevolvendo('pcp')}>
+                      <ArrowUUpLeft size={16} />
+                      Devolver ao PCP
+                    </Botao>
+                  ) : null}
+                  {podeMarcar ? (
+                    <Botao
+                      tom="limpo"
+                      carregando={ocupado === 'desmarcar'}
+                      disabled={!!ocupado}
+                      onClick={() =>
+                        void fazer(
+                          'desmarcar',
+                          () => desmarcarDoPcp(p.id),
+                          `A marca de ${p.numero} saiu.`,
+                        )
+                      }
+                    >
+                      Tirar a marca
+                    </Botao>
+                  ) : null}
+                </div>
+              ) : null}
+              {formulario(
+                'pcp',
+                () =>
+                  void fazer(
+                    'pcp',
+                    () => devolverDoPcp(p.id, motivo),
+                    `${p.numero} voltou ao PCP com o motivo escrito.`,
+                  ),
+                'Falta confirmar a malha com o cliente antes de cortar.',
+                'Devolver ao PCP com este motivo',
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {folha ? (
+        <ModalDaFolha
+          cotacaoId={p.cotacaoId}
+          numeroDoPedido={p.numero}
+          aoFechar={() => setFolha(false)}
+        />
+      ) : null}
     </div>
   )
 }
@@ -347,7 +449,9 @@ export function LiberadoAberto({ p, aoFechar }: { p: PedidoLiberado; aoFechar: (
           <CheckCircle size={20} className="pc-ic" aria-hidden="true" />
           <div className="pilha pc-passo-meio">
             <b>1. PCP</b>
-            <p className="pc-apoio">{p.marcadoPor ? 'Conferido por ' + p.marcadoPor + '.' : 'Conferido pelo PCP.'}</p>
+            <p className="pc-apoio">
+              {p.marcadoPor ? 'Conferido por ' + p.marcadoPor + '.' : 'Conferido pelo PCP.'}
+            </p>
           </div>
         </div>
         <div className="pc-passo feito">
@@ -355,13 +459,21 @@ export function LiberadoAberto({ p, aoFechar }: { p: PedidoLiberado; aoFechar: (
           <div className="pilha pc-passo-meio">
             <b>2. Diretor</b>
             <p className="pc-apoio">
-              {p.liberadoPor ? `Aprovado por ${p.liberadoPor}, ${quando(p.liberadoEm)}.` : `Desceu para a fábrica em ${dataCurta(p.liberadoEm)}, antes de o sistema guardar quem aprovou.`}
+              {p.liberadoPor
+                ? `Aprovado por ${p.liberadoPor}, ${quando(p.liberadoEm)}.`
+                : `Desceu para a fábrica em ${dataCurta(p.liberadoEm)}, antes de o sistema guardar quem aprovou.`}
               {p.aviso === 'falta-material' ? ' Desceu com falta de material.' : ''}
             </p>
           </div>
         </div>
       </section>
-      {folha ? <ModalDaFolha cotacaoId={p.cotacaoId} numeroDoPedido={p.numero} aoFechar={() => setFolha(false)} /> : null}
+      {folha ? (
+        <ModalDaFolha
+          cotacaoId={p.cotacaoId}
+          numeroDoPedido={p.numero}
+          aoFechar={() => setFolha(false)}
+        />
+      ) : null}
     </div>
   )
 }

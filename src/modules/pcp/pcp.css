@@ -54,6 +54,8 @@
   align-items: start;
 }
 .pc-direita {
+  container-type: inline-size;
+  container-name: pedido-pcp;
   min-width: 0;
   /* o topo fixo não tapa o cabeçalho do pedido quando a tela desce até ele */
   scroll-margin-top: calc(var(--topbar-h) + var(--sp-4));
@@ -442,4 +444,171 @@
 }
 .pc-item.escolhido .pc-perto {
   color: inherit;
+}
+
+/* --- o pedido em duas colunas (parte P2) -----------------------------------
+   No meio o cabeçalho, o orçamento e os layouts; ao lado as aprovações. Sem
+   900 px para o pedido, uma parte por vez, com as abas Conferência e
+   Orçamento (pranchas 91 e 92): quem confere no celular começa pelo que
+   decide. */
+.pc-ped {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.pc-ped-meio,
+.pc-ped-orcamento,
+.pc-ped-lado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.pc-ped-abas {
+  display: flex;
+  width: 100%;
+}
+.pc-ped-abas button {
+  flex: 1;
+}
+.pc-ped[data-aba='conferencia'] .pc-ped-orcamento,
+.pc-ped[data-aba='orcamento'] .pc-ped-lado {
+  display: none;
+}
+@container pedido-pcp (min-width: 900px) {
+  .pc-ped {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  .pc-ped .pc-ped-abas {
+    display: none;
+  }
+  .pc-ped[data-aba] .pc-ped-orcamento,
+  .pc-ped[data-aba] .pc-ped-lado {
+    display: flex;
+  }
+}
+@container pedido-pcp (min-width: 1100px) {
+  .pc-ped {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+
+/* o cartão do orçamento */
+.pc-orc,
+.pc-lay {
+  overflow: hidden;
+  min-width: 0;
+}
+.pc-orc-dados,
+.pc-lay-dados {
+  display: grid;
+  gap: var(--re-5) var(--re-6);
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.pc-orc-dados {
+  grid-template-columns: 96px minmax(0, 1fr);
+  padding: var(--re-7);
+}
+.pc-orc-dados dt,
+.pc-lay-dados dt {
+  color: var(--text-2);
+}
+.pc-orc-dados dd,
+.pc-lay-dados dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pc-orc-dados small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* um cartão por layout */
+.pc-lay-tit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.pc-cab > .pc-lay-tit {
+  flex: 1 1 auto;
+  white-space: normal;
+}
+.pc-lay-tit svg {
+  flex: none;
+  color: var(--icon-accent);
+}
+.pc-lay-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--re-7);
+  padding: var(--re-7);
+}
+@container pedido-pcp (min-width: 560px) {
+  .pc-lay-corpo {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+}
+.pc-lay-arte {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.pc-lay-arte img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pc-lay-dados {
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-content: start;
+}
+.pc-lay-tec {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.pc-q {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  background: var(--cor);
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+.pc-lay-tags,
+.pc-lay-grade {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-miudo) var(--re-5);
+}
+.pc-lay-grade span {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pc-lay-grade b {
+  color: var(--text);
+  font-weight: 600;
+}
+/* peças e valor do layout numa linha só: quem encolhe é o nome */
+.pc-lay .pc-cab-apoio {
+  flex: none;
+  white-space: nowrap;
+}
+/* no celular a arte enche a largura, e não a tela inteira */
+.pc-lay-arte {
+  max-height: 240px;
 }

@@ -21,7 +21,6 @@ import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
 import { TelaEstoque } from '@modules/estoque'
 import { TelaCalculadoraDeDtf, TelaVerificadorDeBoleto } from '@modules/ferramentas'
-import { TelaFicha } from '@modules/ficha'
 import { TelaFornecedores } from '@modules/fornecedores'
 import { TelaTransporte } from '@modules/transporte'
 import { TelaParceiros } from '@modules/parceiros'
@@ -85,11 +84,6 @@ export const rotas = createBrowserRouter([
          com o que faltou. */
       { path: 'separacao', element: pede('separacao', <TelaSeparacao />) },
       { path: 'pcp', element: pede('pcp', <TelaPcp />) },
-      /* A ROTA DA FICHA CONTINUA DE PE mesmo com a pagina escondida no menu.
-         Esconder e guardar, e nao apagar: quem tem o endereco ainda abre, e e
-         assim que da para conferir a pagina guardada sem religar ela para a
-         fabrica inteira. */
-      { path: 'ficha', element: pede('ficha', <TelaFicha />) },
       { path: 'kanban', element: pede('kanban', <TelaKanban />) },
       { path: 'estoque', element: pede('estoque', <TelaEstoque />) },
       /* Fornecedores pede o painel do estoque: quem vê o estoque vê de quem

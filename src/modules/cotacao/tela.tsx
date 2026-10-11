@@ -21,8 +21,7 @@ import {
   abrirCft,
   carregarCotacoes,
   carregarPedidosDasCotacoes,
-  cotacaoEmBranco,
-  informesParaCotacaoNova,
+  cotacaoNovaDaCasa,
   diaDe,
   diasEntre,
   estatisticasDoComercial,
@@ -164,9 +163,9 @@ export function TelaCotacao() {
      atomico. */
   async function nova() {
     try {
-      const c = cotacaoEmBranco(await proximoNumero())
-      /* os informes da casa (060): a cotação nova leva a cópia de hoje */
-      c.informes = await informesParaCotacaoNova()
+      const eu = sessao.fase === 'dentro' ? sessao.pessoa : null
+      /* a casa decide o que vem junto: informes, listas do cabeçalho, e quem cria é o vendedor */
+      const c = await cotacaoNovaDaCasa(await proximoNumero(), eu ? { id: eu.id, nome: eu.nome } : null)
       const salva = await salvarCotacao(c)
       navegar('/cotacao/' + salva.id)
     } catch (e) {

@@ -7,7 +7,6 @@ import {
   Calculator,
   CalendarCheck,
   ChartBar,
-  ClipboardText,
   DotsThree,
   Factory,
   Gear,
@@ -233,12 +232,6 @@ export function App() {
           para: '/pcp',
           rotulo: 'PCP',
           icone: <ListChecks {...icone} />,
-        },
-        {
-          chave: 'ficha',
-          para: '/ficha',
-          rotulo: 'Ficha de produção',
-          icone: <ClipboardText {...icone} />,
         },
         {
           chave: 'kanban',

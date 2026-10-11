@@ -384,7 +384,8 @@
   height: 15px;
   border-radius: 50%;
   background: var(--c);
-  box-shadow: 0 0 0 1.5px var(--surface);
+  /* o fio de dentro faz a amostra branca aparecer no menu branco */
+  box-shadow: 0 0 0 1.5px var(--surface), inset 0 0 0 1px var(--sw-borda);
   margin-left: -5px;
 }
 .mn-amostras i:first-child {
@@ -463,6 +464,21 @@
 }
 .mn-g.oculto {
   display: none;
+}
+/* o tecido dentro do grupo (menu do tecido com a cor, 11/10/2026): um degrau
+   abaixo do grupo, com as amostras das cores dele no lugar da caixa */
+.mn-g2 > .mn-grupo {
+  min-height: 40px;
+}
+.mn-g2 > .mn-grupo .nm {
+  font-weight: 500;
+}
+.mn-item .qt {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 .qd {
   width: 18px;

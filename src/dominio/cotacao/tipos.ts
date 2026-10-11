@@ -243,6 +243,9 @@ export type Cotacao = {
   alteradaEm: string
   validaAte: string
   vendedor: string
+  /** a pessoa do vendedor (equipe); vazio nas cotações de antes de 11/10/2026,
+      que o banco costura pelo nome (017) */
+  vendedorId?: string
   cliente: {
     id: string
     nome: string

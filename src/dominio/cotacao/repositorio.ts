@@ -184,6 +184,10 @@ function colunasDe(c: Cotacao, l: LigacoesDaCotacao = {}) {
     cliente_uf: c.cliente.uf,
     estado: c.estado,
     vendedor_nome: c.vendedor,
+    /* O id vai SEMPRE, mesmo nulo: o gatilho da 017 só costura pelo nome
+       quando o id chega vazio, e um id antigo que ficasse na linha passaria
+       por cima do vendedor que acabou de ser trocado. */
+    vendedor_id: c.vendedorId ? vinculo(c.vendedorId) : null,
     /* O total e as peças são recalculados AQUI, e não lidos de um campo. São a
        mesma conta que a tela mostra, feita pela mesma função: se a lista e o
        editor discordassem sobre o total de uma cotação, quem veria primeiro

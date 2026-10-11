@@ -553,6 +553,156 @@ export function MenuCorDeTecido({
   )
 }
 
+/* --- 3b. menu do tecido com a cor, do estoque (11/10/2026) -------------
+   Pedido do Henrique: o tecido e a cor saem do que foi CADASTRADO NO ESTOQUE,
+   e não do catálogo de cores do Banco de dados. Um menu só, em sanfona:
+   grupo de tecido, os tecidos dele, e as cores que aquele tecido tem no
+   estoque. Escolher a cor preenche o tecido e a cor de uma vez. A busca casa
+   com o grupo, o tecido e a cor, e abre o caminho até o que achou. */
+export type CorDoMenuDeTecido = { id: string; nome: string; hex: string; nota?: string }
+export type TecidoDoMenu = { id: string; nome: string; cores: CorDoMenuDeTecido[] }
+export type GrupoDoMenuDeTecido = { cod: string; nome: string; tecidos: TecidoDoMenu[] }
+
+export function MenuTecidoECor({
+  aberto,
+  ancora,
+  aoFechar,
+  grupos,
+  tecido,
+  cor,
+  aoEscolher,
+  semTecidos = 'Nenhum tecido com cor cadastrada no estoque',
+}: Base & {
+  grupos: GrupoDoMenuDeTecido[]
+  /** o tecido e a cor que já estão na linha, pelo nome */
+  tecido?: string
+  cor?: string
+  aoEscolher: (t: TecidoDoMenu, c: CorDoMenuDeTecido) => void
+  semTecidos?: string
+}) {
+  const [busca, setBusca] = useState('')
+  const [abertos, setAbertos] = useState<string[]>([])
+  const campo = useRef<HTMLInputElement>(null)
+  useFocoAoAbrir(aberto, campo, () => setBusca(''))
+
+  const b = semAcento(busca.trim())
+  const achados = useMemo(() => {
+    if (!b) return grupos
+    return grupos
+      .map((g) => {
+        const grupoBate = semAcento(g.nome + ' ' + g.cod).includes(b)
+        const tecidos = g.tecidos
+          .map((t) => {
+            const tecidoBate = grupoBate || semAcento(t.nome).includes(b)
+            return { ...t, cores: tecidoBate ? t.cores : t.cores.filter((c) => semAcento(c.nome).includes(b)) }
+          })
+          .filter((t) => t.cores.length)
+        return { ...g, tecidos }
+      })
+      .filter((g) => g.tecidos.length)
+  }, [grupos, b])
+
+  /* parado, abre o caminho da escolhida; buscando, abre tudo que achou */
+  const doValor = grupos.flatMap((g) => g.tecidos.filter((t) => t.nome === tecido).map((t) => ['g:' + g.cod, 't:' + t.id]))[0] ?? []
+  const efetivos = b
+    ? achados.flatMap((g) => ['g:' + g.cod, ...g.tecidos.map((t) => 't:' + t.id)])
+    : [...abertos, ...doValor]
+  const alternar = (k: string) => setAbertos((a) => (a.includes(k) ? a.filter((x) => x !== k) : [...a, k]))
+  const total = grupos.reduce((s, g) => s + g.tecidos.reduce((n, t) => n + t.cores.length, 0), 0)
+
+  return (
+    <Flutuante
+      aberto={aberto}
+      ancora={ancora}
+      aoFechar={aoFechar}
+      opcoes={{ centro: true, maior: true, largura: 380 }}
+      versao={b + '|' + efetivos.join(',')}
+    >
+      <div className="mn-topo">
+        <CampoDeBusca
+          valor={busca}
+          aoMudar={setBusca}
+          convite="Buscar tecido ou cor"
+          campo={campo}
+          aoEnter={() => {
+            const t = achados[0]?.tecidos[0]
+            const c = t?.cores[0]
+            if (t && c) {
+              aoEscolher(t, c)
+              aoFechar()
+            }
+          }}
+        />
+      </div>
+
+      <div className="mn-lista">
+        {achados.length === 0 ? (
+          <div className="mn-vazio">{b ? 'Nenhum tecido ou cor com esse nome' : semTecidos}</div>
+        ) : (
+          achados.map((g) => {
+            const kg = 'g:' + g.cod
+            const abertoG = efetivos.includes(kg)
+            const temEscolhido = g.tecidos.some((t) => t.nome === tecido)
+            return (
+              <div key={kg} className={['mn-g', abertoG ? 'aberto' : ''].filter(Boolean).join(' ')}>
+                <button type="button" className="mn-grupo" aria-expanded={abertoG} onClick={() => alternar(kg)}>
+                  {g.cod ? <span className={temEscolhido ? 'mn-gcod on' : 'mn-gcod'}>{g.cod}</span> : null}
+                  <span className="nm">{g.nome}</span>
+                  <span className="qt">{g.tecidos.length}</span>
+                  <span className="seta">{SETA}</span>
+                </button>
+                <div className="mn-corpo">
+                  {g.tecidos.map((t) => {
+                    const kt = 't:' + t.id
+                    const abertoT = efetivos.includes(kt)
+                    return (
+                      <div key={kt} className={['mn-g mn-g2', abertoT ? 'aberto' : ''].filter(Boolean).join(' ')}>
+                        <button type="button" className="mn-grupo" aria-expanded={abertoT} onClick={() => alternar(kt)}>
+                          <span className="mn-amostras">
+                            {t.cores.slice(0, 5).map((c) => (
+                              <i key={c.id} style={{ '--c': c.hex || 'var(--surface-3)' } as CSSProperties} />
+                            ))}
+                          </span>
+                          <span className="nm">{t.nome}</span>
+                          {t.nome === tecido ? <span className="marca" /> : null}
+                          <span className="qt">{t.cores.length}</span>
+                          <span className="seta">{SETA}</span>
+                        </button>
+                        <div className="mn-corpo">
+                          {t.cores.map((c) => (
+                            <button
+                              type="button"
+                              key={c.id}
+                              className={['mn-item', t.nome === tecido && c.nome === cor ? 'on' : ''].filter(Boolean).join(' ')}
+                              onClick={() => {
+                                aoEscolher(t, c)
+                                aoFechar()
+                              }}
+                            >
+                              <span className="qd" style={{ '--cor': c.hex || 'var(--surface-3)' } as CSSProperties} />
+                              <span className="nm">{c.nome}</span>
+                              {c.nota ? <span className="qt">{c.nota}</span> : null}
+                              <span className="ok">{VISTO}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <div className="mn-pe">
+        <span>{total} cores no estoque</span>
+      </div>
+    </Flutuante>
+  )
+}
+
 /* --- 4. menu de tecnica -------------------------------------------------- */
 export type SecaoDeTecnica = { titulo: string; itens: { nome: string; cor: string }[] }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FolderOpen, List } from '@phosphor-icons/react'
-import { Aviso, Botao, Cartao, Interruptor, Pagina, TituloCartao, avisar } from '@ds'
+import { List } from '@phosphor-icons/react'
+import { Aviso, Cartao, Interruptor, Pagina, TituloCartao, avisar } from '@ds'
 import { mostrarPagina, paginasEscondidas } from '@dominio/regulagem'
 import { AbasDaConfig } from './abas'
 import './config.css'
@@ -28,14 +28,6 @@ type Pagina = { chave: string; nome: string; onde: string; porque: string; rota:
    e o próprio perfil não: sistema sem porta de entrada não é sistema
    configurável, é sistema quebrado. */
 const PAGINAS: Pagina[] = [
-  {
-    chave: 'ficha',
-    nome: 'Ficha de produção',
-    onde: 'Produção',
-    rota: '/ficha',
-    porque:
-      'Guardada enquanto o caminho novo (separação, PCP e kanban) não provar que ela é desnecessária. O código está inteiro.',
-  },
   {
     chave: 'produtos',
     nome: 'Fichas técnicas',
@@ -162,16 +154,6 @@ export function TelaPaginas() {
         </div>
       </Cartao>
 
-      <Cartao>
-        <TituloCartao icone={FolderOpen}>Abrir uma página guardada</TituloCartao>
-        <p className="cfg-texto">
-          A rota continua de pé. Para ver a Ficha de produção mesmo com ela fora do menu, abra{' '}
-          <code>/ficha</code> direto no endereço.
-        </p>
-        <Botao tom="contorno" onClick={() => window.open('/ficha', '_blank')}>
-          Abrir a ficha numa aba
-        </Botao>
-      </Cartao>
     </Pagina>
   )
 }

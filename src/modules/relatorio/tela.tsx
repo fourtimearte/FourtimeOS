@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, avisar } from '@ds'
 import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
-import { VENDEDORES } from '@dominio/banco'
 import { carregarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
 import './relatorio.css'
 
@@ -187,7 +186,9 @@ export function TelaRelatorio() {
           <Seletor
             rotulo="VENDEDOR"
             valor={vendedor}
-            opcoes={VENDEDORES.map((v) => ({
+            /* os vendedores são as pessoas que aparecem nas vendas do ano, e não
+               uma lista fixa (11/10/2026): quem vendeu entra sozinho */
+            opcoes={[...new Set(todos.map((x) => x.vendedor).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map((v) => ({
               valor: v,
               rotulo: v,
               contagem: itens.filter((x) => x.vendedor === v).length,

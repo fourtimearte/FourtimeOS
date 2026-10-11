@@ -1,22 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Factory, Handshake, MagnifyingGlass, Plus, UserCircle, X } from '@phosphor-icons/react'
-import { Busca, Campo, CampoDeData, Entrada, Flutuante, Seletor, TituloCartao, semAcento } from '@ds'
-import {
-  opcoesDeDepartamento,
-  DEPARTAMENTOS,
-  EMBALAGENS,
-  ENTREGAS,
-  PAGAMENTOS,
-  VENDEDORES,
-} from '@dominio/banco'
+import { Botao, Busca, Campo, CampoDeData, Entrada, Flutuante, Seletor, TituloCartao, semAcento } from '@ds'
+import { comOValorAtual, opcoesDeDepartamento, usarListasDoCabecalho } from '@dominio/banco'
+import { pode, useSessao } from '@dominio/sessao'
 import { carregarClientes, type Cliente } from '@dominio/cliente'
 import {
   COR_DA_MARCA,
   MARCAS,
   NOME_DO_ESTADO_DA_COTACAO,
+  carregarVendedores,
   formataPedido,
   mascaraDeDocumento,
+  type Vendedor,
   type Cotacao,
   type EstadoDaCotacao,
 } from '@dominio/cotacao'
@@ -25,17 +21,16 @@ import './cotacao.css'
 /* ==========================================================================
    Os dados do pedido, em três cartões.
 
-   Desde a decisão 161 eles moram no modal "Dados do pedido e fechamento", e
-   não mais na página: a metade esquerda do modal tem Quem compra e O que foi
-   combinado lado a lado, e O que a fábrica precisa saber embaixo, na largura
-   toda. A ordem é a ordem em que a venda acontece.
+   Moram na gaveta Dados do pedido (prancha 124), lado a lado, na ordem em que
+   a venda acontece. Pagamento, entrega, embalagem e departamento vêm das
+   listas do cabeçalho do banco (Configurações > Banco de dados), só as
+   ativas; o vendedor é uma pessoa (CampoDoVendedor).
 
    UMA ARMADILHA QUE VALE DIZER EM VOZ ALTA: "envio" queria dizer duas coisas
    diferentes nos dois sistemas. Na cotação era o MODO (CORREIOS), na ficha era
    a DATA. Aqui o modo se chama Entrega e a data se chama Data de envio.
    ========================================================================== */
 
-const emOpcao = (lista: string[]) => lista.map((x) => ({ valor: x, rotulo: x }))
 
 const TABELAS = [
   { valor: 'Atacado 2026', rotulo: 'Atacado 2026' },
@@ -198,8 +193,57 @@ function BuscarEmClientes({ aoEscolher }: { aoEscolher: (c: Cliente) => void }) 
   )
 }
 
+/* O VENDEDOR (11/10/2026): quem cria o orçamento já é o vendedor dele. Só quem
+   tem CONTROLE TOTAL em Cotação (matriz de Acessos) troca para outra pessoa,
+   escolhendo entre quem cria orçamento. Os outros veem o nome, e numa cotação
+   ainda sem dono podem ficar com ela. */
+function CampoDoVendedor({ c, mudar, travado }: Props) {
+  const { estado } = useSessao()
+  const eu = estado.fase === 'dentro' ? estado.pessoa : null
+  const escolhe = !!eu && pode(eu, 'cotacao', 'total') && !travado
+  const [lista, setLista] = useState<Vendedor[]>([])
+  useEffect(() => {
+    if (!escolhe) return
+    let vivo = true
+    carregarVendedores()
+      .then((l) => vivo && setLista(l))
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [escolhe])
+
+  if (escolhe) {
+    const opcoes = lista.map((v) => ({ valor: v.id, rotulo: v.nome }))
+    const atual = c.vendedorId || lista.find((v) => semAcento(v.nome).toLowerCase() === semAcento(c.vendedor).toLowerCase())?.id || ''
+    if (!atual && c.vendedor) opcoes.push({ valor: '__nome', rotulo: c.vendedor + ' (sem conta)' })
+    return (
+      <Seletor
+        bloco
+        campo
+        valor={atual || (c.vendedor ? '__nome' : '')}
+        opcoes={opcoes}
+        vazio="Escolher"
+        aoEscolher={(id) => {
+          const v = lista.find((x) => x.id === id)
+          if (v) mudar({ vendedor: v.nome, vendedorId: v.id })
+        }}
+      />
+    )
+  }
+  if (!c.vendedor && eu && !travado) {
+    return (
+      <Botao tom="contorno" onClick={() => mudar({ vendedor: eu.nome, vendedorId: eu.id })}>
+        Ficar com este orçamento
+      </Botao>
+    )
+  }
+  return <Entrada value={c.vendedor || 'sem vendedor'} readOnly title="Só quem tem controle total em Cotação troca o vendedor" />
+}
+
 export function OQueFoiCombinado({ c, mudar, travado }: Props) {
   const inf = (parte: Partial<Cotacao['informe']>) => mudar({ informe: { ...c.informe, ...parte } })
+  const listas = usarListasDoCabecalho()
   return (
     <section className="cartao ct-mc">
       <header className="ct-mc-cab">
@@ -207,7 +251,7 @@ export function OQueFoiCombinado({ c, mudar, travado }: Props) {
       </header>
       <div className="ct-mc-corpo ct-mc-2">
         <Campo rotulo="Vendedor">
-          <Seletor bloco campo valor={c.vendedor} opcoes={emOpcao(VENDEDORES)} vazio="Escolher" aoEscolher={(v) => mudar({ vendedor: v })} />
+          <CampoDoVendedor c={c} mudar={mudar} travado={travado} />
         </Campo>
         <Campo rotulo="Validade da proposta">
           <CampoDeData bloco valor={c.validaAte} aoMudar={(d) => mudar({ validaAte: d })} />
@@ -216,12 +260,12 @@ export function OQueFoiCombinado({ c, mudar, travado }: Props) {
           <Entrada value={c.informe.prazo} disabled={travado} onChange={(e) => inf({ prazo: e.target.value })} />
         </Campo>
         <Campo rotulo="Pagamento">
-          <Seletor bloco campo valor={c.informe.pagamento} opcoes={emOpcao(PAGAMENTOS)} vazio="Escolher" aoEscolher={(v) => inf({ pagamento: v })} />
+          <Seletor bloco campo valor={c.informe.pagamento} opcoes={comOValorAtual(listas.pagamento, c.informe.pagamento)} vazio="Escolher" aoEscolher={(v) => inf({ pagamento: v })} />
         </Campo>
         {/* ENTREGA é o MODO. A data mora no cartão da fábrica, e os dois
             nunca mais podem se chamar "envio" ao mesmo tempo. */}
         <Campo rotulo="Entrega">
-          <Seletor bloco campo valor={c.informe.entrega} opcoes={emOpcao(ENTREGAS)} vazio="Escolher" aoEscolher={(v) => inf({ entrega: v })} />
+          <Seletor bloco campo valor={c.informe.entrega} opcoes={comOValorAtual(listas.entrega, c.informe.entrega)} vazio="Escolher" aoEscolher={(v) => inf({ entrega: v })} />
         </Campo>
         <Campo rotulo="Tabela de preço">
           <Seletor bloco campo valor={c.informe.tabelaDePreco} opcoes={TABELAS} vazio="Escolher" aoEscolher={(v) => inf({ tabelaDePreco: v })} />
@@ -246,6 +290,10 @@ export function OQueAFabricaPrecisaSaber({ c, mudar }: Props) {
   const btMarcas = useRef<HTMLButtonElement>(null)
   const prod = (parte: Partial<Cotacao['producao']>) => mudar({ producao: { ...c.producao, ...parte } })
   const faltando = MARCAS.filter((m) => !c.producao.marcas.includes(m))
+  const listas = usarListasDoCabecalho()
+  const deptos = listas.departamento.includes(c.producao.departamento) || !c.producao.departamento
+    ? listas.departamento
+    : [...listas.departamento, c.producao.departamento]
 
   return (
     <section className="cartao ct-mc">
@@ -272,13 +320,13 @@ export function OQueAFabricaPrecisaSaber({ c, mudar }: Props) {
             bloco
             campo
             valor={c.producao.departamento}
-            opcoes={opcoesDeDepartamento(DEPARTAMENTOS)}
+            opcoes={opcoesDeDepartamento(deptos)}
             vazio="Escolher"
             aoEscolher={(v) => prod({ departamento: v })}
           />
         </Campo>
         <Campo rotulo="Embalagem">
-          <Seletor bloco campo valor={c.producao.embalagem} opcoes={emOpcao(EMBALAGENS)} vazio="Escolher" aoEscolher={(v) => prod({ embalagem: v })} />
+          <Seletor bloco campo valor={c.producao.embalagem} opcoes={comOValorAtual(listas.embalagem, c.producao.embalagem)} vazio="Escolher" aoEscolher={(v) => prod({ embalagem: v })} />
         </Campo>
 
         <Campo rotulo="Marcas do documento" className="ct-mc-meia">

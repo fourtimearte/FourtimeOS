@@ -127,7 +127,6 @@ const TELAS = [
   ['/cotacao/CT20260182', 'cotacao-aprovada'],
   ['/funil', 'funil'],
   /* a ficha de producao: o editor da v3.375 no visual novo */
-  ['/ficha', 'ficha'],
 ]
 
 async function main() {

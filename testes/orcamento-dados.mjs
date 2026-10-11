@@ -206,6 +206,18 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     }),
   ]
 
+  /* as listas do cabeçalho (Configurações > Banco de dados): uma desativada
+     e uma só do banco, para provar que o editor lê daqui */
+  const LISTAS = [
+    { tipo: 'pagamento', valor: 'PIX TOTAL', ordem: 1, ativo: true },
+    { tipo: 'pagamento', valor: 'PAGAMENTO DA PROVA', ordem: 2, ativo: true },
+    { tipo: 'entrega', valor: 'TRANSPORTADORA', ordem: 1, ativo: true },
+    { tipo: 'entrega', valor: 'MOTOBOY', ordem: 2, ativo: true },
+    { tipo: 'embalagem', valor: 'CAIXA', ordem: 1, ativo: true },
+    { tipo: 'embalagem', valor: 'SACOLA DA PROVA', ordem: 2, ativo: true },
+    { tipo: 'departamento', valor: 'ESPORTIVO', ordem: 1, ativo: true },
+    { tipo: 'departamento', valor: 'DTF', ordem: 2, ativo: true },
+  ]
   /* os informes da casa (060): três de produção e três termos, um desmarcado */
   const informesDaCasa = semInformes
     ? null
@@ -217,7 +229,30 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
         { id: 'ic-t2', grupo: 'termos', texto: 'Pagamento: 50% na aprovação.', nasce_marcado: true, ordem: 2 },
         { id: 'ic-t3', grupo: 'termos', texto: 'Frete por conta do cliente.', nasce_marcado: false, ordem: 3 },
       ]
+  /* o estoque de tecido (11/10/2026): o menu do tecido do editor lê as cores
+     cadastradas, agrupadas pelo catálogo */
+  const GRUPOS_DE_TECIDO = [{ cod: 'DRY', nome: 'Dryfit', ordem: 1 }, { cod: 'ALG', nome: 'Algodão', ordem: 2 }]
+  const TECIDOS = [
+    { id: 't-dry', nome: 'DRYFIT POLIESTER 100%', grupo: 'DRY', gramatura: 160, largura: 1.6, ordem: 1, ativo: true },
+    { id: 't-pique', nome: 'PIQUET DE PROVA', grupo: 'DRY', gramatura: 180, largura: 1.6, ordem: 2, ativo: true },
+    { id: 't-pv', nome: 'ALGODÃO PENTEADO', grupo: 'ALG', gramatura: 170, largura: 1.8, ordem: 1, ativo: true },
+  ]
+  const mat = (id, tecido_id, tecido, cor, cor_hex, livre) => ({ id, categoria: 'tecido', nome: tecido + ' · ' + cor, unidade: 'kg', minimo: 0, saldo: livre, reservado: 0, livre, pedidos_reservando: 0, reserva_sem_consumo: false, tecido_id, cor_id: 'c-' + id, tecido, cor, cor_hex, abaixo_do_minimo: false, ultimo_movimento: null })
+  const MATERIAIS_DE_TECIDO = [
+    mat('m1', 't-dry', 'DRYFIT POLIESTER 100%', 'Azul Royal', '#1d4ed8', 42.5),
+    mat('m2', 't-dry', 'DRYFIT POLIESTER 100%', 'Branco', '#ffffff', 80),
+    mat('m3', 't-dry', 'DRYFIT POLIESTER 100%', 'Preto', '#111111', 0),
+    mat('m4', 't-pique', 'PIQUET DE PROVA', 'Vermelho', '#c6161b', 12),
+    mat('m5', 't-pv', 'ALGODÃO PENTEADO', 'Mescla', '#9ca3af', 30),
+    { ...mat('a1', null, null, null, null, 100), categoria: 'aviamento', nome: 'Linha de prova' },
+  ]
   function responder(metodo, u, corpo) {
+    if (u.includes('/rest/v1/material_na_prateleira')) return { status: 200, corpo: MATERIAIS_DE_TECIDO }
+    if (u.includes('/rest/v1/grupo_de_tecido')) return { status: 200, corpo: GRUPOS_DE_TECIDO }
+    if (u.includes('/rest/v1/tecido?')) return { status: 200, corpo: TECIDOS }
+    if (u.includes('/rest/v1/lista_do_cabecalho')) return { status: 200, corpo: LISTAS }
+    if (u.includes('/rest/v1/permissao?')) return { status: 200, corpo: [{ papel: 'admin' }, { papel: 'vendedor' }] }
+    if (u.includes('/rest/v1/equipe?')) return { status: 200, corpo: [{ id: '00000000-0000-4000-8000-0000000000da', nome: 'Dani' }, { id: '00000000-0000-4000-8000-00000000000e', nome: 'Henrique' }, { id: '00000000-0000-4000-8000-0000000000ac', nome: 'Lucas Prova' }] }
     if (u.includes('/rest/v1/informe_da_casa')) {
       if (!informesDaCasa) return { status: 404, corpo: { code: 'PGRST205', message: "Could not find the table 'public.informe_da_casa' in the schema cache" } }
       if (metodo === 'GET') {

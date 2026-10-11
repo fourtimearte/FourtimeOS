@@ -14,14 +14,11 @@ export * from './etiqueta'
 export { carregarCoresDeImpressao, usarAbasDeCor, usarCoresDeImpressao } from './usar-cores-de-impressao'
 export { carregarReferencias, grupoDaReferencia, usarReferencias, type ReferenciasDoBanco } from './usar-referencias'
 export { sanitizarTextoRico } from './texto'
-export { FileiraDoLayout, FileiraEmLeitura, ehIntruso } from './fileira'
 export { GradeDeTamanhos, GradeEmLinha } from './grade-tamanhos'
-export { ModuloDeLayout } from './modulo'
 export { CaixaDeImagem } from './imagem'
 export { LayoutDeLeitura } from './leitura'
 export { comprimeImagem, jaEstaLeve, pesoDoDataUrl, prepararImagem } from './compressao'
 export { colarBloco, copiarBloco, temCopia } from './copia'
-export { compactarFolha, compactarPalco, NIVEIS_DA_TABELA } from './compactar'
 export {
   ALTURA_DA_FOLHA,
   CabecalhoDaFolha,

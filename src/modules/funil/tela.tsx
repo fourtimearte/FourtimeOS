@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus } from '@phosphor-icons/react'
 import { Botao, Pagina, Vazio, avisar } from '@ds'
-import { VENDEDORES } from '@dominio/banco'
-import { cotacaoEmBranco, informesParaCotacaoNova, proximoNumero, salvarCotacao } from '@dominio/cotacao'
+import { cotacaoNovaDaCasa, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import {
   ESTAGIO_FECHADO,
@@ -165,11 +164,14 @@ export function TelaFunil() {
   /* A cotacao nasce do lead com o que ja se sabe, e o lead passa a apontar
      para ela. E aqui que o funil encosta na cotacao, e so aqui. */
   async function montarCotacao(l: Lead) {
-    const c = cotacaoEmBranco(await proximoNumero())
-    c.informes = await informesParaCotacaoNova()
+    /* o dono do lead é o vendedor; lead sem dono fica com quem montou */
+    const c = await cotacaoNovaDaCasa(await proximoNumero(), eu ? { id: eu.id, nome: eu.nome } : null)
     /* o vendedor sai do banco, e nao de um nome escrito a mao: se ele nao
        estiver na lista, o campo da cotacao abre vazio */
-    c.vendedor = l.vendedorNome || VENDEDORES[0]
+    if (l.vendedorNome) {
+      c.vendedor = l.vendedorNome
+      c.vendedorId = l.vendedorId || undefined
+    }
     c.cliente = {
       ...c.cliente,
       id: l.clienteId,

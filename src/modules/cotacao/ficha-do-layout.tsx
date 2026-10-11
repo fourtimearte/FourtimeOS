@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowSquareOut, Check, ClipboardText, Minus, Plus, Warning } from '@phosphor-icons/react'
-import { MenuCodigoDeCor, MenuCorDeTecido, MenuTecido, TituloCartao } from '@ds'
+import { MenuCodigoDeCor, MenuTecidoECor, TituloCartao } from '@ds'
 import {
   hexDoBanco,
   usarAbasDeCor,
-  GRUPOS_DE_COR_DE_TECIDO,
-  TIPOS_DE_TECIDO,
   comEtiqueta,
   etiquetaDoDesign,
   type Bloco,
@@ -17,6 +15,7 @@ import {
 } from '@dominio/layout'
 import { carregarConstrucao, DETALHES, type ConstrucaoDoLayout } from '@dominio/produto'
 import './cotacao.css'
+import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
 
 /* ==========================================================================
    A FICHA TÉCNICA DO LAYOUT, "interruptores e paleta" (decisão 153).
@@ -64,7 +63,9 @@ export function FichaDoLayout({
   travado: boolean
   aoMudar: (b: Bloco) => void
 }) {
-  const [menu, setMenu] = useState<'' | 'tecido' | 'cor' | 'codigo'>('')
+  const [menu, setMenu] = useState<'' | 'tecido' | 'codigo'>('')
+  /* o tecido e a cor vêm do que está cadastrado no Estoque (11/10/2026) */
+  const doEstoque = usarTecidosDoEstoque()
   /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
   const coresDoBanco = usarAbasDeCor()
   const [linha, setLinha] = useState(0)
@@ -97,9 +98,11 @@ export function FichaDoLayout({
   }
 
   const tecidos: TecidoDoBloco[] = bloco.tecidos.length ? bloco.tecidos : []
-  const mudarTecido = (i: number, parte: Partial<TecidoDoBloco>) => {
-    const base = tecidos.length ? tecidos : [{ nome: '', cor: SEM_COR.nome, hex: SEM_COR.hex }]
-    mudar({ tecidos: base.map((t, k) => (k === i ? { ...t, ...parte } : t)) })
+  /* linha -1 é o "+": o tecido escolhido entra numa linha nova. Sem tecido
+     nenhum, a primeira escolha é a linha 0 */
+  const escolherTecido = (i: number, novo: TecidoDoBloco) => {
+    if (i < 0 || !tecidos.length) mudar({ tecidos: [...tecidos, novo] })
+    else mudar({ tecidos: tecidos.map((t, k) => (k === i ? novo : t)) })
   }
 
   if (bloco.informacoes) {
@@ -146,7 +149,11 @@ export function FichaDoLayout({
                 className="ct-ft-mais"
                 aria-label="Acrescentar tecido"
                 title="Acrescentar tecido"
-                onClick={() => mudar({ tecidos: [...tecidos, { nome: '', cor: SEM_COR.nome, hex: SEM_COR.hex }] })}
+                onClick={(e) => {
+                  ancora.current = e.currentTarget
+                  setLinha(-1)
+                  setMenu('tecido')
+                }}
               >
                 <Plus size={13} />
               </button>
@@ -164,7 +171,7 @@ export function FichaDoLayout({
                 onClick={(e) => {
                   ancora.current = e.currentTarget
                   setLinha(i)
-                  setMenu('cor')
+                  setMenu('tecido')
                 }}
               />
               <span className="ct-tc-txt">
@@ -291,23 +298,21 @@ export function FichaDoLayout({
 
       <Construcao cod={bloco.referencia} />
 
-      <MenuTecido
+      <MenuTecidoECor
         aberto={menu === 'tecido'}
         ancora={ancora}
         aoFechar={() => setMenu('')}
-        tipos={TIPOS_DE_TECIDO}
-        valor={tecidos[linha]?.nome ?? ''}
-        aoEscolher={(nome) => mudarTecido(linha, { nome })}
-        aoCriar={(nome) => mudarTecido(linha, { nome })}
-      />
-      <MenuCorDeTecido
-        aberto={menu === 'cor'}
-        ancora={ancora}
-        aoFechar={() => setMenu('')}
-        grupos={GRUPOS_DE_COR_DE_TECIDO}
-        valor={tecidos[linha]?.cor ?? ''}
-        aoEscolher={(cor, hex) => mudarTecido(linha, { cor, hex })}
-        aoLimpar={() => mudarTecido(linha, { cor: SEM_COR.nome, hex: SEM_COR.hex })}
+        grupos={doEstoque.grupos}
+        tecido={linha >= 0 ? tecidos[linha]?.nome ?? '' : ''}
+        cor={linha >= 0 ? tecidos[linha]?.cor ?? '' : ''}
+        semTecidos={
+          doEstoque.fase === 'falhou'
+            ? 'Não consegui ler o estoque: ' + doEstoque.falha
+            : doEstoque.fase === 'pronto'
+              ? 'Nenhum tecido com cor cadastrada no Estoque'
+              : 'Carregando os tecidos do estoque...'
+        }
+        aoEscolher={(t, c) => escolherTecido(linha, { nome: t.nome, cor: c.nome, hex: c.hex, materialId: c.id })}
       />
       <MenuCodigoDeCor
         aberto={menu === 'codigo'}

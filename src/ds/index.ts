@@ -66,6 +66,7 @@ export {
   MenuDeContexto,
   MenuReferencia,
   MenuTecido,
+  MenuTecidoECor,
   MenuTecnica,
 } from './componentes/menus'
 export type {
@@ -75,6 +76,9 @@ export type {
   Referencia,
   SecaoDeTecnica,
   TipoDeTecido,
+  CorDoMenuDeTecido,
+  GrupoDoMenuDeTecido,
+  TecidoDoMenu,
 } from './componentes/menus'
 
 export { AreaDeTextoRico } from './componentes/texto-rico'

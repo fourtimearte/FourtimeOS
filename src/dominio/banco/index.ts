@@ -15,6 +15,12 @@
 export * from './dados'
 export * from './tipos'
 export * from './repositorio'
+export {
+  carregarListasDoCabecalho,
+  comOValorAtual,
+  usarListasDoCabecalho,
+  type ListasDoCabecalho,
+} from './usar-listas-do-cabecalho'
 
 import type {
   Banco,
@@ -37,7 +43,10 @@ export const SECOES: SecaoDoBanco[] = [
   { titulo: 'Layout', itens: ['referencias', 'tecidos', 'consumo'] },
   {
     titulo: 'Cabeçalho',
-    itens: ['pagamento', 'entrega', 'embalagem', 'vendedor', 'departamento'],
+    /* vendedor saiu em 11/10/2026: o vendedor é a pessoa que cria o
+       orçamento (dominio/cotacao/vendedores.ts). A tabela continua com as
+       linhas antigas, que ninguém lê mais. */
+    itens: ['pagamento', 'entrega', 'embalagem', 'departamento'],
   },
   { titulo: 'Cores', itens: ['cor-tecido', 'dtf', 'sublimacao'] },
 ]

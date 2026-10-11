@@ -49,13 +49,10 @@ const LIVRES = [
   'src/modules/entrar/entrar.css',
 ]
 
-/* O PAPEL A4 MORA DENTRO DE modulo.css. folha.css e documento.css ja tinham
-   licenca; as regras .papel do modulo sao a mesma peca, com escala propria em
-   milimetro e papel branco nos dois temas. Licenca por SELECIONADOR, e nao
-   pelo arquivo inteiro, porque o mesmo arquivo desenha a tela tambem. */
-const LIVRE_POR_SELETOR = {
-  'src/dominio/layout/modulo.css': /(^|[\s,>])\.papel\b/,
-}
+/* LICENCA POR SELECIONADOR, e nao pelo arquivo inteiro, para o arquivo que
+   desenha a tela e o papel ao mesmo tempo. Era o caso de modulo.css, que saiu
+   com a pagina antiga /ficha em 11/10/2026; a porta fica para o proximo. */
+const LIVRE_POR_SELETOR = {}
 
 /* ESPACO. As propriedades que carregam o ritmo da tela. Numero cru em
    qualquer uma delas e o comeco da deriva: a medicao de 21/09 achou 319

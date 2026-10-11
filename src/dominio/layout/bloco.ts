@@ -57,6 +57,9 @@ export type TecidoDoBloco = {
   nome: string
   cor: string
   hex: string
+  /** o material do Estoque de onde o tecido e a cor vieram (11/10/2026); a
+      reserva continua casando pelo nome do tecido e da cor (026) */
+  materialId?: string
 }
 
 export type Bloco = {

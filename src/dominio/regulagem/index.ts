@@ -66,15 +66,14 @@ let paginas: Set<string> | null = null
 
 /* O QUE JA NASCE GUARDADO, enquanto ninguem mexeu no interruptor.
 
-   A ficha de producao esta aqui por decisao de 21/09: o caminho novo
-   (separacao, PCP, kanban) pode torna-la desnecessaria, e ate isso ficar
-   claro ela sai do menu sem sair do sistema.
+   Vazio desde 11/10/2026: a ficha de producao, a unica que nascia guardada,
+   saiu do sistema (tudo dela e feito em Fichas tecnicas e no caminho novo).
 
    Isto vale SO enquanto a linha da regulagem nao existe. No instante em que
    alguem mexe em qualquer interruptor, a lista gravada passa a ser a verdade
    inteira, inclusive quando ela fica vazia: senao ligar a ficha de volta
    duraria ate o proximo carregamento, porque o padrao a esconderia de novo. */
-const JA_NASCE_GUARDADA = ['ficha']
+const JA_NASCE_GUARDADA: string[] = []
 
 export async function paginasEscondidas(): Promise<Set<string>> {
   if (paginas) return paginas

@@ -34,6 +34,10 @@ export type PedidoNaSeparacao = {
   /** quantos a prateleira não cobre */
   naoCobre: number
   tudoSeparado: boolean
+  /** a cotação de onde o pedido veio (061); vazio antes dela rodar */
+  cotacaoId: string
+  layouts: number
+  vendedor: string
 }
 
 type LinhaDaFila = {
@@ -50,6 +54,9 @@ type LinhaDaFila = {
   sem_consumo: number | string
   nao_cobre: number | string
   tudo_separado: boolean
+  cotacao_id?: string | null
+  layouts?: number | string | null
+  vendedor_nome?: string | null
 }
 
 const COLUNAS =
@@ -64,9 +71,12 @@ function inteiro(v: number | string): number {
    que sai primeiro. Pedido sem data de entrega vai para o fim, porque ele não
    tem como disputar posição com quem tem prazo. */
 export async function carregarFilaDaSeparacao(): Promise<PedidoNaSeparacao[]> {
+  /* as colunas da 061 vêm junto; antes dela rodar, a fila lê as de sempre e o
+     cabeçalho fica sem vendedor e sem layouts, em vez de a página quebrar */
+  const ordem = '&order=entrega_em.asc.nullslast,numero.asc'
   const linhas = await tabela<LinhaDaFila[]>(
-    `pedido_na_separacao?select=${COLUNAS}&order=entrega_em.asc.nullslast,numero.asc`,
-  )
+    `pedido_na_separacao?select=${COLUNAS},cotacao_id,layouts,vendedor_nome${ordem}`,
+  ).catch(() => tabela<LinhaDaFila[]>(`pedido_na_separacao?select=${COLUNAS}${ordem}`))
   return linhas.map((l) => ({
     id: l.id,
     numero: l.numero,
@@ -81,7 +91,144 @@ export async function carregarFilaDaSeparacao(): Promise<PedidoNaSeparacao[]> {
     semConsumo: inteiro(l.sem_consumo),
     naoCobre: inteiro(l.nao_cobre),
     tudoSeparado: !!l.tudo_separado,
+    cotacaoId: l.cotacao_id ?? '',
+    layouts: inteiro(l.layouts ?? 0),
+    vendedor: l.vendedor_nome ?? '',
   }))
+}
+
+/* ==========================================================================
+   A SOMA DA FILA (061, prancha 82): o que a fila inteira ainda vai tirar de
+   cada material, contra a prateleira. "depois" negativo é falta.
+   ========================================================================== */
+export type MaterialDaFila = {
+  materialId: string
+  material: string
+  categoria: string
+  unidade: string
+  corHex: string
+  ondeFica: string
+  saldo: number
+  pede: number
+  pedidos: number
+  semConsumo: number
+  depois: number
+  /** os pedidos que pedem o material, pela ordem da entrega */
+  numeros: string[]
+}
+
+type LinhaDoMaterialDaFila = {
+  material_id: string
+  material: string
+  categoria: string
+  unidade: string
+  cor_hex: string | null
+  onde_fica: string | null
+  saldo: number | string
+  pede: number | string
+  pedidos: number | string
+  sem_consumo: number | string
+  depois: number | string
+  numeros: string[] | null
+}
+
+const real = (v: number | string | null | undefined) => (typeof v === 'number' ? v : Number(v ?? 0) || 0)
+
+/** null quando a view ainda não existe (a 061 não rodou) */
+export async function carregarMaterialDaFila(): Promise<MaterialDaFila[] | null> {
+  try {
+    const linhas = await tabela<LinhaDoMaterialDaFila[]>('material_da_fila?select=*&order=depois.asc,material.asc')
+    return linhas.map((l) => ({
+      materialId: l.material_id,
+      material: l.material,
+      categoria: l.categoria ?? '',
+      unidade: l.unidade ?? '',
+      corHex: l.cor_hex ?? '',
+      ondeFica: l.onde_fica ?? '',
+      saldo: real(l.saldo),
+      pede: real(l.pede),
+      pedidos: inteiro(l.pedidos),
+      semConsumo: inteiro(l.sem_consumo),
+      depois: real(l.depois),
+      numeros: Array.isArray(l.numeros) ? l.numeros : [],
+    }))
+  } catch (e) {
+    const recado = e instanceof Error ? e.message : String(e)
+    if (/Não encontrei|schema cache|material_da_fila/i.test(recado)) return null
+    throw e
+  }
+}
+
+/* ==========================================================================
+   AS CONCLUÍDAS (061): os pedidos que já passaram pela separação.
+   ========================================================================== */
+export type PedidoSeparado = {
+  id: string
+  numero: string
+  cliente: string
+  estado: string
+  aviso: string
+  pecas: number
+  layouts: number
+  entregaEm: string
+  cotacaoId: string
+  materiais: number
+  separados: number
+  separadoEm: string
+}
+
+type LinhaDoSeparado = {
+  id: string
+  numero: string
+  cliente: string
+  estado: string
+  aviso: string | null
+  pecas: number
+  layouts: number | string | null
+  entrega_em: string | null
+  cotacao_id: string | null
+  materiais: number | string
+  separados: number | string
+  separado_em: string | null
+}
+
+/** null quando a view ainda não existe (a 061 não rodou) */
+export async function carregarSeparados(limite = 60): Promise<PedidoSeparado[] | null> {
+  try {
+    const linhas = await tabela<LinhaDoSeparado[]>(
+      `pedido_separado?select=*&order=separado_em.desc.nullslast,numero.desc&limit=${limite}`,
+    )
+    return linhas.map((l) => ({
+      id: l.id,
+      numero: l.numero,
+      cliente: l.cliente ?? '',
+      estado: l.estado,
+      aviso: l.aviso ?? '',
+      pecas: Number(l.pecas) || 0,
+      layouts: inteiro(l.layouts ?? 0),
+      entregaEm: l.entrega_em ?? '',
+      cotacaoId: l.cotacao_id ?? '',
+      materiais: inteiro(l.materiais),
+      separados: inteiro(l.separados),
+      separadoEm: l.separado_em ?? '',
+    }))
+  } catch (e) {
+    const recado = e instanceof Error ? e.message : String(e)
+    if (/Não encontrei|schema cache|pedido_separado/i.test(recado)) return null
+    throw e
+  }
+}
+
+/* A MINIATURA DA FILA: a arte do primeiro layout de cada cotação. Só aquele
+   pedaço do corpo vem (o PostgREST corta o JSON no caminho pedido), e não as
+   imagens de todos os layouts: a fila tem que abrir rápido. */
+export async function carregarMiniaturas(cotacoes: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(cotacoes.filter((x) => /^[0-9a-f-]{36}$/i.test(x)))]
+  if (!ids.length) return new Map()
+  const linhas = await tabela<{ id: string; imagem: string | null }[]>(
+    `cotacao?select=id,imagem:corpo->produtos->0->bloco->>imagem&id=in.(${ids.join(',')})`,
+  ).catch(() => [])
+  return new Map(linhas.filter((l) => l.imagem).map((l) => [l.id, l.imagem as string]))
 }
 
 /* Marca que alguém começou. Serve para a fila não parecer parada enquanto uma

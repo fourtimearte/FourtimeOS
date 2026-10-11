@@ -1,363 +1,332 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import {
-  Botao,
-  Entrada,
-  Esqueleto,
-  Kpi,
-  Pagina,
-  Selo,
-  Tabela,
-  Vazio,
-  avisar,
-  type Coluna,
-} from '@ds'
+import type { ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Package } from '@phosphor-icons/react'
+import { Botao, Busca, Esqueleto, Pagina, Segmentado, Seletor, Tabela, Vazio, semAcento, type Coluna } from '@ds'
 import {
   carregarFilaDaSeparacao,
+  carregarMaterialDaFila,
+  carregarMiniaturas,
   carregarReservasDoPedido,
-  casasDaUnidade,
-  comecarASeparacao,
-  concluirASeparacao,
-  desfazerASeparacao,
+  carregarSeparados,
   numeroNaUnidade,
-  separarMaterial,
+  type MaterialDaFila,
   type PedidoNaSeparacao,
+  type PedidoSeparado,
   type ReservaDoPedido,
 } from '@dominio/estoque'
+import { GrupoDaFila, LinhaDaFila, LinhaDoSeparado } from './fila'
+import { PedidoAberto } from './pedido'
+import { ResumoDaFila } from './resumo'
 import './separacao.css'
 
 /* ==========================================================================
-   Separação.
+   SEPARAÇÃO, no desenho do wireframe (pranchas 82 a 86; parte S1 em
+   11/10/2026, FOURTIME OS - 12, 4.0c).
 
-   Da aprovação até o corte o pedido para aqui. É onde a reserva deixa de ser
-   promessa: o material sai da prateleira de verdade, e o que não saiu vira um
-   aviso que viaja com o pedido até o PCP.
+   Da aprovação até o PCP o pedido para aqui: é onde a reserva deixa de ser
+   promessa e o material sai da prateleira de verdade.
 
-   A TELA SEMPRE PERGUNTA QUANTO SAIU. O número reservado já vem escrito no
-   campo, mas quem separa confirma ou corrige. Parece trabalho a mais e não é:
-   a reserva é uma conta e a separação é uma pesagem, e quando as duas
-   discordam quem está certo é a balança. Um botão que só dissesse "separado"
-   gravaria a conta como se fosse a pesagem, e o razão passaria a guardar o que
-   o sistema achou em vez do que aconteceu.
-
-   E é por isso que a linha sem consumo cadastrado também dá para separar: o
-   campo nasce vazio e a pessoa escreve o que pesou. O sistema não sabia quanto
-   era; a fábrica sabe.
-
-   CONCLUIR NÃO EXIGE QUE TUDO TENHA SAÍDO. Exigir isso pararia a fábrica no
-   dia em que faltasse meio quilo de malha: o pedido ficaria preso aqui e
-   ninguém decidiria nada. Quem decide se o pedido desce assim é o PCP, e para
-   decidir ele precisa que o pedido chegue lá com a falta escrita.
+   Em cima, as abas Na fila, Com falta e Concluídas, a busca (pedido, cliente
+   ou material) e a ordem. À esquerda, a fila em Separando e Esperando. À
+   direita, com nada escolhido, a fila inteira de uma vez (os números, a Soma
+   da fila e a Falta na prateleira); com um pedido escolhido, o pedido.
 
    A PÁGINA ABRE NUM PEDIDO quando o endereço traz `?pedido=<id>`: é por aí
-   que o Estoque chega aqui, da coluna Para separação e da coluna "Por quê"
-   das movimentações (05/10/2026). Pedido que está na fila vem escolhido. O
-   que já saiu da fila (a separação dele foi concluída) não some: aparece em
-   cima, só para ler, com o que saiu da prateleira para ele.
+   que o Estoque chega aqui. O pedido que já saiu da fila aparece em cima, só
+   para ler, com o que saiu da prateleira para ele.
    ========================================================================== */
 
-function dataCurta(iso: string): string {
-  if (!iso) return 'sem data'
-  const d = new Date(iso + (iso.length === 10 ? 'T12:00:00' : ''))
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-}
+type Aba = 'fila' | 'falta' | 'concluidas'
+type Ordem = 'entrega' | 'cliente' | 'pecas'
 
-/* o id vai para dentro de um endereço de consulta: só passa o que tem cara de uuid */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
-/** o pedido que o endereço pediu e que não está mais na fila */
-type Passado = { id: string; linhas: ReservaDoPedido[] | null; erro: string }
+/** um pedido para ler: o que já saiu da fila (endereço ou aba Concluídas) */
+type Registro = { id: string; numero: string; linhas: ReservaDoPedido[] | null; erro: string; doEndereco: boolean }
 
 export function TelaSeparacao() {
+  const navegar = useNavigate()
   const [parametros, setParametros] = useSearchParams()
-  const pedido = parametros.get('pedido') ?? ''
-  const pedidoPedido = UUID.test(pedido) ? pedido : ''
-  const [passado, setPassado] = useState<Passado | null>(null)
+  const doEndereco = parametros.get('pedido') ?? ''
+  const pedidoDoEndereco = UUID.test(doEndereco) ? doEndereco : ''
+
   const [fila, setFila] = useState<PedidoNaSeparacao[]>([])
-  const [escolhido, setEscolhido] = useState<PedidoNaSeparacao | null>(null)
-  const [linhas, setLinhas] = useState<ReservaDoPedido[]>([])
+  const [separados, setSeparados] = useState<PedidoSeparado[] | null>([])
+  const [materiais, setMateriais] = useState<MaterialDaFila[] | null>([])
+  const [miniaturas, setMiniaturas] = useState<Map<string, string>>(new Map())
   const [carregando, setCarregando] = useState(true)
-  const [abrindo, setAbrindo] = useState(false)
-  const [ocupado, setOcupado] = useState('')
   const [erro, setErro] = useState('')
-  /* A LEITURA QUE FALHOU FICA GUARDADA, e nao vira lista vazia.
+  const [aba, setAba] = useState<Aba>('fila')
+  const [busca, setBusca] = useState('')
+  const [ordem, setOrdem] = useState<Ordem>('entrega')
+  const [escolhido, setEscolhido] = useState('')
+  const [registro, setRegistro] = useState<Registro | null>(null)
 
-     Ate 24/09 o catch aqui embaixo so soltava um recado, que some sozinho em
-     alguns segundos, e deixava `linhas` vazia. O que ficava na tela depois
-     disso era "Nenhum material neste pedido", uma frase plausivel e falsa: o
-     cartao da fila ao lado dizia "0 de 1" ao mesmo tempo. Foi assim que a
-     view quebrada da 027 passou despercebida por dias.
-
-     Tela que nao distingue "nao ha nada" de "nao consegui ler" mente sempre
-     que a segunda acontece, e mente com confianca. */
-  const [erroDoMaterial, setErroDoMaterial] = useState('')
-
-  /* O que a pessoa digitou, por linha. Ele nasce com o reservado e é ele que
-     vai para o razão: o campo é a balança, e não um espelho da conta. */
-  const [pesado, setPesado] = useState<Record<string, string>>({})
-
-  const recarregarFila = useCallback(async () => {
-    const f = await carregarFilaDaSeparacao()
+  const recarregar = useCallback(async () => {
+    const [f, m, s] = await Promise.all([
+      carregarFilaDaSeparacao(),
+      carregarMaterialDaFila().catch(() => [] as MaterialDaFila[]),
+      carregarSeparados().catch(() => [] as PedidoSeparado[]),
+    ])
     setFila(f)
+    setMateriais(m)
+    setSeparados(s)
+    const cotacoes = [...f.map((p) => p.cotacaoId), ...(s ?? []).map((p) => p.cotacaoId)]
+    void carregarMiniaturas(cotacoes).then(setMiniaturas)
     return f
   }, [])
 
   useEffect(() => {
     let vivo = true
-    carregarFilaDaSeparacao()
-      .then((f) => {
-        if (!vivo) return
-        setFila(f)
-        setEscolhido(f[0] ?? null)
-      })
-      .catch((e: unknown) => {
-        if (vivo) setErro(e instanceof Error ? e.message : 'Não consegui ler a fila.')
-      })
-      .finally(() => {
-        if (vivo) setCarregando(false)
-      })
+    recarregar()
+      .catch((e: unknown) => vivo && setErro(e instanceof Error ? e.message : 'Não consegui ler a fila.'))
+      .finally(() => vivo && setCarregando(false))
     return () => {
       vivo = false
     }
+  }, [recarregar])
+
+  /* abrir um pedido para ler: o que saiu da prateleira para ele */
+  const lerRegistro = useCallback((id: string, numero: string, doEnd: boolean) => {
+    setRegistro({ id, numero, linhas: null, erro: '', doEndereco: doEnd })
+    carregarReservasDoPedido(id)
+      .then((linhas) => setRegistro((r) => (r && r.id === id ? { ...r, linhas, numero: numero || linhas[0]?.pedido || '' } : r)))
+      .catch((e: unknown) =>
+        setRegistro((r) =>
+          r && r.id === id ? { ...r, linhas: [], erro: e instanceof Error ? e.message : 'Não consegui ler o material deste pedido.' } : r,
+        ),
+      )
   }, [])
 
-  const abrir = useCallback(async (p: PedidoNaSeparacao | null) => {
-    if (!p) {
-      setLinhas([])
-      return
-    }
-    setAbrindo(true)
-    setErroDoMaterial('')
-    try {
-      const r = await carregarReservasDoPedido(p.id)
-      setLinhas(r)
-      const inicial: Record<string, string> = {}
-      r.forEach((x) => {
-        inicial[x.id] = x.semConsumo
-          ? ''
-          : String(x.quantidade).replace('.', ',')
-      })
-      setPesado(inicial)
-    } catch (e) {
-      const recado = e instanceof Error ? e.message : 'Não consegui ler o material do pedido.'
-      setLinhas([])
-      setErroDoMaterial(recado)
-      avisar(recado, 'brand')
-    } finally {
-      setAbrindo(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void abrir(escolhido)
-  }, [escolhido, abrir])
-
-  /* O PEDIDO QUE O ENDEREÇO PEDIU. Na fila, ele vira o escolhido. Fora dela, a
-     página lê o que foi reservado e baixado para ele e mostra em cima. */
+  /* O PEDIDO DO ENDEREÇO: na fila, ele vira o escolhido; fora dela, o
+     registro do que saiu para ele aparece em cima */
   useEffect(() => {
     if (carregando || erro) return
-    if (!pedidoPedido) {
-      setPassado(null)
+    if (!pedidoDoEndereco) {
+      setRegistro((r) => (r?.doEndereco ? null : r))
       return
     }
-    const naFila = fila.find((p) => p.id === pedidoPedido)
+    const naFila = fila.find((p) => p.id === pedidoDoEndereco)
     if (naFila) {
-      setPassado(null)
-      setEscolhido(naFila)
+      setRegistro(null)
+      setAba('fila')
+      setEscolhido(naFila.id)
       return
     }
-    let vivo = true
-    setPassado({ id: pedidoPedido, linhas: null, erro: '' })
-    carregarReservasDoPedido(pedidoPedido)
-      .then((linhas) => {
-        if (vivo) setPassado({ id: pedidoPedido, linhas, erro: '' })
-      })
-      .catch((e: unknown) => {
-        if (vivo)
-          setPassado({
-            id: pedidoPedido,
-            linhas: [],
-            erro: e instanceof Error ? e.message : 'Não consegui ler o material deste pedido.',
-          })
-      })
-    return () => {
-      vivo = false
-    }
+    lerRegistro(pedidoDoEndereco, separados?.find((p) => p.id === pedidoDoEndereco)?.numero ?? '', true)
     // a fila muda a cada separação; o que importa aqui é o pedido do endereço
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pedidoPedido, carregando, erro])
+  }, [pedidoDoEndereco, carregando, erro])
 
-  const conta = useMemo(
-    () => ({
-      naFila: fila.length,
-      prontos: fila.filter((p) => p.tudoSeparado).length,
-      semConsumo: fila.filter((p) => p.semConsumo > 0).length,
-      naoCobre: fila.filter((p) => p.naoCobre > 0).length,
-      pecas: fila.reduce((s, p) => s + p.pecas, 0),
-    }),
-    [fila],
-  )
+  /* a busca casa com o pedido, o cliente e o material: o material pela soma
+     da fila, que diz quais pedidos pedem cada um */
+  const b = semAcento(busca.trim())
+  const pedidosDoMaterial = useMemo(() => {
+    if (!b || !materiais) return new Set<string>()
+    return new Set(materiais.filter((m) => semAcento(m.material).includes(b)).flatMap((m) => m.numeros))
+  }, [b, materiais])
+  const bate = (numero: string, cliente: string) =>
+    !b || semAcento(numero + ' ' + cliente).includes(b) || pedidosDoMaterial.has(numero)
 
-  function lido(texto: string): number {
-    const n = Number(texto.trim().replace(',', '.'))
-    return Number.isFinite(n) ? n : 0
+  const ordenar = <T extends { entregaEm: string; cliente: string; pecas: number; numero: string }>(l: T[]) =>
+    [...l].sort((x, y) =>
+      ordem === 'cliente'
+        ? x.cliente.localeCompare(y.cliente, 'pt-BR')
+        : ordem === 'pecas'
+          ? y.pecas - x.pecas
+          : (x.entregaEm || '9999').localeCompare(y.entregaEm || '9999') || x.numero.localeCompare(y.numero),
+    )
+
+  const comFalta = fila.filter((p) => p.naoCobre > 0)
+  const daAba = ordenar((aba === 'falta' ? comFalta : fila).filter((p) => bate(p.numero, p.cliente)))
+  const separando = daAba.filter((p) => p.estado === 'separacao')
+  const esperando = daAba.filter((p) => p.estado !== 'separacao')
+  const concluidas = (separados ?? []).filter((p) => bate(p.numero, p.cliente))
+  const aberto = aba !== 'concluidas' ? fila.find((p) => p.id === escolhido) ?? null : null
+
+  function escolher(id: string) {
+    setRegistro(null)
+    if (pedidoDoEndereco) setParametros({}, { replace: true })
+    setEscolhido((x) => (x === id ? '' : id))
   }
 
-  async function separar(l: ReservaDoPedido) {
-    if (!escolhido || ocupado) return
-    const quanto = lido(pesado[l.id] ?? '')
-    if (quanto <= 0) {
-      avisar('Escreva quanto saiu da prateleira.', 'warn')
-      return
-    }
-    setOcupado(l.id)
-    try {
-      /* O pedido entra em `separacao` no instante em que a primeira linha sai
-         da prateleira, e não quando alguém abre a tela: abrir para olhar não é
-         começar, e a fila não deveria mentir sobre isso. */
-      if (escolhido.estado === 'aprovado') await comecarASeparacao(escolhido.id)
-      await separarMaterial(l.id, quanto)
-      await depoisDeMexer()
-      avisar(`${numeroNaUnidade(quanto, l.unidade)} de ${l.material} saiu da prateleira.`, 'ok')
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui separar.', 'brand')
-    } finally {
-      setOcupado('')
-    }
-  }
-
-  async function desfazer(l: ReservaDoPedido) {
-    if (ocupado) return
-    setOcupado(l.id)
-    try {
-      await desfazerASeparacao(l.id)
-      await depoisDeMexer()
-      avisar(`${l.material} voltou para a prateleira.`, 'ok')
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui desfazer.', 'brand')
-    } finally {
-      setOcupado('')
+  function abrirPeloNumero(numero: string) {
+    const p = fila.find((x) => x.numero === numero)
+    if (p) {
+      setAba(p.naoCobre > 0 && aba === 'falta' ? 'falta' : 'fila')
+      escolher(p.id)
     }
   }
 
-  /* A fila e o pedido aberto são a mesma verdade vista de dois jeitos: mexer
-     numa linha muda os dois, e recarregar só um deixaria o contador da fila
-     dizendo 2 de 7 com sete linhas separadas na frente. */
-  async function depoisDeMexer() {
-    const f = await recarregarFila()
-    const eu = escolhido ? (f.find((p) => p.id === escolhido.id) ?? null) : null
-    if (eu) setEscolhido(eu)
-    else await abrir(escolhido)
-  }
+  const conta = { fila: fila.length, falta: comFalta.length, concluidas: separados?.length ?? 0 }
+  const pecas = fila.reduce((s, p) => s + p.pecas, 0)
+  const ROTULO: Record<Aba, string> = { fila: 'Na fila', falta: 'Com falta', concluidas: 'Concluídas' }
 
-  async function concluir() {
-    if (!escolhido || ocupado) return
-    setOcupado('concluir')
-    try {
-      const recado = await concluirASeparacao(escolhido.id)
-      const f = await recarregarFila()
-      setEscolhido(f[0] ?? null)
-      avisar(recado, recado.includes('falta') ? 'warn' : 'ok')
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui concluir.', 'brand')
-    } finally {
-      setOcupado('')
-    }
-  }
-
-  const colunas: Coluna<ReservaDoPedido>[] = [
-    {
-      chave: 'material',
-      titulo: 'Material',
-      celula: (l) => (
-        <span className="pilha colada">
-          <b className="sp-nome">{l.material}</b>
-          <small className="sp-apoio sp-nome">
-            {l.categoria}
-            {l.semConsumo ? ' · consumo não cadastrado' : ''}
-            {/* NO CELULAR A COLUNA "PRECISA" SOME E ELE DESCE PARA CA. Quatro
-                colunas nao cabem em 390 com um campo e um botao dentro, e
-                separar sem saber quanto era a conta e separar no escuro. */}
-            {l.semConsumo ? null : (
-              <span className="sp-no-celular">
-                {' · precisa ' + numeroNaUnidade(l.quantidade, l.unidade)}
-              </span>
-            )}
-          </small>
-        </span>
-      ),
-    },
-    {
-      chave: 'precisa',
-      titulo: 'Precisa',
-      numero: true,
-      celula: (l) =>
-        l.semConsumo ? (
-          <Selo tom="warn">não sei</Selo>
-        ) : (
-          <b>{numeroNaUnidade(l.quantidade, l.unidade)}</b>
-        ),
-    },
-    {
-      chave: 'tem',
-      titulo: 'Na prateleira',
-      numero: true,
-      celula: (l) => (
-        <span className={!l.semConsumo && l.saldo < l.quantidade ? 'sp-pouco' : 'sp-apoio'}>
-          {numeroNaUnidade(l.saldo, l.unidade)}
-        </span>
-      ),
-    },
-    {
-      chave: 'saiu',
-      titulo: 'Saiu',
-      numero: true,
-      celula: (l) =>
-        l.baixada ? (
-          <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b>
-        ) : (
-          <Entrada
-            tamanho="sm"
-            inputMode="decimal"
-            className="sp-campo"
-            value={pesado[l.id] ?? ''}
-            disabled={ocupado === l.id}
-            placeholder={casasDaUnidade(l.unidade) ? '0,0' : '0'}
-            aria-label={'Quanto saiu de ' + l.material + ', em ' + l.unidade}
-            onChange={(e) => setPesado((x) => ({ ...x, [l.id]: e.currentTarget.value }))}
-          />
-        ),
-    },
-    {
-      chave: 'acao',
-      titulo: '',
-      /* FORTE, E NÃO PRIMÁRIO, no botão de separar. No V7 vermelho é ação
-         principal e atraso, e a ação principal desta tela é Concluir a
-         separação, no topo. Uma coluna de botões vermelhos disputaria a
-         atenção com ela e com o vermelho da falta, e três vermelhos na mesma
-         tela não são nenhum. */
-      celula: (l) =>
-        l.baixada ? (
-          <Botao tom="limpo" tamanho="sm" onClick={() => void desfazer(l)} disabled={!!ocupado}>
-            Desfazer
-          </Botao>
-        ) : (
-          <Botao
-            tom="forte"
-            tamanho="sm"
-            onClick={() => void separar(l)}
-            carregando={ocupado === l.id}
-            disabled={!!ocupado}
+  let lista: ReactNode
+  if (aba === 'concluidas') {
+    lista =
+      separados === null ? (
+        <Vazio titulo="A lista das concluídas ainda não existe" texto="Falta rodar a migração 061 no banco." />
+      ) : !concluidas.length ? (
+        <Vazio titulo="Nenhuma separação concluída" texto={b ? 'Nada com esse nome ou número.' : 'O pedido aparece aqui quando a separação dele é concluída.'} />
+      ) : (
+        <GrupoDaFila nome="Concluídas" apoio={plural(concluidas.length, 'pedido', 'pedidos') + ' · a mais recente primeiro'}>
+          {concluidas.map((p) => (
+            <LinhaDoSeparado
+              key={p.id}
+              p={p}
+              miniatura={miniaturas.get(p.cotacaoId)}
+              escolhido={registro?.id === p.id && !registro.doEndereco}
+              aoEscolher={() => (registro?.id === p.id ? setRegistro(null) : lerRegistro(p.id, p.numero, false))}
+            />
+          ))}
+        </GrupoDaFila>
+      )
+  } else if (!daAba.length) {
+    lista = (
+      <Vazio
+        titulo={aba === 'falta' ? 'Nenhum pedido com falta' : 'Nada esperando separação'}
+        texto={
+          b
+            ? 'Nada com esse nome, número ou material.'
+            : aba === 'falta'
+              ? 'A prateleira cobre todos os pedidos da fila.'
+              : 'Todo pedido aprovado já teve o material separado e seguiu para o PCP. Pedido novo aparece aqui no instante em que a cotação é aprovada.'
+        }
+      />
+    )
+  } else {
+    const linha = (p: PedidoNaSeparacao) => (
+      <LinhaDaFila key={p.id} p={p} miniatura={miniaturas.get(p.cotacaoId)} escolhido={p.id === escolhido} aoEscolher={() => escolher(p.id)} />
+    )
+    lista = (
+      <>
+        {separando.length ? (
+          <GrupoDaFila nome="Separando" apoio={plural(separando.length, 'pedido', 'pedidos') + ' · já começou'}>
+            {separando.map(linha)}
+          </GrupoDaFila>
+        ) : null}
+        {esperando.length ? (
+          <GrupoDaFila
+            nome="Esperando"
+            apoio={esperando.length + ' · ' + (ordem === 'entrega' ? 'pela entrega mais próxima' : ordem === 'cliente' ? 'pelo cliente' : 'pelas peças')}
           >
-            Separar
-          </Botao>
-        ),
-    },
-  ]
+            {esperando.map(linha)}
+          </GrupoDaFila>
+        ) : null}
+      </>
+    )
+  }
 
-  const separados = linhas.filter((l) => l.baixada).length
+  return (
+    <Pagina
+      acima="Produção · materiais"
+      titulo="Separação"
+      sub={
+        <>
+          <b>{conta.fila}</b> {conta.fila === 1 ? 'pedido aprovado' : 'pedidos aprovados'} na fila · {pecas.toLocaleString('pt-BR')} peças · o material
+          sai da prateleira quando é separado
+        </>
+      }
+      acoes={
+        <Botao tom="contorno" onClick={() => navegar('/estoque')}>
+          <Package size={17} />
+          Abrir o Estoque
+        </Botao>
+      }
+    >
+      {registro?.doEndereco ? <RegistroDoPedido r={registro} aoFechar={() => setParametros({}, { replace: true })} /> : null}
 
-  const colunasDoPassado: Coluna<ReservaDoPedido>[] = [
+      {erro ? (
+        <Vazio titulo="Não consegui ler a fila" texto={erro} />
+      ) : (
+        <div className="sp-palco">
+          <div className="sp-barra">
+            <Segmentado
+              className="sp-abas"
+              valor={aba}
+              aoMudar={(v) => {
+                setAba(v)
+                setRegistro((r) => (r?.doEndereco ? r : null))
+              }}
+              opcoes={(['fila', 'falta', 'concluidas'] as Aba[]).map((a) => ({
+                valor: a,
+                rotulo: (
+                  <>
+                    {ROTULO[a]} <small>{conta[a]}</small>
+                  </>
+                ),
+              }))}
+            />
+            <div className="sp-barra-busca">
+              <Busca placeholder="Buscar pedido, cliente ou material" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            </div>
+            <Seletor
+              rotulo="ORDEM"
+              /* a ordem de sempre (entrega) fica com o seletor neutro, como no
+                 wireframe; só a escolhida pinta */
+              valor={ordem === 'entrega' ? '' : ordem}
+              opcoes={[
+                { valor: 'entrega', rotulo: 'Entrega' },
+                { valor: 'cliente', rotulo: 'Cliente' },
+                { valor: 'pecas', rotulo: 'Peças' },
+              ]}
+              vazio="Entrega"
+              aoEscolher={(v) => setOrdem((v || 'entrega') as Ordem)}
+            />
+          </div>
+
+          <div className="sp-mesa">
+            <section className="cartao sp-fila" aria-label="Fila da separação">
+              {carregando ? (
+                <div className="sp-espera">
+                  <Esqueleto altura={48} />
+                  <Esqueleto altura={48} />
+                  <Esqueleto altura={48} />
+                </div>
+              ) : (
+                lista
+              )}
+            </section>
+
+            <div className="sp-direita">
+              {carregando ? (
+                <Esqueleto altura={360} />
+              ) : aba === 'concluidas' ? (
+                registro && !registro.doEndereco ? (
+                  <RegistroDoPedido r={registro} aoFechar={() => setRegistro(null)} />
+                ) : (
+                  <Vazio titulo="Escolha um pedido" texto="Abre o que saiu da prateleira para ele, só para ler." />
+                )
+              ) : aberto ? (
+                <PedidoAberto
+                  key={aberto.id}
+                  p={aberto}
+                  aoMexer={async () => {
+                    await recarregar()
+                  }}
+                  aoConcluir={async () => {
+                    setEscolhido('')
+                    await recarregar()
+                  }}
+                  aoFechar={() => setEscolhido('')}
+                />
+              ) : (
+                <ResumoDaFila fila={fila} materiais={materiais} aoAbrirPedido={abrirPeloNumero} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </Pagina>
+  )
+}
+
+/* o que saiu da prateleira para um pedido que já não está na fila */
+function RegistroDoPedido({ r, aoFechar }: { r: Registro; aoFechar: () => void }) {
+  const colunas: Coluna<ReservaDoPedido>[] = [
     {
       chave: 'material',
       titulo: 'Material',
@@ -372,221 +341,40 @@ export function TelaSeparacao() {
       chave: 'precisava',
       titulo: 'Precisava',
       numero: true,
-      celula: (l) =>
-        l.semConsumo ? (
-          <span className="sp-apoio">sem consumo</span>
-        ) : (
-          numeroNaUnidade(l.quantidade, l.unidade)
-        ),
+      celula: (l) => (l.semConsumo ? <span className="sp-apoio">sem consumo</span> : numeroNaUnidade(l.quantidade, l.unidade)),
     },
     {
       chave: 'saiu',
       titulo: 'Saiu',
       numero: true,
-      celula: (l) =>
-        l.baixada ? (
-          <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b>
-        ) : (
-          <span className="sp-pouco">não saiu</span>
-        ),
+      celula: (l) => (l.baixada ? <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b> : <span className="sp-pouco">não saiu</span>),
     },
   ]
-  const numeroDoPassado = passado?.linhas?.[0]?.pedido ?? ''
-
   return (
-    <Pagina
-      acima="Produção · materiais"
-      titulo="Separação"
-      sub={
-        <>
-          <b>{conta.naFila}</b> pedido{conta.naFila === 1 ? '' : 's'} esperando ·{' '}
-          {conta.pecas.toLocaleString('pt-BR')} peças · o material sai da prateleira aqui, e não na
-          entrega
-        </>
-      }
-    >
-      <div className="sp-kpis">
-        <Kpi rotulo="Na fila" valor={conta.naFila} sub="da aprovação até o corte" />
-        <Kpi rotulo="Prontos para concluir" valor={conta.prontos} sub="material todo separado" />
-        <Kpi
-          rotulo="A prateleira não cobre"
-          valor={conta.naoCobre}
-          sub={conta.naoCobre ? 'vai descer com falta' : 'tudo coberto'}
-          aviso={conta.naoCobre > 0}
-        />
-        <Kpi
-          rotulo="Sem consumo cadastrado"
-          valor={conta.semConsumo}
-          sub={conta.semConsumo ? 'a pesagem decide' : 'toda linha tem tamanho'}
-          aviso={conta.semConsumo > 0}
-        />
-      </div>
-
-      {passado ? (
-        <section className="cartao sp-passado" data-passado="">
-          <header className="sp-topo">
-            <div className="pilha colada">
-              <b>
-                {numeroDoPassado
-                  ? `O pedido ${numeroDoPassado} não está mais na fila da Separação`
-                  : 'Este pedido não está na fila da Separação'}
-              </b>
-              <small className="sp-apoio">
-                {passado.linhas === null
-                  ? 'Lendo o material dele.'
-                  : passado.erro
-                    ? passado.erro
-                    : passado.linhas.length
-                      ? 'A separação dele foi concluída e o pedido seguiu para o PCP. Abaixo, o que saiu da prateleira para ele.'
-                      : 'Não há material reservado para ele: ou o pedido seguiu sem reserva, ou ainda não foi aprovado.'}
-              </small>
-            </div>
-            <Botao onClick={() => setParametros({}, { replace: true })}>Fechar</Botao>
-          </header>
-          {passado.linhas === null ? (
-            <div className="sp-espera">
-              <Esqueleto altura={18} />
-              <Esqueleto altura={18} />
-            </div>
-          ) : passado.linhas.length ? (
-            <Tabela
-              colunas={colunasDoPassado}
-              linhas={passado.linhas}
-              chaveDaLinha={(l) => l.id}
-            />
-          ) : null}
-        </section>
-      ) : null}
-
-      {erro ? (
-        <Vazio titulo="Não consegui ler a fila" texto={erro} />
-      ) : carregando ? (
-        <section className="cartao sp-espera">
-          <Esqueleto altura={18} />
-          <Esqueleto altura={18} />
-          <Esqueleto altura={18} />
-          <Esqueleto altura={18} />
-        </section>
-      ) : !fila.length ? (
-        <Vazio
-          titulo="Nada esperando separação"
-          texto="Todo pedido aprovado já teve o material separado e seguiu para o PCP. Pedido novo aparece aqui no instante em que a cotação é aprovada."
-        />
-      ) : (
-        /* O PALCO SÓ EXISTE PARA SER MEDIDO. Ele é o contêiner que a mesa
-           consulta: sem ele, a mesa perguntaria o tamanho da JANELA, e a
-           janela tem 248px de menu lateral que a mesa não pode usar. */
-        <div className="sp-palco">
-          <div className="sp-mesa">
-            <section className="cartao sp-fila" aria-label="Fila de separação">
-              {fila.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={escolhido?.id === p.id ? 'sp-item escolhido' : 'sp-item'}
-                  onClick={() => setEscolhido(p)}
-                >
-                  <span className="sp-item-topo">
-                    <b className="sp-numero">{p.numero}</b>
-                    {p.estado === 'separacao' ? <Selo tom="info">em separação</Selo> : null}
-                  </span>
-                  <span className="sp-nome sp-cliente">{p.cliente || 'sem cliente'}</span>
-                  <span className="sp-item-pe">
-                    <small className="sp-apoio">
-                      {p.pecas} pçs · entrega {dataCurta(p.entregaEm)}
-                    </small>
-                    <small className={p.tudoSeparado ? 'sp-pronto' : 'sp-apoio'}>
-                      {p.materiais ? `${p.separados} de ${p.materiais}` : 'sem material'}
-                    </small>
-                  </span>
-                </button>
-              ))}
-            </section>
-
-            <section className="cartao sp-quadro">
-              {escolhido ? (
-                <>
-                  <header className="sp-topo">
-                    <div className="pilha colada">
-                      <b>
-                        {escolhido.numero} · {escolhido.cliente || 'sem cliente'}
-                      </b>
-                      <small className="sp-apoio">
-                        {escolhido.pecas} peças · {escolhido.departamento || 'sem departamento'} ·
-                        entrega {dataCurta(escolhido.entregaEm)}
-                      </small>
-                    </div>
-                    {/* CONCLUIR FICA TRANCADO ENQUANTO A LISTA NAO ABRIU.
-
-                        Concluir manda o pedido para o PCP com a falta carimbada,
-                        e a falta e calculada no banco a partir do que foi
-                        baixado. Concluir sem ter visto o material e carimbar uma
-                        falta que ninguem conferiu, e o pedido segue para a
-                        frente com um numero inventado atras dele. */}
-                    <Botao
-                      tom="primario"
-                      onClick={() => void concluir()}
-                      carregando={ocupado === 'concluir'}
-                      disabled={!!ocupado || !!erroDoMaterial}
-                      title={
-                        erroDoMaterial
-                          ? 'A lista de material não abriu. Recarregue a página antes de concluir.'
-                          : undefined
-                      }
-                    >
-                      Concluir a separação
-                    </Botao>
-                  </header>
-
-                  {abrindo ? (
-                    <div className="sp-espera">
-                      <Esqueleto altura={18} />
-                      <Esqueleto altura={18} />
-                      <Esqueleto altura={18} />
-                    </div>
-                  ) : (
-                    <Tabela
-                      colunas={colunas}
-                      linhas={linhas}
-                      chaveDaLinha={(l) => l.id}
-                      marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
-                      vazio={
-                        erroDoMaterial ? (
-                          <Vazio
-                            titulo="Não consegui ler o material deste pedido"
-                            texto={
-                              erroDoMaterial +
-                              ' A fila ao lado diz quantos materiais este pedido tem; não conclua a separação enquanto esta lista não abrir.'
-                            }
-                          />
-                        ) : (
-                          <Vazio
-                            titulo="Nenhum material neste pedido"
-                            texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
-                          />
-                        )
-                      }
-                    />
-                  )}
-
-                  <footer className="sp-pe">
-                    <small className="sp-apoio">
-                      {erroDoMaterial
-                        ? 'a lista de material não abriu'
-                        : linhas.length
-                          ? `${separados} de ${linhas.length} materiais separados`
-                          : 'sem material para separar'}
-                      . Concluir move o pedido para o PCP, com falta ou sem.
-                    </small>
-                  </footer>
-                </>
-              ) : (
-                <Vazio titulo="Escolha um pedido" texto="A fila está à esquerda." />
-              )}
-            </section>
-          </div>
+    <section className="cartao sp-passado" data-passado="">
+      <header className="sp-topo">
+        <div className="pilha colada">
+          <b>{r.numero ? `O pedido ${r.numero} não está mais na fila da Separação` : 'Este pedido não está na fila da Separação'}</b>
+          <small className="sp-apoio">
+            {r.linhas === null
+              ? 'Lendo o material dele.'
+              : r.erro
+                ? r.erro
+                : r.linhas.length
+                  ? 'A separação dele foi concluída e o pedido seguiu para o PCP. Abaixo, o que saiu da prateleira para ele.'
+                  : 'Não há material reservado para ele: ou o pedido seguiu sem reserva, ou ainda não foi aprovado.'}
+          </small>
         </div>
-      )}
-    </Pagina>
+        <Botao onClick={aoFechar}>Fechar</Botao>
+      </header>
+      {r.linhas === null ? (
+        <div className="sp-espera">
+          <Esqueleto altura={18} />
+          <Esqueleto altura={18} />
+        </div>
+      ) : r.linhas.length ? (
+        <Tabela colunas={colunas} linhas={r.linhas} chaveDaLinha={(l) => l.id} />
+      ) : null}
+    </section>
   )
 }

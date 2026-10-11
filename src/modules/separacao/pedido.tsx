@@ -1,0 +1,296 @@
+import { useCallback, useEffect, useState } from 'react'
+import { CheckCircle, FileText, X } from '@phosphor-icons/react'
+import { Botao, Entrada, Esqueleto, Selo, Tabela, Vazio, avisar, type Coluna } from '@ds'
+import {
+  carregarReservasDoPedido,
+  casasDaUnidade,
+  comecarASeparacao,
+  concluirASeparacao,
+  desfazerASeparacao,
+  numeroNaUnidade,
+  separarMaterial,
+  type PedidoNaSeparacao,
+  type ReservaDoPedido,
+} from '@dominio/estoque'
+import { ModalDaFolha } from '@modules/cotacao'
+import { dataCurta } from './fila'
+
+/* ==========================================================================
+   O PEDIDO ESCOLHIDO (prancha 83). Nesta parte (S1) o cabeçalho já é o do
+   wireframe: o estado, o pedido e os layouts, o cliente, a linha com peças,
+   departamento, entrega e vendedor, e Ver o orçamento, Concluir a separação e
+   Fechar. Embaixo, a lista do material que já existia. Os cartões de cada
+   layout e a Soma de tudo do wireframe são as partes S2 e S3.
+
+   A TELA SEMPRE PERGUNTA QUANTO SAIU. O número reservado já vem escrito no
+   campo, mas quem separa confirma ou corrige: a reserva é uma conta e a
+   separação é uma pesagem, e quando as duas discordam quem está certo é a
+   balança.
+
+   CONCLUIR NÃO EXIGE QUE TUDO TENHA SAÍDO. Quem decide se o pedido desce com
+   falta é o PCP, e para decidir ele precisa que o pedido chegue lá com a falta
+   escrita.
+   ========================================================================== */
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
+
+export function PedidoAberto({
+  p,
+  aoMexer,
+  aoConcluir,
+  aoFechar,
+}: {
+  p: PedidoNaSeparacao
+  /** a fila muda junto: o contador "x de y" é a mesma verdade */
+  aoMexer: () => Promise<void>
+  aoConcluir: () => Promise<void>
+  aoFechar: () => void
+}) {
+  const [linhas, setLinhas] = useState<ReservaDoPedido[]>([])
+  const [abrindo, setAbrindo] = useState(true)
+  const [ocupado, setOcupado] = useState('')
+  /* A LEITURA QUE FALHOU FICA GUARDADA, e não vira lista vazia: "Nenhum
+     material neste pedido" com a fila dizendo "0 de 1" ao lado é uma frase
+     plausível e falsa. */
+  const [erro, setErro] = useState('')
+  const [pesado, setPesado] = useState<Record<string, string>>({})
+  const [folha, setFolha] = useState(false)
+
+  const abrir = useCallback(async () => {
+    setErro('')
+    try {
+      const r = await carregarReservasDoPedido(p.id)
+      setLinhas(r)
+      setPesado((antes) => {
+        const novo: Record<string, string> = {}
+        r.forEach((x) => {
+          novo[x.id] = antes[x.id] ?? (x.semConsumo ? '' : String(x.quantidade).replace('.', ','))
+        })
+        return novo
+      })
+    } catch (e) {
+      const recado = e instanceof Error ? e.message : 'Não consegui ler o material do pedido.'
+      setLinhas([])
+      setErro(recado)
+      avisar(recado, 'brand')
+    } finally {
+      setAbrindo(false)
+    }
+  }, [p.id])
+
+  useEffect(() => {
+    setAbrindo(true)
+    setPesado({})
+    void abrir()
+  }, [abrir])
+
+  const lido = (texto: string) => {
+    const n = Number(texto.trim().replace(',', '.'))
+    return Number.isFinite(n) ? n : 0
+  }
+
+  async function separar(l: ReservaDoPedido) {
+    if (ocupado) return
+    const quanto = lido(pesado[l.id] ?? '')
+    if (quanto <= 0) {
+      avisar('Escreva quanto saiu da prateleira.', 'warn')
+      return
+    }
+    setOcupado(l.id)
+    try {
+      /* o pedido entra em separação quando a primeira linha sai da prateleira,
+         e não quando alguém abre para olhar */
+      if (p.estado === 'aprovado') await comecarASeparacao(p.id)
+      await separarMaterial(l.id, quanto)
+      await Promise.all([abrir(), aoMexer()])
+      avisar(`${numeroNaUnidade(quanto, l.unidade)} de ${l.material} saiu da prateleira.`, 'ok')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui separar.', 'brand')
+    } finally {
+      setOcupado('')
+    }
+  }
+
+  async function desfazer(l: ReservaDoPedido) {
+    if (ocupado) return
+    setOcupado(l.id)
+    try {
+      await desfazerASeparacao(l.id)
+      await Promise.all([abrir(), aoMexer()])
+      avisar(`${l.material} voltou para a prateleira.`, 'ok')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui desfazer.', 'brand')
+    } finally {
+      setOcupado('')
+    }
+  }
+
+  async function concluir() {
+    if (ocupado) return
+    setOcupado('concluir')
+    try {
+      const recado = await concluirASeparacao(p.id)
+      avisar(recado, recado.includes('falta') ? 'warn' : 'ok')
+      await aoConcluir()
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui concluir.', 'brand')
+    } finally {
+      setOcupado('')
+    }
+  }
+
+  const separados = linhas.filter((l) => l.baixada).length
+
+  const colunas: Coluna<ReservaDoPedido>[] = [
+    {
+      chave: 'material',
+      titulo: 'Material',
+      celula: (l) => (
+        <span className="pilha colada">
+          <b className="sp-nome">{l.material}</b>
+          <small className="sp-apoio sp-nome">
+            {l.categoria}
+            {l.semConsumo ? ' · consumo não cadastrado' : ''}
+            {/* no celular a coluna Precisa some e o número desce para cá */}
+            {l.semConsumo ? null : <span className="sp-no-celular">{' · precisa ' + numeroNaUnidade(l.quantidade, l.unidade)}</span>}
+          </small>
+        </span>
+      ),
+    },
+    {
+      chave: 'precisa',
+      titulo: 'Precisa',
+      numero: true,
+      celula: (l) => (l.semConsumo ? <Selo tom="warn">não sei</Selo> : <b>{numeroNaUnidade(l.quantidade, l.unidade)}</b>),
+    },
+    {
+      chave: 'tem',
+      titulo: 'Na prateleira',
+      numero: true,
+      celula: (l) => (
+        <span className={!l.semConsumo && l.saldo < l.quantidade ? 'sp-pouco' : 'sp-apoio'}>{numeroNaUnidade(l.saldo, l.unidade)}</span>
+      ),
+    },
+    {
+      chave: 'saiu',
+      titulo: 'Saiu',
+      numero: true,
+      celula: (l) =>
+        l.baixada ? (
+          <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b>
+        ) : (
+          <Entrada
+            tamanho="sm"
+            inputMode="decimal"
+            className="sp-campo"
+            value={pesado[l.id] ?? ''}
+            disabled={ocupado === l.id}
+            placeholder={casasDaUnidade(l.unidade) ? '0,0' : '0'}
+            aria-label={'Quanto saiu de ' + l.material + ', em ' + l.unidade}
+            onChange={(e) => {
+              const v = e.currentTarget.value
+              setPesado((x) => ({ ...x, [l.id]: v }))
+            }}
+          />
+        ),
+    },
+    {
+      chave: 'acao',
+      titulo: '',
+      celula: (l) =>
+        l.baixada ? (
+          <Botao tom="limpo" tamanho="sm" onClick={() => void desfazer(l)} disabled={!!ocupado}>
+            Desfazer
+          </Botao>
+        ) : (
+          <Botao tom="forte" tamanho="sm" onClick={() => void separar(l)} carregando={ocupado === l.id} disabled={!!ocupado}>
+            Separar
+          </Botao>
+        ),
+    },
+  ]
+
+  return (
+    <div className="sp-aberto">
+      <header className="sp-ped-topo">
+        <div className="sp-ped-tit">
+          <span className="sp-ped-caminho">
+            <Selo tom={p.estado === 'separacao' ? 'info' : 'neutro'}>{p.estado === 'separacao' ? 'em separação' : 'esperando'}</Selo>
+            <span>
+              {p.numero}
+              {p.layouts ? ' › ' + plural(p.layouts, 'layout', 'layouts') : ''}
+            </span>
+          </span>
+          <h2>{p.cliente || 'sem cliente'}</h2>
+          <small>
+            {p.pecas} peças · {p.departamento || 'sem departamento'} · entrega {dataCurta(p.entregaEm)}
+            {p.vendedor ? ' · vendido por ' + p.vendedor : ''}
+          </small>
+        </div>
+        <div className="fileira">
+          {p.cotacaoId ? (
+            <Botao tom="contorno" onClick={() => setFolha(true)}>
+              <FileText size={17} />
+              Ver o orçamento
+            </Botao>
+          ) : null}
+          {/* CONCLUIR FICA TRANCADO ENQUANTO A LISTA NÃO ABRIU: a falta é
+              calculada do que foi baixado, e concluir sem ter visto o material
+              carimba uma falta que ninguém conferiu */}
+          <Botao
+            tom="primario"
+            onClick={() => void concluir()}
+            carregando={ocupado === 'concluir'}
+            disabled={!!ocupado || !!erro || abrindo}
+            title={erro ? 'A lista de material não abriu. Recarregue a página antes de concluir.' : undefined}
+          >
+            <CheckCircle size={17} />
+            Concluir a separação
+          </Botao>
+          <Botao tom="contorno" onClick={aoFechar}>
+            <X size={17} />
+            Fechar
+          </Botao>
+        </div>
+      </header>
+
+      <section className="cartao sp-quadro">
+        {abrindo ? (
+          <div className="sp-espera">
+            <Esqueleto altura={18} />
+            <Esqueleto altura={18} />
+            <Esqueleto altura={18} />
+          </div>
+        ) : (
+          <Tabela
+            colunas={colunas}
+            linhas={linhas}
+            chaveDaLinha={(l) => l.id}
+            marcadas={linhas.filter((l) => l.baixada).map((l) => l.id)}
+            vazio={
+              erro ? (
+                <Vazio
+                  titulo="Não consegui ler o material deste pedido"
+                  texto={erro + ' A fila ao lado diz quantos materiais este pedido tem; não conclua a separação enquanto esta lista não abrir.'}
+                />
+              ) : (
+                <Vazio
+                  titulo="Nenhum material neste pedido"
+                  texto="A reserva nasce da aprovação e depende do consumo cadastrado. Sem material cadastrado para os tecidos deste layout, não há o que separar: concluir manda o pedido direto para o PCP."
+                />
+              )
+            }
+          />
+        )}
+        <footer className="sp-pe">
+          <small className="sp-apoio">
+            {erro ? 'a lista de material não abriu' : linhas.length ? `${separados} de ${linhas.length} materiais separados` : 'sem material para separar'}.
+            Concluir move o pedido para o PCP, com falta ou sem.
+          </small>
+        </footer>
+      </section>
+
+      {folha && p.cotacaoId ? <ModalDaFolha cotacaoId={p.cotacaoId} numeroDoPedido={p.numero} aoFechar={() => setFolha(false)} /> : null}
+    </div>
+  )
+}

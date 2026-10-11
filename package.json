@@ -33,6 +33,7 @@
     "materiais": "node testes/materiais.mjs",
     "transporte": "node testes/transporte.mjs",
     "porteiro": "node --experimental-strip-types testes/porteiro.mjs",
+    "porteiro-do-site": "node --experimental-strip-types testes/porteiro-do-site.mjs",
     "parceiros": "node testes/parceiros.mjs",
     "deposito": "node testes/deposito.mjs",
     "deposito-nomes": "node testes/deposito-nomes.mjs",

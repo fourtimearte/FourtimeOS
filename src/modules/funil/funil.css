@@ -725,3 +725,44 @@
     height: 44px;
   }
 }
+
+/* --- prancha 125: a barra do topo, a origem no cartao e o aviso da extensao */
+.fn-barra .fn-busca {
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+.fn-seg-n {
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+/* a origem viaja na linha da etapa; a borda e da cor do texto para servir no
+   cartao claro e no de tinta sem regra a mais */
+.fn-origem {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--re-3);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: none;
+}
+.fn-instalar p,
+.fn-instalar ol {
+  margin: 0;
+}
+.fn-instalar ol {
+  padding-left: var(--re-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+}
+.fn-instalar code {
+  padding: var(--re-1) var(--re-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font-size: 13px;
+}

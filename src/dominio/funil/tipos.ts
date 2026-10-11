@@ -108,6 +108,8 @@ export type Lead = {
   /** de quem e o lead: e por aqui que a venda e creditada la no fim */
   vendedorId: string
   vendedorNome: string
+  /** de onde o lead veio: site-chat, whatsapp, indicacao, manual, instagram */
+  origem: string
   teste: boolean
 }
 
@@ -210,8 +212,71 @@ export function leadEmBranco(): Lead {
     janelaAte: '',
     vendedorId: '',
     vendedorNome: '',
+    origem: 'manual',
     teste: false,
   }
+}
+
+/* ==========================================================================
+   DE ONDE O LEAD VEIO (a lista fechada de 25/09, plano 15).
+
+   O selo do cartao so aparece para a origem que diz alguma coisa. "WhatsApp"
+   e o padrao da tabela desde a 011 e esta em quase todo lead antigo, inclusive
+   nos que foram digitados a mao antes de existir a origem "manual": um selo
+   "WhatsApp" em todo cartao seria ruido, e em parte deles uma mentira.
+   ========================================================================== */
+export const NOME_DA_ORIGEM: Record<string, string> = {
+  'site-chat': 'Site',
+  whatsapp: 'WhatsApp',
+  indicacao: 'Indicação',
+  manual: 'Manual',
+  instagram: 'Instagram',
+}
+export const ORIGENS = Object.keys(NOME_DA_ORIGEM)
+
+export function seloDaOrigem(l: Lead): string {
+  if (l.origem === 'whatsapp' || l.origem === 'manual' || !l.origem) return ''
+  return NOME_DA_ORIGEM[l.origem] ?? l.origem
+}
+
+/* ==========================================================================
+   O FILTRO DO TOPO (prancha 125): Meus, Todos e Esperando, a busca, a
+   origem e o vendedor.
+
+   "Esperando" e quem esta esperando A GENTE responder: a mesma regra do
+   vermelho do relogio (semResposta), para o numero do botao e o vermelho dos
+   cartoes nunca discordarem.
+
+   A busca acha nome, contato, telefone (so os digitos, entao "99990001" acha
+   "(62) 99999-0001") e numero de cotacao ou pedido.
+   ========================================================================== */
+export type QuemVer = 'meus' | 'todos' | 'esperando'
+export type FiltroDoFunil = {
+  quem: QuemVer
+  eu: string
+  busca: string
+  origem: string
+  /** id do vendedor; 'sem' = lead sem dono; '' = todos */
+  vendedor: string
+}
+
+const semAcentoMinusculo = (t: string) =>
+  t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+export function filtrarLeads(leads: Lead[], f: FiltroDoFunil, agora = Date.now()): Lead[] {
+  const termo = semAcentoMinusculo(f.busca.trim())
+  const digitos = f.busca.replace(/\D/g, '')
+  return leads.filter((l) => {
+    if (f.quem === 'meus' && l.vendedorId !== f.eu) return false
+    if (f.quem === 'esperando' && !semResposta(l, agora)) return false
+    if (f.origem && (l.origem || 'whatsapp') !== f.origem) return false
+    if (f.vendedor === 'sem' && l.vendedorId) return false
+    if (f.vendedor && f.vendedor !== 'sem' && l.vendedorId !== f.vendedor) return false
+    if (!termo) return true
+    const texto = semAcentoMinusculo([l.nomeLivre, l.contato, l.cotacao, l.pedido].join(' '))
+    if (texto.includes(termo)) return true
+    return digitos.length >= 4 && l.telefone.replace(/\D/g, '').includes(digitos)
+  })
 }
 
 /* --- as respostas rapidas -----------------------------------------------

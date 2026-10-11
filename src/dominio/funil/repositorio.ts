@@ -31,6 +31,7 @@ type LinhaDoLead = {
   ultima_msg_em: string | null
   nao_lidas: number
   janela_ate: string | null
+  origem: string | null
   teste: boolean
   equipe: { nome: string } | null
   cotacao: { id: string }[] | null
@@ -43,7 +44,7 @@ type LinhaDoLead = {
    mostra. */
 const COLUNAS =
   'id,nome,contato,telefone,cliente_id,estagio,valor,vendedor_id,ultima_msg,' +
-  'ultima_msg_em,nao_lidas,janela_ate,teste,equipe(nome),' +
+  'ultima_msg_em,nao_lidas,janela_ate,origem,teste,equipe(nome),' +
   'cotacao(id),pedido(numero)'
 
 function deLinha(l: LinhaDoLead): Lead {
@@ -63,6 +64,7 @@ function deLinha(l: LinhaDoLead): Lead {
     janelaAte: l.janela_ate ?? '',
     vendedorId: l.vendedor_id ?? '',
     vendedorNome: l.equipe?.nome ?? '',
+    origem: l.origem ?? 'whatsapp',
     teste: !!l.teste,
   }
 }
@@ -103,7 +105,9 @@ export async function salvarLead(l: Lead): Promise<Lead> {
   const criado = await tabela<{ id: string }[]>('lead', {
     metodo: 'POST',
     devolver: true,
-    corpo: [paraLinha(l)],
+    /* a origem so vai na criacao: editar o nome de um lead do site nao pode
+       transformar ele em "manual" */
+    corpo: [{ ...paraLinha(l), origem: l.origem || 'manual' }],
   })
   const id = criado[0]?.id
   if (!id) throw new Error('O banco aceitou mas não devolveu a linha.')

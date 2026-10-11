@@ -10,6 +10,7 @@ import {
   nomeDoLead,
   porEstagio,
   minutosDesde,
+  seloDaOrigem,
   semResposta,
   tempoCurto,
   type Estagio,
@@ -294,6 +295,9 @@ function Cartao({
           que diz de onde ele veio. */}
       <span className="fn-etapa">
         <span className="nome">{NOME_DO_ESTAGIO[lead.estagio]}</span>
+        {/* DE ONDE VEIO (prancha 125): so a origem que diz alguma coisa, como
+            "Site". O padrao "WhatsApp" fica de fora (seloDaOrigem). */}
+        {seloDaOrigem(lead) ? <span className="fn-origem">{seloDaOrigem(lead)}</span> : null}
       </span>
 
       <p className="fn-msg">{lead.msg}</p>
@@ -320,7 +324,10 @@ function Cartao({
         </span>
         <span className="fn-meta">
           <Relogio />
+          {/* "esperando há 2 h", e nao so "2 h" (prancha 125): o vermelho dizia
+              que tinha algo errado, e a palavra diz o que */}
           <span className={semResposta(lead, relogio) ? 'fn-tempo atrasado' : 'fn-tempo'}>
+            {semResposta(lead, relogio) ? 'esperando há ' : ''}
             {tempoCurto(minutosDesde(lead.ultimaMsgEm, relogio))}
           </span>
           {lead.cotacao ? <span className="fn-tag">{lead.cotacao}</span> : null}

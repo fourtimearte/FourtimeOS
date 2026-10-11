@@ -47,7 +47,7 @@ const atras = (min) => new Date(Date.now() - min*60000).toISOString()
 const LEADS = [
   { id:'L1', nome:'Futsal Vila Nova', contato:'Rafa', telefone:'62999990001', cliente_id:null,
     estagio:'novo', valor:1620, vendedor_id:null, ultima_msg:'Boa tarde, quanto fica 18 camisas?',
-    ultima_msg_em:atras(30), nao_lidas:2, janela_ate:daqui(1380), teste:true,
+    ultima_msg_em:atras(30), nao_lidas:2, janela_ate:daqui(1380), teste:true, origem:'site-chat',
     equipe:null, cotacao:[], pedido:[] },
   { id:'L2', nome:'Supermercado Bom Preço', contato:'Ana', telefone:'62999990002', cliente_id:null,
     estagio:'atendimento', valor:2800, vendedor_id:null, ultima_msg:'Pode ser 40 camisetas polo',
@@ -126,6 +126,46 @@ for (const tema of ['light', 'dark']) {
       s: document.documentElement.scrollWidth, c: document.documentElement.clientWidth,
     }))
     conta(!largura.rola, `${tema} ${nome}: funil sem rolagem de lado (${largura.s} em ${largura.c})`)
+
+    /* --- prancha 125: a barra do topo, a origem e o "esperando" --- */
+    const barra = await pg.evaluate(() => {
+      const seg = [...document.querySelectorAll('.fn-barra .seg button')].map(b => b.innerText.replace(/\s+/g, ' ').trim())
+      const cards = () => [...document.querySelectorAll('.fn-card .fn-nome')].map(n => n.textContent)
+      const futsal = [...document.querySelectorAll('.fn-card')].find(c => c.textContent.includes('Futsal'))
+      const super_ = [...document.querySelectorAll('.fn-card')].find(c => c.textContent.includes('Supermercado'))
+      return {
+        seg, cards: cards(),
+        origem: futsal?.querySelector('.fn-origem')?.textContent ?? '',
+        semSeloNoPadrao: !super_?.querySelector('.fn-origem'),
+        esperando: super_?.querySelector('.fn-tempo')?.textContent ?? '',
+        aviso: document.body.innerText.includes('Você precisa da extensão Fourtime OS'),
+        titulo: document.querySelector('h1')?.textContent ?? '',
+      }
+    })
+    conta(barra.titulo === 'Funil e WhatsApp', `${tema} ${nome}: o título é Funil e WhatsApp`)
+    conta(barra.seg.join('|') === 'Meus 0|Todos 4|Esperando 1', `${tema} ${nome}: Meus, Todos e Esperando com as contas (${barra.seg.join(' | ')})`)
+    conta(barra.cards.length === 4, `${tema} ${nome}: quem não tem lead começa em Todos (${barra.cards.length} cartões)`)
+    conta(barra.origem === 'Site', `${tema} ${nome}: o lead do site leva o selo Site`)
+    conta(barra.semSeloNoPadrao, `${tema} ${nome}: a origem padrão (WhatsApp) não leva selo`)
+    conta(/^esperando há 2 h$/.test(barra.esperando), `${tema} ${nome}: o cartão atrasado diz "esperando há" (${barra.esperando})`)
+    conta(barra.aviso === (nome === 'computador'), `${tema} ${nome}: o aviso da extensão só no computador sem ela`)
+
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-barra .seg button')].find(b => /Esperando/.test(b.innerText)).click())
+    await pg.waitForTimeout(400)
+    const soEsperando = await pg.evaluate(() => [...document.querySelectorAll('.fn-card .fn-nome')].map(n => n.textContent))
+    conta(soEsperando.join() === 'Supermercado Bom Preço', `${tema} ${nome}: Esperando mostra só quem espera resposta (${soEsperando.join(', ')})`)
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-barra .seg button')].find(b => /Todos/.test(b.innerText)).click())
+    await pg.fill('.fn-barra input[type=search]', '99990003')
+    await pg.waitForTimeout(400)
+    const achou = await pg.evaluate(() => [...document.querySelectorAll('.fn-card .fn-nome')].map(n => n.textContent))
+    conta(achou.join() === 'Vôlei Clube Araras', `${tema} ${nome}: a busca acha pelo telefone (${achou.join(', ')})`)
+    await pg.fill('.fn-barra input[type=search]', 'xyz nada')
+    await pg.waitForTimeout(400)
+    const vazio = await pg.evaluate(() => document.body.innerText.includes('Nada com esse filtro'))
+    conta(vazio, `${tema} ${nome}: busca sem resultado diz "Nada com esse filtro"`)
+    await pg.fill('.fn-barra input[type=search]', '')
+    await pg.waitForTimeout(400)
+    await pg.screenshot({ path: `${PASTA}/funil-barra-${tema}-${nome}.png`, fullPage:false })
 
     /* --- a janela, nos quatro casos --- */
     const janela = async (texto) => {

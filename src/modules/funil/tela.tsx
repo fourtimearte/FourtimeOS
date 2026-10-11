@@ -9,6 +9,7 @@ import {
   carregarConversa,
   carregarLeads,
   emMil,
+  filtrarLeads,
   leadEmBranco,
   leadViraCliente,
   marcarLido,
@@ -18,9 +19,12 @@ import {
   salvarLead,
   semResposta,
   type Estagio,
+  type FiltroDoFunil,
   type Lead,
   type Mensagem,
+  type QuemVer,
 } from '@dominio/funil'
+import { AvisoDaExtensao, BarraDoFunil, vendedoresDosLeads } from './barra'
 import { EditarLead } from './editar'
 import { Inbox } from './inbox'
 import { Quadro } from './quadro'
@@ -141,6 +145,32 @@ export function TelaFunil() {
     }
   }, [abertoId])
 
+  /* O FILTRO DO TOPO (prancha 125). "Meus" e o comeco de quem tem lead; quem
+     nao tem nenhum (o admin que so olha, o vendedor novo) comeca em "Todos",
+     senao abriria o funil num quadro vazio sem entender por que. */
+  const [filtro, setFiltro] = useState<Omit<FiltroDoFunil, 'eu' | 'quem'> & { quem: QuemVer | '' }>({
+    quem: '',
+    busca: '',
+    origem: '',
+    vendedor: '',
+  })
+  const contas = useMemo(
+    () => ({
+      meus: eu ? leads.filter((l) => l.vendedorId === eu.id).length : 0,
+      todos: leads.length,
+      esperando: leads.filter((l) => semResposta(l, agora)).length,
+    }),
+    [leads, eu, agora],
+  )
+  const filtroValendo: FiltroDoFunil = {
+    ...filtro,
+    eu: eu?.id ?? '',
+    quem: filtro.quem || (contas.meus ? 'meus' : 'todos'),
+  }
+  const visiveis = filtrarLeads(leads, filtroValendo, agora)
+  const vendedores = useMemo(() => vendedoresDosLeads(leads), [leads])
+  const filtrando = !!(filtro.busca.trim() || filtro.origem || filtro.vendedor)
+
   const resumo = useMemo(() => {
     const ativos = leads.filter((l) => !ESTAGIO_FECHADO.includes(l.estagio))
     return {
@@ -258,7 +288,7 @@ export function TelaFunil() {
   return (
     <Pagina
       acima="Comercial"
-      titulo="Funil de vendas"
+      titulo="Funil e WhatsApp"
       sub={
         carregando
           ? 'Carregando o funil...'
@@ -294,6 +324,17 @@ export function TelaFunil() {
         </>
       }
     >
+      <AvisoDaExtensao />
+
+      {!falha && !carregando && leads.length ? (
+        <BarraDoFunil
+          filtro={filtroValendo}
+          aoMudar={(m) => setFiltro((f) => ({ ...f, ...m }))}
+          contas={contas}
+          vendedores={vendedores}
+        />
+      ) : null}
+
       {falha ? (
         <Vazio
           titulo="Não consegui carregar o funil"
@@ -311,15 +352,34 @@ export function TelaFunil() {
           }
         />
       ) : (
-        <Quadro
-          leads={leads}
-          aberto={abertoId}
-          podeMexer={podeMexer}
-          aoMover={mover}
-          aoAbrir={abrir}
-          aoEditar={(l) => setEditando(l)}
-          relogio={agora}
-        />
+        <>
+          {/* O FILTRO QUE NAO ACHOU NADA DIZ ISSO, em vez de mostrar seis
+              colunas vazias que parecem um funil sem lead nenhum. */}
+          {leads.length && !visiveis.length ? (
+            <Vazio
+              titulo={filtroValendo.quem === 'esperando' && !filtrando ? 'Ninguém esperando resposta' : 'Nada com esse filtro'}
+              texto={
+                filtroValendo.quem === 'meus' && !filtrando
+                  ? 'Nenhum lead seu no funil. Os de todo mundo estão em Todos.'
+                  : 'Troque o filtro para ver os outros leads.'
+              }
+              acao={
+                <Botao tom="contorno" onClick={() => setFiltro({ quem: 'todos', busca: '', origem: '', vendedor: '' })}>
+                  Ver todos
+                </Botao>
+              }
+            />
+          ) : null}
+          <Quadro
+            leads={visiveis}
+            aberto={abertoId}
+            podeMexer={podeMexer}
+            aoMover={mover}
+            aoAbrir={abrir}
+            aoEditar={(l) => setEditando(l)}
+            relogio={agora}
+          />
+        </>
       )}
 
       <EditarLead

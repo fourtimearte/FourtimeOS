@@ -17,13 +17,18 @@ export {
 export type { PassoDoPedido } from './repositorio'
 
 export {
+  LIBERADOS_A_VISTA,
+  abrirNoPcp,
+  carregarLiberados,
   carregarOPcp,
   desmarcarDoPcp,
+  devolverAoVendedor,
   devolverDoPcp,
   diasAte,
   marcarParaAprovacao,
+  voltarAConferir,
 } from './pcp'
-export type { PedidoNoPcp } from './pcp'
+export type { PedidoLiberado, PedidoNoPcp } from './pcp'
 
 
 export {

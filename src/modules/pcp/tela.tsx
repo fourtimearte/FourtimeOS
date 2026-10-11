@@ -1,188 +1,152 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  ArrowFatLineDown,
-  ArrowUUpLeft,
-  Check,
-  ListChecks,
-  Stamp,
-  UserCircleCheck,
-  Warning,
-} from '@phosphor-icons/react'
-import {
-  AreaTexto,
-  avisar,
-  Botao,
-  Cartao,
-  Esqueleto,
-  type IconeDoPacote,
-  Kpi,
-  Marcacao,
-  Pagina,
-  PilulaTecnica,
-  Selo,
-  TituloCartao,
-  Vazio,
-} from '@ds'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { ArrowFatLineDown } from '@phosphor-icons/react'
+import { Botao, Busca, Esqueleto, Modal, Pagina, Segmentado, Seletor, Vazio, avisar, semAcento } from '@ds'
 import { acharCotacao, fatiasDaCotacao } from '@dominio/cotacao'
 import {
-  NOME_DA_TECNICA,
+  LIBERADOS_A_VISTA,
+  carregarLiberados,
   carregarOPcp,
-  desmarcarDoPcp,
-  devolverDoPcp,
-  diasAte,
   liberarParaProducao,
-  marcarParaAprovacao,
+  type PedidoLiberado,
   type PedidoNoPcp,
 } from '@dominio/producao'
-import { ModalDaFolha } from '@modules/cotacao'
 import { pode, souAdmin, useSessao } from '@dominio/sessao'
+import { GrupoDaFila, LinhaDoLiberado, LinhaDoPcp, dataCurta, temFalta } from './fila'
+import { LiberadoAberto, PedidoAberto } from './pedido'
+import { ResumoDoPcp } from './resumo'
 import './pcp.css'
 
 /* ==========================================================================
-   PCP, planejamento e controle de produção. O portão.
+   PCP, planejamento e controle de produção. O portão. No desenho do
+   wireframe (pranchas 87 a 92; parte P1 em 11/10/2026, FOURTIME OS - 12,
+   4.0c).
 
-   O CAMINHO, decidido em 21/09/2026:
+   O CAMINHO: funil -> cotação -> pedido -> separação -> PCP -> kanban. A
+   separação vem antes de propósito: ela descobre a verdade sobre o estoque,
+   e o PCP decide o que fazer com o que faltou.
 
-     funil -> cotação -> pedido -> separação -> PCP -> kanban
+   DUAS APROVAÇÕES, E NÃO UMA. O PCP confere e MARCA; quem APROVA é o
+   diretor de produção. A migração 032 recusa liberar um pedido que ninguém
+   marcou, venha o pedido de onde vier.
 
-   A separação vem ANTES do PCP de propósito: ela descobre a verdade sobre o
-   estoque, e o PCP decide o que fazer com o que faltou. Assim o operador abre
-   a tela com os avisos prontos na frente, em vez de sair procurando.
+   AS ABAS: No portão (Conferindo e Esperando o diretor), Devolvidos (o PCP
+   devolveu ao vendedor; o pedido continua no PCP, decisão de 11/10/2026) e
+   Liberados (os que já desceram, com quem aprovou). À esquerda a fila; à
+   direita, com nada escolhido, os números, as entregas mais próximas e a
+   mesa do diretor; com um pedido escolhido, o pedido.
 
-   DUAS APROVAÇÕES, E NÃO UMA. O PCP confere e MARCA; quem APROVA é o diretor
-   de produção. Quem confere não é quem libera, e isso não é combinado entre
-   pessoas: a migração 032 recusa liberar um pedido que ninguém marcou, venha
-   o pedido de onde vier.
-
-   A TELA TEM DUAS LEITURAS DA MESMA FILA, e quem vê qual depende do que a
-   pessoa pode, e não de uma aba que qualquer um clica.
-
-   APROVAR EM LOTE NÃO É UM CLIQUE SOZINHO. É o jeito de aprovar a semana numa
-   manhã, e é também o jeito mais fácil de aprovar sem olhar: a confirmação
-   mostra a lista do que vai descer, com a falta em vermelho, antes de ir.
+   APROVAR EM LOTE NÃO É UM CLIQUE SOZINHO: a confirmação mostra a lista do
+   que vai descer, com a falta em vermelho, antes de ir.
    ========================================================================== */
 
-function dataCurta(iso: string): string {
-  if (!iso) return 'sem data'
-  const d = new Date(iso + (iso.length === 10 ? 'T12:00:00' : ''))
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-}
+type Aba = 'portao' | 'devolvidos' | 'liberados'
+type Ordem = 'entrega' | 'cliente' | 'pecas'
 
-function dinheiro(v: number): string {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-/* O quanto falta para a entrega, dito do jeito que alguém fala. */
-function prazo(iso: string): { texto: string; aperta: boolean; atrasado: boolean } {
-  const d = diasAte(iso)
-  if (d === null) return { texto: 'sem data de entrega', aperta: false, atrasado: false }
-  if (d < 0) return { texto: `${-d} dia${-d === 1 ? '' : 's'} atrasado`, aperta: true, atrasado: true }
-  if (d === 0) return { texto: 'entrega hoje', aperta: true, atrasado: false }
-  if (d === 1) return { texto: 'entrega amanhã', aperta: true, atrasado: false }
-  return { texto: `${d} dias para a entrega`, aperta: d <= 3, atrasado: false }
-}
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
 export function TelaPcp() {
   const { estado } = useSessao()
   const eu = estado.fase === 'dentro' ? estado.pessoa : null
 
   /* Quem edita o PCP confere e marca; quem tem controle total aprova. A tela
-     lê a matriz em vez de perguntar o papel: no dia em que existir um papel
-     `diretor`, nada aqui muda. */
+     lê a matriz em vez de perguntar o papel. Devolver ao vendedor é ação do
+     PCP (063): a tela mostra o botão a quem confere, e o banco cobra a
+     ação pcp.ao_vendedor. */
   const podeMarcar = !!eu && pode(eu, 'pcp', 'editar')
   const podeAprovar = !!eu && (pode(eu, 'pcp', 'total') || souAdmin(eu))
 
   const [fila, setFila] = useState<PedidoNoPcp[]>([])
+  const [liberados, setLiberados] = useState<PedidoLiberado[] | null>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
-  const [ocupado, setOcupado] = useState('')
-  const [marcados, setMarcados] = useState<string[]>([])
-  const [devolvendo, setDevolvendo] = useState<PedidoNoPcp | null>(null)
-  const [motivo, setMotivo] = useState('')
-  const [confirmando, setConfirmando] = useState(false)
-  /* A FOLHA ABERTA POR CIMA. Guardada pelo pedido inteiro e não pelo id: o
-     título do modal diz o número do PEDIDO, e quem abre isto está olhando
-     para um pedido, não para uma cotação. */
-  const [naFolha, setNaFolha] = useState<PedidoNoPcp | null>(null)
+  const [aba, setAba] = useState<Aba>('portao')
+  const [busca, setBusca] = useState('')
+  const [ordem, setOrdem] = useState<Ordem>('entrega')
+  const [escolhido, setEscolhido] = useState('')
+  /* a mesa do diretor: o que está marcado para descer */
+  const [naMesa, setNaMesa] = useState<string[]>([])
+  const [confirmando, setConfirmando] = useState<PedidoNoPcp[] | null>(null)
+  const [aprovando, setAprovando] = useState(false)
+  /* os pedidos que a mesa já viu: o que o diretor desmarcou não volta
+     marcado na próxima leitura */
+  const vistosNaMesa = useRef(new Set<string>())
+  const direita = useRef<HTMLDivElement>(null)
 
-  const carregar = useCallback(async () => {
-    try {
-      const f = await carregarOPcp()
-      setFila(f)
-      setMarcados((m) => m.filter((id) => f.some((p) => p.id === id && p.marcado)))
-      return f
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não consegui ler a fila do PCP.')
-      return []
-    } finally {
-      setCarregando(false)
-    }
+  /* NO CELULAR E NO TABLET a fila fica em cima do pedido: escolher leva a
+     tela até ele, senão o toque parece não ter feito nada */
+  useEffect(() => {
+    const d = direita.current
+    if (!escolhido || !d) return
+    const fila = d.previousElementSibling as HTMLElement | null
+    if (fila && d.offsetTop > fila.offsetTop + 10) d.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [escolhido])
+
+  const recarregar = useCallback(async () => {
+    const [f, l] = await Promise.all([carregarOPcp(), carregarLiberados().catch(() => [] as PedidoLiberado[])])
+    setFila(f)
+    setLiberados(l)
+    /* o que chega à mesa sem falta já vem marcado; o com falta, o diretor
+       marca de propósito; o que saiu da mesa sai da lista */
+    setNaMesa((m) => {
+      const mesa = f.filter((p) => p.marcado)
+      const vistos = vistosNaMesa.current
+      const novos = mesa.filter((p) => !m.includes(p.id) && !temFalta(p) && !vistos.has(p.id)).map((p) => p.id)
+      mesa.forEach((p) => vistos.add(p.id))
+      return [...m.filter((id) => mesa.some((p) => p.id === id)), ...novos]
+    })
+    return f
   }, [])
 
   useEffect(() => {
-    void carregar()
-  }, [carregar])
-
-  const esperando = useMemo(() => fila.filter((p) => !p.marcado), [fila])
-  const naMesaDoDiretor = useMemo(() => fila.filter((p) => p.marcado), [fila])
-
-  const conta = useMemo(
-    () => ({
-      naFila: fila.length,
-      aprovar: naMesaDoDiretor.length,
-      falta: fila.filter((p) => p.faltando > 0 || p.aviso === 'falta-material').length,
-      atrasado: fila.filter((p) => prazo(p.entregaEm).atrasado).length,
-      pecas: fila.reduce((s, p) => s + p.pecas, 0),
-    }),
-    [fila, naMesaDoDiretor],
-  )
-
-  async function marcar(p: PedidoNoPcp) {
-    setOcupado(p.id)
-    try {
-      await marcarParaAprovacao(p.id)
-      await carregar()
-      avisar(`${p.numero} foi para a mesa do diretor.`, 'ok')
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui marcar.', 'brand')
-    } finally {
-      setOcupado('')
+    let vivo = true
+    recarregar()
+      .catch((e: unknown) => vivo && setErro(e instanceof Error ? e.message : 'Não consegui ler a fila do PCP.'))
+      .finally(() => vivo && setCarregando(false))
+    return () => {
+      vivo = false
     }
+  }, [recarregar])
+
+  const b = semAcento(busca.trim())
+  const bate = (numero: string, cliente: string) => !b || semAcento(numero + ' ' + cliente).includes(b)
+  const ordenar = <T extends { entregaEm: string; cliente: string; pecas: number; numero: string }>(l: T[]) =>
+    [...l].sort((x, y) =>
+      ordem === 'cliente'
+        ? x.cliente.localeCompare(y.cliente, 'pt-BR')
+        : ordem === 'pecas'
+          ? y.pecas - x.pecas
+          : (x.entregaEm || '9999').localeCompare(y.entregaEm || '9999') || x.numero.localeCompare(y.numero),
+    )
+
+  const portao = useMemo(() => fila.filter((p) => !p.comOVendedor), [fila])
+  const devolvidos = useMemo(() => fila.filter((p) => p.comOVendedor), [fila])
+  const mesa = useMemo(() => ordenar(portao.filter((p) => p.marcado)), [portao, ordem]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const daAba = ordenar((aba === 'devolvidos' ? devolvidos : portao).filter((p) => bate(p.numero, p.cliente)))
+  const conferindo = daAba.filter((p) => !p.marcado)
+  const esperando = daAba.filter((p) => p.marcado)
+  const libs = (liberados ?? []).filter((p) => bate(p.numero, p.cliente))
+
+  const aberto = aba !== 'liberados' ? fila.find((p) => p.id === escolhido) ?? null : null
+  const liberadoAberto = aba === 'liberados' ? (liberados ?? []).find((p) => p.id === escolhido) ?? null : null
+
+  function escolher(id: string) {
+    setEscolhido((x) => (x === id ? '' : id))
   }
 
-  async function desmarcar(p: PedidoNoPcp) {
-    setOcupado(p.id)
-    try {
-      await desmarcarDoPcp(p.id)
-      await carregar()
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui desmarcar.', 'brand')
-    } finally {
-      setOcupado('')
-    }
+  function abrir(id: string) {
+    const p = fila.find((x) => x.id === id)
+    if (!p) return
+    setAba(p.comOVendedor ? 'devolvidos' : 'portao')
+    setEscolhido(id)
   }
 
-  async function devolver() {
-    if (!devolvendo) return
-    setOcupado('devolver')
-    try {
-      await devolverDoPcp(devolvendo.id, motivo)
-      setDevolvendo(null)
-      setMotivo('')
-      await carregar()
-      avisar('Devolvido ao PCP com o motivo escrito.', 'ok')
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui devolver.', 'brand')
-    } finally {
-      setOcupado('')
-    }
-  }
-
-  /* LIBERAR É O VERBO, E ELE PRECISA DAS FATIAS. Quem sabe ler um bloco de
-     layout e transformar grade em peça é o domínio da cotação, e não o banco:
-     por isso a cotação de cada pedido é lida aqui antes de descer. */
+  /* LIBERAR É O VERBO, E ELE PRECISA DAS FATIAS. Quem transforma grade em
+     peça é o domínio da cotação, e não o banco: a cotação de cada pedido é
+     lida aqui antes de descer. */
   async function aprovar(lista: PedidoNoPcp[]) {
-    setOcupado('aprovar')
+    setAprovando(true)
     let foram = 0
     const erros: string[] = []
     for (const p of lista) {
@@ -197,23 +161,71 @@ export function TelaPcp() {
         erros.push(`${p.numero}: ${e instanceof Error ? e.message : 'falhou'}`)
       }
     }
-    setConfirmando(false)
-    setMarcados([])
-    await carregar()
-    setOcupado('')
-    if (erros.length) {
-      avisar(`${foram} de ${lista.length} desceram. ${erros.join(' · ')}`, 'warn')
-    } else {
-      avisar(
-        foram === 1
-          ? `${lista[0].numero} está no chão de fábrica.`
-          : `${foram} pedidos desceram para a fábrica.`,
-        'ok',
-      )
-    }
+    setConfirmando(null)
+    setAprovando(false)
+    if (lista.some((p) => p.id === escolhido)) setEscolhido('')
+    await recarregar().catch(() => null)
+    if (erros.length) avisar(`${foram} de ${lista.length} desceram. ${erros.join(' · ')}`, 'warn')
+    else avisar(foram === 1 ? `${lista[0].numero} está no chão de fábrica.` : `${foram} pedidos desceram para a fábrica.`, 'ok')
   }
 
-  const escolhidos = naMesaDoDiretor.filter((p) => marcados.includes(p.id))
+  const conta = { portao: portao.length, devolvidos: devolvidos.length, liberados: liberados?.length ?? 0 }
+  const pecas = portao.reduce((s, p) => s + p.pecas, 0)
+  const ROTULO: Record<Aba, string> = { portao: 'No portão', devolvidos: 'Devolvidos', liberados: 'Liberados' }
+  const comoOrdena = ordem === 'entrega' ? 'pela entrega' : ordem === 'cliente' ? 'pelo cliente' : 'pelas peças'
+
+  let lista: ReactNode
+  if (aba === 'liberados') {
+    lista =
+      liberados === null ? (
+        <Vazio titulo="A lista dos liberados ainda não existe" texto="Falta rodar a migração 063 no banco." />
+      ) : !libs.length ? (
+        <Vazio titulo="Nenhum pedido liberado" texto={b ? 'Nada com esse nome ou número.' : 'O pedido aparece aqui quando o diretor aprova para a produção.'} />
+      ) : (
+        <GrupoDaFila
+          nome="Liberados"
+          apoio={libs.length >= LIBERADOS_A_VISTA ? `os ${LIBERADOS_A_VISTA} mais recentes` : 'o mais recente primeiro'}
+        >
+          {libs.map((p) => (
+            <LinhaDoLiberado key={p.id} p={p} escolhido={p.id === escolhido} aoEscolher={() => escolher(p.id)} />
+          ))}
+        </GrupoDaFila>
+      )
+  } else if (!daAba.length) {
+    lista = (
+      <Vazio
+        titulo={aba === 'devolvidos' ? 'Nenhum pedido devolvido' : 'Nada no portão'}
+        texto={
+          b
+            ? 'Nada com esse nome ou número.'
+            : aba === 'devolvidos'
+              ? 'Quando o PCP devolve um pedido ao vendedor, ele espera aqui, com o motivo.'
+              : 'Pedido chega aqui quando a separação é concluída.'
+        }
+      />
+    )
+  } else {
+    const linha = (p: PedidoNoPcp) => <LinhaDoPcp key={p.id} p={p} escolhido={p.id === escolhido} aoEscolher={() => escolher(p.id)} />
+    lista =
+      aba === 'devolvidos' ? (
+        <GrupoDaFila nome="Com o vendedor" apoio={plural(daAba.length, 'pedido', 'pedidos') + ' · ' + comoOrdena}>
+          {daAba.map(linha)}
+        </GrupoDaFila>
+      ) : (
+        <>
+          {conferindo.length ? (
+            <GrupoDaFila nome="Conferindo" apoio={conferindo.length + ' · com o PCP'}>
+              {conferindo.map(linha)}
+            </GrupoDaFila>
+          ) : null}
+          {esperando.length ? (
+            <GrupoDaFila nome="Esperando o diretor" apoio={esperando.length + ' · já conferidos'}>
+              {esperando.map(linha)}
+            </GrupoDaFila>
+          ) : null}
+        </>
+      )
+  }
 
   if (!eu) return null
 
@@ -223,332 +235,133 @@ export function TelaPcp() {
       titulo="PCP"
       sub={
         <>
-          <b>{conta.naFila}</b> pedido{conta.naFila === 1 ? '' : 's'} no portão ·{' '}
-          {conta.pecas.toLocaleString('pt-BR')} peças · o PCP confere e marca, o diretor aprova
+          <b>{conta.portao}</b> {conta.portao === 1 ? 'pedido' : 'pedidos'} no portão · {pecas.toLocaleString('pt-BR')} peças · o PCP confere o
+          orçamento e o diretor dá a última aprovação
         </>
       }
-      acoes={
-        podeAprovar && escolhidos.length > 0 ? (
-          <Botao tom="primario" onClick={() => setConfirmando(true)} disabled={!!ocupado}>
-            <Check size={17} />
-            Aprovar {escolhidos.length} para a fábrica
-          </Botao>
-        ) : null
-      }
     >
-      <div className="pcp-kpis">
-        <Kpi rotulo="No portão" valor={conta.naFila} sub="conferindo e esperando" />
-        <Kpi rotulo="Na mesa do diretor" valor={conta.aprovar} sub="já marcados pelo PCP" />
-        <Kpi
-          rotulo="Com falta de material"
-          valor={conta.falta}
-          sub={conta.falta ? 'o diretor decide se desce assim' : 'tudo coberto'}
-          aviso={conta.falta > 0}
-        />
-        <Kpi
-          rotulo="Já atrasado"
-          valor={conta.atrasado}
-          sub={conta.atrasado ? 'a entrega já passou' : 'nenhum passou da data'}
-          aviso={conta.atrasado > 0}
-        />
-      </div>
-
       {erro ? (
         <Vazio titulo="Não consegui ler a fila do PCP" texto={erro} />
-      ) : carregando ? (
-        <Cartao>
-          <Esqueleto altura={18} />
-          <Esqueleto altura={18} />
-          <Esqueleto altura={18} />
-        </Cartao>
-      ) : !fila.length ? (
-        <Vazio
-          titulo="Nada esperando no PCP"
-          texto="Pedido chega aqui quando a separação é concluída. Enquanto a fila estiver vazia, não há nada para liberar para a fábrica."
-        />
       ) : (
-        <div className="pcp-mesa">
-          <Fila
-            titulo="Conferindo"
-            icone={ListChecks}
-            vazio="Tudo que está no PCP já foi marcado."
-            linha="O PCP confere a cotação e o material, e marca o que pode descer."
-            pedidos={esperando}
-            eu="pcp"
-            ocupado={ocupado}
-            podeMarcar={podeMarcar}
-            podeAprovar={podeAprovar}
-            marcados={marcados}
-            aoMarcar={(p) => void marcar(p)}
-            aoDesmarcar={(p) => void desmarcar(p)}
-            aoEscolher={() => {}}
-            aoDevolver={() => {}}
-            aoVerAFolha={setNaFolha}
-          />
+        <div className="pc-palco">
+          <div className="pc-barra">
+            <Segmentado
+              className="pc-abas"
+              valor={aba}
+              aoMudar={(v) => {
+                setAba(v)
+                setEscolhido('')
+              }}
+              opcoes={(['portao', 'devolvidos', 'liberados'] as Aba[]).map((a) => ({
+                valor: a,
+                rotulo: (
+                  <>
+                    {ROTULO[a]} <small>{conta[a]}</small>
+                  </>
+                ),
+              }))}
+            />
+            <div className="pc-barra-busca">
+              <Busca placeholder="Buscar pedido ou cliente" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            </div>
+            <Seletor
+              rotulo="ORDEM"
+              valor={ordem === 'entrega' ? '' : ordem}
+              opcoes={[
+                { valor: 'entrega', rotulo: 'Entrega' },
+                { valor: 'cliente', rotulo: 'Cliente' },
+                { valor: 'pecas', rotulo: 'Peças' },
+              ]}
+              vazio="Entrega"
+              aoEscolher={(v) => setOrdem((v || 'entrega') as Ordem)}
+            />
+          </div>
 
-          <Fila
-            titulo="Esperando o diretor"
-            icone={UserCircleCheck}
-            vazio="Nada marcado ainda. O PCP marca do lado de cá."
-            linha="Aprovar cria as fatias no kanban e põe o pedido no chão de fábrica."
-            pedidos={naMesaDoDiretor}
-            eu="diretor"
-            ocupado={ocupado}
-            podeMarcar={podeMarcar}
-            podeAprovar={podeAprovar}
-            marcados={marcados}
-            aoMarcar={(p) => void marcar(p)}
-            aoDesmarcar={(p) => void desmarcar(p)}
-            aoEscolher={(p) =>
-              setMarcados((m) => (m.includes(p.id) ? m.filter((x) => x !== p.id) : [...m, p.id]))
-            }
-            aoDevolver={(p) => {
-              setDevolvendo(p)
-              setMotivo('')
-            }}
-            aoVerAFolha={setNaFolha}
-          />
+          <div className="pc-mesa">
+            <section className="cartao pc-fila" aria-label="Fila do PCP">
+              {carregando ? (
+                <div className="pc-espera">
+                  <Esqueleto altura={48} />
+                  <Esqueleto altura={48} />
+                  <Esqueleto altura={48} />
+                </div>
+              ) : (
+                lista
+              )}
+            </section>
+
+            <div className="pc-direita" ref={direita}>
+              {carregando ? (
+                <Esqueleto altura={360} />
+              ) : aberto ? (
+                <PedidoAberto
+                  key={aberto.id}
+                  p={aberto}
+                  eu={eu.nome}
+                  podeMarcar={podeMarcar}
+                  podeDevolverAoVendedor={podeMarcar}
+                  podeAprovar={podeAprovar}
+                  aoMexer={recarregar}
+                  aoAprovar={(p) => setConfirmando([p])}
+                  aoFechar={() => setEscolhido('')}
+                />
+              ) : liberadoAberto ? (
+                <LiberadoAberto key={liberadoAberto.id} p={liberadoAberto} aoFechar={() => setEscolhido('')} />
+              ) : aba === 'liberados' ? (
+                <Vazio titulo="Escolha um pedido" texto="Abre quem conferiu e quem aprovou, só para ler." />
+              ) : (
+                <ResumoDoPcp
+                  portao={portao}
+                  todos={fila}
+                  mesa={mesa}
+                  podeAprovar={podeAprovar}
+                  escolhidos={naMesa}
+                  ocupado={aprovando}
+                  aoEscolher={(id) => setNaMesa((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]))}
+                  aoAprovar={() => setConfirmando(mesa.filter((p) => naMesa.includes(p.id)))}
+                  aoAbrir={abrir}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {naFolha ? (
-        <ModalDaFolha
-          cotacaoId={naFolha.cotacaoId}
-          numeroDoPedido={naFolha.numero}
-          aoFechar={() => setNaFolha(null)}
-        />
-      ) : null}
-
-      {/* A CONFIRMAÇÃO DO LOTE MOSTRA O QUE VAI DESCER. Aprovar rápido é bom;
+      {/* A CONFIRMAÇÃO MOSTRA O QUE VAI DESCER. Aprovar rápido é bom;
           aprovar sem ver o que está aprovando não é. */}
-      {confirmando ? (
-        <Cartao className="pcp-confirma">
-          <TituloCartao icone={ArrowFatLineDown}>
-            Descer {escolhidos.length} para a fábrica?
-          </TituloCartao>
-          <ul className="pcp-lista-confirma">
-            {escolhidos.map((p) => (
-              <li key={p.id}>
-                <b>{p.numero}</b> · {p.cliente || 'sem cliente'} · {p.pecas} pçs
-                {p.faltando > 0 ? (
-                  <span className="pcp-falta"> · {p.faltando} material sem cobrir</span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <p className="pcp-apoio">
-            Cada um vira fatia no kanban por técnica, linha no painel e registro no relatório.
-            Isso não tem botão de desfazer.
-          </p>
-          <div className="pcp-botoes">
-            <Botao
-              tom="primario"
-              carregando={ocupado === 'aprovar'}
-              onClick={() => void aprovar(escolhidos)}
-            >
+      <Modal
+        aberto={!!confirmando}
+        aoFechar={() => (aprovando ? null : setConfirmando(null))}
+        titulo={confirmando?.length === 1 ? `Descer ${confirmando[0].numero} para a fábrica?` : `Descer ${confirmando?.length ?? 0} pedidos para a fábrica?`}
+        pe={
+          <div className="fileira fim">
+            <Botao tom="limpo" disabled={aprovando} onClick={() => setConfirmando(null)}>
+              Cancelar
+            </Botao>
+            <Botao tom="primario" carregando={aprovando} onClick={() => confirmando && void aprovar(confirmando)}>
+              <ArrowFatLineDown size={17} />
               Descer para a fábrica
             </Botao>
-            <Botao tom="limpo" onClick={() => setConfirmando(false)}>
-              Cancelar
-            </Botao>
           </div>
-        </Cartao>
-      ) : null}
-
-      {devolvendo ? (
-        <Cartao className="pcp-confirma">
-          <TituloCartao icone={ArrowUUpLeft}>Devolver {devolvendo.numero} ao PCP</TituloCartao>
-          <p className="pcp-apoio">
-            O pedido continua no PCP e a marca cai. O motivo aparece para quem for arrumar, e sem
-            ele a devolução vira recado de WhatsApp.
-          </p>
-          <AreaTexto
-            value={motivo}
-            rows={3}
-            placeholder="Falta confirmar a malha com o cliente antes de cortar."
-            onChange={(e) => setMotivo(e.currentTarget.value)}
-          />
-          <div className="pcp-botoes">
-            <Botao
-              tom="primario"
-              carregando={ocupado === 'devolver'}
-              disabled={motivo.trim().length < 3}
-              onClick={() => void devolver()}
-            >
-              <ArrowUUpLeft size={16} />
-              Devolver com este motivo
-            </Botao>
-            <Botao tom="limpo" onClick={() => setDevolvendo(null)}>
-              Cancelar
-            </Botao>
-          </div>
-        </Cartao>
-      ) : null}
+        }
+      >
+        <ul className="pc-confirma">
+          {(confirmando ?? []).map((p) => (
+            <li key={p.id}>
+              <b>{p.numero}</b> · {p.cliente || 'sem cliente'} · {p.pecas} pçs · entrega {dataCurta(p.entregaEm)}
+              {temFalta(p) ? (
+                <span className="pc-alerta">
+                  {' '}
+                  · {p.faltando > 0 ? `${p.faltando} material sem cobrir` : 'desce com falta de material'}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <p className="pc-apoio">
+          Cada um vira fatia no kanban por técnica, linha no painel e registro no relatório. Isso não tem botão de desfazer.
+        </p>
+      </Modal>
     </Pagina>
-  )
-}
-
-function Fila({
-  titulo,
-  icone,
-  linha,
-  vazio,
-  pedidos,
-  eu,
-  ocupado,
-  podeMarcar,
-  podeAprovar,
-  marcados,
-  aoMarcar,
-  aoDesmarcar,
-  aoEscolher,
-  aoDevolver,
-  aoVerAFolha,
-}: {
-  titulo: string
-  icone: IconeDoPacote
-  linha: string
-  vazio: string
-  pedidos: PedidoNoPcp[]
-  eu: 'pcp' | 'diretor'
-  ocupado: string
-  podeMarcar: boolean
-  podeAprovar: boolean
-  marcados: string[]
-  aoMarcar: (p: PedidoNoPcp) => void
-  aoDesmarcar: (p: PedidoNoPcp) => void
-  aoEscolher: (p: PedidoNoPcp) => void
-  aoDevolver: (p: PedidoNoPcp) => void
-  aoVerAFolha: (p: PedidoNoPcp) => void
-}) {
-  return (
-    <Cartao className="pcp-coluna">
-      <TituloCartao icone={icone}>
-        {titulo} <span className="pcp-conta">{pedidos.length}</span>
-      </TituloCartao>
-      <p className="pcp-apoio pcp-linha-topo">{linha}</p>
-
-      {!pedidos.length ? (
-        <p className="pcp-vazio">{vazio}</p>
-      ) : (
-        pedidos.map((p) => {
-          const pz = prazo(p.entregaEm)
-          const falta = p.faltando > 0 || p.aviso === 'falta-material'
-          return (
-            <article key={p.id} className="pcp-cartao">
-              <header className="pcp-topo">
-                <span className="pilha colada">
-                  <b className="pcp-numero">
-                    {eu === 'diretor' && podeAprovar ? (
-                      <Marcacao
-                        checked={marcados.includes(p.id)}
-                        disabled={!!ocupado}
-                        aria-label={'Escolher ' + p.numero}
-                        onChange={() => aoEscolher(p)}
-                      />
-                    ) : null}
-                    {p.numero}
-                    {p.teste ? <Selo tom="info">teste</Selo> : null}
-                  </b>
-                  <small className="pcp-apoio">{p.cliente || 'sem cliente'}</small>
-                </span>
-                <span className={pz.aperta ? 'pcp-prazo aperta' : 'pcp-prazo'}>
-                  {dataCurta(p.entregaEm)}
-                </span>
-              </header>
-
-              <p className="pcp-numeros">
-                {p.pecas} peças · {p.layouts} layout{p.layouts === 1 ? '' : 's'} ·{' '}
-                {dinheiro(p.total)} · {pz.texto}
-              </p>
-
-              {/* A PÍLULA, E NÃO A CHAVE CRUA. A cor da técnica é a mesma no
-                  editor, no cartão e no kanban, e escrever 'subli' na tela
-                  jogaria fora a peça que o Design System já tem para isso. */}
-              {p.tecnicas.length ? (
-                <p className="pcp-tecnicas">
-                  {p.tecnicas.map((t) => (
-                    <PilulaTecnica key={t} tecnica={t} tamanho="sm">
-                      {NOME_DA_TECNICA[t] ?? t}
-                    </PilulaTecnica>
-                  ))}
-                </p>
-              ) : (
-                <p className="pcp-tecnicas alerta">
-                  Nenhuma técnica no documento: sem isso não nasce fatia no kanban.
-                </p>
-              )}
-
-              {falta ? (
-                <p className="pcp-aviso">
-                  <Warning size={15} />
-                  {p.faltando > 0
-                    ? `${p.faltando} de ${p.materiais} materiais não foram cobertos na separação.`
-                    : 'A separação carimbou falta de material neste pedido.'}
-                </p>
-              ) : null}
-
-              {p.devolvidoMotivo ? (
-                <p className="pcp-devolvido">
-                  <ArrowUUpLeft size={15} />
-                  Devolvido por {p.devolvidoPor || 'alguém'}: {p.devolvidoMotivo}
-                </p>
-              ) : null}
-
-              {p.marcado ? (
-                <p className="pcp-apoio">
-                  Marcado por {p.marcadoPor || 'alguém'} em {dataCurta(p.marcadoEm)}.
-                </p>
-              ) : null}
-
-              <footer className="pcp-botoes">
-                {/* A FOLHA ABRE POR CIMA, e não leva a pessoa embora.
-
-                    Era um link para /cotacao/:id/producao, e conferir um
-                    pedido custava sair do PCP: voltar significava recarregar a
-                    fila, reencontrar o pedido na coluna e refazer a rolagem.
-                    Quem confere quinze pedidos numa manhã pagava esse preço
-                    trinta vezes. A folha é uma consulta, e consulta não muda
-                    de lugar. */}
-                <Botao tom="contorno" tamanho="sm" onClick={() => aoVerAFolha(p)}>
-                  Ver a folha
-                </Botao>
-
-                {eu === 'pcp' && podeMarcar ? (
-                  <Botao
-                    tom="forte"
-                    tamanho="sm"
-                    carregando={ocupado === p.id}
-                    disabled={!!ocupado}
-                    onClick={() => aoMarcar(p)}
-                  >
-                    <Stamp size={16} />
-                    Marcar para aprovação
-                  </Botao>
-                ) : null}
-
-                {eu === 'diretor' && podeMarcar ? (
-                  <Botao
-                    tom="limpo"
-                    tamanho="sm"
-                    disabled={!!ocupado}
-                    onClick={() => aoDesmarcar(p)}
-                  >
-                    Tirar a marca
-                  </Botao>
-                ) : null}
-
-                {eu === 'diretor' && podeAprovar ? (
-                  <Botao tom="limpo" tamanho="sm" disabled={!!ocupado} onClick={() => aoDevolver(p)}>
-                    <ArrowUUpLeft size={16} />
-                    Devolver
-                  </Botao>
-                ) : null}
-              </footer>
-            </article>
-          )
-        })
-      )}
-    </Cartao>
   )
 }

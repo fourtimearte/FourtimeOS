@@ -1,178 +1,445 @@
 /* ==========================================================================
-   PCP. Duas filas lado a lado: a de quem confere e a de quem aprova.
-   Nenhuma classe daqui é do Design System.
+   PCP, no desenho do wireframe (pranchas 87 a 92; parte P1).
+
+   Fila à esquerda, o resto à direita. Quando a MESA não tem 900 px as duas
+   viram uma coluna, com a fila em cima. A conta é da mesa e não da janela: a
+   janela tem 248 px de menu que a mesa não pode usar.
+
+   A folga ENTRE os blocos é da página, então nada aqui escreve margin-bottom.
    ========================================================================== */
 
-.pcp-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-}
-
-/* As duas filas têm o mesmo peso de propósito: nenhuma das duas aprovações é
-   a principal, e dar mais espaço a uma diria o contrário. */
-.pcp-mesa {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-5);
-  align-items: start;
-}
-
-.pcp-coluna {
+.pc-palco {
+  container-type: inline-size;
+  container-name: mesa-pcp;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
-.pcp-conta {
+/* a barra de cima: as abas na largura da fila, a busca e a ordem */
+.pc-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: center;
+  min-width: 0;
+}
+.pc-abas {
+  display: flex;
+  width: 100%;
+}
+.pc-abas button {
+  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 22px;
+  gap: var(--re-3);
+  min-width: 0;
   padding: 0 var(--re-3);
-  border-radius: var(--radius-pill);
-  background: var(--surface-3);
-  color: var(--text-2);
+}
+.pc-abas button small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.pc-barra-busca {
+  min-width: 0;
+}
+
+.pc-mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.pc-direita {
+  min-width: 0;
+  /* o topo fixo não tapa o cabeçalho do pedido quando a tela desce até ele */
+  scroll-margin-top: calc(var(--topbar-h) + var(--sp-4));
+}
+@container mesa-pcp (min-width: 900px) {
+  .pc-barra {
+    grid-template-columns: 300px minmax(0, 1fr) auto;
+  }
+  .pc-barra-busca {
+    max-width: 540px;
+  }
+  .pc-mesa {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+
+/* --- a fila ---------------------------------------------------------------
+   No computador ela rola dentro dela mesma, presa no topo. Duas classes: o
+   .cartao do Design System põe position: relative e, empatado, ganharia pela
+   ordem do arquivo. */
+.pc-fila {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+@container mesa-pcp (min-width: 900px) {
+  .pc-mesa > .pc-fila {
+    max-height: calc(100vh - var(--topbar-h) - var(--sp-8));
+    overflow-y: auto;
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--sp-4));
+  }
+}
+.pc-espera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--pad-cartao);
+}
+.pc-g {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-4);
+  padding: var(--re-4) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
   font-size: 12px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
-
-.pcp-linha-topo {
-  margin-bottom: var(--sp-4);
-}
-
-.pcp-apoio {
+.pc-g small {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-3);
-  font-size: 12.5px;
 }
-
-.pcp-vazio {
-  color: var(--text-3);
-  font-size: 13px;
-  padding: var(--sp-6) 0;
-  text-align: center;
-}
-
-/* ---------- o cartão do pedido ---------- */
-.pcp-cartao {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--pad-cartao);
-  margin-bottom: var(--sp-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-miudo);
-}
-
-.pcp-cartao:last-child {
-  margin-bottom: 0;
-}
-
-.pcp-topo {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--gap-dentro);
-}
-
-.pcp-numero {
+.pc-item {
   display: flex;
   align-items: center;
-  gap: var(--gap-miudo);
-  font-size: 15px;
+  gap: var(--re-6);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
 }
-
-.pcp-prazo {
-  font-size: 13px;
-  font-weight: 600;
+.pc-grupo:last-child > .pc-item:last-child {
+  border-bottom: 0;
+}
+.pc-item:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+.pc-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pc-ic {
+  display: inline-flex;
+  flex: none;
   color: var(--text-2);
-  font-variant-numeric: tabular-nums;
+}
+.pc-ic.alerta {
+  color: var(--brand-text);
+}
+.pc-item-meio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.pc-cliente {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pc-item-meio small,
+.pc-item-fim small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+.pc-corta {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* Vermelho é atraso, e só. Um prazo que aperta não é uma falha: é o que a
-   pessoa precisa ver primeiro. */
-.pcp-prazo.aperta {
+.pc-item-meio small.pc-alerta,
+.pc-alerta {
   color: var(--brand-text);
 }
-
-.pcp-numeros {
+.pc-item-fim {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap-colado);
+  text-align: right;
+}
+.pc-item-fim b {
   font-size: 13px;
-  color: var(--text-2);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-
-.pcp-tecnicas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-miudo);
-  font-size: 12.5px;
-  color: var(--text-3);
-}
-
-.pcp-tecnicas.alerta {
-  color: var(--warn);
-}
-
-.pcp-aviso,
-.pcp-devolvido {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--gap-miudo);
-  font-size: 12.5px;
-  border-radius: var(--radius-sm);
-  padding: var(--re-3) var(--re-4);
-}
-
-.pcp-aviso {
-  background: var(--brand-soft);
+.pc-perto {
   color: var(--brand-text);
 }
 
-.pcp-devolvido {
-  background: var(--surface-2);
-  color: var(--text-2);
-  border-left: 3px solid var(--warn);
-}
-
-.pcp-aviso svg,
-.pcp-devolvido svg {
-  flex: none;
-  margin-top: var(--re-1);
-}
-
-.pcp-botoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-btn);
-  align-items: center;
-  margin-top: var(--re-3);
-}
-
-/* ---------- a confirmação ---------- */
-.pcp-confirma {
-  margin-top: var(--sp-5);
-  border-color: var(--brand);
-}
-
-.pcp-lista-confirma {
-  list-style: none;
-  padding: 0;
-  margin: var(--sp-3) 0;
+/* --- nada escolhido (prancha 87) ------------------------------------------ */
+.pc-resumo {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-miudo);
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.pc-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+@container mesa-pcp (min-width: 1200px) {
+  .pc-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.pc-resumo-par {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+@container mesa-pcp (min-width: 1200px) {
+  .pc-resumo-par {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pc-entregas,
+.pc-mesa-diretor,
+.pc-aprovacoes {
+  overflow: hidden;
+  min-width: 0;
+}
+.pc-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  min-height: 48px;
+  padding: var(--re-3) var(--re-7);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pc-cab > :first-child {
+  flex: none;
+  white-space: nowrap;
+}
+.pc-cab-apoio {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+}
+.pc-nada {
+  margin: 0;
+  padding: var(--re-7);
   font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.pc-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pc-lista > li {
+  border-bottom: 1px solid var(--border);
+}
+.pc-lista > li:last-child {
+  border-bottom: 0;
+}
+.pc-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--re-6);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--re-4) var(--re-7);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.pc-linha:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+.pc-linha:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pc-linha-meio {
+  flex: 1;
+}
+.pc-linha-meio small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pc-dias {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.pc-data {
+  flex: none;
+  min-width: 44px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.pc-mesa-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--re-6);
+  min-height: 56px;
+  padding: var(--re-4) var(--re-7);
+}
+.pc-mesa-pe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.pc-mesa-pe p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
 }
 
-.pcp-falta {
-  color: var(--brand-text);
+/* --- o pedido escolhido (pranchas 88 e 89) -------------------------------- */
+.pc-aberto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.pc-ped-topo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.pc-ped-tit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+}
+.pc-ped-caminho {
+  display: flex;
+  align-items: center;
+  gap: var(--re-4);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pc-ped-tit h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.pc-ped-tit small {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.pc-passo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--re-6);
+  padding: var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.pc-passo:last-child {
+  border-bottom: 0;
+}
+.pc-passo .pc-ic {
+  margin-top: var(--re-1);
+}
+.pc-passo.feito .pc-ic {
+  color: var(--ok);
+}
+.pc-passo.fechado b,
+.pc-passo.fechado .pc-apoio {
+  color: var(--text-3);
+}
+.pc-passo-meio {
+  flex: 1;
+  gap: var(--re-3);
+  min-width: 0;
+}
+.pc-passo-meio b {
+  font-size: 14px;
   font-weight: 600;
 }
+.pc-apoio {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.pc-motivo {
+  margin: 0;
+  padding: var(--re-4) var(--re-6);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-xs);
+  background: var(--brand-soft);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.pc-passo-botoes {
+  padding-top: var(--re-3);
+}
+.pc-devolve {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--re-3);
+}
 
-@media (max-width: 1100px) {
-  .pcp-mesa {
-    grid-template-columns: minmax(0, 1fr);
-  }
+/* --- a confirmação do lote ------------------------------------------------- */
+.pc-confirma {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+.pc-dias.pc-perto {
+  color: var(--brand-text);
+}
+/* na linha escolhida (a tinta grafite) o ícone acompanha o texto; o
+   vermelho continua vermelho */
+.pc-item.escolhido .pc-ic:not(.alerta) {
+  color: inherit;
+}
+.pc-item.escolhido .pc-perto {
+  color: inherit;
 }

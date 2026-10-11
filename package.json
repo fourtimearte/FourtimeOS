@@ -40,7 +40,8 @@
     "estoque-cadastro": "node testes/estoque-cadastro.mjs",
     "produtos": "node testes/produtos.mjs",
     "orcamento": "node testes/orcamento.mjs",
-    "separacao": "node testes/separacao.mjs"
+    "separacao": "node testes/separacao.mjs",
+    "pcp": "node testes/pcp.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

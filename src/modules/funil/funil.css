@@ -875,3 +875,114 @@
     margin-right: calc(400px + var(--sp-4) - var(--gutter));
   }
 }
+
+/* --- o WhatsApp dentro do Fourtime OS (pranchas 131 a 133) ---------------- */
+/* guardado e nao desmontado: o quadro do WhatsApp continua vivo escondido */
+.fn-guardado,
+.fn-mesa.fn-guardado {
+  display: none;
+}
+/* o icone e o nome do modo na mesma linha, dentro do segmentado */
+.fn-modo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.fn-wa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: var(--sp-4);
+  align-items: stretch;
+  height: max(560px, calc(100dvh - var(--topbar-h) - 190px));
+}
+.fn-wa-quadro {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.fn-wa-faixa {
+  display: flex;
+  align-items: center;
+  gap: var(--re-5);
+  min-height: 44px;
+  padding: 0 var(--re-7);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 13px;
+}
+.fn-wa-faixa small {
+  opacity: 0.75;
+  font-size: 12.5px;
+}
+.fn-wa-faixa .fn-wa-nota {
+  margin-left: auto;
+}
+.fn-wa-ponto {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex: none;
+}
+.fn-wa-ponto.ligado {
+  background: var(--wa);
+}
+.fn-wa-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--surface-2);
+}
+.fn-wa-lado {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.fn-wa-bloco {
+  padding: var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.fn-wa-bloco:last-child {
+  border-bottom: 0;
+}
+.fn-wa-rot {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.fn-wa-nome {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.fn-wa-apoio {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.fn-wa-dl {
+  margin: 0;
+}
+/* abaixo de 1280 a coluna do lead desce para baixo do WhatsApp */
+@media (max-width: 1279px) {
+  .fn-wa {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .fn-wa-quadro {
+    height: max(560px, calc(100dvh - var(--topbar-h) - 190px));
+  }
+}

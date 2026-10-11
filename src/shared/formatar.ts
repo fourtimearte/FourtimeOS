@@ -104,6 +104,14 @@ export function abrirNoWhatsApp(telefone: string, mensagem = '') {
   /* COM A EXTENSAO, a conversa troca na aba do WhatsApp que ja esta aberta,
      sem aba nova e, se o WhatsApp aceitar, sem recarregar. O pedido vai para a
      propria janela; a extensao pega e leva. */
+  /* A PAGINA PODE ATENDER PRIMEIRO. O Funil com o WhatsApp aberto dentro
+     dele (pranchas 131 a 133) pega o pedido e troca a conversa ali mesmo;
+     em qualquer outra pagina ninguem pega, e segue o caminho de sempre. */
+  const pedido = new CustomEvent('fourtime:abrir-whatsapp', {
+    cancelable: true,
+    detail: { telefone: numeroComPais(telefone), texto: mensagem },
+  })
+  if (!window.dispatchEvent(pedido)) return
   if (noComputador() && versaoDaExtensao()) {
     window.postMessage(
       { fourtime: 'abrir-whatsapp', telefone: numeroComPais(telefone), texto: mensagem },

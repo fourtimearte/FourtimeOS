@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus } from '@phosphor-icons/react'
-import { Botao, Pagina, Vazio, avisar } from '@ds'
+import { ChatCircleText, Kanban, Plus } from '@phosphor-icons/react'
+import { Botao, Pagina, Segmentado, Vazio, avisar } from '@ds'
+import { noComputador, versaoDaExtensao } from '@shared'
 import { cotacaoNovaDaCasa, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import {
@@ -28,6 +29,7 @@ import { AvisoDaExtensao, BarraDoFunil, vendedoresDosLeads } from './barra'
 import { EditarLead } from './editar'
 import { Inbox } from './inbox'
 import { Quadro } from './quadro'
+import { PainelDoWhatsApp, type PedidoDeConversa } from './whatsapp'
 import './funil.css'
 
 /* ==========================================================================
@@ -134,6 +136,48 @@ export function TelaFunil() {
   }, [pedidoDeLead, carregando, leads, setParametros])
 
   const aberto = leads.find((l) => l.id === abertoId) ?? null
+
+  /* QUADRO OU WHATSAPP (pranchas 131 a 133). So no computador: no celular o
+     botao do WhatsApp abre o aplicativo. A escolha fica lembrada neste
+     navegador. O WhatsApp so e montado na primeira vez que alguem entra no
+     modo, e depois fica montado, escondido, para nao recarregar a cada troca. */
+  const podeWhatsApp = noComputador()
+  const [modo, setModoBruto] = useState<'quadro' | 'whatsapp'>(() => {
+    try {
+      return podeWhatsApp && localStorage.getItem('ft.funil-modo') === 'whatsapp' ? 'whatsapp' : 'quadro'
+    } catch {
+      return 'quadro'
+    }
+  })
+  const [montado, setMontado] = useState(modo === 'whatsapp')
+  const [pedido, setPedido] = useState<PedidoDeConversa | null>(null)
+  const setModo = useCallback((m: 'quadro' | 'whatsapp') => {
+    setModoBruto(m)
+    if (m === 'whatsapp') {
+      setMontado(true)
+      setAbertoId('')
+    }
+    try {
+      localStorage.setItem('ft.funil-modo', m)
+    } catch {
+      /* sem armazenamento: vale so nesta visita */
+    }
+  }, [])
+
+  /* O BOTAO DO WHATSAPP DO FUNIL, com a extensao, troca a conversa no
+     WhatsApp daqui de dentro em vez de abrir outra aba */
+  useEffect(() => {
+    if (!podeWhatsApp) return
+    const pegar = (e: Event) => {
+      if (!versaoDaExtensao()) return
+      const d = (e as CustomEvent<{ telefone: string; texto: string }>).detail
+      e.preventDefault()
+      setModo('whatsapp')
+      setPedido({ telefone: d.telefone, texto: d.texto, marca: Date.now() })
+    }
+    window.addEventListener('fourtime:abrir-whatsapp', pegar)
+    return () => window.removeEventListener('fourtime:abrir-whatsapp', pegar)
+  }, [podeWhatsApp, setModo])
 
   /* A conversa segue o cartao aberto. Trocar de cartao esvazia antes de buscar:
      mostrar a conversa do lead anterior enquanto a nova carrega e o jeito
@@ -311,6 +355,30 @@ export function TelaFunil() {
       }
       acoes={
         <>
+          {podeWhatsApp ? (
+            <Segmentado<'quadro' | 'whatsapp'>
+              valor={modo}
+              aoMudar={setModo}
+              opcoes={[
+                {
+                  valor: 'quadro',
+                  rotulo: (
+                    <span className="fn-modo">
+                      <Kanban size={16} /> Quadro
+                    </span>
+                  ),
+                },
+                {
+                  valor: 'whatsapp',
+                  rotulo: (
+                    <span className="fn-modo">
+                      <ChatCircleText size={16} /> WhatsApp
+                    </span>
+                  ),
+                },
+              ]}
+            />
+          ) : null}
           <Botao
             tom="wa"
             onClick={() => {
@@ -334,7 +402,31 @@ export function TelaFunil() {
         </>
       }
     >
-      <div className={aberto ? 'pilha fn-mesa com-inbox' : 'pilha fn-mesa'}>
+      {montado ? (
+        <PainelDoWhatsApp
+          visivel={modo === 'whatsapp'}
+          leads={leads}
+          pedido={pedido}
+          podeMexer={podeMexer}
+          relogio={agora}
+          aoAbrirNoQuadro={(l) => {
+            setModo('quadro')
+            abrir(l)
+          }}
+          aoMontarCotacao={(l) => void montarCotacao(l)}
+          aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
+          aoMover={(id, e) => void mover(id, e)}
+          aoCriarLead={(t) =>
+            setEditando({ ...leadEmBranco(), telefone: t.replace(/^55(?=\d{10,11}$)/, '') })
+          }
+        />
+      ) : null}
+
+      <div
+        className={['pilha fn-mesa', aberto ? 'com-inbox' : '', modo === 'whatsapp' ? 'fn-guardado' : '']
+          .filter(Boolean)
+          .join(' ')}
+      >
         <AvisoDaExtensao />
         {!falha && !carregando && leads.length ? (
           <BarraDoFunil
@@ -413,7 +505,7 @@ export function TelaFunil() {
       />
 
       <Inbox
-        lead={aberto}
+        lead={modo === 'whatsapp' ? null : aberto}
         conversa={conversa}
         carregandoConversa={carregandoConversa}
         podeMexer={podeMexer}

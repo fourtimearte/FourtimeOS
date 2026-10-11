@@ -117,10 +117,12 @@ function fechadoHoje() {
   }
 }
 
-export function AvisoDaExtensao() {
+/* fixo: o aviso do modo WhatsApp, que nao fecha (sem a extensao ali nao ha
+   o que mostrar) */
+export function AvisoDaExtensao({ fixo = false }: { fixo?: boolean }) {
   const [fechado, setFechado] = useState(fechadoHoje)
   const [comoInstalar, setComoInstalar] = useState(false)
-  if (fechado || !noComputador() || versaoDaExtensao()) return null
+  if ((fechado && !fixo) || !noComputador() || versaoDaExtensao()) return null
 
   function fechar() {
     try {
@@ -152,14 +154,16 @@ export function AvisoDaExtensao() {
                 Como instalar
               </Botao>
             )}
-            <Botao tom="contorno" onClick={fechar}>
-              Agora não
-            </Botao>
+            {fixo ? null : (
+              <Botao tom="contorno" onClick={fechar}>
+                Agora não
+              </Botao>
+            )}
           </div>
         }
       >
-        Sem ela, o botão do WhatsApp abre uma aba nova a cada clique, e o lead da conversa não
-        aparece ao lado do WhatsApp.
+        O WhatsApp não deixa ser aberto dentro de outro site, e a extensão libera só para o Fourtime
+        OS, neste computador. Sem ela, o botão do WhatsApp abre uma aba nova a cada clique.
       </Aviso>
 
       <Modal
@@ -170,7 +174,7 @@ export function AvisoDaExtensao() {
         <div className="pilha fn-instalar">
           <p>
             A extensão ainda está em teste e não está na Chrome Web Store. Peça o arquivo{' '}
-            <b>fourtime-os-0.1.0.zip</b> ao administrador e siga os passos neste computador:
+            <b>fourtime-os-0.2.0.zip</b> ao administrador e siga os passos neste computador:
           </p>
           <ol>
             <li>Descompacte o arquivo numa pasta que não vá ser apagada.</li>
@@ -179,9 +183,12 @@ export function AvisoDaExtensao() {
             </li>
             <li>Ligue o Modo do desenvolvedor, no canto de cima à direita.</li>
             <li>
-              Clique em Carregar sem compactação e escolha a pasta <b>fourtime-os-0.1.0</b>.
+              Clique em Carregar sem compactação e escolha a pasta <b>fourtime-os-0.2.0</b>.
             </li>
-            <li>Volte para esta página e recarregue: este aviso some sozinho.</li>
+            <li>
+              Volte para esta página e recarregue: este aviso some sozinho. Se uma versão anterior já
+              estava instalada, aperte o botão de recarregar dela em <code>chrome://extensions</code>.
+            </li>
           </ol>
         </div>
       </Modal>

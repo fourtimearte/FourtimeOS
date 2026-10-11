@@ -1,5 +1,5 @@
 /* ==========================================================================
-   O TESTE DA EXTENSAO (prova 0.1.0, coluna lateral).
+   O TESTE DA EXTENSAO (0.2.0: a coluna lateral e o WhatsApp dentro do Fourtime OS).
 
    O WhatsApp Web de verdade pede QR Code, entao aqui ele e trocado por uma
    pagina falsa no mesmo endereco, com o que a extensao procura: o #main com
@@ -79,6 +79,9 @@ const ctx = await chromium.launchPersistentContext(perfil, {
 
 let jidDaPagina = '5562999990001@c.us'
 await ctx.route('https://web.whatsapp.com/**', (r) =>
+  /* SEM o X-Frame-Options: resposta montada pelo teste nao passa pela regra
+     da extensao (declarativeNetRequest), entao a trava e provada a parte, com
+     rede de verdade, em testes/extensao-trava.mjs */
   r.fulfill({ status: 200, contentType: 'text/html', body: WA_FALSO(jidDaPagina) }))
 let leadsDoBanco = [LEAD]
 await ctx.route('**ensaio.supabase.co/**', (r) => {
@@ -125,13 +128,17 @@ await os.addInitScript(() => { try {
 await os.goto(SITE + '/funil?lead=L1', { waitUntil: 'networkidle' })
 await os.waitForTimeout(1500)
 const marca = await os.evaluate(() => document.documentElement.dataset.fourtimeExtensao || '')
-conta(marca === '0.1.0', 'o Fourtime OS enxerga a extensão (' + marca + ')')
+const VERSAO = JSON.parse(readFileSync(join(EXT, 'manifest.json'), 'utf8')).version
+conta(marca === VERSAO, 'o Fourtime OS enxerga a extensão (' + marca + ')')
 const abriuOLead = await os.evaluate(() => !!document.querySelector('.fn-inbox'))
 conta(abriuOLead, '/funil?lead=L1 abre o inbox daquele lead')
 conta(!new URL(os.url()).searchParams.has('lead'), 'o ?lead= sai da barra depois de usado')
 
+/* a aba comum do WhatsApp: o pedido de uma pagina que nao tem o WhatsApp
+   dentro (a ficha do cliente, por exemplo) vai para a aba aberta */
+const pedirPelaAba = () => os.evaluate(() => window.postMessage({ fourtime: 'abrir-whatsapp', telefone: '5562999990001', texto: '' }, location.origin))
 const abasAntes = ctx.pages().length
-await os.click('.fn-in-wa')
+await pedirPelaAba()
 await os.waitForTimeout(1500)
 const links = await wa.evaluate(() => window.__links)
 conta(ctx.pages().length === abasAntes, 'com a extensão, o ícone não abre aba nova (' + ctx.pages().length + ' abas)')
@@ -140,10 +147,38 @@ conta(links.length === 1 && links[0] === 'https://wa.me/5562999990001', 'a aba d
 /* 5b. o WhatsApp nao pegou o link: a aba vai pelo endereco */
 await wa.evaluate(() => { window.__naoPega = true })
 await os.bringToFront()
-await os.click('.fn-in-wa')
+await pedirPelaAba()
 await wa.waitForURL(/send\?phone=5562999990001/, { timeout: 5000 }).catch(() => {})
 conta(wa.url().includes('/send?phone=5562999990001'), 'se o WhatsApp não pega o link, a aba vai pelo /send (' + wa.url() + ')')
 await wa.waitForTimeout(1200)
+
+/* --- 8 a 11: o WhatsApp DENTRO do Fourtime OS (pranchas 131 a 133) --- */
+jidDaPagina = '5562999990001@c.us'
+await os.bringToFront()
+await os.goto(SITE + '/funil', { waitUntil: 'networkidle' })
+await os.waitForTimeout(1200)
+await os.evaluate(() => [...document.querySelectorAll('.fn-card')].find(c => c.textContent.includes('Atlético')).click())
+await os.waitForTimeout(800)
+await os.click('.fn-in-wa')
+await os.waitForTimeout(3000)
+const quadroWa = os.frames().find(f => f.url().startsWith('https://web.whatsapp.com'))
+const dentro = quadroWa ? await quadroWa.evaluate(() => ({
+  main: !!document.querySelector('#main'),
+  classe: document.documentElement.classList.contains('fourtime-dentro'),
+  links: window.__links,
+})).catch(() => null) : null
+conta(!!dentro?.main, 'o WhatsApp abre DENTRO do Fourtime OS, no modo WhatsApp')
+conta(!!dentro?.classe, 'dentro do Fourtime OS, o WhatsApp ganha a cara do sistema')
+conta(dentro?.links?.[0] === 'https://wa.me/5562999990001', 'o botão do WhatsApp no funil troca a conversa no WhatsApp daqui de dentro (' + (dentro?.links ?? []).join(' ') + ')')
+const coluna = await os.evaluate(() => ({
+  texto: document.querySelector('.fn-wa-lado')?.innerText ?? '',
+  modo: [...document.querySelectorAll('.seg button')].find(b => /WhatsApp/.test(b.innerText))?.className ?? '',
+  inbox: !!document.querySelector('.fn-inbox'),
+}))
+conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'a coluna da direita mostra o lead da conversa aberta')
+conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
+await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
+
 
 /* --- 6, 7: a coluna lateral ------------------------------------------ */
 const lado = await ctx.newPage()

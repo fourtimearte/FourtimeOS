@@ -30,3 +30,4 @@ testes/compilado-planta/
 # a extensao: o config.js leva o endereco e a chave publicavel, e o pacote sai do empacotador
 extensao/config.js
 dist-extensao/
+extensao/_metadata/

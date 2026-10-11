@@ -1,10 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Fourtime OS",
-  "version": "0.1.0",
-  "description": "Prova: o WhatsApp Web do vendedor com a cara do Fourtime OS e o lead da conversa aberta ao lado.",
-  "permissions": ["sidePanel", "storage", "tabs"],
-  "host_permissions": ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
+  "version": "0.2.0",
+  "description": "O WhatsApp Web do vendedor dentro do Fourtime OS, com a cara do sistema e o lead da conversa aberta ao lado.",
+  "permissions": ["sidePanel", "storage", "tabs", "declarativeNetRequest"],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "https://*.supabase.co/*",
+    "https://fourtimeos.arte-adc.workers.dev/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [{ "id": "whatsapp-no-sistema", "enabled": true, "path": "regras.json" }]
+  },
   "background": { "service_worker": "fundo.js" },
   "side_panel": { "default_path": "lado.html" },
   "action": { "default_title": "Fourtime OS" },
@@ -19,6 +28,7 @@
       "matches": ["https://web.whatsapp.com/*"],
       "js": ["whatsapp.js"],
       "css": ["whatsapp.css"],
+      "all_frames": true,
       "run_at": "document_start"
     }
   ]

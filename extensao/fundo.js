@@ -27,7 +27,52 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   if (tab) void ajustarPainel(tabId, tab.url)
 })
 
+/* ==========================================================================
+   O WHATSAPP DENTRO DAS ABAS DO FOURTIME OS.
+
+   O WhatsApp Web recusa ser aberto num quadro de duas formas: manda
+   X-Frame-Options: DENY (o navegador recusa) e, quando o pedido diz que e de
+   um quadro (Sec-Fetch-Dest: iframe), o servidor dele responde 400 com
+   "Sorry, something went wrong". A regra fixa (regras.json) cuida da
+   primeira carga, quando quem pede e o Fourtime OS. Esta regra por aba cuida
+   do resto: toda troca de endereco do WhatsApp DENTRO do quadro (quem pede
+   ai e o proprio WhatsApp). Vale so para abas que se anunciaram como o
+   Fourtime OS (anuncio.js), e sai quando a aba fecha ou vai para outro site.
+   ========================================================================== */
+const SISTEMA = /^(https:\/\/fourtimeos\.arte-adc\.workers\.dev|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)\//
+
+async function liberarNaAba(tabId) {
+  await chrome.declarativeNetRequest
+    .updateSessionRules({
+      removeRuleIds: [tabId],
+      addRules: [
+        {
+          id: tabId,
+          priority: 2,
+          action: {
+            type: 'modifyHeaders',
+            responseHeaders: [{ header: 'x-frame-options', operation: 'remove' }],
+            requestHeaders: [{ header: 'sec-fetch-dest', operation: 'set', value: 'document' }],
+          },
+          condition: { urlFilter: '||web.whatsapp.com/', resourceTypes: ['sub_frame'], tabIds: [tabId] },
+        },
+      ],
+    })
+    .catch(() => {})
+}
+const tirarDaAba = (tabId) => chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [tabId] }).catch(() => {})
+
+chrome.tabs.onRemoved.addListener((tabId) => void tirarDaAba(tabId))
+chrome.tabs.onUpdated.addListener((tabId, mudou) => {
+  if (mudou.url && !SISTEMA.test(mudou.url)) void tirarDaAba(tabId)
+})
+
 chrome.runtime.onMessage.addListener((m, quem) => {
+  /* uma aba do Fourtime OS se anunciou: so vale se o endereco dela confere */
+  if (m && m.tipo === 'sou-o-sistema' && quem.tab && SISTEMA.test(quem.tab.url || '')) {
+    void liberarNaAba(quem.tab.id)
+    return
+  }
   /* o WhatsApp contou qual conversa esta aberta: a coluna escuta o storage */
   if (m && m.tipo === 'conversa' && quem.tab) {
     chrome.storage.session.set({ conversa: { jid: m.jid || '', telefone: m.telefone || '', em: Date.now() } })

@@ -4,12 +4,30 @@
     "priority": 1,
     "action": {
       "type": "modifyHeaders",
-      "responseHeaders": [{ "header": "x-frame-options", "operation": "remove" }]
+      "responseHeaders": [
+        {
+          "header": "x-frame-options",
+          "operation": "remove"
+        }
+      ],
+      "requestHeaders": [
+        {
+          "header": "sec-fetch-dest",
+          "operation": "set",
+          "value": "document"
+        }
+      ]
     },
     "condition": {
       "urlFilter": "||web.whatsapp.com/",
-      "resourceTypes": ["sub_frame"],
-      "initiatorDomains": ["fourtimeos.arte-adc.workers.dev", "127.0.0.1", "localhost"]
+      "resourceTypes": [
+        "sub_frame"
+      ],
+      "initiatorDomains": [
+        "fourtimeos.arte-adc.workers.dev",
+        "127.0.0.1",
+        "localhost"
+      ]
     }
   }
 ]

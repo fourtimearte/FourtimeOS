@@ -12,6 +12,11 @@
    ========================================================================== */
 document.documentElement.dataset.fourtimeExtensao = chrome.runtime.getManifest().version
 
+/* 3. AVISA O FUNDO QUE ESTA ABA E O FOURTIME OS. O fundo libera o WhatsApp
+      dentro dos quadros DESTA aba (inclusive quando o proprio WhatsApp troca
+      de endereco dentro do quadro, o que a regra fixa nao cobre). */
+chrome.runtime.sendMessage({ tipo: 'sou-o-sistema' }).catch(() => {})
+
 window.addEventListener('message', (e) => {
   if (e.source !== window || e.origin !== location.origin) return
   const d = e.data

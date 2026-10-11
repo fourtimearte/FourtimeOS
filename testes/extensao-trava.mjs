@@ -9,7 +9,8 @@
    este teste sobe um servidor HTTPS de mentira no lugar do web.whatsapp.com
    (o Chromium e apontado para ele), com a mesma trava, e confere tres coisas:
      1. sem a extensao, o Fourtime OS NAO consegue abrir o WhatsApp no quadro;
-     2. com a extensao, consegue;
+     2. com a extensao, consegue, e o quadro continua de pe quando o proprio
+        WhatsApp troca de endereco la dentro;
      3. com a extensao, OUTRO SITE continua sem conseguir.
 
    Uso:  node testes/extensao-trava.mjs   (pede o openssl)
@@ -36,7 +37,14 @@ execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyo
   '-out', join(pasta, 'c.pem'), '-days', '1', '-subj', '/CN=web.whatsapp.com'], { stdio: 'ignore' })
 
 const WA = '<!doctype html><html><body><div id="app"><div id="main">o WhatsApp de mentira</div></div></body></html>'
-const falso = https({ key: readFileSync(join(pasta, 'k.pem')), cert: readFileSync(join(pasta, 'c.pem')) }, (_q, r) => {
+/* AS DUAS TRAVAS DO WHATSAPP DE VERDADE (vistas em 11/10/2026): o
+   X-Frame-Options no navegador e, no servidor, o 400 com "Sorry, something
+   went wrong" para pedido que diz vir de um quadro (Sec-Fetch-Dest: iframe) */
+const falso = https({ key: readFileSync(join(pasta, 'k.pem')), cert: readFileSync(join(pasta, 'c.pem')) }, (q, r) => {
+  if (q.headers['sec-fetch-dest'] === 'iframe') {
+    r.writeHead(400, { 'content-type': 'text/html', 'x-frame-options': 'DENY' })
+    return r.end('<!doctype html><title>Error</title><h1>Sorry, something went wrong.</h1>')
+  }
   r.writeHead(200, { 'content-type': 'text/html', 'x-frame-options': 'DENY' })
   r.end(WA)
 }).listen(8443, '127.0.0.1')
@@ -62,13 +70,22 @@ async function abre(comExtensao, endereco) {
   await p.waitForTimeout(2500)
   const f = p.frames().find((x) => x.url().startsWith('https://web.whatsapp.com'))
   const abriu = f ? await f.evaluate(() => !!document.querySelector('#main')).catch(() => false) : false
+  /* o proprio WhatsApp troca de endereco dentro do quadro (o /send da troca
+     de conversa): quem pede ai e ele, e nao o Fourtime OS */
+  let trocou = false
+  if (abriu) {
+    await f.evaluate(() => { location.href = '/send?phone=5562999990001' }).catch(() => {})
+    await p.waitForTimeout(2000)
+    const g = p.frames().find((x) => x.url().includes('/send?phone='))
+    trocou = g ? await g.evaluate(() => !!document.querySelector('#main')).catch(() => false) : false
+  }
   await ctx.close()
-  return abriu
+  return comExtensao && endereco.includes('127.0.0.1') ? abriu && trocou : abriu
 }
 
 try {
   conta(!(await abre(false, 'http://127.0.0.1:8098/')), 'sem a extensão, o WhatsApp não abre dentro do Fourtime OS (a trava vale)')
-  conta(await abre(true, 'http://127.0.0.1:8098/'), 'com a extensão, o WhatsApp abre dentro do Fourtime OS')
+  conta(await abre(true, 'http://127.0.0.1:8098/'), 'com a extensão, o WhatsApp abre dentro do Fourtime OS (sem o 400 do quadro) e continua de pé quando ele troca de endereço lá dentro')
   conta(!(await abre(true, 'http://127.0.0.3:8099/')), 'com a extensão, outro site continua sem conseguir')
 } finally {
   falso.close(); sistema.close(); intruso.close()

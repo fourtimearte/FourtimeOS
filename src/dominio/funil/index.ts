@@ -27,10 +27,12 @@ export {
   apagarRapida,
   camposVazios,
   carregarRapidas,
+  pedacosDaRapida,
   porGrupo,
   possoMexerNaRapida,
   preencherRapida,
   salvarRapida,
   type DadosDaConversa,
   type MensagemRapida,
+  type Pedaco,
 } from './rapidas'

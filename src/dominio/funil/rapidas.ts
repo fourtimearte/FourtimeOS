@@ -152,6 +152,23 @@ export function preencherRapida(texto: string, d: DadosDaConversa): string {
     .replace(/[ \t]{2,}/g, ' ')
 }
 
+/** O texto em pedacos, para a tela mostrar como fica: cada campo com o valor
+ *  desta conversa, ou vazio (a tela marca o que falta). */
+export type Pedaco = { texto: string } | { campo: string; rotulo: string; valor: string }
+const ROTULO: Record<string, string> = { nome: 'nome', contato: 'nome', empresa: 'empresa', vendedor: 'vendedor', cotacao: 'cotação', 'cotação': 'cotação', total: 'total' }
+export function pedacosDaRapida(texto: string, d: DadosDaConversa): Pedaco[] {
+  const saida: Pedaco[] = []
+  let i = 0
+  for (const m of texto.matchAll(/\{(nome|contato|empresa|vendedor|cotacao|cotação|total)\}/g)) {
+    const at = m.index ?? 0
+    if (at > i) saida.push({ texto: texto.slice(i, at) })
+    saida.push({ campo: m[1], rotulo: ROTULO[m[1]], valor: preencherRapida(m[0], d).trim() })
+    i = at + m[0].length
+  }
+  if (i < texto.length) saida.push({ texto: texto.slice(i) })
+  return saida
+}
+
 /** Os campos que o texto usa e que ficaram vazios nesta conversa. */
 export function camposVazios(texto: string, d: DadosDaConversa): string[] {
   const usados = [...texto.matchAll(/\{(nome|contato|empresa|vendedor|cotacao|cotação|total)\}/g)].map((m) => m[1])

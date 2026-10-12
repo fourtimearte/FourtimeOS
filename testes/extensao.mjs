@@ -107,7 +107,7 @@ await ctx.route('**ensaio.supabase.co/**', (r) => {
   let corpo = []
   if (u.includes('meu_perfil')) corpo = PERFIL
   else if (u.includes('/lead?')) corpo = leadsDoBanco
-  else if (u.includes('/mensagem_rapida')) corpo = [{ id:'R1', titulo:'Saudação', texto:'Oi {nome}! Aqui é {vendedor}, da Fourtime.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:1 }]
+  else if (u.includes('/mensagem_rapida')) corpo = [{ id:'R1', titulo:'Saudação', texto:'Oi {nome}! Aqui é {vendedor}, da Fourtime.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:1 }, { id:'R2', titulo:'Orçamento', texto:'Oi {nome}, segue o orçamento da {empresa}.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:2 }]
   else if (u.includes('/auth/v1/token')) corpo = { access_token:'a', refresh_token:'r', expires_in:3600, user:{ email:'dani@fourtime' } }
   return r.fulfill({ status:200, contentType:'application/json', headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*'}, body: JSON.stringify(corpo) })
 })
@@ -222,11 +222,11 @@ conta(!semFaixa.faixa && /WhatsApp aberto aqui dentro/.test(semFaixa.status), 's
 /* --- 150: a aba Atendimento, a mensagem rapida que ENVIA sozinha (0.4.0) --- */
 const rapida = await os.evaluate(() => document.querySelector('.fn-pa-msg')?.innerText ?? '')
 conta(/Saudação/.test(rapida) && /Oi Marcos! Aqui é Henrique, da Fourtime\./.test(rapida), 'a mensagem rápida já mostra os campos preenchidos com a conversa (' + rapida.replace(/\s+/g, ' ') + ')')
-await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).click()
+await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).first().click()
 await os.waitForTimeout(1200)
 const enviada = await quadroWa.evaluate(() => ({ foram: window.__enviadas, campo: document.querySelector('footer [contenteditable]').innerText })).catch(() => null)
 conta(enviada?.foram?.[0] === 'Oi Marcos! Aqui é Henrique, da Fourtime.' && !enviada.campo.trim(), 'Enviar escreve no WhatsApp e aperta o enviar (' + JSON.stringify(enviada) + ')')
-await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).click({ modifiers: ['Shift'] })
+await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).first().click({ modifiers: ['Shift'] })
 await os.waitForTimeout(1000)
 const soEscrita = await quadroWa.evaluate(() => ({ foram: window.__enviadas.length, campo: document.querySelector('footer [contenteditable]').innerText.trim() })).catch(() => null)
 conta(soEscrita?.foram === 1 && soEscrita.campo === 'Oi Marcos! Aqui é Henrique, da Fourtime.', 'Shift + Enviar só escreve, sem enviar (' + JSON.stringify(soEscrita) + ')')
@@ -244,6 +244,18 @@ await os.keyboard.type('Chave Pix', { delay: 20 })
 await os.click('.fn-pa-editor textarea')
 await os.waitForTimeout(300)
 await os.keyboard.type('Oi {nome}, segue a chave Pix.', { delay: 10 })
+/* a aba Como fica: o texto com os campos da conversa aberta (o lead do Marcos) */
+await os.locator('.fn-pa-editor .seg button', { hasText: 'Como fica' }).click()
+await os.waitForTimeout(200)
+const comoFica = await os.evaluate(() => ({
+  previa: document.querySelector('.fn-pa-previa')?.innerText.trim() ?? '',
+  cheio: [...document.querySelectorAll('.fn-pa-previa .fn-pa-cheio')].map((e) => e.innerText),
+  nota: [...document.querySelectorAll('.fn-pa-editor .fn-pa-nota')].map((e) => e.innerText).join(' '),
+}))
+conta(comoFica.previa === 'Oi Marcos, segue a chave Pix.' && comoFica.cheio.join() === 'Marcos' && /Atlético Exemplo|Marcos/.test(comoFica.nota), 'a aba Como fica mostra o texto com os campos da conversa aberta (' + JSON.stringify(comoFica) + ')')
+await os.locator('.fn-pa-editor').screenshot({ path: 'testes/fotos/extensao-como-fica.png' }).catch(() => {})
+await os.locator('.fn-pa-editor .seg button', { hasText: 'Escrever' }).click()
+await os.waitForTimeout(200)
 const roubo = {
   titulo: await os.inputValue('.fn-pa-editor input'),
   texto: await os.inputValue('.fn-pa-editor textarea'),
@@ -273,6 +285,11 @@ const botaoLid = await os.evaluate(() => { const b = [...document.querySelectorA
 await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).first().click().catch(() => {})
 await os.waitForTimeout(1200)
 const foiLid = await quadroLid?.evaluate(() => window.__enviadas).catch(() => null)
+/* sem lead, a {empresa} nao existe: a lista ja mostra o que falta, antes do Enviar */
+const falta = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-msg')].map((a) => ({ t: a.querySelector('b')?.innerText ?? '', falta: [...a.querySelectorAll('.fn-pa-falta')].map((e) => e.innerText) })))
+const orc = falta.find((x) => /Orçamento/.test(x.t))
+await os.locator('.fn-pa-msgs').first().screenshot({ path: 'testes/fotos/extensao-falta.png' }).catch(() => {})
+conta(orc?.falta.join() === 'empresa', 'conversa sem lead: a mensagem com {empresa} mostra na lista que falta a empresa (' + JSON.stringify(orc) + ')')
 conta(botaoLid === true && foiLid?.length === 1, 'contato sem o número à vista (@lid): o Enviar continua e manda para a conversa aberta (' + JSON.stringify({ botaoLid, foiLid }) + ')')
 jidDaPagina = '5562999990001@c.us'
 await quadroLid?.evaluate(() => location.reload()).catch(() => {})

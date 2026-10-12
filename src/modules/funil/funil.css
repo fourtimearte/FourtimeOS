@@ -1208,6 +1208,40 @@
   background: var(--surface);
   box-shadow: 0 0 0 1px var(--ink);
 }
+/* o Texto do editor: Escrever (com os campos entre chaves) e Como fica */
+.fn-pa-texto {
+  gap: var(--re-4);
+}
+.fn-pa-rot {
+  font-weight: 500;
+}
+.fn-pa-previa {
+  min-height: calc(1.5em * 5 + var(--re-6) * 2 + 2px);
+  padding: var(--re-6) var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* o campo preenchido pela conversa, e o que esta conversa nao tem */
+.fn-pa-cheio {
+  font-weight: 600;
+  color: var(--text);
+}
+.fn-pa-falta {
+  display: inline-block;
+  padding: 0 var(--re-3);
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.92em;
+  line-height: 1.35;
+}
 .fn-pa-cl {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));

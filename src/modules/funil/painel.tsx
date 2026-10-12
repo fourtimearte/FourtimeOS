@@ -26,6 +26,7 @@ import {
   carregarRapidas,
   minutosDesde,
   nomeDoLead,
+  pedacosDaRapida,
   porGrupo,
   possoMexerNaRapida,
   preencherRapida,
@@ -36,6 +37,7 @@ import {
   temFichaDoSite,
   type Estagio,
   type Lead,
+  type DadosDaConversa,
   type MensagemRapida,
   type Mensagem,
 } from '@dominio/funil'
@@ -505,7 +507,7 @@ function AbaAtendimento({
         </Aviso>
       ) : null}
       {editando && !editando.id ? (
-        <EditorDeRapida inicial={editando} grupos={nomesDeGrupo} aoCancelar={() => setEditando(null)} aoSalvar={(m) => void gravar(m)} />
+        <EditorDeRapida inicial={editando} grupos={nomesDeGrupo} dados={dados} conversa={!!(aberta || telefone)} aoCancelar={() => setEditando(null)} aoSalvar={(m) => void gravar(m)} />
       ) : null}
       {carregando ? <p className="fn-in-vazio">Carregando as mensagens...</p> : null}
       {!carregando && !visiveis.length ? (
@@ -526,6 +528,8 @@ function AbaAtendimento({
                   key={m.id}
                   inicial={editando}
                   grupos={nomesDeGrupo}
+                  dados={dados}
+                  conversa={!!(aberta || telefone)}
                   aoCancelar={() => setEditando(null)}
                   aoSalvar={(x) => void gravar(x)}
                 />
@@ -536,7 +540,9 @@ function AbaAtendimento({
                       {m.titulo}
                       {m.minha ? <span className="fn-origem">SÓ MINHA</span> : null}
                     </b>
-                    <p>{preencherRapida(m.texto, dados)}</p>
+                    <p>
+                      <TextoPreenchido texto={m.texto} dados={dados} />
+                    </p>
                   </div>
                   <div className="fn-pa-msg-acoes">
                     {possoMexerNaRapida(m, eu.id, eu.chefe) && podeMexer ? (
@@ -590,20 +596,55 @@ function AbaAtendimento({
   )
 }
 
+/* O TEXTO COMO FICA: cada campo com o valor da conversa aberta, e o que esta
+   conversa nao tem marcado no lugar, antes de apertar Enviar (pedido de
+   12/10/2026, depois do "falta empresa nesta conversa"). */
+function TextoPreenchido({ texto, dados }: { texto: string; dados: DadosDaConversa }) {
+  return (
+    <>
+      {pedacosDaRapida(texto, dados).map((p, i) =>
+        'campo' in p ? (
+          p.valor ? (
+            <span key={i} className="fn-pa-cheio">
+              {p.valor}
+            </span>
+          ) : (
+            <span key={i} className="fn-pa-falta" title={'Esta conversa não tem ' + p.rotulo}>
+              {p.rotulo}
+            </span>
+          )
+        ) : (
+          <span key={i}>{p.texto}</span>
+        ),
+      )}
+    </>
+  )
+}
+
+type AbaDoEditor = 'escrever' | 'como-fica'
+
 function EditorDeRapida({
   inicial,
   grupos,
+  dados,
+  conversa,
   aoCancelar,
   aoSalvar,
 }: {
   inicial: MensagemRapida
   grupos: string[]
+  dados: DadosDaConversa
+  /** ha uma conversa aberta no WhatsApp ao lado */
+  conversa: boolean
   aoCancelar: () => void
   aoSalvar: (m: MensagemRapida) => void
 }) {
   const [m, setM] = useState(inicial)
+  const [aba, setAba] = useState<AbaDoEditor>('escrever')
   const caixa = useRef<HTMLTextAreaElement>(null)
   const pronta = !!m.titulo.trim() && !!m.texto.trim()
+  const faltam = [...new Set(pedacosDaRapida(m.texto, dados).flatMap((p) => ('campo' in p && !p.valor ? [p.rotulo] : [])))]
+  const quem = dados.lead ? dados.lead.contato || nomeDoLead(dados.lead) : dados.contato
 
   /* o campo entra onde o cursor esta, e o cursor fica depois dele */
   function porCampo(c: string) {
@@ -624,16 +665,53 @@ function EditorDeRapida({
       <Campo rotulo="Título">
         <Entrada autoFocus maxLength={60} value={m.titulo} onChange={(e) => setM({ ...m, titulo: e.target.value })} placeholder="Ex.: Prazo de produção" />
       </Campo>
-      <Campo rotulo="Texto" dica="Os campos se preenchem com a conversa aberta na hora de enviar.">
-        <AreaTexto ref={caixa} rows={4} maxLength={2000} value={m.texto} onChange={(e) => setM({ ...m, texto: e.target.value })} />
-      </Campo>
-      <div className="fileira miuda">
-        <span className="fn-pa-nota">Pôr no texto:</span>
-        {CAMPOS_DA_MENSAGEM.map((c) => (
-          <Chip key={c.campo} tamanho="sm" title={c.explica} onClick={() => porCampo(c.campo)}>
-            {c.rotulo}
-          </Chip>
-        ))}
+      <div className="pilha fn-pa-texto">
+        <div className="fileira entre">
+          <span className="fn-pa-rot" id={'rot-texto-' + (m.id || 'nova')}>
+            Texto
+          </span>
+          <Segmentado<AbaDoEditor>
+            valor={aba}
+            aoMudar={setAba}
+            opcoes={[
+              { valor: 'escrever', rotulo: 'Escrever' },
+              { valor: 'como-fica', rotulo: 'Como fica' },
+            ]}
+          />
+        </div>
+        {aba === 'escrever' ? (
+          <>
+            <AreaTexto
+              ref={caixa}
+              rows={5}
+              maxLength={2000}
+              aria-labelledby={'rot-texto-' + (m.id || 'nova')}
+              value={m.texto}
+              onChange={(e) => setM({ ...m, texto: e.target.value })}
+            />
+            <div className="fileira miuda">
+              <span className="fn-pa-nota">Pôr no texto:</span>
+              {CAMPOS_DA_MENSAGEM.map((c) => (
+                <Chip key={c.campo} tamanho="sm" title={c.explica} onClick={() => porCampo(c.campo)}>
+                  {c.rotulo}
+                </Chip>
+              ))}
+            </div>
+            <span className="fn-pa-nota">Os campos entre chaves se preenchem com a conversa aberta na hora de enviar.</span>
+          </>
+        ) : (
+          <>
+            <div className="fn-pa-previa" aria-live="polite">
+              {m.texto.trim() ? <TextoPreenchido texto={m.texto} dados={dados} /> : <span className="fn-pa-nota">Escreva o texto para ver como fica.</span>}
+            </div>
+            <span className="fn-pa-nota">
+              {conversa
+                ? 'Como sai para a conversa aberta' + (quem ? ' (' + quem + ')' : '') + '.'
+                : 'Nenhuma conversa aberta: os campos aparecem marcados.'}
+              {faltam.length ? ' Nesta conversa falta ' + faltam.join(', ') + ': ao enviar, a mensagem é escrita sem ir, para você completar.' : ''}
+            </span>
+          </>
+        )}
       </div>
       <Campo rotulo="Grupo">
         <Entrada maxLength={40} value={m.grupo} onChange={(e) => setM({ ...m, grupo: e.target.value })} placeholder="Ex.: Pagamento" />

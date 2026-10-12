@@ -1,0 +1,12 @@
+/* a tela que quebrou: sem a casca, no meio da janela */
+.erro-tela {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  background: var(--bg);
+}
+.erro-tela code {
+  font-size: 13px;
+  word-break: break-word;
+}

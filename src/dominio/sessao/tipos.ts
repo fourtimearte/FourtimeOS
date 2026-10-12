@@ -120,3 +120,11 @@ export function iniciaisDe(nome: string): string {
 export function primeiroNome(nome: string): string {
   return nome.trim().split(/\s+/)[0] || nome
 }
+
+/** "Bom dia, Henrique" pela hora de agora: manhã até meio-dia, tarde até as 18h. */
+export function saudacao(nome: string, agora = new Date()): string {
+  const h = agora.getHours()
+  const parte = h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite'
+  const quem = primeiroNome(nome || '')
+  return quem ? parte + ', ' + quem : parte
+}

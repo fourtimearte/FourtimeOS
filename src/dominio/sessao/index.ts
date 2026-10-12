@@ -12,6 +12,7 @@ export {
   pode,
   podeVer,
   primeiroNome,
+  saudacao,
   souAdmin,
 } from './tipos'
 export type { Estado, Nivel4, Painel, Papel, Pessoa, Situacao } from './tipos'

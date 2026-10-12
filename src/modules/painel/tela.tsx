@@ -31,6 +31,7 @@ import {
   tempoCurto,
   type Lead,
 } from '@dominio/funil'
+import { saudacao, useSessao } from '@dominio/sessao'
 import './painel.css'
 
 /* ==========================================================================
@@ -72,6 +73,8 @@ function semanaDoAno(d: Date): number {
 }
 
 export function TelaPainel() {
+  const { estado } = useSessao()
+  const eu = estado.fase === 'dentro' ? estado.pessoa : null
   const navegar = useNavigate()
   /* O inicio nao para por causa de uma consulta que falhou.
 
@@ -132,7 +135,7 @@ export function TelaPainel() {
   return (
     <Pagina
       acima={cabecalho}
-      titulo="Bom dia, Henrique"
+      titulo={saudacao(eu?.nome ?? '')}
       sub={
         <>
           {conta.ativos.length} pedidos na fábrica ·{' '}

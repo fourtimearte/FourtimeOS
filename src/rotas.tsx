@@ -32,6 +32,7 @@ import { TelaPerfil } from '@modules/perfil'
 import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
 import { TelaPainel } from '@modules/painel'
+import { TelaDeErro, TelaNaoEncontrada } from '@modules/erro'
 
 /* Este arquivo é o ponto de montagem do sistema: o único lugar que conhece
    todas as camadas ao mesmo tempo. É de propósito que ele fique na raiz de src
@@ -55,6 +56,8 @@ export const rotas = createBrowserRouter([
         <App />
       </Protegido>
     ),
+    /* tela que quebra ao desenhar mostra o aviso em portugues, e nao o erro cru */
+    errorElement: <TelaDeErro />,
     children: [
       { index: true, element: pede('inicio', <TelaPainel />) },
 
@@ -118,6 +121,9 @@ export const rotas = createBrowserRouter([
       /* AS FICHAS TÉCNICAS SÃO DE MATERIAIS, ao lado do Estoque: a ficha diz de
          que a peça é feita e o estoque diz quanto disso existe. */
       { path: 'produtos', element: pede('produtos', <TelaProdutos />) },
+
+      /* qualquer outro endereco: a pagina que nao existe, dentro da casca */
+      { path: '*', element: <TelaNaoEncontrada /> },
     ],
   },
 ])

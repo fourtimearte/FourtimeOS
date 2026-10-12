@@ -160,6 +160,21 @@ for (const tema of ['light', 'dark']) {
     })
     conta(etiqueta === 'CO2026-0007', `${tema} ${nome}: a etiqueta da cotação no cartão mostra o número da mais nova (${etiqueta})`)
 
+    /* o endereco que nao existe e a saudacao do inicio (12, secao 2, itens 8 e 9) */
+    if (tema === 'light' && nome === 'computador') {
+      await pg.goto(SITE + '/endereco-que-nao-existe', { waitUntil: 'networkidle' })
+      const nao = await pg.evaluate(() => ({ h1: document.querySelector('h1')?.innerText ?? '', menu: !!document.querySelector('.lado, nav') }))
+      conta(nao.h1 === 'Esta página não existe' && nao.menu, `${tema} ${nome}: endereço que não existe mostra a página própria, dentro da casca (${nao.h1})`)
+      await pg.goto(SITE + '/', { waitUntil: 'networkidle' })
+      await pg.waitForTimeout(600)
+      const ola = await pg.evaluate(() => document.querySelector('h1')?.innerText ?? '')
+      const h = new Date().getHours()
+      const esperado = (h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite') + ', Henrique'
+      conta(ola === esperado, `${tema} ${nome}: o início cumprimenta pelo nome e pela hora (${ola})`)
+      await pg.goto(SITE + '/funil', { waitUntil: 'networkidle' })
+      await pg.waitForTimeout(1200)
+    }
+
     /* a aba volta para a frente: o funil rele na hora, sem esperar os 30 s */
     if (tema === 'light' && nome === 'computador') {
       const antes = leituras

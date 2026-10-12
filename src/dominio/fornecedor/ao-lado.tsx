@@ -104,8 +104,8 @@ export function NovoFornecedorAoLado({
   }
 
   return (
-    <section className="fn-lado" aria-label="Novo fornecedor" data-novo-fornecedor="">
-      <header className="fn-lado-topo">
+    <section className="fr-lado" aria-label="Novo fornecedor" data-novo-fornecedor="">
+      <header className="fr-lado-topo">
         <div className="pilha colada">
           <b>Novo fornecedor</b>
           <small>
@@ -126,8 +126,8 @@ export function NovoFornecedorAoLado({
 
       <div className="campo">
         <span>CNPJ</span>
-        <div className="fn-lado-cnpj">
-          <Campo className="fn-lado-cresce" erro={!semCnpj && cnpjCompleto && !cnpjCerto}>
+        <div className="fr-lado-cnpj">
+          <Campo className="fr-lado-cresce" erro={!semCnpj && cnpjCompleto && !cnpjCerto}>
             <Entrada
               value={cnpj}
               disabled={semCnpj}
@@ -153,7 +153,7 @@ export function NovoFornecedorAoLado({
         ) : null}
         <button
           type="button"
-          className="fn-lado-link"
+          className="fr-lado-link"
           onClick={() => {
             setSemCnpj(s => !s)
             setReceita(null)
@@ -165,7 +165,7 @@ export function NovoFornecedorAoLado({
       </div>
 
       {semCnpj ? (
-        <div className="fn-lado-receita ruim">
+        <div className="fr-lado-receita ruim">
           <WarningCircle size={22} aria-hidden="true" />
           <div>
             <b>Sem CNPJ</b>
@@ -176,7 +176,7 @@ export function NovoFornecedorAoLado({
           </div>
         </div>
       ) : receita ? (
-        <div className="fn-lado-receita">
+        <div className="fr-lado-receita">
           <CheckCircle size={22} aria-hidden="true" />
           <div>
             <b>{receita.razaoSocial}</b>
@@ -188,7 +188,7 @@ export function NovoFornecedorAoLado({
           </div>
         </div>
       ) : avisoDaReceita ? (
-        <div className="fn-lado-receita ruim">
+        <div className="fr-lado-receita ruim">
           <WarningCircle size={22} aria-hidden="true" />
           <div>
             <b>{avisoDaReceita}</b>
@@ -211,7 +211,7 @@ export function NovoFornecedorAoLado({
           placeholder="Nome de quem atende e o número"
         />
       </Campo>
-      <div className="fn-lado-dois">
+      <div className="fr-lado-dois">
         <Campo rotulo="Como paga">
           <Entrada
             value={pagamento}
@@ -230,7 +230,7 @@ export function NovoFornecedorAoLado({
 
       {falha ? <Aviso tom="brand">{falha}</Aviso> : null}
 
-      <div className="fn-lado-pe">
+      <div className="fr-lado-pe">
         <Botao onClick={aoFechar}>Cancelar</Botao>
         <Botao tom="forte" onClick={salvar} disabled={!pronto || gravando} carregando={gravando}>
           {gravando ? 'Salvando' : 'Salvar fornecedor'}

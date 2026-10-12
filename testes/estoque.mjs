@@ -463,7 +463,7 @@ for (const tema of ['light', 'dark']) {
     const folha = await caixa(pg, 'dialog[open] .caixa')
     conta(igual(folha.w, 440) && igual(folha.dir, 1430) && /de 3 kg para 43 kg/.test(await texto(pg, 'dialog[open] .es-antes-depois')), `${T} folha: a gaveta de 440 abre na cor escolhida, e o antes e depois mostra 3 kg virando 43`)
     await foto('folha', false)
-    await pg.locator('dialog[open] .fn-gatilho').click(); await pausa(pg)
+    await pg.locator('dialog[open] .fr-gatilho').click(); await pausa(pg)
     await pg.locator('.mn.flutua').getByText('Malharia Exemplo Ltda', { exact: false }).first().click(); await pausa(pg)
     await pg.locator('dialog[open] .sobre-pe .btn').last().click(); await pausa(pg, 600)
     const mov = gravados.find((g) => String(g.u).includes('rpc/mexer_no_estoque'))
@@ -499,7 +499,7 @@ for (const tema of ['light', 'dark']) {
     const criado = gravados.find((g) => /^fornecedor\?/.test(String(g.u)))
     conta(criado && criado.corpo.nome === 'Malharia de Prova' && criado.corpo.entrou_por === 'estoque' && criado.corpo.cnpj === null && gravados.some((g) => String(g.u).startsWith('fornecedor_tipo') && JSON.stringify(g.corpo).includes('"tipo":"tecido"')), `${T} novo material: o fornecedor vai para o banco como "entrou pelo estoque", do tipo tecido (${criado ? JSON.stringify(criado.corpo).slice(0, 110) : 'nada gravado'})`)
     const depois = await caixa(pg, 'dialog[open] .caixa')
-    conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 0 && igual(depois.w, 560) && /Malharia de Prova/.test(await texto(pg, 'dialog[open] .fn-gatilho')), `${T} novo material: salvo, a coluna fecha, a caixa volta a 560 e o fornecedor novo já está escolhido (${await texto(pg, 'dialog[open] .fn-gatilho')})`)
+    conta(await pg.locator('dialog[open] [data-novo-fornecedor]').count() === 0 && igual(depois.w, 560) && /Malharia de Prova/.test(await texto(pg, 'dialog[open] .fr-gatilho')), `${T} novo material: salvo, a coluna fecha, a caixa volta a 560 e o fornecedor novo já está escolhido (${await texto(pg, 'dialog[open] .fr-gatilho')})`)
     conta(await pg.locator('dialog[open] .es-novo-chips .chip.ligado', { hasText: /^Laranja$/ }).count() === 1 && await pg.locator('dialog[open] .es-novo-tres input[inputmode=decimal]').inputValue() === '25', `${T} novo material: o cadastro da cor continua de onde parou`)
     await pg.keyboard.press('Escape'); await pausa(pg)
   })
@@ -543,7 +543,7 @@ for (const tema of ['light', 'dark']) {
     /* definir o mínimo: só esse campo, nas 4 de uma vez */
     await lote().getByRole('button', { name: 'Definir mínimo' }).click(); await pausa(pg, 600)
     let cx = await caixa(pg, 'dialog[open] .caixa')
-    conta(/^Mínimo de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && igual(cx.w, 560) && await pg.locator('dialog[open] [data-editar-ficha] input').count() === 1 && await pg.locator('dialog[open] [data-cuidados]').count() === 0 && await pg.locator('dialog[open] .fn-gatilho').count() === 0, `${T} lote: "Definir mínimo" abre uma caixa de 560 só com o campo do mínimo (${await texto(pg, 'dialog[open] .sobre-topo')})`)
+    conta(/^Mínimo de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && igual(cx.w, 560) && await pg.locator('dialog[open] [data-editar-ficha] input').count() === 1 && await pg.locator('dialog[open] [data-cuidados]').count() === 0 && await pg.locator('dialog[open] .fr-gatilho').count() === 0, `${T} lote: "Definir mínimo" abre uma caixa de 560 só com o campo do mínimo (${await texto(pg, 'dialog[open] .sobre-topo')})`)
     await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').fill('25'); await pausa(pg, 200)
     await foto('lote-minimo', false)
     await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Aplicar em 4' }).click(); await pausa(pg, 800)
@@ -552,8 +552,8 @@ for (const tema of ['light', 'dark']) {
 
     /* definir o fornecedor, poupando quem já tem */
     await lote().getByRole('button', { name: 'Definir fornecedor' }).click(); await pausa(pg, 600)
-    conta(/^Fornecedor de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] .fn-gatilho').count() === 1 && await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').count() === 0, `${T} lote: "Definir fornecedor" abre só o campo do fornecedor, com o "Novo fornecedor" ao lado`)
-    await pg.locator('dialog[open] .fn-gatilho').click(); await pausa(pg)
+    conta(/^Fornecedor de 4 materiais/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] .fr-gatilho').count() === 1 && await pg.locator('dialog[open] input[aria-label="Mínimo no estoque"]').count() === 0, `${T} lote: "Definir fornecedor" abre só o campo do fornecedor, com o "Novo fornecedor" ao lado`)
+    await pg.locator('dialog[open] .fr-gatilho').click(); await pausa(pg)
     await pg.locator('.mn.flutua').getByText('Tecidos Exemplo S.A.', { exact: false }).first().click(); await pausa(pg)
     const trocar = pg.locator('dialog[open] .ck', { hasText: 'Trocar também' })
     conta(/nos 4 que já têm fornecedor/.test(await trocar.innerText()), `${T} lote: como as 4 já têm fornecedor, a caixa pergunta se troca também nelas (${(await trocar.innerText()).trim()})`)

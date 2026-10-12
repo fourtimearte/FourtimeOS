@@ -61,6 +61,8 @@ for (const f of TSX) {
   for (const m of txt.matchAll(/['"](--[a-zA-Z0-9_-]+)['"]\s*:/g)) definidas.add(m[1])
   /* e por setProperty, que costuma quebrar a linha depois do parenteses */
   for (const m of txt.matchAll(/setProperty\(\s*['"](--[a-zA-Z0-9_-]+)['"]/g)) definidas.add(m[1])
+  /* e por atribuicao num objeto de estilo: estilo['--vao-cor'] = cor */
+  for (const m of txt.matchAll(/\[\s*['"](--[a-zA-Z0-9_-]+)['"]\s*\]\s*=/g)) definidas.add(m[1])
 }
 
 /* --- quem DEFINE uma classe ---------------------------------------------- */

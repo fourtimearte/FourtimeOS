@@ -2,10 +2,14 @@
 # Compila so as pecas de dominio que o teste usa e roda a conferencia.
 # Elas nao dependem de React nem do navegador, entao rodam em node puro.
 set -e
+# O TypeScript 6 pede --ignoreConfig quando os arquivos vem na linha de
+# comando; o 5.9 do node_modules nao conhece a opcao (e nem precisa dela).
+IGNORAR=""
+tsc --help --all 2>/dev/null | grep -q ignoreConfig && IGNORAR="--ignoreConfig"
 raiz="$(dirname "$0")/.."
 saida="$raiz/testes/compilado"
 rm -rf "$saida"
-tsc --ignoreConfig \
+tsc $IGNORAR \
   "$raiz/src/dominio/layout/grade.ts" \
   "$raiz/src/dominio/layout/bloco.ts" \
   "$raiz/src/dominio/layout/destaques.ts" \

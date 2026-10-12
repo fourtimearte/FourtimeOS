@@ -103,22 +103,22 @@ export function EscolherFornecedor({
   }
 
   return (
-    <span className={['fn-escolher', aberto ? 'aberto' : ''].filter(Boolean).join(' ')}>
+    <span className={['fr-escolher', aberto ? 'aberto' : ''].filter(Boolean).join(' ')}>
       <button
         ref={bt}
         type="button"
-        className={['fn-gatilho', escolhido ? 'cheio' : ''].filter(Boolean).join(' ')}
+        className={['fr-gatilho', escolhido ? 'cheio' : ''].filter(Boolean).join(' ')}
         aria-expanded={aberto}
         onClick={() => setAberto((a) => !a)}
       >
-        <span className="fn-gatilho-texto">
+        <span className="fr-gatilho-texto">
           {escolhido ? (
             <>
               <b>{escolhido.nome}</b>
               {apoio ? <small>{apoio(escolhido)}</small> : null}
             </>
           ) : (
-            <span className="fn-gatilho-vazio">Escolha de quem veio</span>
+            <span className="fr-gatilho-vazio">Escolha de quem veio</span>
           )}
         </span>
         <Seta />
@@ -160,7 +160,7 @@ export function EscolherFornecedor({
             </button>
           ) : null}
           {grupos.map((g) => (
-            <div key={g.titulo} className="fn-grupo">
+            <div key={g.titulo} className="fr-grupo">
               <span className="mn-sep">{g.titulo}</span>
               {g.itens.map((f) => {
                 const s = situacaoDe(f)
@@ -175,7 +175,7 @@ export function EscolherFornecedor({
                     }}
                   >
                     <span className="nm">{f.nome}</span>
-                    <span className="fn-situacao" style={{ '--c': COR_DA_SITUACAO[s] } as CSSProperties}>
+                    <span className="fr-situacao" style={{ '--c': COR_DA_SITUACAO[s] } as CSSProperties}>
                       <i />
                       {NOME_DA_SITUACAO[s]}
                     </span>
@@ -192,7 +192,7 @@ export function EscolherFornecedor({
           ) : null}
           {aoCriar && nome && !jaExiste ? (
             <button type="button" className="mn-item mn-novo" onClick={criar} disabled={criando}>
-              <span className="fn-mais" aria-hidden="true">
+              <span className="fr-mais" aria-hidden="true">
                 +
               </span>
               <span className="nm">
@@ -200,7 +200,7 @@ export function EscolherFornecedor({
               </span>
             </button>
           ) : null}
-          {falha ? <div className="fn-falha">{falha}</div> : null}
+          {falha ? <div className="fr-falha">{falha}</div> : null}
         </div>
       </Flutuante>
     </span>
@@ -209,7 +209,7 @@ export function EscolherFornecedor({
 
 function Seta() {
   return (
-    <svg className="fn-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className="fr-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -228,7 +228,7 @@ function Lupa() {
 export function SituacaoDoFornecedor({ f, texto }: { f: Pick<Fornecedor, 'gravada' | 'cnpj'>; texto?: string }) {
   const s = situacaoDe(f)
   return (
-    <span className="fn-situacao forte" style={{ '--c': COR_DA_SITUACAO[s] } as CSSProperties}>
+    <span className="fr-situacao forte" style={{ '--c': COR_DA_SITUACAO[s] } as CSSProperties}>
       <i />
       {texto ?? NOME_DA_SITUACAO[s]}
     </span>

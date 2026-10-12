@@ -678,7 +678,7 @@ table.es-tb {
   align-items: flex-start;
   gap: var(--gap-btn);
 }
-.es-fornecedor-e-novo > .fn-escolher {
+.es-fornecedor-e-novo > .fr-escolher {
   flex: 1 1 240px;
   width: auto;
 }

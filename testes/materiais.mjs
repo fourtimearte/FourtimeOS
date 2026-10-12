@@ -240,7 +240,7 @@ for (const tema of ['light', 'dark']) {
   const K = await tokens(pg, ['--bg', '--surface', '--surface-2', '--surface-3', '--brand', '--text', '--text-2', '--text-3', '--border', '--ink'])
   let botoes
   let chips
-  let m = await medir(pg, ['.pagina-topo .acima', '.pagina-topo h1', '.fo-barra', '.pagina-topo', '.fo-busca', '.fo-vista', '.fo-quadro', '.fo-grupo', '.fo-linha', '.fn-situacao'])
+  let m = await medir(pg, ['.pagina-topo .acima', '.pagina-topo h1', '.fo-barra', '.pagina-topo', '.fo-busca', '.fo-vista', '.fo-quadro', '.fo-grupo', '.fo-linha', '.fr-situacao'])
   conta(m['.pagina-topo h1'].letra === '24px/600' && m['.pagina-topo h1'].texto === 'Fornecedores' && m['.pagina-topo .acima'].letra === '12.5px/600', `${T} fornecedores: titulo 24/600 com a sobrelinha 12.5/600`)
   botoes = await todos(pg, '.pagina-topo .btn')
   conta(botoes.every((b) => igual(b.h, 40) && b.raio === '10px') && folga(botoes).every((f) => igual(f, 10)) && botoes.at(-1).fundo === K['--brand'], `${T} fornecedores: botoes do topo 40, 10 entre eles, a ultima vermelha (${botoes.map((b) => b.texto).join(', ')})`)
@@ -251,7 +251,7 @@ for (const tema of ['light', 'dark']) {
   conta(chips.map((c) => c.texto.replace(/\s+/g, ' ')).join(' | ') === 'Todos 9 | Tecido 4 | Aviamento 3 | Insumo 2 | Serviço 1' && chips.every((c) => igual(c.h, 40) && c.raio === '999px' && c.letra === '13px/500'), `${T} fornecedores: cinco chips em pilula, sem o Frete, 40, 13/500 (${chips.map((c) => c.texto.replace(/\s+/g, ' ')).join(' | ')})`)
   conta(m['.fo-quadro'].raio === '14px' && m['.fo-quadro'].borda === '1px' && igual(m['.fo-quadro'].w, 1598) && m['.fo-quadro'].fundo === K['--surface'], `${T} fornecedores: quadro raio 14, borda 1, largura inteira`)
   conta(m['.fo-grupo'].letra === '12.5px/600' && m['.fo-grupo'].cor === K['--text-2'], `${T} fornecedores: nome do tipo 12.5/600 em --text-2`)
-  conta(igual(m['.fo-linha'].h, 48) && m['.fn-situacao'].letra === '13px/600', `${T} fornecedores: linha de 48 e situacao 13/600`)
+  conta(igual(m['.fo-linha'].h, 48) && m['.fr-situacao'].letra === '13px/600', `${T} fornecedores: linha de 48 e situacao 13/600`)
   const linhasDeFornecedor = await todos(pg, '.fo-linha')
   conta(linhasDeFornecedor.length === 10 && await sobra(pg) <= 0, `${T} fornecedores: 9 fornecedores, a malharia em dois tipos, sem rolar para o lado (${linhasDeFornecedor.length} linhas)`)
   conta(!linhasDeFornecedor.some((l) => /Correios|Jadlog|Braspress|Transportadora/.test(l.texto)), `${T} fornecedores: nenhuma transportadora na pagina`)

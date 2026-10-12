@@ -6,6 +6,12 @@
 
 /* --- estrutura e medida -------------------------------------------------- */
 :root {
+  /* a borda fina da amostra de cor nos menus do layout (ds/menus.css) e as
+     tres cores do sinal de genero nos menus; moravam la, fora daqui */
+  --sw-borda: rgba(26, 29, 35, 0.16);
+  --gen-m: #2563eb;
+  --gen-f: #d4157e;
+  --gen-i: #1f8449;
   --font: 'Urbanist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-doc: 'Roboto', sans-serif;
   /* a fonte de numero de codigo e de trecho de dado bruto. Nasceu escrita na
@@ -206,6 +212,7 @@
 
 /* --- Grafite (escuro) ---------------------------------------------------- */
 [data-theme='dark'] {
+  --sw-borda: rgba(255, 255, 255, 0.22);
   --bg: #131416;
   --surface: #1c1e21;
   --surface-2: #25282c;

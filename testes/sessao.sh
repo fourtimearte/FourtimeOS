@@ -2,10 +2,14 @@
 # Compila o modulo do Supabase e roda a conferencia do cracha.
 # Ele nao depende de React nem do navegador, entao roda em node puro.
 set -e
+# O TypeScript 6 pede --ignoreConfig quando os arquivos vem na linha de
+# comando; o 5.9 do node_modules nao conhece a opcao (e nem precisa dela).
+IGNORAR=""
+tsc --help --all 2>/dev/null | grep -q ignoreConfig && IGNORAR="--ignoreConfig"
 raiz="$(dirname "$0")/.."
 saida="$raiz/testes/compilado-sessao"
 rm -rf "$saida"
-tsc --ignoreConfig \
+tsc $IGNORAR \
   "$raiz/src/ambiente.d.ts" \
   "$raiz/src/shared/supabase/index.ts" \
   --target ES2022 --module ESNext --moduleResolution bundler \

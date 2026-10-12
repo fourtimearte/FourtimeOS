@@ -16,7 +16,17 @@
 set -e
 raiz="$(dirname "$0")/.."
 relato="$raiz/testes/tipos-erros.txt"
-tsc -p "$raiz/testes/tsconfig-tipos.json" > "$relato" 2>&1 || true
+# O TypeScript 6 pede ignoreDeprecations "6.0" por causa do baseUrl; o 5.9 do
+# node_modules recusa esse valor. Com o 5.x, a mesma configuracao sem a linha.
+config="$raiz/testes/tsconfig-tipos.json"
+case "$(tsc -v)" in
+  *" 5."*)
+    sed '/ignoreDeprecations/d' "$config" > "$raiz/testes/tsconfig-tipos-5.json"
+    config="$raiz/testes/tsconfig-tipos-5.json"
+    ;;
+esac
+tsc -p "$config" > "$relato" 2>&1 || true
+rm -f "$raiz/testes/tsconfig-tipos-5.json"
 
 # tudo que nao for TS7006 dentro de um .tsx
 restantes=$(grep -E 'error TS' "$relato" | grep -v -E '\.tsx\([0-9]+,[0-9]+\): error TS7006' || true)

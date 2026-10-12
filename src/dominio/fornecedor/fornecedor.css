@@ -11,12 +11,12 @@
    Ele tem a altura de um campo quando está vazio e cresce para duas linhas
    quando há alguém escolhido: o nome e, embaixo, por que aquele nome foi
    sugerido. A borda, o raio e o foco são os do campo do sistema. */
-.fn-escolher {
+.fr-escolher {
   display: flex;
   width: 100%;
   min-width: 0;
 }
-.fn-gatilho {
+.fr-gatilho {
   display: flex;
   align-items: center;
   gap: var(--re-5);
@@ -36,53 +36,53 @@
     border-color var(--t-fast),
     box-shadow var(--t-fast);
 }
-.fn-gatilho.cheio {
+.fr-gatilho.cheio {
   padding-block: var(--re-4);
 }
-.fn-gatilho:hover {
+.fr-gatilho:hover {
   border-color: var(--text-3);
 }
-.fn-escolher.aberto .fn-gatilho,
-.fn-gatilho:focus-visible {
+.fr-escolher.aberto .fr-gatilho,
+.fr-gatilho:focus-visible {
   outline: none;
   border-color: var(--ink);
   box-shadow: 0 0 0 3px var(--ink-soft);
 }
-.fn-gatilho-texto {
+.fr-gatilho-texto {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--gap-colado);
 }
-.fn-gatilho-texto b {
+.fr-gatilho-texto b {
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fn-gatilho-texto small {
+.fr-gatilho-texto small {
   font-size: 12.5px;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fn-gatilho-vazio {
+.fr-gatilho-vazio {
   color: var(--text-3);
 }
-.fn-seta {
+.fr-seta {
   flex: none;
   color: var(--text-3);
 }
 
-.fn-grupo {
+.fr-grupo {
   display: flex;
   flex-direction: column;
   gap: var(--re-1);
 }
-.fn-mais {
+.fr-mais {
   flex: none;
   width: 18px;
   text-align: center;
@@ -91,7 +91,7 @@
   font-weight: 500;
   color: var(--brand);
 }
-.fn-falha {
+.fr-falha {
   padding: var(--re-4) var(--re-5);
   font-size: 12.5px;
   color: var(--brand-text);
@@ -100,7 +100,7 @@
 /* --- o ponto da situação ---------------------------------------------------
    Estado é ponto e texto, nunca fundo colorido. A cor chega em --c, escolhida
    pelo domínio. */
-.fn-situacao {
+.fr-situacao {
   display: inline-flex;
   align-items: center;
   gap: var(--re-4);
@@ -111,11 +111,11 @@
   color: var(--text);
   white-space: nowrap;
 }
-.fn-situacao.forte {
+.fr-situacao.forte {
   margin-left: 0;
   font-size: 13px;
 }
-.fn-situacao i {
+.fr-situacao i {
   flex: none;
   width: 8px;
   height: 8px;
@@ -127,7 +127,7 @@
    A coluna que abre dentro do cadastro de um material. Ela é um painel cinza
    encostado no formulário, e não um modal por cima do modal: quem cadastra a
    cor continua vendo a cor enquanto escreve o fornecedor. */
-.fn-lado {
+.fr-lado {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
@@ -136,40 +136,40 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-2);
-  animation: fn-lado-surge var(--t-base) var(--ease-out);
+  animation: fr-lado-surge var(--t-base) var(--ease-out);
 }
-@keyframes fn-lado-surge {
+@keyframes fr-lado-surge {
   from {
     opacity: 0;
     transform: translateX(8px);
   }
 }
-.fn-lado-topo {
+.fr-lado-topo {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-3);
 }
-.fn-lado-topo b {
+.fr-lado-topo b {
   font-size: 15px;
   font-weight: 600;
 }
-.fn-lado-topo small {
+.fr-lado-topo small {
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-2);
 }
-.fn-lado-cnpj {
+.fr-lado-cnpj {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--gap-btn);
 }
-.fn-lado-cnpj .fn-lado-cresce {
+.fr-lado-cnpj .fr-lado-cresce {
   flex: 1 1 180px;
   min-width: 0;
 }
-.fn-lado-link {
+.fr-lado-link {
   align-self: flex-start;
   border: 0;
   background: none;
@@ -182,10 +182,10 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.fn-lado-link:hover {
+.fr-lado-link:hover {
   color: var(--text);
 }
-.fn-lado-receita {
+.fr-lado-receita {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -194,33 +194,33 @@
   border: 1px solid var(--border);
   background: var(--surface);
 }
-.fn-lado-receita svg {
+.fr-lado-receita svg {
   flex: none;
   color: var(--ok);
 }
-.fn-lado-receita.ruim svg {
+.fr-lado-receita.ruim svg {
   color: var(--warn);
 }
-.fn-lado-receita div {
+.fr-lado-receita div {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--gap-colado);
 }
-.fn-lado-receita b {
+.fr-lado-receita b {
   font-size: 14px;
   font-weight: 600;
 }
-.fn-lado-receita small {
+.fr-lado-receita small {
   font-size: 12.5px;
   color: var(--text-2);
 }
-.fn-lado-dois {
+.fr-lado-dois {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-4);
 }
-.fn-lado-pe {
+.fr-lado-pe {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;

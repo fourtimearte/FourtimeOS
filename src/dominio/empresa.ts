@@ -1,3 +1,4 @@
+import { mascaraDoCnpj } from './fornecedor/cnpj'
 /* ==========================================================================
    Os dados da fábrica, num lugar só.
 
@@ -113,16 +114,11 @@ export function empresaAConferir(d: DadosDaEmpresa = EMPRESA): boolean {
    Elas moram aqui, e não na tela, porque o formato do CNPJ e do CEP é do
    DADO: um arquivo importado amanhã tem que passar pela mesma régua que o
    campo digitado hoje. */
+/* O CNPJ NOVO TEM LETRA (alfanumérico, a partir de julho de 2026): os doze
+   primeiros podem ser letra ou número, os dois do fim são número. A máscara
+   é a mesma dos fornecedores, e mora lá, num lugar só. */
 export function mascaraDeCnpj(v: string): string {
-  const n = String(v).replace(/\D/g, '').slice(0, 14)
-  if (n.length <= 2) return n
-  if (n.length <= 5) return n.slice(0, 2) + '.' + n.slice(2)
-  if (n.length <= 8) return n.slice(0, 2) + '.' + n.slice(2, 5) + '.' + n.slice(5)
-  if (n.length <= 12)
-    return n.slice(0, 2) + '.' + n.slice(2, 5) + '.' + n.slice(5, 8) + '/' + n.slice(8)
-  return (
-    n.slice(0, 2) + '.' + n.slice(2, 5) + '.' + n.slice(5, 8) + '/' + n.slice(8, 12) + '-' + n.slice(12)
-  )
+  return mascaraDoCnpj(v)
 }
 
 export function mascaraDeCep(v: string): string {

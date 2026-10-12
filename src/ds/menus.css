@@ -4,15 +4,7 @@
    resolve um problema diferente de escolha.
    ========================================================================== */
 
-:root {
-  --sw-borda: rgba(26, 29, 35, 0.16);
-  --gen-m: #2563eb;
-  --gen-f: #d4157e;
-  --gen-i: #1f8449;
-}
-[data-theme='dark'] {
-  --sw-borda: rgba(255, 255, 255, 0.22);
-}
+/* as variaveis destes menus (--sw-borda, --gen-m, --gen-f, --gen-i) moram em tokens.css */
 
 /* --- a caixa flutuante --------------------------------------------------- */
 .mn {

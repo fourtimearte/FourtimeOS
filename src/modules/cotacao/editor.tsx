@@ -269,7 +269,9 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     if (!salva) return
     try {
       const pedido = await aprovarNoBanco(salva, salva.enviadas.length || 1)
-      const nova = aprovar(salva, pedido.numero, salva.vendedor || 'admin')
+      /* quem apertou o sim, e nao o vendedor da cotacao: o vendedor ja esta
+         gravado na cotacao e no pedido; aqui fica quem registrou a aprovacao */
+      const nova = aprovar(salva, pedido.numero, pessoa?.nome || salva.vendedor || 'admin')
       await gravar(nova)
       avisar(
         'Pedido ' +

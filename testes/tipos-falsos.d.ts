@@ -134,6 +134,7 @@ declare module 'react-router-dom' {
   export const useLocation: any
   export const useNavigate: any
   export const useParams: any
+  export const useRouteError: any
   export const useSearchParams: any
 }
 /* Sem chaves: o modulo abreviado faz TODO import dele virar `any`, e e o

@@ -239,6 +239,12 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
   })
   const ORDEM_DOS_DETALHES = ['barra', 'costura', 'gola', 'manga', 'punho']
   const gravados = []
+  /* o deposito de pecas prontas (073): tres lotes, um infantil e um sem lugar */
+  const lotes = estado === 'vazio' ? [] : [
+    { id: 'lt1', referencia_id: 'r000', cod: 'FT-010-000M', nome: 'CAMISETA MASC TRAD', cor: 'Preto', origem: 'pronta', pedido: '', grade: { P: 6, M: 12, G: 10, GG: 8 }, onde: 'P2 · B3', guardado_em: '2026-09-20T10:00:00Z' },
+    { id: 'lt2', referencia_id: 'r008', cod: 'FT-010-008C', nome: 'CAMISETA INFANTIL UNISSEX', cor: 'Branco', origem: 'sobra', pedido: 'PD-0409', grade: { '4A': 4, '6A': 6, '8A': 8 }, onde: 'P2 · B4', guardado_em: '2026-10-01T10:00:00Z' },
+    { id: 'lt3', referencia_id: 'r090', cod: 'FT-090-000M', nome: 'CALÇAO MASC SEM BOLSO', cor: 'Estampa Atlético', origem: 'mostruario', pedido: '', grade: { M: 2 }, onde: '', guardado_em: '2026-05-01T10:00:00Z' },
+  ]
   let recusas = recusa
   let novos = 0
   let itensNovos = 0
@@ -363,7 +369,27 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
       for (const k of Object.keys(pecasDosKits)) pecasDosKits[k] = pecasDosKits[k].filter((p) => p.referencia_id !== idDe(u, 'id'))
       return { status: 204, corpo: null }
     }
+    if (u.includes('rpc/guardar_pecas')) {
+      gravados.push({ u: 'rpc/guardar_pecas', corpo })
+      const r = refs.find((x) => x.id === corpo.p_referencia)
+      const l = { id: 'lt' + (lotes.length + 1), referencia_id: r.id, cod: r.cod, nome: r.nome, cor: corpo.p_cor.trim(), origem: corpo.p_origem, pedido: corpo.p_origem === 'sobra' ? corpo.p_pedido : '', grade: Object.fromEntries(Object.entries(corpo.p_grade).filter(([, n]) => n > 0)), onde: corpo.p_onde.trim(), guardado_em: '2026-10-12T12:00:00Z' }
+      lotes.unshift(l)
+      return { status: 200, corpo: l }
+    }
+    if (u.includes('rpc/dar_baixa_de_pecas')) {
+      gravados.push({ u: 'rpc/dar_baixa_de_pecas', corpo })
+      const l = lotes.find((x) => x.id === corpo.p_lote)
+      for (const [t, n] of Object.entries(corpo.p_grade)) { l.grade[t] -= n; if (!l.grade[t]) delete l.grade[t] }
+      return { status: 200, corpo: l }
+    }
+    if (u.includes('rpc/mudar_lugar_do_lote')) {
+      gravados.push({ u: 'rpc/mudar_lugar_do_lote', corpo })
+      const l = lotes.find((x) => x.id === corpo.p_lote)
+      l.onde = corpo.p_onde.trim()
+      return { status: 200, corpo: l }
+    }
     if (metodo !== 'GET') return null
+    if (u.includes('peca_pronta')) return { status: 200, corpo: copia(lotes) }
     if (u.includes('item_de_detalhe_na_lista')) {
       if (estado === 'sem-apoio') return { status: 403, corpo: { message: 'permission denied for view item_de_detalhe_na_lista' } }
       return { status: 200, corpo: [...itens].sort((x, y) => ORDEM_DOS_DETALHES.indexOf(x.detalhe) - ORDEM_DOS_DETALHES.indexOf(y.detalhe) || x.ordem - y.ordem || x.nome.localeCompare(y.nome)).map(itemNaLista) }
@@ -410,5 +436,5 @@ export function bancoDasFichas({ estado = 'cheio', recusa = 0, vendas = 'cheias'
     if (u.includes('/material?')) return estado === 'sem-apoio' ? { status: 403, corpo: { message: 'permission denied for table material' } } : { status: 200, corpo: doEstoque }
     return null
   }
-  return { responder, gravados, fichas, refs, pecasDosKits, itens, lidos }
+  return { responder, gravados, fichas, refs, pecasDosKits, itens, lidos, lotes }
 }

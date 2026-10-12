@@ -578,3 +578,72 @@ export async function carregarConstrucao(cod: string): Promise<ConstrucaoDoLayou
     })),
   }
 }
+
+/* --- o deposito de pecas prontas (073) ----------------------------------------- */
+export * from './deposito'
+import type { LoteDePecas, OrigemDaPeca } from './deposito'
+
+type LinhaDoLote = {
+  id: string
+  referencia_id: string | null
+  cod: string
+  nome: string
+  cor: string
+  origem: OrigemDaPeca
+  pedido: string
+  grade: Record<string, number> | null
+  onde: string
+  guardado_em: string
+}
+const deLote = (l: LinhaDoLote): LoteDePecas => ({
+  id: l.id,
+  referenciaId: l.referencia_id ?? '',
+  cod: l.cod,
+  nome: l.nome,
+  cor: l.cor,
+  origem: l.origem,
+  pedido: l.pedido,
+  grade: Object.fromEntries(Object.entries(l.grade ?? {}).map(([k, v]) => [k, Number(v) || 0])),
+  onde: l.onde,
+  guardadoEm: l.guardado_em,
+})
+const COLUNAS_DO_LOTE = 'id,referencia_id,cod,nome,cor,origem,pedido,grade,onde,guardado_em'
+const semO073 = (e: unknown) => e instanceof Error && /PGRST205|PGRST202|schema cache|peca_pronta|guardar_pecas|Could not find/i.test(e.message)
+
+/** null antes da 073 rodar */
+export async function carregarDeposito(): Promise<LoteDePecas[] | null> {
+  try {
+    const ls = await tabela<LinhaDoLote[]>('peca_pronta?select=' + COLUNAS_DO_LOTE + '&order=guardado_em.desc')
+    return ls.map(deLote)
+  } catch (e) {
+    if (semO073(e)) return null
+    throw e
+  }
+}
+
+export async function guardarPecas(p: {
+  referenciaId: string
+  cor: string
+  origem: OrigemDaPeca
+  pedido: string
+  grade: Record<string, number>
+  onde: string
+}): Promise<LoteDePecas> {
+  const l = await chamar<LinhaDoLote>('guardar_pecas', {
+    p_referencia: p.referenciaId,
+    p_cor: p.cor,
+    p_origem: p.origem,
+    p_pedido: p.pedido,
+    p_grade: p.grade,
+    p_onde: p.onde,
+  })
+  return deLote(l)
+}
+
+export async function darBaixaDePecas(lote: string, grade: Record<string, number>, motivo: string): Promise<LoteDePecas> {
+  return deLote(await chamar<LinhaDoLote>('dar_baixa_de_pecas', { p_lote: lote, p_grade: grade, p_motivo: motivo }))
+}
+
+export async function mudarLugarDoLote(lote: string, onde: string): Promise<LoteDePecas> {
+  return deLote(await chamar<LinhaDoLote>('mudar_lugar_do_lote', { p_lote: lote, p_onde: onde }))
+}

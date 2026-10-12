@@ -19,6 +19,7 @@ import * as k from './compilado-produto/src/dominio/produto/kit.js'
 import * as l from './compilado-produto/src/dominio/produto/listas.js'
 import * as o from './compilado-produto/src/dominio/produto/molde.js'
 import * as v from './compilado-produto/src/dominio/produto/vendas.js'
+import * as d from './compilado-produto/src/dominio/produto/deposito.js'
 
 let ruins = 0
 const conta = (certo, frase) => {
@@ -467,6 +468,19 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(igual(depois, { gola: 'Redonda com ribana', manga: 'Curta', barra: 'Bainha' }) && antes.gola === ' redonda ' && l.comNomesTrocados({ gola: 'Polo' }, renomes).gola === 'Polo' && igual(l.comNomesTrocados({}, renomes), {}), 'nomes trocados: o detalhe que tinha o nome antigo passa a ter o novo, sem mexer no objeto de origem; o resto fica como está')
   const mesmo = { gola: 'Polo' }
   conta(l.comNomesTrocados(mesmo, renomes) === mesmo && l.comNomesTrocados(mesmo, []) === mesmo, 'nomes trocados: se nada mudou, devolve o mesmo objeto (a tela não redesenha à toa)')
+}
+
+/* --- o deposito de pecas prontas (073) --- */
+{
+  const lote = (id, grade, extra = {}) => ({ id, referenciaId: 'r' + id, cod: 'FT-010-00' + id, nome: 'P' + id, cor: '', origem: 'pronta', pedido: '', grade, onde: 'P1', guardadoEm: '2026-10-01T10:00:00Z', ...extra })
+  const ls = [lote('1', { P: 6, M: 12 }), lote('2', { '4A': 4, '6A': 6 }, { origem: 'sobra', pedido: 'PD-1', onde: '' }), lote('3', { M: 2 }, { origem: 'mostruario', guardadoEm: '2026-05-01T10:00:00Z' }), lote('4', {})]
+  const r = d.resumoDoDeposito(ls, new Date('2026-10-12T12:00:00Z'))
+  conta(r.pecas === 30 && r.referencias === 3 && r.semLugar === 1 && r.paradas === 2, 'depósito: peças, referências, sem lugar e paradas há mais de 90 dias (' + JSON.stringify(r) + ')')
+  conta(r.porFiltro.tudo === 3 && r.porFiltro.pronta === 1 && r.porFiltro.sobra === 1 && r.porFiltro['sem-lugar'] === 1, 'depósito: o lote zerado sai das contas e dos filtros')
+  conta(d.loteInfantil(ls[1]) && !d.loteInfantil(ls[0]) && !d.loteInfantil(ls[3]), 'depósito: o lote é infantil pelos tamanhos (2A a 14A)')
+  conta(d.textoDaOrigem(ls[1]) === 'sobra do PD-1' && d.textoDaOrigem(ls[2]) === 'mostruário' && d.textoDaOrigem(ls[0]) === 'pronta entrega', 'depósito: o texto da origem')
+  conta(d.baixaPossivel(ls[0], { M: 13 }) === 'O lote só tem 12 no tamanho M.' && d.baixaPossivel(ls[0], { G: 1 }) === 'O lote só tem 0 no tamanho G.' && d.baixaPossivel(ls[0], {}) === 'Escreva quantas peças saem.' && d.baixaPossivel(ls[0], { M: 2 }) === '', 'depósito: a baixa não passa do que o lote tem')
+  conta(d.COLUNAS_DO_DEPOSITO.length === 10 && d.COLUNAS_DO_DEPOSITO[0].join() === 'PP,2A' && d.COLUNAS_DO_DEPOSITO[6].join() === 'G1,14A', 'depósito: as colunas dividem adulto e infantil (PP com 2A, G1 com 14A)')
 }
 
 console.log('')

@@ -69,8 +69,13 @@ function Vista({
   aoAmpliarMolde,
   aoImprimir,
   vendas,
+  prontas,
+  aoVerDeposito,
 }: {
   vendas: VendasDaReferencia | null
+  /** as pecas prontas desta referencia no deposito (073); null antes de ler */
+  prontas?: { pecas: number; lotes: number } | null
+  aoVerDeposito?: () => void
   kits: KitDaReferencia[]
   aoAbrirKit: (id: string) => void
   aoAmpliarMolde: () => void
@@ -246,6 +251,27 @@ function Vista({
             <p className="pd-nota">Esta peça não está em nenhum kit.</p>
           </div>
         )}
+        {prontas ? (
+          <>
+            <div className="pd-sub">Prontas no depósito</div>
+            <div className="pd-lin" data-prontas-da-peca="">
+              <span className="pd-txt">
+                <b>{prontas.pecas ? prontas.pecas + (prontas.pecas === 1 ? ' peça pronta' : ' peças prontas') : 'Nenhuma peça pronta'}</b>
+                <small>
+                  {prontas.pecas
+                    ? 'em ' + prontas.lotes + (prontas.lotes === 1 ? ' lote' : ' lotes') + ': pronta entrega, sobra ou mostruário'
+                    : 'guardada no depósito'}
+                </small>
+              </span>
+              {aoVerDeposito ? (
+                <Botao tom="limpo" tamanho="sm" onClick={aoVerDeposito}>
+                  Ver
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Botao>
+              ) : null}
+            </div>
+          </>
+        ) : null}
         {vendas ? (
           <>
             <div className="pd-sub">Vendas</div>
@@ -292,7 +318,11 @@ export function FichaDaReferencia({
   aoAbrirKit,
   aoImprimir,
   vendas,
+  prontas,
+  aoVerDeposito,
 }: {
+  prontas?: { pecas: number; lotes: number } | null
+  aoVerDeposito?: () => void
   r: ReferenciaNaFicha
   grupo: GrupoDeReferencia | null
   /** as outras referências, para copiar medidas e tecido de uma delas */
@@ -460,6 +490,8 @@ export function FichaDaReferencia({
       aoAmpliarMolde={() => setVisor(true)}
       aoImprimir={() => aoImprimir({ ficha, molde })}
       vendas={vendas}
+      prontas={prontas}
+      aoVerDeposito={aoVerDeposito}
     />
     {visor ? (
       <VisorDoMolde

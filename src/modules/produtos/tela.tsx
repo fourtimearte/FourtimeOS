@@ -30,6 +30,10 @@ import {
   type Periodo,
   type ReferenciaNaFicha,
   type TecidoDeConta,
+  carregarDeposito,
+  lotesVivos,
+  totalDoLote,
+  type LoteDePecas,
 } from '@dominio/produto'
 import { plural } from './apoio'
 import { Arvore, type Lista } from './arvore'
@@ -39,6 +43,7 @@ import { VisaoGeral } from './geral'
 import { ImpressaoDaReferencia, ImpressaoDoKit } from './impressa'
 import { FichaDoKit, type KitCarregado } from './kit'
 import { Movimento, type Agrupar, type Situacao } from './movimento'
+import { Deposito, type AcaoDoDeposito } from './deposito'
 import { NovaReferencia } from './nova'
 import { FichaDaReferencia } from './referencia'
 import { usarVendas } from './vendas'
@@ -58,9 +63,8 @@ import './produtos.css'
    de que a peça é feita.
 
    O QUE EXISTE: as referências e os kits, o molde em tela cheia com as
-   medidas, a folha impressa, o Movimento e as Estatísticas. O Depósito de
-   peças prontas chega no próximo passo, e até lá ele diz isso na própria aba,
-   em vez de fingir que existe.
+   medidas, a folha impressa, o Movimento, as Estatísticas e o Depósito de
+   peças prontas (073, deposito.tsx).
 
    AS VENDAS SÃO UMA LEITURA SÓ (vendas.tsx), feita quando a página abre: ela
    serve à árvore, ao lado direito antes de escolher uma peça, ao Movimento e
@@ -83,11 +87,6 @@ const ABAS: { valor: Aba; rotulo: string }[] = [
   { valor: 'estatisticas', rotulo: 'Estatísticas' },
 ]
 
-const AINDA_NAO = {
-  titulo: 'O Depósito de peças prontas ainda não chegou',
-  texto:
-    'Aqui vai ficar a peça pronta guardada: a pronta entrega, a sobra de pedido e o mostruário, por tamanho e com o lugar de cada lote.',
-}
 
 const O_QUE_BUSCAR: Record<Exclude<Aba, 'deposito'>, string> = {
   fichas: 'Buscar referência, código ou kit',
@@ -130,6 +129,18 @@ export function TelaProdutos() {
 
   const [endereco, setEndereco] = useSearchParams()
   const [aba, setAba] = useState<Aba>('fichas')
+  /* o deposito de pecas prontas (073): os lotes servem a aba e a ficha da peca */
+  const [lotesProntos, setLotesProntos] = useState<LoteDePecas[] | null>(null)
+  const [acaoDoDeposito, setAcaoDoDeposito] = useState<AcaoDoDeposito>('')
+  useEffect(() => {
+    let vivo = true
+    carregarDeposito()
+      .then((l) => vivo && setLotesProntos(l))
+      .catch(() => vivo && setLotesProntos(null))
+    return () => {
+      vivo = false
+    }
+  }, [])
   const [busca, setBusca] = useState('')
   const [lista, setLista] = useState<Lista>('referencias')
   const [abertos, setAbertos] = useState<Set<string>>(new Set())
@@ -522,6 +533,13 @@ export function TelaProdutos() {
               Abrir o Kanban
             </Botao>
           ) : undefined
+        ) : aba === 'deposito' && podeEditar ? (
+          <>
+            <Botao onClick={() => setAcaoDoDeposito('baixa')}>Dar baixa</Botao>
+            <Botao tom="primario" onClick={() => setAcaoDoDeposito('guardar')}>
+              Guardar peças
+            </Botao>
+          </>
         ) : aba === 'fichas' && podeCriar && !celular ? (
           <>
             <Botao onClick={() => seDerParaSair(abrirNovoKit)}>Novo kit</Botao>
@@ -622,9 +640,15 @@ export function TelaProdutos() {
       </div>
 
       {aba === 'deposito' ? (
-        <section className="cartao pd-quadro" data-ainda-nao={aba}>
-          <Vazio titulo={AINDA_NAO.titulo} texto={AINDA_NAO.texto} />
-        </section>
+        <Deposito
+          referencias={referencias}
+          grupos={grupos}
+          podeEditar={podeEditar}
+          celular={celular}
+          acao={acaoDoDeposito}
+          aoFecharAcao={() => setAcaoDoDeposito('')}
+          aoMudar={setLotesProntos}
+        />
       ) : aba !== 'fichas' ? (
         !vendas ? (
           erroDasVendas ? (
@@ -755,6 +779,15 @@ export function TelaProdutos() {
                   aoFechar={() => escolher('')}
                   aoAbrirKit={escolherKit}
                   aoImprimir={lido => setFolha({ de: 'referencia', r: aberta, ...lido })}
+                  prontas={
+                    lotesProntos
+                      ? (() => {
+                          const meus = lotesVivos(lotesProntos).filter((l) => l.referenciaId === aberta.id)
+                          return { pecas: meus.reduce((s, l) => s + totalDoLote(l), 0), lotes: meus.length }
+                        })()
+                      : null
+                  }
+                  aoVerDeposito={() => trocarAba('deposito')}
                   vendas={
                     vendas
                       ? {

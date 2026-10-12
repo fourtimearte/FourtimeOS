@@ -272,3 +272,83 @@ export async function sairDoSupabase(): Promise<void> {
     /* o cracha ja foi apagado daqui, que e o que importa para esta tablet */
   }
 }
+
+/* --- esqueci a senha (12/10/2026) -----------------------------------------
+   Tres passos, todos do proprio Supabase:
+     1. pedirLinkDeSenha: o Supabase manda um e-mail com um link de uso unico
+        que volta para /nova-senha. A resposta e a mesma exista a conta ou
+        nao, para a tela nao virar um jeito de descobrir quem tem conta.
+     2. crachaDoLink: o link chega com o cracha no fragmento do endereco (#),
+        que nunca vai ao servidor. Ele vira a sessao, como uma entrada normal.
+     3. trocarASenha: com o cracha do link, grava a senha nova.
+   O e-mail sai pelo envio do Supabase: sem um servidor de e-mail proprio
+   configurado la (Authentication, SMTP), ele so entrega para quem e da equipe
+   do projeto no Supabase, e poucos por hora. */
+export async function pedirLinkDeSenha(email: string, voltarPara: string): Promise<void> {
+  let resposta: Response
+  try {
+    resposta = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(voltarPara)}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_CHAVE, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    })
+  } catch {
+    throw new Error(SEM_REDE)
+  }
+  if (resposta.status === 429) throw new Error('Muitos pedidos seguidos. Espere alguns minutos e tente de novo.')
+  /* qualquer outra resposta vira a mesma frase na tela: nao conta se a conta existe */
+}
+
+/** O que veio no fragmento do link do e-mail: o cracha, ou o motivo de nao ter vindo. */
+export async function crachaDoLink(fragmento: string): Promise<{ cracha: Cracha } | { erro: string }> {
+  const p = new URLSearchParams(fragmento.replace(/^#/, ''))
+  if (p.get('error') || p.get('error_code')) {
+    return {
+      erro: /expired/i.test(p.get('error_code') ?? '') || /expired/i.test(p.get('error_description') ?? '')
+        ? 'Este link já venceu ou já foi usado. Peça um novo na tela de entrada.'
+        : 'Este link não vale mais. Peça um novo na tela de entrada.',
+    }
+  }
+  const acesso = p.get('access_token'), renovacao = p.get('refresh_token')
+  if (!acesso || !renovacao) return { erro: 'Este endereço não veio de um link de troca de senha. Peça um na tela de entrada.' }
+  let usuario = '', email = ''
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_CHAVE, Authorization: `Bearer ${acesso}` } })
+    if (!r.ok) return { erro: 'Este link já venceu ou já foi usado. Peça um novo na tela de entrada.' }
+    const u = (await r.json().catch(() => ({}))) as { id?: string; email?: string }
+    usuario = u.id ?? ''
+    email = u.email ?? ''
+  } catch {
+    return { erro: SEM_REDE }
+  }
+  const cracha: Cracha = {
+    acesso,
+    renovacao,
+    venceEm: Date.now() + (Number(p.get('expires_in')) || 3600) * 1000,
+    usuario,
+    email,
+  }
+  gravar(cracha)
+  return { cracha }
+}
+
+export async function trocarASenha(nova: string): Promise<void> {
+  const c = ler()
+  if (!c) throw new Error('A sessão do link acabou. Peça um link novo na tela de entrada.')
+  let resposta: Response
+  try {
+    resposta = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { apikey: SUPABASE_CHAVE, Authorization: `Bearer ${c.acesso}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: nova }),
+    })
+  } catch {
+    throw new Error(SEM_REDE)
+  }
+  if (resposta.ok) return
+  const dados = (await resposta.json().catch(() => ({}))) as RespostaDoToken
+  const bruto = [dados.msg, dados.message, dados.error_description, dados.error_code].filter(Boolean).join(' ')
+  if (/weak[ _]password|at least|should be/i.test(bruto)) throw new Error('A senha é curta demais. Use pelo menos 8 caracteres.')
+  if (/same[ _]password|different from the old/i.test(bruto)) throw new Error('A senha nova precisa ser diferente da antiga.')
+  throw new Error(bruto || 'Não consegui trocar a senha agora. Tente de novo.')
+}

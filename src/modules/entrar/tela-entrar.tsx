@@ -136,7 +136,7 @@ export function TelaEntrar() {
         </button>
 
         <p className="ent-pe">
-          Primeira vez? <Link to="/criar-conta">Criar conta</Link>
+          <Link to="/esqueci-a-senha">Esqueci a senha</Link> · Primeira vez? <Link to="/criar-conta">Criar conta</Link>
         </p>
       </form>
     </div>

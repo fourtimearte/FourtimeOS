@@ -204,6 +204,17 @@
   background: var(--brand);
 }
 
+/* o recado de que deu certo (esqueci a senha): o mesmo desenho, em verde */
+.ent-recado.ent-certo {
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.45;
+}
+.ent-recado.ent-certo i {
+  background: var(--ok);
+}
+
 /* --- botao --------------------------------------------------------------- */
 .ent-botao {
   height: 48px;

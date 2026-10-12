@@ -16,7 +16,7 @@ import {
   TelaPaginas,
 } from '@modules/config'
 import { DocumentoDaCotacao, EditorDeCotacao, TelaCotacao, TelaInformesDaCasa } from '@modules/cotacao'
-import { TelaCriarConta, TelaEntrar } from '@modules/entrar'
+import { TelaCriarConta, TelaEntrar, TelaEsqueciASenha, TelaNovaSenha } from '@modules/entrar'
 import { TelaAtividades } from '@modules/atividades'
 import { TelaBanco } from '@modules/banco'
 import { TelaEstoque } from '@modules/estoque'
@@ -47,9 +47,19 @@ const pede = (painel: Painel, tela: ReactNode) => (
   <ExigePainel painel={painel}>{tela}</ExigePainel>
 )
 
+/* O LINK DO E-MAIL DE SENHA pode cair na raiz do site, quando o endereco
+   /nova-senha nao esta na lista de enderecos permitidos do Supabase: o
+   cracha vem no fragmento, com type=recovery, e aqui ele vai para a tela
+   certa antes do roteador ler o endereco. */
+if (typeof window !== 'undefined' && /(^|[#&])type=recovery(&|$)/.test(window.location.hash) && window.location.pathname !== '/nova-senha') {
+  window.history.replaceState(null, '', '/nova-senha' + window.location.hash)
+}
+
 export const rotas = createBrowserRouter([
   { path: '/entrar', element: <TelaEntrar /> },
   { path: '/criar-conta', element: <TelaCriarConta /> },
+  { path: '/esqueci-a-senha', element: <TelaEsqueciASenha /> },
+  { path: '/nova-senha', element: <TelaNovaSenha /> },
   {
     path: '/',
     element: (

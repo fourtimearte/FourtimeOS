@@ -1,0 +1,452 @@
+/* ==========================================================================
+   As tabelas de preço (pranchas 134 a 138). Prefixo pr-.
+   ========================================================================== */
+
+/* --- a mesa: as tabelas, a grade, as regras -------------------------------- */
+.pr-mesa {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+/* as regras descem para baixo da grade, lado a lado, ate a tela ser larga */
+.pr-mesa > aside {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+@media (min-width: 1760px) {
+  .pr-mesa {
+    grid-template-columns: 320px minmax(0, 1fr) 320px;
+  }
+  .pr-mesa > aside {
+    grid-column: auto;
+    display: flex;
+    flex-direction: column;
+  }
+}
+.pr-col {
+  min-width: 0;
+  gap: var(--sp-3);
+}
+.pr-rot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pr-lista {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.pr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--gap-colado);
+  min-height: 72px;
+  padding: var(--re-6) var(--re-8);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pr-item:last-child {
+  border-bottom: 0;
+}
+.pr-item:hover {
+  background: var(--surface-2);
+}
+.pr-item.ligado {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.pr-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pr-l1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-dentro);
+  min-width: 0;
+}
+.pr-item b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pr-item small {
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-nada {
+  margin: 0;
+  padding: var(--re-8);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.pr-selo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--gap-colado);
+  height: 20px;
+  padding: 0 var(--re-4);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+}
+.pr-selo-padrao {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+.pr-selo-rasc {
+  border: 1px dashed var(--border-2);
+  color: var(--text-2);
+}
+
+/* --- a tabela escolhida ------------------------------------------------------ */
+.pr-cartao {
+  min-width: 0;
+  overflow: hidden;
+}
+.pr-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--re-9) var(--re-9) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.pr-titulo,
+.pr-titulo-campo {
+  margin: 0;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pr-titulo-campo {
+  min-width: 0;
+  width: 100%;
+  max-width: 420px;
+  height: 40px;
+  padding: 0 var(--re-4);
+  margin-left: calc(-1 * var(--re-4));
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+}
+.pr-titulo-campo:hover {
+  border-color: var(--border);
+}
+.pr-titulo-campo:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+.pr-apoio {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.pr-ferr {
+  padding: var(--re-6) var(--re-9);
+  border-bottom: 1px solid var(--border);
+}
+.pr-ferr .busca {
+  min-width: 240px;
+  flex: 1;
+  max-width: 340px;
+}
+
+/* a barra de mudar em lote: tarja escura, como a selecao do kanban */
+.pr-lote {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  margin: var(--re-6) var(--re-9);
+  padding: var(--re-5) var(--re-7);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 13.5px;
+}
+.pr-lote .pr-lote-pct {
+  width: 80px;
+}
+
+/* --- a grade ------------------------------------------------------------------ */
+.pr-rola {
+  overflow-x: auto;
+}
+.pr-grade {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+.pr-grade th {
+  padding: var(--re-5) var(--re-6);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: right;
+  white-space: nowrap;
+}
+.pr-grade th small {
+  display: block;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.pr-grade td {
+  height: var(--row-h);
+  padding: 0 var(--re-6);
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pr-grade .pr-ck-col {
+  width: 44px;
+  padding-left: var(--re-9);
+  text-align: left;
+}
+.pr-grade .pr-nm {
+  text-align: left;
+  white-space: normal;
+  min-width: 220px;
+}
+.pr-grade td.pr-nm b {
+  font-weight: 600;
+}
+.pr-grade td.pr-nm small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.pr-grade tr.pr-grupo td {
+  height: 36px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  text-align: left;
+  padding-left: var(--re-9);
+}
+.pr-grade tr.pr-marcada td {
+  background: var(--brand-soft);
+}
+.pr-cod {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  margin-right: var(--re-4);
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* a celula: botao que abre o campo */
+.pr-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--re-2);
+  min-width: 96px;
+  height: 34px;
+  padding: 0 var(--re-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+button.pr-v:not(:disabled) {
+  cursor: text;
+}
+button.pr-v:not(:disabled):hover {
+  border-color: var(--border-2);
+  background: var(--surface);
+}
+button.pr-v:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.pr-v-regra,
+.pr-v-kit {
+  color: var(--text-3);
+}
+.pr-v-vazio {
+  color: var(--text-3);
+}
+.pr-v-base {
+  font-weight: 600;
+}
+.pr-v-mao {
+  font-weight: 600;
+}
+.pr-v-mao::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--warn);
+}
+.pr-v-campo {
+  width: 104px;
+  border: 2px solid var(--ring);
+  background: var(--surface);
+  font-weight: 600;
+  text-align: right;
+}
+.pr-pe {
+  margin: 0;
+  padding: var(--re-6) var(--re-9);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* --- as regras ------------------------------------------------------------------ */
+.pr-bloco {
+  gap: var(--sp-3);
+}
+.pr-nota {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.pr-leg {
+  gap: var(--gap-miudo);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-leg span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+}
+.pr-leg .pr-v {
+  min-width: 72px;
+  height: 26px;
+  font-size: 12.5px;
+}
+
+/* --- a tabela nova ----------------------------------------------------------------- */
+.pr-nova {
+  gap: var(--sp-4);
+}
+.pr-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+.pr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  height: 36px;
+  padding: 0 var(--re-6);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pr-chip-x {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pr-chip-x:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.pr-chip-x:focus-visible {
+  outline: 2px solid var(--on-ink);
+}
+.pr-faixa-nova {
+  width: 110px;
+}
+
+/* --- a pagina de imprimir (o papel mora em papel.css) --- */
+.pr-imp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--sp-6);
+  align-items: start;
+}
+.pr-palco {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  overflow-x: auto;
+}
+
+/* --- abaixo de 1280: as regras descem; abaixo de 900, tudo empilha -------------------- */
+@media (max-width: 1279px) {
+  .pr-mesa {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pr-mesa > aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pr-imp {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 899px) {
+  .pr-mesa > aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pr-2col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (pointer: coarse) {
+  .pr-v {
+    height: 44px;
+  }
+}
+
+/* o campo da faixa nova e curto: cabe um numero */
+.pr-nova .pr-faixa-nova {
+  width: 110px;
+  flex: none;
+}

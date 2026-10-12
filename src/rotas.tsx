@@ -33,6 +33,7 @@ import { TelaRelatorio } from '@modules/relatorio'
 import { TelaKanban } from '@modules/kanban'
 import { TelaPainel } from '@modules/painel'
 import { TelaDeErro, TelaNaoEncontrada } from '@modules/erro'
+import { TelaTabelaImpressa, TelaTabelasDePreco } from '@modules/precos'
 
 /* Este arquivo é o ponto de montagem do sistema: o único lugar que conhece
    todas as camadas ao mesmo tempo. É de propósito que ele fique na raiz de src
@@ -73,6 +74,9 @@ export const rotas = createBrowserRouter([
          Vem antes de cotacao/:id só para quem lê; o roteador já prefere o
          caminho fixo ao que tem :id. */
       { path: 'cotacao/informes', element: pede('cotacao', <TelaInformesDaCasa />) },
+      /* as tabelas de preco (068): a pagina e a folha impressa */
+      { path: 'tabelas', element: pede('cotacao', <TelaTabelasDePreco />) },
+      { path: 'tabelas/:id/imprimir', element: pede('cotacao', <TelaTabelaImpressa />) },
       { path: 'cotacao/:id', element: pede('cotacao', <EditorDeCotacao />) },
       { path: 'cotacao/:id/folha', element: pede('cotacao', <DocumentoDaCotacao />) },
       /* A MESMA FOLHA, OUTRO LEITOR. A do cliente nasce com valor e a da

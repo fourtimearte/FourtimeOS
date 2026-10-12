@@ -1,0 +1,150 @@
+/* ==========================================================================
+   O PAPEL DA TABELA IMPRESSA (prancha 138): A4 em milímetro, branco e em
+   Roboto nos dois temas, como a folha da cotação. Por isso tem licença para
+   cor escrita na mão (testes/tokens.mjs, LIVRES): a cor do papel não vira
+   com o tema da tela.
+   ========================================================================== */
+/* --- a folha impressa ---------------------------------------------------------------- */
+.pr-folha {
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  padding: 14mm 14mm 10mm;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  background: #ffffff;
+  color: #1a1d23;
+  font-family: var(--font-doc);
+  box-shadow: var(--shadow-pop);
+}
+.pr-f-cab {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 0.6mm solid #1a1d23;
+}
+.pr-f-cab h1 {
+  margin: 0;
+  font-size: 15pt;
+  font-weight: 700;
+  text-align: right;
+}
+.pr-f-cab p {
+  margin: 1mm 0 0;
+  font-size: 8.5pt;
+  color: #5c6470;
+  text-align: right;
+}
+.pr-f-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2mm;
+  font-size: 8.5pt;
+}
+.pr-f-info div {
+  padding: 1.5mm 2mm;
+  border: 0.25mm solid #d8dce3;
+  border-radius: var(--radius-xs);
+}
+.pr-f-info small {
+  display: block;
+  font-size: 7pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b929d;
+}
+.pr-f-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+}
+.pr-f-tab th {
+  padding: 1.5mm 1.5mm;
+  border-bottom: 0.4mm solid #1a1d23;
+  font-size: 7.5pt;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5c6470;
+  text-align: right;
+}
+.pr-f-tab td {
+  padding: 1.2mm 1.5mm;
+  border-bottom: 0.25mm solid #e4e7ec;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pr-f-tab .pr-f-cod,
+.pr-f-tab .pr-f-peca {
+  text-align: left;
+}
+.pr-f-tab td.pr-f-cod {
+  width: 16mm;
+  font-weight: 700;
+  font-size: 7.5pt;
+  color: #5c6470;
+}
+.pr-f-tab td.pr-f-peca span {
+  display: block;
+  font-size: 7.5pt;
+  color: #8b929d;
+}
+.pr-f-tab tr.pr-f-g td {
+  background: #f1f3f6;
+  font-weight: 700;
+  font-size: 7.5pt;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5c6470;
+  text-align: left;
+}
+.pr-f-grupo {
+  break-inside: avoid;
+}
+.pr-f-obs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4mm;
+  margin-top: auto;
+  font-size: 8pt;
+  color: #3a3f47;
+}
+.pr-f-obs h4 {
+  margin: 0;
+  font-size: 8pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1d23;
+}
+.pr-f-obs ol {
+  margin: 1mm 0 0;
+  padding-left: 4mm;
+}
+.pr-f-pe {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  padding-top: 2mm;
+  border-top: 0.25mm solid #d8dce3;
+  font-size: 7.5pt;
+  color: #8b929d;
+}
+
+@media print {
+  body.imprimindo .pr-imp {
+    display: block !important;
+  }
+  body.imprimindo .pr-palco {
+    padding: 0 !important;
+    background: #ffffff !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+  body.imprimindo .pr-folha {
+    box-shadow: none !important;
+    min-height: 0 !important;
+  }
+}
+

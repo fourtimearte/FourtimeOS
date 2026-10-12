@@ -18,6 +18,7 @@ import {
   Receipt,
   SignOut,
   Storefront,
+  Tag,
   Sun,
   TShirt,
   Truck,
@@ -275,6 +276,15 @@ export function App() {
           para: '/cotacao',
           rotulo: 'Cotação de venda',
           icone: <Receipt {...icone} />,
+        },
+        /* as tabelas de preco (068) sao de quem ve a Cotacao; mudar e do
+           admin e do gerente, e quem tranca isso e o banco */
+        {
+          chave: 'tabelas',
+          painel: 'cotacao',
+          para: '/tabelas',
+          rotulo: 'Tabelas de preço',
+          icone: <Tag {...icone} />,
         },
       ],
     },

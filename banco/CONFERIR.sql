@@ -18,4 +18,7 @@ where n.nspname = 'public'
   -- contador fica de fora DE PROPOSITO (011): ninguem tira numero de cotacao
   -- nem de pedido na mao, so as duas funcoes security definer que mexem nele.
   and c.relname <> 'contador'
+  -- envio_do_site tambem (065): e o limite por IP do chat da loja, so a
+  -- funcao lead-do-site mexe nele, e ninguem logado precisa ler.
+  and c.relname <> 'envio_do_site'
 order by 1;

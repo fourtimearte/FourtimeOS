@@ -70,26 +70,52 @@ function ehCrachaVencido(erro: ErroDoBanco): boolean {
   return /jwt|token/i.test(erro.message ?? '')
 }
 
+/* TODA CHAMADA TEM PRAZO (12/10/2026; a regra do editor V4 vale aqui tambem).
+   Sem prazo, uma rede que cai no meio deixa a tela girando para sempre e a
+   pessoa sem saber se recarrega. Ler desiste em 30 segundos; gravar espera
+   60, e quando desiste avisa que pode ter gravado, porque o pedido pode ter
+   chegado ao banco antes da rede cair. */
+export const PRAZO_DE_LER = 30_000
+export const PRAZO_DE_GRAVAR = 60_000
+export const RECADO_DO_PRAZO_LENDO = 'O servidor demorou demais para responder. Confira a internet e tente de novo.'
+export const RECADO_DO_PRAZO_GRAVANDO =
+  'O servidor demorou demais para responder. Pode ter gravado: confira antes de tentar de novo.'
+
 export async function tabela<T>(caminho: string, pedido: Pedido = {}): Promise<T> {
   const cracha = await crachaValido()
   if (!cracha) throw new Error(SESSAO_VENCIDA)
 
   const endereco = `${SUPABASE_URL}/rest/v1/${caminho}`
   const corpo = pedido.corpo === undefined ? undefined : JSON.stringify(pedido.corpo)
+  const lendo = (pedido.metodo ?? 'GET') === 'GET'
+  const prazo = new AbortController()
+  const relogio = setTimeout(() => prazo.abort(), lendo ? PRAZO_DE_LER : PRAZO_DE_GRAVAR)
+  try {
+    return await conversar<T>(endereco, corpo, pedido, cracha.acesso, prazo.signal)
+  } catch (e) {
+    if (prazo.signal.aborted) throw new Error(lendo ? RECADO_DO_PRAZO_LENDO : RECADO_DO_PRAZO_GRAVANDO)
+    throw e
+  } finally {
+    clearTimeout(relogio)
+  }
+}
 
+async function conversar<T>(endereco: string, corpo: string | undefined, pedido: Pedido, acesso0: string, sinal: AbortSignal): Promise<T> {
   async function disparar(acesso: string): Promise<Response> {
     try {
       return await fetch(endereco, {
         method: pedido.metodo ?? 'GET',
         headers: cabecalho(acesso, pedido),
         body: corpo,
+        signal: sinal,
       })
-    } catch {
+    } catch (e) {
+      if (sinal.aborted) throw e
       throw new Error('Não consegui falar com o servidor. Confira a internet.')
     }
   }
 
-  let resposta = await disparar(cracha.acesso)
+  let resposta = await disparar(acesso0)
 
   /* 401 de cracha vencido: o servidor derrubou a sessao antes da hora prevista.
      Vale uma renovacao e uma segunda tentativa, nunca mais que isso. */

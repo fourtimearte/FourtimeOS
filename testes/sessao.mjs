@@ -188,6 +188,22 @@ responder = () => resposta(409, { code: '23505', message: 'duplicate key value v
 erro = await erroDe(sb.tabela('cliente', { metodo: 'POST', corpo: { nome: 'Escola Sao Jose' } }))
 conferir('recado que a fabrica entende', erro === 'Já existe um cadastro com esse nome.', erro)
 
+console.log('\no prazo: a rede que nao responde desiste e avisa')
+{
+  const relogioDeVerdade = globalThis.setTimeout
+  /* o prazo de verdade e 30 s; aqui ele vence em 5 ms */
+  globalThis.setTimeout = (fn) => relogioDeVerdade(fn, 5)
+  responder = (_e, opcoes) => new Promise((_ok, falha) => opcoes.signal?.addEventListener('abort', () => falha(new DOMException('aborted', 'AbortError'))))
+  erro = await erroDe(sb.tabela('cliente?select=id'))
+  conferir('ler desiste e pede para tentar de novo', erro === sb.RECADO_DO_PRAZO_LENDO, erro)
+  erro = await erroDe(sb.tabela('cliente', { metodo: 'POST', corpo: { nome: 'X' } }))
+  conferir('gravar desiste e avisa que pode ter gravado', erro === sb.RECADO_DO_PRAZO_GRAVANDO, erro)
+  globalThis.setTimeout = relogioDeVerdade
+}
+responder = () => resposta(200, [{ id: 1 }])
+const lido = await sb.tabela('cliente?select=id')
+conferir('a chamada que responde a tempo nao muda', Array.isArray(lido) && lido[0].id === 1, lido)
+
 console.log('\nsair')
 chamadas = []
 responder = () => resposta(204, null)

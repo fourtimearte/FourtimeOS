@@ -282,7 +282,11 @@
   gap: var(--re-3);
   min-width: 0;
 }
-.campo > label {
+/* o rotulo: <label class="campo"><span class="campo-rotulo"> do componente
+   Campo, ou o <label> dentro de um div.campo escrito a mao. Ate 12/10/2026 a
+   regra so mirava o segundo, e o rotulo do Campo saia sem estilo. */
+.campo > label,
+.campo > .campo-rotulo {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-2);

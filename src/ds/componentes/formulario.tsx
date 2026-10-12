@@ -23,7 +23,7 @@ export function Campo({
 }) {
   return (
     <label className={['campo', erro ? 'erro' : '', className].filter(Boolean).join(' ')}>
-      {rotulo ? <span>{rotulo}</span> : null}
+      {rotulo ? <span className="campo-rotulo">{rotulo}</span> : null}
       {children}
       {dica ? <span className="dica">{dica}</span> : null}
     </label>

@@ -9,15 +9,18 @@
 
 import { crachaValido } from './auth'
 import { SUPABASE_CHAVE, SUPABASE_URL } from './config'
-import { SESSAO_VENCIDA } from './rest'
+import { PRAZO_DE_GRAVAR, RECADO_DO_PRAZO_GRAVANDO, SESSAO_VENCIDA } from './rest'
 
 export async function funcao<T>(nome: string, corpo: unknown = {}): Promise<T> {
   const cracha = await crachaValido()
   if (!cracha) throw new Error(SESSAO_VENCIDA)
 
   let resposta: Response
+  const prazo = new AbortController()
+  const relogio = setTimeout(() => prazo.abort(), PRAZO_DE_GRAVAR)
   try {
     resposta = await fetch(`${SUPABASE_URL}/functions/v1/${nome}`, {
+      signal: prazo.signal,
       method: 'POST',
       headers: {
         apikey: SUPABASE_CHAVE,
@@ -27,11 +30,12 @@ export async function funcao<T>(nome: string, corpo: unknown = {}): Promise<T> {
       body: JSON.stringify(corpo),
     })
   } catch {
-    throw new Error('Não consegui falar com o servidor. Confira a internet.')
+    clearTimeout(relogio)
+    throw new Error(prazo.signal.aborted ? RECADO_DO_PRAZO_GRAVANDO : 'Não consegui falar com o servidor. Confira a internet.')
   }
 
   /* le como texto, pelo mesmo motivo do rest.ts: corpo vazio nao e erro */
-  const texto = await resposta.text()
+  const texto = await resposta.text().finally(() => clearTimeout(relogio))
   let lido: unknown = null
   try {
     lido = texto ? JSON.parse(texto) : null

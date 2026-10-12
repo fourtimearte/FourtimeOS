@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Buildings, DownloadSimple, MapPin, Plus, Truck, User } from '@phosphor-icons/react'
+import { Buildings, DownloadSimple, FileArrowUp, MapPin, Plus, Truck, User } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Aviso, Botao, Busca, Esqueleto, Gaveta, Pagina, Paginador, Segmentado, Selo, Seletor, Vazio, avisar } from '@ds'
 import { formatarCep, semAcento } from '@shared'
 import { FichaDoCliente } from './ficha'
+import { ImportarDoBling } from './importar'
 import { FichaAoLado, RetratoDaBase, TOM_DA_SITUACAO } from './lado'
 import {
   NOME_DA_SITUACAO,
@@ -121,6 +122,8 @@ export function TelaClientes() {
   const largo = useLargo()
 
   const [todos, setTodos] = useState<Cliente[]>([])
+  const [importando, setImportando] = useState(false)
+  const chefe = eu?.papel === 'admin' || eu?.papel === 'gerente'
   const [carregando, setCarregando] = useState(true)
   const [falha, setFalha] = useState('')
   const hoje = useMemo(() => Date.now(), [])
@@ -385,6 +388,12 @@ export function TelaClientes() {
       }
       acoes={
         <>
+          {chefe ? (
+            <Botao tom="contorno" onClick={() => setImportando(true)}>
+              <FileArrowUp size={17} />
+              Importar do Bling
+            </Botao>
+          ) : null}
           <Botao tom="contorno" onClick={exportar} disabled={!achados.length}>
             <DownloadSimple size={17} />
             Exportar
@@ -649,6 +658,7 @@ export function TelaClientes() {
         sugestoes={naEntrega ? transportadorasPara(naEntrega, cepsDaCidade) : []}
         aoFechar={() => setNaEntrega(null)}
       />
+      <ImportarDoBling aberto={importando} base={todos} aoFechar={() => setImportando(false)} aoImportar={() => void recarregar()} />
     </Pagina>
   )
 }

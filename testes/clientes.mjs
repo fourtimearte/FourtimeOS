@@ -45,6 +45,7 @@ const COTACOES = [{ id: 'Q1', numero: 'CO2026-0131', cliente_id: 'C1', cliente_n
 const nav = await chromium.launch()
 const achados = []
 const gravados = []
+const importados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
 async function abrir({ tema, larg, alt }) {
@@ -53,6 +54,7 @@ async function abrir({ tema, larg, alt }) {
     const u = r.request().url()
     let corpo = []
     if (r.request().method() === 'PATCH' && u.includes('/cliente?')) { gravados.push(JSON.parse(r.request().postData() ?? '{}')); corpo = [] }
+    else if (r.request().method() === 'POST' && /\/rest\/v1\/cliente(\?|$)/.test(u)) { importados.push(...JSON.parse(r.request().postData() ?? '[]')); corpo = [] }
     else if (u.includes('/equipe?')) corpo = [{ id: '00000000-0000-4000-8000-0000000000a1', nome: 'Dani Ribeiro' }, { id: '00000000-0000-4000-8000-0000000000a2', nome: 'Rafa Lima' }]
     else if (u.includes('meu_perfil')) corpo = PERFIL
     else if (u.includes('cliente_na_lista')) corpo = u.includes('id=eq.') ? CLIENTES.filter((c) => u.includes(c.id)) : CLIENTES
@@ -116,6 +118,43 @@ for (const tema of ['light', 'dark']) {
         await pg.waitForTimeout(600)
         conta(gravados.length === 1 && gravados[0].vendedor_id === '00000000-0000-4000-8000-0000000000a2' && gravados[0].vendedor === 'Rafa Lima', 'trocar a carteira grava a pessoa e o nome (' + JSON.stringify(gravados.map((g) => [g.vendedor_id, g.vendedor])) + ')')
         await pg.keyboard.press('Escape')
+        await pg.waitForTimeout(300)
+        /* importar do Bling (12/10/2026): os montes antes de gravar */
+        await pg.locator('.pagina-topo button', { hasText: 'Importar do Bling' }).click()
+        await pg.waitForTimeout(300)
+        const CSV = [
+          'ID;Código;Nome;Fantasia;Endereço;Número;Complemento;Bairro;CEP;Cidade;UF;Contatos;Fone;Celular;E-mail;Tipo pessoa;CNPJ / CPF;Situação;Vendedor',
+          '1;;Colégio Exemplo Matriz;;Rua A;10;;Centro;74000-000;Goiânia;GO;;;;;J;12.345.678/0001-90;Ativo;Marcela',
+          '2;;Academia Nova;;Rua B;20;;Centro;;Goiânia;GO;;;(62) 98888-0000;;F;;Ativo;',
+          '3;;atletico exemplo;;;;;;;Anápolis;GO;;;;;J;;Ativo;',
+          '4;;"Padaria São João; Filial";;Av. Brasil;300;;Setor Sul;74100-000;Goiânia;GO;João;(62) 3333-4444;(62) 97777-1111;padaria@exemplo.com;F;123.456.789-09;Ativo;Rafael',
+          '5;;Padaria Sao Joao Dois;;;;;;;Goiânia;GO;;;;;F;123.456.789-09;Ativo;',
+          '6;;;;;;;;;Goiânia;GO;;;;;F;;Ativo;',
+          '7;;Time Novo da Vila;;;;;;;Trindade;GO;Bia;;62955554444;;J;11.222.333/0001-81;Ativo;Marcela',
+        ].join('\r\n')
+        await pg.locator('dialog[open] input[type=file]').setInputFiles({ name: 'contatos.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV, 'latin1') })
+        await pg.waitForTimeout(500)
+        const montes = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .seg button')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()))
+        conta(montes.join('|') === 'Entram 2|Já existem 3|Repetidos 1|Sem nome 1', 'importar: os montes antes de gravar (' + montes.join(' | ') + ')')
+        conta(!importados.length, 'importar: nada é gravado só por escolher o arquivo')
+        await pg.screenshot({ path: `${PASTA}/clientes-importar.png` })
+        const entram = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .cl-imp-tab tbody tr')].map((t) => t.innerText.replace(/\s+/g, ' ').trim()))
+        conta(entram.length === 2 && /Padaria São João; Filial 12345678909 \(62\) 97777-1111 Goiânia, GO/.test(entram[0]), 'importar: o CSV em Latin-1, com aspas e ponto e vírgula dentro do nome (' + entram[0] + ')')
+        await pg.locator('dialog[open] .seg button', { hasText: 'Já existem' }).click()
+        await pg.waitForTimeout(200)
+        const existem = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .cl-imp-tab tbody tr')].map((t) => t.innerText.replace(/\s+/g, ' ').trim()))
+        conta(existem.length === 3 && /mesmo CNPJ de Colégio Exemplo/.test(existem[0]) && /mesmo telefone de Academia Exemplo/.test(existem[1]) && /mesmo nome de Atlético Exemplo/.test(existem[2]), 'importar: já existe pelo CNPJ, pelo final do telefone e pelo nome sem acento (' + existem.join(' | ') + ')')
+        await pg.locator('dialog[open] .seg button', { hasText: 'Repetidos' }).click()
+        await pg.waitForTimeout(200)
+        conta(/mesmo CPF da linha 5/.test(await pg.locator('dialog[open] .cl-imp-tab').innerText()), 'importar: o mesmo CPF duas vezes no arquivo: entra a primeira')
+        const [rel] = await Promise.all([pg.waitForEvent('download', { timeout: 4000 }).catch(() => null), pg.locator('dialog[open] button', { hasText: 'Baixar o que ficou de fora' }).click()])
+        conta(!!rel && rel.suggestedFilename() === 'bling-o-que-ficou-de-fora.csv', 'importar: o relatório do que ficou de fora baixa para aprovar')
+        await pg.locator('dialog[open] button', { hasText: 'Importar 2 clientes novos' }).click()
+        await pg.waitForTimeout(200)
+        conta(!importados.length && /Vão entrar 2 clientes de verdade/.test(await pg.locator('dialog[open]').innerText()), 'importar: pergunta antes de gravar')
+        await pg.locator('dialog[open] button', { hasText: 'Sim, gravar 2 clientes' }).click()
+        await pg.waitForTimeout(800)
+        conta(importados.length === 2 && importados.map((c) => c.nome).join('|') === 'Padaria São João; Filial|Time Novo da Vila' && importados[0].documento === '12345678909' && importados[0].endereco === 'Av. Brasil, 300' && importados[1].tipo === 'J' && importados[1].vendedor === 'Marcela', 'importar: grava só os novos, com o documento limpo e o endereço com número (' + JSON.stringify(importados.map((c) => [c.nome, c.documento, c.tipo])) + ')')
         /* filtros */
         await pg.evaluate(() => [...document.querySelectorAll('.cl-ferr .seg button')].find((b) => /Parados/.test(b.innerText)).click())
         await pg.waitForTimeout(300)

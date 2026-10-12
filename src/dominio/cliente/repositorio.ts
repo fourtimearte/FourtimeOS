@@ -163,6 +163,27 @@ export async function salvarCliente(c: Cliente): Promise<Cliente> {
   return salvo
 }
 
+/* A IMPORTACAO DO BLING grava em lotes de cem: um pedido so com 1.901 linhas
+   seria grande demais, e um lote que falha nao leva os outros junto. Devolve
+   quantos entraram e a primeira falha, se houve. */
+export async function importarClientes(
+  cs: Cliente[],
+  aoAndar?: (feitos: number) => void,
+): Promise<{ entraram: number; falha: string }> {
+  let entraram = 0
+  for (let i = 0; i < cs.length; i += 100) {
+    const lote = cs.slice(i, i + 100)
+    try {
+      await tabela('cliente', { metodo: 'POST', corpo: lote.map(paraLinha) })
+      entraram += lote.length
+      aoAndar?.(entraram)
+    } catch (e) {
+      return { entraram, falha: e instanceof Error ? e.message : 'O banco recusou um lote.' }
+    }
+  }
+  return { entraram, falha: '' }
+}
+
 export async function apagarCliente(id: string): Promise<void> {
   await tabela(`cliente?id=eq.${encodeURIComponent(id)}`, { metodo: 'DELETE' })
 }

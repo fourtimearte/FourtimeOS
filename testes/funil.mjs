@@ -91,6 +91,7 @@ for (const tema of ['light', 'dark']) {
     let chamouVirar = false
     let gravou = null
     let leituras = 0
+    let cotacaoGravada = null
     await ctx.route('**supabase.co/**', async (r) => {
       const req = r.request(); const u = req.url(); const m = req.method()
       let corpo = []
@@ -100,6 +101,10 @@ for (const tema of ['light', 'dark']) {
          da tabela: foi o que aconteceu na primeira rodada. */
       else if (u.includes('rpc/lead_vira_cliente')) { chamouVirar = true; corpo = { id:'C7' } }
       else if (u.includes('/equipe?')) corpo = DONOS
+      else if (/\/rest\/v1\/cotacao(\?|$)/.test(u) && m === 'POST') {
+        try { cotacaoGravada = JSON.parse(req.postData() || 'null') } catch { cotacaoGravada = 'corpo ilegivel' }
+        corpo = []
+      }
       else if (u.includes('/lead') && (m === 'POST' || m === 'PATCH')) {
         try { gravou = JSON.parse(req.postData() || 'null') } catch { gravou = 'corpo ilegivel' }
         corpo = [{ id:'L9' }]
@@ -219,6 +224,16 @@ for (const tema of ['light', 'dark']) {
     conta(ficha.link === 'https://fourtimefit.com.br/products/raglan' && /<b>logo<\/b>/.test(ficha.texto) && !ficha.html,
       `${tema} ${nome}: o produto tem link, e o texto do cliente aparece como texto, nunca HTML`)
     await pg.screenshot({ path: `${PASTA}/funil-ficha-${tema}-${nome}.png`, fullPage:false })
+    /* a cotacao que nasce do lead do site leva o e-mail e o que o cliente respondeu no chat */
+    if (tema === 'light' && nome === 'computador') {
+      await pg.evaluate(() => [...document.querySelectorAll('.fn-inbox button')].find(b => /Criar cotação/.test(b.innerText)).click())
+      await pg.waitForTimeout(1200)
+      const corpo = Array.isArray(cotacaoGravada) ? cotacaoGravada[0]?.corpo : null
+      const obs = corpo?.producao?.observacao ?? ''
+      conta(corpo?.cliente?.email === 'rafa@futsal.exemplo', `${tema} ${nome}: a cotação do lead do site já sai com o e-mail do cliente (${corpo?.cliente?.email})`)
+      conta(/^Do site: Kit camiseta e short, 50 a 100 peças, Prazo: Urgente/.test(obs) && /Viu: Camiseta Raglan/.test(obs) && /Detalhe: <b>logo<\/b> nas costas/.test(obs),
+        `${tema} ${nome}: a cotação do lead do site leva o pedido do chat na observação interna (${obs})`)
+    }
     await pg.evaluate(() => [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Supermercado')).click())
     await pg.waitForTimeout(900)
     const zap = await pg.evaluate(() => ({ abas: !!document.querySelector('.fn-in-abas'), canais: document.querySelectorAll('.fn-canal').length }))

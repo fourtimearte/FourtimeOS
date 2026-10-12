@@ -115,3 +115,26 @@ export function fichaDoSite(l: Lead): BlocoDaFicha[] {
     { titulo: 'Contato e LGPD', linhas: contato },
   ].filter((x) => x.linhas.length)
 }
+
+/* O PEDIDO DO SITE EM UMA LINHA, para a cotacao que nasce do lead (pedido do
+   Henrique, 12/10/2026: montar a cotacao sem redigitar o que o cliente ja
+   respondeu no chat). Vai na "Observacao do pedido", que e interna: nao sai
+   na folha do cliente. A faixa de quantidade fica como texto, porque e uma
+   faixa e nao a grade. */
+export function resumoDoSite(l: Lead): string {
+  const b = l.briefing
+  const partes = [
+    nome('tipo_peca', b.tipo_peca),
+    nome('modelo_camiseta', b.modelo_camiseta),
+    nome('finalidade', b.finalidade),
+    nome('quantidade_faixa', b.quantidade_faixa),
+    nome('prazo', b.prazo) ? 'Prazo: ' + nome('prazo', b.prazo) : '',
+    nome('arte', b.arte),
+  ].filter(Boolean)
+  const detalhe = txt(b.detalhe).replace(/\s+/g, ' ')
+  const produto = txt(obj(b.produto).titulo)
+  let r = partes.join(', ')
+  if (produto) r += (r ? '. ' : '') + 'Viu: ' + produto
+  if (detalhe) r += (r ? '. ' : '') + 'Detalhe: ' + detalhe
+  return r ? ('Do site: ' + r).slice(0, 400) : ''
+}

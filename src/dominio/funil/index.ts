@@ -21,4 +21,4 @@ export {
   type ModoDoLeadDoSite,
   type RegraDoLeadDoSite,
 } from './regra'
-export { fichaDoSite, temFichaDoSite, type BlocoDaFicha, type LinhaDaFicha } from './site'
+export { fichaDoSite, resumoDoSite, temFichaDoSite, type BlocoDaFicha, type LinhaDaFicha } from './site'

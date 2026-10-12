@@ -17,6 +17,7 @@ import {
   moverLead,
   nomeDoLead,
   registrarMensagem,
+  resumoDoSite,
   salvarLead,
   semResposta,
   type Estagio,
@@ -290,7 +291,12 @@ export function TelaFunil() {
       nome: l.nomeLivre,
       contato: l.contato,
       telefone: l.telefone,
+      email: l.email || c.cliente.email,
     }
+    /* o que o cliente respondeu no chat da loja vem junto, na observacao
+       interna do pedido, para ninguem redigitar */
+    const doSite = resumoDoSite(l)
+    if (doSite && !c.producao.observacao) c.producao = { ...c.producao, observacao: doSite }
     /* O LEAD ENTRA NA COTACAO, e e por isso que ela nasce ligada a ele: e essa
        ligacao que faz a venda ser creditada a pessoa certa la no fim, quando o
        pedido for aprovado. */

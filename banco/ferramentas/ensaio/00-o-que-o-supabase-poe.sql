@@ -20,6 +20,11 @@ create table auth.users (
 );
 create or replace function auth.uid() returns uuid language sql stable
 as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+-- No Supabase o authenticated chama auth.uid() direto (as regras de acesso e
+-- os gatilhos que anotam quem mexeu dependem disso); sem este grant, todo
+-- gatilho "atualizado_por := auth.uid()" falhava so aqui no ensaio (068).
+grant usage on schema auth to anon, authenticated, service_role;
+grant execute on function auth.uid() to anon, authenticated, service_role;
 
 -- O Storage. So a casca: a 006 cria o balde do avatar e as regras dele, e sem
 -- estas duas tabelas o arquivo inteiro para na primeira linha.

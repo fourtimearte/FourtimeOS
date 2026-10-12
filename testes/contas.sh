@@ -19,9 +19,11 @@ tsc $IGNORAR \
   "$raiz/src/dominio/cotacao/fabrica.ts" \
   "$raiz/src/dominio/cotacao/comercial.ts" \
   "$raiz/src/dominio/producao/comparacao.ts" \
+  "$raiz/src/dominio/preco/tipos.ts" \
   --target ES2022 --module ESNext --moduleResolution bundler \
   --lib ES2022,DOM --skipLibCheck --outDir "$saida"
 # node exige a extensao no import; o tsc nao a escreve
 find "$saida" -name '*.js' -exec sed -i "s|from '\(\.\.\{0,1\}/[a-z/]*\)'|from '\1.js'|g" {} +
 echo '{"type":"module"}' > "$saida/package.json"
 node "$raiz/testes/contas.mjs"
+node "$raiz/testes/precos.mjs"

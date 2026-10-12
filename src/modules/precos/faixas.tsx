@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, X } from '@phosphor-icons/react'
-import { Botao, Chip, Entrada, Modal } from '@ds'
+import { Botao, Chip, Entrada, Modal, Selo } from '@ds'
 import {
   MAXIMO_DE_FAIXAS,
   MODELOS_DE_FAIXAS,
@@ -132,9 +132,9 @@ export function EditorDeFaixas({ faixas, aoMudar }: { faixas: Faixa[]; aoMudar: 
         <div className="fileira miuda">
           <span className="pr-nota">Na cotação e na folha:</span>
           {faixas.map((f) => (
-            <span key={f.de} className="pr-chip">
+            <Selo key={f.de} forma="contorno">
               {nomeDaFaixa(f)}
-            </span>
+            </Selo>
           ))}
         </div>
       )}

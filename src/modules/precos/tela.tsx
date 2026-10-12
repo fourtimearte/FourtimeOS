@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Copy, DotsThree, List, PencilSimple, Printer, Plus, Package, Star, Table, Tag, Trash, Warning } from '@phosphor-icons/react'
+import { Copy, DotsThree, List, PencilSimple, Printer, Plus, Package, Star, Table, Tag, Trash } from '@phosphor-icons/react'
 import {
   Aviso,
   Botao,
@@ -12,6 +12,7 @@ import {
   Modal,
   Pagina,
   Segmentado,
+  Selo,
   Seletor,
   TituloCartao,
   Vazio,
@@ -461,12 +462,12 @@ export function TelaTabelasDePreco() {
                     <span className="pr-l1">
                       <b className="corta">{x.nome}</b>
                       {x.padrao ? (
-                        <span className="pr-selo pr-selo-padrao">
+                        <Selo tom="brand">
                           <Star size={12} weight="fill" />
-                          PADRÃO
-                        </span>
+                          Padrão
+                        </Selo>
                       ) : x.situacao !== 'ativa' ? (
-                        <span className="pr-selo pr-selo-rasc">{NOME_DA_SITUACAO[x.situacao].toUpperCase()}</span>
+                        <Selo forma="contorno">{NOME_DA_SITUACAO[x.situacao]}</Selo>
                       ) : null}
                     </span>
                     <small>
@@ -540,16 +541,16 @@ export function TelaTabelasDePreco() {
 
               {semPreco ? (
                 <div className="pr-aviso" role="status">
-                  <Warning size={17} />
-                  <span>
-                    <b>
-                      {semPreco} {semPreco === 1 ? 'peça sem preço base.' : 'peças sem preço base.'}
-                    </b>{' '}
+                  <Aviso
+                    titulo={`${semPreco} ${semPreco === 1 ? 'peça sem preço base' : 'peças sem preço base'}`}
+                    acao={
+                      <Botao tom="contorno" tamanho="sm" onClick={() => setSoSemPreco((v) => !v)}>
+                        {soSemPreco ? 'Mostrar todas' : semPreco === 1 ? 'Mostrar só ela' : 'Mostrar só elas'}
+                      </Botao>
+                    }
+                  >
                     {semPreco === 1 ? 'Ela não aparece' : 'Elas não aparecem'} na cotação nem na folha impressa até ganhar um preço.
-                  </span>
-                  <Botao tom="contorno" tamanho="sm" onClick={() => setSoSemPreco((v) => !v)}>
-                    {soSemPreco ? 'Mostrar todas' : semPreco === 1 ? 'Mostrar só ela' : 'Mostrar só elas'}
-                  </Botao>
+                  </Aviso>
                 </div>
               ) : null}
 
@@ -647,9 +648,9 @@ export function TelaTabelasDePreco() {
                 <TituloCartao icone={Tag}>As faixas de quantidade</TituloCartao>
                 <div className="fileira miuda">
                   {t.faixas.map((f) => (
-                    <span key={f.de} className="pr-chip pr-chip-claro">
+                    <Selo key={f.de} forma="contorno">
                       {nomeDaFaixa(f)}
-                    </span>
+                    </Selo>
                   ))}
                 </div>
                 {podeMexer ? (

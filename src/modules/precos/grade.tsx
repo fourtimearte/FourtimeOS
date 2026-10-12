@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Plus, Warning } from '@phosphor-icons/react'
 import { Botao, Marcacao } from '@ds'
 import { celula, nomeDaFaixa, type Contexto, type TabelaDePreco } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao, usarMarcarEmFaixa } from './campo'
 import type { LinhaDaGrade, PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -59,6 +59,7 @@ export function GradeDaTabela({
     aoColar: (cod, i, texto) => aoColar(ordem, ordem.indexOf(cod), i, texto),
   })
 
+  const marcarUma = usarMarcarEmFaixa(ordem, marcados, aoMarcar)
   const alca = usarAlca({
     ordem,
     valorDe: (cod, i) => {
@@ -114,9 +115,8 @@ export function GradeDaTabela({
                         <Marcacao
                           aria-label={'Marcar ' + l.item.codigo}
                           checked={marcado}
-                          onChange={() =>
-                            aoMarcar(marcado ? marcados.filter((c) => c !== l.item.codigo) : [...marcados, l.item.codigo])
-                          }
+                          onChange={() => {}}
+                          onClick={(e) => marcarUma(l.item.codigo, e)}
                         />
                       ) : null}
                     </td>

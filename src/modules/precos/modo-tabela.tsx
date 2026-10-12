@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { CaretRight, ClipboardText, Copy, Plus, X } from '@phosphor-icons/react'
-import { Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar } from '@ds'
+import { Aviso, Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar } from '@ds'
 import { formatarNumeroExato } from '@shared'
 import {
   ajustarEmLote,
@@ -21,7 +21,7 @@ import {
   type EntradaDoCatalogo,
   type TabelaDePreco,
 } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao, usarMarcarEmFaixa } from './campo'
 import { achaNaBusca, type GrupoDoCatalogo, type PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -144,6 +144,11 @@ export function ModoTabela({
 
   const marcar = (cods: string[], sim: boolean) =>
     setMarcados((m) => (sim ? [...new Set([...m, ...cods])] : m.filter((c) => !cods.includes(c))))
+  const marcarUma = usarMarcarEmFaixa(
+    ordem.map((p) => p.codigo),
+    marcados,
+    setMarcados,
+  )
   const naTabela = marcados.filter((c) => item(c))
 
   function aplicarBase() {
@@ -223,20 +228,25 @@ export function ModoTabela({
 
       {daCopiada ? (
         <div className="pr-mt-copia" role="status">
-          <Copy size={16} />
-          <span>
-            Preços da <b>{copiada}</b> copiados:{' '}
-            {t.faixas.map((_f, i) => formatarNumeroExato(celula(t, daCopiada, i, ctx).valor ?? 0)).join(' · ')}. Cole numa
-            peça, no grupo ou nas marcadas.
-          </span>
-          {marcados.length ? (
-            <Botao tom="primario" tamanho="sm" onClick={() => colar(marcados)}>
-              Colar {marcados.length === 1 ? 'na marcada' : `nas ${marcados.length} marcadas`}
-            </Botao>
-          ) : null}
-          <Botao tom="limpo" tamanho="sm" onClick={() => setCopiada('')}>
-            Esquecer
-          </Botao>
+          <Aviso
+            tom="info"
+            titulo={'Preços da ' + copiada + ' copiados'}
+            acao={
+              <span className="fileira">
+                {marcados.length ? (
+                  <Botao tom="primario" tamanho="sm" onClick={() => colar(marcados)}>
+                    Colar {marcados.length === 1 ? 'na marcada' : `nas ${marcados.length} marcadas`}
+                  </Botao>
+                ) : null}
+                <Botao tom="contorno" tamanho="sm" onClick={() => setCopiada('')}>
+                  Esquecer
+                </Botao>
+              </span>
+            }
+          >
+            {t.faixas.map((_f, i) => formatarNumeroExato(celula(t, daCopiada, i, ctx).valor ?? 0)).join(' · ')}. Cole numa peça,
+            no grupo ou nas marcadas.
+          </Aviso>
         </div>
       ) : null}
 
@@ -349,7 +359,12 @@ export function ModoTabela({
                           <tr key={p.codigo} className={[marcado ? 'pr-marcada' : '', it ? '' : 'pr-mt-fora'].filter(Boolean).join(' ')}>
                             <td className="pr-ck-col">
                               {podeMexer ? (
-                                <Marcacao aria-label={'Marcar ' + p.codigo} checked={marcado} onChange={() => marcar([p.codigo], !marcado)} />
+                                <Marcacao
+                                  aria-label={'Marcar ' + p.codigo}
+                                  checked={marcado}
+                                  onChange={() => {}}
+                                  onClick={(e) => marcarUma(p.codigo, e)}
+                                />
                               ) : null}
                             </td>
                             <td className="pr-nm">

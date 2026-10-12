@@ -242,7 +242,7 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.fill('dialog[open] input[aria-label="Fim da faixa 1"]', '25')
   await pg.waitForTimeout(150)
   const auto = await pg.evaluate(() => document.querySelector('dialog[open] .pr-fx-auto')?.textContent)
-  const previa = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .pr-chip')].map((c) => c.textContent).join(', '))
+  const previa = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .pr-fx .selo')].map((c) => c.textContent).join(', '))
   conta(auto === '26' && previa === '1 a 25, 26 a 100, 101 ou mais', '141: escrever onde a faixa acaba, e a seguinte começa sozinha (' + previa + ')')
   await pg.screenshot({ path: `${PASTA}/precos-141.png` })
   await pg.locator('dialog[open] button', { hasText: 'Usar estas faixas' }).click()
@@ -366,6 +366,18 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
     await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 })
     return pg
   }
+  /* Shift mais clique marca o intervalo, como em qualquer lista */
+  const linhaCk = (c) => pg.locator(`.pr-mt-tab label.ck:has(input[aria-label="Marcar ${c}"])`)
+  await linhaCk('CT01').click()
+  await linhaCk('SH01').click({ modifiers: ['Shift'] })
+  await pg.waitForTimeout(150)
+  const faixaMarcada = await pg.evaluate(() => [...document.querySelectorAll('.pr-mt-tab tbody tr:not(.pr-mt-g)')].filter((t) => t.querySelector('input[type=checkbox]')?.checked).map((t) => t.querySelector('.pr-cod').textContent))
+  await linhaCk('CT02').click({ modifiers: ['Control'] })
+  await pg.waitForTimeout(150)
+  const comCtrl = await pg.evaluate(() => [...document.querySelectorAll('.pr-mt-tab tbody tr:not(.pr-mt-g)')].filter((t) => t.querySelector('input[type=checkbox]')?.checked).map((t) => t.querySelector('.pr-cod').textContent))
+  conta(faixaMarcada.join() === 'CT01,CT02,RG01,SH01' && comCtrl.join() === 'CT01,RG01,SH01', 'Shift marca o intervalo e Ctrl tira uma (' + faixaMarcada.join() + ' / ' + comCtrl.join() + ')')
+  await pg.locator('button[aria-label="Desmarcar todas"]').click()
+  await pg.waitForTimeout(150)
   await arrastar('CT01:0', 'CT02:0')
   const sel = await pg.evaluate(() => document.querySelectorAll('.pr-pc-sel').length)
   await pg.screenshot({ path: `${PASTA}/precos-alca.png` })

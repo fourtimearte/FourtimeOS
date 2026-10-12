@@ -70,8 +70,7 @@
   background: var(--surface-2);
 }
 .pr-item.ligado {
-  background: var(--surface-2);
-  box-shadow: inset 3px 0 0 var(--brand);
+  background: var(--ink-soft);
 }
 .pr-item:focus-visible {
   outline: 2px solid var(--ring);
@@ -97,25 +96,6 @@
   margin: 0;
   padding: var(--re-8);
   font-size: 13.5px;
-  color: var(--text-2);
-}
-.pr-selo {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: var(--gap-colado);
-  height: 20px;
-  padding: 0 var(--re-4);
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 700;
-}
-.pr-selo-padrao {
-  background: var(--brand-soft);
-  color: var(--brand-text);
-}
-.pr-selo-rasc {
-  border: 1px dashed var(--border-2);
   color: var(--text-2);
 }
 
@@ -255,7 +235,7 @@
   padding-left: var(--re-9);
 }
 .pr-grade tr.pr-marcada td {
-  background: var(--brand-soft);
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
 }
 .pr-cod {
   display: inline-flex;
@@ -311,19 +291,6 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-4);
-}
-.pr-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--gap-miudo);
-  height: 36px;
-  padding: 0 var(--re-6);
-  border-radius: var(--radius-pill);
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 13.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 
@@ -461,7 +428,7 @@ button.pr-pc:focus-visible {
   background: color-mix(in srgb, var(--surface-2) 55%, transparent);
 }
 .pr-grade tr.pr-marcada td.pr-col-base {
-  background: var(--brand-soft);
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface-2));
 }
 .pr-falta {
   display: flex;
@@ -511,23 +478,7 @@ button.pr-pc:focus-visible {
   text-align: left;
 }
 .pr-aviso {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-btn);
-  flex-wrap: wrap;
-  margin: var(--re-6) var(--re-9) 0;
-  padding: var(--re-5) var(--re-7);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--brand);
-  border-radius: var(--radius);
-  font-size: 13.5px;
-}
-.pr-aviso > span {
-  flex: 1;
-  min-width: 0;
-}
-.pr-aviso > svg {
-  color: var(--brand-text);
+  margin: var(--re-6) var(--re-9);
 }
 .pr-ferr-fim {
   margin-left: auto;
@@ -546,13 +497,6 @@ button.pr-pc:focus-visible {
 }
 .pr-titulo-rotulo .pr-titulo-campo {
   border-color: var(--border);
-}
-.pr-chip-claro {
-  height: 30px;
-  border: 1px solid var(--border-2);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 12.5px;
 }
 .pr-alinha-inicio {
   align-self: flex-start;
@@ -607,8 +551,6 @@ button.pr-pc:focus-visible {
 }
 .pr-fx-l .pr-fx-mais {
   justify-content: center;
-  background: var(--ink);
-  color: var(--on-ink);
   font-weight: 600;
 }
 .pr-fx-add {
@@ -705,7 +647,7 @@ button.pr-pc:focus-visible {
   color: var(--text-3);
 }
 .pr-ad-p.marcada {
-  background: var(--brand-soft);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 .pr-ad-pe {
   padding: var(--re-6) var(--re-7);
@@ -876,9 +818,10 @@ button.pr-pc:focus-visible {
   font-weight: 600;
   color: var(--text);
 }
+/* a opção sugerida: o mesmo realce do kpi escolhido, borda de tinta */
 .pr-op-forte {
-  border: 2px solid var(--ink);
-  background: var(--surface-2);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
 }
 @media (max-width: 899px) {
   .pr-comeco-op {
@@ -969,20 +912,7 @@ button.pr-pc:focus-visible {
 }
 /* copiar os preços de uma peça */
 .pr-mt-copia {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-btn);
-  flex-wrap: wrap;
   margin: var(--re-6) var(--re-9) 0;
-  padding: var(--re-5) var(--re-7);
-  border: 1px solid var(--border-2);
-  border-left: 3px solid var(--ink);
-  border-radius: var(--radius);
-  font-size: 13.5px;
-}
-.pr-mt-copia > span {
-  flex: 1;
-  min-width: 0;
 }
 .pr-mt-nome {
   display: flex;

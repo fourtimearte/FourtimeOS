@@ -24,6 +24,9 @@ function resposta(situacao, corpo) {
     ok: situacao >= 200 && situacao < 300,
     status: situacao,
     json: async () => corpo,
+    /* o rest.js le o corpo como texto (resposta vazia nao e JSON) */
+    text: async () => (corpo === null || corpo === undefined ? '' : JSON.stringify(corpo)),
+    headers: { get: () => null },
   }
 }
 

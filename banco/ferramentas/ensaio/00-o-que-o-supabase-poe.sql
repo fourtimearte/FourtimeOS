@@ -19,7 +19,14 @@ create table auth.users (
   raw_user_meta_data jsonb default '{}'::jsonb
 );
 create or replace function auth.uid() returns uuid language sql stable
-as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+as $$
+  -- como o do Supabase: o claim.sub solto (o jeito antigo) ou o sub de dentro
+  -- do request.jwt.claims (o jeito de hoje). As provas usam os dois.
+  select coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'
+  )::uuid
+$$;
 -- No Supabase o authenticated chama auth.uid() direto (as regras de acesso e
 -- os gatilhos que anotam quem mexeu dependem disso); sem este grant, todo
 -- gatilho "atualizado_por := auth.uid()" falhava so aqui no ensaio (068).

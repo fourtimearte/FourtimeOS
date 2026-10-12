@@ -11,8 +11,11 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', eu)::text, true);
 
   select count(*) into n from public.acao;
-  r := r || case when n = 14 then 'ok    ' else 'FALHA ' end
-         || 'o catalogo tem so acao que a matriz manda [' || n || ']' || E'\n';
+  /* a 030 nasceu com 14; as migracoes seguintes acrescentaram as delas
+     (21 em 12/10/2026). O que a prova garante e que as 14 de partida
+     continuam no catalogo. */
+  r := r || case when n >= 14 then 'ok    ' else 'FALHA ' end
+         || 'o catalogo tem as acoes de partida e as que vieram depois [' || n || ']' || E'\n';
 
   select count(*) into n from public.permissao_da_acao;
   r := r || case when n > 30 then 'ok    ' else 'FALHA ' end

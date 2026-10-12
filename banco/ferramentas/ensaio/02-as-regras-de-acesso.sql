@@ -43,7 +43,9 @@ insert into auth.users (id,email,raw_user_meta_data) values
 update public.pessoa set situacao='aprovado' where id='44444444-4444-4444-4444-444444444444';
 set role authenticated; set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select count(*) as cotacoes_que_a_joana_ve from public.cotacao_na_lista;
-update public.pedido set estado='producao';
+-- a passagem (029 em diante): do aprovado o pedido vai para a separacao, e a
+-- producao e um dos quatro papeis que fazem essa passagem
+update public.pedido set estado='separacao';
 select numero, estado from public.pedido;
 do $$ begin
   insert into public.cotacao (numero, corpo, versao_do_formato, estado, total, pecas)

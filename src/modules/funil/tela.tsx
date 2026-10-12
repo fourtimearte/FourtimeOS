@@ -148,29 +148,20 @@ export function TelaFunil() {
   const aberto = leads.find((l) => l.id === abertoId) ?? null
 
   /* QUADRO OU WHATSAPP (pranchas 131 a 133). So no computador: no celular o
-     botao do WhatsApp abre o aplicativo. A escolha fica lembrada neste
-     navegador. O WhatsApp so e montado na primeira vez que alguem entra no
-     modo, e depois fica montado, escondido, para nao recarregar a cada troca. */
+     botao do WhatsApp abre o aplicativo. A pagina SEMPRE abre no Quadro
+     (pedido do Henrique em 12/10/2026: antes a escolha ficava lembrada e o
+     Funil abria no WhatsApp). O WhatsApp so e montado na primeira vez que
+     alguem entra no modo, e depois fica montado, escondido, para nao
+     recarregar a cada troca. */
   const podeWhatsApp = noComputador()
-  const [modo, setModoBruto] = useState<'quadro' | 'whatsapp'>(() => {
-    try {
-      return podeWhatsApp && localStorage.getItem('ft.funil-modo') === 'whatsapp' ? 'whatsapp' : 'quadro'
-    } catch {
-      return 'quadro'
-    }
-  })
-  const [montado, setMontado] = useState(modo === 'whatsapp')
+  const [modo, setModoBruto] = useState<'quadro' | 'whatsapp'>('quadro')
+  const [montado, setMontado] = useState(false)
   const [pedido, setPedido] = useState<PedidoDeConversa | null>(null)
   const setModo = useCallback((m: 'quadro' | 'whatsapp') => {
     setModoBruto(m)
     if (m === 'whatsapp') {
       setMontado(true)
       setAbertoId('')
-    }
-    try {
-      localStorage.setItem('ft.funil-modo', m)
-    } catch {
-      /* sem armazenamento: vale so nesta visita */
     }
   }, [])
 

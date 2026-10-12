@@ -128,6 +128,7 @@ for (const tema of ['light', 'dark']) {
         { id:'s1', quem:'cliente', tipo:'texto', texto:'Quero um orçamento', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(45), canal:'site' },
         { id:'s2', quem:'sistema', tipo:'texto', texto:'Ótimo! Qual peça?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(44), canal:'site' },
         { id:'s3', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(30), canal:'whatsapp' },
+        { id:'s4', quem:'cliente', tipo:'audio', texto:'', arquivo:'', nome_do_arquivo:'audio 0:48', situacao:'', em:atras(29), canal:'whatsapp' },
       ]
       else if (u.includes('/mensagem?')) corpo = [
         { id:'m1', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?',
@@ -258,7 +259,9 @@ for (const tema of ['light', 'dark']) {
       abas: [...document.querySelectorAll('.fn-in-abas .seg button')].map(b => b.innerText.trim()),
       canais: [...document.querySelectorAll('.fn-canal')].map(c => c.textContent),
       robo: !!document.querySelector('.fn-balao.robo'),
+      midia: document.querySelector('.fn-balao .fn-midia')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
     }))
+    conta(/^Áudio audio 0:48 O arquivo fica no WhatsApp/.test(site.midia), `${tema} ${nome}: o áudio aparece no balão com o tipo e o nome, e não vazio (${site.midia})`)
     conta(site.abas.join() === 'Conversa,Ficha do site', `${tema} ${nome}: o lead do site tem as abas Conversa e Ficha do site`)
     conta(site.canais.join('|') === 'No site, pelo chat da loja|WhatsApp da Fourtime', `${tema} ${nome}: a conversa separa o site do WhatsApp (${site.canais.join(' | ')})`)
     conta(site.robo, `${tema} ${nome}: a fala do roteiro do chat aparece como robô`)

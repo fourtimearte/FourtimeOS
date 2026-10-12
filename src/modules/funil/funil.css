@@ -1380,3 +1380,31 @@ button.fn-pa-doc:focus-visible {
   font-size: 12px;
   color: var(--text-2);
 }
+
+/* a midia no balao: o tipo com o icone, o nome do arquivo e onde ele mora */
+.fn-midia {
+  gap: var(--re-2);
+  min-width: 0;
+}
+.fn-midia-tipo {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-width: 0;
+}
+.fn-midia-tipo svg {
+  flex: none;
+  color: var(--icon-accent);
+}
+.fn-midia-tipo small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.fn-midia a {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.fn-midia-onde {
+  font-size: 12px;
+  color: var(--text-3);
+}

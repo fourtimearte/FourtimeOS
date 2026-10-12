@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PencilSimple, WhatsappLogo } from '@phosphor-icons/react'
+import { ChatTeardropText, File, Image, Microphone, PencilSimple, WhatsappLogo } from '@phosphor-icons/react'
 import { Botao, Segmentado, avisar } from '@ds'
 import { formatarTelefone } from '@shared'
 import {
@@ -192,7 +192,7 @@ export function Inbox({
                 <div key={m.id} className="fn-fala">
                   {separa ? <p className="fn-canal">{NOME_DO_CANAL[m.canal]}</p> : null}
                   <div className={m.quem === 'nos' ? 'fn-balao nos' : m.quem === 'sistema' ? 'fn-balao robo' : 'fn-balao'}>
-                    {m.texto}
+                    {m.tipo === 'texto' ? m.texto : <Midia m={m} />}
                     <time>
                       {m.quem === 'sistema' ? 'roteiro do chat · ' : ''}
                       {m.quem === 'nos' && m.lida ? 'lida' : 'há ' + tempoCurto(minutosDesde(m.em))}
@@ -353,5 +353,39 @@ function Aviao() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+/* A MIDIA NO BALAO (12/10/2026; pendencia do 12, secao 2, item 7). O banco ja
+   guardava o tipo da fala (audio, imagem, arquivo, modelo), e o balao so
+   desenhava o texto: um audio aparecia vazio. Agora cada tipo tem o seu
+   desenho. O arquivo em si nao mora no Fourtime OS (decisao do 16: a midia
+   fica no WhatsApp); quando a linha traz um endereco que abre, vira link. */
+const MIDIA = {
+  audio: { Icone: Microphone, nome: 'Áudio' },
+  imagem: { Icone: Image, nome: 'Imagem' },
+  arquivo: { Icone: File, nome: 'Arquivo' },
+  modelo: { Icone: ChatTeardropText, nome: 'Mensagem modelo' },
+} as const
+
+function Midia({ m }: { m: Mensagem }) {
+  const t = MIDIA[m.tipo as keyof typeof MIDIA] ?? MIDIA.arquivo
+  const abre = /^https?:\/\//.test(m.arquivo)
+  return (
+    <span className="pilha fn-midia">
+      <span className="fn-midia-tipo">
+        <t.Icone size={18} weight="duotone" />
+        <b>{t.nome}</b>
+        {m.nomeDoArquivo ? <small className="corta">{m.nomeDoArquivo}</small> : null}
+      </span>
+      {m.texto ? <span>{m.texto}</span> : null}
+      {abre ? (
+        <a href={m.arquivo} target="_blank" rel="noreferrer">
+          Abrir
+        </a>
+      ) : m.tipo !== 'modelo' ? (
+        <small className="fn-midia-onde">O arquivo fica no WhatsApp de quem conversou.</small>
+      ) : null}
+    </span>
   )
 }

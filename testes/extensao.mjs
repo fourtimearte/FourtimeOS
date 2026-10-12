@@ -154,6 +154,14 @@ await wa.waitForTimeout(1200)
 
 /* --- 8 a 11: o WhatsApp DENTRO do Fourtime OS (pranchas 131 a 133) --- */
 jidDaPagina = '5562999990001@c.us'
+/* mais dois leads para a coluna da direita: um do site esperando ha 3 horas,
+   outro do site que acabou de chegar */
+const LEAD_ESPERANDO = { ...LEAD, id:'L2', nome:'Clube Esperando', telefone:'(62) 98888-0002', estagio:'novo', origem:'site-chat',
+  ultima_msg_em:new Date(Date.now()-3*3600000).toISOString() }
+const LEAD_NOVO = { ...LEAD, id:'L3', nome:'Escola Nova', telefone:'(62) 97777-0003', estagio:'novo', origem:'site-chat',
+  ultima_msg_em:new Date(Date.now()-600000).toISOString() }
+const leadsGuardados = leadsDoBanco
+leadsDoBanco = [LEAD, LEAD_ESPERANDO, LEAD_NOVO]
 await os.bringToFront()
 await os.goto(SITE + '/funil', { waitUntil: 'networkidle' })
 await os.waitForTimeout(1200)
@@ -178,6 +186,44 @@ const coluna = await os.evaluate(() => ({
 conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'a coluna da direita mostra o lead da conversa aberta')
 conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
+
+/* 12/10/2026: a faixa escura saiu; o estado do WhatsApp mora no topo da coluna */
+const semFaixa = await os.evaluate(() => ({
+  faixa: !!document.querySelector('.fn-wa-faixa'),
+  status: document.querySelector('.fn-wa-lado .fn-wa-status')?.innerText ?? '',
+}))
+conta(!semFaixa.faixa && /WhatsApp aberto aqui dentro/.test(semFaixa.status), 'sem faixa escura em cima do WhatsApp; o estado fica no topo da coluna (' + semFaixa.status + ')')
+
+/* a coluna nunca fica vazia: quem espera resposta e quem chegou pelo site */
+conta(/Esperando resposta/i.test(coluna.texto) && /Clube Esperando/.test(coluna.texto), 'a coluna lista quem está esperando resposta')
+conta(/Novos do site/i.test(coluna.texto) && /Escola Nova/.test(coluna.texto), 'a coluna lista os leads novos do site')
+conta(!/Esperando resposta[\s\S]*Atlético Exemplo/i.test(coluna.texto), 'o lead da conversa aberta não se repete nas listas')
+await os.evaluate(() => [...document.querySelectorAll('.fn-wa-item')].find(b => b.innerText.includes('Escola Nova')).click())
+await os.waitForTimeout(600)
+const linksDaLista = await quadroWa.evaluate(() => window.__links).catch(() => [])
+conta(linksDaLista.at(-1) === 'https://wa.me/5562977770003', 'clicar num nome da lista troca a conversa no WhatsApp ao lado (' + linksDaLista.join(' ') + ')')
+
+/* a cara do Fourtime OS: o tema da página vai para dentro do WhatsApp */
+const corDentro = () => quadroWa.evaluate(() => ({
+  claro: document.documentElement.classList.contains('fourtime-claro'),
+  escuro: document.documentElement.classList.contains('fourtime-escuro'),
+  acento: getComputedStyle(document.documentElement).getPropertyValue('--WDS-accent').trim(),
+  fundo: getComputedStyle(document.documentElement).getPropertyValue('--WDS-app-wash').trim(),
+})).catch(() => null)
+const temaDaPagina = await os.evaluate(() => document.documentElement.getAttribute('data-theme'))
+const cor1 = await corDentro()
+const esperado1 = temaDaPagina === 'dark' ? { escuro: true, acento: '#E0262E' } : { claro: true, acento: '#C6161B' }
+conta(!!cor1 && (esperado1.escuro ? cor1.escuro : cor1.claro) && cor1.acento.toUpperCase() === esperado1.acento,
+  'o WhatsApp de dentro ganha as cores do tema da página (' + temaDaPagina + ': ' + JSON.stringify(cor1) + ')')
+const outro = temaDaPagina === 'dark' ? 'light' : 'dark'
+await os.evaluate((t) => document.documentElement.setAttribute('data-theme', t), outro)
+await os.waitForTimeout(400)
+const cor2 = await corDentro()
+conta(!!cor2 && (outro === 'dark' ? cor2.escuro && cor2.fundo.toUpperCase() === '#131416' : cor2.claro && cor2.fundo.toUpperCase() === '#EBEDF1'),
+  'trocar o tema da página repinta o WhatsApp de dentro (' + outro + ': ' + JSON.stringify(cor2) + ')')
+await os.screenshot({ path: 'testes/fotos/extensao-dentro-' + outro + '.png' }).catch(() => {})
+await os.evaluate((t) => document.documentElement.setAttribute('data-theme', t), temaDaPagina)
+leadsDoBanco = leadsGuardados
 
 /* trocar de modo esconde um e mostra o outro (o defeito que o Henrique achou em 11/10/2026:
    o WhatsApp ficava sempre e o quadro ia para baixo dele) */

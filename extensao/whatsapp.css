@@ -1,6 +1,16 @@
-/* A cara do Fourtime OS no WhatsApp Web. Na prova, so a letra e a faixa
-   vermelha no topo: o bastante para saber que o CSS entra e nao quebra nada.
-   Cores e cantos sao da W2, depois de a prova passar. */
+/* ==========================================================================
+   A cara do Fourtime OS no WhatsApp Web.
+
+   Em qualquer aba onde a extensao roda: a letra Urbanist e a faixa vermelha.
+   DENTRO DO FOURTIME OS (html.fourtime-dentro) tambem as cores: as variaveis
+   de tema do proprio WhatsApp (--WDS-*, o Design System dele, presas no html)
+   ganham os tokens do V7, no tema que o Fourtime OS estiver usando (Gelo ou
+   Grafite; a pagina conta pelo quadro). Vermelho e acao e aviso; o verde do
+   WhatsApp sai. A aba comum do WhatsApp fica com as cores dele.
+
+   Se o WhatsApp renomear as variaveis, as cores voltam a ser as dele, sem
+   quebrar nada: nao ha regra presa a classe gerada (x1abc...).
+   ========================================================================== */
 html.fourtime-os body,
 html.fourtime-os body * {
   font-family: 'Urbanist', system-ui, sans-serif !important;
@@ -13,4 +23,132 @@ html.fourtime-os body::before {
   background: #c6161b;
   z-index: 2147483647;
   pointer-events: none;
+}
+
+/* Gelo */
+html.fourtime-dentro.fourtime-claro {
+  --WDS-accent: #C6161B !important;
+  --WDS-accent-RGB: 198, 22, 27 !important;
+  --WDS-accent-deemphasized: #FDECEC !important;
+  --WDS-accent-deemphasized-RGB: 253, 236, 236 !important;
+  --WDS-accent-emphasized: #AE1217 !important;
+  --WDS-accent-emphasized-RGB: 174, 18, 23 !important;
+  --WDS-content-action-emphasized: #B3121A !important;
+  --WDS-content-action-emphasized-RGB: 179, 18, 26 !important;
+  --WDS-content-external-link: #B3121A !important;
+  --WDS-content-external-link-RGB: 179, 18, 26 !important;
+  --WDS-content-default: #1A1D23 !important;
+  --WDS-content-default-RGB: 26, 29, 35 !important;
+  --WDS-content-action-default: #1A1D23 !important;
+  --WDS-content-action-default-RGB: 26, 29, 35 !important;
+  --WDS-content-deemphasized: #5C6470 !important;
+  --WDS-content-deemphasized-RGB: 92, 100, 112 !important;
+  --WDS-surface-default: #FFFFFF !important;
+  --WDS-surface-default-RGB: 255, 255, 255 !important;
+  --WDS-surface-emphasized: #F1F3F6 !important;
+  --WDS-surface-emphasized-RGB: 241, 243, 246 !important;
+  --WDS-surface-elevated-default: #FFFFFF !important;
+  --WDS-surface-elevated-default-RGB: 255, 255, 255 !important;
+  --WDS-surface-elevated-emphasized: #F1F3F6 !important;
+  --WDS-surface-elevated-emphasized-RGB: 241, 243, 246 !important;
+  --WDS-background-wash-plain: #FFFFFF !important;
+  --WDS-background-wash-plain-RGB: 255, 255, 255 !important;
+  --WDS-background-wash-inset: #F1F3F6 !important;
+  --WDS-background-wash-inset-RGB: 241, 243, 246 !important;
+  --WDS-background-elevated-wash-plain: #FFFFFF !important;
+  --WDS-background-elevated-wash-plain-RGB: 255, 255, 255 !important;
+  --WDS-background-elevated-wash-inset: #F1F3F6 !important;
+  --WDS-background-elevated-wash-inset-RGB: 241, 243, 246 !important;
+  --WDS-app-wash: #EBEDF1 !important;
+  --WDS-app-wash-RGB: 235, 237, 241 !important;
+  --WDS-components-surface-nav-bar: #F1F3F6 !important;
+  --WDS-components-surface-nav-bar-RGB: 241, 243, 246 !important;
+  --WDS-components-filter-surface-selected: #E4E7EC !important;
+  --WDS-components-filter-surface-selected-RGB: 228, 231, 236 !important;
+  --WDS-lines-divider: #D8DCE3 !important;
+  --WDS-lines-divider-RGB: 216, 220, 227 !important;
+  --WDS-lines-outline-deemphasized: #D8DCE3 !important;
+  --WDS-lines-outline-deemphasized-RGB: 216, 220, 227 !important;
+  --WDS-lines-outline-default: #C2C8D1 !important;
+  --WDS-lines-outline-default-RGB: 194, 200, 209 !important;
+  --WDS-systems-bubble-surface-outgoing: #E4E7EC !important;
+  --WDS-systems-bubble-surface-outgoing-RGB: 228, 231, 236 !important;
+  --WDS-systems-bubble-surface-incoming: #FFFFFF !important;
+  --WDS-systems-bubble-surface-incoming-RGB: 255, 255, 255 !important;
+  --WDS-systems-chat-background-wallpaper: #EBEDF1 !important;
+  --WDS-systems-chat-background-wallpaper-RGB: 235, 237, 241 !important;
+  --WDS-systems-chat-foreground-wallpaper: #E0E3E9 !important;
+  --WDS-systems-chat-foreground-wallpaper-RGB: 224, 227, 233 !important;
+  --WDS-systems-chat-surface-composer: #FFFFFF !important;
+  --WDS-systems-chat-surface-composer-RGB: 255, 255, 255 !important;
+  --WDS-systems-chat-surface-tray: #F1F3F6 !important;
+  --WDS-systems-chat-surface-tray-RGB: 241, 243, 246 !important;
+  --WDS-secondary-positive: #1F8A50 !important;
+  --WDS-secondary-positive-RGB: 31, 138, 80 !important;
+  --WDS-persistent-always-branded: #C6161B !important;
+  --WDS-persistent-always-branded-RGB: 198, 22, 27 !important;
+}
+
+/* Grafite */
+html.fourtime-dentro.fourtime-escuro {
+  --WDS-accent: #E0262E !important;
+  --WDS-accent-RGB: 224, 38, 46 !important;
+  --WDS-accent-deemphasized: #3B1B1D !important;
+  --WDS-accent-deemphasized-RGB: 59, 27, 29 !important;
+  --WDS-accent-emphasized: #F03B43 !important;
+  --WDS-accent-emphasized-RGB: 240, 59, 67 !important;
+  --WDS-content-action-emphasized: #FF6B70 !important;
+  --WDS-content-action-emphasized-RGB: 255, 107, 112 !important;
+  --WDS-content-external-link: #FF6B70 !important;
+  --WDS-content-external-link-RGB: 255, 107, 112 !important;
+  --WDS-content-default: #EDEEF0 !important;
+  --WDS-content-default-RGB: 237, 238, 240 !important;
+  --WDS-content-action-default: #EDEEF0 !important;
+  --WDS-content-action-default-RGB: 237, 238, 240 !important;
+  --WDS-content-deemphasized: #A2A8B1 !important;
+  --WDS-content-deemphasized-RGB: 162, 168, 177 !important;
+  --WDS-surface-default: #1C1E21 !important;
+  --WDS-surface-default-RGB: 28, 30, 33 !important;
+  --WDS-surface-emphasized: #25282C !important;
+  --WDS-surface-emphasized-RGB: 37, 40, 44 !important;
+  --WDS-surface-elevated-default: #25282C !important;
+  --WDS-surface-elevated-default-RGB: 37, 40, 44 !important;
+  --WDS-surface-elevated-emphasized: #2E3237 !important;
+  --WDS-surface-elevated-emphasized-RGB: 46, 50, 55 !important;
+  --WDS-background-wash-plain: #1C1E21 !important;
+  --WDS-background-wash-plain-RGB: 28, 30, 33 !important;
+  --WDS-background-wash-inset: #25282C !important;
+  --WDS-background-wash-inset-RGB: 37, 40, 44 !important;
+  --WDS-background-elevated-wash-plain: #25282C !important;
+  --WDS-background-elevated-wash-plain-RGB: 37, 40, 44 !important;
+  --WDS-background-elevated-wash-inset: #2E3237 !important;
+  --WDS-background-elevated-wash-inset-RGB: 46, 50, 55 !important;
+  --WDS-app-wash: #131416 !important;
+  --WDS-app-wash-RGB: 19, 20, 22 !important;
+  --WDS-components-surface-nav-bar: #1C1E21 !important;
+  --WDS-components-surface-nav-bar-RGB: 28, 30, 33 !important;
+  --WDS-components-filter-surface-selected: #3B4048 !important;
+  --WDS-components-filter-surface-selected-RGB: 59, 64, 72 !important;
+  --WDS-lines-divider: #2B2F35 !important;
+  --WDS-lines-divider-RGB: 43, 47, 53 !important;
+  --WDS-lines-outline-deemphasized: #2B2F35 !important;
+  --WDS-lines-outline-deemphasized-RGB: 43, 47, 53 !important;
+  --WDS-lines-outline-default: #3B4048 !important;
+  --WDS-lines-outline-default-RGB: 59, 64, 72 !important;
+  --WDS-systems-bubble-surface-outgoing: #2E3237 !important;
+  --WDS-systems-bubble-surface-outgoing-RGB: 46, 50, 55 !important;
+  --WDS-systems-bubble-surface-incoming: #25282C !important;
+  --WDS-systems-bubble-surface-incoming-RGB: 37, 40, 44 !important;
+  --WDS-systems-chat-background-wallpaper: #131416 !important;
+  --WDS-systems-chat-background-wallpaper-RGB: 19, 20, 22 !important;
+  --WDS-systems-chat-foreground-wallpaper: #1C1E21 !important;
+  --WDS-systems-chat-foreground-wallpaper-RGB: 28, 30, 33 !important;
+  --WDS-systems-chat-surface-composer: #25282C !important;
+  --WDS-systems-chat-surface-composer-RGB: 37, 40, 44 !important;
+  --WDS-systems-chat-surface-tray: #1C1E21 !important;
+  --WDS-systems-chat-surface-tray-RGB: 28, 30, 33 !important;
+  --WDS-secondary-positive: #1F8A50 !important;
+  --WDS-secondary-positive-RGB: 31, 138, 80 !important;
+  --WDS-persistent-always-branded: #E0262E !important;
+  --WDS-persistent-always-branded-RGB: 224, 38, 46 !important;
 }

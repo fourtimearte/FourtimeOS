@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.2.0).
+   A extensao dentro do WhatsApp Web (0.3.0).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -10,7 +10,8 @@
    Em quadro de qualquer outro site, nada.
 
    O que ela faz, e nada alem disso:
-     1. a cara do Fourtime OS (whatsapp.css);
+     1. a cara do Fourtime OS (whatsapp.css): dentro, nas cores do tema que
+        a pagina manda (Gelo ou Grafite);
      2. conta QUAL conversa esta aberta: so o telefone dela, lido do
         identificador das mensagens. Nao le texto nenhum;
      3. troca de conversa quando o Fourtime OS pede, sem recarregar se o
@@ -129,7 +130,15 @@
     window.addEventListener('message', (e) => {
       if (e.origin !== pai || e.source !== parent) return
       const d = e.data
-      if (!d || d.fourtime !== 'pedido' || d.tipo !== 'abrir') return
+      if (!d || d.fourtime !== 'pedido') return
+      /* o tema do Fourtime OS (Gelo ou Grafite): as cores do whatsapp.css */
+      if (d.tipo === 'tema') {
+        const escuro = d.tema === 'dark'
+        document.documentElement.classList.toggle('fourtime-escuro', escuro)
+        document.documentElement.classList.toggle('fourtime-claro', !escuro)
+        return
+      }
+      if (d.tipo !== 'abrir') return
       const n = numero(d.telefone)
       if (!n) return
       const texto = String(d.texto || '')

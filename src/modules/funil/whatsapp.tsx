@@ -89,15 +89,30 @@ export function PainelDoWhatsApp({
     return () => window.removeEventListener('message', ouvir)
   }, [])
 
+  const pedir = (telefone: string, texto = '') =>
+    quadro.current?.contentWindow?.postMessage({ fourtime: 'pedido', tipo: 'abrir', telefone, texto }, WHATSAPP)
+
+  /* O TEMA DO FOURTIME OS VAI PARA DENTRO: a extensao pinta o WhatsApp de
+     Gelo ou de Grafite (whatsapp.css), e repinta quando o tema da pagina muda */
+  useEffect(() => {
+    if (!pronto) return
+    const contar = () =>
+      quadro.current?.contentWindow?.postMessage(
+        { fourtime: 'pedido', tipo: 'tema', tema: document.documentElement.getAttribute('data-theme') || 'light' },
+        WHATSAPP,
+      )
+    contar()
+    const vigia = new MutationObserver(contar)
+    vigia.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => vigia.disconnect()
+  }, [pronto])
+
   /* o pedido do quadro vai para o WhatsApp assim que ele estiver de pe */
   const ultimoPedido = useRef(0)
   useEffect(() => {
     if (!pedido || !pronto || pedido.marca === ultimoPedido.current) return
     ultimoPedido.current = pedido.marca
-    quadro.current?.contentWindow?.postMessage(
-      { fourtime: 'pedido', tipo: 'abrir', telefone: pedido.telefone, texto: pedido.texto },
-      WHATSAPP,
-    )
+    pedir(pedido.telefone, pedido.texto)
   }, [pedido, pronto])
 
   const lead = useMemo(() => {
@@ -108,19 +123,25 @@ export function PainelDoWhatsApp({
 
   if (!extensao) return visivel ? <AvisoDaExtensao fixo /> : null
 
+  /* A COLUNA NUNCA FICA VAZIA (pedido do Henrique, 12/10/2026): quem esta
+     esperando resposta e quem chegou pelo site, a um clique de abrir a
+     conversa no WhatsApp ao lado. O lead da conversa aberta sai das listas. */
+  const esperando = leads
+    .filter((l) => l.id !== lead?.id && l.telefone && semResposta(l, relogio))
+    .sort((a, b) => minutosDesde(b.ultimaMsgEm, relogio) - minutosDesde(a.ultimaMsgEm, relogio))
+    .slice(0, 8)
+  const doSite = leads
+    .filter((l) => l.id !== lead?.id && l.telefone && l.origem === 'site-chat' && l.estagio === 'novo')
+    .filter((l) => !esperando.includes(l))
+    .slice(0, 6)
+  const comPais = (t: string) => {
+    const n = t.replace(/\D/g, '')
+    return n.startsWith('55') ? n : '55' + n
+  }
+
   return (
     <div className={visivel ? 'fn-wa' : 'fn-wa fn-guardado'} aria-hidden={!visivel}>
       <section className="fn-wa-quadro" aria-label="WhatsApp Web">
-        <header className="fn-wa-faixa">
-          <span className={pronto ? 'fn-wa-ponto ligado' : 'fn-wa-ponto'} aria-hidden="true" />
-          <b>WhatsApp</b>
-          <small>
-            {pronto
-              ? 'o WhatsApp Web de verdade, aberto aqui dentro'
-              : 'abrindo o WhatsApp Web... na primeira vez, escaneie o QR Code com o celular'}
-          </small>
-          {recarregou ? <small className="fn-wa-nota">trocou de conversa recarregando</small> : null}
-        </header>
         <iframe
           ref={quadro}
           className="fn-wa-frame"
@@ -131,6 +152,12 @@ export function PainelDoWhatsApp({
       </section>
 
       <aside className="fn-wa-lado" aria-label="O lead desta conversa">
+        {/* o estado do WhatsApp, que antes era uma faixa escura em cima dele */}
+        <p className="fn-wa-status">
+          <span className={pronto ? 'fn-wa-ponto ligado' : 'fn-wa-ponto'} aria-hidden="true" />
+          {pronto ? 'WhatsApp aberto aqui dentro' : 'Abrindo o WhatsApp... na primeira vez, escaneie o QR Code'}
+          {recarregou ? <small>trocou de conversa recarregando</small> : null}
+        </p>
         {!conversa.jid && !conversa.telefone ? (
           <p className="fn-in-vazio">Abra uma conversa no WhatsApp e o lead dela aparece aqui.</p>
         ) : conversa.jid.endsWith('@g.us') ? (
@@ -159,7 +186,59 @@ export function PainelDoWhatsApp({
             ) : null}
           </div>
         )}
+
+        {esperando.length ? (
+          <ListaDeConversas
+            titulo="Esperando resposta"
+            leads={esperando}
+            relogio={relogio}
+            atrasado
+            aoAbrir={(l) => pedir(comPais(l.telefone))}
+          />
+        ) : null}
+        {doSite.length ? (
+          <ListaDeConversas
+            titulo="Novos do site"
+            leads={doSite}
+            relogio={relogio}
+            aoAbrir={(l) => pedir(comPais(l.telefone))}
+          />
+        ) : null}
       </aside>
+    </div>
+  )
+}
+
+function ListaDeConversas({
+  titulo,
+  leads,
+  relogio,
+  atrasado,
+  aoAbrir,
+}: {
+  titulo: string
+  leads: Lead[]
+  relogio: number
+  atrasado?: boolean
+  aoAbrir: (l: Lead) => void
+}) {
+  return (
+    <div className="pilha fn-wa-bloco">
+      <span className="fn-wa-rot">
+        {titulo} <span className="fn-seg-n">{leads.length}</span>
+      </span>
+      <ul className="fn-wa-lista">
+        {leads.map((l) => (
+          <li key={l.id}>
+            <button type="button" className="fn-wa-item" onClick={() => aoAbrir(l)} title="Abrir a conversa no WhatsApp">
+              <span className="corta">{nomeDoLead(l)}</span>
+              <small className={atrasado ? 'fn-tempo atrasado' : 'fn-tempo'}>
+                {l.ultimaMsgEm ? 'há ' + tempoCurto(minutosDesde(l.ultimaMsgEm, relogio)) : ''}
+              </small>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

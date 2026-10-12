@@ -40,6 +40,13 @@ const ROTULO: Record<string, string> = {
   cotacao: 'Cotações',
   pedido: 'Pedidos',
   material: 'Materiais',
+  consumo: 'Consumo',
+  /* da 069 em diante a view conta estes também */
+  fornecedor: 'Fornecedores',
+  conferencia_de_boleto: 'Boletos conferidos',
+  transportador: 'Transportadores',
+  lancamento_de_transporte: 'Lançamentos de transporte',
+  tabela_de_preco: 'Tabelas de preço',
 }
 
 export function TelaEnsaio() {

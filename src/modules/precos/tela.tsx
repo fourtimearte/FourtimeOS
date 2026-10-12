@@ -9,6 +9,7 @@ import {
   Entrada,
   Interruptor,
   MenuDeContexto,
+  LINHA_ESCOLHIDA,
   Modal,
   Pagina,
   Segmentado,
@@ -85,7 +86,6 @@ export function TelaTabelasDePreco() {
   const [semBanco, setSemBanco] = useState(false)
   const [lendo, setLendo] = useState(true)
   const [falha, setFalha] = useState('')
-  const [verArquivadas, setVerArquivadas] = useState(false)
   const [rascunho, setRascunho] = useState<TabelaDePreco | null>(null)
   const [marcados, setMarcados] = useState<string[]>([])
   const [busca, setBusca] = useState('')
@@ -382,8 +382,15 @@ export function TelaTabelasDePreco() {
     )
   }
 
-  const visiveis = tabelas.filter((x) => (verArquivadas ? x.situacao === 'arquivada' : x.situacao !== 'arquivada'))
-  const arquivadas = tabelas.filter((x) => x.situacao === 'arquivada').length
+  /* A COLUNA EM SECOES (pedido de 12/10/2026): Rascunhos, Ativas e
+     Arquivadas, num cartao branco, como a fila do PCP e da Separacao; a
+     escolhida leva o desenho do item aberto do menu (LINHA_ESCOLHIDA) */
+  const porData = (a: TabelaDePreco, b: TabelaDePreco) => (b.atualizadoEm || '').localeCompare(a.atualizadoEm || '')
+  const secoes: [string, TabelaDePreco[]][] = [
+    ['Rascunhos', tabelas.filter((x) => x.situacao === 'rascunho').sort(porData)],
+    ['Ativas', tabelas.filter((x) => x.situacao === 'ativa').sort((a, b) => Number(b.padrao) - Number(a.padrao) || a.nome.localeCompare(b.nome, 'pt'))],
+    ['Arquivadas', tabelas.filter((x) => x.situacao === 'arquivada').sort(porData)],
+  ]
   const ativas = tabelas.filter((x) => x.situacao === 'ativa').length
   const nomeDaPadrao = tabelas.find((x) => x.padrao)?.nome
 
@@ -443,65 +450,79 @@ export function TelaTabelasDePreco() {
         </section>
       ) : (
         <div className="pr-mesa">
-          <div className="pilha pr-col">
-            <span className="pr-rot">
-              <Tag size={15} />
-              {verArquivadas ? 'Arquivadas' : 'As tabelas da casa'}
-            </span>
-            <div className="pr-lista" role="list">
-              {visiveis.length === 0 ? (
-                <p className="pr-nada">{lendo ? 'Lendo...' : verArquivadas ? 'Nenhuma arquivada.' : 'Nenhuma tabela ainda.'}</p>
-              ) : (
-                visiveis.map((x) => (
-                  <div role="listitem" key={x.id} className="pr-item-caixa">
-                  <button
-                    type="button"
-                    className={'pr-item' + (x.id === escolhidaId ? ' ligado' : '')}
-                    onClick={() => trocarTabela(x.id)}
-                  >
-                    <span className="pr-l1">
-                      <b className="corta">{x.nome}</b>
-                      {x.padrao ? (
-                        <Selo tom="brand">
-                          <Star size={12} weight="fill" />
-                          Padrão
-                        </Selo>
-                      ) : x.situacao !== 'ativa' ? (
-                        <Selo forma="contorno">{NOME_DA_SITUACAO[x.situacao]}</Selo>
-                      ) : null}
-                    </span>
-                    <small>
-                      {x.itens.length ? `${x.itens.length} ${x.itens.length === 1 ? 'peça' : 'peças'}` : 'nenhuma peça ainda'}
-                      {x.valeAte ? ' · vale até ' + x.valeAte.split('-').reverse().join('/') : ''}
-                    </small>
-                    <small>{x.soGerente ? 'Só gerente e admin escolhem' : x.situacao === 'rascunho' ? 'Ainda não aparece na cotação' : 'Todos os vendedores usam'}</small>
-                  </button>
-                  {podeMexer ? (
-                    <button
-                      type="button"
-                      className="btn btn-limpo icone pr-item-mais"
-                      aria-label={'Editar, duplicar, arquivar ou excluir a ' + x.nome}
-                      title="Editar, duplicar, arquivar ou excluir"
-                      aria-haspopup="menu"
-                      aria-expanded={menuDe === x.id}
-                      onClick={(e) => {
-                        ancoraDoMenu.current = e.currentTarget
-                        setMenuDe((m) => (m === x.id ? '' : x.id))
-                      }}
-                    >
-                      <DotsThree size={18} weight="bold" />
-                    </button>
-                  ) : null}
-                  </div>
-                ))
-              )}
+          <section className="cartao pr-tabelas" aria-label="As tabelas de preço">
+            <div className="pr-col-cab">
+              <b>
+                <Tag size={17} />
+                As tabelas
+              </b>
+              <small>{tabelas.length}</small>
             </div>
-            {arquivadas || verArquivadas ? (
-              <Botao tom="limpo" tamanho="sm" onClick={() => setVerArquivadas((v) => !v)}>
-                {verArquivadas ? 'Voltar às tabelas da casa' : `Arquivadas (${arquivadas})`}
-              </Botao>
-            ) : null}
-          </div>
+            {!tabelas.length ? <p className="pr-nada">{lendo ? 'Lendo...' : 'Nenhuma tabela ainda.'}</p> : null}
+            {secoes.map(([nome, lista]) =>
+              lista.length ? (
+                <div key={nome} className="pr-secao" role="list" aria-label={nome}>
+                  <div className="pr-g">
+                    {nome}
+                    <small>{lista.length}</small>
+                  </div>
+                  {lista.map((x) => (
+                    <div
+                      role="listitem"
+                      key={x.id}
+                      className={'pr-item-caixa' + (x.id === escolhidaId ? ' ' + LINHA_ESCOLHIDA : '') + (x.situacao === 'arquivada' ? ' pr-arq' : '')}
+                    >
+                      <button
+                        type="button"
+                        className={'pr-item' + (x.id === escolhidaId ? ' ligado' : '')}
+                        aria-pressed={x.id === escolhidaId}
+                        onClick={() => trocarTabela(x.id)}
+                      >
+                        <span className="pr-l1">
+                          <b className="corta">{x.nome}</b>
+                          {x.padrao ? (
+                            <Selo tom="brand">
+                              <Star size={12} weight="fill" />
+                              Padrão
+                            </Selo>
+                          ) : null}
+                        </span>
+                        <small>
+                          {x.itens.length ? `${x.itens.length} ${x.itens.length === 1 ? 'peça' : 'peças'}` : 'nenhuma peça ainda'}
+                          {x.valeAte ? ' · vale até ' + x.valeAte.split('-').reverse().join('/') : ''}
+                        </small>
+                        <small>
+                          {x.situacao === 'arquivada'
+                            ? 'Some da cotação, pode voltar'
+                            : x.situacao === 'rascunho'
+                              ? 'Ainda não aparece na cotação'
+                              : x.soGerente
+                                ? 'Só gerente e admin escolhem'
+                                : 'Todos os vendedores usam'}
+                        </small>
+                      </button>
+                      {podeMexer ? (
+                        <button
+                          type="button"
+                          className="btn btn-limpo icone pr-item-mais"
+                          aria-label={'Editar, duplicar, arquivar ou excluir a ' + x.nome}
+                          title="Editar, duplicar, arquivar ou excluir"
+                          aria-haspopup="menu"
+                          aria-expanded={menuDe === x.id}
+                          onClick={(e) => {
+                            ancoraDoMenu.current = e.currentTarget
+                            setMenuDe((m) => (m === x.id ? '' : x.id))
+                          }}
+                        >
+                          <DotsThree size={18} weight="bold" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null,
+            )}
+          </section>
 
           {!t ? (
             <div className="cartao pr-cartao">

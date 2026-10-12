@@ -108,8 +108,10 @@ for (const tema of ['light', 'dark']) {
     const T = `${tema} ${nome}:`
     const rola = await pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)
     conta(!rola, `${T} a página não rola de lado`)
-    const lista = await pg.evaluate(() => [...document.querySelectorAll('.pr-item b')].map((b) => b.textContent))
-    conta(lista.join() === 'Atacado 2026,Varejo 2026', `${T} a lista mostra as tabelas da casa, sem a arquivada (${lista.join(', ')})`)
+    const lista = await pg.evaluate(() => [...document.querySelectorAll('.pr-secao')].map((sc) => sc.querySelector('.pr-g').firstChild.textContent + ': ' + [...sc.querySelectorAll('.pr-item b')].map((b) => b.textContent).join(', ')))
+    conta(lista.join(' | ') === 'Ativas: Atacado 2026, Varejo 2026 | Arquivadas: Licitação velha', `${T} a coluna separa as tabelas em seções, a padrão primeiro (${lista.join(' | ')})`)
+    const escolhida = await pg.evaluate(() => { const c = document.querySelector('.pr-item-caixa.tinta'); return c ? c.innerText.split('\n')[0] : '' })
+    conta(escolhida === 'Atacado 2026', `${T} a escolhida leva o desenho do item aberto do menu (${escolhida})`)
     const ct = await celulas(pg, 'CT01'); const ct2 = await celulas(pg, 'CT02'); const kt = await celulas(pg, 'KT01')
     conta(ct.join() === '49,90,44,90~,40,90~,36,90~', `${T} a padrão abre sozinha: base e a regra nas faixas (${ct.join(' ')})`)
     conta(ct2[1] === '48,90*', `${T} o escrito à mão aparece com ponto (${ct2.join(' ')})`)

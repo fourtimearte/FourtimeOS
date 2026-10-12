@@ -447,7 +447,6 @@ export function TelaFunil() {
             aoCriarLead={(t) =>
               setEditando({ ...leadEmBranco(), telefone: t.replace(/^55(?=\d{10,11}$)/, '') })
             }
-            aoEditar={(l) => setEditando(l)}
             aoRegistrar={(l, texto) => void registrar(l, texto)}
             eu={{ id: eu?.id ?? '', nome: eu?.nome ?? '', chefe: !!eu && (eu.papel === 'admin' || eu.papel === 'gerente') }}
           />

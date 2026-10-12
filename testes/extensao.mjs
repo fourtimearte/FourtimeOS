@@ -203,7 +203,8 @@ const coluna = await os.evaluate(() => ({
 }))
 conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'o painel ao lado mostra o lead da conversa aberta, preso em cima')
 conta(/Cadastrar cliente/.test(coluna.texto) && /Montar cotação/.test(coluna.texto), 'o painel oferece Cadastrar cliente e Montar cotação para o lead sem cadastro')
-conta(/Atendimento/.test(coluna.texto) && /Cliente/.test(coluna.texto) && /Funil/.test(coluna.texto), 'o painel tem as três abas: Atendimento, Cliente e Funil')
+const abas = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].map((b) => b.innerText.trim()))
+conta(abas.join() === 'Atendimento,Cliente', 'o painel tem as duas abas, Atendimento e Cliente (' + abas.join(', ') + ')')
 conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
 
@@ -234,20 +235,8 @@ const abaCliente = await os.evaluate(() => document.querySelector('.fn-pa-miolo'
 conta(/ainda não é cliente/.test(abaCliente) && /Nenhuma cotação ainda/.test(abaCliente) && /O que já aconteceu/.test(abaCliente), 'a aba Cliente mostra o cadastro, as cotações e o que já aconteceu')
 await os.screenshot({ path: 'testes/fotos/extensao-cliente.png' }).catch(() => {})
 
-/* --- 152: a aba Funil: clicar num cartao troca a conversa ao lado --- */
-await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => /Funil/.test(b.innerText)).click())
-await os.waitForTimeout(600)
-await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .seg button')].find(b => /Todos/.test(b.innerText)).click())
-await os.waitForTimeout(400)
-const cartoes = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .fn-card')].map(c => c.innerText.replace(/\s+/g, ' ')))
-conta(cartoes.some(c => /Clube Esperando/.test(c)) && cartoes.some(c => /Escola Nova/.test(c)), 'a aba Funil mostra os cartões do funil (' + cartoes.join(', ') + ')')
-await os.screenshot({ path: 'testes/fotos/extensao-funil.png' }).catch(() => {})
-await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .fn-card')].find(c => c.innerText.includes('Escola Nova')).click())
-await os.waitForTimeout(600)
-const linksDaLista = await quadroWa.evaluate(() => window.__links).catch(() => [])
-conta(linksDaLista.at(-1) === 'https://wa.me/5562977770003', 'clicar num cartão da aba Funil troca a conversa no WhatsApp ao lado (' + linksDaLista.join(' ') + ')')
 /* as telas do Henrique: 1080p e o 4K dele (3072 de largura com o Windows em 125%) */
-for (const [w, h, aba] of [[1920, 1080, 'Atendimento'], [1920, 1080, 'Funil'], [3072, 1594, 'Atendimento'], [3072, 1594, 'Cliente'], [3072, 1594, 'Funil']]) {
+for (const [w, h, aba] of [[1920, 1080, 'Atendimento'], [1920, 1080, 'Cliente'], [3072, 1594, 'Atendimento'], [3072, 1594, 'Cliente']]) {
   await os.setViewportSize({ width: w, height: h })
   await os.evaluate((a) => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => b.innerText.includes(a)).click(), aba)
   await os.waitForTimeout(500)

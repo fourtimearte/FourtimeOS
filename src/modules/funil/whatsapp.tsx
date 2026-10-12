@@ -47,7 +47,6 @@ export function PainelDoWhatsApp({
   aoCriarLead,
   aoVirarCliente,
   aoAbrirCliente,
-  aoEditar,
   aoRegistrar,
   eu,
 }: {
@@ -64,7 +63,6 @@ export function PainelDoWhatsApp({
   aoCriarLead: (telefone: string) => void
   aoVirarCliente: (l: Lead) => void
   aoAbrirCliente: (id: string) => void
-  aoEditar: (l: Lead) => void
   aoRegistrar: (l: Lead, texto: string) => void
   eu: Eu
 }) {
@@ -179,7 +177,6 @@ export function PainelDoWhatsApp({
         aoCriarLead={aoCriarLead}
         aoVirarCliente={aoVirarCliente}
         aoAbrirCliente={aoAbrirCliente}
-        aoEditar={aoEditar}
         aoRegistrar={aoRegistrar}
       />
     </div>

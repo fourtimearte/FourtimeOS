@@ -30,23 +30,54 @@
   min-width: 0;
   gap: var(--sp-3);
 }
-.pr-rot {
+.pr-tabelas {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  align-self: start;
+}
+.pr-col-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-dentro);
+  padding: var(--re-7) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.pr-col-cab b {
   display: inline-flex;
   align-items: center;
   gap: var(--gap-miudo);
-  font-size: 11.5px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-3);
 }
-.pr-lista {
+.pr-col-cab b svg {
+  color: var(--icon-accent);
+}
+.pr-col-cab small,
+.pr-g small {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+/* a faixa de cada secao, como a fila do PCP */
+.pr-g {
   display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--re-4);
+  padding: var(--re-4) var(--re-8);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 .pr-item {
   display: flex;
@@ -58,19 +89,13 @@
   border: 0;
   border-bottom: 1px solid var(--border);
   background: transparent;
-  color: var(--text);
+  color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .pr-item:last-child {
   border-bottom: 0;
-}
-.pr-item:hover {
-  background: var(--surface-2);
-}
-.pr-item.ligado {
-  background: var(--ink-soft);
 }
 .pr-item:focus-visible {
   outline: 2px solid var(--ring);
@@ -90,7 +115,9 @@
 .pr-item small {
   text-align: left;
   font-size: 12.5px;
-  color: var(--text-2);
+  /* herda da linha (no escolhido, o texto da tinta) e apaga um pouco */
+  color: inherit;
+  opacity: 0.72;
 }
 .pr-nada {
   margin: 0;
@@ -860,9 +887,20 @@ button.pr-pc:focus-visible {
 .pr-item-caixa {
   position: relative;
   border-bottom: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+  transition: background-color var(--t-fast);
 }
-.pr-item-caixa:last-child {
+.pr-secao:last-child > .pr-item-caixa:last-child {
   border-bottom: 0;
+}
+.pr-item-caixa:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+/* a arquivada fica apagada, mas legivel */
+.pr-arq .pr-item b {
+  font-weight: 500;
+  opacity: 0.8;
 }
 .pr-item-caixa .pr-item {
   width: 100%;
@@ -870,6 +908,7 @@ button.pr-pc:focus-visible {
   padding-right: var(--sp-12);
 }
 .pr-item-caixa .pr-item-mais {
+  color: inherit;
   position: absolute;
   top: var(--re-5);
   right: var(--re-5);

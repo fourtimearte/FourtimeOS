@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChatCircleText,
   ClockCounterClockwise,
@@ -24,7 +24,6 @@ import {
   camposVazios,
   carregarConversa,
   carregarRapidas,
-  filtrarLeads,
   minutosDesde,
   nomeDoLead,
   porGrupo,
@@ -41,19 +40,19 @@ import {
   type Mensagem,
 } from '@dominio/funil'
 import { FichaDoSite } from './inbox'
-import { Quadro } from './quadro'
 
 /* ==========================================================================
    O PAINEL AO LADO DO WHATSAPP (pranchas 150 a 152, aprovadas em 12/10/2026:
    "ok, pode colocar no ar, 150 ate 152").
 
    O WhatsApp fica no tamanho minimo e o resto da tela e este painel: o lead
-   da conversa aberta preso em cima, e tres abas embaixo.
+   da conversa aberta preso em cima, e duas abas embaixo (a terceira, o
+   quadro do funil, saiu a pedido dele em 12/10/2026: o Quadro ja e o outro
+   modo da pagina).
      - ATENDIMENTO: as mensagens rapidas (070). Enviar escreve no WhatsApp da
        conversa aberta e envia (extensao 0.4.0); Shift + clique so escreve.
      - CLIENTE: o cadastro, as cotacoes e os pedidos, o que ja aconteceu e o
        pedido do site.
-     - FUNIL: o quadro do funil; clicar num cartao troca a conversa ao lado.
 
    A midia da conversa (as fotos e os audios) fica de fora: ler a conversa e
    a W3, que espera a decisao do Henrique.
@@ -61,7 +60,7 @@ import { Quadro } from './quadro'
 
 export type Escrita = { ok: boolean; enviado?: boolean; motivo?: string }
 export type Eu = { id: string; nome: string; chefe: boolean }
-type Aba = 'atendimento' | 'cliente' | 'funil'
+type Aba = 'atendimento' | 'cliente'
 
 const comPais = (t: string) => {
   const n = t.replace(/\D/g, '')
@@ -86,7 +85,6 @@ export function PainelAoLado({
   aoCriarLead,
   aoVirarCliente,
   aoAbrirCliente,
-  aoEditar,
   aoRegistrar,
 }: {
   lead: Lead | null
@@ -106,11 +104,9 @@ export function PainelAoLado({
   aoCriarLead: (telefone: string) => void
   aoVirarCliente: (l: Lead) => void
   aoAbrirCliente: (id: string) => void
-  aoEditar: (l: Lead) => void
   aoRegistrar: (l: Lead, texto: string) => void
 }) {
   const [aba, setAba] = useState<Aba>('atendimento')
-  const noFunil = leads.filter((l) => !['fechado', 'perdido'].includes(l.estagio)).length
 
   return (
     <aside className="fn-pa" aria-label="O painel ao lado do WhatsApp">
@@ -138,22 +134,12 @@ export function PainelAoLado({
           opcoes={[
             { valor: 'atendimento', rotulo: <span className="fn-modo"><ChatCircleText size={16} /> Atendimento</span> },
             { valor: 'cliente', rotulo: <span className="fn-modo"><User size={16} /> Cliente</span> },
-            {
-              valor: 'funil',
-              rotulo: (
-                <span className="fn-modo">
-                  <Kanban size={16} /> Funil <span className="fn-seg-n">{noFunil}</span>
-                </span>
-              ),
-            },
           ]}
         />
         <span className="fn-pa-nota">
           {aba === 'atendimento'
             ? 'Enviar escreve no WhatsApp e envia sozinho; Shift + clique só escreve'
-            : aba === 'cliente'
-              ? 'Tudo de quem está na conversa aberta ao lado'
-              : 'Clicar num cartão troca a conversa do WhatsApp; arrastar muda a etapa'}
+            : 'Tudo de quem está na conversa aberta ao lado'}
         </span>
       </div>
       <div className="fn-pa-miolo">
@@ -167,24 +153,13 @@ export function PainelAoLado({
             escrever={escrever}
             aoRegistrar={aoRegistrar}
           />
-        ) : aba === 'cliente' ? (
+        ) : (
           <AbaCliente
             lead={lead}
             aoAbrirCliente={aoAbrirCliente}
             aoVirarCliente={aoVirarCliente}
             aoAbrirCotacao={aoAbrirCotacao}
             aoMontarCotacao={aoMontarCotacao}
-          />
-        ) : (
-          <AbaFunil
-            leads={leads}
-            lead={lead}
-            eu={eu}
-            relogio={relogio}
-            podeMexer={podeMexer}
-            aoMover={aoMover}
-            aoEditar={aoEditar}
-            aoAbrirConversa={(l) => (l.telefone ? pedir(comPais(l.telefone)) : aoAbrirNoQuadro(l))}
           />
         )}
       </div>
@@ -817,69 +792,6 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
     <div className="fn-ficha-linha">
       <dt>{rotulo}</dt>
       <dd>{valor}</dd>
-    </div>
-  )
-}
-
-/* --- aba FUNIL -------------------------------------------------------------- */
-type Quem = 'meus' | 'todos' | 'esperando'
-function AbaFunil({
-  leads,
-  lead,
-  eu,
-  relogio,
-  podeMexer,
-  aoMover,
-  aoEditar,
-  aoAbrirConversa,
-}: {
-  leads: Lead[]
-  lead: Lead | null
-  eu: Eu
-  relogio: number
-  podeMexer: boolean
-  aoMover: (id: string, e: Estagio) => void
-  aoEditar: (l: Lead) => void
-  aoAbrirConversa: (l: Lead) => void
-}) {
-  /* abre em Meus; quem nao tem lead nenhum abre em Todos, para nao ver um quadro vazio */
-  const [quem, setQuem] = useState<Quem>(() => (leads.some((l) => l.vendedorId === eu.id) ? 'meus' : 'todos'))
-  const [busca, setBusca] = useState('')
-  const meus = useMemo(() => leads.filter((l) => l.vendedorId === eu.id), [leads, eu.id])
-  const esperando = useMemo(() => leads.filter((l) => semResposta(l, relogio)), [leads, relogio])
-  const base = quem === 'meus' ? meus : quem === 'esperando' ? esperando : leads
-  const visiveis = busca.trim()
-    ? filtrarLeads(base, { quem: 'todos', eu: eu.id, busca, origem: '', vendedor: '' }, relogio)
-    : base
-  return (
-    <div className="pilha fn-pa-fu">
-      <div className="fileira fn-pa-barra">
-        <Segmentado<Quem>
-          valor={quem}
-          aoMudar={setQuem}
-          opcoes={[
-            { valor: 'meus', rotulo: <span className="fn-modo">Meus <span className="fn-seg-n">{meus.length}</span></span> },
-            { valor: 'todos', rotulo: <span className="fn-modo">Todos <span className="fn-seg-n">{leads.length}</span></span> },
-            { valor: 'esperando', rotulo: <span className="fn-modo">Esperando <span className="fn-seg-n">{esperando.length}</span></span> },
-          ]}
-        />
-        <Busca
-          className="fn-pa-busca"
-          placeholder="Buscar nome, telefone ou cotação"
-          aria-label="Buscar no funil"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-      </div>
-      <Quadro
-        leads={visiveis}
-        aberto={lead?.id ?? ''}
-        podeMexer={podeMexer}
-        aoMover={aoMover}
-        aoAbrir={aoAbrirConversa}
-        aoEditar={aoEditar}
-        relogio={relogio}
-      />
     </div>
   )
 }

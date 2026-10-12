@@ -528,7 +528,7 @@ for (const tema of ['light', 'dark']) {
 
     const depois = await pg.evaluate(() => ({
       url: location.pathname + location.search,
-      ficha: !!document.querySelector('dialog[open], .gaveta'),
+      ficha: !!document.querySelector('dialog[open], .gaveta') || /Studio Pilates Flor/.test(document.querySelector('.cl-lado h2')?.textContent ?? ''),
       texto: document.body.innerText.includes('Studio Pilates Flor'),
     }))
     conta(depois.url.startsWith('/clientes'), `${tema} ${nome}: Ver cliente vai para a tela de clientes (${depois.url})`)

@@ -174,7 +174,7 @@ export function AvisoDaExtensao({ fixo = false }: { fixo?: boolean }) {
         <div className="pilha fn-instalar">
           <p>
             A extensão ainda está em teste e não está na Chrome Web Store. Peça o arquivo{' '}
-            <b>fourtime-os-0.2.0.zip</b> ao administrador e siga os passos neste computador:
+            <b>fourtime-os-0.4.0.zip</b> ao administrador e siga os passos neste computador:
           </p>
           <ol>
             <li>Descompacte o arquivo numa pasta que não vá ser apagada.</li>

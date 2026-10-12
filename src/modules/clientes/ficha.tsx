@@ -57,6 +57,7 @@ export function FichaDoCliente({
   aoSalvar,
   gravar = salvarCliente,
   titulo,
+  comecarEditando = false,
 }: {
   cliente: Cliente | null
   /* A base inteira, para achar o CEP da cidade. Vem de cima em vez de a ficha
@@ -71,6 +72,8 @@ export function FichaDoCliente({
   gravar?: (c: Cliente) => Promise<Cliente>
   /* o titulo do cliente novo, quando quem abre sabe de onde ele vem */
   titulo?: string
+  /* a ficha ao lado (147) abre esta ja no formulario, pelo Editar */
+  comecarEditando?: boolean
 }) {
   const [rascunho, setRascunho] = useState<Cliente | null>(cliente)
   const [editando, setEditando] = useState(false)
@@ -79,8 +82,8 @@ export function FichaDoCliente({
   useEffect(() => {
     setRascunho(cliente)
     /* cliente sem id e cliente novo: ele ja nasce em modo de edicao */
-    setEditando(!!cliente && !cliente.id)
-  }, [cliente])
+    setEditando(!!cliente && (!cliente.id || comecarEditando))
+  }, [cliente, comecarEditando])
 
   const c = rascunho
   const novo = !!c && !c.id

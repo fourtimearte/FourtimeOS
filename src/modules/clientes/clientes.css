@@ -111,38 +111,35 @@
 }
 
 /* ==========================================================================
-   A lista de clientes cadastrados.
-
-   Seis numeros em cima, uma fileira de filtros, o que esta filtrando escrito
-   embaixo dela, e a tabela dentro de um cartao com o rodape de paginas colado
-   nela. Quem opera precisa ver de um golpe quantos cadastros estao pela
-   metade: e por isso que os seis numeros vem antes da busca, e nao depois.
+   A lista de clientes (prancha 147, ideia A): a busca, as situacoes e os
+   seletores no topo, a placa dos cadastros para arrumar, e a mesa: a tabela
+   a esquerda e a ficha ao lado a direita (a partir de 1280 px).
    ========================================================================== */
 
-.cl-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-  gap: var(--sp-3);
-}
-@media (min-width: 1280px) {
-  .cl-kpis {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-/* --- a fileira de filtros ------------------------------------------------ */
-.cl-filtros {
+.cl-ferr {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--re-3);
-  align-items: stretch;
+  gap: var(--gap-btn);
+  align-items: center;
 }
 .cl-busca {
-  flex: 1 1 260px;
+  flex: 1 1 280px;
   min-width: 220px;
 }
-.cl-limpa {
-  align-self: center;
+.cl-seg-rolo {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cl-aba {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.cl-conta {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
 }
 
 /* --- o que esta filtrando ------------------------------------------------ */
@@ -151,7 +148,7 @@
   flex-wrap: wrap;
   gap: var(--re-3);
   align-items: center;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-3);
 }
 .cl-marcas b {
@@ -162,9 +159,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--re-1);
-  height: 22px;
+  height: 24px;
   padding: 0 var(--re-2) 0 var(--re-4);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text-2);
@@ -197,35 +194,55 @@
   cursor: pointer;
 }
 
+/* --- a mesa: a lista e a ficha ao lado ------------------------------------ */
+.cl-mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 560px);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.cl-mesa.so-lista {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* --- a tabela ------------------------------------------------------------ */
 .cl-caixa {
-  padding: 0;
   overflow: hidden;
+  min-width: 0;
 }
 .cl-rolo {
   overflow-x: auto;
-  min-width: 0;
 }
 .cl-tab {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 .cl-tab th,
 .cl-tab td {
-  padding: var(--re-5) var(--re-7);
-  text-align: left;
+  padding: 0 var(--re-6);
   border-bottom: 1px solid var(--border);
+  text-align: left;
   vertical-align: middle;
 }
+.cl-tab th:first-child,
+.cl-tab td:first-child {
+  padding-left: var(--sp-5);
+}
+.cl-tab th:last-child,
+.cl-tab td:last-child {
+  padding-right: var(--sp-5);
+}
 .cl-tab th {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  height: 44px;
   background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
   white-space: nowrap;
+}
+.cl-tab td {
+  height: 60px;
 }
 .cl-tab th button {
   border: 0;
@@ -233,8 +250,6 @@
   padding: 0;
   font: inherit;
   color: inherit;
-  text-transform: inherit;
-  letter-spacing: inherit;
   cursor: pointer;
 }
 .cl-tab tbody tr {
@@ -243,26 +258,45 @@
 .cl-tab tbody tr:hover {
   background: var(--surface-2);
 }
-.cl-tab tbody tr:last-child td {
-  border-bottom: 0;
+.cl-tab tbody tr:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.cl-tab tbody tr.ligado {
+  background: var(--ink-soft);
+}
+.cl-tab .cl-num-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cl-tab td.cl-num-col {
+  font-weight: 600;
 }
 
 .cl-quem {
   display: flex;
   align-items: center;
-  gap: var(--re-4);
+  gap: var(--re-6);
   min-width: 0;
 }
-.cl-retrato {
-  display: grid;
+.cl-av {
+  display: inline-grid;
   place-items: center;
   flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.cl-av-g {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
 }
 .cl-nome {
   display: grid;
@@ -274,19 +308,19 @@
   align-items: center;
   gap: var(--re-3);
   font-weight: 600;
-  max-width: 280px;
+  max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .cl-fantasia {
-  font-size: 11px;
-  color: var(--text-3);
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 
-/* as tres tarjas do nome. Sao miudas de proposito: elas contam alguma coisa
+/* as duas tarjas do nome. Sao miudas de proposito: elas contam alguma coisa
    sobre o cadastro, nao sobre o cliente. */
-.cl-marca-pd,
 .cl-marca-dup,
 .cl-marca-inc {
   flex: none;
@@ -298,56 +332,46 @@
   letter-spacing: 0.04em;
   line-height: 16px;
 }
-.cl-marca-pd {
-  background: var(--ink);
-  color: var(--on-ink);
-}
 .cl-marca-dup {
   background: color-mix(in srgb, var(--warn) 16%, var(--surface));
   color: var(--warn);
 }
 .cl-marca-inc {
-  background: var(--brand);
-  color: var(--on-brand);
-}
-
-.cl-doc {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  background: var(--surface-3);
+  color: var(--text-2);
 }
 .cl-falta {
+  margin: 0;
+  font-size: 13px;
   color: var(--text-3);
-  opacity: 0.75;
 }
-.cl-contato {
+.cl-duas {
   display: grid;
-  gap: var(--re-2);
-  font-size: 12px;
-}
-.cl-contato > span {
-  display: flex;
-  align-items: center;
-  gap: var(--re-3);
+  gap: var(--re-1);
   font-variant-numeric: tabular-nums;
-}
-.cl-email {
-  color: var(--text-3);
-  max-width: 210px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
-  display: block !important;
 }
-.cl-wa {
-  height: 16px;
-  padding: 0 var(--re-2);
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--wa);
-  color: var(--wa);
-  font-size: 9.5px;
-  font-weight: 800;
-  line-height: 14px;
-  text-decoration: none;
+.cl-duas small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.cl-vd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  white-space: nowrap;
+}
+.cl-vd i {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-2);
 }
 
 .cl-cidade {
@@ -365,6 +389,10 @@
 .cl-cidade:hover {
   text-decoration: underline;
 }
+.cl-cidade:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .cl-uf {
   color: var(--text-3);
 }
@@ -372,98 +400,334 @@
   display: inline-flex;
   align-items: center;
   gap: var(--re-2);
-  height: 17px;
+  height: 18px;
   padding: 0 var(--re-3);
   border-radius: var(--radius-xs);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--text-3);
 }
 
-.cl-tipo {
-  display: inline-block;
-  height: 19px;
-  padding: 0 var(--re-3);
-  border-radius: 5px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: 10.5px;
-  font-weight: 800;
-  line-height: 17px;
-  color: var(--text-2);
-}
-.cl-tipo.pj {
-  background: color-mix(in srgb, var(--info) 14%, var(--surface));
-  border-color: transparent;
-  color: var(--info);
-}
-.cl-desde {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-/* Contato, Tipo e Desde saem no celular: ali a linha tem que caber sem rolar
-   para o lado, e nome, documento e cidade sao o que se procura no balcao. */
+/* No celular e no tablet a linha tem que caber sem rolar para o lado: ficam
+   o nome e a situacao (o resto esta na ficha, um toque depois). Entre 1280
+   e 1599, com a ficha ao lado, o vendedor sai. */
 @media (max-width: 1023px) {
-  .cl-tab .cl-some {
+  .cl-tab .cl-some,
+  .cl-tab .cl-some-mais {
+    display: none;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1599px) {
+  .cl-tab .cl-some-mais {
     display: none;
   }
 }
 
 /* --- o rodape de paginas, colado na tabela ------------------------------- */
 .cl-pe {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--re-3);
-  padding: var(--re-5) var(--re-7);
+  padding: var(--re-5) var(--sp-5);
   border-top: 1px solid var(--border);
+}
+
+/* --- a ficha ao lado (lado.tsx) ------------------------------------------ */
+.cl-lado {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.cl-lado-cab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+.cl-lado-l1 {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+.cl-lado-nome {
+  flex: 1;
+  min-width: 0;
+  gap: var(--re-3);
+}
+.cl-lado-nome h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.cl-lado-nome p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.cl-lado-fim {
+  margin-left: auto;
+}
+.cl-lado-abas {
+  align-self: stretch;
+}
+.cl-lado-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.cl-lado-bloco:last-child {
+  border-bottom: 0;
+}
+.cl-rot {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.cl-rot svg {
+  color: var(--icon-accent);
+}
+.cl-rot-dir,
+.cl-rot-link {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+.cl-rot-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cl-rot-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.cl-nums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--re-5);
+}
+.cl-num {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-1);
+  min-width: 0;
+  padding: var(--re-6) var(--re-7);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.cl-num small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.cl-num b {
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cl-num i {
+  font-style: normal;
   font-size: 12px;
   color: var(--text-3);
 }
-.cl-pe b {
+.cl-meses {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--re-2);
+}
+.cl-meses span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-2);
+  font-size: 11px;
+  color: var(--text-3);
+}
+.cl-meses span.hoje {
+  font-weight: 700;
   color: var(--text);
+}
+.cl-meses i {
+  display: block;
+  width: 100%;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+}
+.cl-meses i.medio {
+  background: color-mix(in srgb, var(--ink) 30%, var(--surface-2));
+}
+.cl-meses i.forte {
+  background: color-mix(in srgb, var(--ink) 70%, var(--surface-2));
+}
+.cl-pessoa {
+  display: flex;
+  align-items: center;
+  gap: var(--re-6);
+  padding: var(--re-6) var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.cl-pessoa-t {
+  flex: 1;
+  min-width: 0;
+  gap: var(--re-1);
+}
+.cl-pessoa-t b {
+  font-weight: 600;
+}
+.cl-pessoa-t small {
+  font-size: 12.5px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.cl-ped {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto auto;
+  gap: var(--re-6);
+  align-items: center;
+  padding: var(--re-4) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.cl-ped:last-child {
+  border-bottom: 0;
+}
+.cl-ped b {
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.cl-empurra {
-  flex: 1 1 auto;
+.cl-ped span {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.cl-numeros {
+.cl-ped i {
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cl-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 13.5px;
+  min-width: 0;
+}
+.cl-linha svg {
+  flex: none;
+  color: var(--text-2);
+}
+.cl-linha-dir {
+  margin-left: auto;
+}
+.cl-alinha {
+  align-self: flex-start;
+}
+.cl-barras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+}
+.cl-barra {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 44px;
+  gap: var(--re-5);
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--re-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.cl-barra:hover {
+  background: var(--surface-2);
+}
+.cl-barra:focus-visible,
+.cl-cid:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.cl-barra span {
+  color: var(--text-2);
+}
+.cl-barra i {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.cl-barra em {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 55%, var(--surface-2));
+}
+.cl-barra b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cl-cid {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-height: 36px;
+  padding: 0 var(--re-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.cl-cid:hover {
+  background: var(--surface-2);
+}
+.cl-cid b {
+  font-weight: 600;
+}
+.cl-cid span {
+  color: var(--text-2);
+}
+.cl-cid .cl-linha-dir {
   display: inline-flex;
   align-items: center;
   gap: var(--re-2);
-}
-.cl-numeros button {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 var(--re-4);
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-2);
-  font: inherit;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
 }
-.cl-numeros button:hover:not(:disabled) {
-  background: var(--surface-2);
-}
-.cl-numeros button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.cl-numeros button.ligado {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
-}
-.cl-numeros > span {
-  color: var(--text-3);
-  padding: 0 var(--re-1);
+@media (pointer: coarse) {
+  .cl-barra,
+  .cl-cid {
+    min-height: 44px;
+  }
 }
 
 /* --- a gaveta das transportadoras ---------------------------------------- */

@@ -110,5 +110,54 @@ r = await atender(new Request(`${BANCO}/functions/v1/lead-do-site`))
 const g = await r.text()
 confere('GET diz so se a chave esta posta', r.status === 200 && g.includes('"servico":true') && !g.includes(CHAVE))
 
+// 8. o aviso por e-mail: desligado sem os segredos, e ligado com eles
+chamadas = []
+resposta = { status: 200, corpo: { lead_id: 'L1', repetido: false } }
+r = await atender(post(FICHA))
+confere('sem RESEND_API_KEY nao manda e-mail', r.status === 201 && !chamadas.some((c) => c.endereco.includes('resend')))
+
+globalThis.Deno = { env: { get: (n) => ({ SUPABASE_URL: BANCO, SUPABASE_SERVICE_ROLE_KEY: CHAVE,
+  RESEND_API_KEY: 're_mentira', AVISO_EMAIL_DE: 'Fourtime OS <avisos@fourtimefit.com.br>', AVISO_EMAIL_PARA: 'extra@fourtime.test, nao-e-email' })[n] }, serve: () => {} }
+let dono = null
+let leadRepetido = false
+globalThis.fetch = async (url, opcoes = {}) => {
+  const u = String(url)
+  chamadas.push({ endereco: u, corpo: opcoes.body ? JSON.parse(opcoes.body) : null, cabecalhos: opcoes.headers ?? {} })
+  let corpo = {}
+  if (u.includes('rpc/registrar_lead_do_site')) corpo = { lead_id: 'L1', repetido: leadRepetido }
+  else if (u.includes('/rest/v1/lead?')) corpo = [{ nome: 'Fernanda <b>', telefone: '+5562977775555', vendedor_id: dono, teste: true, ultima_msg: 'Logo nas costas', prioridade: false }]
+  else if (u.includes('/rest/v1/pessoa?')) corpo = [
+    { id: 'A', email: 'admin@fourtime.test', papel: 'admin' }, { id: 'G', email: 'gerente@fourtime.test', papel: 'gerente' },
+    { id: 'V', email: 'dani@fourtime.test', papel: 'vendedor' }, { id: 'P', email: 'joana@fourtime.test', papel: 'producao' }]
+  else if (u.includes('api.resend.com')) corpo = { id: 'email-1' }
+  return new Response(JSON.stringify(corpo), { status: 200 })
+}
+const comEmail = await import(ARQUIVO + '?com-email')
+chamadas = []
+r = await comEmail.atender(post(FICHA))
+let email = chamadas.find((c) => c.endereco === 'https://api.resend.com/emails')
+confere('lead novo sem dono: e-mail para admin, gerente e o fixo, nao para a vendedora nem a producao',
+  r.status === 201 && !!email && JSON.stringify(email.corpo.to.sort()) === JSON.stringify(['admin@fourtime.test', 'extra@fourtime.test', 'gerente@fourtime.test'])
+  && email.cabecalhos.Authorization === 'Bearer re_mentira', JSON.stringify(email?.corpo?.to))
+confere('o e-mail leva o link do lead, marca o teste e escapa o nome no HTML',
+  !!email && email.corpo.subject === '[TESTE] Lead novo pelo site: Fernanda <b>' && email.corpo.html.includes('Fernanda &lt;b&gt;')
+  && email.corpo.html.includes('/funil?lead=L1') && email.corpo.from === 'Fourtime OS <avisos@fourtimefit.com.br>')
+dono = 'V'
+chamadas = []
+await comEmail.atender(post(FICHA))
+email = chamadas.find((c) => c.endereco === 'https://api.resend.com/emails')
+confere('lead com dono: e-mail para o dono (e o fixo)', !!email && JSON.stringify(email.corpo.to.sort()) === JSON.stringify(['dani@fourtime.test', 'extra@fourtime.test']), JSON.stringify(email?.corpo?.to))
+leadRepetido = true
+chamadas = []
+r = await comEmail.atender(post(FICHA))
+confere('a mesma conversa chegando de novo nao manda e-mail', r.status === 200 && !chamadas.some((c) => c.endereco.includes('resend')))
+leadRepetido = false
+globalThis.fetch = async (url) => {
+  if (String(url).includes('api.resend.com')) throw new Error('fora do ar')
+  return new Response(JSON.stringify(String(url).includes('rpc/') ? { lead_id: 'L1', repetido: false } : []), { status: 200 })
+}
+r = await comEmail.atender(post(FICHA))
+confere('o e-mail falhando nao muda a resposta ao chat', r.status === 201)
+
 console.log(`\n${certas} de ${certas + erradas} certos`)
 process.exit(erradas ? 1 : 0)

@@ -29,6 +29,18 @@
 // outras origens separadas por virgula (decisao 6: o myshopify ja esta aqui).
 //
 // PUBLICAR: com "Verify JWT" DESLIGADO. O visitante da loja nao tem cracha.
+//
+// O AVISO POR E-MAIL DO LEAD NOVO (pedido do Henrique, obrigatorio antes do
+// fim do projeto; FOURTIME OS - 12, secao 1, item 6). Fica DESLIGADO ate os
+// segredos existirem, e desligado nada muda:
+//   RESEND_API_KEY   a chave do Resend (resend.com), o servico de envio;
+//   AVISO_EMAIL_DE   quem manda, num dominio verificado no Resend, por
+//                    exemplo "Fourtime OS <avisos@fourtimefit.com.br>";
+//   AVISO_EMAIL_PARA (opcional) mais enderecos, separados por virgula, que
+//                    recebem todo lead novo.
+// Quem recebe e quem o sino avisa: o dono do lead; sem dono, admin e gerente.
+// So lead NOVO manda e-mail (a mesma conversa chegando de novo, nao). Falha
+// do e-mail nunca derruba a resposta ao chat: o lead ja esta gravado.
 // ===========================================================================
 
 declare const Deno: {
@@ -53,6 +65,14 @@ const ORIGENS = new Set(
 )
 
 const TETO_DO_CORPO = 64 * 1024
+
+const EMAIL_CHAVE = (Deno.env.get('RESEND_API_KEY') ?? '').trim()
+const EMAIL_DE = (Deno.env.get('AVISO_EMAIL_DE') ?? '').trim()
+const EMAIL_PARA_SEMPRE = (Deno.env.get('AVISO_EMAIL_PARA') ?? '')
+  .split(',')
+  .map((x) => x.trim())
+  .filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x))
+const SISTEMA = 'https://fourtimeos.arte-adc.workers.dev'
 
 function chaveDeServico(): string {
   const novas = Deno.env.get('SUPABASE_SECRET_KEYS')
@@ -205,7 +225,7 @@ function ipDe(req: Request): string {
 /* O codigo do erro do banco vira a resposta: P0429 e o limite, P0422 a isca,
    22023 o que esta fora do contrato. O resto e problema nosso (500), e o chat
    tenta de novo. */
-async function registrar(ficha: Solto, marca: string): Promise<{ status: number; corpo: Solto }> {
+async function registrar(ficha: Solto, marca: string): Promise<{ status: number; corpo: Solto; leadId?: string }> {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/registrar_lead_do_site`, {
     method: 'POST',
     headers: {
@@ -223,12 +243,82 @@ async function registrar(ficha: Solto, marca: string): Promise<{ status: number;
   } catch {
     /* resposta que nao e JSON: fica vazia */
   }
-  if (r.ok) return { status: dados.repetido === true ? 200 : 201, corpo: { ok: true } }
+  if (r.ok) {
+    return { status: dados.repetido === true ? 200 : 201, corpo: { ok: true }, leadId: texto(dados.lead_id, 64) }
+  }
   const codigo = texto(dados.code, 10)
   if (codigo === 'P0429') return { status: 429, corpo: { ok: false, erro: 'Muitos envios. Tente de novo em alguns minutos.' } }
   if (codigo === 'P0422') return { status: 422, corpo: { ok: false, erro: 'Ficha recusada.' } }
   if (codigo === '22023') return { status: 400, corpo: { ok: false, erro: texto(dados.message, 120) || 'Ficha fora do contrato.' } }
   return { status: 500, corpo: { ok: false, erro: 'O Fourtime OS não respondeu.' } }
+}
+
+// ---------- o aviso por e-mail ---------------------------------------------
+
+const html = (t: string) =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+async function lerDoBanco(caminho: string): Promise<Solto[]> {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${caminho}`, {
+    headers: { apikey: CHAVE_DE_SERVICO, Authorization: `Bearer ${CHAVE_DE_SERVICO}` },
+    signal: AbortSignal.timeout(4000),
+  })
+  if (!r.ok) return []
+  const d = await r.json().catch(() => [])
+  return Array.isArray(d) ? (d as Solto[]) : []
+}
+
+/* Os mesmos destinatarios do sino (065): o dono do lead; sem dono, admin e
+   gerente. Mais os enderecos fixos de AVISO_EMAIL_PARA. Sem repetir. */
+export async function avisarPorEmail(leadId: string): Promise<boolean> {
+  if (!EMAIL_CHAVE || !EMAIL_DE || !leadId) return false
+  const [lead] = await lerDoBanco(
+    `lead?id=eq.${encodeURIComponent(leadId)}&select=nome,telefone,vendedor_id,teste,ultima_msg,prioridade`,
+  )
+  if (!lead) return false
+  const pessoas = await lerDoBanco('pessoa?situacao=eq.aprovado&select=id,email,papel')
+  const dono = texto(lead.vendedor_id, 64)
+  const para = new Set<string>(EMAIL_PARA_SEMPRE)
+  for (const p of pessoas) {
+    const email = texto(p.email, 200)
+    if (!email) continue
+    if (dono ? p.id === dono : p.papel === 'admin' || p.papel === 'gerente') para.add(email)
+  }
+  if (!para.size) return false
+  const nome = texto(lead.nome, 120) || 'sem nome'
+  const telefone = texto(lead.telefone, 20)
+  const fala = texto(lead.ultima_msg, 280)
+  const link = `${SISTEMA}/funil?lead=${encodeURIComponent(leadId)}`
+  const marcas = [lead.teste === true ? '[TESTE]' : '', lead.prioridade === true ? '[PRIORIDADE]' : ''].filter(Boolean).join(' ')
+  const assunto = `${marcas ? marcas + ' ' : ''}Lead novo pelo site: ${nome}`
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${EMAIL_CHAVE}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: EMAIL_DE,
+      to: [...para],
+      subject: assunto,
+      text: `${nome}${telefone ? ' (' + telefone + ')' : ''} deixou o contato no chat da loja.\n${fala ? '\n"' + fala + '"\n' : ''}\nAbrir no Fourtime OS: ${link}\n`,
+      html:
+        `<p><b>${html(nome)}</b>${telefone ? ' (' + html(telefone) + ')' : ''} deixou o contato no chat da loja.</p>` +
+        (fala ? `<p style="color:#5C6470">"${html(fala)}"</p>` : '') +
+        `<p><a href="${link}" style="color:#C6161B;font-weight:600">Abrir no Fourtime OS</a></p>`,
+    }),
+    signal: AbortSignal.timeout(5000),
+  })
+  return r.ok
+}
+
+/* O e-mail anda depois da resposta quando o Supabase deixa (waitUntil); sem
+   isso, espera, mas nunca muda a resposta. */
+function emSegundoPlano(p: Promise<unknown>): Promise<void> {
+  const seguro = p.then(() => {}, () => {})
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime
+  if (rt?.waitUntil) {
+    rt.waitUntil(seguro)
+    return Promise.resolve()
+  }
+  return seguro
 }
 
 // ---------- a porta --------------------------------------------------------
@@ -263,7 +353,8 @@ export async function atender(req: Request): Promise<Response> {
 
     const ficha = limpar(f)
     const marca = await impressao(ipDe(req), CHAVE_DE_SERVICO || 'sem-chave')
-    const { status, corpo } = await registrar(ficha, marca)
+    const { status, corpo, leadId } = await registrar(ficha, marca)
+    if (status === 201 && leadId) await emSegundoPlano(avisarPorEmail(leadId))
     return responder(corpo, status, origem)
   } catch {
     return responder({ ok: false, erro: 'O Fourtime OS não respondeu.' }, 500, daCasa ? origem : '')

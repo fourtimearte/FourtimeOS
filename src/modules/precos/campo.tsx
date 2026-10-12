@@ -139,8 +139,8 @@ export function usarEdicao({
 /* --- A ALÇA (pedido de 12/10/2026): o quadradinho no canto do campo, como na
    grade do editor da cotação. Arrastar repete o valor nas vizinhas: para
    baixo ou para cima, nas outras peças da mesma faixa; para o lado, nas
-   outras faixas da mesma peça. Quem decide a direção é o maior movimento.
-   Soltar grava de uma vez. --------------------------------------------- */
+   outras faixas da mesma peça; na diagonal, no retângulo inteiro entre a
+   origem e onde o mouse está. Soltar grava de uma vez. --------------------------------------------- */
 type Ponto = { codigo: string; faixa: number }
 export type Alca = {
   naSelecao: (codigo: string, faixa: number) => boolean
@@ -160,18 +160,15 @@ export function usarAlca({
   const [arrasto, setArrasto] = useState<{ de: Ponto; ate: Ponto } | null>(null)
 
   function alvosDe(a: { de: Ponto; ate: Ponto }): Ponto[] {
+    /* o retângulo entre a célula de origem e a de agora: para baixo, para o
+       lado ou na diagonal (aí são as peças E as faixas do caminho) */
     const i = ordem.indexOf(a.de.codigo)
     const j = ordem.indexOf(a.ate.codigo)
-    const dr = j - i
-    const dc = a.ate.faixa - a.de.faixa
-    if (!dr && !dc) return []
-    if (Math.abs(dr) >= Math.abs(dc)) {
-      const [x, y] = i < j ? [i, j] : [j, i]
-      return ordem.slice(x, y + 1).filter((c) => c !== a.de.codigo).map((codigo) => ({ codigo, faixa: a.de.faixa }))
-    }
-    const [x, y] = a.de.faixa < a.ate.faixa ? [a.de.faixa, a.ate.faixa] : [a.ate.faixa, a.de.faixa]
+    const [r0, r1] = i < j ? [i, j] : [j, i]
+    const [c0, c1] = a.de.faixa < a.ate.faixa ? [a.de.faixa, a.ate.faixa] : [a.ate.faixa, a.de.faixa]
     const out: Ponto[] = []
-    for (let k = x; k <= y; k++) if (k !== a.de.faixa) out.push({ codigo: a.de.codigo, faixa: k })
+    for (let r = r0; r <= r1; r++)
+      for (let k = c0; k <= c1; k++) if (!(ordem[r] === a.de.codigo && k === a.de.faixa)) out.push({ codigo: ordem[r], faixa: k })
     return out
   }
 

@@ -243,7 +243,7 @@ export function ModoTabela({
       <p className="pr-mt-dica">
         <ClipboardText size={15} />
         Clique num preço e escreva: <kbd>Enter</kbd> desce, <kbd>Tab</kbd> vai para o lado. Arraste o quadradinho do canto
-        do campo para repetir o valor nas vizinhas, para baixo ou para o lado. <kbd>Ctrl</kbd> <kbd>V</kbd> numa célula cola a
+        do campo para repetir o valor nas vizinhas, para baixo, para o lado ou na diagonal. <kbd>Ctrl</kbd> <kbd>V</kbd> numa célula cola a
         coluna copiada da planilha. O botão de copiar ao lado do nome leva os preços de uma peça para outras.
       </p>
 

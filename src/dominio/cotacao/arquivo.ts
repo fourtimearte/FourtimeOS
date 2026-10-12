@@ -149,6 +149,19 @@ const DEGRAUS: ((c: Bruto) => Bruto)[] = [
       }),
     }
   },
+
+  /* de 5 para 6: as TABELAS DE PRECO (068).
+     A cotacao ganha o id da tabela (vazio: a de antes do banco, que guardava
+     so o nome), e cada layout ganha a tabela dele e o que a tabela deu por
+     tamanho. Tudo entra vazio: o preco que estava na cotacao continua sendo
+     o preco, e nenhuma tabela passa a mandar nele sem alguem escolher. */
+  (c) => ({
+    ...c,
+    informe: { tabelaDePrecoId: '', ...((c.informe ?? {}) as Bruto) },
+    produtos: Array.isArray(c.produtos)
+      ? (c.produtos as Bruto[]).map((p) => ({ tabelaId: '', precoDaTabela: {}, ...p }))
+      : c.produtos,
+  }),
 ]
 
 export class ArquivoRecusado extends Error {}
@@ -236,6 +249,8 @@ export function arrumarCotacao(corpo: Bruto, versao: number, versaoDoBloco: numb
       bloco: migrarBloco(bruto) as Bloco,
       precoPorTamanho: (p.precoPorTamanho ?? {}) as Record<string, number>,
       precoBase: Number(p.precoBase ?? 0),
+      tabelaId: String(p.tabelaId ?? ''),
+      precoDaTabela: (p.precoDaTabela ?? {}) as Record<string, number>,
     }
   })
 

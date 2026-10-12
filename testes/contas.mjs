@@ -88,6 +88,8 @@ ok('arquivo sem versao sobe a escada', migrado.versaoDoFormato === VERSAO_DO_CFT
 ok('arquivo sem campo novo ganha o padrao', typeof migrado.informe.prazo === 'string' && migrado.informe.prazo.length > 0)
 ok('arquivo velho mantem a conta', subtotal(migrado) === 60)
 ok('arquivo velho sem estado abre como rascunho', migrado.estado === 'rascunho')
+ok('degrau 6: a cotacao velha nasce sem tabela de preco escolhida, e o layout segue a da cotacao',
+   migrado.informe.tabelaDePrecoId === '' && migrado.produtos[0].tabelaId === '' && JSON.stringify(migrado.produtos[0].precoDaTabela) === '{}')
 
 /* recusas */
 const recusa = (t, nome) => { try { deCft(t); ok(nome, false) } catch (e) { ok(nome, e instanceof ArquivoRecusado) } }

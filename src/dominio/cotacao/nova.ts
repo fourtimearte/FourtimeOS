@@ -1,5 +1,6 @@
 import { carregarListasDoCabecalho } from '@dominio/banco'
 import type { Cliente } from '@dominio/cliente'
+import { carregarTabelasDePreco, type TabelaDePreco } from '@dominio/preco'
 import { informesParaCotacaoNova } from './informes-da-casa'
 import { cotacaoEmBranco, mascaraDeDocumento, type Cotacao } from './tipos'
 
@@ -12,14 +13,28 @@ import { cotacaoEmBranco, mascaraDeDocumento, type Cotacao } from './tipos'
         de quem é (o lead que vira cotação traz o dono dele);
      3. o pagamento e a entrega de partida só ficam se ainda estiverem
         ativos nas listas do cabeçalho: valor que saiu da lista não nasce
-        numa cotação nova.
+        numa cotação nova;
+     4. a tabela de preço é a PADRÃO das tabelas de preço (068), nome e id.
+        Sem a 068 no banco (ou sem tabela criada), fica o nome de antes;
+        com tabelas e nenhuma
+        padrão, nasce sem tabela, para ninguém cotar numa tabela que não
+        existe.
 
    A lista do Orçamento e o funil nascem a cotação por aqui, e só por aqui.
    ========================================================================== */
 export async function cotacaoNovaDaCasa(numero: string, vendedor: { id: string; nome: string } | null): Promise<Cotacao> {
   const c = cotacaoEmBranco(numero)
-  const [informes, listas] = await Promise.all([informesParaCotacaoNova(), carregarListasDoCabecalho()])
+  const [informes, listas, tabelas] = await Promise.all([
+    informesParaCotacaoNova(),
+    carregarListasDoCabecalho(),
+    carregarTabelasDePreco().catch(() => ({ tabelas: [] as TabelaDePreco[], semBanco: true })),
+  ])
   c.informes = informes
+  if (!tabelas.semBanco && tabelas.tabelas.length) {
+    const padrao = tabelas.tabelas.find((t) => t.padrao && t.situacao === 'ativa')
+    c.informe.tabelaDePreco = padrao?.nome ?? ''
+    c.informe.tabelaDePrecoId = padrao?.id ?? ''
+  }
   if (vendedor) {
     c.vendedor = vendedor.nome
     c.vendedorId = vendedor.id

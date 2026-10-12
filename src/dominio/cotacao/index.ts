@@ -91,3 +91,5 @@ export {
   type AbaDoComercial,
   type EstatisticasDoComercial,
 } from './comercial'
+export { SEM_TABELA, aplicarTabelas, origemDoPreco, pecasPorTabela, tabelaDoLayout } from './tabela-de-preco'
+export type { OrigemDoPreco } from './tabela-de-preco'

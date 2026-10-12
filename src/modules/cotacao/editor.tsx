@@ -5,6 +5,7 @@ import { souAdmin, useSessao } from '@dominio/sessao'
 import { avisar, Aviso, Botao, Esqueleto, Pagina, Vazio } from '@ds'
 import { blocoEmBranco, colarBloco, copiarBloco, temCopia } from '@dominio/layout'
 import {
+  aplicarTabelas,
   apagarCotacao,
   aprovar,
   baixarCft,
@@ -23,6 +24,7 @@ import { PerguntaDeApagar } from './pergunta-de-apagar'
 import { TopoDoEditor, type Porta } from './topo-do-editor'
 import './cotacao.css'
 import { usarCotacao } from './usar-cotacao'
+import { ContextoDasTabelas, usarCarregarTabelas } from './tabelas-da-cotacao'
 
 /* ==========================================================================
    O editor de cotação, no desenho fechado em 08/10/2026 (decisão 163,
@@ -117,6 +119,19 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     window.addEventListener('beforeunload', aviso)
     return () => window.removeEventListener('beforeunload', aviso)
   }, [sujo])
+
+  /* AS TABELAS DE PRECO (068): lidas uma vez; toda vez que a cotacao muda
+     (a tabela, um layout, a quantidade, que muda a faixa), os precos que vem
+     da tabela sao refeitos. Nada muda quando nao ha tabela escolhida, e a
+     cotacao aprovada fica como esta. */
+  const tabelasDePreco = usarCarregarTabelas(chefia)
+  useEffect(() => {
+    const nova = aplicarTabelas(c, tabelasDePreco.todas, tabelasDePreco.pecasDoKit)
+    if (nova !== c) {
+      setC(nova)
+      setSujo(true)
+    }
+  }, [c, tabelasDePreco])
 
   const mudar = (parte: Partial<Cotacao>) => {
     setC((x) => ({ ...x, ...parte }))
@@ -288,6 +303,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const fechada = travada(c)
 
   return (
+    <ContextoDasTabelas.Provider value={tabelasDePreco}>
     <div className="pagina ct-ed">
       <TopoDoEditor
         c={c}
@@ -343,6 +359,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
       {c.produtos.length ? (
         <CorpoDoEditor
+          cotacao={c}
           produtos={c.produtos}
           escolhido={atual}
           travado={fechada}
@@ -376,5 +393,6 @@ function Editor({ inicial }: { inicial: Cotacao }) {
         aoFechar={() => setPerguntaApagar(false)}
       />
     </div>
+    </ContextoDasTabelas.Provider>
   )
 }

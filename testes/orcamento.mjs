@@ -48,12 +48,13 @@ mkdirSync(PASTA, { recursive: true })
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
 const abertos = new Set()
-async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false, semPresets = false, semInformes = false }) {
+async function abrir(nav, { largura, altura = 946, tema = 'light', papel = 'admin', abertas = 6, muitos = false, rica = false, semPresets = false, semInformes = false, tabelas = null }) {
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
   const banco = F.bancoDoOrcamento({ papel, abertas, muitos, rica, semPresets, semInformes })
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
+    if (tabelas && u.includes('/rest/v1/tabela_de_preco')) return r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(tabelas) })
     let corpo = null
     try { corpo = JSON.parse(req.postData() ?? 'null') } catch { /* corpo que não é JSON */ }
     const resp = banco.responder(m, u, corpo)
@@ -379,6 +380,50 @@ await secao(async () => {
   const campo = naGaveta(pg).locator('.campo', { hasText: 'Vendedor' })
   conta(await campo.locator('button.cb').count() === 0 && (await campo.locator('input').inputValue()) === 'Dani' && await campo.locator('input[readonly]').count() === 1, 'quem não tem controle total vê o vendedor e não troca')
   conta(!erros.length, 'sem erro de JavaScript (vendedor sem controle total): ' + erros.join(' | '))
+})
+
+/* 2g. as tabelas de preço (068, prancha 137): a da cotação no cabeçalho, a de
+   cada layout no cartão da grade, e o preço que a tabela escreve */
+await secao(async () => {
+  const faixas = [{ de: 10, ate: 20 }, { de: 21, ate: 50 }, { de: 51, ate: 100 }, { de: 101, ate: null }]
+  const regras = { passo_pct: -10, arredondar: '90', plus_reais: 6, infantil_pct: -10, kit_pct: -8 }
+  const tab = (id, nome, padrao, itens) => ({ id, nome, situacao: 'ativa', padrao, vale_ate: null, so_gerente: false, faixas, regras, itens, observacao: '', teste: true, atualizado_em: '2026-10-12T00:00:00Z' })
+  const tabelas = [
+    tab('TP1', 'Atacado Prova', true, [{ codigo: 'FT-090-000M', tipo: 'referencia', base: 40, precos: [null, null, null, 30] }]),
+    tab('TP2', 'Varejo Prova', false, [{ codigo: 'FT-010-000M', tipo: 'referencia', base: 80, precos: [null, null, null, null] }]),
+  ]
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920, tabelas })
+  await ir(pg)
+  await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
+  await pausa(pg, 400)
+  const ops = await opcoesDoCampo(pg, 'Tabela de preço')
+  conta(ops.some((x) => /Atacado Prova \(padrão\)/.test(x)) && ops.some((x) => /Varejo Prova/.test(x)) && !ops.some((x) => /Licitação/.test(x)), 'o cabeçalho escolhe entre as tabelas do banco: ' + ops.join(' | '))
+  await naGaveta(pg).locator('.campo', { hasText: 'Tabela de preço' }).locator('button.cb').first().click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Atacado Prova' }).click()
+  await naGaveta(pg).getByRole('button', { name: 'Concluir' }).click()
+  await pausa(pg, 500)
+  conta(/não está na tabela/.test(await texto(pg, '.ct-preco-origem')), 'o L-01 (FT-010) não está na Atacado Prova: o preço é o escrito: ' + await texto(pg, '.ct-preco-origem'))
+  await pg.locator('.ct-ly-linha').nth(1).click()
+  await pausa(pg, 400)
+  conta(/Valores da Atacado Prova, faixa 101 ou mais/.test(await texto(pg, '.ct-preco-origem')), 'o L-02 (FT-090) segue a tabela, na faixa do total da cotação (186 peças): ' + await texto(pg, '.ct-preco-origem'))
+  /* o L-01 passa a seguir a Varejo Prova, sozinho na faixa dele (89 peças) */
+  await pg.locator('.ct-ly-linha').nth(0).click()
+  await pausa(pg, 400)
+  await pg.locator('.ct-preco-do-layout .sel', { hasText: 'PREÇO' }).locator('button.cb').click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Varejo Prova' }).click()
+  await pausa(pg, 400)
+  conta(/Valores da Varejo Prova, faixa 51 a 100/.test(await texto(pg, '.ct-preco-origem')), 'o L-01 segue outra tabela, com a faixa dela: ' + await texto(pg, '.ct-preco-origem'))
+  await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
+  await pausa(pg, 700)
+  const g = banco.gravados.filter((x) => x.metodo === 'PATCH').pop()
+  const cp = g && g.corpo.corpo
+  conta(cp && cp.informe.tabelaDePrecoId === 'TP1' && cp.informe.tabelaDePreco === 'Atacado Prova', 'o banco recebe a tabela da cotação, nome e id')
+  conta(cp && cp.produtos[1].precoBase === 31.9 && cp.produtos[1].precoDaTabela.G1 === 37.9, 'com o L-01 fora, a Atacado tem 89 + 8 = 97 peças: o L-02 cai na faixa 51 a 100, pela regra (31,90), e o plus é mais 6 (37,90): ' + (cp && [cp.produtos[1].precoBase, cp.produtos[1].precoDaTabela.G1]))
+  conta(cp && cp.produtos[0].tabelaId === 'TP2' && cp.produtos[0].precoBase !== 62 && cp.produtos[2].precoBase === 74, 'o L-01 na Varejo Prova muda de preço base; o L-03 (FT-010, fora da Atacado) fica com o dele: ' + (cp && cp.produtos.map((p) => p.precoBase)))
+  await foto(pg, '1920-tabela-de-preco', false)
+  conta(!erros.length, 'sem erro de JavaScript (tabelas de preço): ' + erros.join(' | '))
 })
 
 /* 2c. as cores de impressão do menu vêm do banco: 300 do DTF e 87 da sublimação (11/10/2026) */

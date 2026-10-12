@@ -29,7 +29,7 @@ import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
       (CORREIOS, TRANSPORTADORA), e a ficha chamava de `envio` a DATA. Manter
       os dois com o mesmo nome no mesmo registro era a armadilha mais cara da
       fusão: um dia alguém leria a data e mostraria "CORREIOS" no lugar dela. */
-export const VERSAO_DO_CFT = 5
+export const VERSAO_DO_CFT = 6
 /*  5 (11/10/2026): cada informe ganhou o GRUPO, "Sobre a produção" ou
       "Termos". A folha com valor mostra os dois em duas colunas, cada uma com
       o seu título (FOURTIME OS - 14, seção 4, INFORMES 2); o editor monta os
@@ -48,9 +48,15 @@ export const NOME_DO_ESTADO_DA_COTACAO: Record<EstadoDaCotacao, string> = {
 /** um produto cotado: o bloco de layout mais o que so a venda precisa saber */
 export type ProdutoCotado = {
   bloco: Bloco
-  /** preco por tamanho. Tamanho sem preco usa o precoBase */
+  /** preco por tamanho, ESCRITO A MAO. Ganha de tudo */
   precoPorTamanho: Partial<Record<string, number>>
   precoBase: number
+  /** a tabela de preco deste layout (068): '' segue a da cotacao; 'manual'
+      nao segue tabela nenhuma (formato 6) */
+  tabelaId?: string
+  /** o que a tabela deu por tamanho (plus e infantil); o adulto fica no
+      precoBase. Escrito pelo sistema, e nao por alguem (formato 6) */
+  precoDaTabela?: Partial<Record<string, number>>
 }
 
 /** um acrescimo ou desconto no total, em reais ou em por cento */
@@ -68,7 +74,10 @@ export type InformeDeProducao = {
   pagamento: string
   /** o MODO de entrega: CORREIOS, TRANSPORTADORA, MOTOBOY. Nao e data. */
   entrega: string
+  /** o NOME da tabela, que e o que a folha mostra */
   tabelaDePreco: string
+  /** o id da tabela no banco (068); vazio na cotacao de antes dela (formato 6) */
+  tabelaDePrecoId?: string
 }
 
 /* Um informe e uma frase que o cliente le antes de aprovar. Desmarcar tira ela
@@ -312,11 +321,17 @@ export function pecasDoProduto(p: ProdutoCotado): number {
   return totalDaGrade(p.bloco.grade)
 }
 
+/* O PRECO DE UM TAMANHO: o escrito a mao ganha; depois o que a tabela deu
+   para aquele tamanho (plus, infantil); depois o preco base. Um lugar so,
+   para a grade, o total e a folha darem o mesmo numero. */
+export function precoNaGrade(p: ProdutoCotado, tam: string): number {
+  return p.precoPorTamanho[tam] ?? p.precoDaTabela?.[tam] ?? p.precoBase
+}
+
 export function totalDoProduto(p: ProdutoCotado): number {
   return Object.entries(p.bloco.grade).reduce((soma, [tam, qtd]) => {
     const n = qtd ?? 0
-    const preco = p.precoPorTamanho[tam] ?? p.precoBase
-    return soma + n * preco
+    return soma + n * precoNaGrade(p, tam)
   }, 0)
 }
 

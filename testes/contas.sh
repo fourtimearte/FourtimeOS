@@ -20,6 +20,7 @@ tsc $IGNORAR \
   "$raiz/src/dominio/cotacao/comercial.ts" \
   "$raiz/src/dominio/producao/comparacao.ts" \
   "$raiz/src/dominio/preco/tipos.ts" \
+  "$raiz/src/dominio/cotacao/tabela-de-preco.ts" \
   --target ES2022 --module ESNext --moduleResolution bundler \
   --lib ES2022,DOM --skipLibCheck --outDir "$saida"
 # node exige a extensao no import; o tsc nao a escreve

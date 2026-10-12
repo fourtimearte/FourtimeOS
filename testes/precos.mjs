@@ -6,6 +6,9 @@ import {
   arredondar, celula, faixaDe, precoDoTamanho, ajustarEmLote, voltarParaARegra,
   escrever, copiarDe, tabelaEmBranco, tabelasParaEscolher, nomeDaFaixa,
 } from './compilado/preco/tipos.js'
+import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
+import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
+import { blocoEmBranco } from './compilado/layout/bloco.js'
 
 let ruins = 0
 const ok = (certo, texto) => { if (!certo) ruins++; console.log((certo ? '  ok   ' : '  RUIM ') + texto) }
@@ -68,6 +71,41 @@ const lista = tabelasParaEscolher([
   { ...t, nome: 'D', situacao: 'rascunho', padrao: false, soGerente: false },
 ], false)
 ok(lista.map((x) => x.nome).join() === 'C,B', 'na cotação: só as ativas, a padrão primeiro, e a "só gerente" fica fora para o vendedor')
+
+console.log('a tabela dentro da cotação')
+{
+  const tab = { ...t, id: 'T1', nome: 'Atacado', situacao: 'ativa' }
+  const outra = { ...t, id: 'T2', nome: 'Parceiro', situacao: 'ativa', itens: [{ codigo: 'CT01', tipo: 'referencia', base: 60, precos: [null, null, null, null] }] }
+  const tabelas = [tab, outra]
+  const produto = (ref, grade, extra = {}) => {
+    const b = blocoEmBranco(1)
+    b.referencia = ref
+    b.grade = grade
+    return { bloco: b, precoPorTamanho: {}, precoBase: 10, ...extra }
+  }
+  const cot = cotacaoEmBranco('2026-9101')
+  cot.informe.tabelaDePrecoId = 'T1'
+  cot.produtos = [produto('CT01', { M: 15 }), produto('SH01', { M: 10 })]
+  const um = aplicarTabelas(cot, tabelas, ctx.pecasDoKit)
+  ok(um !== cot && um.produtos[0].precoBase === 44.9 && um.produtos[1].precoBase === 33,
+    'a faixa vale pelo total da tabela: 15 + 10 = 25 peças, faixa 21 a 50 (44,90 da regra e 33,00 à mão)')
+  ok(um.produtos[0].precoDaTabela.G1 === 50.9 && precoNaGrade(um.produtos[0], 'G1') === 50.9 && precoNaGrade(um.produtos[0], 'M') === 44.9,
+    'o plus sai da tabela (mais R$ 6), o adulto é o preço base')
+  ok(aplicarTabelas(um, tabelas, ctx.pecasDoKit) === um, 'sem mudança, devolve o mesmo objeto (o editor não fica sujo à toa)')
+  ok(origemDoPreco(um, um.produtos[0], tabelas).faixa === '21 a 50' && origemDoPreco(um, um.produtos[0], tabelas).tabela === 'Atacado', 'a frase de onde veio o preço')
+  const escrito = { ...um, produtos: [{ ...um.produtos[0], precoPorTamanho: { M: 99 } }, um.produtos[1]] }
+  ok(totalDoProduto(escrito.produtos[0]) === 99 * 15, 'o escrito à mão na grade ganha da tabela')
+  const manual = { ...cot, produtos: [produto('CT01', { M: 15 }, { tabelaId: SEM_TABELA }), produto('SH01', { M: 10 })] }
+  const dois = aplicarTabelas(manual, tabelas, ctx.pecasDoKit)
+  ok(dois.produtos[0].precoBase === 10 && dois.produtos[1].precoBase === 39.9, 'layout sem tabela fica com o preço escrito, e sai da conta da faixa (10 peças, primeira faixa)')
+  const porLayout = { ...cot, produtos: [produto('CT01', { M: 15 }, { tabelaId: 'T2' }), produto('SH01', { M: 10 })] }
+  const tres = aplicarTabelas(porLayout, tabelas, ctx.pecasDoKit)
+  ok(tres.produtos[0].precoBase === 60 && pecasPorTabela(porLayout).get('T2') === 15, 'o layout pode seguir outra tabela, com a faixa dela')
+  const semRef = { ...cot, produtos: [produto('ZZ01', { M: 30 })] }
+  ok(aplicarTabelas(semRef, tabelas, ctx.pecasDoKit) === semRef && origemDoPreco(semRef, semRef.produtos[0], tabelas) === null, 'referência fora da tabela: nada muda')
+  const aprovada = { ...cot, aprovacao: { quando: '2026-10-12', pedido: '1', quem: 'x' } }
+  ok(aplicarTabelas(aprovada, tabelas, ctx.pecasDoKit) === aprovada, 'cotação aprovada não muda de preço')
+}
 
 console.log(ruins ? `\n${ruins} RUINS` : '\ntabelas de preço: tudo certo')
 process.exit(ruins ? 1 : 0)

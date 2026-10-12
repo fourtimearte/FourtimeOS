@@ -11,11 +11,12 @@ import {
   type Bloco,
   type Imagem,
 } from '@dominio/layout'
-import type { ProdutoCotado } from '@dominio/cotacao'
+import type { Cotacao, ProdutoCotado } from '@dominio/cotacao'
 import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
 import { MuralDaArte } from './mural-da-arte'
+import { PrecoDoLayout } from './tabelas-da-cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -37,6 +38,7 @@ const GENEROS: [string, string, string][] = [
 ]
 
 export function CorpoDoEditor({
+  cotacao,
   produtos,
   escolhido,
   travado,
@@ -48,6 +50,7 @@ export function CorpoDoEditor({
   aoDuplicar,
   aoRemover,
 }: {
+  cotacao: Cotacao
   produtos: ProdutoCotado[]
   escolhido: number
   travado: boolean
@@ -100,7 +103,19 @@ export function CorpoDoEditor({
             ) : null}
           </div>
           <CartaoDaArte bloco={p.bloco} travado={travado} aoMudar={mudarBloco} />
-          <CartaoDaGrade produto={p} travado={travado} aoMudarProduto={(troca) => aoMudarProduto(escolhido, troca)} />
+          <CartaoDaGrade
+            produto={p}
+            travado={travado}
+            aoMudarProduto={(troca) => aoMudarProduto(escolhido, troca)}
+            seletorDoPreco={
+              <PrecoDoLayout
+                c={cotacao}
+                produto={p}
+                travado={travado}
+                aoMudar={(tabelaId) => aoMudarProduto(escolhido, (x) => ({ ...x, tabelaId }))}
+              />
+            }
+          />
           <div className="ct-ly-ficha">
             <FichaDoLayout bloco={p.bloco} travado={travado} aoMudar={mudarBloco} />
           </div>

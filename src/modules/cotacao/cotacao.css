@@ -3367,3 +3367,21 @@ i.ct-cv-pe {
   font-size: 13.5px;
   color: var(--text-2);
 }
+
+/* O PRECO DO LAYOUT (068): de qual tabela o preco vem, e a frase de onde o
+   numero saiu. Mora no cartao da grade, logo abaixo do titulo, com o mesmo
+   recheio do cabecalho, numa fileira que quebra. */
+.ct-preco-do-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-btn);
+  min-width: 0;
+  padding: var(--re-3) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-preco-origem {
+  font-size: 13.5px;
+  color: var(--text-2);
+  min-width: 0;
+}

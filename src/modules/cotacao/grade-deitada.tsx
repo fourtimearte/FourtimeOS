@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
-import type { PointerEvent as EventoDePonteiro } from 'react'
+import type { PointerEvent as EventoDePonteiro, ReactNode } from 'react'
 import { Table } from '@phosphor-icons/react'
 import { Segmentado, TituloCartao } from '@ds'
 import { GradeDeTamanhos, foraDaFaixa, tamanhosNaOrdem, type Faixa, type Grade, type Tamanho } from '@dominio/layout'
-import { pecasDoProduto, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
+import { pecasDoProduto, precoNaGrade, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -30,10 +30,13 @@ export function CartaoDaGrade({
   produto,
   travado,
   aoMudarProduto,
+  seletorDoPreco,
 }: {
   produto: ProdutoCotado
   travado: boolean
   aoMudarProduto: (troca: (p: ProdutoCotado) => ProdutoCotado) => void
+  /** de qual tabela de preço o layout segue (068); fica embaixo do título */
+  seletorDoPreco?: ReactNode
 }) {
   const b = produto.bloco
   const tamanhos = tamanhosNaOrdem(b.faixa, b.grade)
@@ -44,7 +47,7 @@ export function CartaoDaGrade({
 
   const mudarGrade = (g: Grade) => aoMudarProduto((p) => ({ ...p, bloco: { ...p.bloco, grade: g } }))
   const mudarFaixa = (f: Faixa) => aoMudarProduto((p) => ({ ...p, bloco: { ...p.bloco, faixa: f } }))
-  const preco = (t: string) => produto.precoPorTamanho[t] ?? produto.precoBase
+  const preco = (t: string) => precoNaGrade(produto, t)
 
   function gravar(linha: Linha, alvos: string[], n: number | null) {
     if (linha === 'pecas') {
@@ -58,7 +61,7 @@ export function CartaoDaGrade({
       aoMudarProduto((p) => {
         const novo = { ...p.precoPorTamanho }
         for (const t of alvos) {
-          if (n === null || n === p.precoBase) delete novo[t]
+          if (n === null || n === (p.precoDaTabela?.[t] ?? p.precoBase)) delete novo[t]
           else novo[t] = n
         }
         return { ...p, precoPorTamanho: novo }
@@ -169,6 +172,7 @@ export function CartaoDaGrade({
           />
         ) : null}
       </header>
+      {seletorDoPreco}
       {/* NO CELULAR a grade fica EM PÉ: deitada, doze colunas não cabem em 360
           px, e tabela que rola de lado esconde o número que a pessoa veio ver.
           É a grade de sempre do módulo de layout, com o mesmo dado. */}

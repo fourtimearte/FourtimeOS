@@ -17,6 +17,7 @@ import {
   type Cotacao,
   type EstadoDaCotacao,
 } from '@dominio/cotacao'
+import { usarTabelasDaCotacao } from './tabelas-da-cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -33,7 +34,9 @@ import './cotacao.css'
    ========================================================================== */
 
 
-const TABELAS = [
+/* A lista de antes da 068: so vale enquanto as tabelas de preco nao estao
+   no banco. Depois, a escolha e uma tabela de verdade, com id. */
+const TABELAS_DE_ANTES = [
   { valor: 'Atacado 2026', rotulo: 'Atacado 2026' },
   { valor: 'Varejo 2026', rotulo: 'Varejo 2026' },
   { valor: 'Licitação', rotulo: 'Licitação' },
@@ -253,7 +256,7 @@ export function OQueFoiCombinado({ c, mudar, travado }: Props) {
           <Seletor bloco campo valor={c.informe.entrega} opcoes={comOValorAtual(listas.entrega, c.informe.entrega)} vazio="Escolher" aoEscolher={(v) => inf({ entrega: v })} />
         </Campo>
         <Campo rotulo="Tabela de preço">
-          <Seletor bloco campo valor={c.informe.tabelaDePreco} opcoes={TABELAS} vazio="Escolher" aoEscolher={(v) => inf({ tabelaDePreco: v })} />
+          <SeletorDaTabela c={c} aoMudar={inf} />
         </Campo>
         <Campo rotulo="Situação">
           <Seletor
@@ -370,5 +373,46 @@ export function OQueAFabricaPrecisaSaber({ c, mudar }: Props) {
         </div>
       </Flutuante>
     </section>
+  )
+}
+
+/* A TABELA DE PRECO DA COTACAO. Com a 068 no banco, as tabelas ativas que
+   esta pessoa pode escolher (a "so gerente" so para chefia), mais a que ja
+   estava escolhida, mesmo arquivada depois; o nome vai junto do id, que e
+   o que a folha e a lista mostram. Sem a 068, ou com ela e nenhuma tabela
+   criada ainda, a lista de nomes de antes. */
+function SeletorDaTabela({
+  c,
+  aoMudar,
+}: {
+  c: Cotacao
+  aoMudar: (parte: Partial<Cotacao['informe']>) => void
+}) {
+  const { todas, escolhiveis, semBanco } = usarTabelasDaCotacao()
+  if (semBanco || !todas.length) {
+    return (
+      <Seletor
+        bloco
+        campo
+        valor={c.informe.tabelaDePreco}
+        opcoes={TABELAS_DE_ANTES}
+        vazio="Escolher"
+        aoEscolher={(v) => aoMudar({ tabelaDePreco: v })}
+      />
+    )
+  }
+  const id = c.informe.tabelaDePrecoId ?? ''
+  const opcoes = escolhiveis.map((t) => ({ valor: t.id, rotulo: t.nome + (t.padrao ? ' (padrão)' : '') }))
+  const atual = todas.find((t) => t.id === id)
+  if (atual && !opcoes.some((o) => o.valor === id)) opcoes.push({ valor: id, rotulo: atual.nome })
+  return (
+    <Seletor
+      bloco
+      campo
+      valor={id}
+      opcoes={opcoes}
+      vazio="Sem tabela"
+      aoEscolher={(v) => aoMudar({ tabelaDePrecoId: v, tabelaDePreco: todas.find((t) => t.id === v)?.nome ?? '' })}
+    />
   )
 }

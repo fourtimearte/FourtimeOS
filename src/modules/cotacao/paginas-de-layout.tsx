@@ -17,7 +17,7 @@ import {
   type Imagem,
   type Tamanho,
 } from '@dominio/layout'
-import { pecasDoProduto, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
+import { pecasDoProduto, precoNaGrade, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import type { ConstrucaoDoLayout } from '@dominio/produto'
 import { construcaoDe } from './ficha-do-layout'
 import { n2, pecas, reais, Rotulo, Titulo } from './pagina-um'
@@ -295,7 +295,7 @@ export function fileirasDaGrade(b: Bloco, modo: ModoDaFolha): { nome: string; ta
 function GradeVendida({ p, comValor, modo }: { p: ProdutoCotado; comValor: boolean; modo: ModoDaFolha }) {
   const b = p.bloco
   const q = (t: Tamanho) => b.grade[t] ?? 0
-  const preco = (t: Tamanho) => p.precoPorTamanho[t] ?? p.precoBase
+  const preco = (t: Tamanho) => precoNaGrade(p, t)
   const filas = fileirasDaGrade(b, modo)
   const varias = filas.length > 1
   const ncols = Math.max(...filas.map((f) => f.tamanhos.length))

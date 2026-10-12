@@ -1,5 +1,5 @@
 -- ===========================================================================
--- A PROVA DA 065: o lead do site.
+-- A PROVA DA 065 E DA 066: o lead do site.
 --
 -- Roda no SQL Editor quantas vezes quiser: termina levantando um erro de
 -- proposito, e por isso tudo que fez e desfeito. Veste um admin, um gerente
@@ -86,6 +86,15 @@ begin
       and (select count(*) from public.lead where id_envio = envio) = 1
     then 'ok  ' else 'RUIM' end || ' 4. reenvio da mesma conversa: mesmo lead, envio_numero 2, so a fala nova entra';
 
+  -- 11 (066). o cartao mostra a ultima fala do CLIENTE, e nao a "mensagem" da ficha nem o robo
+  ficha := jsonb_set(ficha, '{envio_numero}', '3');
+  ficha := jsonb_set(ficha, '{mensagem}', '"Você já tem a arte?"');
+  ficha := jsonb_set(ficha, '{mensagens}', (ficha->'mensagens') || jsonb_build_array(
+    jsonb_build_object('autor', 'bot', 'texto', 'Você já tem a arte?', 'em', '2026-10-11T16:00:05-03:00')));
+  perform public.registrar_lead_do_site(ficha, imp);
+  txt := txt || E'\n' || case when (select ultima_msg from public.lead where id = lid) = 'E o prazo?'
+    then 'ok  ' else 'RUIM' end || ' 11. o cartao mostra a ultima fala do cliente, e nao a pergunta do robo (066)';
+
   -- 5. outra conversa do mesmo telefone com o lead aberto: o mesmo cartao
   r2 := public.registrar_lead_do_site(jsonb_set(jsonb_set(ficha, '{id_envio}', to_jsonb(envio2)), '{envio_numero}', '1'), imp);
   txt := txt || E'\n' || case when (r2->>'lead_id')::uuid = lid and (r2->>'repetido')::boolean
@@ -149,5 +158,5 @@ begin
   txt := txt || E'\n' || case when b then 'ok  ' else 'RUIM' end
       || ' 10. so a chave de servico chama a funcao; a vendedora nao muda a regra e o admin muda (fica anotado)';
 
-  raise exception E'\nPROVA DO LEAD DO SITE (065)%\n\nNada foi gravado: este erro e de proposito e desfaz tudo.', txt;
+  raise exception E'\nPROVA DO LEAD DO SITE (065 e 066)%\n\nNada foi gravado: este erro e de proposito e desfaz tudo.', txt;
 end $$;

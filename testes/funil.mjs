@@ -90,6 +90,7 @@ for (const tema of ['light', 'dark']) {
     })
     let chamouVirar = false
     let gravou = null
+    let leituras = 0
     await ctx.route('**supabase.co/**', async (r) => {
       const req = r.request(); const u = req.url(); const m = req.method()
       let corpo = []
@@ -103,7 +104,7 @@ for (const tema of ['light', 'dark']) {
         try { gravou = JSON.parse(req.postData() || 'null') } catch { gravou = 'corpo ilegivel' }
         corpo = [{ id:'L9' }]
       }
-      else if (u.includes('/lead?')) corpo = LEADS
+      else if (u.includes('/lead?')) { leituras++; corpo = LEADS }
       else if (u.includes('/mensagem?') && u.includes('lead_id=eq.L1')) corpo = [
         { id:'s1', quem:'cliente', tipo:'texto', texto:'Quero um orçamento', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(45), canal:'site' },
         { id:'s2', quem:'sistema', tipo:'texto', texto:'Ótimo! Qual peça?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(44), canal:'site' },
@@ -131,6 +132,14 @@ for (const tema of ['light', 'dark']) {
       s: document.documentElement.scrollWidth, c: document.documentElement.clientWidth,
     }))
     conta(!largura.rola, `${tema} ${nome}: funil sem rolagem de lado (${largura.s} em ${largura.c})`)
+
+    /* a aba volta para a frente: o funil rele na hora, sem esperar os 30 s */
+    if (tema === 'light' && nome === 'computador') {
+      const antes = leituras
+      await pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+      await pg.waitForTimeout(600)
+      conta(leituras > antes, `${tema} ${nome}: a aba volta para a frente e o funil rele os leads na hora (${antes} para ${leituras})`)
+    }
 
     /* --- prancha 125: a barra do topo, a origem e o "esperando" --- */
     const barra = await pg.evaluate(() => {

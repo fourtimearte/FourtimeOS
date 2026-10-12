@@ -107,12 +107,20 @@ export function TelaFunil() {
 
   /* O FUNIL SE RELE SOZINHO a cada 30 segundos enquanto esta na frente (plano
      15, C3): o lead do site chega sem ninguem apertar nada. Aba escondida nao
-     rele: ninguem esta olhando, e o sino avisa. */
+     rele: ninguem esta olhando, e o sino avisa. E quando a aba volta para a
+     frente, rele na hora, sem esperar os 30 segundos. */
   useEffect(() => {
     const t = setInterval(() => {
       if (document.visibilityState === 'visible') void recarregar()
     }, 30_000)
-    return () => clearInterval(t)
+    const voltou = () => {
+      if (document.visibilityState === 'visible') void recarregar()
+    }
+    document.addEventListener('visibilitychange', voltou)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', voltou)
+    }
   }, [recarregar])
 
   /* ?lead=<id> ABRE AQUELE LEAD. E por onde a coluna lateral da extensao, no

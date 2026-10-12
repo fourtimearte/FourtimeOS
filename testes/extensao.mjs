@@ -182,12 +182,24 @@ await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {}
 /* trocar de modo esconde um e mostra o outro (o defeito que o Henrique achou em 11/10/2026:
    o WhatsApp ficava sempre e o quadro ia para baixo dele) */
 const visto = () => os.evaluate(() => {
-  const vis = (el) => !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0
-  return { wa: vis(document.querySelector('.fn-wa')), quadro: vis(document.querySelector('.fn-quadro')) }
+  const vis = (el) => !!el && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden' && el.getBoundingClientRect().height > 0
+  const f = document.querySelector('.fn-wa-frame')?.getBoundingClientRect()
+  return { wa: vis(document.querySelector('.fn-wa')), quadro: vis(document.querySelector('.fn-quadro')), frame: f ? Math.round(f.width) + 'x' + Math.round(f.height) : '' }
 })
+const antes = await visto()
 await os.evaluate(() => [...document.querySelectorAll('.seg button')].find(b => /Quadro/.test(b.innerText)).click())
 await os.waitForTimeout(500)
 const noQuadro = await visto()
+/* o "pulo" que o Henrique viu em 12/10/2026: escondido, o WhatsApp ficava
+   com tamanho zero e se redesenhava ao voltar. Agora o quadro dele nao muda
+   de tamanho ao trocar de modo. */
+conta(!!antes.frame && noQuadro.frame === antes.frame, 'escondido, o WhatsApp mantém o mesmo tamanho e não se redesenha ao voltar (' + antes.frame + ' e ' + noQuadro.frame + ')')
+const clicavel = await os.evaluate(() => {
+  const c = document.querySelector('.fn-card'); if (!c) return false
+  const r = c.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + 10)
+  return !!el && c.contains(el)
+})
+conta(clicavel, 'com o WhatsApp guardado por baixo, os cartões do quadro continuam clicáveis')
 conta(!noQuadro.wa && noQuadro.quadro, 'no modo Quadro o WhatsApp some e o quadro aparece (' + JSON.stringify(noQuadro) + ')')
 await os.evaluate(() => [...document.querySelectorAll('.seg button')].find(b => /WhatsApp/.test(b.innerText)).click())
 await os.waitForTimeout(500)

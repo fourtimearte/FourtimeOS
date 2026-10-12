@@ -402,87 +402,93 @@ export function TelaFunil() {
         </>
       }
     >
-      {montado ? (
-        <PainelDoWhatsApp
-          visivel={modo === 'whatsapp'}
-          leads={leads}
-          pedido={pedido}
-          podeMexer={podeMexer}
-          relogio={agora}
-          aoAbrirNoQuadro={(l) => {
-            setModo('quadro')
-            abrir(l)
-          }}
-          aoMontarCotacao={(l) => void montarCotacao(l)}
-          aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
-          aoMover={(id, e) => void mover(id, e)}
-          aoCriarLead={(t) =>
-            setEditando({ ...leadEmBranco(), telefone: t.replace(/^55(?=\d{10,11}$)/, '') })
-          }
-        />
-      ) : null}
-
-      <div
-        className={['pilha fn-mesa', aberto ? 'com-inbox' : '', modo === 'whatsapp' ? 'fn-guardado' : '']
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <AvisoDaExtensao />
-        {!falha && !carregando && leads.length ? (
-          <BarraDoFunil
-            filtro={filtroValendo}
-            aoMudar={(m) => setFiltro((f) => ({ ...f, ...m }))}
-            contas={contas}
-            vendedores={vendedores}
+      {/* O PALCO: o WhatsApp e o quadro moram no mesmo lugar. Escondido, o
+          WhatsApp fica por baixo, invisivel e do MESMO tamanho, em vez de
+          sair da tela: sumir com display:none fazia o WhatsApp se redesenhar
+          minusculo e voltar, o "pulo" que o Henrique viu em 12/10/2026. */}
+      <div className="pilha fn-palco">
+        {montado ? (
+          <PainelDoWhatsApp
+            visivel={modo === 'whatsapp'}
+            leads={leads}
+            pedido={pedido}
+            podeMexer={podeMexer}
+            relogio={agora}
+            aoAbrirNoQuadro={(l) => {
+              setModo('quadro')
+              abrir(l)
+            }}
+            aoMontarCotacao={(l) => void montarCotacao(l)}
+            aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
+            aoMover={(id, e) => void mover(id, e)}
+            aoCriarLead={(t) =>
+              setEditando({ ...leadEmBranco(), telefone: t.replace(/^55(?=\d{10,11}$)/, '') })
+            }
           />
         ) : null}
 
-        {falha ? (
-          <Vazio
-            titulo="Não consegui carregar o funil"
-            texto={falha}
-            acao={
-              <Botao
-                tom="forte"
-                onClick={() => {
-                  setCarregando(true)
-                  void recarregar()
-                }}
-              >
-                Tentar de novo
-              </Botao>
-            }
-          />
-        ) : (
-          <>
-            {/* O FILTRO QUE NAO ACHOU NADA DIZ ISSO, em vez de mostrar seis
-                colunas vazias que parecem um funil sem lead nenhum. */}
-            {leads.length && !visiveis.length ? (
-              <Vazio
-                titulo={filtroValendo.quem === 'esperando' && !filtrando ? 'Ninguém esperando resposta' : 'Nada com esse filtro'}
-                texto={
-                  filtroValendo.quem === 'meus' && !filtrando
-                    ? 'Nenhum lead seu no funil. Os de todo mundo estão em Todos.'
-                    : 'Troque o filtro para ver os outros leads.'
-                }
-                acao={
-                  <Botao tom="contorno" onClick={() => setFiltro({ quem: 'todos', busca: '', origem: '', vendedor: '' })}>
-                    Ver todos
-                  </Botao>
-                }
-              />
-            ) : null}
-            <Quadro
-              leads={visiveis}
-              aberto={abertoId}
-              podeMexer={podeMexer}
-              aoMover={mover}
-              aoAbrir={abrir}
-              aoEditar={(l) => setEditando(l)}
-              relogio={agora}
+        <div
+          className={['pilha fn-mesa', aberto ? 'com-inbox' : '', modo === 'whatsapp' ? 'fn-guardado' : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <AvisoDaExtensao />
+          {!falha && !carregando && leads.length ? (
+            <BarraDoFunil
+              filtro={filtroValendo}
+              aoMudar={(m) => setFiltro((f) => ({ ...f, ...m }))}
+              contas={contas}
+              vendedores={vendedores}
             />
-          </>
-        )}
+          ) : null}
+
+          {falha ? (
+            <Vazio
+              titulo="Não consegui carregar o funil"
+              texto={falha}
+              acao={
+                <Botao
+                  tom="forte"
+                  onClick={() => {
+                    setCarregando(true)
+                    void recarregar()
+                  }}
+                >
+                  Tentar de novo
+                </Botao>
+              }
+            />
+          ) : (
+            <>
+              {/* O FILTRO QUE NAO ACHOU NADA DIZ ISSO, em vez de mostrar seis
+                  colunas vazias que parecem um funil sem lead nenhum. */}
+              {leads.length && !visiveis.length ? (
+                <Vazio
+                  titulo={filtroValendo.quem === 'esperando' && !filtrando ? 'Ninguém esperando resposta' : 'Nada com esse filtro'}
+                  texto={
+                    filtroValendo.quem === 'meus' && !filtrando
+                      ? 'Nenhum lead seu no funil. Os de todo mundo estão em Todos.'
+                      : 'Troque o filtro para ver os outros leads.'
+                  }
+                  acao={
+                    <Botao tom="contorno" onClick={() => setFiltro({ quem: 'todos', busca: '', origem: '', vendedor: '' })}>
+                      Ver todos
+                    </Botao>
+                  }
+                />
+              ) : null}
+              <Quadro
+                leads={visiveis}
+                aberto={abertoId}
+                podeMexer={podeMexer}
+                aoMover={mover}
+                aoAbrir={abrir}
+                aoEditar={(l) => setEditando(l)}
+                relogio={agora}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       <EditarLead

@@ -56,7 +56,10 @@ export type Cliente = {
   /** "Cliente", "Cliente, Fornecedor", "Cliente, Funcionario" */
   tipoDeContato: string
   segmento: Segmento
+  /** o nome de quem e dono da carteira (a pessoa, quando ha vendedorId; senao o texto que veio do Bling) */
   vendedor: string
+  /** a pessoa dona da carteira (011): o lead deste telefone volta para ela */
+  vendedorId: string
   /** quantos pedidos ja fez */
   pedidos: number
   /** soma de tudo que ja comprou, em reais */

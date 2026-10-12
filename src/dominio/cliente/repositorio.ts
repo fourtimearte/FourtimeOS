@@ -1,3 +1,4 @@
+import { vinculo } from '@shared'
 import { tabela } from '@shared/supabase'
 import type { Cliente, Segmento, TipoDePessoa } from './tipos'
 
@@ -37,6 +38,7 @@ type LinhaDoCliente = {
   tipo_de_contato: string
   segmento: Segmento
   vendedor: string
+  vendedor_id?: string | null
   teste: boolean
   criado_em: string
   pedidos: number
@@ -46,7 +48,7 @@ type LinhaDoCliente = {
 
 const COLUNAS =
   'id,nome,fantasia,tipo,documento,contato,telefone,celular,email,endereco,' +
-  'complemento,bairro,cidade,uf,cep,tipo_de_contato,segmento,vendedor,teste,' +
+  'complemento,bairro,cidade,uf,cep,tipo_de_contato,segmento,vendedor,vendedor_id,teste,' +
   'criado_em,pedidos,total,ultimo_pedido'
 
 function deLinha(l: LinhaDoCliente): Cliente {
@@ -69,6 +71,7 @@ function deLinha(l: LinhaDoCliente): Cliente {
     tipoDeContato: l.tipo_de_contato ?? '',
     segmento: l.segmento,
     vendedor: l.vendedor ?? '',
+    vendedorId: l.vendedor_id ?? '',
     /* numeric do Postgres chega como texto no JSON, e "66280.00" + 1 daria
        "66280.001". Number aqui, uma vez, em vez de em cada tela. */
     pedidos: Number(l.pedidos) || 0,
@@ -101,19 +104,34 @@ export function paraLinha(c: Cliente) {
     tipo_de_contato: c.tipoDeContato,
     segmento: c.segmento,
     vendedor: c.vendedor,
+    vendedor_id: vinculo(c.vendedorId),
+  }
+}
+
+/* A CARTEIRA PELO NOME DA PESSOA. A view guarda o id; o nome vem da equipe,
+   numa leitura so para a lista inteira. Sem a equipe (falha de rede), fica o
+   texto que estava gravado, que e o nome da ultima vez que alguem salvou. */
+async function comONomeDoVendedor(cs: Cliente[]): Promise<Cliente[]> {
+  if (!cs.some((c) => c.vendedorId)) return cs
+  try {
+    const equipe = await tabela<{ id: string; nome: string }[]>('equipe?select=id,nome')
+    const nome = new Map(equipe.map((p) => [p.id, p.nome]))
+    return cs.map((c) => (c.vendedorId && nome.get(c.vendedorId) ? { ...c, vendedor: nome.get(c.vendedorId) ?? c.vendedor } : c))
+  } catch {
+    return cs
   }
 }
 
 export async function carregarClientes(): Promise<Cliente[]> {
   const linhas = await tabela<LinhaDoCliente[]>(`cliente_na_lista?select=${COLUNAS}&order=nome.asc`)
-  return linhas.map(deLinha)
+  return comONomeDoVendedor(linhas.map(deLinha))
 }
 
 export async function acharCliente(id: string): Promise<Cliente | null> {
   const linhas = await tabela<LinhaDoCliente[]>(
     `cliente_na_lista?select=${COLUNAS}&id=eq.${encodeURIComponent(id)}`,
   )
-  return linhas.length ? deLinha(linhas[0]) : null
+  return linhas.length ? (await comONomeDoVendedor([deLinha(linhas[0])]))[0] : null
 }
 
 /* Gravar devolve a linha da TABELA, que não tem os três números da view. Então
@@ -170,6 +188,7 @@ export function clienteEmBranco(): Cliente {
     tipoDeContato: 'Cliente',
     segmento: 'outros',
     vendedor: '',
+    vendedorId: '',
     pedidos: 0,
     total: 0,
     ultimoPedido: '',

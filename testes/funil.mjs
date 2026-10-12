@@ -95,6 +95,7 @@ for (const tema of ['light', 'dark']) {
     let gravou = null
     let leituras = 0
     let cotacaoGravada = null
+    let trocou = null
     await ctx.route('**supabase.co/**', async (r) => {
       const req = r.request(); const u = req.url(); const m = req.method()
       let corpo = []
@@ -107,6 +108,8 @@ for (const tema of ['light', 'dark']) {
         ligado = true
         corpo = { id:'C7' }
       }
+      else if (u.includes('rpc/trocar_dono_do_lead')) { try { trocou = JSON.parse(req.postData() || '{}') } catch { trocou = {} } corpo = null }
+      else if (u.includes('/transferencia_de_lead?')) corpo = [{ de_quem:null, para_quem:'P1', quem_fez:'P1', motivo:'veio pelo rodízio', em:'2026-10-10T14:30:00-03:00' }]
       else if (u.includes('/equipe?')) corpo = DONOS
       else if (/\/rest\/v1\/cotacao(\?|$)/.test(u) && m === 'POST') {
         try { cotacaoGravada = JSON.parse(req.postData() || 'null') } catch { cotacaoGravada = 'corpo ilegivel' }
@@ -464,6 +467,36 @@ for (const tema of ['light', 'dark']) {
     await pg.screenshot({ path: `${PASTA}/funil-editar-${tema}-${nome}.png`, fullPage:false })
     await pg.keyboard.press('Escape')
     await pg.waitForTimeout(800)
+
+    /* --- a troca de dono deixa rastro (072, 12/10/2026) --- */
+    if (tema === 'light' && nome === 'computador') {
+      await pg.evaluate(() => {
+        const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Vôlei Clube Araras'))
+        c.click()
+      })
+      await pg.waitForTimeout(1200)
+      await pg.evaluate(() => {
+        const b = [...document.querySelectorAll('.fn-in-topo button')].find(x => /Editar/.test(x.getAttribute('aria-label') || ''))
+        b.click()
+      })
+      await pg.waitForTimeout(1200)
+      const hist = await pg.evaluate(() => document.querySelector('dialog[open] .fn-trocas')?.innerText ?? '')
+      conta(/Quem já foi dono/i.test(hist) && /ninguém para Dani Ribeiro/.test(hist) && /veio pelo rodízio/.test(hist), 'o editar mostra quem já foi dono, com o motivo (' + hist.replace(/\s+/g, ' ').slice(0, 90) + ')')
+      const semMotivo = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .campo')].some(c => /Motivo da troca/.test(c.innerText)))
+      conta(!semMotivo, 'sem trocar o dono, não pede motivo')
+      await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .campo')].find(c => /Dono do lead/.test(c.innerText)).querySelector('button').click())
+      await pg.waitForTimeout(300)
+      await pg.locator('.mn-item', { hasText: 'Lucas Garcia' }).first().click()
+      await pg.waitForTimeout(300)
+      const motivo = pg.locator('dialog[open] .campo', { hasText: 'Motivo da troca' }).locator('input')
+      conta(await motivo.count() === 1, 'trocar o dono pede o motivo da troca')
+      await motivo.fill('cliente pediu o Lucas')
+      await pg.locator('dialog[open] button', { hasText: 'Salvar' }).click()
+      await pg.waitForTimeout(1200)
+      conta(trocou?.p_lead === 'L3' && trocou?.p_para === 'P2' && trocou?.p_motivo === 'cliente pediu o Lucas', 'Salvar troca o dono pela função do banco, com o motivo (' + JSON.stringify(trocou) + ')')
+      await pg.keyboard.press('Escape')
+      await pg.waitForTimeout(600)
+    }
 
     /* --- cadastrar o cliente do lead (067) --- */
     await pg.evaluate(() => {

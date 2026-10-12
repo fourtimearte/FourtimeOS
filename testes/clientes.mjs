@@ -27,7 +27,7 @@ const dias = (n) => new Date(Date.now() - n * 86400000).toISOString()
 const base = (o) => ({ fantasia: '', tipo: 'J', documento: '', contato: '', telefone: '', celular: '', email: '', endereco: '', complemento: '', bairro: '',
   cidade: 'Goiânia', uf: 'GO', cep: '', tipo_de_contato: 'Cliente', segmento: 'outros', vendedor: '', teste: true, criado_em: dias(900), pedidos: 0, total: 0, ultimo_pedido: '', ...o })
 const CLIENTES = [
-  base({ id: 'C1', nome: 'Colégio Exemplo', documento: '12345678000190', contato: 'Ana Paula', celular: '62999991111', email: 'ana@exemplo.com.br', segmento: 'escola', vendedor: 'Dani Ribeiro', pedidos: 14, total: 48210, ultimo_pedido: dias(60), endereco: 'Rua Exemplo, 100', bairro: 'Setor Bueno', cep: '74000000' }),
+  base({ id: 'C1', nome: 'Colégio Exemplo', documento: '12345678000190', contato: 'Ana Paula', celular: '62999991111', email: 'ana@exemplo.com.br', segmento: 'escola', vendedor: 'Dani', vendedor_id: '00000000-0000-4000-8000-0000000000a1', pedidos: 14, total: 48210, ultimo_pedido: dias(60), endereco: 'Rua Exemplo, 100', bairro: 'Setor Bueno', cep: '74000000' }),
   base({ id: 'C2', nome: 'Academia Exemplo', contato: 'Bruno', celular: '62988880000', segmento: 'academia', cidade: 'Aparecida de Goiânia', vendedor: 'Dani Ribeiro', pedidos: 3, total: 6180, ultimo_pedido: dias(12) }),
   base({ id: 'C3', nome: 'Atlético Exemplo', documento: '98765432000110', contato: 'Marcos', celular: '62977770000', segmento: 'time', cidade: 'Anápolis', vendedor: 'Henrique', pedidos: 2, total: 3940, ultimo_pedido: dias(220) }),
   base({ id: 'C4', nome: 'Marina Souza', tipo: 'F', documento: '12345678900', celular: '62966660000', criado_em: dias(7), pedidos: 1, total: 640, ultimo_pedido: dias(7), vendedor: 'Lucas' }),
@@ -44,6 +44,7 @@ const COTACOES = [{ id: 'Q1', numero: 'CO2026-0131', cliente_id: 'C1', cliente_n
 
 const nav = await chromium.launch()
 const achados = []
+const gravados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
 async function abrir({ tema, larg, alt }) {
@@ -51,7 +52,9 @@ async function abrir({ tema, larg, alt }) {
   await ctx.route('**supabase.co/**', async (r) => {
     const u = r.request().url()
     let corpo = []
-    if (u.includes('meu_perfil')) corpo = PERFIL
+    if (r.request().method() === 'PATCH' && u.includes('/cliente?')) { gravados.push(JSON.parse(r.request().postData() ?? '{}')); corpo = [] }
+    else if (u.includes('/equipe?')) corpo = [{ id: '00000000-0000-4000-8000-0000000000a1', nome: 'Dani Ribeiro' }, { id: '00000000-0000-4000-8000-0000000000a2', nome: 'Rafa Lima' }]
+    else if (u.includes('meu_perfil')) corpo = PERFIL
     else if (u.includes('cliente_na_lista')) corpo = u.includes('id=eq.') ? CLIENTES.filter((c) => u.includes(c.id)) : CLIENTES
     else if (u.includes('/pedido?')) corpo = u.includes('C1') ? PEDIDOS : []
     else if (u.includes('/cliente?select=pedidos_antigos')) corpo = [{ pedidos_antigos: u.includes('C1') ? 6 : 0, total_antigo: 14300, ultimo_pedido_antigo: '2025-02-01' }]
@@ -102,6 +105,16 @@ for (const tema of ['light', 'dark']) {
         await pg.waitForTimeout(400)
         const form = await pg.evaluate(() => !!document.querySelector('dialog[open] .ficha-form'))
         conta(form, '147: Editar abre o formulário de sempre, já editando')
+        /* a carteira é de uma pessoa (12/10/2026): o nome vem da equipe, e trocar grava o id */
+        const carteira = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .campo')].find((c) => /Vendedor da carteira/.test(c.innerText))?.innerText ?? '')
+        conta(/Dani Ribeiro/.test(carteira), 'a carteira mostra a pessoa pelo nome da equipe (' + carteira.replace(/\s+/g, ' ').slice(0, 80) + ')')
+        await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .campo')].find((c) => /Vendedor da carteira/.test(c.innerText)).querySelector('button').click())
+        await pg.waitForTimeout(200)
+        await pg.locator('.mn-item', { hasText: 'Rafa Lima' }).first().click()
+        await pg.waitForTimeout(200)
+        await pg.locator('dialog[open] button', { hasText: 'Salvar' }).first().click()
+        await pg.waitForTimeout(600)
+        conta(gravados.length === 1 && gravados[0].vendedor_id === '00000000-0000-4000-8000-0000000000a2' && gravados[0].vendedor === 'Rafa Lima', 'trocar a carteira grava a pessoa e o nome (' + JSON.stringify(gravados.map((g) => [g.vendedor_id, g.vendedor])) + ')')
         await pg.keyboard.press('Escape')
         /* filtros */
         await pg.evaluate(() => [...document.querySelectorAll('.cl-ferr .seg button')].find((b) => /Parados/.test(b.innerText)).click())

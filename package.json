@@ -44,6 +44,7 @@
     "separacao": "node testes/separacao.mjs",
     "pcp": "node testes/pcp.mjs",
     "extensao": "node testes/extensao.mjs",
+    "rodizio": "node testes/rodizio.mjs http://127.0.0.1:4173",
     "clientes": "node testes/clientes.mjs http://127.0.0.1:4173",
     "inspetor": "node testes/inspetor.mjs"
   },

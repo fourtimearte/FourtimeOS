@@ -7,14 +7,17 @@ export {
   carregarConversa,
   carregarDonosPossiveis,
   carregarLeads,
+  carregarTrocasDeDono,
   leadViraCliente,
   marcarLido,
   moverLead,
   porEstagio,
   registrarMensagem,
   salvarLead,
+  trocarDonoDoLead,
 } from './repositorio'
-export type { DonoPossivel } from './repositorio'
+export type { DonoPossivel, TrocaDeDono } from './repositorio'
+export { carregarRodizio, daVez, salvarNaFila, zerarRodizio, type NaFila } from './rodizio'
 export {
   carregarRegraDoLeadDoSite,
   salvarRegraDoLeadDoSite,

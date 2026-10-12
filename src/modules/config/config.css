@@ -418,3 +418,63 @@
 .cfg-lead-do-site small {
   margin: 0;
 }
+
+/* a fila do rodizio dos leads */
+.cfg-rod {
+  gap: var(--gap-dentro);
+  margin-top: var(--sp-3);
+}
+.cfg-rod p {
+  margin: 0;
+}
+.cfg-rod-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.cfg-rod-lin {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--re-6);
+  min-height: var(--row-h);
+  padding: var(--re-3) var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.cfg-rod-lin:first-child {
+  border-top: 0;
+}
+.cfg-rod-fora {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+.cfg-rod-fora .cfg-rod-quem b {
+  color: var(--text-2);
+}
+.cfg-rod-n {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  text-align: center;
+}
+.cfg-rod-quem {
+  gap: var(--gap-colado);
+}
+.cfg-rod-quem b {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cfg-rod-quem b .corta {
+  min-width: min(100%, 12ch);
+}
+.cfg-rod-quem small {
+  font-size: 12px;
+  color: var(--text-2);
+}

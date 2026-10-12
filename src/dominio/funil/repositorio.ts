@@ -294,3 +294,36 @@ export function porEstagio(leads: Lead[]): Record<Estagio, Lead[]> {
   })
   return saida
 }
+
+/* --- a troca de dono (072) ------------------------------------------------
+   Toda troca de dono do lead fica anotada pelo banco (o gatilho da 072), venha
+   do editar, da transferencia ou de um PATCH. A tela troca por esta funcao
+   quando tem um motivo para guardar. Antes da 072 a funcao nao existe: a tela
+   troca pela coluna, como sempre trocou, e nada e anotado. */
+export type TrocaDeDono = { de: string; para: string; quem: string; motivo: string; em: string }
+
+const semAFuncao = (e: unknown) =>
+  e instanceof Error && /PGRST202|Could not find the function|trocar_dono_do_lead|transferencia_de_lead|PGRST205|schema cache/i.test(e.message)
+
+/** true quando o banco anotou com o motivo; false antes da 072 */
+export async function trocarDonoDoLead(leadId: string, para: string, motivo: string): Promise<boolean> {
+  try {
+    await chamar('trocar_dono_do_lead', { p_lead: leadId, p_para: para || null, p_motivo: motivo.trim() })
+    return true
+  } catch (e) {
+    if (semAFuncao(e)) return false
+    throw e
+  }
+}
+
+export async function carregarTrocasDeDono(leadId: string): Promise<TrocaDeDono[]> {
+  try {
+    const linhas = await tabela<{ de_quem: string | null; para_quem: string | null; quem_fez: string | null; motivo: string; em: string }[]>(
+      `transferencia_de_lead?select=de_quem,para_quem,quem_fez,motivo,em&lead_id=eq.${encodeURIComponent(leadId)}&order=em.desc&limit=20`,
+    )
+    return linhas.map((l) => ({ de: l.de_quem ?? '', para: l.para_quem ?? '', quem: l.quem_fez ?? '', motivo: l.motivo ?? '', em: l.em }))
+  } catch (e) {
+    if (semAFuncao(e)) return []
+    throw e
+  }
+}

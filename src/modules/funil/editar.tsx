@@ -7,10 +7,13 @@ import {
   NOME_DO_ESTAGIO,
   apagarLead,
   carregarDonosPossiveis,
+  carregarTrocasDeDono,
   corDoEstagio,
   nomeDoLead,
   salvarLead,
+  trocarDonoDoLead,
   type DonoPossivel,
+  type TrocaDeDono,
   type Estagio,
   type Lead,
 } from '@dominio/funil'
@@ -53,6 +56,8 @@ export function EditarLead({
   const [donos, setDonos] = useState<DonoPossivel[]>([])
   const [gravando, setGravando] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [trocas, setTrocas] = useState<TrocaDeDono[]>([])
 
   /* TUDO NASCE DE NOVO A CADA ABERTURA, e `gravando` junto.
 
@@ -70,6 +75,16 @@ export function EditarLead({
     setRascunho(lead)
     setConfirmando(false)
     setGravando(false)
+    setMotivo('')
+    setTrocas([])
+    if (!lead?.id) return
+    let vivo = true
+    carregarTrocasDeDono(lead.id)
+      .then((t) => vivo && setTrocas(t))
+      .catch(() => vivo && setTrocas([]))
+    return () => {
+      vivo = false
+    }
   }, [lead])
 
   useEffect(() => {
@@ -94,11 +109,16 @@ export function EditarLead({
      conversa começa por Instagram, e exigir telefone faria a pessoa inventar
      um para conseguir salvar. */
   const nomeVazio = !r.nomeLivre.trim()
+  /* A TROCA DE DONO DEIXA RASTRO (072): o banco anota toda troca, e o motivo
+     vai junto quando a tela troca pela funcao. */
+  const trocouDono = !novo && (r.vendedorId || '') !== (lead.vendedorId || '')
+  const nomeDe = (id: string) => (id ? donos.find((d) => d.id === id)?.nome || 'alguém que saiu da equipe' : 'ninguém')
 
   async function gravar() {
     if (nomeVazio || gravando) return
     setGravando(true)
     try {
+      if (trocouDono) await trocarDonoDoLead(r.id, r.vendedorId, motivo)
       const salvo = await salvarLead(r)
       avisar(novo ? 'Lead criado' : 'Lead salvo', 'ok')
       aoSalvar(salvo)
@@ -240,7 +260,36 @@ export function EditarLead({
             aoEscolher={(v) => mexer({ vendedorId: v })}
           />
         </Campo>
+        {trocouDono ? (
+          <Campo rotulo="Motivo da troca" dica="Fica no histórico do lead, com quem trocou e quando">
+            <Entrada
+              value={motivo}
+              maxLength={300}
+              placeholder="Ex.: o cliente já comprava com a Dani"
+              onChange={(e) => setMotivo(e.target.value)}
+            />
+          </Campo>
+        ) : null}
       </div>
+      {trocas.length ? (
+        <section className="pilha fn-trocas" aria-label="Quem já foi dono deste lead">
+          <span className="fn-trocas-t">Quem já foi dono</span>
+          <ul>
+            {trocas.map((t) => (
+              <li key={t.em + t.para}>
+                <b>
+                  De {nomeDe(t.de)} para {nomeDe(t.para)}
+                </b>
+                <small>
+                  {new Date(t.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {t.quem ? ' · por ' + nomeDe(t.quem) : ''}
+                  {t.motivo ? ' · ' + t.motivo : ''}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </Modal>
   )
 }

@@ -51,6 +51,7 @@ import type { Painel, Papel } from '@dominio/sessao'
 import { carregarPapeis, linhaDoPapel, nomeDoPapel, papeisEmMemoria } from '@dominio/acessos'
 import type { PapelDoSistema } from '@dominio/acessos'
 import { QuemRecebeOLeadDoSite } from './lead-do-site'
+import { FilaDoRodizio } from './rodizio'
 import { AbasDaConfig } from './abas'
 import './config.css'
 
@@ -177,6 +178,7 @@ export function TelaEquipe() {
 
             {/* SO O ADMIN: e quem decide para onde vai o lead do site (065) */}
             {eu.papel === 'admin' ? <QuemRecebeOLeadDoSite equipe={equipe} /> : null}
+            {eu.papel === 'admin' ? <FilaDoRodizio equipe={equipe} /> : null}
           </div>
 
           <Convites

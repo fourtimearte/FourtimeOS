@@ -33,6 +33,7 @@ import {
   type Segmento,
 } from '@dominio/cliente'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
+import { carregarDonosPossiveis, type DonoPossivel } from '@dominio/funil'
 import './clientes.css'
 
 const SEGMENTOS = (Object.keys(NOME_DO_SEGMENTO) as Segmento[]).map((s) => ({
@@ -78,6 +79,19 @@ export function FichaDoCliente({
   const [rascunho, setRascunho] = useState<Cliente | null>(cliente)
   const [editando, setEditando] = useState(false)
   const [gravando, setGravando] = useState(false)
+
+  /* A CARTEIRA E DE UMA PESSOA (011): o lead deste telefone volta para ela, antes
+     do rodizio. O texto antigo (do Bling) aparece enquanto ninguem escolher. */
+  const [donos, setDonos] = useState<DonoPossivel[]>([])
+  useEffect(() => {
+    let vivo = true
+    carregarDonosPossiveis()
+      .then((d) => vivo && setDonos(d))
+      .catch(() => vivo && setDonos([]))
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   useEffect(() => {
     setRascunho(cliente)
@@ -130,6 +144,9 @@ export function FichaDoCliente({
 
   const mudar = (campo: keyof Cliente, valor: string) =>
     setRascunho((x) => (x ? { ...x, [campo]: valor } : x))
+
+  const escolherVendedor = (id: string) =>
+    setRascunho((x) => (x ? { ...x, vendedorId: id, vendedor: id ? donos.find((d) => d.id === id)?.nome ?? '' : '' } : x))
 
   async function salvar() {
     if (!c || gravando) return
@@ -347,8 +364,23 @@ export function FichaDoCliente({
                   aoEscolher={(v) => mudar('segmento', v || 'outros')}
                 />
               </Campo>
-              <Campo rotulo="Vendedor" className="col-2">
-                <Entrada value={c.vendedor} onChange={(e) => mudar('vendedor', e.target.value)} />
+              <Campo
+                rotulo="Vendedor da carteira"
+                className="col-2"
+                dica={
+                  !c.vendedorId && c.vendedor
+                    ? 'Do cadastro antigo: ' + c.vendedor + '. Escolha a pessoa para o lead deste telefone voltar para ela.'
+                    : 'O lead deste telefone volta para esta pessoa, antes do rodízio'
+                }
+              >
+                <Seletor
+                  bloco
+                  campo
+                  valor={c.vendedorId}
+                  opcoes={donos.map((d) => ({ valor: d.id, rotulo: d.nome }))}
+                  vazio="Sem vendedor"
+                  aoEscolher={escolherVendedor}
+                />
               </Campo>
             </div>
           ) : (

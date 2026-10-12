@@ -56,6 +56,7 @@ import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
 import { abasDaConfigDe, ICONE_DA_ABA } from '@modules/config'
 import { Sino } from '@modules/sino'
+import { Inspetor } from '@modules/inspetor'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
    roteador e a lista de modulos ao mesmo tempo. A casca em si nao sabe o que e
@@ -627,6 +628,8 @@ export function App() {
 
       <BuscaGlobal aberto={busca} aoFechar={() => setBusca(false)} itens={itensDaBusca} />
       <PilhaDeRecados />
+      {/* temporário: Ctrl+Shift+X copia o endereço de qualquer elemento (só o admin) */}
+      <Inspetor ligavel={souAdmin} />
     </>
   )
 }

@@ -1,0 +1,67 @@
+/* O INSPETOR (temporário): a camada de cima, a moldura e o endereço. Nada
+   aqui recebe o mouse; quem escuta são os eventos da janela. */
+.insp {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2147483647;
+  font-family: var(--font);
+}
+.insp-faixa {
+  position: fixed;
+  left: 50%;
+  bottom: var(--sp-4);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  padding: var(--re-4) var(--re-6);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 13px;
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+}
+.insp-faixa b {
+  color: var(--brand);
+  font-weight: 700;
+}
+.insp-moldura {
+  position: fixed;
+  box-sizing: border-box;
+  border: 2px solid var(--brand);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+.insp-rotulo {
+  position: fixed;
+  transform: translateY(-100%);
+  max-width: 70vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: var(--re-2) var(--re-3);
+  border-radius: var(--radius-xs);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 12px;
+  font-weight: 600;
+}
+.insp-rotulo-baixo {
+  transform: none;
+}
+/* ligado: o cursor diz que o clique é do inspetor */
+.inspetor-ligado,
+.inspetor-ligado * {
+  cursor: crosshair !important;
+}

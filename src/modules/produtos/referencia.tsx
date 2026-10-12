@@ -19,6 +19,7 @@ import {
   type TecidoDeConta,
 } from '@dominio/produto'
 import { Editor } from './editor'
+import { CartaoDosPrecos } from './precos-da-ficha'
 import { MedidasETecido, type AbaDoModulo } from './medidas'
 import { CartaoDoMolde } from './molde'
 import { SEM_ETIQUETA, Trilha, apoioDoMaterial } from './pecas'
@@ -262,6 +263,8 @@ function Vista({
         ) : null}
       </section>
       </div>
+
+      <CartaoDosPrecos codigo={r.cod} />
     </div>
   )
 }

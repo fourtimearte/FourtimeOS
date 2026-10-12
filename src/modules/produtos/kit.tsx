@@ -29,6 +29,7 @@ import { LARGURA_DA_TABELA_DEITADA, plural, usarLargura } from './apoio'
 import { GradePorTamanho } from './grade'
 import { CartaoDoMolde } from './molde'
 import { emKits } from './vendas'
+import { CartaoDosPrecos } from './precos-da-ficha'
 
 /* ==========================================================================
    A ficha de um kit: o lado direito da página, com a aba Kits.
@@ -504,6 +505,8 @@ export function FichaDoKit({
             </section>
           ) : null}
           </div>
+
+          <CartaoDosPrecos codigo={kit.cod} />
         </>
       )}
     </div>

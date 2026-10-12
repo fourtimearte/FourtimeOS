@@ -1765,3 +1765,44 @@ button.pd-lin:hover {
     min-height: 50px;
   }
 }
+
+/* OS PRECOS NAS TABELAS (prancha 136): o nome da tabela, os precos faixa a
+   faixa, e o Abrir. No celular os precos descem para a linha de baixo. */
+.pd-preco-lin {
+  flex-wrap: wrap;
+}
+.pd-precos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-5);
+  min-width: 0;
+}
+.pd-preco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 76px;
+  text-align: right;
+}
+.pd-preco small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pd-preco b {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* na ficha estreita os precos viram uma grade de duas colunas, por inteiro,
+   alinhados a esquerda debaixo do nome */
+@container pd-ficha (max-width: 519px) {
+  .pd-precos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .pd-preco {
+    min-width: 0;
+    text-align: left;
+  }
+}

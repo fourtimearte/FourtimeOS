@@ -50,7 +50,7 @@ mkdirSync(PASTA, { recursive: true })
 
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
 
-async function abrir(nav, { largura, altura, tema = 'light', acesso = 'chefe', estado = 'cheio', recusa = 0, vendas = 'cheias' }) {
+async function abrir(nav, { largura, altura, tema = 'light', acesso = 'chefe', estado = 'cheio', recusa = 0, vendas = 'cheias', tabelas = null }) {
   /* o fuso é o de Goiânia e o relógio da página fica parado no dia da prova:
      as vendas somam por mês, e a prova não pode mudar de resultado na virada dele */
   const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce', hasTouch: largura < 800, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo' })
@@ -58,6 +58,7 @@ async function abrir(nav, { largura, altura, tema = 'light', acesso = 'chefe', e
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url()); const m = req.method()
     if (m === 'OPTIONS') return r.fulfill({ status: 200, headers: CORS })
+    if (tabelas && u.includes('/rest/v1/tabela_de_preco')) return r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(tabelas) })
     let corpo = null
     try { corpo = JSON.parse(req.postData() ?? 'null') } catch { /* corpo que não é JSON */ }
     const resp = banco.responder(m, u, corpo)
@@ -1778,6 +1779,42 @@ for (const [largura, altura, nome] of [[390, 844, 'celular'], [820, 1180, 'table
   conta(colunas.length === 9 && colunas[1].h > 80 && colunas.every((x) => x.w >= 8), `${G}, estatísticas: as nove colunas de tamanho cabem, e continuam com largura de coluna`)
   await foto(pg, `estatisticas-${nome}-${tema}`)
   conta(erros.length === 0, `${G}, movimento e estatísticas: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+
+/* ==========================================================================
+   OS PREÇOS NAS TABELAS (prancha 136): só leitura, na ficha; sem tabela, o
+   cartão não aparece
+   ========================================================================== */
+for (const [largura, altura, tema] of [[1536, 900, 'light'], [390, 844, 'dark']]) await secao(async () => {
+  const faixas = [{ de: 10, ate: 20 }, { de: 21, ate: 50 }, { de: 51, ate: 100 }, { de: 101, ate: null }]
+  const regras = { passo_pct: -10, arredondar: '90', plus_reais: 6, infantil_pct: -10, kit_pct: -8 }
+  const tab = (id, nome, padrao, situacao, itens) => ({ id, nome, situacao, padrao, vale_ate: null, so_gerente: false, faixas, regras, itens, observacao: '', teste: true, atualizado_em: '2026-10-12T00:00:00Z' })
+  const tabelas = [
+    tab('TP1', 'Atacado Prova', true, 'ativa', [{ codigo: 'FT-010-000M', tipo: 'referencia', base: 49.9, precos: [null, 46, null, null] }]),
+    tab('TP2', 'Varejo Prova', false, 'ativa', []),
+    tab('TP3', 'Velha Prova', false, 'arquivada', [{ codigo: 'FT-010-000M', tipo: 'referencia', base: 10, precos: [null, null, null, null] }]),
+  ]
+  const { ctx, pg, erros } = await abrir(nav, { largura, altura, tema, tabelas })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await pg.waitForSelector('[data-cartao="precos"]', { timeout: 8000 })
+  const lin = await textos(pg, '[data-cartao="precos"] .pd-preco-lin')
+  conta(lin.length === 1 && /Atacado Prova padrão/.test(lin[0]) && /10 a 20 R\$ 49,90/.test(lin[0]) && /21 a 50 R\$ 46,00/.test(lin[0]) && /51 a 100 R\$ 41,90/.test(lin[0]), `${largura} preços: a tabela que tem a peça, faixa a faixa (a mão e a regra): ${lin[0]}`)
+  conta(/Não está em: Varejo Prova\./.test((await textos(pg, '[data-cartao="precos"] .pd-nota'))[0] ?? '') && !lin.some((l) => /Velha/.test(l)), `${largura} preços: a que não tem a peça numa linha só, e a arquivada fica de fora`)
+  conta(await sobra(pg) <= 0, `${largura} preços: nada rola de lado (${await sobra(pg)})`)
+  await pg.locator('[data-cartao="precos"]').scrollIntoViewIfNeeded()
+  await pg.locator('[data-cartao="precos"]').screenshot({ path: `${PASTA}/precos-${largura}-${tema}.png` })
+  await pg.locator('[data-cartao="precos"] .btn', { hasText: 'Abrir' }).click()
+  await pausa(pg, 500)
+  conta(new URL(pg.url()).pathname === '/tabelas' && new URL(pg.url()).searchParams.get('t') === 'TP1', `${largura} preços: o Abrir leva para a tabela (${new URL(pg.url()).pathname}${new URL(pg.url()).search})`)
+  conta(erros.length === 0, `${largura} preços: nenhum erro de JavaScript${erros.length ? ' (' + erros.slice(0, 3).join(' // ') + ')' : ''}`)
+  await ctx.close()
+})
+await secao(async () => {
+  const { ctx, pg } = await abrir(nav, { largura: 1536, altura: 900 })
+  await ir(pg, '/produtos?ref=FT-010-000M', '[data-ficha="referencia"]')
+  await pausa(pg, 600)
+  conta(await pg.locator('[data-cartao="precos"]').count() === 0, 'sem tabela de preço no banco, a ficha não ganha cartão vazio')
   await ctx.close()
 })
 

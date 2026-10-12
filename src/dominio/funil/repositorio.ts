@@ -1,3 +1,4 @@
+import { paraLinha as cadastroParaBanco, type Cliente } from '@dominio/cliente'
 import { vinculo } from '@shared'
 import { chamar, tabela } from '@shared/supabase'
 import { ESTAGIOS, type Estagio, type Lead, type Mensagem } from './tipos'
@@ -176,9 +177,18 @@ export async function marcarLido(id: string): Promise<void> {
    montar um Cliente e o dominio de cliente, e ele tem uma view com mais coluna
    do que a tabela crua que a funcao devolve. Devolver o id e deixar a tela de
    clientes ler pela porta dela mantem a montagem num lugar so. */
-export async function leadViraCliente(leadId: string): Promise<string> {
+/* O CADASTRO INTEIRO (067): com `cadastro`, o cliente novo nasce completo e
+   o que ja existe pelo nome so ganha o que estava vazio; com `clienteId`, o
+   lead se liga a um cliente escolhido na tela. Sem nenhum dos dois, o de
+   sempre: nome, contato e celular. */
+export async function leadViraCliente(
+  leadId: string,
+  opcoes: { cadastro?: Cliente; clienteId?: string } = {},
+): Promise<string> {
   const c = await chamar<{ id: string } | { id: string }[]>('lead_vira_cliente', {
     p_lead: leadId,
+    ...(opcoes.cadastro ? { p_cadastro: cadastroParaBanco(opcoes.cadastro) } : {}),
+    ...(opcoes.clienteId ? { p_cliente: opcoes.clienteId } : {}),
   })
   const linha = Array.isArray(c) ? c[0] : c
   const id = linha?.id

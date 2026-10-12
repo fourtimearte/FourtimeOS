@@ -240,7 +240,7 @@ export function Inbox({
           </Botao>
         ) : (
           <Botao tom="contorno" tamanho="sm" bloco onClick={() => aoVirarCliente(l)}>
-            Criar cliente
+            Cadastrar cliente
           </Botao>
         )}
         {l.cotacao ? (

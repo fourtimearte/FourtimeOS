@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChatCircleText, Kanban, Plus } from '@phosphor-icons/react'
 import { Botao, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { noComputador, versaoDaExtensao } from '@shared'
-import { cotacaoNovaDaCasa, proximoNumero, salvarCotacao } from '@dominio/cotacao'
+import { acharCliente } from '@dominio/cliente'
+import { clienteDaCotacao, cotacaoNovaDaCasa, proximoNumero, salvarCotacao } from '@dominio/cotacao'
 import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import {
   ESTAGIO_FECHADO,
@@ -12,7 +13,6 @@ import {
   emMil,
   filtrarLeads,
   leadEmBranco,
-  leadViraCliente,
   marcarLido,
   moverLead,
   nomeDoLead,
@@ -27,6 +27,7 @@ import {
   type QuemVer,
 } from '@dominio/funil'
 import { AvisoDaExtensao, BarraDoFunil, vendedoresDosLeads } from './barra'
+import { CadastroDoLead } from './cadastro'
 import { EditarLead } from './editar'
 import { Inbox } from './inbox'
 import { Quadro } from './quadro'
@@ -293,6 +294,19 @@ export function TelaFunil() {
       telefone: l.telefone,
       email: l.email || c.cliente.email,
     }
+    /* O LEAD JA TEM CADASTRO: o cabecalho sai dele (documento, cidade, UF,
+       e-mail), pela mesma conta do "Buscar em Clientes" do editor. O que o
+       cadastro nao tiver fica com o que o lead sabe. */
+    if (l.clienteId) {
+      const cad = await acharCliente(l.clienteId).catch(() => null)
+      if (cad) {
+        const doCadastro = clienteDaCotacao(cad)
+        c.cliente = {
+          ...c.cliente,
+          ...Object.fromEntries(Object.entries(doCadastro).filter(([, v]) => v)),
+        }
+      }
+    }
     /* o que o cliente respondeu no chat da loja vem junto, na observacao
        interna do pedido, para ninguem redigitar */
     const doSite = resumoDoSite(l)
@@ -331,15 +345,17 @@ export function TelaFunil() {
      LISTA com aquele cliente aberto. Uma rota /clientes/:id prometeria uma
      pagina propria que nao existe, e quem fechasse a ficha cairia numa tela em
      branco em vez de voltar para a lista. */
-  async function virarCliente(l: Lead) {
-    try {
-      const id = await leadViraCliente(l.id)
-      await recarregar()
-      avisar(nomeDoLead(l) + ' agora tem cadastro de cliente', 'ok')
-      navegar('/clientes?abrir=' + encodeURIComponent(id))
-    } catch (e) {
-      avisar(e instanceof Error ? e.message : 'Não consegui criar o cliente', 'warn')
-    }
+  /* agora abre o cadastro (cadastro.tsx): procura quem ja pode ser o
+     cliente e, se nao for ninguem, a ficha completa ja preenchida */
+  const [cadastrando, setCadastrando] = useState<Lead | null>(null)
+  function virarCliente(l: Lead) {
+    setCadastrando(l)
+  }
+  async function cadastrou(l: Lead, novo: boolean) {
+    setCadastrando(null)
+    await recarregar()
+    /* o cadastro novo ja avisou pela ficha; ligar a um que existe avisa aqui */
+    if (!novo) avisar(nomeDoLead(l) + ' ficou ligado ao cliente', 'ok')
   }
 
   /* o que foi mandado pelo WhatsApp entra na conversa, senao o funil mente
@@ -532,11 +548,18 @@ export function TelaFunil() {
         aoEditar={(l) => setEditando(l)}
         aoFechar={() => setAbertoId('')}
         aoAbrirCliente={(id) => navegar('/clientes?abrir=' + encodeURIComponent(id))}
-        aoVirarCliente={(l) => void virarCliente(l)}
+        aoVirarCliente={(l) => virarCliente(l)}
         aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
         aoMontarCotacao={(l) => void montarCotacao(l)}
         aoRegistrar={(l, texto) => void registrar(l, texto)}
       />
+      {cadastrando ? (
+        <CadastroDoLead
+          lead={cadastrando}
+          aoFechar={() => setCadastrando(null)}
+          aoCadastrar={(_id, novo) => void cadastrou(cadastrando, novo)}
+        />
+      ) : null}
     </Pagina>
   )
 }

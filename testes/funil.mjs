@@ -11,8 +11,10 @@
      1. em nenhuma largura a pagina rola de lado
      2. lead sem fala de cliente NAO desenha faixa de janela
      3. janela aberta diz quanto falta; apertada e fechada mudam de cor
-     4. lead sem cliente mostra "Criar cliente"; com cliente, "Ver cliente"
-     5. criar cliente chama lead_vira_cliente e leva para /clientes?abrir=
+     4. lead sem cliente mostra "Cadastrar cliente"; com cliente, "Ver cliente"
+     5. cadastrar cliente acha o cadastro parecido e liga o lead a ele, ou abre
+        a ficha ja preenchida e grava pelo lead_vira_cliente (067); depois,
+        "Ver cliente" leva para /clientes?abrir=
      6. o parametro sai da barra depois de abrir, senao a ficha nao fecha
 
    O item 6 e o que mais importa e o menos obvio: sem tirar o parametro, fechar
@@ -88,7 +90,8 @@ for (const tema of ['light', 'dark']) {
     const ctx = await nav.newContext({
       viewport:{width:larg,height:alt}, reducedMotion:'reduce', hasTouch: nome !== 'computador',
     })
-    let chamouVirar = false
+    let chamouVirar = null
+    let ligado = false
     let gravou = null
     let leituras = 0
     let cotacaoGravada = null
@@ -99,7 +102,11 @@ for (const tema of ['light', 'dark']) {
       /* A RPC VEM ANTES. A url dela e rpc/lead_vira_cliente, e um teste que
          casasse por '/lead' engoliria a chamada da funcao junto com a gravacao
          da tabela: foi o que aconteceu na primeira rodada. */
-      else if (u.includes('rpc/lead_vira_cliente')) { chamouVirar = true; corpo = { id:'C7' } }
+      else if (u.includes('rpc/lead_vira_cliente')) {
+        try { chamouVirar = JSON.parse(req.postData() || '{}') } catch { chamouVirar = {} }
+        ligado = true
+        corpo = { id:'C7' }
+      }
       else if (u.includes('/equipe?')) corpo = DONOS
       else if (/\/rest\/v1\/cotacao(\?|$)/.test(u) && m === 'POST') {
         try { cotacaoGravada = JSON.parse(req.postData() || 'null') } catch { cotacaoGravada = 'corpo ilegivel' }
@@ -109,7 +116,11 @@ for (const tema of ['light', 'dark']) {
         try { gravou = JSON.parse(req.postData() || 'null') } catch { gravou = 'corpo ilegivel' }
         corpo = [{ id:'L9' }]
       }
-      else if (u.includes('/lead?')) { leituras++; corpo = LEADS }
+      else if (u.includes('/lead?')) {
+        leituras++
+        /* depois de cadastrar, o Studio Pilates Flor (L4) fica ligado ao C7 */
+        corpo = ligado ? LEADS.map(x => x.id === 'L4' ? { ...x, cliente_id:'C7' } : x) : LEADS
+      }
       else if (u.includes('/mensagem?') && u.includes('lead_id=eq.L1')) corpo = [
         { id:'s1', quem:'cliente', tipo:'texto', texto:'Quero um orçamento', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(45), canal:'site' },
         { id:'s2', quem:'sistema', tipo:'texto', texto:'Ótimo! Qual peça?', arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(44), canal:'site' },
@@ -119,7 +130,11 @@ for (const tema of ['light', 'dark']) {
         { id:'m1', quem:'cliente', tipo:'texto', texto:'Boa tarde, quanto fica 18 camisas?',
           arquivo:'', nome_do_arquivo:'', situacao:'', em:atras(30) },
       ]
-      else if (u.includes('cliente')) corpo = CLIENTES
+      else if (u.includes('cliente')) {
+        /* acharCliente pede um so, por id=eq. */
+        const id = /[?&]id=eq\.([^&]+)/.exec(u)?.[1]
+        corpo = id ? CLIENTES.filter(c => c.id === decodeURIComponent(id)) : CLIENTES
+      }
       return r.fulfill({ status:200, contentType:'application/json',
         headers:{'access-control-allow-origin':'*'}, body: JSON.stringify(corpo) })
     })
@@ -260,8 +275,8 @@ for (const tema of ['light', 'dark']) {
     const j1 = await janela('Futsal Vila Nova')
     conta(j1.tem && /fecha em/.test(j1.texto) && !/aperta|fechada/.test(j1.classe),
       `${tema} ${nome}: janela aberta diz quanto falta (${j1.texto.slice(0,34)})`)
-    conta(j1.acoes.includes('Criar cliente'),
-      `${tema} ${nome}: lead sem cliente oferece Criar cliente`)
+    conta(j1.acoes.includes('Cadastrar cliente'),
+      `${tema} ${nome}: lead sem cliente oferece Cadastrar cliente`)
 
     await pg.screenshot({ path: `${PASTA}/funil-${tema}-${nome}.png`, fullPage:false })
 
@@ -408,16 +423,65 @@ for (const tema of ['light', 'dark']) {
     await pg.keyboard.press('Escape')
     await pg.waitForTimeout(800)
 
-    /* --- criar cliente, e cair na lista com a ficha aberta --- */
+    /* --- cadastrar o cliente do lead (067) --- */
     await pg.evaluate(() => {
       const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Studio Pilates Flor'))
       c.click()
     })
     await pg.waitForTimeout(1300)
     await pg.evaluate(() => {
-      const b = [...document.querySelectorAll('.fn-in-acoes button')].find(x => /Criar cliente/.test(x.innerText))
+      const b = [...document.querySelectorAll('.fn-in-acoes button')].find(x => /Cadastrar cliente/.test(x.innerText))
       b.click()
     })
+    await pg.waitForTimeout(1500)
+    const parecido = await pg.evaluate(() => ({
+      titulo: document.querySelector('dialog[open]')?.innerText ?? '',
+      itens: [...document.querySelectorAll('.fn-cad-item')].map(x => x.innerText),
+    }))
+    conta(/já pode estar cadastrado/.test(parecido.titulo) && parecido.itens.length === 1 && /Studio Pilates Flor/.test(parecido.itens[0]),
+      `${tema} ${nome}: cadastrar cliente acha o cadastro parecido (mesmo telefone e nome) antes de criar outro`)
+    await pg.screenshot({ path: `${PASTA}/funil-parecido-${tema}-${nome}.png`, fullPage:false })
+
+    if (tema === 'light' && nome === 'computador') {
+      /* o caminho do cadastro novo: a ficha ja vem preenchida com o lead */
+      await pg.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find(b => /Cadastrar novo/.test(b.innerText)).click())
+      await pg.waitForTimeout(800)
+      const ficha = await pg.evaluate(() => {
+        const d = document.querySelector('dialog[open]')
+        const campos = [...d.querySelectorAll('input')].map(i => i.value)
+        return { texto: d.innerText, campos }
+      })
+      conta(/Cadastrar cliente do lead/.test(ficha.texto) && ficha.campos.includes('Studio Pilates Flor') && ficha.campos.includes('62999990004'),
+        `${tema} ${nome}: Cadastrar novo abre a ficha de cliente já preenchida com o lead`)
+      await pg.screenshot({ path: `${PASTA}/funil-cadastro-${tema}-${nome}.png`, fullPage:false })
+      await pg.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find(b => /^Cadastrar$/.test(b.innerText.trim())).click())
+      await pg.waitForTimeout(1500)
+      conta(chamouVirar?.p_lead === 'L4' && chamouVirar?.p_cadastro?.nome === 'Studio Pilates Flor' && chamouVirar?.p_cadastro?.celular === '62999990004',
+        `${tema} ${nome}: a ficha grava pelo lead_vira_cliente com o cadastro inteiro (${JSON.stringify(chamouVirar)?.slice(0, 90)})`)
+    } else {
+      /* o caminho do cadastro que ja existe: liga o lead a ele */
+      await pg.evaluate(() => [...document.querySelectorAll('.fn-cad-item button')][0].click())
+      await pg.waitForTimeout(1500)
+      conta(chamouVirar?.p_lead === 'L4' && chamouVirar?.p_cliente === 'C7' && !chamouVirar?.p_cadastro,
+        `${tema} ${nome}: Ligar a este liga o lead ao cliente que já existe (${JSON.stringify(chamouVirar)})`)
+    }
+    const fechou = await pg.evaluate(() => ({
+      modal: !!document.querySelector('dialog[open]'),
+      acoes: [...document.querySelectorAll('.fn-in-acoes button')].map(b => b.innerText.trim()),
+    }))
+    conta(!fechou.modal && fechou.acoes.includes('Ver cliente'),
+      `${tema} ${nome}: depois de cadastrar, o lead mostra Ver cliente (${fechou.acoes.join(', ')})`)
+
+    /* com cadastro, a cotacao sai com o cabecalho do cliente */
+    cotacaoGravada = null
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-in-acoes button')].find(b => /Criar cotação/.test(b.innerText)).click())
+    await pg.waitForTimeout(1500)
+    const cab = Array.isArray(cotacaoGravada) ? cotacaoGravada[0]?.corpo?.cliente : null
+    conta(cab?.id === 'C7' && cab?.cidade === 'Goiânia' && cab?.uf === 'GO' && cab?.nome === 'Studio Pilates Flor',
+      `${tema} ${nome}: com cadastro, o cabeçalho da cotação sai do cliente (${JSON.stringify(cab)})`)
+
+    /* e o Ver cliente leva para a lista com a ficha aberta */
+    await pg.evaluate(() => [...document.querySelectorAll('.fn-in-acoes button')].find(b => /Ver cliente/.test(b.innerText)).click())
     await pg.waitForTimeout(2500)
 
     const depois = await pg.evaluate(() => ({
@@ -425,8 +489,7 @@ for (const tema of ['light', 'dark']) {
       ficha: !!document.querySelector('dialog[open], .gaveta'),
       texto: document.body.innerText.includes('Studio Pilates Flor'),
     }))
-    conta(chamouVirar, `${tema} ${nome}: o botão chamou lead_vira_cliente no banco`)
-    conta(depois.url.startsWith('/clientes'), `${tema} ${nome}: foi para a tela de clientes (${depois.url})`)
+    conta(depois.url.startsWith('/clientes'), `${tema} ${nome}: Ver cliente vai para a tela de clientes (${depois.url})`)
     /* 6. O PARAMETRO SAI DA BARRA. Sem isso a ficha reabre sozinha ao fechar. */
     conta(!depois.url.includes('abrir='),
       `${tema} ${nome}: o parâmetro abrir saiu da barra depois de abrir (${depois.url})`)

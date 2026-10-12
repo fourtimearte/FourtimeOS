@@ -165,3 +165,27 @@ export function abrirClienteNoWhatsApp(c: Cliente, mensagem = '') {
   abrirNoWhatsApp(numeroDeWhatsApp(c) || c.celular || c.telefone, mensagem)
 }
 
+
+/* --- quem ja pode ser este cliente --------------------------------------
+   Antes de cadastrar um cliente a partir de um lead, a tela pergunta se ele
+   ja nao esta na base: pelo final do telefone (os oito ultimos digitos, como
+   a fim_do_telefone do banco, porque o 9 e o 55 entram e saem) ou pelo mesmo
+   nome sem acento e sem caixa (a trava do nome, 001). No maximo tres, o mais
+   provavel primeiro: telefone igual vale mais que nome igual. */
+const chave = (s: string) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+const fim = (s: string) => so(s).slice(-8)
+
+export function clientesParecidos(lista: Cliente[], nome: string, telefone: string): Cliente[] {
+  const t = fim(telefone)
+  const n = chave(nome)
+  const pontos = (c: Cliente) =>
+    (t.length === 8 && (fim(c.celular) === t || fim(c.telefone) === t) ? 2 : 0) +
+    (n && chave(c.nome) === n ? 1 : 0)
+  return lista
+    .map((c) => ({ c, p: pontos(c) }))
+    .filter((x) => x.p > 0)
+    .sort((a, b) => b.p - a.p)
+    .slice(0, 3)
+    .map((x) => x.c)
+}

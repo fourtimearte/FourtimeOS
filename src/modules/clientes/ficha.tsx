@@ -55,6 +55,8 @@ export function FichaDoCliente({
   base,
   aoFechar,
   aoSalvar,
+  gravar = salvarCliente,
+  titulo,
 }: {
   cliente: Cliente | null
   /* A base inteira, para achar o CEP da cidade. Vem de cima em vez de a ficha
@@ -64,6 +66,11 @@ export function FichaDoCliente({
   base: Cliente[]
   aoFechar: () => void
   aoSalvar: (c: Cliente) => void
+  /* quem grava. O padrao e a tabela de clientes; o funil grava pelo banco,
+     que liga o lead ao cliente na mesma conta (067) */
+  gravar?: (c: Cliente) => Promise<Cliente>
+  /* o titulo do cliente novo, quando quem abre sabe de onde ele vem */
+  titulo?: string
 }) {
   const [rascunho, setRascunho] = useState<Cliente | null>(cliente)
   const [editando, setEditando] = useState(false)
@@ -129,7 +136,7 @@ export function FichaDoCliente({
     }
     setGravando(true)
     try {
-      const salvo = await salvarCliente(c)
+      const salvo = await gravar(c)
       aoSalvar(salvo)
       setEditando(false)
       avisar(novo ? 'Cliente cadastrado' : 'Cliente salvo', 'ok')
@@ -195,7 +202,7 @@ export function FichaDoCliente({
       aberto
       largo
       aoFechar={aoFechar}
-      titulo={novo ? 'Novo cliente' : c.nome}
+      titulo={novo ? titulo || 'Novo cliente' : c.nome}
       pe={
         editando ? (
           <>

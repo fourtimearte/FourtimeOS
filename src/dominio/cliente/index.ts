@@ -6,6 +6,7 @@ export {
   apagarCliente,
   carregarClientes,
   clienteEmBranco,
+  paraLinha,
   salvarCliente,
 } from './repositorio'
 export { CLIENTES_DE_EXEMPLO } from './exemplo'

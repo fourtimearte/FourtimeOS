@@ -10,6 +10,7 @@ import {
   MARCAS,
   NOME_DO_ESTADO_DA_COTACAO,
   carregarVendedores,
+  clienteDaCotacao,
   formataPedido,
   mascaraDeDocumento,
   type Vendedor,
@@ -56,7 +57,7 @@ export function QuemCompra({ c, mudar, travado }: Props) {
     <section className="cartao ct-mc">
       <header className="ct-mc-cab">
         <TituloCartao icone={UserCircle}>Quem compra</TituloCartao>
-        {!travado ? <BuscarEmClientes aoEscolher={(x) => cli(doCadastro(x))} /> : null}
+        {!travado ? <BuscarEmClientes aoEscolher={(x) => cli(clienteDaCotacao(x))} /> : null}
       </header>
       <div className="ct-mc-corpo ct-mc-2">
         <Campo rotulo="Cliente" className="ct-mc-toda">
@@ -103,22 +104,6 @@ export function QuemCompra({ c, mudar, travado }: Props) {
       </div>
     </section>
   )
-}
-
-/* O CADASTRO MANDA NOS CAMPOS, MAS NÃO PRENDE. Escolher um cliente de Clientes
-   preenche os campos e guarda o id (é o que liga a cotação à carteira); quem
-   quiser outro nome na proposta corrige depois, que o cadastro não muda. */
-function doCadastro(x: Cliente): Partial<Cotacao['cliente']> {
-  return {
-    id: x.id,
-    nome: x.nome,
-    documento: mascaraDeDocumento(x.documento),
-    contato: x.contato,
-    telefone: x.celular || x.telefone,
-    email: x.email,
-    cidade: x.cidade,
-    uf: x.uf,
-  }
 }
 
 function BuscarEmClientes({ aoEscolher }: { aoEscolher: (c: Cliente) => void }) {

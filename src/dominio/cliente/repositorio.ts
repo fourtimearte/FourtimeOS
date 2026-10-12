@@ -80,8 +80,9 @@ function deLinha(l: LinhaDoCliente): Cliente {
 
 /* O que vai para o banco na hora de gravar. Os três números do topo NÃO entram:
    eles são conta da view, e mandar eles de volta seria gravar por cima de um
-   resultado com um palpite. */
-function paraLinha(c: Cliente) {
+   resultado com um palpite. Sai daqui tambem para o cadastro que nasce do
+   lead (067), que grava pelo banco e nao pela tabela. */
+export function paraLinha(c: Cliente) {
   return {
     nome: c.nome.trim(),
     fantasia: c.fantasia,

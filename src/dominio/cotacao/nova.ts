@@ -1,6 +1,7 @@
 import { carregarListasDoCabecalho } from '@dominio/banco'
+import type { Cliente } from '@dominio/cliente'
 import { informesParaCotacaoNova } from './informes-da-casa'
-import { cotacaoEmBranco, type Cotacao } from './tipos'
+import { cotacaoEmBranco, mascaraDeDocumento, type Cotacao } from './tipos'
 
 /* ==========================================================================
    A COTAÇÃO NOVA DA CASA: em branco, com o que a casa decidiu em
@@ -28,4 +29,22 @@ export async function cotacaoNovaDaCasa(numero: string, vendedor: { id: string; 
     if (!listas.entrega.includes(c.informe.entrega)) c.informe.entrega = ''
   }
   return c
+}
+
+/* O CADASTRO MANDA NOS CAMPOS, MAS NAO PRENDE. Escolher um cliente de Clientes
+   (ou criar a cotacao de um lead que ja tem cadastro) preenche o cabecalho e
+   guarda o id, que e o que liga a cotacao a carteira; quem quiser outro nome
+   na proposta corrige depois, que o cadastro nao muda. Um lugar so para as
+   duas portas: o cabecalho do editor e o "Criar cotacao" do funil. */
+export function clienteDaCotacao(x: Cliente): Partial<Cotacao['cliente']> {
+  return {
+    id: x.id,
+    nome: x.nome,
+    documento: mascaraDeDocumento(x.documento),
+    contato: x.contato,
+    telefone: x.celular || x.telefone,
+    email: x.email,
+    cidade: x.cidade,
+    uf: x.uf,
+  }
 }

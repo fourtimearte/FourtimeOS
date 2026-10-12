@@ -1039,3 +1039,35 @@
     min-height: 44px;
   }
 }
+
+/* o cliente que nasce do lead (cadastro.tsx): os cadastros parecidos */
+.fn-cad-apoio {
+  margin: 0 0 var(--sp-3);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.fn-cad-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.fn-cad-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-dentro);
+  min-height: 56px;
+  padding: var(--re-6) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.fn-cad-item:last-child {
+  border-bottom: 0;
+}
+.fn-cad-item small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}

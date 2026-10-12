@@ -22,7 +22,7 @@ export {
   type InformeDaCasa,
   type OndeMoramOsInformes,
 } from './informes-da-casa'
-export { cotacaoNovaDaCasa } from './nova'
+export { clienteDaCotacao, cotacaoNovaDaCasa } from './nova'
 export { carregarVendedores, type Vendedor } from './vendedores'
 export { montarKitDeTeste, MOTIVOS_DO_KIT } from './kit-de-teste'
 export {

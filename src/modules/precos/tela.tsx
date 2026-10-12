@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Copy, List, PencilSimple, Printer, Plus, Package, Star, Table, Tag, Warning } from '@phosphor-icons/react'
+import { Copy, DotsThree, List, PencilSimple, Printer, Plus, Package, Star, Table, Tag, Trash, Warning } from '@phosphor-icons/react'
 import {
   Aviso,
   Botao,
@@ -8,6 +8,8 @@ import {
   Campo,
   Entrada,
   Interruptor,
+  MenuDeContexto,
+  Modal,
   Pagina,
   Segmentado,
   Seletor,
@@ -20,6 +22,7 @@ import { useSessao } from '@dominio/sessao'
 import {
   NOME_DA_SITUACAO,
   ajustarEmLote,
+  apagarTabelaDePreco,
   celula,
   carregarTabelasDePreco,
   colarNaTabela,
@@ -29,6 +32,7 @@ import {
   nomeDaFaixa,
   numeroDoTexto,
   porNaTabela,
+  preencherCelulas,
   trocarFaixas,
   salvarTabelaDePreco,
   tornarPadrao,
@@ -94,6 +98,11 @@ export function TelaTabelasDePreco() {
   const [mudandoFaixas, setMudandoFaixas] = useState(false)
   const [soSemPreco, setSoSemPreco] = useState(false)
   const botaoAdicionar = useRef<HTMLSpanElement>(null)
+  const campoDoNome = useRef<HTMLInputElement>(null)
+  const [menuDe, setMenuDe] = useState('')
+  const ancoraDoMenu = useRef<HTMLElement | null>(null)
+  const [excluindo, setExcluindo] = useState<TabelaDePreco | null>(null)
+  const souAdmin = eu?.papel === 'admin'
   const { catalogo } = usarCatalogo()
 
   const escolhidaId = params.get('t') ?? ''
@@ -200,23 +209,69 @@ export function TelaTabelasDePreco() {
     }
   }
 
-  async function situacao(s: TabelaDePreco['situacao']) {
-    if (!t) return
-    if (s === 'arquivada' && t.padrao) {
+  async function situacao(s: TabelaDePreco['situacao'], alvo: TabelaDePreco | null = t) {
+    if (!alvo) return
+    if (s === 'arquivada' && alvo.padrao) {
       avisar('A padrão não arquiva: escolha outra padrão antes', 'warn')
       return
     }
-    await salvar({ ...t, situacao: s })
+    /* a escolhida leva o rascunho junto; outra da lista vai como está no banco */
+    const base = alvo.id === t?.id ? t : alvo
+    const salva = await salvar({ ...base, situacao: s })
+    if (salva && s === 'arquivada') avisar(salva.nome + ' foi para as arquivadas. Dá para desarquivar quando quiser.', 'ok')
   }
 
-  async function duplicar() {
-    if (!t) return
-    const base = t.nome.replace(/ \(cópia( \d+)?\)$/, '')
+  async function duplicar(alvo: TabelaDePreco | null = t) {
+    if (!alvo) return
+    const origem = alvo.id === t?.id ? t : alvo
+    const base = origem.nome.replace(/ \(cópia( \d+)?\)$/, '')
     let nome = base + ' (cópia)'
     for (let n = 2; tabelas.some((x) => x.nome.toLowerCase() === nome.toLowerCase()); n++) nome = `${base} (cópia ${n})`
-    const salva = await salvar({ ...copiarDe(t, nome, 0, t.regras.arredondar), regras: { ...t.regras } })
+    const salva = await salvar({ ...copiarDe(origem, nome, 0, origem.regras.arredondar), regras: { ...origem.regras } })
     if (salva) avisar('Cópia criada como rascunho', 'ok')
   }
+
+  async function excluir(alvo: TabelaDePreco) {
+    try {
+      await apagarTabelaDePreco(alvo.id)
+      const restam = tabelas.filter((x) => x.id !== alvo.id)
+      setTabelas(restam)
+      setExcluindo(null)
+      if (alvo.id === escolhidaId) {
+        const outra = restam.find((x) => x.padrao) ?? restam.find((x) => x.situacao !== 'arquivada') ?? restam[0]
+        setParams((p) => {
+          const n = new URLSearchParams(p)
+          if (outra) n.set('t', outra.id)
+          else n.delete('t')
+          return n
+        }, { replace: true })
+      }
+      avisar('Tabela ' + alvo.nome + ' excluída', 'ok')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui excluir a tabela', 'warn')
+    }
+  }
+
+  /* O MENU DE CADA TABELA (pedido dele em 12/10/2026: "não consigo editar ou
+     excluir"): o mesmo no três pontinhos da lista e no do cabeçalho */
+  function acoesDe(x: TabelaDePreco) {
+    const abrirEla = (depois?: () => void) => {
+      if (x.id !== escolhidaId) trocarTabela(x.id)
+      if (depois) setTimeout(depois, 60)
+    }
+    return [
+      { rotulo: 'Editar: mudar o nome', aoEscolher: () => abrirEla(() => campoDoNome.current?.select()) },
+      { rotulo: 'Mudar as faixas', aoEscolher: () => abrirEla(() => setMudandoFaixas(true)) },
+      { rotulo: 'Duplicar', aoEscolher: () => void duplicar(x) },
+      ...(x.padrao
+        ? []
+        : x.situacao === 'arquivada'
+          ? [{ rotulo: 'Desarquivar', aoEscolher: () => void situacao('ativa', x) }]
+          : [{ rotulo: 'Arquivar (some da cotação, pode voltar)', aoEscolher: () => void situacao('arquivada', x) }]),
+      ...(souAdmin && !x.padrao ? [{ rotulo: 'Excluir de vez', risco: true, aoEscolher: () => setExcluindo(x) }] : []),
+    ]
+  }
+  const menuDaTabela = tabelas.find((x) => x.id === menuDe)
 
   function trocarTabela(id: string) {
     if (id === escolhidaId) return
@@ -259,6 +314,7 @@ export function TelaTabelasDePreco() {
           {podeMexer ? (
             <label className="pr-titulo-rotulo" title="Clique para mudar o nome">
               <input
+                ref={campoDoNome}
                 className="pr-titulo-campo"
                 aria-label="Nome da tabela"
                 value={x.nome}
@@ -304,6 +360,20 @@ export function TelaTabelasDePreco() {
             </Botao>
             <Botao tom="primario" disabled={!sujo || gravando} onClick={() => void salvar()}>
               {gravando ? 'Salvando...' : sujo ? 'Salvar' : 'Salvo'}
+            </Botao>
+            <Botao
+              tom="contorno"
+              icone
+              aria-label={'Mais ações da ' + x.nome}
+              title="Mudar as faixas, arquivar ou excluir"
+              aria-haspopup="menu"
+              aria-expanded={menuDe === x.id + ':cab'}
+              onClick={(e) => {
+                ancoraDoMenu.current = e.currentTarget
+                setMenuDe((m) => (m === x.id + ':cab' ? '' : x.id + ':cab'))
+              }}
+            >
+              <DotsThree size={18} weight="bold" />
             </Botao>
           </div>
         ) : null}
@@ -382,10 +452,9 @@ export function TelaTabelasDePreco() {
                 <p className="pr-nada">{lendo ? 'Lendo...' : verArquivadas ? 'Nenhuma arquivada.' : 'Nenhuma tabela ainda.'}</p>
               ) : (
                 visiveis.map((x) => (
+                  <div role="listitem" key={x.id} className="pr-item-caixa">
                   <button
                     type="button"
-                    role="listitem"
-                    key={x.id}
                     className={'pr-item' + (x.id === escolhidaId ? ' ligado' : '')}
                     onClick={() => trocarTabela(x.id)}
                   >
@@ -406,6 +475,23 @@ export function TelaTabelasDePreco() {
                     </small>
                     <small>{x.soGerente ? 'Só gerente e admin escolhem' : x.situacao === 'rascunho' ? 'Ainda não aparece na cotação' : 'Todos os vendedores usam'}</small>
                   </button>
+                  {podeMexer ? (
+                    <button
+                      type="button"
+                      className="btn btn-limpo icone pr-item-mais"
+                      aria-label={'Editar, duplicar, arquivar ou excluir a ' + x.nome}
+                      title="Editar, duplicar, arquivar ou excluir"
+                      aria-haspopup="menu"
+                      aria-expanded={menuDe === x.id}
+                      onClick={(e) => {
+                        ancoraDoMenu.current = e.currentTarget
+                        setMenuDe((m) => (m === x.id ? '' : x.id))
+                      }}
+                    >
+                      <DotsThree size={18} weight="bold" />
+                    </button>
+                  ) : null}
+                  </div>
                 ))
               )}
             </div>
@@ -542,6 +628,9 @@ export function TelaTabelasDePreco() {
                       })
                       setTimeout(() => avisar(`${n} ${n === 1 ? 'preço colado' : 'preços colados'} da planilha`, 'ok'), 0)
                     }}
+                    aoPreencher={(alvos, v) =>
+                      mudar((x) => preencherCelulas(x, alvos.map((a) => ({ ...a, tipo: x.itens.find((i) => i.codigo === a.codigo)?.tipo ?? 'referencia' })), v))
+                    }
                     aoPor={(peca) => mudar((x) => porNaTabela(x, [{ codigo: peca.codigo, tipo: peca.tipo }]))}
                   />
                 ) : (
@@ -656,6 +745,42 @@ export function TelaTabelasDePreco() {
             setMudandoFaixas(false)
           }}
         />
+      ) : null}
+      {podeMexer ? (
+        <MenuDeContexto
+          aberto={!!menuDe}
+          ancora={ancoraDoMenu}
+          aoFechar={() => setMenuDe('')}
+          cabecalho={menuDaTabela?.nome ?? tabelas.find((x) => x.id + ':cab' === menuDe)?.nome}
+          itens={(() => {
+            const x = menuDaTabela ?? tabelas.find((y) => y.id + ':cab' === menuDe)
+            return x ? acoesDe(x) : []
+          })()}
+        />
+      ) : null}
+      {excluindo ? (
+        <Modal
+          aberto
+          fechaFora={false}
+          aoFechar={() => setExcluindo(null)}
+          titulo={'Excluir a ' + excluindo.nome + '?'}
+          pe={
+            <>
+              <Botao tom="limpo" autoFocus onClick={() => setExcluindo(null)}>
+                Cancelar
+              </Botao>
+              <Botao tom="perigo" onClick={() => void excluir(excluindo)}>
+                <Trash size={17} />
+                Excluir de vez
+              </Botao>
+            </>
+          }
+        >
+          <p className="pr-nota">
+            A tabela some e não volta. As cotações que já usaram ela continuam com o nome e os preços que têm. Se quiser só
+            tirar da cotação e poder voltar depois, use Arquivar.
+          </p>
+        </Modal>
       ) : null}
       {nova ? (
         <NovaTabela

@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import type { ClipboardEvent as EventoDeColar, KeyboardEvent as EventoDeTecla } from 'react'
+import type {
+  ClipboardEvent as EventoDeColar,
+  KeyboardEvent as EventoDeTecla,
+  PointerEvent as EventoDePonteiro,
+} from 'react'
 import { formatarNumeroExato } from '@shared'
 import { numeroDoTexto, type Celula } from '@dominio/preco'
 
@@ -132,6 +136,79 @@ export function usarEdicao({
   }
 }
 
+/* --- A ALÇA (pedido de 12/10/2026): o quadradinho no canto do campo, como na
+   grade do editor da cotação. Arrastar repete o valor nas vizinhas: para
+   baixo ou para cima, nas outras peças da mesma faixa; para o lado, nas
+   outras faixas da mesma peça. Quem decide a direção é o maior movimento.
+   Soltar grava de uma vez. --------------------------------------------- */
+type Ponto = { codigo: string; faixa: number }
+export type Alca = {
+  naSelecao: (codigo: string, faixa: number) => boolean
+  comecar: (e: EventoDePonteiro, codigo: string, faixa: number) => void
+}
+
+export function usarAlca({
+  ordem,
+  valorDe,
+  aoPreencher,
+}: {
+  ordem: string[]
+  /** o valor que a célula MOSTRA (da base, da regra ou à mão) */
+  valorDe: (codigo: string, faixa: number) => number | null
+  aoPreencher: (alvos: Ponto[], valor: number) => void
+}): Alca {
+  const [arrasto, setArrasto] = useState<{ de: Ponto; ate: Ponto } | null>(null)
+
+  function alvosDe(a: { de: Ponto; ate: Ponto }): Ponto[] {
+    const i = ordem.indexOf(a.de.codigo)
+    const j = ordem.indexOf(a.ate.codigo)
+    const dr = j - i
+    const dc = a.ate.faixa - a.de.faixa
+    if (!dr && !dc) return []
+    if (Math.abs(dr) >= Math.abs(dc)) {
+      const [x, y] = i < j ? [i, j] : [j, i]
+      return ordem.slice(x, y + 1).filter((c) => c !== a.de.codigo).map((codigo) => ({ codigo, faixa: a.de.faixa }))
+    }
+    const [x, y] = a.de.faixa < a.ate.faixa ? [a.de.faixa, a.ate.faixa] : [a.ate.faixa, a.de.faixa]
+    const out: Ponto[] = []
+    for (let k = x; k <= y; k++) if (k !== a.de.faixa) out.push({ codigo: a.de.codigo, faixa: k })
+    return out
+  }
+
+  function comecar(e: EventoDePonteiro, codigo: string, faixa: number) {
+    e.preventDefault()
+    e.stopPropagation()
+    const de = { codigo, faixa }
+    let atual = { de, ate: de }
+    setArrasto(atual)
+    const mover = (ev: PointerEvent) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('[data-celula]')
+      if (!el) return
+      const [c, f] = (el.dataset.celula ?? '').split(':')
+      if (!c || !ordem.includes(c)) return
+      atual = { de, ate: { codigo: c, faixa: Number(f) } }
+      setArrasto(atual)
+    }
+    const soltar = () => {
+      window.removeEventListener('pointermove', mover)
+      window.removeEventListener('pointerup', soltar)
+      const v = valorDe(de.codigo, de.faixa)
+      const alvos = alvosDe(atual)
+      setArrasto(null)
+      if (v != null && alvos.length) aoPreencher(alvos, v)
+    }
+    window.addEventListener('pointermove', mover)
+    window.addEventListener('pointerup', soltar)
+  }
+
+  const selecao = arrasto ? alvosDe(arrasto) : []
+  return {
+    naSelecao: (codigo, faixa) =>
+      !!arrasto && ((arrasto.de.codigo === codigo && arrasto.de.faixa === faixa) || selecao.some((p) => p.codigo === codigo && p.faixa === faixa)),
+    comecar,
+  }
+}
+
 export function CampoDePreco({
   codigo,
   faixa,
@@ -140,6 +217,7 @@ export function CampoDePreco({
   rotulo,
   podeMexer,
   edicao,
+  alca,
 }: {
   codigo: string
   faixa: number
@@ -148,9 +226,25 @@ export function CampoDePreco({
   rotulo: string
   podeMexer: boolean
   edicao: Edicao
+  alca?: Alca
 }) {
   const aberto = edicao.editando?.codigo === codigo && edicao.editando.faixa === faixa
-  if (aberto) {
+  const sel = alca?.naSelecao(codigo, faixa) ? ' pr-pc-sel' : ''
+  return (
+    <span className={'pr-pc-caixa' + sel} data-celula={codigo + ':' + faixa}>
+      {aberto ? campoAberto() : botao()}
+      {alca && podeMexer && !aberto && !fora && celula.valor != null ? (
+        <span
+          className="pr-pc-alca"
+          aria-hidden="true"
+          title="Arraste para repetir este valor nas vizinhas"
+          onPointerDown={(e) => alca.comecar(e, codigo, faixa)}
+        />
+      ) : null}
+    </span>
+  )
+
+  function campoAberto() {
     return (
       <input
         className="pr-pc pr-pc-campo"
@@ -166,6 +260,8 @@ export function CampoDePreco({
       />
     )
   }
+
+  function botao() {
   const estado: keyof typeof CLASSE = fora
     ? 'fora'
     : celula.origem === 'vazio'
@@ -182,7 +278,6 @@ export function CampoDePreco({
       disabled={!podeMexer}
       title={TITULO[estado]}
       aria-label={rotulo + ': ' + texto}
-      data-celula={codigo + ':' + faixa}
       onClick={() => edicao.abrir(codigo, faixa)}
       onKeyDown={(e) => {
         /* comecar a digitar ja abre o campo, com o que foi digitado */
@@ -195,4 +290,5 @@ export function CampoDePreco({
       {texto}
     </button>
   )
+  }
 }

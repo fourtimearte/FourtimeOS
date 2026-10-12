@@ -1,11 +1,13 @@
 import { Fragment, useMemo, useState } from 'react'
-import { CaretRight, ClipboardText, Plus, X } from '@phosphor-icons/react'
+import { CaretRight, ClipboardText, Copy, Plus, X } from '@phosphor-icons/react'
 import { Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar } from '@ds'
 import { formatarNumeroExato } from '@shared'
 import {
   ajustarEmLote,
   celula,
   colarNaTabela,
+  colarPrecosDaPeca,
+  preencherCelulas,
   copiarPrecosDe,
   escrever,
   escreverBase,
@@ -19,7 +21,7 @@ import {
   type EntradaDoCatalogo,
   type TabelaDePreco,
 } from '@dominio/preco'
-import { CampoDePreco, usarEdicao } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao } from './campo'
 import { achaNaBusca, type GrupoDoCatalogo, type PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -116,6 +118,30 @@ export function ModoTabela({
     },
   })
 
+  /* A ALÇA: o valor que a célula mostra repete nas vizinhas, para baixo ou para o lado */
+  const alca = usarAlca({
+    ordem: ordem.map((p) => p.codigo),
+    valorDe: (cod, i) => {
+      const it = item(cod)
+      return it ? celula(t, it, i, ctx).valor : null
+    },
+    aoPreencher: (alvos, v) => {
+      const tipo = (c: string) => grupos.flatMap((g) => g.pecas).find((p) => p.codigo === c)?.tipo ?? 'referencia'
+      mudar((x) => preencherCelulas(x, alvos.map((a) => ({ ...a, tipo: tipo(a.codigo) })), v))
+    },
+  })
+
+  /* COPIAR OS PREÇOS DE UMA PEÇA e colar em outras, no grupo ou nas marcadas */
+  const [copiada, setCopiada] = useState('')
+  const colar = (cods: string[]) => {
+    if (!copiada) return
+    const alvos = entradas(cods.filter((c) => c !== copiada))
+    if (!alvos.length) return
+    mudar((x) => colarPrecosDaPeca(x, copiada, alvos))
+    avisar(`Os preços da ${copiada} foram para ${alvos.length} ${alvos.length === 1 ? 'peça' : 'peças'}. Falta salvar.`, 'ok')
+  }
+  const daCopiada = copiada ? item(copiada) : undefined
+
   const marcar = (cods: string[], sim: boolean) =>
     setMarcados((m) => (sim ? [...new Set([...m, ...cods])] : m.filter((c) => !cods.includes(c))))
   const naTabela = marcados.filter((c) => item(c))
@@ -195,10 +221,30 @@ export function ModoTabela({
         </div>
       ) : null}
 
+      {daCopiada ? (
+        <div className="pr-mt-copia" role="status">
+          <Copy size={16} />
+          <span>
+            Preços da <b>{copiada}</b> copiados:{' '}
+            {t.faixas.map((_f, i) => formatarNumeroExato(celula(t, daCopiada, i, ctx).valor ?? 0)).join(' · ')}. Cole numa
+            peça, no grupo ou nas marcadas.
+          </span>
+          {marcados.length ? (
+            <Botao tom="primario" tamanho="sm" onClick={() => colar(marcados)}>
+              Colar {marcados.length === 1 ? 'na marcada' : `nas ${marcados.length} marcadas`}
+            </Botao>
+          ) : null}
+          <Botao tom="limpo" tamanho="sm" onClick={() => setCopiada('')}>
+            Esquecer
+          </Botao>
+        </div>
+      ) : null}
+
       <p className="pr-mt-dica">
         <ClipboardText size={15} />
-        Clique num preço e escreva: <kbd>Enter</kbd> desce para a peça de baixo, <kbd>Tab</kbd> vai para a faixa do lado, e{' '}
-        <kbd>Ctrl</kbd> <kbd>V</kbd> numa célula cola a coluna copiada da planilha, de cima para baixo, só nas peças à vista.
+        Clique num preço e escreva: <kbd>Enter</kbd> desce, <kbd>Tab</kbd> vai para o lado. Arraste o quadradinho do canto
+        do campo para repetir o valor nas vizinhas, para baixo ou para o lado. <kbd>Ctrl</kbd> <kbd>V</kbd> numa célula cola a
+        coluna copiada da planilha. O botão de copiar ao lado do nome leva os preços de uma peça para outras.
       </p>
 
       <div className="pr-rola">
@@ -271,6 +317,17 @@ export function ModoTabela({
                         {g.pecas.length} {g.pecas.length === 1 ? 'peça' : 'peças'} · {tem ? `${tem} na tabela` : 'nenhuma na tabela'}
                         {sem ? ` · ${sem} sem preço` : ''}
                       </span>
+                      {copiada && podeMexer ? (
+                        <Botao
+                          tom="contorno"
+                          tamanho="sm"
+                          className="pr-mt-colar-g"
+                          title={'Colar os preços da ' + copiada + ' em todas as peças de ' + g.nome}
+                          onClick={() => colar(cods)}
+                        >
+                          Colar no grupo
+                        </Botao>
+                      ) : null}
                     </td>
                   </tr>
                   {fechada
@@ -296,9 +353,32 @@ export function ModoTabela({
                               ) : null}
                             </td>
                             <td className="pr-nm">
-                              <span className="pr-cod">{p.codigo}</span>
-                              <b>{p.nome}</b>
-                              {p.sub ? <small>{p.sub}</small> : null}
+                              <div className="pr-mt-nome">
+                                <span>
+                                  <span className="pr-cod">{p.codigo}</span>
+                                  <b>{p.nome}</b>
+                                  {p.sub ? <small>{p.sub}</small> : null}
+                                </span>
+                                {podeMexer && (it || copiada) ? (
+                                  copiada && copiada !== p.codigo ? (
+                                    <Botao tom="contorno" tamanho="sm" className="pr-mt-copiar" onClick={() => colar([p.codigo])}>
+                                      Colar
+                                    </Botao>
+                                  ) : it ? (
+                                    <Botao
+                                      tom={copiada === p.codigo ? 'forte' : 'limpo'}
+                                      tamanho="sm"
+                                      icone
+                                      className="pr-mt-copiar"
+                                      aria-label={'Copiar os preços da ' + p.codigo}
+                                      title="Copiar os preços desta peça para colar em outras"
+                                      onClick={() => setCopiada(copiada === p.codigo ? '' : p.codigo)}
+                                    >
+                                      <Copy size={15} />
+                                    </Botao>
+                                  ) : null
+                                ) : null}
+                              </div>
                             </td>
                             <td className="pr-mt-na">
                               <Interruptor
@@ -319,6 +399,7 @@ export function ModoTabela({
                                   rotulo={`${p.codigo}, ${i === 0 ? 'preço base' : nomeDaFaixa(f) + ' peças'}`}
                                   podeMexer={podeMexer}
                                   edicao={edicao}
+                                  alca={alca}
                                 />
                               </td>
                             ))}

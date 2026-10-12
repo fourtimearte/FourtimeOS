@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Plus, Warning } from '@phosphor-icons/react'
 import { Botao, Marcacao } from '@ds'
 import { celula, nomeDaFaixa, type Contexto, type TabelaDePreco } from '@dominio/preco'
-import { CampoDePreco, usarEdicao } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao } from './campo'
 import type { LinhaDaGrade, PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -28,6 +28,7 @@ export function GradeDaTabela({
   aoMarcar,
   aoEscrever,
   aoColar,
+  aoPreencher,
   aoPor,
 }: {
   tabela: TabelaDePreco
@@ -41,6 +42,7 @@ export function GradeDaTabela({
   aoMarcar: (codigos: string[]) => void
   aoEscrever: (codigo: string, faixa: number, valor: number | null) => void
   aoColar: (codigos: string[], linha: number, faixa: number, texto: string) => void
+  aoPreencher: (alvos: { codigo: string; faixa: number }[], valor: number) => void
   aoPor: (p: PecaDoCatalogo) => void
 }) {
   const ordem = linhas.map((l) => l.item.codigo)
@@ -55,6 +57,15 @@ export function GradeDaTabela({
     },
     aoEscrever,
     aoColar: (cod, i, texto) => aoColar(ordem, ordem.indexOf(cod), i, texto),
+  })
+
+  const alca = usarAlca({
+    ordem,
+    valorDe: (cod, i) => {
+      const it = tabela.itens.find((x) => x.codigo === cod)
+      return it ? celula(tabela, it, i, ctx).valor : null
+    },
+    aoPreencher,
   })
 
   const grupos: [string, string, LinhaDaGrade[]][] = []
@@ -129,6 +140,7 @@ export function GradeDaTabela({
                           rotulo={`${l.item.codigo}, ${i === 0 ? 'preço base' : nomeDaFaixa(f) + ' peças'}`}
                           podeMexer={podeMexer}
                           edicao={edicao}
+                          alca={alca}
                         />
                       </td>
                     ))}

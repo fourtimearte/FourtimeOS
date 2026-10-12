@@ -913,3 +913,91 @@ button.pr-pc:focus-visible {
     display: none;
   }
 }
+/* a tabela na lista, com o menu de três pontinhos no canto */
+.pr-item-caixa {
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.pr-item-caixa:last-child {
+  border-bottom: 0;
+}
+.pr-item-caixa .pr-item {
+  width: 100%;
+  border-bottom: 0;
+  padding-right: var(--sp-12);
+}
+.pr-item-caixa .pr-item-mais {
+  position: absolute;
+  top: var(--re-5);
+  right: var(--re-5);
+}
+/* a alça do campo (como a grade do editor da cotação) */
+.pr-pc-caixa {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+}
+.pr-pc-sel .pr-pc {
+  border-color: var(--ring);
+  background: var(--ink-soft);
+}
+.pr-pc-alca {
+  position: absolute;
+  right: calc(-1 * var(--re-1));
+  bottom: calc(-1 * var(--re-1));
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--surface);
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  cursor: crosshair;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+  touch-action: none;
+}
+.pr-pc-caixa:hover .pr-pc-alca,
+.pr-pc-caixa:focus-within .pr-pc-alca,
+.pr-pc-sel .pr-pc-alca {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .pr-pc-alca {
+    width: 14px;
+    height: 14px;
+    opacity: 1;
+  }
+}
+/* copiar os preços de uma peça */
+.pr-mt-copia {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  margin: var(--re-6) var(--re-9) 0;
+  padding: var(--re-5) var(--re-7);
+  border: 1px solid var(--border-2);
+  border-left: 3px solid var(--ink);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+.pr-mt-copia > span {
+  flex: 1;
+  min-width: 0;
+}
+.pr-mt-nome {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-width: 0;
+}
+.pr-mt-nome > span {
+  flex: 1;
+  min-width: 0;
+}
+.pr-mt-copiar {
+  flex: none;
+}
+.pr-mt-colar-g {
+  margin-left: var(--re-6);
+  vertical-align: middle;
+}

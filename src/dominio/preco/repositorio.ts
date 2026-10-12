@@ -143,3 +143,14 @@ export async function salvarTabelaDePreco(t: TabelaDePreco): Promise<TabelaDePre
 export async function tornarPadrao(id: string): Promise<void> {
   await chamar('tabela_de_preco_padrao', { p_id: id })
 }
+
+/* Apagar de vez: só o admin (a regra mora no banco, 068). A cotação que usou
+   a tabela não depende dela: guarda o nome e os preços que já tem. Sem acesso,
+   o banco não apaga nada e devolve a lista vazia: aí a frase diz por quê. */
+export async function apagarTabelaDePreco(id: string): Promise<void> {
+  const linhas = await tabela<{ id: string }[]>(`tabela_de_preco?id=eq.${encodeURIComponent(id)}&select=id`, {
+    metodo: 'DELETE',
+    devolver: true,
+  })
+  if (!linhas.length) throw new Error('Só o administrador exclui uma tabela de preço.')
+}

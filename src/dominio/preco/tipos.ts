@@ -387,3 +387,32 @@ export function colarNaTabela(
   })
   return { tabela: out, coladas }
 }
+
+/* COPIAR OS PREÇOS DE UMA PEÇA E COLAR EM OUTRAS (pedido de 12/10/2026, no modo
+   tabela): a base e o escrito à mão de cada faixa vão iguais; quem não estava
+   na tabela entra. */
+export function colarPrecosDaPeca(t: TabelaDePreco, origem: string, destinos: EntradaDoCatalogo[]): TabelaDePreco {
+  const o = t.itens.find((i) => i.codigo === origem)
+  if (!o) return t
+  const alvos = destinos.filter((d) => d.codigo !== origem)
+  const com = porNaTabela(t, alvos)
+  const cods = new Set(alvos.map((d) => d.codigo))
+  return {
+    ...com,
+    itens: com.itens.map((i) => (cods.has(i.codigo) ? { ...i, base: o.base, precos: t.faixas.map((_, k) => o.precos[k] ?? null) } : i)),
+  }
+}
+
+/* A ALÇA (como a grade do editor da cotação): o valor de uma célula repete
+   nas vizinhas, para baixo (outras peças, mesma faixa) ou para o lado (a
+   mesma peça, outras faixas). A primeira faixa é a base; as outras ficam à
+   mão. */
+export function preencherCelulas(
+  t: TabelaDePreco,
+  alvos: { codigo: string; tipo: TipoDoItem; faixa: number }[],
+  valor: number | null,
+): TabelaDePreco {
+  let out = t
+  for (const a of alvos) out = escrever(porNaTabela(out, [{ codigo: a.codigo, tipo: a.tipo }]), a.codigo, a.faixa, valor)
+  return out
+}

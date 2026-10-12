@@ -5,7 +5,7 @@
 import {
   arredondar, celula, faixaDe, precoDoTamanho, ajustarEmLote, voltarParaARegra,
   escrever, copiarDe, tabelaEmBranco, tabelasParaEscolher, nomeDaFaixa,
-  faixasDosFins, conferirFaixas, trocarFaixas, porNaTabela, tirarDaTabela, escreverBase, copiarPrecosDe, numeroDoTexto, colarNaTabela,
+  faixasDosFins, conferirFaixas, trocarFaixas, porNaTabela, tirarDaTabela, escreverBase, copiarPrecosDe, numeroDoTexto, colarNaTabela, colarPrecosDaPeca, preencherCelulas,
 } from './compilado/preco/tipos.js'
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
@@ -132,6 +132,17 @@ console.log('as faixas pelo fim, e pôr e preencher muitas de uma vez (139 a 143
   const col = colarNaTabela(base, linhasC, 1, 0, '39,90\t35\n42,90\n')
   ok(col.coladas === 3 && col.tabela.itens.find((i) => i.codigo === 'B').base === 39.9 && col.tabela.itens.find((i) => i.codigo === 'B').precos[1] === 35 && col.tabela.itens.find((i) => i.codigo === 'C').base === 42.9 && col.tabela.itens.find((i) => i.codigo === 'A').base === 50,
     'colar da planilha: começa na linha onde colou, desce, a segunda coluna vai para a faixa do lado, e quem faltava entra')
+}
+
+console.log('copiar os preços de uma peça e a alça')
+{
+  const b = { ...tabelaEmBranco('T'), itens: [{ codigo: 'A', tipo: 'referencia', base: 50, precos: [null, 44, null, null] }, { codigo: 'B', tipo: 'referencia', base: 30, precos: [null, null, null, 20] }] }
+  const c = colarPrecosDaPeca(b, 'A', [{ codigo: 'A', tipo: 'referencia' }, { codigo: 'B', tipo: 'referencia' }, { codigo: 'C', tipo: 'referencia' }])
+  ok(c.itens.length === 3 && c.itens.every((i) => i.base === 50 && i.precos[1] === 44 && i.precos[3] === null), 'colar os preços de A em B (que tinha outros) e em C (que entra)')
+  const p = preencherCelulas(b, [{ codigo: 'B', tipo: 'referencia', faixa: 0 }, { codigo: 'D', tipo: 'referencia', faixa: 0 }], 50)
+  ok(p.itens.find((i) => i.codigo === 'B').base === 50 && p.itens.find((i) => i.codigo === 'D').base === 50, 'a alça para baixo na base: as peças ganham a mesma base, e quem faltava entra')
+  const h = preencherCelulas(b, [{ codigo: 'A', tipo: 'referencia', faixa: 2 }, { codigo: 'A', tipo: 'referencia', faixa: 3 }], 44)
+  ok(h.itens[0].precos.join() === ',44,44,44' && h.itens[0].base === 50, 'a alça para o lado: as faixas seguintes ficam à mão com o mesmo valor')
 }
 
 console.log(ruins ? `\n${ruins} RUINS` : '\ntabelas de preço: tudo certo')

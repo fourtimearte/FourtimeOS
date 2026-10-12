@@ -69,6 +69,11 @@ async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false, tabel
         estado.gravado = JSON.parse(req.postData() || '{}')
         estado.tabelas = estado.tabelas.map((t) => (t.id === id ? { ...t, ...estado.gravado, atualizado_em: new Date().toISOString() } : t))
         corpo = estado.tabelas.filter((t) => t.id === id)
+      } else if (m === 'DELETE') {
+        const id = /id=eq\.([^&]+)/.exec(u)?.[1]
+        estado.apagado = id
+        corpo = estado.tabelas.filter((t) => t.id === id)
+        estado.tabelas = estado.tabelas.filter((t) => t.id !== id)
       } else if (m === 'POST') {
         const novo = { ...JSON.parse(req.postData() || '[{}]')[0], id: 'T9', padrao: false, teste: true, atualizado_em: new Date().toISOString() }
         estado.criado = novo
@@ -318,6 +323,73 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   const n = await pg.evaluate(() => document.querySelectorAll('.pr-grade tbody .pr-cod').length)
   conta(n === 4, '143: copiar da padrão traz as 4 peças (' + n + ')')
   conta(!erros.length, 'revisão, tabela nova: nenhum erro de JavaScript ' + erros.join(' | '))
+  await ctx.close()
+}
+
+{
+  /* editar e excluir uma tabela salva ou um rascunho (o menu de cada item e o do cabeçalho) */
+  const comRascunho = [...tabelasIniciais(), { id: 'T8', nome: 'Tabela teste', situacao: 'rascunho', padrao: false, vale_ate: null, so_gerente: false, faixas: FAIXAS, regras: REGRAS, itens: [], observacao: '', teste: true, atualizado_em: new Date().toISOString() }]
+  const { ctx, pg, estado, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900, tabelas: comRascunho })
+  await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(800)
+  await pg.locator('.pr-item-caixa', { hasText: 'Tabela teste' }).locator('.pr-item-mais').click()
+  await pg.waitForTimeout(250)
+  const itens = await pg.evaluate(() => [...document.querySelectorAll('.mn-ctx .mn-item')].map((b) => b.innerText.trim()))
+  conta(itens.some((i) => /mudar o nome/.test(i)) && itens.includes('Duplicar') && itens.some((i) => /^Arquivar/.test(i)) && itens.includes('Excluir de vez'), 'menu do item: editar, faixas, duplicar, arquivar e excluir (' + itens.join(' | ') + ')')
+  await pg.screenshot({ path: `${PASTA}/precos-menu.png` })
+  await pg.locator('.mn-ctx .mn-item', { hasText: 'Excluir de vez' }).click()
+  await pg.waitForTimeout(250)
+  await pg.locator('dialog[open] button', { hasText: 'Excluir de vez' }).click()
+  await pg.waitForTimeout(400)
+  const lista = await pg.evaluate(() => [...document.querySelectorAll('.pr-item b')].map((b) => b.textContent))
+  conta(estado.apagado === 'T8' && !lista.includes('Tabela teste'), 'excluir de vez o rascunho apaga no banco e some da lista (' + lista.join(', ') + ')')
+  await pg.locator('.pr-item-caixa', { hasText: 'Atacado 2026' }).locator('.pr-item-mais').click()
+  await pg.waitForTimeout(200)
+  const daPadrao = await pg.evaluate(() => [...document.querySelectorAll('.mn-ctx .mn-item')].map((b) => b.innerText.trim()))
+  conta(!daPadrao.includes('Excluir de vez'), 'a padrão não tem Excluir (' + daPadrao.join(' | ') + ')')
+  await pg.keyboard.press('Escape')
+  conta(!erros.length, 'menus: nenhum erro de JavaScript ' + erros.join(' | '))
+  await ctx.close()
+}
+{
+  /* modo tabela: a alça que arrasta o valor e copiar os preços de uma peça */
+  const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900 })
+  await pg.goto(SITE + '/tabelas?modo=tabela', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(800)
+  const val = (cods) => pg.evaluate((cs) => cs.map((c) => document.querySelector(`[data-celula="${c}"] .pr-pc`)?.textContent.trim()), cods)
+  async function arrastar(de, ate) {
+    await pg.locator(`[data-celula="${de}"]`).hover()
+    const a = await pg.locator(`[data-celula="${de}"] .pr-pc-alca`).boundingBox()
+    const b = await pg.locator(`[data-celula="${ate}"]`).boundingBox()
+    await pg.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+    await pg.mouse.down()
+    await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 })
+    return pg
+  }
+  await arrastar('CT01:0', 'CT02:0')
+  const sel = await pg.evaluate(() => document.querySelectorAll('.pr-pc-sel').length)
+  await pg.screenshot({ path: `${PASTA}/precos-alca.png` })
+  await pg.mouse.up()
+  await pg.waitForTimeout(200)
+  conta(sel === 2 && (await val(['CT02:0'])).join() === '49,90', 'alça: arrastar para baixo marca o caminho e repete a base na de baixo (' + sel + ' marcadas, ' + (await val(['CT02:0'])).join() + ')')
+  await arrastar('CT02:1', 'CT02:3')
+  await pg.mouse.up()
+  await pg.waitForTimeout(200)
+  const lado = await val(['CT02:1', 'CT02:2', 'CT02:3'])
+  conta(lado.join() === '48,90,48,90,48,90', 'alça: arrastar para o lado repete o valor nas faixas seguintes (' + lado.join(' ') + ')')
+  await pg.locator('button[aria-label="Copiar os preços da CT02"]').click()
+  await pg.waitForTimeout(150)
+  conta(await pg.locator('.pr-mt-copia').isVisible(), 'copiar: a faixa "Preços da CT02 copiados" aparece')
+  await pg.locator('.pr-mt-colar-g', { hasText: 'no grupo' }).nth(1).click()
+  await pg.waitForTimeout(200)
+  const sh = await val(['SH01:0', 'SH01:1', 'SH01:2', 'SH01:3'])
+  conta(sh.join() === '49,90,48,90,48,90,48,90', 'colar no grupo Shorts leva os 4 preços da CT02 (' + sh.join(' ') + ')')
+  await pg.locator('.pr-mt-tab tr', { hasText: 'RG01' }).locator('.pr-mt-copiar', { hasText: 'Colar' }).click()
+  await pg.waitForTimeout(200)
+  const rg = await val(['RG01:0', 'RG01:3'])
+  conta(rg.join() === '49,90,48,90', 'colar numa peça fora da tabela põe ela com os preços (' + rg.join(' ') + ')')
+  await pg.screenshot({ path: `${PASTA}/precos-copiar.png`, fullPage: true })
+  conta(!erros.length, 'alça e copiar: nenhum erro de JavaScript ' + erros.join(' | '))
   await ctx.close()
 }
 

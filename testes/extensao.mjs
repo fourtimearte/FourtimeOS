@@ -64,6 +64,10 @@ const WA_FALSO = (jid) => `<!doctype html><html><head><title>WhatsApp</title></h
     e.preventDefault()
     document.execCommand('insertText', false, e.clipboardData.getData('text/plain'))
   })
+  /* como o de verdade, ele puxa o foco de volta para o campo quando o perde
+     (a reclamacao de 12/10/2026: o Titulo da mensagem rapida escrevia aqui) */
+  campo.addEventListener('blur', () => setTimeout(() => campo.focus(), 0))
+  window.addEventListener('blur', () => setTimeout(() => campo.focus(), 30))
   document.querySelector('footer button').addEventListener('click', () => {
     window.__enviadas.push(campo.innerText.trim())
     campo.textContent = ''
@@ -229,13 +233,34 @@ conta(soEscrita?.foram === 1 && soEscrita.campo === 'Oi Marcos! Aqui é Henrique
 /* criar uma mensagem rapida */
 await os.locator('.fn-pa button', { hasText: 'Nova mensagem' }).click()
 await os.waitForTimeout(300)
-await os.fill('.fn-pa-editor input', 'Chave Pix')
-await os.fill('.fn-pa-editor textarea', 'Oi {nome}, segue a chave Pix.')
+/* a pessoa estava escrevendo na conversa e clica no Titulo: o que ela digita
+   tem que ir para o Titulo, e nao para o WhatsApp */
+await quadroWa.evaluate(() => { document.querySelector('footer [contenteditable]').textContent = '' })
+await quadroWa.click('footer [contenteditable]')
+await os.waitForTimeout(200)
+await os.click('.fn-pa-editor input')
+await os.waitForTimeout(300)
+await os.keyboard.type('Chave Pix', { delay: 20 })
+await os.click('.fn-pa-editor textarea')
+await os.waitForTimeout(300)
+await os.keyboard.type('Oi {nome}, segue a chave Pix.', { delay: 10 })
+const roubo = {
+  titulo: await os.inputValue('.fn-pa-editor input'),
+  texto: await os.inputValue('.fn-pa-editor textarea'),
+  noWhats: await quadroWa.evaluate(() => document.querySelector('footer [contenteditable]').innerText.trim()).catch(() => '?'),
+}
+conta(roubo.titulo === 'Chave Pix' && roubo.texto === 'Oi {nome}, segue a chave Pix.' && roubo.noWhats === '', 'clicar no Título e no Texto escreve neles, e o WhatsApp não puxa o foco de volta (' + JSON.stringify(roubo) + ')')
 const posts = []
 os.on('request', (r) => { if (r.method() === 'POST' && r.url().includes('/mensagem_rapida')) posts.push(r.postData()) })
 await os.locator('.fn-pa-editor button', { hasText: 'Criar mensagem' }).click()
 await os.waitForTimeout(800)
 conta(posts.length === 1 && /Chave Pix/.test(posts[0]) && /"criado_por":"1"/.test(posts[0]), 'Nova mensagem cria a mensagem rápida no banco (' + (posts[0] ?? 'nada') + ')')
+/* e voltar para a conversa continua normal: clicar nela e escrever */
+await quadroWa.click('footer [contenteditable]')
+await os.keyboard.type('voltei', { delay: 20 })
+const voltou = await quadroWa.evaluate(() => document.querySelector('footer [contenteditable]').innerText.trim()).catch(() => '?')
+conta(voltou === 'voltei', 'clicar de volta na conversa e escrever continua indo para o WhatsApp (' + voltou + ')')
+await quadroWa.evaluate(() => { document.querySelector('footer [contenteditable]').textContent = '' })
 await os.screenshot({ path: 'testes/fotos/extensao-atendimento.png' }).catch(() => {})
 
 /* o contato que o WhatsApp so mostra pelo nome (@lid, sem o numero): o

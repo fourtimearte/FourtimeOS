@@ -298,6 +298,7 @@ export type EstadoDoPedidoNoComercial =
   | 'cancelado'
 
 export type PedidoDaCotacao = {
+  id: string
   numero: string
   cotacaoId: string
   estado: EstadoDoPedidoNoComercial
@@ -308,6 +309,7 @@ export type PedidoDaCotacao = {
 }
 
 type LinhaDoPedidoDaCotacao = {
+  id: string
   numero: string
   cotacao_id: string | null
   estado: EstadoDoPedidoNoComercial
@@ -318,6 +320,7 @@ type LinhaDoPedidoDaCotacao = {
 }
 
 const dePedido = (l: LinhaDoPedidoDaCotacao): PedidoDaCotacao => ({
+  id: l.id,
   numero: l.numero,
   cotacaoId: l.cotacao_id ?? '',
   estado: l.estado,
@@ -327,7 +330,7 @@ const dePedido = (l: LinhaDoPedidoDaCotacao): PedidoDaCotacao => ({
   vendedor: l.vendedor_nome ?? '',
 })
 
-const COLUNAS_DO_PEDIDO = 'numero,cotacao_id,estado,aprovado_em,pecas,total,vendedor_nome'
+const COLUNAS_DO_PEDIDO = 'id,numero,cotacao_id,estado,aprovado_em,pecas,total,vendedor_nome'
 
 export async function carregarPedidosDasCotacoes(): Promise<PedidoDaCotacao[]> {
   const linhas = await tabela<LinhaDoPedidoDaCotacao[]>(

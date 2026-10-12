@@ -9,6 +9,7 @@ import {
   Copy,
   PaperPlaneTilt,
   PencilSimple,
+  Prohibit,
   Path,
   Printer,
   Receipt,
@@ -32,6 +33,7 @@ import {
   type PedidoDaCotacao,
 } from '@dominio/cotacao'
 import { usarCotacao } from './usar-cotacao'
+import { BotoesDoCaminho } from './caminho'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -54,7 +56,16 @@ const ddmm = (iso: string) => {
 const TECNICAS_COM_PILULA = new Set(['subli', 'dtf', 'silk', 'bordado', 'patch'])
 const NOME_DA_TECNICA: Record<string, string> = { subli: 'Subli', dtf: 'DTF', silk: 'Silk', bordado: 'Bordado', patch: 'Patch' }
 
-export function CotacaoEscolhida({ id, aoFechar }: { id: string; aoFechar: () => void }) {
+export function CotacaoEscolhida({
+  id,
+  aoFechar,
+  aoMudarPedido,
+}: {
+  id: string
+  aoFechar: () => void
+  /** a lista ao lado acompanha quando o pedido muda de passo aqui */
+  aoMudarPedido?: (pedidoId: string, para: PedidoDaCotacao['estado']) => void
+}) {
   const navegar = useNavigate()
   const { cotacao: c, carregando, falha } = usarCotacao(id)
   const [pedido, setPedido] = useState<PedidoDaCotacao | null>(null)
@@ -162,7 +173,18 @@ export function CotacaoEscolhida({ id, aoFechar }: { id: string; aoFechar: () =>
     ['Separação', 'o material sai da prateleira, layout por layout'],
     ['PCP', 'confere o orçamento, e o diretor aprova'],
     ['Produção', 'as fatias entram no kanban'],
+    [
+      'Entrega',
+      pedido?.estado === 'enviado'
+        ? 'enviado, esperando chegar ao cliente'
+        : pedido?.estado === 'pronto'
+          ? 'pronto, esperando o envio'
+          : pedido?.estado === 'entregue'
+            ? 'entregue ao cliente'
+            : 'enviar e confirmar que chegou',
+    ],
   ]
+  const ULTIMO = PASSOS.length - 1
 
   return (
     <div className="ct-es">
@@ -300,19 +322,33 @@ export function CotacaoEscolhida({ id, aoFechar }: { id: string; aoFechar: () =>
             <TituloCartao icone={Path}>Caminho do pedido</TituloCartao>
             <span className="ct-lt-nota">{aprovada ? 'onde ele está agora' : 'depois de aprovada'}</span>
           </header>
-          <ol className="ct-es-passos">
-            {PASSOS.map(([nome, texto], i) => {
-              const feito = i < agora || (agora === 4 && i === 3)
-              const estaAqui = i === agora && agora < 4
-              return (
-                <li key={nome} className={feito ? 'ct-es-passo ct-es-feito' : estaAqui ? 'ct-es-passo ct-es-agora' : 'ct-es-passo'}>
-                  {feito ? <CheckCircle size={18} weight="fill" /> : estaAqui ? <Clock size={18} weight="bold" /> : <Circle size={18} />}
-                  <b>{nome}</b>
-                  <small>{i === 0 ? texto : estaAqui && pedido ? 'o pedido ' + pedido.numero + ' está aqui' : texto}</small>
-                </li>
-              )
-            })}
-          </ol>
+          {agora === -1 ? (
+            <p className="ct-es-cancelado">
+              <Prohibit size={18} weight="bold" />O pedido {pedido?.numero} foi cancelado. Só o administrador reabre.
+            </p>
+          ) : (
+            <ol className="ct-es-passos">
+              {PASSOS.map(([nome, texto], i) => {
+                const feito = i < agora || (agora > ULTIMO && i === ULTIMO)
+                const estaAqui = i === agora && agora <= ULTIMO
+                return (
+                  <li key={nome} className={feito ? 'ct-es-passo ct-es-feito' : estaAqui ? 'ct-es-passo ct-es-agora' : 'ct-es-passo'}>
+                    {feito ? <CheckCircle size={18} weight="fill" /> : estaAqui ? <Clock size={18} weight="bold" /> : <Circle size={18} />}
+                    <b>{nome}</b>
+                    <small>{i === 0 || i === ULTIMO ? texto : estaAqui && pedido ? 'o pedido ' + pedido.numero + ' está aqui' : texto}</small>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+          {pedido ? (
+            <div className="fileira ct-es-acoes">
+              <BotoesDoCaminho pedido={pedido} tamanho="sm" aoMudar={(para) => {
+                  setPedido({ ...pedido, estado: para })
+                  aoMudarPedido?.(pedido.id, para)
+                }} />
+            </div>
+          ) : null}
         </section>
         <section className="cartao ct-lt-cartao">
           <header className="ct-lt-cab">

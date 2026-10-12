@@ -15,6 +15,7 @@ export {
   reabrir,
 } from './repositorio'
 export type { PassoDoPedido } from './repositorio'
+export { avisoDoCaminho, botoesDoCaminho, type BotaoDoCaminho } from './caminho'
 
 export {
   LIBERADOS_A_VISTA,

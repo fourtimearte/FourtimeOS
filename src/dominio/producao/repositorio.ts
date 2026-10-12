@@ -178,15 +178,8 @@ async function mexer(id: string, corpo: Record<string, unknown>): Promise<Pedido
    A migracao e a 022. A tabela de quem pode cada passagem esta la, e a mesma
    `quem_pode_a_passagem` pode ser chamada pela tela antes de desenhar o
    botao, quando as telas dos passos 8 e 9 existirem. */
-export type PassoDoPedido =
-  | 'aprovado'
-  | 'separacao'
-  | 'pcp'
-  | 'producao'
-  | 'pronto'
-  | 'enviado'
-  | 'entregue'
-  | 'cancelado'
+import type { PassoDoPedido } from './caminho'
+export type { PassoDoPedido }
 
 export async function moverPedido(id: string, para: PassoDoPedido): Promise<void> {
   await chamar('mover_pedido', { p_pedido: id, p_para: para })

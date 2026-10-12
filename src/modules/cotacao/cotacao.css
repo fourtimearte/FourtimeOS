@@ -2793,7 +2793,7 @@ i.ct-cv-pe {
 .ct-es-passos {
   display: grid;
   flex: 1;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2826,6 +2826,87 @@ i.ct-cv-pe {
 }
 .ct-es-passo.ct-es-agora {
   color: var(--text);
+}
+/* os botoes do fim do caminho, embaixo dos passos, e o cancelado */
+.ct-es-acoes {
+  justify-content: flex-end;
+  padding: var(--re-6) var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.ct-es-acoes:empty {
+  display: none;
+}
+.ct-es-cancelado {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  margin: 0;
+  padding: var(--re-8) var(--re-7);
+  color: var(--brand-text);
+  font-weight: 600;
+}
+/* Para entregar: uma linha por pedido pronto ou enviado */
+.ct-en {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ct-en-lin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--re-8);
+  min-height: var(--row-h);
+  padding: var(--re-4) var(--re-7);
+  border-top: 1px solid var(--border);
+}
+.ct-en-lin:first-child {
+  border-top: 0;
+}
+.ct-en-quem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-colado);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ct-en-quem:hover b {
+  text-decoration: underline;
+}
+.ct-en-quem:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.ct-en-quem b,
+.ct-en-quem small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-en-quem b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ct-en-quem small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ct-en-valor {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ct-en-acao {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
 }
 .ct-es-envio {
   display: flex;
@@ -2894,6 +2975,16 @@ i.ct-cv-pe {
   }
 }
 @container ct-dir (max-width: 640px) {
+  .ct-en-lin {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ct-en-lin .ct-ap-onde {
+    grid-column: 1;
+  }
+  .ct-en-acao {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
   .ct-es-lay {
     grid-template-columns: 80px minmax(0, 1fr) auto;
   }
@@ -2903,10 +2994,10 @@ i.ct-cv-pe {
   .ct-es-passos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .ct-es-passo:nth-child(2) {
+  .ct-es-passo:nth-child(2n) {
     border-right: 0;
   }
-  .ct-es-passo:nth-child(-n + 2) {
+  .ct-es-passo:nth-child(-n + 4) {
     border-bottom: 1px solid var(--border);
   }
   .ct-cv-lado,

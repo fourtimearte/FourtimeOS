@@ -19,6 +19,7 @@ tsc $IGNORAR \
   "$raiz/src/dominio/cotacao/fabrica.ts" \
   "$raiz/src/dominio/cotacao/comercial.ts" \
   "$raiz/src/dominio/producao/comparacao.ts" \
+  "$raiz/src/dominio/producao/caminho.ts" \
   "$raiz/src/dominio/preco/tipos.ts" \
   "$raiz/src/dominio/cotacao/tabela-de-preco.ts" \
   --target ES2022 --module ESNext --moduleResolution bundler \

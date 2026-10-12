@@ -105,7 +105,10 @@ export const ONDE_ESTA_O_PEDIDO: Record<PedidoDaCotacao['estado'], string> = {
 /* O CAMINHO DO PEDIDO (prancha 73): Cotação, Separação, PCP e Produção. O
    passo de agora é o que está acontecendo; os de antes estão feitos. Depois
    da produção, os quatro estão feitos (agora = 4). */
-export function passoDoCaminho(estado: EstadoDaCotacao, pedido: PedidoDaCotacao | null): number {
+/** Em que passo do caminho a cotação está: 0 Cotação, 1 Separação, 2 PCP,
+ *  3 Produção, 4 Entrega (pronto ou enviado) e 5 quando foi entregue, que é
+ *  todos feitos; -1 é o pedido cancelado. */
+export function passoDoCaminho(estado: EstadoDaCotacao, pedido: Pick<PedidoDaCotacao, 'estado'> | null): number {
   if (estado !== 'aprovada' || !pedido) return 0
   switch (pedido.estado) {
     case 'aprovado':
@@ -115,8 +118,13 @@ export function passoDoCaminho(estado: EstadoDaCotacao, pedido: PedidoDaCotacao 
       return 2
     case 'producao':
       return 3
-    default:
+    case 'pronto':
+    case 'enviado':
       return 4
+    case 'entregue':
+      return 5
+    default:
+      return -1
   }
 }
 

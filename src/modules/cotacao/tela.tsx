@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChartBar, Funnel, MapPin, SealCheck, TShirt } from '@phosphor-icons/react'
+import { ChartBar, Funnel, MapPin, SealCheck, TShirt, Truck } from '@phosphor-icons/react'
 import {
   Botao,
   Busca,
@@ -40,6 +40,7 @@ import {
 } from '@dominio/cotacao'
 import { souAdmin, useSessao } from '@dominio/sessao'
 import { CotacaoEscolhida } from './cotacao-escolhida'
+import { BotoesDoCaminho } from './caminho'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -148,6 +149,20 @@ export function TelaCotacao() {
   const est = useMemo(
     () => estatisticasDoComercial(vistas, pedidosVistos, mes, hoje),
     [vistas, pedidosVistos, mes, hoje],
+  )
+
+  const mudarPedido = (id: string, para: PedidoDaCotacao['estado']) =>
+    setPedidos((ps) => ps.map((p) => (p.id === id ? { ...p, estado: para } : p)))
+
+  /* O FIM DO CAMINHO À VISTA: o pedido pronto espera alguém enviar, e o
+     enviado espera alguém dizer que chegou. Os mais antigos primeiro. */
+  const paraEntregar = useMemo(
+    () =>
+      pedidosVistos
+        .filter((p) => p.estado === 'pronto' || p.estado === 'enviado')
+        .sort((a, b) => a.aprovadoEm.localeCompare(b.aprovadoEm))
+        .map((p) => ({ pedido: p, cotacao: todas.find((c) => c.id === p.cotacaoId) ?? null })),
+    [pedidosVistos, todas],
   )
 
   const escolher = (id: string) => {
@@ -336,10 +351,13 @@ export function TelaCotacao() {
           </section>
 
           {escolhida ? (
-            <CotacaoEscolhida key={escolhida} id={escolhida} aoFechar={() => escolher('')} />
+            <CotacaoEscolhida key={escolhida} id={escolhida} aoFechar={() => escolher('')} aoMudarPedido={mudarPedido} />
           ) : (
             <Estatisticas
               est={est}
+              paraEntregar={paraEntregar}
+              aoMudarPedido={mudarPedido}
+              aoAbrir={escolher}
               mes={mes}
               hoje={hoje}
               admin={admin && !vendedor}
@@ -393,12 +411,18 @@ function LinhaDaCotacao({
    ========================================================================== */
 function Estatisticas({
   est,
+  paraEntregar,
+  aoMudarPedido,
+  aoAbrir,
   mes,
   hoje,
   admin,
   comVendedor,
 }: {
   est: EstatisticasDoComercial<CotacaoNaLista, PedidoDaCotacao>
+  paraEntregar: { pedido: PedidoDaCotacao; cotacao: CotacaoNaLista | null }[]
+  aoMudarPedido: (id: string, para: PedidoDaCotacao['estado']) => void
+  aoAbrir: (cotacaoId: string) => void
   mes: string
   hoje: string
   /** o administrador olhando para todos: só aí entra "Aprovado por vendedor" */
@@ -531,6 +555,35 @@ function Estatisticas({
           sub={est.rascunhos ? 'ainda não saiu' : 'nenhum parado'}
         />
       </div>
+
+      {paraEntregar.length ? (
+        <section className="cartao ct-lt-cartao">
+          <header className="ct-lt-cab">
+            <TituloCartao icone={Truck}>Para entregar</TituloCartao>
+            <span className="ct-lt-nota">prontos esperando o envio e enviados esperando chegar</span>
+          </header>
+          <ul className="ct-en">
+            {paraEntregar.map(({ pedido: p, cotacao: c }) => (
+              <li key={p.id} className="ct-en-lin">
+                <button type="button" className="ct-en-quem" onClick={() => p.cotacaoId && aoAbrir(p.cotacaoId)}>
+                  <b>{c?.clienteNome || 'Pedido ' + p.numero}</b>
+                  <small>
+                    {[c ? p.numero : '', c?.numero, comVendedor ? p.vendedor : '', p.pecas + ' pçs'].filter(Boolean).join(' · ')}
+                  </small>
+                </button>
+                <span className="ct-ap-onde">
+                  <MapPin size={14} />
+                  {ONDE_ESTA_O_PEDIDO[p.estado]}
+                </span>
+                <b className="ct-en-valor">{reais(p.total)}</b>
+                <span className="ct-en-acao">
+                  <BotoesDoCaminho pedido={p} tamanho="sm" soOPrincipal aoMudar={(para) => aoMudarPedido(p.id, para)} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="cartao ct-lt-cartao">
         <header className="ct-lt-cab">

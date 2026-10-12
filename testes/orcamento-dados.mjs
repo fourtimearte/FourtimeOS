@@ -119,9 +119,18 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
   /* os pedidos: o da c6 no PCP, um do Rafa de uma cotação que não está na
      lista, e um de setembro, que não conta no mês */
   const PEDIDOS = [
-    { numero: 'PD004410', cotacao_id: 'c6', estado: 'pcp', aprovado_em: '2026-10-08T11:00:00-03:00', pecas: 136, total: 5534.5, vendedor_nome: 'Dani' },
-    { numero: 'PD004401', cotacao_id: 'cx1', estado: 'producao', aprovado_em: '2026-10-03T09:00:00-03:00', pecas: 84, total: 2880, vendedor_nome: 'Rafa' },
-    { numero: 'PD004390', cotacao_id: 'cx2', estado: 'entregue', aprovado_em: '2026-09-20T09:00:00-03:00', pecas: 40, total: 1900, vendedor_nome: 'Dani' },
+    { id: 'p1', numero: 'PD004410', cotacao_id: 'c6', estado: 'pcp', aprovado_em: '2026-10-08T11:00:00-03:00', pecas: 136, total: 5534.5, vendedor_nome: 'Dani' },
+    { id: 'p2', numero: 'PD004401', cotacao_id: 'cx1', estado: 'producao', aprovado_em: '2026-10-03T09:00:00-03:00', pecas: 84, total: 2880, vendedor_nome: 'Rafa' },
+    { id: 'p3', numero: 'PD004390', cotacao_id: 'cx2', estado: 'entregue', aprovado_em: '2026-09-20T09:00:00-03:00', pecas: 40, total: 1900, vendedor_nome: 'Dani' },
+    /* o fim do caminho (12/10/2026): um pedido pronto, esperando o envio, de
+       setembro (não mexe nas contas do mês nem nas últimas aprovadas) */
+    { id: 'p4', numero: 'PD004380', cotacao_id: 'cx3', estado: 'pronto', aprovado_em: '2026-09-15T09:00:00-03:00', pecas: 60, total: 2100, vendedor_nome: 'Dani' },
+  ]
+  /* a matriz de ações do caminho do pedido, como a 030 nasce */
+  const ACOES = [
+    ...['pedido.enviar', 'pedido.entregar', 'pedido.voltar', 'pedido.cancelar'].flatMap((acao) => [{ papel: 'admin', acao }, { papel: 'gerente', acao }]),
+    { papel: 'vendedor', acao: 'pedido.enviar' },
+    { papel: 'vendedor', acao: 'pedido.entregar' },
   ]
   const primeira = () => {
     const c = cotacaoDoAtletico()
@@ -313,6 +322,14 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
       return { status: 200, corpo: MATERIAIS.filter((m) => ids.includes(m.referencia_id)) }
     }
     if (u.includes('/rest/v1/kit_na_ficha')) return { status: 200, corpo: [] }
+    if (u.includes('/rest/v1/permissao_da_acao')) return { status: 200, corpo: ACOES }
+    if (u.includes('/rest/v1/rpc/mover_pedido')) {
+      const p = PEDIDOS.find((x) => x.id === corpo?.p_pedido)
+      gravados.push({ metodo, u: 'mover_pedido', corpo })
+      if (!p) return { status: 404, corpo: { message: 'Pedido não encontrado.' } }
+      p.estado = corpo.p_para
+      return { status: 200, corpo: p }
+    }
     if (u.includes('/rest/v1/pedido?')) {
       const so = (u.match(/cotacao_id=eq\.([^&]+)/) || [])[1]
       return { status: 200, corpo: so ? PEDIDOS.filter((p) => p.cotacao_id === so) : PEDIDOS }

@@ -35,6 +35,7 @@ import { etiquetaDoDesign, comEtiqueta } from './compilado/layout/etiqueta.js'
 import { fatiasDaCotacao, numerosDaFabrica } from './compilado/cotacao/fabrica.js'
 import { tamanhosNaOrdem, gradeEmTexto, totalDaGrade } from './compilado/layout/grade.js'
 import { compararOsComponentes, quanto } from './compilado/producao/comparacao.js'
+import { botoesDoCaminho, avisoDoCaminho } from './compilado/producao/caminho.js'
 import { estatisticasDoComercial, quandoDaCotacao, passoDoCaminho, ultimosMeses, diasEntre, naAba } from './compilado/cotacao/comercial.js'
 
 let falhas = 0
@@ -349,7 +350,18 @@ ok('a validade: 3 dias é perto, 4 não', quandoDaCotacao(CL('z', 'enviada', '',
 ok('a validade passada: venceu', quandoDaCotacao(CL('z', 'enviada', '', 0, '2026-10-08'), '2026-10-10').texto === 'venceu em 08/10')
 ok('o rascunho mexido ontem', quandoDaCotacao(CL('z', 'rascunho', '', 0, '', '2026-10-09'), '2026-10-10').texto === 'mexida ontem')
 ok('o caminho: a cotação enviada está no passo 0', passoDoCaminho('enviada', null) === 0)
-ok('o caminho: o pedido no PCP está no passo 2, e o entregue passou de todos', passoDoCaminho('aprovada', { estado: 'pcp' }) === 2 && passoDoCaminho('aprovada', { estado: 'entregue' }) === 4)
+ok('o caminho: o pedido no PCP está no passo 2, pronto e enviado na Entrega (4), e o entregue passou de todos', passoDoCaminho('aprovada', { estado: 'pcp' }) === 2 && passoDoCaminho('aprovada', { estado: 'pronto' }) === 4 && passoDoCaminho('aprovada', { estado: 'enviado' }) === 4 && passoDoCaminho('aprovada', { estado: 'entregue' }) === 5)
+ok('o caminho: o cancelado fica fora dos passos', passoDoCaminho('aprovada', { estado: 'cancelado' }) === -1)
+{
+  const para = (e) => botoesDoCaminho(e).map((b) => b.para).join()
+  ok('os botões do fim: pronto envia ou cancela', para('pronto') === 'enviado,cancelado')
+  ok('enviado entrega, volta para pronto ou cancela', para('enviado') === 'entregue,pronto,cancelado')
+  ok('entregue só volta para enviado (não cancela o que chegou)', para('entregue') === 'enviado')
+  ok('cancelado não tem botão; os do meio do caminho só cancelam', para('cancelado') === '' && para('pcp') === 'cancelado' && para('producao') === 'cancelado')
+  ok('cada botão leva a ação da matriz certa', botoesDoCaminho('enviado').map((b) => b.acao).join() === 'pedido.entregar,pedido.voltar,pedido.cancelar')
+  ok('o cancelar pergunta antes', !!botoesDoCaminho('pronto').find((b) => b.para === 'cancelado').pergunta)
+  ok('o aviso diz o número', avisoDoCaminho('PD004413', 'entregue').startsWith('Pedido PD004413 entregue'))
+}
 ok('os doze meses, virando o ano', ultimosMeses('2026-02-10', 3).join() === '2026-02,2026-01,2025-12')
 ok('dias entre datas, pelo calendário', diasEntre('2026-02-27', '2026-03-01') === 2)
 ok('as abas: perdidas são recusadas e vencidas', naAba(CL('z', 'vencida'), 'perdidas') && !naAba(CL('z', 'aprovada'), 'perdidas') && naAba(CL('z', 'rascunho'), 'aberto'))

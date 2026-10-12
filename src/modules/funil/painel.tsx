@@ -88,7 +88,7 @@ export function PainelAoLado({
   aoRegistrar,
 }: {
   lead: Lead | null
-  conversa: { jid: string; telefone: string }
+  conversa: { jid: string; telefone: string; nome: string; aberta: boolean }
   pronto: boolean
   recarregou: boolean
   leads: Lead[]
@@ -147,6 +147,8 @@ export function PainelAoLado({
           <AbaAtendimento
             lead={lead}
             telefone={conversa.telefone}
+            aberta={conversa.aberta}
+            nomeDaConversa={conversa.nome}
             eu={eu}
             podeMexer={podeMexer}
             pedir={pedir}
@@ -186,7 +188,7 @@ function TopoDaConversa({
   aoAbrirCliente,
 }: {
   lead: Lead | null
-  conversa: { jid: string; telefone: string }
+  conversa: { jid: string; telefone: string; nome: string; aberta: boolean }
   pronto: boolean
   recarregou: boolean
   leads: Lead[]
@@ -349,6 +351,8 @@ const semAcento = (t: string) =>
 function AbaAtendimento({
   lead,
   telefone,
+  aberta,
+  nomeDaConversa,
   eu,
   podeMexer,
   pedir,
@@ -357,6 +361,10 @@ function AbaAtendimento({
 }: {
   lead: Lead | null
   telefone: string
+  /** ha uma conversa aberta no WhatsApp, mesmo sem o numero a vista */
+  aberta: boolean
+  /** o nome que o WhatsApp mostra no topo da conversa, quando nao ha lead */
+  nomeDaConversa: string
   eu: Eu
   podeMexer: boolean
   pedir: (telefone: string, texto?: string) => void
@@ -371,6 +379,11 @@ function AbaAtendimento({
   const [apagando, setApagando] = useState<MensagemRapida | null>(null)
   const [enviando, setEnviando] = useState('')
 
+  /* LER DE NOVO: o painel fica montado enquanto a pagina estiver aberta, e
+     quem abriu antes da 070 rodar ficava com a lista de antes (sem o "Nova
+     mensagem") ate recarregar a pagina. Agora le de novo ao voltar para a
+     aba, ao voltar para a janela e pelo "Tentar de novo". */
+  const [versao, setVersao] = useState(0)
   useEffect(() => {
     let vivo = true
     carregarRapidas()
@@ -384,9 +397,15 @@ function AbaAtendimento({
     return () => {
       vivo = false
     }
-  }, [])
+  }, [versao])
+  useEffect(() => {
+    if (!semBanco) return
+    const deNovo = () => setVersao((v) => v + 1)
+    window.addEventListener('focus', deNovo)
+    return () => window.removeEventListener('focus', deNovo)
+  }, [semBanco])
 
-  const dados = { lead, vendedor: eu.nome, total: lead?.valor }
+  const dados = { lead, vendedor: eu.nome, total: lead?.valor, contato: nomeDaConversa }
   const termo = semAcento(busca.trim())
   const visiveis = termo
     ? lista.filter((m) => semAcento(m.titulo + ' ' + m.texto + ' ' + m.grupo).includes(termo))
@@ -396,7 +415,7 @@ function AbaAtendimento({
   const podeCriar = podeMexer && !semBanco && !!eu.id
 
   async function enviar(m: MensagemRapida, soEscrever: boolean) {
-    if (!telefone) return avisar('Abra uma conversa no WhatsApp ao lado primeiro.', 'warn')
+    if (!aberta && !telefone) return avisar('Abra uma conversa no WhatsApp ao lado primeiro.', 'warn')
     const texto = preencherRapida(m.texto, dados)
     const vazios = camposVazios(m.texto, dados)
     const mandar = !soEscrever && !vazios.length
@@ -415,8 +434,13 @@ function AbaAtendimento({
         )
       } else if (r.motivo === 'extensao-antiga') {
         /* a extensao de antes da 0.4.0 so sabe abrir a conversa com o texto */
-        pedir(comPais(telefone), texto)
-        avisar('Sua extensão é de antes do envio automático: o texto foi escrito, aperte Enter. Atualize a extensão para enviar sozinho.', 'warn')
+        if (telefone) {
+          pedir(comPais(telefone), texto)
+          avisar('Sua extensão é de antes do envio automático: o texto foi escrito, aperte Enter. Atualize a extensão para enviar sozinho.', 'warn')
+        } else {
+          void navigator.clipboard?.writeText(texto).catch(() => {})
+          avisar('Sua extensão é de antes do envio automático. Copiei o texto: cole no WhatsApp (Ctrl + V). Atualize a extensão para enviar sozinho.', 'warn')
+        }
       } else {
         avisar(MOTIVO[r.motivo ?? ''] ?? 'Não consegui escrever no WhatsApp.', 'warn')
       }
@@ -468,7 +492,17 @@ function AbaAtendimento({
         ) : null}
       </div>
       {semBanco ? (
-        <Aviso tom="warn">As mensagens da equipe ainda não estão no banco (falta rodar a 070). Estas são as quatro de sempre, só para usar.</Aviso>
+        <Aviso
+          tom="warn"
+          acao={
+            <Botao tom="contorno" tamanho="sm" onClick={() => setVersao((v) => v + 1)}>
+              Tentar de novo
+            </Botao>
+          }
+        >
+          Não achei as mensagens da equipe no banco. Estas são as quatro de sempre, só para usar; criar e editar voltam quando o banco
+          responder.
+        </Aviso>
       ) : null}
       {editando && !editando.id ? (
         <EditorDeRapida inicial={editando} grupos={nomesDeGrupo} aoCancelar={() => setEditando(null)} aoSalvar={(m) => void gravar(m)} />
@@ -518,9 +552,9 @@ function AbaAtendimento({
                     <Botao
                       tom="primario"
                       tamanho="sm"
-                      disabled={!telefone || enviando === m.id}
+                      disabled={(!telefone && !aberta) || enviando === m.id}
                       carregando={enviando === m.id}
-                      title={telefone ? 'Enviar para a conversa aberta. Shift + clique só escreve.' : 'Abra uma conversa no WhatsApp ao lado'}
+                      title={telefone || aberta ? 'Enviar para a conversa aberta. Shift + clique só escreve.' : 'Abra uma conversa no WhatsApp ao lado'}
                       onClick={(e) => void enviar(m, e.shiftKey)}
                     >
                       <PaperPlaneTilt size={15} />

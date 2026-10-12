@@ -130,12 +130,14 @@ export type DadosDaConversa = {
   vendedor: string
   /** o total da cotacao do lead, quando a tela ja sabe */
   total?: number
+  /** o nome do contato que o WhatsApp mostra, quando a conversa nao e de um lead */
+  contato?: string
 }
 
 /** O texto pronto para ir: os campos trocados pelo que se sabe da conversa. */
 export function preencherRapida(texto: string, d: DadosDaConversa): string {
   const l = d.lead
-  const nome = (l?.contato || '').trim().split(/\s+/)[0] || ''
+  const nome = (l?.contato || d.contato || '').trim().split(/\s+/)[0] || ''
   const valores: Record<string, string> = {
     nome,
     contato: nome,

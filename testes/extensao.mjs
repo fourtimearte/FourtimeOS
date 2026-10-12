@@ -226,7 +226,32 @@ await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).click({ modifiers: 
 await os.waitForTimeout(1000)
 const soEscrita = await quadroWa.evaluate(() => ({ foram: window.__enviadas.length, campo: document.querySelector('footer [contenteditable]').innerText.trim() })).catch(() => null)
 conta(soEscrita?.foram === 1 && soEscrita.campo === 'Oi Marcos! Aqui é Henrique, da Fourtime.', 'Shift + Enviar só escreve, sem enviar (' + JSON.stringify(soEscrita) + ')')
+/* criar uma mensagem rapida */
+await os.locator('.fn-pa button', { hasText: 'Nova mensagem' }).click()
+await os.waitForTimeout(300)
+await os.fill('.fn-pa-editor input', 'Chave Pix')
+await os.fill('.fn-pa-editor textarea', 'Oi {nome}, segue a chave Pix.')
+const posts = []
+os.on('request', (r) => { if (r.method() === 'POST' && r.url().includes('/mensagem_rapida')) posts.push(r.postData()) })
+await os.locator('.fn-pa-editor button', { hasText: 'Criar mensagem' }).click()
+await os.waitForTimeout(800)
+conta(posts.length === 1 && /Chave Pix/.test(posts[0]) && /"criado_por":"1"/.test(posts[0]), 'Nova mensagem cria a mensagem rápida no banco (' + (posts[0] ?? 'nada') + ')')
 await os.screenshot({ path: 'testes/fotos/extensao-atendimento.png' }).catch(() => {})
+
+/* o contato que o WhatsApp so mostra pelo nome (@lid, sem o numero): o
+   Enviar continua valendo, pela conversa aberta (a reclamacao de 12/10/2026) */
+jidDaPagina = '99887766554433@lid'
+await quadroWa.evaluate(() => location.reload()).catch(() => {})
+await os.waitForTimeout(2500)
+const quadroLid = os.frames().find(f => f.url().startsWith('https://web.whatsapp.com'))
+const botaoLid = await os.evaluate(() => { const b = [...document.querySelectorAll('.fn-pa-msg button')].find((x) => /Enviar/.test(x.innerText)); return b ? !b.disabled : null })
+await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).first().click().catch(() => {})
+await os.waitForTimeout(1200)
+const foiLid = await quadroLid?.evaluate(() => window.__enviadas).catch(() => null)
+conta(botaoLid === true && foiLid?.length === 1, 'contato sem o número à vista (@lid): o Enviar continua e manda para a conversa aberta (' + JSON.stringify({ botaoLid, foiLid }) + ')')
+jidDaPagina = '5562999990001@c.us'
+await quadroLid?.evaluate(() => location.reload()).catch(() => {})
+await os.waitForTimeout(2500)
 
 /* --- 151: a aba Cliente --- */
 await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => /Cliente/.test(b.innerText)).click())

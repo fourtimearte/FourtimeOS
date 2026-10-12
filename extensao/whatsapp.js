@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.4.1).
+   A extensao dentro do WhatsApp Web (0.4.2).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -67,7 +67,7 @@
      quando o contato nao esta salvo. */
   function conversaAberta() {
     const main = document.querySelector('#main')
-    if (!main) return { jid: '', telefone: '' }
+    if (!main) return { jid: '', telefone: '', nome: '', aberta: false }
     let jid = ''
     for (const el of main.querySelectorAll('[data-id]')) {
       const m = /^(?:true|false)_([^_]+@(?:c\.us|s\.whatsapp\.net|lid|g\.us))_/.exec(el.getAttribute('data-id') || '')
@@ -85,7 +85,12 @@
       const digitos = t.replace(/\D/g, '')
       if (/^\+?[\d\s()-]{10,}$/.test(t.trim()) && digitos.length >= 10) telefone = digitos
     }
-    return { jid, telefone }
+    /* o nome que o topo da conversa mostra (o contato salvo), para a mensagem
+       rapida preencher o {nome} quando a conversa nao e de um lead */
+    const topo = main.querySelector('header span[title], header [dir="auto"]')
+    const nomeDoTopo = ((topo && (topo.getAttribute('title') || topo.textContent)) || '').trim()
+    const nome = /^\+?[\d\s()-]+$/.test(nomeDoTopo) ? '' : nomeDoTopo.slice(0, 80)
+    return { jid, telefone, nome, aberta: !!main.querySelector('footer') }
   }
 
   let ultima = ''
@@ -93,7 +98,7 @@
   function olhar() {
     marcado = 0
     const c = conversaAberta()
-    const chave = c.jid + '|' + c.telefone
+    const chave = c.jid + '|' + c.telefone + '|' + c.nome + '|' + c.aberta
     if (chave === ultima) return
     ultima = chave
     contar({ tipo: 'conversa', ...c })
@@ -174,11 +179,15 @@
     return icone ? icone.closest('button, [role="button"]') : null
   }
   const textoDoCampo = (c) => (c.innerText || c.textContent || '').replace(/\s+/g, ' ').trim()
-  async function escrever(telefone, texto, enviar) {
+  /* QUAL CONVERSA (0.4.1): pela identidade da conversa (jid), que existe
+     tambem no contato que o WhatsApp so mostra pelo nome (@lid, sem o
+     numero); o telefone so confere quando os dois lados o tem. */
+  async function escrever(jid, telefone, texto, enviar) {
     const aberta = conversaAberta()
     const fimDe = (t) => String(t || '').replace(/\D/g, '').slice(-8)
-    if (!aberta.telefone) return { ok: false, motivo: 'sem-telefone' }
-    if (fimDe(aberta.telefone) !== fimDe(telefone)) return { ok: false, motivo: 'outra-conversa' }
+    if (!aberta.aberta) return { ok: false, motivo: 'sem-campo' }
+    if (jid && aberta.jid && jid !== aberta.jid) return { ok: false, motivo: 'outra-conversa' }
+    if (telefone && aberta.telefone && fimDe(aberta.telefone) !== fimDe(telefone)) return { ok: false, motivo: 'outra-conversa' }
     const campo = campoDeEscrever()
     if (!campo) return { ok: false, motivo: 'sem-campo' }
     campo.focus()
@@ -217,7 +226,7 @@
         return
       }
       if (d.tipo === 'escrever') {
-        escrever(d.telefone, String(d.texto || ''), !!d.enviar).then((r) =>
+        escrever(String(d.jid || ''), String(d.telefone || ''), String(d.texto || ''), !!d.enviar).then((r) =>
           contar({ tipo: 'escreveu', marca: d.marca, ...r }),
         )
         return

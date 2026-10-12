@@ -68,7 +68,12 @@ export function PainelDoWhatsApp({
 }) {
   const quadro = useRef<HTMLIFrameElement>(null)
   const [pronto, setPronto] = useState(false)
-  const [conversa, setConversa] = useState<{ jid: string; telefone: string }>({ jid: '', telefone: '' })
+  const [conversa, setConversa] = useState<{ jid: string; telefone: string; nome: string; aberta: boolean }>({
+    jid: '',
+    telefone: '',
+    nome: '',
+    aberta: false,
+  })
   const [recarregou, setRecarregou] = useState(false)
   const extensao = versaoDaExtensao()
 
@@ -78,8 +83,23 @@ export function PainelDoWhatsApp({
       if (e.origin !== WHATSAPP || e.source !== quadro.current?.contentWindow) return
       const d = e.data as { fourtime?: string; tipo?: string; jid?: string; telefone?: string; jeito?: string }
       if (!d || d.fourtime !== 'whatsapp') return
-      if (d.tipo === 'pronto') setPronto(true)
-      if (d.tipo === 'conversa') setConversa({ jid: String(d.jid ?? ''), telefone: String(d.telefone ?? '') })
+      if (d.tipo === 'pronto') {
+        setPronto(true)
+        /* o quadro que RECARREGOU (a troca de conversa pelo endereco) nasce sem
+           o tema: ele vai de novo a cada "pronto", e nao so no primeiro */
+        quadro.current?.contentWindow?.postMessage(
+          { fourtime: 'pedido', tipo: 'tema', tema: document.documentElement.getAttribute('data-theme') || 'light' },
+          WHATSAPP,
+        )
+      }
+      /* a 0.4.1 conta tambem se ha uma conversa aberta (aberta), mesmo quando o
+         WhatsApp nao mostra o numero; a de antes, so o jid e o telefone */
+      if (d.tipo === 'conversa') {
+        const x = d as { jid?: string; telefone?: string; nome?: string; aberta?: boolean }
+        const jid = String(x.jid ?? '')
+        const telefone = String(x.telefone ?? '')
+        setConversa({ jid, telefone, nome: String(x.nome ?? ''), aberta: x.aberta ?? !!(jid || telefone) })
+      }
       if (d.tipo === 'abriu') setRecarregou(d.jeito === 'recarregando')
       if (d.tipo === 'escreveu') {
         const r = d as unknown as Escrita & { marca?: number }
@@ -103,7 +123,7 @@ export function PainelDoWhatsApp({
       const marca = Date.now() + Math.random()
       escritas.current.set(marca, resolver)
       quadro.current?.contentWindow?.postMessage(
-        { fourtime: 'pedido', tipo: 'escrever', telefone: conversa.telefone, texto, enviar, marca },
+        { fourtime: 'pedido', tipo: 'escrever', jid: conversa.jid, telefone: conversa.telefone, texto, enviar, marca },
         WHATSAPP,
       )
       setTimeout(() => {

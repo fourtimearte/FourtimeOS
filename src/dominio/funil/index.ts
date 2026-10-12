@@ -22,3 +22,15 @@ export {
   type RegraDoLeadDoSite,
 } from './regra'
 export { fichaDoSite, resumoDoSite, temFichaDoSite, type BlocoDaFicha, type LinhaDaFicha } from './site'
+export {
+  CAMPOS_DA_MENSAGEM,
+  apagarRapida,
+  camposVazios,
+  carregarRapidas,
+  porGrupo,
+  possoMexerNaRapida,
+  preencherRapida,
+  salvarRapida,
+  type DadosDaConversa,
+  type MensagemRapida,
+} from './rapidas'

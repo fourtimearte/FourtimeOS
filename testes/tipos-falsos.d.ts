@@ -47,6 +47,7 @@ declare module 'react' {
   export type CSSProperties = any
   export type ErrorInfo = any
   export type RefObject<T = any> = any
+  export type Ref<T = any> = any
   export type HTMLAttributes<T = any> = any
   export type InputHTMLAttributes<T = any> = any
   export type TextareaHTMLAttributes<T = any> = any

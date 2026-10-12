@@ -4,6 +4,8 @@ import { Botao, Segmentado, avisar } from '@ds'
 import { formatarTelefone } from '@shared'
 import {
   RESPOSTAS,
+  carregarRapidas,
+  preencherRapida,
   fichaDoSite,
   iniciais,
   janelaApertada,
@@ -11,7 +13,6 @@ import {
   abrirLeadNoWhatsApp,
   nomeDoLead,
   minutosDesde,
-  preencher,
   tempoCurto,
   temFichaDoSite,
   type Lead,
@@ -70,6 +71,17 @@ export function Inbox({
   aoRegistrar: (l: Lead, texto: string) => void
 }) {
   const [texto, setTexto] = useState('')
+  /* as mensagens rapidas do banco (070): as mesmas do painel do WhatsApp */
+  const [rapidas, setRapidas] = useState<{ id: string; titulo: string; texto: string }[]>(RESPOSTAS)
+  useEffect(() => {
+    let vivo = true
+    carregarRapidas()
+      .then((r) => vivo && setRapidas(r.mensagens))
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [])
   const [aba, setAba] = useState<'conversa' | 'ficha'>('conversa')
 
   /* trocar de lead limpa o que estava escrito: mandar para o errado e o tipo
@@ -199,8 +211,8 @@ export function Inbox({
       )}
 
       <div className="fn-in-rapidas">
-        {RESPOSTAS.map((r) => (
-          <button key={r.id} type="button" onClick={() => setTexto(preencher(r.texto, l))}>
+        {rapidas.map((r) => (
+          <button key={r.id} type="button" onClick={() => setTexto(preencherRapida(r.texto, { lead: l, vendedor: l.vendedorNome, total: l.valor }))}>
             {r.titulo}
           </button>
         ))}
@@ -258,7 +270,7 @@ export function Inbox({
 }
 
 /* --- a ficha do site ------------------------------------------------------ */
-function FichaDoSite({ lead }: { lead: Lead }) {
+export function FichaDoSite({ lead }: { lead: Lead }) {
   const blocos = fichaDoSite(lead)
   return (
     <div className="fn-in-ficha">

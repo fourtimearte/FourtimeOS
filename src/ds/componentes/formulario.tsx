@@ -2,6 +2,7 @@ import { useId, useLayoutEffect, useRef, useState } from 'react'
 import type {
   InputHTMLAttributes,
   ReactNode,
+  Ref,
   TextareaHTMLAttributes,
 } from 'react'
 
@@ -46,7 +47,7 @@ export function AreaTexto({
   className = '',
   rows = 4,
   ...resto
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
   return <textarea className={['entrada', className].filter(Boolean).join(' ')} rows={rows} {...resto} />
 }
 

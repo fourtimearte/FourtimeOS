@@ -75,11 +75,21 @@ type LinhaDaLista = {
   teste: boolean
 }
 
-export async function carregarCotacoes(): Promise<CotacaoNaLista[]> {
+/* `de` filtra no banco: as cotacoes de um lead ou de um cliente (o painel do
+   WhatsApp, 151). Sem filtro, todas, como a lista da cotacao sempre leu. */
+export async function carregarCotacoes(de: { leadId?: string; clienteId?: string } = {}): Promise<CotacaoNaLista[]> {
+  const filtro =
+    de.leadId && de.clienteId
+      ? `&or=(lead_id.eq.${encodeURIComponent(de.leadId)},cliente_id.eq.${encodeURIComponent(de.clienteId)})`
+      : de.leadId
+        ? `&lead_id=eq.${encodeURIComponent(de.leadId)}`
+        : de.clienteId
+          ? `&cliente_id=eq.${encodeURIComponent(de.clienteId)}`
+          : ''
   const linhas = await tabela<LinhaDaLista[]>(
     'cotacao_na_lista?select=id,numero,cliente_id,cliente_nome,cliente_cidade,cliente_uf,' +
       'lead_id,estado,vendedor_nome,total,pecas,valida_ate,criada_em,atualizado_em,' +
-      'pedido_numero,teste&order=criada_em.desc',
+      'pedido_numero,teste' + filtro + '&order=criada_em.desc',
   )
   return linhas.map((l) => ({
     id: l.id,

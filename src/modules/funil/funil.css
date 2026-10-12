@@ -902,7 +902,10 @@
 }
 .fn-wa {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
+  /* O WHATSAPP NO MINIMO E O PAINEL COM O RESTO (150 a 152): ate 1120 px
+     para o WhatsApp (a lista e o chat abertos), e tudo o que sobra vai para
+     o painel. Numa tela de 1080p os dois dividem; numa de 4K o painel cresce. */
+  grid-template-columns: minmax(520px, 1120px) minmax(400px, 1fr);
   gap: var(--sp-4);
   align-items: stretch;
   height: max(560px, calc(100dvh - var(--topbar-h) - 190px));
@@ -934,22 +937,6 @@
   min-height: 0;
   border: 0;
   background: var(--surface-2);
-}
-.fn-wa-lado {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
-.fn-wa-bloco {
-  padding: var(--re-8);
-  border-bottom: 1px solid var(--border);
-}
-.fn-wa-bloco:last-child {
-  border-bottom: 0;
 }
 .fn-wa-rot {
   font-size: 11.5px;
@@ -998,13 +985,6 @@
 .fn-wa-status small {
   font-weight: 500;
   color: var(--text-3);
-}
-.fn-wa-lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
 }
 .fn-wa-item {
   width: 100%;
@@ -1070,4 +1050,263 @@
 .fn-cad-item small {
   font-size: 12.5px;
   color: var(--text-2);
+}
+
+/* --- o painel ao lado do WhatsApp (painel.tsx, pranchas 150 a 152) ------- */
+.fn-pa {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.fn-pa-topo {
+  flex: none;
+  border-bottom: 1px solid var(--border);
+}
+.fn-pa-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--re-8);
+}
+.fn-pa-av {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.fn-pa-nome {
+  flex: 1 1 220px;
+  gap: var(--gap-colado);
+  min-width: 0;
+}
+.fn-pa-acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+}
+.fn-pa-sem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--re-8);
+}
+.fn-pa-sem .fn-wa-item {
+  width: auto;
+  border: 1px solid var(--border);
+}
+.fn-pa-esperando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+}
+.fn-pa-abas {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--re-6) var(--re-8);
+  border-bottom: 1px solid var(--border);
+}
+.fn-pa-nota {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fn-pa-abas .fn-pa-nota {
+  margin-left: auto;
+}
+.fn-pa-miolo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--re-8);
+  background: var(--surface-2);
+}
+.fn-pa-barra {
+  align-items: center;
+}
+.fn-pa-busca {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.fn-pa-at,
+.fn-pa-fu {
+  gap: var(--sp-4);
+}
+.fn-pa-grupo {
+  gap: var(--gap-dentro);
+}
+.fn-pa-grupo .fn-wa-rot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.fn-pa-msgs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: var(--gap-dentro);
+}
+.fn-pa-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-dentro);
+  min-width: 0;
+  padding: var(--re-6) var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.fn-pa-msg-texto {
+  flex: 1;
+  min-width: 0;
+  gap: var(--gap-colado);
+}
+.fn-pa-msg-texto b {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fn-pa-msg-texto p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fn-pa-msg-acoes {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-colado);
+}
+.fn-pa-editor {
+  grid-column: 1 / -1;
+  gap: var(--sp-3);
+  padding: var(--re-8);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.fn-pa-cl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+.fn-pa-bloco {
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.fn-pa-t {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.fn-pa-t svg {
+  color: var(--icon-accent);
+}
+.fn-pa-alinha {
+  align-self: flex-start;
+}
+.fn-pa-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  width: 100%;
+  padding: var(--re-5) var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+button.fn-pa-doc {
+  cursor: pointer;
+}
+button.fn-pa-doc:hover {
+  background: var(--surface-2);
+}
+button.fn-pa-doc:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.fn-pa-doc svg {
+  flex: none;
+  color: var(--text-2);
+}
+.fn-pa-doc b {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fn-pa-doc small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fn-pa-tl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fn-pa-tl li {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: var(--gap-dentro);
+  padding: var(--re-4) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.fn-pa-tl li:last-child {
+  border-bottom: 0;
+}
+.fn-pa-tl span {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.fn-pa-tl p {
+  margin: 0;
+  line-height: 1.4;
+}
+@media (max-width: 1279px) {
+  .fn-pa {
+    min-height: 640px;
+  }
+}
+/* o painel estreito (1080p com o menu aberto): o topo encolhe para sobrar
+   altura para as abas */
+@container (max-width: 560px) {
+  .fn-pa-av,
+  .fn-pa-abas .fn-pa-nota {
+    display: none;
+  }
+  .fn-pa-lead {
+    gap: var(--sp-3);
+  }
 }

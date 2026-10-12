@@ -52,9 +52,22 @@ const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((c
 /* o body nasce com "dark", como o WhatsApp de quem usa o tema escuro */
 const WA_FALSO = (jid) => `<!doctype html><html><head><title>WhatsApp</title></head><body class="dark">
 <div id="app"><div id="main"><header><span title="Teste">Teste</span></header>
-<div data-id="false_${jid}_3EB0AAAA">oi</div><div data-id="true_${jid}_3EB0BBBB">ola</div></div></div>
+<div data-id="false_${jid}_3EB0AAAA">oi</div><div data-id="true_${jid}_3EB0BBBB">ola</div>
+<footer><div contenteditable="true" data-tab="10" role="textbox"></div><button aria-label="Enviar" type="button">enviar</button></footer></div></div>
 <script>
   window.__links = []
+  /* o campo de escrever de mentira: cola como o do WhatsApp (que trata a
+     colagem ele mesmo) e o botao Enviar manda o que estiver escrito */
+  window.__enviadas = []
+  const campo = document.querySelector('footer [contenteditable]')
+  campo.addEventListener('paste', (e) => {
+    e.preventDefault()
+    document.execCommand('insertText', false, e.clipboardData.getData('text/plain'))
+  })
+  document.querySelector('footer button').addEventListener('click', () => {
+    window.__enviadas.push(campo.innerText.trim())
+    campo.textContent = ''
+  })
   /* o WhatsApp de mentira pega link wa.me como o de verdade pega link recebido */
   document.addEventListener('click', (e) => {
     if (window.__naoPega) return
@@ -90,6 +103,7 @@ await ctx.route('**ensaio.supabase.co/**', (r) => {
   let corpo = []
   if (u.includes('meu_perfil')) corpo = PERFIL
   else if (u.includes('/lead?')) corpo = leadsDoBanco
+  else if (u.includes('/mensagem_rapida')) corpo = [{ id:'R1', titulo:'Saudação', texto:'Oi {nome}! Aqui é {vendedor}, da Fourtime.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:1 }]
   else if (u.includes('/auth/v1/token')) corpo = { access_token:'a', refresh_token:'r', expires_in:3600, user:{ email:'dani@fourtime' } }
   return r.fulfill({ status:200, contentType:'application/json', headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*'}, body: JSON.stringify(corpo) })
 })
@@ -183,30 +197,64 @@ conta(!!dentro?.main, 'o WhatsApp abre DENTRO do Fourtime OS, no modo WhatsApp')
 conta(!!dentro?.classe, 'dentro do Fourtime OS, o WhatsApp ganha a cara do sistema')
 conta(dentro?.links?.[0] === 'https://wa.me/5562999990001', 'o botão do WhatsApp no funil troca a conversa no WhatsApp daqui de dentro (' + (dentro?.links ?? []).join(' ') + ')')
 const coluna = await os.evaluate(() => ({
-  texto: document.querySelector('.fn-wa-lado')?.innerText ?? '',
+  texto: document.querySelector('.fn-pa')?.innerText ?? '',
   modo: [...document.querySelectorAll('.seg button')].find(b => /WhatsApp/.test(b.innerText))?.className ?? '',
   inbox: !!document.querySelector('.fn-inbox'),
 }))
-conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'a coluna da direita mostra o lead da conversa aberta')
-conta(/Cadastrar cliente/.test(coluna.texto) && /Montar cotação/.test(coluna.texto), 'a coluna oferece Cadastrar cliente e Montar cotação para o lead sem cadastro')
+conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'o painel ao lado mostra o lead da conversa aberta, preso em cima')
+conta(/Cadastrar cliente/.test(coluna.texto) && /Montar cotação/.test(coluna.texto), 'o painel oferece Cadastrar cliente e Montar cotação para o lead sem cadastro')
+conta(/Atendimento/.test(coluna.texto) && /Cliente/.test(coluna.texto) && /Funil/.test(coluna.texto), 'o painel tem as três abas: Atendimento, Cliente e Funil')
 conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
 
 /* 12/10/2026: a faixa escura saiu; o estado do WhatsApp mora no topo da coluna */
 const semFaixa = await os.evaluate(() => ({
   faixa: !!document.querySelector('.fn-wa-faixa'),
-  status: document.querySelector('.fn-wa-lado .fn-wa-status')?.innerText ?? '',
+  status: document.querySelector('.fn-pa .fn-wa-status')?.innerText ?? '',
 }))
 conta(!semFaixa.faixa && /WhatsApp aberto aqui dentro/.test(semFaixa.status), 'sem faixa escura em cima do WhatsApp; o estado fica no topo da coluna (' + semFaixa.status + ')')
 
-/* a coluna nunca fica vazia: quem espera resposta e quem chegou pelo site */
-conta(/Esperando resposta/i.test(coluna.texto) && /Clube Esperando/.test(coluna.texto), 'a coluna lista quem está esperando resposta')
-conta(/Novos do site/i.test(coluna.texto) && /Escola Nova/.test(coluna.texto), 'a coluna lista os leads novos do site')
-conta(!/Esperando resposta[\s\S]*Atlético Exemplo/i.test(coluna.texto), 'o lead da conversa aberta não se repete nas listas')
-await os.evaluate(() => [...document.querySelectorAll('.fn-wa-item')].find(b => b.innerText.includes('Escola Nova')).click())
+/* --- 150: a aba Atendimento, a mensagem rapida que ENVIA sozinha (0.4.0) --- */
+const rapida = await os.evaluate(() => document.querySelector('.fn-pa-msg')?.innerText ?? '')
+conta(/Saudação/.test(rapida) && /Oi Marcos! Aqui é Henrique, da Fourtime\./.test(rapida), 'a mensagem rápida já mostra os campos preenchidos com a conversa (' + rapida.replace(/\s+/g, ' ') + ')')
+await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).click()
+await os.waitForTimeout(1200)
+const enviada = await quadroWa.evaluate(() => ({ foram: window.__enviadas, campo: document.querySelector('footer [contenteditable]').innerText })).catch(() => null)
+conta(enviada?.foram?.[0] === 'Oi Marcos! Aqui é Henrique, da Fourtime.' && !enviada.campo.trim(), 'Enviar escreve no WhatsApp e aperta o enviar (' + JSON.stringify(enviada) + ')')
+await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).click({ modifiers: ['Shift'] })
+await os.waitForTimeout(1000)
+const soEscrita = await quadroWa.evaluate(() => ({ foram: window.__enviadas.length, campo: document.querySelector('footer [contenteditable]').innerText.trim() })).catch(() => null)
+conta(soEscrita?.foram === 1 && soEscrita.campo === 'Oi Marcos! Aqui é Henrique, da Fourtime.', 'Shift + Enviar só escreve, sem enviar (' + JSON.stringify(soEscrita) + ')')
+await os.screenshot({ path: 'testes/fotos/extensao-atendimento.png' }).catch(() => {})
+
+/* --- 151: a aba Cliente --- */
+await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => /Cliente/.test(b.innerText)).click())
+await os.waitForTimeout(800)
+const abaCliente = await os.evaluate(() => document.querySelector('.fn-pa-miolo')?.innerText ?? '')
+conta(/ainda não é cliente/.test(abaCliente) && /Nenhuma cotação ainda/.test(abaCliente) && /O que já aconteceu/.test(abaCliente), 'a aba Cliente mostra o cadastro, as cotações e o que já aconteceu')
+await os.screenshot({ path: 'testes/fotos/extensao-cliente.png' }).catch(() => {})
+
+/* --- 152: a aba Funil: clicar num cartao troca a conversa ao lado --- */
+await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => /Funil/.test(b.innerText)).click())
+await os.waitForTimeout(600)
+await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .seg button')].find(b => /Todos/.test(b.innerText)).click())
+await os.waitForTimeout(400)
+const cartoes = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .fn-card')].map(c => c.innerText.replace(/\s+/g, ' ')))
+conta(cartoes.some(c => /Clube Esperando/.test(c)) && cartoes.some(c => /Escola Nova/.test(c)), 'a aba Funil mostra os cartões do funil (' + cartoes.join(', ') + ')')
+await os.screenshot({ path: 'testes/fotos/extensao-funil.png' }).catch(() => {})
+await os.evaluate(() => [...document.querySelectorAll('.fn-pa-fu .fn-card')].find(c => c.innerText.includes('Escola Nova')).click())
 await os.waitForTimeout(600)
 const linksDaLista = await quadroWa.evaluate(() => window.__links).catch(() => [])
-conta(linksDaLista.at(-1) === 'https://wa.me/5562977770003', 'clicar num nome da lista troca a conversa no WhatsApp ao lado (' + linksDaLista.join(' ') + ')')
+conta(linksDaLista.at(-1) === 'https://wa.me/5562977770003', 'clicar num cartão da aba Funil troca a conversa no WhatsApp ao lado (' + linksDaLista.join(' ') + ')')
+/* as telas do Henrique: 1080p e o 4K dele (3072 de largura com o Windows em 125%) */
+for (const [w, h, aba] of [[1920, 1080, 'Atendimento'], [1920, 1080, 'Funil'], [3072, 1594, 'Atendimento'], [3072, 1594, 'Cliente'], [3072, 1594, 'Funil']]) {
+  await os.setViewportSize({ width: w, height: h })
+  await os.evaluate((a) => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => b.innerText.includes(a)).click(), aba)
+  await os.waitForTimeout(500)
+  await os.screenshot({ path: `testes/fotos/extensao-${aba.toLowerCase()}-${w}.png` }).catch(() => {})
+}
+await os.setViewportSize({ width: 1440, height: 900 })
+await os.evaluate(() => [...document.querySelectorAll('.fn-pa-abas .seg button')].find(b => /Atendimento/.test(b.innerText)).click())
 
 /* a cara do Fourtime OS: o tema da página vai para dentro do WhatsApp */
 const corDentro = () => quadroWa.evaluate(() => ({

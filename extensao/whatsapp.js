@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.3.0).
+   A extensao dentro do WhatsApp Web (0.4.0).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -15,7 +15,11 @@
      2. conta QUAL conversa esta aberta: so o telefone dela, lido do
         identificador das mensagens. Nao le texto nenhum;
      3. troca de conversa quando o Fourtime OS pede, sem recarregar se o
-        WhatsApp aceitar.
+        WhatsApp aceitar;
+     4. (0.4.0) a MENSAGEM RAPIDA: escreve o texto no campo da conversa
+        aberta e, quando pedem, aperta o enviar do WhatsApp. So na conversa
+        do telefone que a pagina disse: se a conversa aberta for outra,
+        nao escreve nada (mandar para a pessoa errada e o pior erro daqui).
    O registro das mensagens no lead e a W3.
    ========================================================================== */
 ;(() => {
@@ -151,6 +155,55 @@
     else document.addEventListener('DOMContentLoaded', vigiarBody, { once: true })
   }
 
+  /* --- escrever (e enviar) na conversa aberta -------------------------
+     O campo do WhatsApp e um editor proprio: texto posto direto no HTML ele
+     nao enxerga. Colar ele entende (com as quebras de linha), entao o texto
+     entra como uma colagem; se nao pegar, vai pelo insertText do navegador.
+     Enviar e o botao de enviar do proprio WhatsApp; sem achar o botao, o
+     Enter. Devolve o que aconteceu, com o motivo quando nao deu. */
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms))
+  const campoDeEscrever = () =>
+    document.querySelector('#main footer div[contenteditable="true"]') ||
+    document.querySelector('#main div[contenteditable="true"][data-tab]')
+  const botaoDeEnviar = () => {
+    const f = document.querySelector('#main footer')
+    if (!f) return null
+    const porNome = f.querySelector('button[aria-label="Enviar"], button[aria-label="Send"], [role="button"][aria-label="Enviar"], [role="button"][aria-label="Send"]')
+    if (porNome) return porNome
+    const icone = f.querySelector('[data-icon="send"], [data-icon="wds-ic-send-filled"], [data-icon^="send"]')
+    return icone ? icone.closest('button, [role="button"]') : null
+  }
+  const textoDoCampo = (c) => (c.innerText || c.textContent || '').replace(/\s+/g, ' ').trim()
+  async function escrever(telefone, texto, enviar) {
+    const aberta = conversaAberta()
+    const fimDe = (t) => String(t || '').replace(/\D/g, '').slice(-8)
+    if (!aberta.telefone) return { ok: false, motivo: 'sem-telefone' }
+    if (fimDe(aberta.telefone) !== fimDe(telefone)) return { ok: false, motivo: 'outra-conversa' }
+    const campo = campoDeEscrever()
+    if (!campo) return { ok: false, motivo: 'sem-campo' }
+    campo.focus()
+    document.execCommand('selectAll', false)
+    const dt = new DataTransfer()
+    dt.setData('text/plain', texto)
+    campo.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+    await espera(80)
+    const comeco = texto.replace(/\s+/g, ' ').trim().slice(0, 12)
+    if (!textoDoCampo(campo).includes(comeco)) {
+      document.execCommand('selectAll', false)
+      document.execCommand('insertText', false, texto)
+      await espera(80)
+    }
+    if (!textoDoCampo(campo).includes(comeco)) return { ok: false, motivo: 'nao-escreveu' }
+    if (!enviar) return { ok: true, enviado: false }
+    await espera(120)
+    const b = botaoDeEnviar()
+    if (b) b.click()
+    else campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true }))
+    await espera(300)
+    const saiu = !textoDoCampo(campoDeEscrever() || campo).includes(comeco)
+    return saiu ? { ok: true, enviado: true } : { ok: false, motivo: 'nao-enviou' }
+  }
+
   if (dentro) {
     /* o pedido vem da pagina do Fourtime OS, e de mais ninguem */
     window.addEventListener('message', (e) => {
@@ -161,6 +214,12 @@
       if (d.tipo === 'tema') {
         temaDaPagina = d.tema === 'dark' ? 'escuro' : 'claro'
         aplicarTema()
+        return
+      }
+      if (d.tipo === 'escrever') {
+        escrever(d.telefone, String(d.texto || ''), !!d.enviar).then((r) =>
+          contar({ tipo: 'escreveu', marca: d.marca, ...r }),
+        )
         return
       }
       if (d.tipo !== 'abrir') return

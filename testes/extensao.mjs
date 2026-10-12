@@ -107,7 +107,7 @@ await ctx.route('**ensaio.supabase.co/**', (r) => {
   let corpo = []
   if (u.includes('meu_perfil')) corpo = PERFIL
   else if (u.includes('/lead?')) corpo = leadsDoBanco
-  else if (u.includes('/mensagem_rapida')) corpo = [{ id:'R1', titulo:'Saudação', texto:'Oi {nome}! Aqui é {vendedor}, da Fourtime.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:1 }, { id:'R2', titulo:'Orçamento', texto:'Oi {nome}, segue o orçamento da {empresa}.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:2 }]
+  else if (u.includes('/mensagem_rapida')) corpo = [{ id:'R1', titulo:'Saudação', texto:'Oi {nome}! Aqui é {vendedor}, da Fourtime.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:1 }, { id:'R2', titulo:'Orçamento', texto:'Oi {nome}, segue o orçamento da {cliente}, aqui é da {empresa}.', grupo:'Primeiro contato', dono_id:null, criado_por:null, ordem:2 }]
   else if (u.includes('/auth/v1/token')) corpo = { access_token:'a', refresh_token:'r', expires_in:3600, user:{ email:'dani@fourtime' } }
   return r.fulfill({ status:200, contentType:'application/json', headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*'}, body: JSON.stringify(corpo) })
 })
@@ -285,11 +285,11 @@ const botaoLid = await os.evaluate(() => { const b = [...document.querySelectorA
 await os.locator('.fn-pa-msg button', { hasText: 'Enviar' }).first().click().catch(() => {})
 await os.waitForTimeout(1200)
 const foiLid = await quadroLid?.evaluate(() => window.__enviadas).catch(() => null)
-/* sem lead, a {empresa} nao existe: a lista ja mostra o que falta, antes do Enviar */
-const falta = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-msg')].map((a) => ({ t: a.querySelector('b')?.innerText ?? '', falta: [...a.querySelectorAll('.fn-pa-falta')].map((e) => e.innerText) })))
+/* sem lead, o {cliente} nao existe: a lista ja mostra o que falta, antes do Enviar */
+const falta = await os.evaluate(() => [...document.querySelectorAll('.fn-pa-msg')].map((a) => ({ t: a.querySelector('b')?.innerText ?? '', texto: a.querySelector('p')?.innerText ?? '', falta: [...a.querySelectorAll('.fn-pa-falta')].map((e) => e.innerText) })))
 const orc = falta.find((x) => /Orçamento/.test(x.t))
 await os.locator('.fn-pa-msgs').first().screenshot({ path: 'testes/fotos/extensao-falta.png' }).catch(() => {})
-conta(orc?.falta.join() === 'empresa', 'conversa sem lead: a mensagem com {empresa} mostra na lista que falta a empresa (' + JSON.stringify(orc) + ')')
+conta(orc?.falta.join() === 'cliente' && /da Fourtime\./.test(orc?.texto ?? ''), 'conversa sem lead: falta o {cliente}, e o {empresa} é sempre a Fourtime (' + JSON.stringify(orc) + ')')
 conta(botaoLid === true && foiLid?.length === 1, 'contato sem o número à vista (@lid): o Enviar continua e manda para a conversa aberta (' + JSON.stringify({ botaoLid, foiLid }) + ')')
 jidDaPagina = '5562999990001@c.us'
 await quadroLid?.evaluate(() => location.reload()).catch(() => {})

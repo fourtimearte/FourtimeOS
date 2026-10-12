@@ -10,9 +10,10 @@ import { RESPOSTAS, nomeDoLead, type Lead } from './tipos'
    gerente. A tela so esconde o lapis de quem nao pode, por educacao.
 
    O TEXTO TEM CAMPOS que se preenchem na hora de enviar, com o lead da
-   conversa aberta: {nome} o contato, {empresa} o nome do lead, {vendedor}
-   quem envia, {cotacao} o numero da cotacao e {total} o valor dela. O
-   {contato} das respostas antigas do v5 vale como {nome}.
+   conversa aberta: {nome} o contato, {cliente} o nome do lead, {empresa} a
+   Fourtime (sempre, decisao de 12/10/2026), {vendedor} quem envia, {cotacao}
+   o numero da cotacao e {total} o valor dela. O {contato} das respostas
+   antigas do v5 vale como {nome}.
 
    ANTES DA 070 RODAR a tabela nao existe: a lista mostra as quatro respostas
    do v5, so para usar, e a tela diz que criar e editar esperam o banco.
@@ -43,7 +44,8 @@ const COLUNAS = 'id,titulo,texto,grupo,dono_id,criado_por,ordem'
 
 export const CAMPOS_DA_MENSAGEM = [
   { campo: 'nome', rotulo: 'nome', explica: 'o contato da conversa' },
-  { campo: 'empresa', rotulo: 'empresa', explica: 'o nome do lead' },
+  { campo: 'cliente', rotulo: 'cliente', explica: 'o nome do lead' },
+  { campo: 'empresa', rotulo: 'empresa', explica: 'a Fourtime' },
   { campo: 'vendedor', rotulo: 'vendedor', explica: 'quem envia' },
   { campo: 'cotacao', rotulo: 'cotação', explica: 'o número da cotação' },
   { campo: 'total', rotulo: 'total', explica: 'o valor da cotação' },
@@ -141,13 +143,14 @@ export function preencherRapida(texto: string, d: DadosDaConversa): string {
   const valores: Record<string, string> = {
     nome,
     contato: nome,
-    empresa: l ? nomeDoLead(l) : '',
+    cliente: l ? nomeDoLead(l) : '',
+    empresa: 'Fourtime',
     vendedor: (d.vendedor || '').trim().split(/\s+/)[0] || '',
     cotacao: l?.cotacaoNumero || '',
     total: d.total ? formatarDinheiroExato(d.total) : '',
   }
   return texto
-    .replace(/\{(nome|contato|empresa|vendedor|cotacao|cotação|total)\}/g, (_x, c: string) => valores[c === 'cotação' ? 'cotacao' : c] ?? '')
+    .replace(/\{(nome|contato|cliente|empresa|vendedor|cotacao|cotação|total)\}/g, (_x, c: string) => valores[c === 'cotação' ? 'cotacao' : c] ?? '')
     .replace(/Oi !/g, 'Oi!')
     .replace(/[ \t]{2,}/g, ' ')
 }
@@ -155,11 +158,11 @@ export function preencherRapida(texto: string, d: DadosDaConversa): string {
 /** O texto em pedacos, para a tela mostrar como fica: cada campo com o valor
  *  desta conversa, ou vazio (a tela marca o que falta). */
 export type Pedaco = { texto: string } | { campo: string; rotulo: string; valor: string }
-const ROTULO: Record<string, string> = { nome: 'nome', contato: 'nome', empresa: 'empresa', vendedor: 'vendedor', cotacao: 'cotação', 'cotação': 'cotação', total: 'total' }
+const ROTULO: Record<string, string> = { nome: 'nome', contato: 'nome', cliente: 'cliente', empresa: 'empresa', vendedor: 'vendedor', cotacao: 'cotação', 'cotação': 'cotação', total: 'total' }
 export function pedacosDaRapida(texto: string, d: DadosDaConversa): Pedaco[] {
   const saida: Pedaco[] = []
   let i = 0
-  for (const m of texto.matchAll(/\{(nome|contato|empresa|vendedor|cotacao|cotação|total)\}/g)) {
+  for (const m of texto.matchAll(/\{(nome|contato|cliente|empresa|vendedor|cotacao|cotação|total)\}/g)) {
     const at = m.index ?? 0
     if (at > i) saida.push({ texto: texto.slice(i, at) })
     saida.push({ campo: m[1], rotulo: ROTULO[m[1]], valor: preencherRapida(m[0], d).trim() })
@@ -171,7 +174,7 @@ export function pedacosDaRapida(texto: string, d: DadosDaConversa): Pedaco[] {
 
 /** Os campos que o texto usa e que ficaram vazios nesta conversa. */
 export function camposVazios(texto: string, d: DadosDaConversa): string[] {
-  const usados = [...texto.matchAll(/\{(nome|contato|empresa|vendedor|cotacao|cotação|total)\}/g)].map((m) => m[1])
+  const usados = [...texto.matchAll(/\{(nome|contato|cliente|empresa|vendedor|cotacao|cotação|total)\}/g)].map((m) => m[1])
   return [...new Set(usados)].filter((c) => !preencherRapida('{' + c + '}', d).trim())
 }
 

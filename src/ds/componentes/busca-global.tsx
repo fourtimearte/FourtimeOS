@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as EventoDeTecla, ReactNode } from 'react'
+import { semAcento } from './flutuante'
 
 export type ItemBusca = {
   id: string
@@ -9,8 +10,14 @@ export type ItemBusca = {
   grupo: string
   /** palavras que também devem encontrar este item */
   termos?: string
+  /** só aparece quando a pessoa já escreveu algo (lead, cliente, cotação):
+      com a caixa vazia, a lista é das telas, e não da base inteira */
+  soComTexto?: boolean
   aoEscolher: () => void
 }
+
+/* no máximo tantos de cada grupo de dados: a busca acha, e não lista a base */
+const POR_GRUPO = 8
 
 /* A busca global. Abre com Ctrl K ou Cmd K, anda com as setas, escolhe com
    Enter e sai com Esc. Ela nunca fica no meio do caminho: some assim que
@@ -32,9 +39,16 @@ export function BuscaGlobal({
   const [foco, setFoco] = useState(0)
 
   const achados = useMemo(() => {
-    const t = texto.trim().toLowerCase()
-    if (!t) return itens
-    return itens.filter((i) => `${i.titulo} ${i.termos ?? ''} ${i.grupo}`.toLowerCase().includes(t))
+    const t = semAcento(texto.trim())
+    if (!t) return itens.filter((i) => !i.soComTexto)
+    const conta = new Map<string, number>()
+    return itens.filter((i) => {
+      if (!semAcento(`${i.titulo} ${i.termos ?? ''} ${i.grupo}`).includes(t)) return false
+      if (!i.soComTexto) return true
+      const n = (conta.get(i.grupo) ?? 0) + 1
+      conta.set(i.grupo, n)
+      return n <= POR_GRUPO
+    })
   }, [itens, texto])
 
   const grupos = useMemo(() => {

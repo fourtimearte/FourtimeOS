@@ -175,6 +175,26 @@ for (const tema of ['light', 'dark']) {
       await pg.waitForTimeout(1200)
     }
 
+    /* a busca do topo acha lead e cliente, sem acento, e a caixa vazia so mostra telas */
+    if (tema === 'light' && nome === 'computador') {
+      await pg.keyboard.press('Control+k')
+      await pg.waitForTimeout(1200)
+      const vazia = await pg.evaluate(() => [...document.querySelectorAll('dialog.cmdk .grupo')].map(g => g.textContent))
+      await pg.keyboard.type('volei')
+      await pg.waitForTimeout(300)
+      const achou = await pg.evaluate(() => [...document.querySelectorAll('dialog.cmdk .cmdk-lista > div')].map(d => d.querySelector('.grupo')?.textContent + ':' + [...d.querySelectorAll('.item span:first-child')].map(x => x.textContent).join('|')))
+      conta(vazia.join() === 'Telas' && achou.some(x => /^Leads:.*Vôlei Clube Araras/.test(x)) && achou.some(x => /^Clientes:.*Vôlei Clube Araras/.test(x)),
+        `${tema} ${nome}: a busca do topo acha lead e cliente sem acento, e vazia mostra só as telas (${vazia.join()} / ${achou.join(' ; ')})`)
+      await pg.keyboard.press('Control+a'); await pg.keyboard.type('futsal')
+      await pg.waitForTimeout(300)
+      await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(1500)
+      const foi = await pg.evaluate(() => ({ url: location.pathname + location.search, inbox: document.querySelector('.fn-inbox')?.innerText ?? '' }))
+      conta(foi.url === '/funil' && /Futsal Vila Nova/.test(foi.inbox), `${tema} ${nome}: escolher o lead na busca abre a conversa dele no funil (${foi.url})`)
+      await pg.goto(SITE + '/funil', { waitUntil: 'networkidle' })
+      await pg.waitForTimeout(1200)
+    }
+
     /* a aba volta para a frente: o funil rele na hora, sem esperar os 30 s */
     if (tema === 'light' && nome === 'computador') {
       const antes = leituras

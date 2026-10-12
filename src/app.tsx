@@ -48,7 +48,9 @@ import {
 import { nomeDoPapel } from '@dominio/acessos'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { paginasEscondidas } from '@dominio/regulagem'
-import { ESTAGIO_FECHADO, carregarLeads } from '@dominio/funil'
+import { ESTAGIO_FECHADO, NOME_DO_ESTAGIO, carregarLeads } from '@dominio/funil'
+import { carregarClientes } from '@dominio/cliente'
+import { NOME_DO_ESTADO_DA_COTACAO, carregarCotacoes } from '@dominio/cotacao'
 import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
 import { abasDaConfigDe, ICONE_DA_ABA } from '@modules/config'
@@ -153,6 +155,69 @@ export function App() {
       vivo = false
     }
   }, [pessoa])
+
+  /* A BUSCA DO TOPO ACHA DADO, E NAO SO TELA (12, secao 2, item 10): leads,
+     clientes e cotacoes, lidos quando a busca abre, cada um so se a pessoa ve
+     aquele painel (e o banco ainda entrega so o que ela pode ver). Com a caixa
+     vazia a lista continua sendo a das telas; escrevendo, aparecem ate oito de
+     cada grupo, sem acento e sem caixa. */
+  const [dadosDaBusca, setDadosDaBusca] = useState<ItemBusca[]>([])
+  useEffect(() => {
+    if (!busca || !pessoa) return
+    let vivo = true
+    const nada = () => [] as ItemBusca[]
+    const so = (d: string) => d.replace(/\D/g, '')
+    Promise.all([
+      podeVer(pessoa, 'funil')
+        ? carregarLeads()
+            .then((ls) =>
+              ls.map<ItemBusca>((l) => ({
+                id: 'lead-' + l.id,
+                grupo: 'Leads',
+                titulo: l.nomeLivre || 'Lead sem nome',
+                termos: [l.contato, l.telefone, so(l.telefone), l.email].join(' '),
+                lado: NOME_DO_ESTAGIO[l.estagio],
+                soComTexto: true,
+                aoEscolher: () => navegar('/funil?lead=' + encodeURIComponent(l.id)),
+              })),
+            )
+            .catch(nada)
+        : Promise.resolve(nada()),
+      podeVer(pessoa, 'clientes')
+        ? carregarClientes()
+            .then((cs) =>
+              cs.map<ItemBusca>((c) => ({
+                id: 'cliente-' + c.id,
+                grupo: 'Clientes',
+                titulo: c.nome,
+                termos: [c.fantasia, c.documento, c.celular, c.telefone, c.email, c.cidade].join(' '),
+                lado: c.cidade ? c.cidade + (c.uf ? ', ' + c.uf : '') : '',
+                soComTexto: true,
+                aoEscolher: () => navegar('/clientes?abrir=' + encodeURIComponent(c.id)),
+              })),
+            )
+            .catch(nada)
+        : Promise.resolve(nada()),
+      podeVer(pessoa, 'cotacao')
+        ? carregarCotacoes()
+            .then((cs) =>
+              cs.map<ItemBusca>((c) => ({
+                id: 'cotacao-' + c.id,
+                grupo: 'Cotações',
+                titulo: c.numero + (c.clienteNome ? ' · ' + c.clienteNome : ''),
+                termos: [c.vendedor, c.clienteCidade].join(' '),
+                lado: NOME_DO_ESTADO_DA_COTACAO[c.estado],
+                soComTexto: true,
+                aoEscolher: () => navegar('/cotacao?c=' + encodeURIComponent(c.id)),
+              })),
+            )
+            .catch(nada)
+        : Promise.resolve(nada()),
+    ]).then((grupos) => vivo && setDadosDaBusca(grupos.flat()))
+    return () => {
+      vivo = false
+    }
+  }, [busca, pessoa, navegar])
 
   /* Os doze destinos do v5, na ordem e com os nomes dele. O Design System e a
      unica linha que nao esta no mockup: ele e ferramenta nossa, e sem ele o
@@ -474,15 +539,15 @@ export function App() {
   ]
 
   const itensDaBusca: ItemBusca[] = [
-    ...secoes.flatMap((s) => s.itens),
-    ...meusFilhos,
-  ].map((i) => ({
-    id: i.para,
-    grupo: 'Telas',
-    titulo: i.rotulo,
-    lado: 'ir para',
-    aoEscolher: () => navegar(i.para),
-  }))
+    ...[...secoes.flatMap((s) => s.itens), ...meusFilhos].map((i) => ({
+      id: i.para,
+      grupo: 'Telas',
+      titulo: i.rotulo,
+      lado: 'ir para',
+      aoEscolher: () => navegar(i.para),
+    })),
+    ...dadosDaBusca,
+  ]
 
   return (
     <>

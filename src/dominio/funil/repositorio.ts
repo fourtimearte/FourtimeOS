@@ -40,7 +40,7 @@ type LinhaDoLead = {
   consentimento_em?: string | null
   consentimento_texto?: string
   equipe: { nome: string } | null
-  cotacao: { id: string }[] | null
+  cotacao: { id: string; numero?: string; criada_em?: string }[] | null
   pedido: { numero: string }[] | null
 }
 
@@ -48,10 +48,16 @@ type LinhaDoLead = {
    `pedido(numero)` vêm como lista porque a chave estrangeira está do lado
    deles: um lead pode ter mais de uma cotação, e é a mais recente que o cartão
    mostra. */
+/* o join nao vem em ordem: a mais nova e escolhida aqui, pela data */
+function maisNova(l: LinhaDoLead['cotacao']) {
+  if (!l || !l.length) return null
+  return [...l].sort((a, b) => (b.criada_em ?? '').localeCompare(a.criada_em ?? ''))[0]
+}
+
 const COLUNAS_ANTES_DA_065 =
   'id,nome,contato,telefone,cliente_id,estagio,valor,vendedor_id,ultima_msg,' +
   'ultima_msg_em,nao_lidas,janela_ate,origem,teste,equipe(nome),' +
-  'cotacao(id),pedido(numero)'
+  'cotacao(id,numero,criada_em),pedido(numero)'
 const COLUNAS_DA_065 = ',prioridade,email,briefing,consentimento_em,consentimento_texto'
 
 /* A 065 RODA DEPOIS DO CODIGO SUBIR. Ate o Henrique apertar Run, as colunas
@@ -86,7 +92,8 @@ function deLinha(l: LinhaDoLead): Lead {
     ultimaMsgEm: l.ultima_msg_em ?? '',
     novo: Number(l.nao_lidas) || 0,
     valor: Number(l.valor) || 0,
-    cotacao: l.cotacao?.[0]?.id ?? '',
+    cotacao: maisNova(l.cotacao)?.id ?? '',
+    cotacaoNumero: maisNova(l.cotacao)?.numero ?? '',
     pedido: l.pedido?.[0]?.numero ?? '',
     janelaAte: l.janela_ate ?? '',
     vendedorId: l.vendedor_id ?? '',

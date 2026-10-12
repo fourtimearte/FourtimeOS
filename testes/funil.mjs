@@ -58,7 +58,7 @@ const LEADS = [
   { id:'L3', nome:'Vôlei Clube Araras', contato:'Bia', telefone:'62999990003', cliente_id:'C9',
     estagio:'cotacao', valor:1860, vendedor_id:null, ultima_msg:'Recebi a cotação, vou mostrar',
     ultima_msg_em:atras(2880), nao_lidas:0, janela_ate:atras(1440), teste:true,
-    equipe:{nome:'Dani Ribeiro'}, cotacao:[{id:'c1'}], pedido:[] },
+    equipe:{nome:'Dani Ribeiro'}, cotacao:[{id:'c0', numero:'CO2026-0003', criada_em:atras(5000)}, {id:'c1', numero:'CO2026-0007', criada_em:atras(100)}], pedido:[] },
   { id:'L4', nome:'Studio Pilates Flor', contato:'Flor', telefone:'62999990004', cliente_id:null,
     estagio:'negociando', valor:2400, vendedor_id:null, ultima_msg:'Vi o trabalho de vocês',
     ultima_msg_em:atras(120), nao_lidas:1, janela_ate:null, teste:true,
@@ -152,6 +152,13 @@ for (const tema of ['light', 'dark']) {
       s: document.documentElement.scrollWidth, c: document.documentElement.clientWidth,
     }))
     conta(!largura.rola, `${tema} ${nome}: funil sem rolagem de lado (${largura.s} em ${largura.c})`)
+
+    /* a etiqueta da cotacao no cartao e o NUMERO da mais nova, e nao o id */
+    const etiqueta = await pg.evaluate(() => {
+      const c = [...document.querySelectorAll('.fn-card')].find(x => x.textContent.includes('Vôlei Clube Araras'))
+      return c ? [...c.querySelectorAll('.fn-tag')].map(t => t.textContent).join(',') : 'sem cartao'
+    })
+    conta(etiqueta === 'CO2026-0007', `${tema} ${nome}: a etiqueta da cotação no cartão mostra o número da mais nova (${etiqueta})`)
 
     /* a aba volta para a frente: o funil rele na hora, sem esperar os 30 s */
     if (tema === 'light' && nome === 'computador') {

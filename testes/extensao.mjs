@@ -188,6 +188,7 @@ const coluna = await os.evaluate(() => ({
   inbox: !!document.querySelector('.fn-inbox'),
 }))
 conta(/Atlético Exemplo/.test(coluna.texto) && /Em atendimento/.test(coluna.texto), 'a coluna da direita mostra o lead da conversa aberta')
+conta(/Cadastrar cliente/.test(coluna.texto) && /Montar cotação/.test(coluna.texto), 'a coluna oferece Cadastrar cliente e Montar cotação para o lead sem cadastro')
 conta(/ligado/.test(coluna.modo) && !coluna.inbox, 'a página passou para o modo WhatsApp, sem a conversa do quadro por cima')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro.png' }).catch(() => {})
 

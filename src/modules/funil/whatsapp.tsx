@@ -56,6 +56,8 @@ export function PainelDoWhatsApp({
   aoAbrirCotacao,
   aoMover,
   aoCriarLead,
+  aoVirarCliente,
+  aoAbrirCliente,
 }: {
   visivel: boolean
   leads: Lead[]
@@ -68,6 +70,8 @@ export function PainelDoWhatsApp({
   aoAbrirCotacao: (id: string) => void
   aoMover: (id: string, e: Estagio) => void
   aoCriarLead: (telefone: string) => void
+  aoVirarCliente: (l: Lead) => void
+  aoAbrirCliente: (id: string) => void
 }) {
   const quadro = useRef<HTMLIFrameElement>(null)
   const [pronto, setPronto] = useState(false)
@@ -173,6 +177,8 @@ export function PainelDoWhatsApp({
             aoMontarCotacao={aoMontarCotacao}
             aoAbrirCotacao={aoAbrirCotacao}
             aoMover={aoMover}
+            aoVirarCliente={aoVirarCliente}
+            aoAbrirCliente={aoAbrirCliente}
           />
         ) : (
           <div className="pilha fn-wa-bloco">
@@ -251,6 +257,8 @@ function LadoDoLead({
   aoMontarCotacao,
   aoAbrirCotacao,
   aoMover,
+  aoVirarCliente,
+  aoAbrirCliente,
 }: {
   lead: Lead
   podeMexer: boolean
@@ -259,6 +267,8 @@ function LadoDoLead({
   aoMontarCotacao: (l: Lead) => void
   aoAbrirCotacao: (id: string) => void
   aoMover: (id: string, e: Estagio) => void
+  aoVirarCliente: (l: Lead) => void
+  aoAbrirCliente: (id: string) => void
 }) {
   const pedido = temFichaDoSite(l) ? fichaDoSite(l).find((b) => b.titulo === 'O pedido') : undefined
   return (
@@ -310,6 +320,15 @@ function LadoDoLead({
           ) : (
             <Botao tom="primario" onClick={() => aoMontarCotacao(l)}>
               Montar cotação
+            </Botao>
+          )}
+          {l.clienteId ? (
+            <Botao tom="contorno" onClick={() => aoAbrirCliente(l.clienteId)}>
+              Ver cliente
+            </Botao>
+          ) : (
+            <Botao tom="contorno" onClick={() => aoVirarCliente(l)}>
+              Cadastrar cliente
             </Botao>
           )}
           <Botao tom="contorno" onClick={() => aoAbrirNoQuadro(l)}>

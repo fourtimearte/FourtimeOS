@@ -332,7 +332,7 @@ function Cartao({
             {semResposta(lead, relogio) ? 'esperando há ' : ''}
             {tempoCurto(minutosDesde(lead.ultimaMsgEm, relogio))}
           </span>
-          {lead.cotacao ? <span className="fn-tag">{lead.cotacao}</span> : null}
+          {lead.cotacao ? <span className="fn-tag">{lead.cotacaoNumero || 'Cotação'}</span> : null}
           {lead.pedido ? <span className="fn-tag">{lead.pedido}</span> : null}
         </span>
       </div>

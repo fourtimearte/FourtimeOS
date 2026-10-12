@@ -104,6 +104,8 @@ export type Lead = {
   valor: number
   /** id da cotacao ligada, quando existe */
   cotacao: string
+  /** o numero dela (CO2026-0007), que e o que o cartao mostra */
+  cotacaoNumero: string
   /** numero do pedido, quando fechou */
   pedido: string
   /** quando a janela de 24 h do WhatsApp fecha, em ISO */
@@ -218,6 +220,7 @@ export function leadEmBranco(): Lead {
     novo: 0,
     valor: 0,
     cotacao: '',
+    cotacaoNumero: '',
     pedido: '',
     janelaAte: '',
     vendedorId: '',

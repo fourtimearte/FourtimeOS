@@ -264,7 +264,7 @@ export function TelaFunil() {
       const salvo = await moverLead(id, estagio)
       if (salvo) setLeads((atuais) => atuais.map((x) => (x.id === id ? salvo : x)))
       if (estagio === 'fechado') {
-        avisar('Fechado. A cotação aprovada vira ficha de produção na fase 2.', 'ok')
+        avisar('Lead fechado. O pedido nasce quando a cotação dele é aprovada no editor.', 'ok')
       }
     } catch (e) {
       /* O cartao volta para a coluna de onde saiu. Deixar ele na coluna nova
@@ -450,6 +450,8 @@ export function TelaFunil() {
             }}
             aoMontarCotacao={(l) => void montarCotacao(l)}
             aoAbrirCotacao={(id) => navegar('/cotacao/' + id)}
+            aoVirarCliente={(l) => virarCliente(l)}
+            aoAbrirCliente={(id) => navegar('/clientes?abrir=' + encodeURIComponent(id))}
             aoMover={(id, e) => void mover(id, e)}
             aoCriarLead={(t) =>
               setEditando({ ...leadEmBranco(), telefone: t.replace(/^55(?=\d{10,11}$)/, '') })

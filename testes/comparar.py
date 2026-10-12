@@ -4,7 +4,7 @@
     python3 testes/comparar.py            confere
     python3 testes/comparar.py --aprovar  adota as fotos novas como as boas
 
-As fotos aprovadas ficam em testes/fotos. Quando uma secao muda de proposito,
+As fotos aprovadas ficam em testes/aprovadas/kit. Quando uma secao muda de proposito,
 roda com --aprovar e o commit mostra exatamente o que mudou de aparencia: o
 diff do repositorio vira o registro visual da mudanca.
 
@@ -20,8 +20,8 @@ import sys
 from PIL import Image, ImageChops, ImageFilter
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-ATUAL = os.path.join(AQUI, "atual")
-FOTOS = os.path.join(AQUI, "fotos")
+ATUAL = os.path.join(AQUI, "atual", "kit")
+FOTOS = os.path.join(AQUI, "aprovadas", "kit")
 DIFF = os.path.join(AQUI, "diferenca")
 
 # um pixel so conta como mudado se a diferenca passa disto, de 0 a 255
@@ -87,7 +87,7 @@ def main():
     if aprovar:
         shutil.rmtree(FOTOS, ignore_errors=True)
         shutil.copytree(ATUAL, FOTOS)
-        print("aprovadas " + str(len(os.listdir(FOTOS))) + " fotos em testes/fotos")
+        print("aprovadas " + str(len(os.listdir(FOTOS))) + " fotos em testes/aprovadas/kit")
         return 0
 
     if not os.path.isdir(FOTOS):

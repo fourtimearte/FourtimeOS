@@ -409,6 +409,16 @@
   font-size: 12px;
 }
 
+/* a faixa que rola de lado quando o segmentado não cabe */
+.kit-rolo {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.kit-rolo::-webkit-scrollbar {
+  display: none;
+}
+
 /* a conta miúda dentro de uma aba do segmentado */
 .kit-conta {
   margin-left: var(--re-2);

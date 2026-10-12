@@ -12,7 +12,7 @@ import type { Etapa } from './tipos'
    corta antes de imprimir.
 
    CADA TÉCNICA TEM A SUA ROTA, e ela não é um caminho só. A fatia de
-   sublimação passa por impressão, calandra e corte, nessa ordem; a de DTF
+   sublimação passa por impressão, calandra e Futurize (o corte dela, 024), nessa ordem; a de DTF
    passa por corte, DTF e prensa. Por isso um cartão não pode cair em qualquer
    coluna: ele só anda pelos postos que a rota dele conhece, e é o banco que
    recusa o resto.

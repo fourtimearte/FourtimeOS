@@ -24,7 +24,7 @@ import {
    OS POSTOS ESTÃO NA ORDEM DAS COLUNAS DO QUADRO, e não na ordem da rota. É
    isso que faz o gráfico ser um mapa do quadro de baixo: o ponto da terceira
    coluna do gráfico está na terceira coluna do quadro. Na ordem da rota, a
-   sublimação (impressão, calandra, corte) e o DTF (corte, impressão, prensa)
+   sublimação (impressão, calandra, Futurize) e o DTF (corte, impressão, prensa)
    precisariam de dois eixos diferentes.
 
    SÓ ENTRAM OS POSTOS POR ONDE ALGUMA TÉCNICA DO PEDIDO PASSA. Com os treze,

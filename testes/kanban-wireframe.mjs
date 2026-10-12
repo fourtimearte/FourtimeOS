@@ -33,7 +33,7 @@ const PERFIL = [{ id:'1', nome:'Henrique', papel:'admin', situacao:'aprovado', p
 
 const ROTAS = []
 const poe = (t, postos) => postos.forEach((p,i) => ROTAS.push({tecnica:t, ordem:(i+1)*10, posto:p}))
-poe('subli', ['subli','calandra','corte','conferencia','cd-costura','costura','embalagem','finalizado'])
+poe('subli', ['subli','calandra','futurize','conferencia','cd-costura','costura','embalagem','finalizado'])
 poe('dtf', ['corte','dtf','prensa','conferencia','cd-costura','costura','embalagem','finalizado'])
 poe('silk', ['corte','silk','conferencia','cd-costura','costura','embalagem','finalizado'])
 poe('bordado', ['bordado','cd-costura','costura','embalagem','finalizado'])

@@ -2,8 +2,10 @@
    Teste visual do /kit.
 
    Tira uma foto de cada secao do kit, nos dois temas, e guarda em
-   testes/atual/. Depois o comparar.py confere contra testes/fotos/, que sao as
-   fotos aprovadas, e aponta o que mudou.
+   testes/atual/kit/. Depois o comparar.py confere contra testes/aprovadas/kit/,
+   que sao as fotos aprovadas (no repositorio), e aponta o que mudou.
+   (Ate 12/10/2026 as aprovadas moravam em testes/fotos/, que as outras provas
+   usam de rascunho e o .gitignore ignora: elas venceram em setembro.)
 
    Nao entra no `npm run build`: build e para publicar, e navegador dentro do
    build de publicacao so atrasa deploy. Este roda antes de subir.
@@ -36,7 +38,8 @@ function pegarPlaywright() {
 const { chromium } = pegarPlaywright()
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
-const SAIDA = resolve(AQUI, 'atual')
+/* a pasta do kit e so dele: as outras provas tambem fotografam em testes/atual */
+const SAIDA = resolve(AQUI, 'atual', 'kit')
 
 const SITE = process.argv[2] || 'https://fourtimeos.arte-adc.workers.dev'
 
@@ -119,14 +122,9 @@ const TELAS = [
   ['/', 'inicio'],
   ['/clientes', 'clientes'],
   ['/cotacao', 'cotacao'],
-  /* o editor com uma cotacao de exemplo. O numero e sempre o mesmo porque a
-     base de exemplo nasce do mesmo molde toda vez */
-  ['/cotacao/CT20260183', 'cotacao-editor'],
-  ['/cotacao/CT20260183/folha', 'cotacao-folha'],
-  /* uma cotacao ja aprovada: e o unico jeito de a trava aparecer na foto */
-  ['/cotacao/CT20260182', 'cotacao-aprovada'],
+  /* o editor e a folha tem a prova deles, com cotacao de verdade no banco de
+     mentira (npm run orcamento); aqui ficavam ids de antes do banco */
   ['/funil', 'funil'],
-  /* a ficha de producao: o editor da v3.375 no visual novo */
 ]
 
 async function main() {
@@ -274,7 +272,15 @@ async function main() {
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
       )
       if (rolando) {
-        console.log('  ' + rota + ' rola para o lado em ' + nome)
+        const culpados = await p.evaluate(() => {
+          const w = document.documentElement.clientWidth
+          return [...document.querySelectorAll('body *')]
+            .filter((e) => e.getBoundingClientRect().right > w + 1 && getComputedStyle(e).position !== 'fixed')
+            .filter((e) => ![...e.children].some((f) => f.getBoundingClientRect().right > w + 1))
+            .slice(0, 5)
+            .map((e) => e.tagName.toLowerCase() + '.' + [...e.classList].join('.') + ' ' + Math.round(e.getBoundingClientRect().right))
+        })
+        console.log('  ' + rota + ' rola para o lado em ' + nome + ': ' + culpados.join(' | '))
         erros++
       }
     }
@@ -282,7 +288,7 @@ async function main() {
   }
 
   await navegador.close()
-  console.log('fotos tiradas em testes/atual')
+  console.log('fotos tiradas em testes/atual/kit')
   if (erros) {
     console.log('x ' + erros + ' problema(s) antes mesmo de comparar')
     process.exit(1)

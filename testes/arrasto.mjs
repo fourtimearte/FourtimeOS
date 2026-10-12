@@ -15,7 +15,10 @@
    quase nunca esta na tela. Sem o auto-rolar, arrastar so funcionava para a
    coluna do lado.
 
-   Uso:  node testes/arrasto.mjs
+   Desde 12/10/2026 ele REPROVA (antes so imprimia), e a rota da sublimacao
+   e a do banco (024: o corte da subli e o Futurize).
+
+   Uso:  node testes/arrasto.mjs [endereco]
    ========================================================================== */
 
 import { createRequire } from 'node:module'
@@ -33,7 +36,7 @@ const permissoes = {}; PAGINAS.forEach(k => permissoes[k] = {ver:true,editar:tru
 const PERFIL = [{ id:'1', nome:'Henrique', papel:'admin', situacao:'aprovado', paineis:PAGINAS, permissoes, email:'t@f', foto_em:null }]
 const ROTAS = []
 const põe = (t, postos) => postos.forEach((p,i) => ROTAS.push({tecnica:t, ordem:(i+1)*10, posto:p}))
-põe('subli', ['subli','calandra','corte','conferencia','cd-costura','costura','embalagem','finalizado'])
+põe('subli', ['subli','calandra','futurize','conferencia','cd-costura','costura','embalagem','finalizado'])
 põe('dtf', ['corte','dtf','prensa','conferencia','cd-costura','costura','embalagem','finalizado'])
 const ha = (d) => new Date(Date.now() - d*86400000).toISOString()
 let FATIAS = [
@@ -51,6 +54,8 @@ const TAGS = [
   { chave:'falta_tecido', nome:'falta tecido', tom:'vermelha', em_todo_posto:true, ordem:20, ativa:true },
 ]
 const TAGS_POSTO = [{ tag:'montagem', posto:'dtf' }, { tag:'montagem', posto:'subli' }]
+const achados = []
+const conta = (certo, texto) => { achados.push(certo); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 const nav = await chromium.launch()
 const ctx = await nav.newContext({ viewport:{width:1440,height:1000}, reducedMotion:'reduce' })
 let patches = []
@@ -102,7 +107,7 @@ const onde = async (numero) => pg.evaluate((n) => {
   return c ? c.closest('[data-posto]').dataset.posto : null
 }, numero)
 
-console.log('antes:', 'PD-0401 em', await onde('PD-0401'))
+conta(await onde('PD-0401') === 'subli', 'antes: PD-0401 em subli')
 
 // ---- 1. o Terminei empurra para o proximo posto da rota, com confirmacao ----
 // O TERMINEI NUNCA E UM TOQUE SO: ele abre a conferencia, e so o segundo
@@ -127,15 +132,14 @@ const conferencia = await pg.evaluate(() => {
     botao: [...d.querySelectorAll('button')].map(b => b.textContent.trim()).join(' | '),
   }
 })
-console.log('terminei: abriu a conferencia =', conferencia.aberto,
-  '| ok', conferencia.ok, 'atencao', conferencia.atencao, 'nota', conferencia.nota)
-console.log('terminei: o cartao NAO andou antes de confirmar =', semConfirmar === 'corte')
+conta(conferencia.aberto && conferencia.ok === 1 && conferencia.atencao === 1 && conferencia.nota === 1, 'terminei: abre a conferencia com os tres tons (' + JSON.stringify(conferencia) + ')')
+conta(semConfirmar === 'corte', 'terminei: o cartao NAO anda antes de confirmar')
 await pg.evaluate(() => {
   const d = document.querySelector('dialog[open]')
   ;[...d.querySelectorAll('button')].find(b => /Terminar assim mesmo|Sim, terminei/.test(b.textContent)).click()
 })
 await pg.waitForTimeout(900)
-console.log('seta:   PD-0402 foi para', await onde('PD-0402'), '| esperado dtf')
+conta(await onde('PD-0402') === 'dtf', 'terminei confirmado: PD-0402 vai para o proximo posto da rota (dtf)')
 
 // ---- 2. arrastar para uma coluna DA ROTA ----
 const cartao = await pg.evaluateHandle(() =>
@@ -165,7 +169,7 @@ for (let i = 0; i < 40 && !achou; i++) {
     return r.left > 0 && r.right < window.innerWidth
   })
 }
-console.log('auto-rolar: a calandra entrou na tela sozinha =', achou)
+conta(achou, 'auto-rolar: a calandra entra na tela sozinha')
 const destino = await pg.evaluate(() => {
   const r = document.querySelector('[data-posto="calandra"]').getBoundingClientRect()
   return [r.x + r.width/2, r.y + r.height/2]
@@ -175,9 +179,8 @@ await pg.waitForTimeout(200)
 const marcouAlvo = await pg.evaluate(() => !!document.querySelector('.kb-coluna.alvo'))
 await pg.mouse.up()
 await pg.waitForTimeout(900)
-console.log('arrasto: fantasma apareceu =', fantasma, '| colunas fora da rota apagadas =', apagadas,
-            '| coluna alvo acesa =', marcouAlvo)
-console.log('arrasto: PD-0401 foi para', await onde('PD-0401'), '| esperado calandra')
+conta(fantasma && apagadas > 0 && marcouAlvo, 'arrasto: o fantasma, as colunas fora da rota apagadas e a coluna alvo acesa (' + apagadas + ' apagadas)')
+conta(await onde('PD-0401') === 'calandra', 'arrasto: PD-0401 vai para a calandra')
 
 // ---- 3. arrastar para uma coluna FORA da rota nao move ----
 const c2 = await pg.evaluate(() => {
@@ -191,6 +194,9 @@ const fora = await pg.evaluate(() => {
 await pg.mouse.move(c2[0], c2[1]); await pg.mouse.down()
 await pg.mouse.move(fora[0], fora[1], {steps:10}); await pg.mouse.up()
 await pg.waitForTimeout(900)
-console.log('fora da rota: PD-0401 continua em', await onde('PD-0401'), '| esperado calandra')
-console.log('patches enviados ao banco:', JSON.stringify(patches))
+conta(await onde('PD-0402') === 'dtf', 'fora da rota: PD-0402 continua no dtf')
+conta(JSON.stringify(patches) === JSON.stringify([{ id: '2', etapa: 'dtf' }, { id: '1', etapa: 'calandra' }]), 'o banco so recebe as duas passagens certas (' + JSON.stringify(patches) + ')')
 await nav.close()
+const ruins = achados.filter((x) => !x).length
+console.log(`\n${achados.length - ruins} de ${achados.length} certos`)
+process.exit(ruins ? 1 : 0)

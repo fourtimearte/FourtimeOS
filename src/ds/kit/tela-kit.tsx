@@ -870,17 +870,20 @@ function SegmentadoDemo() {
       />
       {/* COMO ABAS DE COLUNA, com a conta de cada uma em miúdo (a lista do
           orçamento e a árvore das Fichas técnicas): o rótulo aceita mais que
-          texto, e a conta é um <small> dentro do botão */}
-      <Segmentado
-        valor={aba}
-        aoMudar={setAba}
-        opcoes={[
-          { valor: 'aberto', rotulo: <>Em aberto <small className="kit-conta">4</small></> },
-          { valor: 'aprovadas', rotulo: <>Aprovadas <small className="kit-conta">1</small></> },
-          { valor: 'perdidas', rotulo: <>Perdidas <small className="kit-conta">1</small></> },
-          { valor: 'todas', rotulo: <>Todas <small className="kit-conta">6</small></> },
-        ]}
-      />
+          texto, e a conta é um <small> dentro do botão. No celular ele não
+          cabe: rola dentro da própria faixa, como na página Clientes */}
+      <div className="kit-rolo">
+        <Segmentado
+          valor={aba}
+          aoMudar={setAba}
+          opcoes={[
+            { valor: 'aberto', rotulo: <>Em aberto <small className="kit-conta">4</small></> },
+            { valor: 'aprovadas', rotulo: <>Aprovadas <small className="kit-conta">1</small></> },
+            { valor: 'perdidas', rotulo: <>Perdidas <small className="kit-conta">1</small></> },
+            { valor: 'todas', rotulo: <>Todas <small className="kit-conta">6</small></> },
+          ]}
+        />
+      </div>
     </>
   )
 }

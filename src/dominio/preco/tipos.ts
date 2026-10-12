@@ -238,3 +238,152 @@ export function tabelasParaEscolher(todas: TabelaDePreco[], souGerente: boolean)
     .filter((t) => t.situacao === 'ativa' && (!t.soGerente || souGerente))
     .sort((a, b) => Number(b.padrao) - Number(a.padrao) || a.nome.localeCompare(b.nome, 'pt-BR'))
 }
+
+/* --- as faixas, escritas pelo fim (prancha 141, 12/10/2026) ---------------------
+   Quem monta as faixas escreve o começo da primeira e onde cada uma ACABA; a
+   seguinte começa no número depois, sem buraco e sem peça sobrando, e a
+   última é sempre "ou mais". */
+export const MAXIMO_DE_FAIXAS = 8
+
+export const MODELOS_DE_FAIXAS: { nome: string; faixas: Faixa[] }[] = [
+  { nome: 'Do chat da loja', faixas: FAIXAS_PADRAO },
+  {
+    nome: '1 a 30, 31 a 100, 101 ou mais',
+    faixas: [
+      { de: 1, ate: 30 },
+      { de: 31, ate: 100 },
+      { de: 101, ate: null },
+    ],
+  },
+  { nome: 'Uma faixa só', faixas: [{ de: 1, ate: null }] },
+]
+
+/** Monta as faixas pelo começo da primeira e pelo fim de cada uma (a última sem fim). */
+export function faixasDosFins(primeira: number, fins: number[]): Faixa[] {
+  const out: Faixa[] = []
+  let de = Math.max(1, Math.round(primeira))
+  for (const fim of fins) {
+    out.push({ de, ate: Math.round(fim) })
+    de = Math.round(fim) + 1
+  }
+  out.push({ de, ate: null })
+  return out
+}
+
+/** O que está errado nas faixas, numa frase; vazio quando estão certas. */
+export function conferirFaixas(faixas: Faixa[]): string {
+  if (!faixas.length) return 'A tabela precisa de pelo menos uma faixa.'
+  if (faixas.length > MAXIMO_DE_FAIXAS) return `No máximo ${MAXIMO_DE_FAIXAS} faixas.`
+  if (faixas[0].de < 1) return 'A primeira faixa começa em 1 peça ou mais.'
+  for (let i = 0; i < faixas.length; i++) {
+    const f = faixas[i]
+    const ultima = i === faixas.length - 1
+    if (ultima ? f.ate != null : f.ate == null) return 'Só a última faixa é "ou mais".'
+    if (f.ate != null && f.ate < f.de) return `A faixa ${i + 1} acaba antes de começar (${f.de} a ${f.ate}).`
+    if (i > 0 && f.de !== (faixas[i - 1].ate ?? 0) + 1) return `A faixa ${i + 1} tem de começar logo depois da anterior.`
+  }
+  return ''
+}
+
+/* Trocar as faixas de uma tabela que já tem preço: a base fica; o escrito à
+   mão só fica na faixa que continua igual (mesmo começo e mesmo fim). */
+export function trocarFaixas(t: TabelaDePreco, novas: Faixa[]): TabelaDePreco {
+  const igual = (a: Faixa, b: Faixa) => a.de === b.de && a.ate === b.ate
+  return {
+    ...t,
+    faixas: novas.map((f) => ({ ...f })),
+    itens: t.itens.map((it) => ({
+      ...it,
+      precos: novas.map((f) => {
+        const j = t.faixas.findIndex((v) => igual(v, f))
+        return j >= 0 ? (it.precos[j] ?? null) : null
+      }),
+    })),
+  }
+}
+
+/* --- pôr, tirar e preencher muitas de uma vez (pranchas 140 e 142) ---------------- */
+export type EntradaDoCatalogo = { codigo: string; tipo: TipoDoItem }
+
+/** Põe na tabela o que ainda não está, com a base (ou sem). Não mexe no que já está. */
+export function porNaTabela(t: TabelaDePreco, entradas: EntradaDoCatalogo[], base: number | null = null): TabelaDePreco {
+  const tem = new Set(t.itens.map((i) => i.codigo))
+  const novos = entradas
+    .filter((e) => !tem.has(e.codigo))
+    .filter((e, i, a) => a.findIndex((x) => x.codigo === e.codigo) === i)
+    .map((e) => ({ codigo: e.codigo, tipo: e.tipo, base, precos: t.faixas.map(() => null) }))
+  return novos.length ? { ...t, itens: [...t.itens, ...novos] } : t
+}
+
+export function tirarDaTabela(t: TabelaDePreco, codigos: string[]): TabelaDePreco {
+  return { ...t, itens: t.itens.filter((i) => !codigos.includes(i.codigo)) }
+}
+
+/** O mesmo preço base para várias; quem ainda não está na tabela entra. */
+export function escreverBase(t: TabelaDePreco, entradas: EntradaDoCatalogo[], valor: number): TabelaDePreco {
+  const com = porNaTabela(t, entradas)
+  const cods = new Set(entradas.map((e) => e.codigo))
+  return { ...com, itens: com.itens.map((i) => (cods.has(i.codigo) ? { ...i, base: valor } : i)) }
+}
+
+/* Copia de outra tabela a base e o escrito à mão das peças pedidas, com o
+   ajuste em por cento. O escrito à mão só vem quando as faixas são as mesmas;
+   peça que a outra tabela não tem não muda. */
+export function copiarPrecosDe(
+  t: TabelaDePreco,
+  origem: TabelaDePreco,
+  codigos: string[],
+  pct: number,
+  modo: Arredondar,
+): TabelaDePreco {
+  const mesmas = JSON.stringify(t.faixas) === JSON.stringify(origem.faixas)
+  const f = (v: number | null) => (v == null ? null : arredondar(v * (1 + pct / 100), modo))
+  const daOrigem = new Map(origem.itens.filter((i) => codigos.includes(i.codigo)).map((i) => [i.codigo, i]))
+  const com = porNaTabela(t, [...daOrigem.values()].map((i) => ({ codigo: i.codigo, tipo: i.tipo })))
+  return {
+    ...com,
+    itens: com.itens.map((i) => {
+      const o = daOrigem.get(i.codigo)
+      if (!o) return i
+      return { ...i, base: f(o.base), precos: mesmas ? o.precos.map(f) : t.faixas.map(() => null) }
+    }),
+  }
+}
+
+/** "R$ 1.234,56", "49,9", "49.90" viram número; vazio vira null; o resto, NaN. */
+export function numeroDoTexto(texto: string): number | null {
+  const s = texto.replace(/[^\d,.-]/g, '')
+  if (!s) return null
+  const limpo = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s
+  return Number(limpo)
+}
+
+/* COLAR DA PLANILHA: a coluna (ou o bloco) copiado começa na célula onde se
+   colou e desce pelas linhas à vista, na ordem da tela; colunas a mais vão
+   para as faixas do lado. Quem não estava na tabela entra. */
+export function colarNaTabela(
+  t: TabelaDePreco,
+  linhas: EntradaDoCatalogo[],
+  linha: number,
+  faixa: number,
+  texto: string,
+): { tabela: TabelaDePreco; coladas: number } {
+  const matriz = texto
+    .replace(/\r/g, '')
+    .split('\n')
+    .filter((l, i, a) => l.trim() !== '' || i < a.length - 1)
+    .map((l) => l.split('\t').map(numeroDoTexto))
+  let out = t
+  let coladas = 0
+  matriz.forEach((cols, dr) => {
+    const alvo = linhas[linha + dr]
+    if (!alvo) return
+    cols.forEach((v, dc) => {
+      const k = faixa + dc
+      if (k >= t.faixas.length || (v != null && (!Number.isFinite(v) || v < 0))) return
+      out = escrever(porNaTabela(out, [alvo]), alvo.codigo, k, v)
+      coladas++
+    })
+  })
+  return { tabela: out, coladas }
+}

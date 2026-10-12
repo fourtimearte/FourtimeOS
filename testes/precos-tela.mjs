@@ -50,9 +50,9 @@ const nav = await chromium.launch()
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
-async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false }) {
+async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false, tabelas = null }) {
   const ctx = await nav.newContext({ viewport: { width: larg, height: alt }, reducedMotion: 'reduce', hasTouch: larg < 1024 })
-  const estado = { tabelas: tabelasIniciais(), gravado: null, criado: null, padrao: null }
+  const estado = { tabelas: tabelas ?? tabelasIniciais(), gravado: null, criado: null, padrao: null }
   await ctx.route('**supabase.co/**', async (r) => {
     const req = r.request(); const u = req.url(); const m = req.method()
     let corpo = []
@@ -92,7 +92,7 @@ async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false }) {
 
 const celulas = (pg, cod) => pg.evaluate((c) => {
   const tr = [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === c)
-  return tr ? [...tr.querySelectorAll('td .pr-v')].map((b) => b.textContent.trim() + (b.className.includes('pr-v-mao') ? '*' : b.className.includes('pr-v-regra') ? '~' : b.className.includes('pr-v-kit') ? 'k' : '')) : []
+  return tr ? [...tr.querySelectorAll('td .pr-pc')].map((b) => b.textContent.trim() + (b.className.includes('pr-pc-mao') ? '*' : b.className.includes('pr-pc-regra') ? '~' : b.className.includes('pr-pc-kit') ? 'k' : '')) : []
 }, cod)
 
 for (const tema of ['light', 'dark']) {
@@ -110,12 +110,12 @@ for (const tema of ['light', 'dark']) {
     conta(ct2[1] === '48,90*', `${T} o escrito à mão aparece com ponto (${ct2.join(' ')})`)
     conta(kt[0] === '82,90k', `${T} o kit sem base vem pela soma das peças menos 8% (${kt.join(' ')})`)
     const grupos = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tr.pr-grupo td')].map((t) => t.textContent))
-    conta(grupos.join() === 'Camisetas,Shorts,Kits', `${T} a grade agrupa como a ficha técnica, kits no fim (${grupos.join(', ')})`)
+    conta(grupos.join() === 'CAMCamisetas,SHOShorts,KITKits', `${T} a grade agrupa como a ficha técnica, kits no fim (${grupos.join(', ')})`)
     await pg.screenshot({ path: `${PASTA}/precos-${tema}-${nome}.png`, fullPage: true })
 
     if (tema === 'light' && nome === 'computador') {
       /* escrever numa celula: a primeira faixa vira a base e a regra segue */
-      await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === 'CT01').querySelector('td .pr-v').click())
+      await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === 'CT01').querySelector('td .pr-pc').click())
       await pg.keyboard.press('Control+a'); await pg.keyboard.type('59,90'); await pg.keyboard.press('Enter')
       await pg.waitForTimeout(200)
       const novo = await celulas(pg, 'CT01')
@@ -181,7 +181,7 @@ for (const tema of ['light', 'dark']) {
   const v = await pg.evaluate(() => ({
     nova: [...document.querySelectorAll('button')].some((b) => /Nova tabela/.test(b.innerText)),
     salvar: [...document.querySelectorAll('button')].some((b) => /^Salv/.test(b.innerText.trim())),
-    celulaTravada: document.querySelector('.pr-grade td .pr-v')?.disabled ?? false,
+    celulaTravada: document.querySelector('.pr-grade td .pr-pc')?.disabled ?? false,
   }))
   conta(!v.nova && !v.salvar && v.celulaTravada, 'vendedora: vê a tabela, sem Nova tabela, sem Salvar e com as células travadas')
   await ctx.close()
@@ -192,6 +192,132 @@ for (const tema of ['light', 'dark']) {
   await pg.waitForTimeout(800)
   const t = await pg.evaluate(() => document.querySelector('.pagina')?.innerText ?? '')
   conta(/migração 068/.test(t), 'antes da 068: a página diz o que falta, e não cai')
+  await ctx.close()
+}
+
+/* ==========================================================================
+   A REVISÃO DE 12/10/2026 (pranchas 139 a 143)
+   ========================================================================== */
+const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-grade [data-celula="${c}:0"]`), cod)
+{
+  const { ctx, pg, estado, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900 })
+  await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(800)
+  /* 139: a busca acha no catálogo o que a tabela não tem */
+  await pg.fill('.pr-ferr input[type=search]', 'regata')
+  await pg.waitForTimeout(200)
+  const fora = await pg.evaluate(() => [...document.querySelectorAll('.pr-fora-linha')].map((t) => t.innerText.replace(/\s+/g, ' ')))
+  conta(fora.length === 1 && /RG01/.test(fora[0]) && /Pôr na tabela/.test(fora[0]), '139: a busca acha no catálogo o que a tabela não tem, com Pôr na tabela (' + fora.join(' | ') + ')')
+  await pg.locator('.pr-fora-linha button', { hasText: 'Pôr na tabela' }).click()
+  await pg.fill('.pr-ferr input[type=search]', '')
+  await pg.waitForTimeout(200)
+  const rg = await celulas(pg, 'RG01')
+  const aviso = await pg.evaluate(() => document.querySelector('.pr-aviso')?.innerText ?? '')
+  const falta = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === 'RG01')?.querySelector('.pr-falta')?.textContent ?? '')
+  conta(rg.join() === 'R$ 0,00,da base,da base,da base' && /1 peça sem preço base/.test(aviso) && /falta o preço base/.test(falta), '139: sem base, o campo vazio, as faixas "da base", a linha avisa e o aviso conta (' + rg.join(' ') + ')')
+  await pg.locator('.pr-aviso button').click()
+  await pg.waitForTimeout(150)
+  const so = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody .pr-cod')].map((c) => c.textContent))
+  conta(so.join() === 'RG01', '139: "Mostrar só ela" deixa só a sem preço (' + so.join() + ')')
+  await pg.locator('.pr-aviso button').click()
+  /* digitar direto no campo: Enter grava e desce */
+  await pg.locator('[data-celula="RG01:0"]').click()
+  await pg.keyboard.type('44,90'); await pg.keyboard.press('Enter')
+  await pg.waitForTimeout(150)
+  const rg2 = await celulas(pg, 'RG01')
+  const abertoAgora = await pg.evaluate(() => document.querySelector('.pr-pc-campo')?.getAttribute('aria-label') ?? '')
+  conta(rg2[0] === '44,90' && rg2[1] === '40,90~' && abertoAgora !== '', '139: escrever a base no campo, e o Enter desce para a peça de baixo (' + rg2.join(' ') + ' · aberto: ' + abertoAgora + ')')
+  await pg.keyboard.press('Escape')
+  await pg.screenshot({ path: `${PASTA}/precos-139.png`, fullPage: true })
+
+  /* 141: mudar as faixas de uma tabela que já existe */
+  await pg.locator('aside button', { hasText: 'Mudar as faixas' }).click()
+  await pg.waitForTimeout(300)
+  await pg.locator('dialog[open] .chip', { hasText: '1 a 30, 31 a 100, 101 ou mais' }).click()
+  await pg.fill('dialog[open] input[aria-label="Fim da faixa 1"]', '25')
+  await pg.waitForTimeout(150)
+  const auto = await pg.evaluate(() => document.querySelector('dialog[open] .pr-fx-auto')?.textContent)
+  const previa = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .pr-chip')].map((c) => c.textContent).join(', '))
+  conta(auto === '26' && previa === '1 a 25, 26 a 100, 101 ou mais', '141: escrever onde a faixa acaba, e a seguinte começa sozinha (' + previa + ')')
+  await pg.screenshot({ path: `${PASTA}/precos-141.png` })
+  await pg.locator('dialog[open] button', { hasText: 'Usar estas faixas' }).click()
+  await pg.waitForTimeout(250)
+  const cab = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade thead th')].slice(2).map((t) => t.innerText.replace(/\s+/g, ' ')))
+  const ct2 = await celulas(pg, 'CT02')
+  conta(cab.join(' | ') === 'Preço base 1 a 25 peças | 26 a 100 peças | 101 ou mais peças' && ct2[0] === '54,90' && !ct2[1].includes('*'), '141: a grade troca de faixas, a base fica e o à mão da faixa que mudou volta para a regra (' + cab.join(' | ') + ' · ' + ct2.join(' ') + ')')
+
+  /* 140: adicionar agrupado (abre num contexto novo, com a tabela de antes) */
+  conta(!erros.length, 'revisão, lista: nenhum erro de JavaScript ' + erros.join(' | '))
+  await ctx.close()
+}
+{
+  const { ctx, pg, erros } = await abrir({ tema: 'dark', larg: 1440, alt: 900 })
+  await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(800)
+  await pg.locator('.pr-ferr button', { hasText: 'Adicionar referência ou kit' }).click()
+  await pg.waitForTimeout(300)
+  const grupos = await pg.evaluate(() => [...document.querySelectorAll('.pr-ad .pr-ad-gcab')].map((g) => g.innerText.replace(/\s+/g, ' ')))
+  conta(grupos.length === 2 && /CAM Camisetas 3 peças · 2 já na tabela/.test(grupos[0]), '140: os grupos da ficha técnica com o código e quantas já estão na tabela (' + grupos.join(' | ') + ')')
+  await pg.locator('.pr-ad .pr-ad-gcab').first().locator('input[type=checkbox]').evaluate((el) => el.click())
+  await pg.locator('.pr-ad .pr-ad-gcab').first().locator('.pr-ad-seta').click()
+  await pg.waitForTimeout(150)
+  const pecas = await pg.evaluate(() => [...document.querySelectorAll('.pr-ad .pr-ad-p')].map((p) => p.className + ':' + p.querySelector('.pr-cod').textContent))
+  conta(pecas.some((p) => /ja:CT01/.test(p)) && pecas.some((p) => /marcada:RG01/.test(p)), '140: marcar o grupo marca só o que falta; o que já está aparece apagado (' + pecas.join(' ') + ')')
+  await pg.fill('.pr-ad input[aria-label^="Preço base"]', '44,90')
+  await pg.screenshot({ path: `${PASTA}/precos-140.png` })
+  await pg.locator('.pr-ad button', { hasText: 'Pôr na tabela' }).click()
+  await pg.waitForTimeout(300)
+  const rg = await celulas(pg, 'RG01')
+  conta(rg[0] === '44,90' && (await pg.locator('.pr-ad').isVisible()) === false, '140: as marcadas entram com o preço base e o menu fecha (' + rg.join(' ') + ')')
+
+  /* 142: o modo tabela */
+  await pg.locator('.pr-ferr .seg button, .pr-ferr [role=radio]', { hasText: 'Tabela' }).first().click()
+  await pg.waitForTimeout(400)
+  conta(new URL(pg.url()).searchParams.get('modo') === 'tabela' && (await pg.locator('.pr-mt-tab').count()) === 1 && (await pg.locator('.pr-mesa').count()) === 0, '142: o modo tabela troca a página inteira e fica no endereço')
+  const linhas = await pg.evaluate(() => [...document.querySelectorAll('.pr-mt-tab tbody tr:not(.pr-mt-g)')].map((t) => t.querySelector('.pr-cod')?.textContent + ':' + (t.querySelector('[role=switch]')?.getAttribute('aria-checked') ?? '')))
+  conta(linhas.join() === 'CT01:true,CT02:true,RG01:true,SH01:true,KT01:true', '142: o catálogo inteiro, por grupo, com a chave Na tabela (' + linhas.join(' ') + ')')
+  await pg.locator('.pr-mt-tab tr', { hasText: 'RG01' }).locator('[role=switch]').click()
+  await pg.waitForTimeout(150)
+  await pg.locator('.pr-mt-filtros .chip', { hasText: 'Fora da tabela' }).click()
+  await pg.waitForTimeout(150)
+  const soFora = await pg.evaluate(() => [...document.querySelectorAll('.pr-mt-tab tbody .pr-cod')].map((c) => c.textContent))
+  conta(soFora.join() === 'RG01', '142: a chave tira da tabela, e o filtro Fora da tabela mostra só ela (' + soFora.join() + ')')
+  await pg.locator('.pr-mt-filtros .chip', { hasText: 'Todas' }).click()
+  await pg.locator('.pr-mt-tab tr.pr-mt-g', { hasText: 'Camisetas' }).locator('input[type=checkbox]').evaluate((el) => el.click())
+  await pg.waitForTimeout(150)
+  await pg.fill('.pr-mt-lote input[aria-label="Preço base das marcadas"]', '47,90')
+  await pg.locator('.pr-mt-lote button', { hasText: /Aplicar nas 3/ }).click()
+  await pg.waitForTimeout(200)
+  const bases = await pg.evaluate(() => ['CT01', 'CT02', 'RG01'].map((c) => document.querySelector(`[data-celula="${c}:0"]`)?.textContent))
+  conta(bases.join() === '47,90,47,90,47,90', '142: marcar o grupo e dar o mesmo preço base às 3, pondo de volta a que estava fora (' + bases.join(' ') + ')')
+  await pg.screenshot({ path: `${PASTA}/precos-142.png`, fullPage: true })
+  /* colar da planilha numa célula: desce pelas peças à vista */
+  await pg.locator('[data-celula="CT02:0"]').click()
+  await pg.evaluate(() => {
+    const dt = new DataTransfer(); dt.setData('text/plain', '50\n60,5\t55')
+    document.querySelector('.pr-pc-campo').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+  })
+  await pg.waitForTimeout(250)
+  const col = await pg.evaluate(() => ['CT02:0', 'RG01:0', 'RG01:1'].map((c) => document.querySelector(`[data-celula="${c}"]`)?.textContent))
+  conta(col.join() === '50,00,60,50,55,00', '142: colar da planilha preenche para baixo e para o lado (' + col.join(' ') + ')')
+  conta(!erros.length, 'revisão, adicionar e modo tabela: nenhum erro de JavaScript ' + erros.join(' | '))
+  await ctx.close()
+}
+{
+  /* 143: a tabela nova não nasce em branco */
+  const vazia = [{ id: 'T7', nome: 'Parceiro Goiás', situacao: 'rascunho', padrao: false, vale_ate: null, so_gerente: false, faixas: FAIXAS, regras: REGRAS, itens: [], observacao: '', teste: true, atualizado_em: new Date().toISOString() },
+    ...tabelasIniciais()]
+  const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900, tabelas: vazia })
+  await pg.goto(SITE + '/tabelas?t=T7', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(800)
+  const ops = await pg.evaluate(() => [...document.querySelectorAll('.pr-comeco .pr-op b')].map((b) => b.textContent))
+  conta(ops.join() === 'Escolher no catálogo,Modo tabela,Copiar de outra tabela', '143: três jeitos de começar (' + ops.join(', ') + ')')
+  await pg.screenshot({ path: `${PASTA}/precos-143.png`, fullPage: true })
+  await pg.locator('.pr-comeco .pr-op', { hasText: 'Copiar de outra tabela' }).locator('button', { hasText: 'Copiar' }).click()
+  await pg.waitForTimeout(250)
+  const n = await pg.evaluate(() => document.querySelectorAll('.pr-grade tbody .pr-cod').length)
+  conta(n === 4, '143: copiar da padrão traz as 4 peças (' + n + ')')
+  conta(!erros.length, 'revisão, tabela nova: nenhum erro de JavaScript ' + erros.join(' | '))
   await ctx.close()
 }
 

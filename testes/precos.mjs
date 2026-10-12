@@ -5,6 +5,7 @@
 import {
   arredondar, celula, faixaDe, precoDoTamanho, ajustarEmLote, voltarParaARegra,
   escrever, copiarDe, tabelaEmBranco, tabelasParaEscolher, nomeDaFaixa,
+  faixasDosFins, conferirFaixas, trocarFaixas, porNaTabela, tirarDaTabela, escreverBase, copiarPrecosDe, numeroDoTexto, colarNaTabela,
 } from './compilado/preco/tipos.js'
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
@@ -105,6 +106,32 @@ console.log('a tabela dentro da cotação')
   ok(aplicarTabelas(semRef, tabelas, ctx.pecasDoKit) === semRef && origemDoPreco(semRef, semRef.produtos[0], tabelas) === null, 'referência fora da tabela: nada muda')
   const aprovada = { ...cot, aprovacao: { quando: '2026-10-12', pedido: '1', quem: 'x' } }
   ok(aplicarTabelas(aprovada, tabelas, ctx.pecasDoKit) === aprovada, 'cotação aprovada não muda de preço')
+}
+
+console.log('as faixas pelo fim, e pôr e preencher muitas de uma vez (139 a 143)')
+{
+  const fx = faixasDosFins(1, [30, 100])
+  ok(fx.map(nomeDaFaixa).join() === '1 a 30,31 a 100,101 ou mais' && conferirFaixas(fx) === '', 'escrever só o fim: 1 a 30, 31 a 100, 101 ou mais')
+  ok(conferirFaixas([{ de: 10, ate: 5 }, { de: 6, ate: null }]) !== '' && conferirFaixas([{ de: 1, ate: 30 }, { de: 35, ate: null }]) !== '' && conferirFaixas([{ de: 1, ate: 30 }]) !== '', 'acusa faixa ao contrário, buraco e última com fim')
+  const base = { ...tabelaEmBranco('T'), itens: [{ codigo: 'A', tipo: 'referencia', base: 50, precos: [null, 44, null, 30] }] }
+  const tr = trocarFaixas(base, [{ de: 10, ate: 20 }, { de: 21, ate: 60 }, { de: 61, ate: null }])
+  ok(tr.itens[0].base === 50 && tr.itens[0].precos.join() === ',,' && tr.faixas.length === 3, 'trocar as faixas: a base fica, o à mão de faixa que mudou sai')
+  const tr2 = trocarFaixas(base, [{ de: 10, ate: 20 }, { de: 21, ate: 50 }, { de: 51, ate: null }])
+  ok(tr2.itens[0].precos[1] === 44 && tr2.itens[0].precos[2] === null, 'a faixa que continua igual guarda o escrito à mão')
+  const pos = porNaTabela(base, [{ codigo: 'A', tipo: 'referencia' }, { codigo: 'B', tipo: 'referencia' }, { codigo: 'B', tipo: 'referencia' }, { codigo: 'K', tipo: 'kit' }], 40)
+  ok(pos.itens.length === 3 && pos.itens[0].base === 50 && pos.itens[1].base === 40 && pos.itens[2].tipo === 'kit' && pos.itens[1].precos.length === 4, 'pôr na tabela: o que já está fica igual, sem repetir, com a base')
+  ok(tirarDaTabela(pos, ['B', 'K']).itens.map((i) => i.codigo).join() === 'A', 'tirar da tabela')
+  const eb = escreverBase(base, [{ codigo: 'A', tipo: 'referencia' }, { codigo: 'C', tipo: 'referencia' }], 47.9)
+  ok(eb.itens.length === 2 && eb.itens.every((i) => i.base === 47.9) && eb.itens[0].precos[1] === 44, 'a mesma base para várias, pondo quem faltava, sem apagar o à mão')
+  const origem = { ...tabelaEmBranco('O'), itens: [{ codigo: 'A', tipo: 'referencia', base: 60, precos: [null, 50, null, null] }, { codigo: 'D', tipo: 'referencia', base: 30, precos: [null, null, null, null] }] }
+  const cp = copiarPrecosDe(base, origem, ['A', 'D', 'X'], 10, '90')
+  ok(cp.itens.find((i) => i.codigo === 'A').base === 65.9 && cp.itens.find((i) => i.codigo === 'A').precos[1] === 54.9 && cp.itens.find((i) => i.codigo === 'D').base === 32.9 && !cp.itens.some((i) => i.codigo === 'X'),
+    'copiar de outra tabela com mais 10%: base e à mão, quem faltava entra, o que a outra não tem fica de fora')
+  ok(numeroDoTexto('R$ 1.234,56') === 1234.56 && numeroDoTexto('49,9') === 49.9 && numeroDoTexto('49.90') === 49.9 && numeroDoTexto('') === null && Number.isNaN(numeroDoTexto('-')), 'o número escrito de qualquer jeito')
+  const linhasC = [{ codigo: 'A', tipo: 'referencia' }, { codigo: 'B', tipo: 'referencia' }, { codigo: 'C', tipo: 'referencia' }]
+  const col = colarNaTabela(base, linhasC, 1, 0, '39,90\t35\n42,90\n')
+  ok(col.coladas === 3 && col.tabela.itens.find((i) => i.codigo === 'B').base === 39.9 && col.tabela.itens.find((i) => i.codigo === 'B').precos[1] === 35 && col.tabela.itens.find((i) => i.codigo === 'C').base === 42.9 && col.tabela.itens.find((i) => i.codigo === 'A').base === 50,
+    'colar da planilha: começa na linha onde colou, desce, a segunda coluna vai para a faixa do lado, e quem faltava entra')
 }
 
 console.log(ruins ? `\n${ruins} RUINS` : '\ntabelas de preço: tudo certo')

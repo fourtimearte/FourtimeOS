@@ -270,61 +270,6 @@
   color: var(--text);
 }
 
-/* a celula: botao que abre o campo */
-.pr-v {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--re-2);
-  min-width: 96px;
-  height: 34px;
-  padding: 0 var(--re-5);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-}
-button.pr-v:not(:disabled) {
-  cursor: text;
-}
-button.pr-v:not(:disabled):hover {
-  border-color: var(--border-2);
-  background: var(--surface);
-}
-button.pr-v:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
-}
-.pr-v-regra,
-.pr-v-kit {
-  color: var(--text-3);
-}
-.pr-v-vazio {
-  color: var(--text-3);
-}
-.pr-v-base {
-  font-weight: 600;
-}
-.pr-v-mao {
-  font-weight: 600;
-}
-.pr-v-mao::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--warn);
-}
-.pr-v-campo {
-  width: 104px;
-  border: 2px solid var(--ring);
-  background: var(--surface);
-  font-weight: 600;
-  text-align: right;
-}
 .pr-pe {
   margin: 0;
   padding: var(--re-6) var(--re-9);
@@ -352,9 +297,9 @@ button.pr-v:focus-visible {
   align-items: center;
   gap: var(--gap-dentro);
 }
-.pr-leg .pr-v {
-  min-width: 72px;
-  height: 26px;
+.pr-leg .pr-pc {
+  width: 84px;
+  height: 28px;
   font-size: 12.5px;
 }
 
@@ -380,28 +325,10 @@ button.pr-v:focus-visible {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.pr-chip-x {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.pr-chip-x:hover {
-  background: var(--surface-3);
-  color: var(--text);
-}
-.pr-chip-x:focus-visible {
-  outline: 2px solid var(--on-ink);
-}
-.pr-faixa-nova {
-  width: 110px;
-}
+
+
+
+
 
 /* --- a pagina de imprimir (o papel mora em papel.css) --- */
 .pr-imp {
@@ -440,13 +367,549 @@ button.pr-v:focus-visible {
   }
 }
 @media (pointer: coarse) {
-  .pr-v {
+  .pr-pc {
     height: 44px;
   }
 }
 
-/* o campo da faixa nova e curto: cabe um numero */
-.pr-nova .pr-faixa-nova {
-  width: 110px;
+
+/* ==========================================================================
+   A REVISÃO DE 12/10/2026 (pranchas 139 a 143)
+   ========================================================================== */
+
+/* --- o campo do preço: sempre à vista (campo.tsx) --------------------------- */
+.pr-pc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--re-3);
+  width: 100px;
+  height: 34px;
+  padding: 0 var(--re-5);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+button.pr-pc:not(:disabled) {
+  cursor: text;
+}
+button.pr-pc:not(:disabled):hover {
+  border-color: var(--text-3);
+}
+button.pr-pc:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.pr-pc-base,
+.pr-pc-mao {
+  font-weight: 600;
+}
+.pr-pc-regra,
+.pr-pc-kit {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.pr-pc-mao::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-right: auto;
+  border-radius: var(--radius-pill);
+  background: var(--warn);
+}
+.pr-pc-vazio {
+  justify-content: flex-start;
+  border: 1.5px dashed var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pr-pc-dabase,
+.pr-pc-fora {
+  justify-content: center;
+  border: 1px dashed var(--border-2);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.pr-pc-fora {
+  border-color: var(--border);
+}
+.pr-pc-campo {
+  border: 2px solid var(--ring);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+  font-weight: 600;
+  text-align: right;
+}
+.pr-pc-campo:focus-visible {
+  outline: none;
+}
+/* a coluna do preço base, destacada */
+.pr-grade th.pr-col-base {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.pr-grade td.pr-col-base {
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+}
+.pr-grade tr.pr-marcada td.pr-col-base {
+  background: var(--brand-soft);
+}
+.pr-falta {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-colado);
+  margin-top: var(--re-1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+.pr-gcod {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  margin-right: var(--re-4);
+  padding: 0 var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.pr-gcod.ligado {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.pr-grade tr.pr-sep td {
+  height: 44px;
+  padding-left: var(--re-9);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-2);
+}
+.pr-grade tr.pr-fora-linha td.pr-nm b {
+  color: var(--text-2);
+}
+.pr-grade td.pr-fora-acao {
+  text-align: left;
+}
+.pr-aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  margin: var(--re-6) var(--re-9) 0;
+  padding: var(--re-5) var(--re-7);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+.pr-aviso > span {
+  flex: 1;
+  min-width: 0;
+}
+.pr-aviso > svg {
+  color: var(--brand-text);
+}
+.pr-ferr-fim {
+  margin-left: auto;
+}
+.pr-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.pr-titulo-rotulo {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  color: var(--text-3);
+  cursor: text;
+}
+.pr-titulo-rotulo .pr-titulo-campo {
+  border-color: var(--border);
+}
+.pr-chip-claro {
+  height: 30px;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+}
+.pr-alinha-inicio {
+  align-self: flex-start;
+}
+
+/* --- o editor das faixas (faixas.tsx) ------------------------------------------------ */
+.pr-fx {
+  gap: var(--sp-3);
+}
+.pr-fx-modelos .chip {
+  height: 32px;
+  font-size: 12.5px;
+}
+.pr-fx-caixa {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.pr-fx-l {
+  display: grid;
+  grid-template-columns: 70px 24px 92px 28px 110px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 52px;
+  padding: 0 var(--re-7);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.pr-fx-l > span {
+  color: var(--text-2);
+}
+.pr-fx-l b {
+  font-weight: 600;
+}
+.pr-fx-l .pr-fx-n {
+  width: 100%;
+  text-align: right;
+}
+.pr-fx-l .pr-fx-auto,
+.pr-fx-l .pr-fx-mais {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 36px;
+  padding: 0 var(--re-5);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pr-fx-l .pr-fx-mais {
+  justify-content: center;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-weight: 600;
+}
+.pr-fx-add {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+  flex-wrap: wrap;
+  padding: var(--re-5) var(--re-7);
+  background: var(--surface-2);
+}
+.pr-fx-erro {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+
+/* --- adicionar, agrupado (adicionar.tsx) ------------------------------------------------ */
+.pr-ad {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.pr-ad-topo {
+  gap: var(--gap-dentro);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.pr-ad-lista {
+  flex: 1;
+  min-height: 0;
+  max-height: 460px;
+  overflow-y: auto;
+}
+.pr-ad-gcab {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 48px;
+  padding: 0 var(--re-7) 0 var(--re-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 14px;
+}
+.pr-ad-gcab small,
+.pr-ad-p small {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.pr-ad-gcab .pr-gcod {
+  margin-right: 0;
+}
+.pr-ad-seta {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.pr-ad-seta.aberta {
+  transform: rotate(90deg);
+}
+.pr-ad-seta:focus-visible {
+  outline: 2px solid var(--ring);
+}
+.pr-ad-p {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 46px;
+  padding: 0 var(--re-7) 0 var(--sp-12);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.pr-ad-p b {
+  font-weight: 600;
+  min-width: 0;
+}
+.pr-ad-p.ja {
+  color: var(--text-3);
+  cursor: default;
+}
+.pr-ad-p.ja b {
+  font-weight: 500;
+  color: var(--text-3);
+}
+.pr-ad-p.marcada {
+  background: var(--brand-soft);
+}
+.pr-ad-pe {
+  padding: var(--re-6) var(--re-7);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+.pr-ad-pe .pr-ad-base {
+  width: 170px;
   flex: none;
+}
+.pr-ad-pe .btn-primario {
+  margin-left: auto;
+}
+
+/* --- o modo tabela (modo-tabela.tsx) ------------------------------------------------------ */
+.pr-mt-filtros {
+  padding: var(--re-6) var(--re-9) 0;
+}
+.pr-mt-filtros .chip small {
+  font-weight: 500;
+  opacity: 0.7;
+}
+.pr-mt-lote .pr-mt-div {
+  width: 1px;
+  height: 24px;
+  background: color-mix(in srgb, var(--on-ink) 25%, transparent);
+}
+.pr-mt-lote .pr-mt-x {
+  margin-left: auto;
+  color: var(--on-ink);
+}
+.pr-mt-dica {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: var(--re-6) var(--re-9);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-mt-dica kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--re-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pr-mt-tab th.pr-mt-na,
+.pr-mt-tab td.pr-mt-na,
+.pr-mt-tab th.pr-mt-st,
+.pr-mt-tab td.pr-mt-st {
+  text-align: left;
+}
+.pr-mt-tab tr.pr-mt-g td {
+  height: 46px;
+  background: var(--surface-2);
+  text-align: left;
+}
+.pr-mt-tab tr.pr-mt-g.fechada td {
+  background: var(--surface);
+}
+.pr-mt-tab tr.pr-mt-g b {
+  font-weight: 600;
+}
+.pr-mt-gconta {
+  margin-left: var(--re-5);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-mt-tab tr.pr-mt-g .pr-ad-seta {
+  margin-right: var(--re-3);
+  vertical-align: middle;
+}
+.pr-mt-tab tr.pr-mt-fora td.pr-nm b {
+  font-weight: 500;
+  color: var(--text-2);
+}
+.pr-mt-tab td.pr-mt-calc {
+  color: var(--text-3);
+}
+.pr-st {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.pr-st i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--text-3);
+}
+.pr-st-falta {
+  font-weight: 600;
+  color: var(--brand-text);
+}
+.pr-st-falta i {
+  background: var(--brand);
+}
+.pr-st-mao i {
+  background: var(--warn);
+}
+.pr-st-fora i {
+  border: 1px solid var(--text-3);
+  background: transparent;
+}
+
+/* --- a tabela nova, sem peça (prancha 143) ------------------------------------------------- */
+.pr-comeco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-8) var(--sp-6);
+  text-align: center;
+}
+.pr-comeco h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.pr-comeco-ic {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.pr-comeco-op {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  width: 100%;
+  max-width: 960px;
+  margin-top: var(--sp-2);
+  text-align: left;
+}
+.pr-op {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-dentro);
+  padding: var(--re-8);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.pr-op b {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pr-op-forte {
+  border: 2px solid var(--ink);
+  background: var(--surface-2);
+}
+@media (max-width: 899px) {
+  .pr-comeco-op {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pr-fx-l {
+    grid-template-columns: 60px 20px 72px 24px 88px 36px;
+  }
+  .pr-fx-l .pr-nota {
+    display: none;
+  }
+}
+.pr-mt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pr-ad-g {
+  display: flex;
+  flex-direction: column;
+}
+.pr-op .pr-lote-pct {
+  width: 80px;
+  flex: none;
+}
+/* no celular o modo tabela fica com o que se escreve: o nome, a chave e os
+   precos (que rolam dentro da caixa); o calculado e a dica saem */
+@media (max-width: 899px) {
+  .pr-mt-tab .pr-mt-calc,
+  .pr-mt-tab .pr-mt-st,
+  .pr-mt-dica {
+    display: none;
+  }
 }

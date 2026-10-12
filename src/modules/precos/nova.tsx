@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Botao, Campo, Entrada, Interruptor, Modal, Segmentado, Seletor, avisar } from '@ds'
+import { EditorDeFaixas } from './faixas'
 import {
   FAIXAS_PADRAO,
+  conferirFaixas,
   copiarDe,
-  nomeDaFaixa,
   tabelaEmBranco,
+  trocarFaixas,
   type Arredondar,
   type Faixa,
   type TabelaDePreco,
@@ -39,23 +41,16 @@ export function NovaTabela({
     const o = ativas.find((t) => t.padrao) ?? ativas[0]
     return (o?.faixas ?? FAIXAS_PADRAO).map((f) => ({ ...f }))
   })
-  const [novaFaixa, setNovaFaixa] = useState('')
   const [valeAte, setValeAte] = useState('')
   const [soGerente, setSoGerente] = useState(false)
   const [criando, setCriando] = useState(false)
-
-  /* as faixas sao os comecos: 10, 21, 51, 101. O fim de cada uma e o comeco da
-     seguinte menos um, e a ultima e "ou mais" */
-  const comecos = faixas.map((f) => f.de)
-  const deComecos = (cs: number[]): Faixa[] => {
-    const o = [...new Set(cs)].filter((n) => n > 0).sort((a, b) => a - b)
-    return o.map((de, i) => ({ de, ate: i < o.length - 1 ? o[i + 1] - 1 : null }))
-  }
 
   async function criar() {
     const n = nome.trim()
     if (!n) return avisar('Dê um nome para a tabela', 'warn')
     if (tabelas.some((t) => t.nome.trim().toLowerCase() === n.toLowerCase())) return avisar('Já existe uma tabela com esse nome', 'warn')
+    const erro = conferirFaixas(faixas)
+    if (erro) return avisar(erro, 'warn')
     let nova: TabelaDePreco
     if (comeco === 'copia') {
       const o = tabelas.find((t) => t.id === origem)
@@ -64,10 +59,8 @@ export function NovaTabela({
       if (!Number.isFinite(p)) return avisar('O ajuste é um número em por cento (0 copia igual)', 'warn')
       nova = copiarDe(o, n, p, arredondar)
       /* faixas diferentes das da origem: os itens ficam, e o escrito a mao
-         nas faixas sai, porque ele era de outra faixa */
-      if (JSON.stringify(o.faixas) !== JSON.stringify(faixas)) {
-        nova = { ...nova, faixas, itens: nova.itens.map((i) => ({ ...i, precos: faixas.map(() => null) })) }
-      }
+         so fica na faixa que continua igual */
+      if (JSON.stringify(o.faixas) !== JSON.stringify(faixas)) nova = trocarFaixas(nova, faixas)
     } else {
       nova = { ...tabelaEmBranco(n), faixas, regras: { ...tabelaEmBranco().regras, arredondar } }
     }
@@ -130,48 +123,8 @@ export function NovaTabela({
           </div>
         ) : null}
 
-        <Campo rotulo="Faixas de quantidade" dica="Cada faixa começa onde a anterior termina; a última é ‘ou mais’. As do chat da loja são 10, 21, 51 e 101.">
-          <div className="fileira">
-            {faixas.map((f) => (
-              <span key={f.de} className="pr-chip">
-                {nomeDaFaixa(f)}
-                {faixas.length > 1 ? (
-                  <button
-                    type="button"
-                    className="pr-chip-x"
-                    aria-label={'Tirar a faixa ' + nomeDaFaixa(f)}
-                    onClick={() => setFaixas(deComecos(comecos.filter((c) => c !== f.de)))}
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </span>
-            ))}
-            {faixas.length < 8 ? (
-              <span className="fileira miuda">
-                <Entrada
-                  className="pr-faixa-nova"
-                  inputMode="numeric"
-                  aria-label="Começo da faixa nova"
-                  placeholder="começa em"
-                  value={novaFaixa}
-                  onChange={(e) => setNovaFaixa(e.target.value.replace(/\D/g, ''))}
-                />
-                <Botao
-                  tom="contorno"
-                  tamanho="sm"
-                  onClick={() => {
-                    const n = Number(novaFaixa)
-                    if (!n) return
-                    setFaixas(deComecos([...comecos, n]))
-                    setNovaFaixa('')
-                  }}
-                >
-                  Faixa
-                </Botao>
-              </span>
-            ) : null}
-          </div>
+        <Campo rotulo="Faixas de quantidade" dica="Escreva só onde cada faixa ACABA: a seguinte começa no número depois, sozinha. Tab passa para o próximo campo.">
+          <EditorDeFaixas faixas={faixas} aoMudar={setFaixas} />
         </Campo>
 
         <div className="pr-2col">

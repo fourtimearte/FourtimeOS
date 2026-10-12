@@ -1,103 +1,70 @@
-import { useState } from 'react'
-import type { KeyboardEvent as EventoDeTecla, ReactNode } from 'react'
-import { Marcacao } from '@ds'
-import { formatarNumeroExato } from '@shared'
-import {
-  celula,
-  nomeDaFaixa,
-  type Contexto,
-  type ItemDaTabela,
-  type TabelaDePreco,
-} from '@dominio/preco'
+import type { ReactNode } from 'react'
+import { Plus, Warning } from '@phosphor-icons/react'
+import { Botao, Marcacao } from '@ds'
+import { celula, nomeDaFaixa, type Contexto, type TabelaDePreco } from '@dominio/preco'
+import { CampoDePreco, usarEdicao } from './campo'
+import type { LinhaDaGrade, PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
-   A GRADE DA TABELA (prancha 134): uma linha por referência ou kit, agrupada,
-   e uma coluna por faixa de quantidade.
+   A GRADE DA TABELA, NA LISTA (prancha 139): uma linha por referência ou kit
+   da tabela, agrupada como na ficha técnica (o código do grupo na caixa), e
+   uma coluna por faixa. A primeira é o PREÇO BASE, destacada. Todo preço é
+   um campo à vista (campo.tsx).
 
-   Em cinza o que veio da regra; com ponto o que foi escrito à mão; a
-   primeira faixa é a base, escrita por alguém. Clicar numa célula abre o
-   campo: Enter grava, Tab grava e vai para a faixa do lado, Esc desiste.
-   Apagar o número de uma faixa à mão devolve ela para a regra.
+   Com busca, embaixo vem o que o catálogo tem e a tabela não: "Fora desta
+   tabela", cada uma com Pôr na tabela. Era por isso que a busca parecia não
+   funcionar: ela só olhava dentro da tabela.
    ========================================================================== */
 
-/* a classe de cada origem, escrita inteira para a conferencia de ligacoes achar */
-const CLASSE_DA_ORIGEM = {
-  base: 'pr-v-base',
-  mao: 'pr-v-mao',
-  regra: 'pr-v-regra',
-  kit: 'pr-v-kit',
-  vazio: 'pr-v-vazio',
-} as const
-
-export type LinhaDaGrade = {
-  item: ItemDaTabela
-  nome: string
-  sub: string
-  grupo: string
-}
 
 export function GradeDaTabela({
   tabela,
   linhas,
+  fora,
+  busca,
   ctx,
   podeMexer,
   marcados,
   aoMarcar,
   aoEscrever,
+  aoColar,
+  aoPor,
 }: {
   tabela: TabelaDePreco
   linhas: LinhaDaGrade[]
+  /** o que a busca achou no catálogo e a tabela não tem */
+  fora: PecaDoCatalogo[]
+  busca: string
   ctx: Contexto
   podeMexer: boolean
   marcados: string[]
   aoMarcar: (codigos: string[]) => void
   aoEscrever: (codigo: string, faixa: number, valor: number | null) => void
+  aoColar: (codigos: string[], linha: number, faixa: number, texto: string) => void
+  aoPor: (p: PecaDoCatalogo) => void
 }) {
-  const [editando, setEditando] = useState<{ codigo: string; faixa: number } | null>(null)
-  const [texto, setTexto] = useState('')
+  const ordem = linhas.map((l) => l.item.codigo)
+  const edicao = usarEdicao({
+    ordem,
+    faixas: tabela.faixas.length,
+    valorDe: (cod, i) => {
+      const it = tabela.itens.find((x) => x.codigo === cod)
+      if (!it) return null
+      /* abrir mostra o que esta escrito: a base, ou o a mao da faixa */
+      return i === 0 ? it.base : (it.precos[i] ?? null)
+    },
+    aoEscrever,
+    aoColar: (cod, i, texto) => aoColar(ordem, ordem.indexOf(cod), i, texto),
+  })
 
-  const grupos: [string, LinhaDaGrade[]][] = []
+  const grupos: [string, string, LinhaDaGrade[]][] = []
   for (const l of linhas) {
     const g = grupos.find(([n]) => n === l.grupo)
-    if (g) g[1].push(l)
-    else grupos.push([l.grupo, [l]])
+    if (g) g[2].push(l)
+    else grupos.push([l.grupo, l.grupoCod, [l]])
   }
-  const todos = linhas.map((l) => l.item.codigo)
-  const marcouTodos = todos.length > 0 && todos.every((c) => marcados.includes(c))
-
-  function abrir(codigo: string, faixa: number, valor: number | null) {
-    if (!podeMexer) return
-    setEditando({ codigo, faixa })
-    setTexto(valor == null ? '' : formatarNumeroExato(valor))
-  }
-
-  function gravar(proxima?: number) {
-    if (!editando) return
-    const limpo = texto.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
-    const n = limpo === '' ? null : Number(limpo)
-    if (n === null || (Number.isFinite(n) && n >= 0)) aoEscrever(editando.codigo, editando.faixa, n)
-    if (proxima != null && proxima < tabela.faixas.length) {
-      const it = linhas.find((l) => l.item.codigo === editando.codigo)?.item
-      const v = it ? celula(tabela, it, proxima, ctx).valor : null
-      setEditando({ codigo: editando.codigo, faixa: proxima })
-      setTexto(v == null ? '' : formatarNumeroExato(v))
-      return
-    }
-    setEditando(null)
-  }
-
-  function tecla(e: EventoDeTecla<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      gravar()
-    } else if (e.key === 'Tab' && !e.shiftKey && editando) {
-      e.preventDefault()
-      gravar(editando.faixa + 1)
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      setEditando(null)
-    }
-  }
+  const marcouTodos = ordem.length > 0 && ordem.every((c) => marcados.includes(c))
+  const colunas = tabela.faixas.length + 2
 
   return (
     <div className="pr-rola">
@@ -105,29 +72,30 @@ export function GradeDaTabela({
         <thead>
           <tr>
             <th className="pr-ck-col">
-              {podeMexer ? (
+              {podeMexer && ordem.length ? (
                 <Marcacao
                   aria-label="Marcar todas"
                   checked={marcouTodos}
                   meio={!marcouTodos && marcados.length > 0}
-                  onChange={() => aoMarcar(marcouTodos ? [] : todos)}
+                  onChange={() => aoMarcar(marcouTodos ? [] : ordem)}
                 />
               ) : null}
             </th>
             <th className="pr-nm">Referência ou kit</th>
-            {tabela.faixas.map((f) => (
-              <th key={nomeDaFaixa(f)}>
-                {nomeDaFaixa(f)}
-                <small>peças</small>
+            {tabela.faixas.map((f, i) => (
+              <th key={nomeDaFaixa(f)} className={i === 0 ? 'pr-col-base' : ''}>
+                {i === 0 ? 'Preço base' : nomeDaFaixa(f)}
+                <small>{i === 0 ? nomeDaFaixa(f) + ' peças' : 'peças'}</small>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {grupos.map(([grupo, ls]) => (
-            <GrupoDaGrade key={grupo} grupo={grupo} colunas={tabela.faixas.length + 2}>
+          {grupos.map(([grupo, cod, ls]) => (
+            <GrupoDaGrade key={grupo} grupo={grupo} cod={cod} colunas={colunas}>
               {ls.map((l) => {
                 const marcado = marcados.includes(l.item.codigo)
+                const semBase = celula(tabela, l.item, 0, ctx).valor == null
                 return (
                   <tr key={l.item.codigo} className={marcado ? 'pr-marcada' : ''}>
                     <td className="pr-ck-col">
@@ -145,63 +113,73 @@ export function GradeDaTabela({
                       <span className="pr-cod">{l.item.codigo}</span>
                       <b>{l.nome}</b>
                       {l.sub ? <small>{l.sub}</small> : null}
+                      {semBase ? (
+                        <span className="pr-falta">
+                          <Warning size={14} />
+                          falta o preço base
+                        </span>
+                      ) : null}
                     </td>
-                    {tabela.faixas.map((f, i) => {
-                      const c = celula(tabela, l.item, i, ctx)
-                      const aberto = editando?.codigo === l.item.codigo && editando.faixa === i
-                      return (
-                        <td key={nomeDaFaixa(f)}>
-                          {aberto ? (
-                            <input
-                              className="pr-v pr-v-campo"
-                              autoFocus
-                              inputMode="decimal"
-                              aria-label={`${l.item.codigo}, ${nomeDaFaixa(f)} peças`}
-                              value={texto}
-                              onChange={(e) => setTexto(e.target.value)}
-                              onKeyDown={tecla}
-                              onBlur={() => gravar()}
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              className={'pr-v ' + CLASSE_DA_ORIGEM[c.origem]}
-                              disabled={!podeMexer}
-                              title={
-                                c.origem === 'mao'
-                                  ? 'Escrito à mão. Apague para voltar à regra.'
-                                  : c.origem === 'regra'
-                                    ? 'Da regra da tabela'
-                                    : c.origem === 'kit'
-                                      ? 'Soma das peças do kit, com o desconto do kit'
-                                      : c.origem === 'vazio'
-                                        ? 'Sem preço'
-                                        : 'A base, escrita por alguém'
-                              }
-                              onClick={() => abrir(l.item.codigo, i, c.valor)}
-                            >
-                              {c.valor == null ? '·' : formatarNumeroExato(c.valor)}
-                            </button>
-                          )}
-                        </td>
-                      )
-                    })}
+                    {tabela.faixas.map((f, i) => (
+                      <td key={nomeDaFaixa(f)} className={i === 0 ? 'pr-col-base' : ''}>
+                        <CampoDePreco
+                          codigo={l.item.codigo}
+                          faixa={i}
+                          celula={celula(tabela, l.item, i, ctx)}
+                          rotulo={`${l.item.codigo}, ${i === 0 ? 'preço base' : nomeDaFaixa(f) + ' peças'}`}
+                          podeMexer={podeMexer}
+                          edicao={edicao}
+                        />
+                      </td>
+                    ))}
                   </tr>
                 )
               })}
             </GrupoDaGrade>
           ))}
+          {fora.length ? (
+            <>
+              <tr className="pr-sep">
+                <td colSpan={colunas}>
+                  Fora desta tabela, com “{busca.trim()}” · {fora.length}
+                </td>
+              </tr>
+              {fora.map((p) => (
+                <tr key={p.codigo} className="pr-fora-linha">
+                  <td className="pr-ck-col" />
+                  <td className="pr-nm">
+                    <span className="pr-cod">{p.codigo}</span>
+                    <b>{p.nome}</b>
+                    {p.sub ? <small>{p.sub}</small> : null}
+                  </td>
+                  <td colSpan={colunas - 2} className="pr-fora-acao">
+                    {podeMexer ? (
+                      <Botao tom="contorno" tamanho="sm" onClick={() => aoPor(p)}>
+                        <Plus size={15} />
+                        Pôr na tabela
+                      </Botao>
+                    ) : (
+                      <span className="pr-nota">não está nesta tabela</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </>
+          ) : null}
         </tbody>
       </table>
     </div>
   )
 }
 
-function GrupoDaGrade({ grupo, colunas, children }: { grupo: string; colunas: number; children: ReactNode }) {
+function GrupoDaGrade({ grupo, cod, colunas, children }: { grupo: string; cod: string; colunas: number; children: ReactNode }) {
   return (
     <>
       <tr className="pr-grupo">
-        <td colSpan={colunas}>{grupo}</td>
+        <td colSpan={colunas}>
+          {cod ? <span className="pr-gcod">{cod}</span> : null}
+          {grupo}
+        </td>
       </tr>
       {children}
     </>

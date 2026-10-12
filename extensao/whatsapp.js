@@ -125,6 +125,32 @@
     return /^\d{12,13}$/.test(n) ? n : ''
   }
 
+  /* --- o tema do Fourtime OS dentro do WhatsApp ------------------------
+     As variaveis novas (--WDS-*) o whatsapp.css troca pela classe no html.
+     As antigas o WhatsApp troca pela classe "dark" do body, e o texto do
+     campo de escrever ainda usa uma delas: com o WhatsApp do vendedor em
+     escuro e o Fourtime OS em Gelo, ele saia branco no branco (12/10/2026).
+     Entao o body segue o tema da pagina, e volta a seguir se o WhatsApp
+     mexer nele de novo. */
+  let temaDaPagina = ''
+  function aplicarTema() {
+    if (!temaDaPagina) return
+    const escuro = temaDaPagina === 'escuro'
+    document.documentElement.classList.toggle('fourtime-escuro', escuro)
+    document.documentElement.classList.toggle('fourtime-claro', !escuro)
+    const b = document.body
+    if (b && b.classList.contains('dark') !== escuro) b.classList.toggle('dark', escuro)
+  }
+  if (dentro) {
+    const vigiarBody = () => {
+      if (!document.body) return
+      new MutationObserver(aplicarTema).observe(document.body, { attributes: true, attributeFilter: ['class'] })
+      aplicarTema()
+    }
+    if (document.body) vigiarBody()
+    else document.addEventListener('DOMContentLoaded', vigiarBody, { once: true })
+  }
+
   if (dentro) {
     /* o pedido vem da pagina do Fourtime OS, e de mais ninguem */
     window.addEventListener('message', (e) => {
@@ -133,9 +159,8 @@
       if (!d || d.fourtime !== 'pedido') return
       /* o tema do Fourtime OS (Gelo ou Grafite): as cores do whatsapp.css */
       if (d.tipo === 'tema') {
-        const escuro = d.tema === 'dark'
-        document.documentElement.classList.toggle('fourtime-escuro', escuro)
-        document.documentElement.classList.toggle('fourtime-claro', !escuro)
+        temaDaPagina = d.tema === 'dark' ? 'escuro' : 'claro'
+        aplicarTema()
         return
       }
       if (d.tipo !== 'abrir') return

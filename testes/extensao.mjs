@@ -49,7 +49,8 @@ if (escreviConfig) {
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
-const WA_FALSO = (jid) => `<!doctype html><html><head><title>WhatsApp</title></head><body>
+/* o body nasce com "dark", como o WhatsApp de quem usa o tema escuro */
+const WA_FALSO = (jid) => `<!doctype html><html><head><title>WhatsApp</title></head><body class="dark">
 <div id="app"><div id="main"><header><span title="Teste">Teste</span></header>
 <div data-id="false_${jid}_3EB0AAAA">oi</div><div data-id="true_${jid}_3EB0BBBB">ola</div></div></div>
 <script>
@@ -106,9 +107,12 @@ const visual = await wa.evaluate(() => ({
   classe: document.documentElement.classList.contains('fourtime-os'),
   letra: getComputedStyle(document.body).fontFamily,
   fonte: !!document.getElementById('fourtime-fonte'),
+  faixa: getComputedStyle(document.body, '::before').content,
+  dark: document.body.classList.contains('dark'),
 }))
 conta(visual.classe && /Urbanist/.test(visual.letra), 'no WhatsApp entra a cara do Fourtime OS (' + visual.letra + ')')
 conta(visual.fonte, 'no WhatsApp entra o link da letra Urbanist')
+conta(visual.faixa === '""' && visual.dark, 'na aba comum a faixa vermelha continua, e o tema do WhatsApp não é mexido (' + visual.faixa + ')')
 const conversa = await fundo.evaluate(() => chrome.storage.session.get('conversa'))
 conta(conversa.conversa?.telefone === '5562999990001', 'a conversa aberta chega ao fundo com o telefone (' + conversa.conversa?.telefone + ')')
 
@@ -205,6 +209,9 @@ conta(linksDaLista.at(-1) === 'https://wa.me/5562977770003', 'clicar num nome da
 
 /* a cara do Fourtime OS: o tema da página vai para dentro do WhatsApp */
 const corDentro = () => quadroWa.evaluate(() => ({
+  dark: document.body.classList.contains('dark'),
+  faixa: getComputedStyle(document.body, '::before').content,
+  destaque: getComputedStyle(document.documentElement).getPropertyValue('--WDS-surface-highlight').trim(),
   claro: document.documentElement.classList.contains('fourtime-claro'),
   escuro: document.documentElement.classList.contains('fourtime-escuro'),
   acento: getComputedStyle(document.documentElement).getPropertyValue('--WDS-accent').trim(),
@@ -215,12 +222,21 @@ const cor1 = await corDentro()
 const esperado1 = temaDaPagina === 'dark' ? { escuro: true, acento: '#E0262E' } : { claro: true, acento: '#C6161B' }
 conta(!!cor1 && (esperado1.escuro ? cor1.escuro : cor1.claro) && cor1.acento.toUpperCase() === esperado1.acento,
   'o WhatsApp de dentro ganha as cores do tema da página (' + temaDaPagina + ': ' + JSON.stringify(cor1) + ')')
+conta(!!cor1 && cor1.dark === (temaDaPagina === 'dark') && cor1.faixa === 'none',
+  'o body do WhatsApp segue o tema da página (a classe dark das cores antigas) e a faixa vermelha não aparece dentro (' + JSON.stringify({ dark: cor1?.dark, faixa: cor1?.faixa }) + ')')
+conta(!!cor1 && (temaDaPagina === 'dark' ? /255, 255, 255/.test(cor1.destaque) : /194, 189, 184/.test(cor1.destaque)),
+  'o tema de dentro é inteiro: até as cores que o Fourtime OS não recolore seguem o tema da página (' + cor1?.destaque + ')')
 const outro = temaDaPagina === 'dark' ? 'light' : 'dark'
 await os.evaluate((t) => document.documentElement.setAttribute('data-theme', t), outro)
 await os.waitForTimeout(400)
 const cor2 = await corDentro()
 conta(!!cor2 && (outro === 'dark' ? cor2.escuro && cor2.fundo.toUpperCase() === '#131416' : cor2.claro && cor2.fundo.toUpperCase() === '#EBEDF1'),
   'trocar o tema da página repinta o WhatsApp de dentro (' + outro + ': ' + JSON.stringify(cor2) + ')')
+await quadroWa.evaluate(() => { document.body.className = 'dark' })
+await os.waitForTimeout(200)
+const cor3 = await corDentro()
+conta(!!cor3 && cor3.dark === (outro === 'dark'),
+  'se o WhatsApp mexer na classe do body, ela volta para o tema da página (' + JSON.stringify({ dark: cor3?.dark }) + ')')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro-' + outro + '.png' }).catch(() => {})
 await os.evaluate((t) => document.documentElement.setAttribute('data-theme', t), temaDaPagina)
 leadsDoBanco = leadsGuardados

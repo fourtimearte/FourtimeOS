@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.4.0).
+   A extensao dentro do WhatsApp Web (0.4.1).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num

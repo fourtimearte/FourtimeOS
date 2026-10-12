@@ -121,6 +121,27 @@ html.fourtime-os:not(.fourtime-dentro) body::before {
   pointer-events: none;
 }
 
+/* O QUE SE ESCREVE (12/10/2026): o campo de escrever da conversa e as
+   buscas pegam a cor do texto do tema PELO ATRIBUTO (contenteditable, input),
+   e nao por variavel do WhatsApp. Com o body ja seguindo o tema, o texto
+   continuava claro no Gelo e nao dava para ler o que se escrevia. */
+html.fourtime-dentro.fourtime-claro [contenteditable='true'],
+html.fourtime-dentro.fourtime-claro [contenteditable='true'] *,
+html.fourtime-dentro.fourtime-claro input,
+html.fourtime-dentro.fourtime-claro textarea {
+  color: #1A1D23 !important;
+  -webkit-text-fill-color: #1A1D23 !important;
+  caret-color: #1A1D23 !important;
+}
+html.fourtime-dentro.fourtime-escuro [contenteditable='true'],
+html.fourtime-dentro.fourtime-escuro [contenteditable='true'] *,
+html.fourtime-dentro.fourtime-escuro input,
+html.fourtime-dentro.fourtime-escuro textarea {
+  color: #EDEEF0 !important;
+  -webkit-text-fill-color: #EDEEF0 !important;
+  caret-color: #EDEEF0 !important;
+}
+
 '''
 
 if __name__ == '__main__':

@@ -276,6 +276,23 @@ const cor3 = await corDentro()
 conta(!!cor3 && cor3.dark === (outro === 'dark'),
   'se o WhatsApp mexer na classe do body, ela volta para o tema da página (' + JSON.stringify({ dark: cor3?.dark }) + ')')
 await os.screenshot({ path: 'testes/fotos/extensao-dentro-' + outro + '.png' }).catch(() => {})
+/* o que se escreve: no Gelo, preto; no Grafite, claro (a reclamacao de 12/10/2026) */
+const corDoCampo = () => quadroWa.evaluate(() => {
+  const c = document.querySelector('footer [contenteditable]')
+  c.textContent = 'teste'
+  const st = getComputedStyle(c)
+  const r = [st.color, st.webkitTextFillColor]
+  c.textContent = ''
+  return r
+}).catch(() => null)
+await os.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+await os.waitForTimeout(300)
+const campoClaro = await corDoCampo()
+await os.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+await os.waitForTimeout(300)
+const campoEscuro = await corDoCampo()
+conta(campoClaro?.[0] === 'rgb(26, 29, 35)' && campoClaro?.[1] === 'rgb(26, 29, 35)' && campoEscuro?.[0] === 'rgb(237, 238, 240)',
+  'o texto que se escreve no WhatsApp é preto no Gelo e claro no Grafite (' + JSON.stringify([campoClaro, campoEscuro]) + ')')
 await os.evaluate((t) => document.documentElement.setAttribute('data-theme', t), temaDaPagina)
 leadsDoBanco = leadsGuardados
 

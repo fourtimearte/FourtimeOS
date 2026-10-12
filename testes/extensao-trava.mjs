@@ -37,15 +37,20 @@ execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyo
   '-out', join(pasta, 'c.pem'), '-days', '1', '-subj', '/CN=web.whatsapp.com'], { stdio: 'ignore' })
 
 const WA = '<!doctype html><html><body><div id="app"><div id="main">o WhatsApp de mentira</div></div></body></html>'
-/* AS DUAS TRAVAS DO WHATSAPP DE VERDADE (vistas em 11/10/2026): o
-   X-Frame-Options no navegador e, no servidor, o 400 com "Sorry, something
-   went wrong" para pedido que diz vir de um quadro (Sec-Fetch-Dest: iframe) */
+/* AS TRES TRAVAS DO WHATSAPP DE VERDADE (vistas em 11 e 12/10/2026): no
+   navegador, o X-Frame-Options e o frame-ancestors da CSP ("a conexao foi
+   recusada"); no servidor, o 400 com "Sorry, something went wrong" para
+   pedido que diz vir de um quadro (Sec-Fetch-Dest: iframe) */
 const falso = https({ key: readFileSync(join(pasta, 'k.pem')), cert: readFileSync(join(pasta, 'c.pem')) }, (q, r) => {
   if (q.headers['sec-fetch-dest'] === 'iframe') {
     r.writeHead(400, { 'content-type': 'text/html', 'x-frame-options': 'DENY' })
     return r.end('<!doctype html><title>Error</title><h1>Sorry, something went wrong.</h1>')
   }
-  r.writeHead(200, { 'content-type': 'text/html', 'x-frame-options': 'DENY' })
+  r.writeHead(200, {
+    'content-type': 'text/html',
+    'x-frame-options': 'DENY',
+    'content-security-policy': 'frame-ancestors https://*.whatsapp.com https://whatsapp.com',
+  })
   r.end(WA)
 }).listen(8443, '127.0.0.1')
 

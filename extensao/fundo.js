@@ -30,10 +30,13 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
 /* ==========================================================================
    O WHATSAPP DENTRO DAS ABAS DO FOURTIME OS.
 
-   O WhatsApp Web recusa ser aberto num quadro de duas formas: manda
-   X-Frame-Options: DENY (o navegador recusa) e, quando o pedido diz que e de
-   um quadro (Sec-Fetch-Dest: iframe), o servidor dele responde 400 com
-   "Sorry, something went wrong". A regra fixa (regras.json) cuida da
+   O WhatsApp Web recusa ser aberto num quadro de tres formas: manda
+   X-Frame-Options: DENY e Content-Security-Policy com frame-ancestors (o
+   navegador recusa: "a conexao foi recusada"), e, quando o pedido diz que e
+   de um quadro (Sec-Fetch-Dest: iframe), o servidor dele responde 400 com
+   "Sorry, something went wrong". O cabecalho de CSP nao da para editar, so
+   tirar inteiro: dentro do quadro do Fourtime OS o WhatsApp roda sem a CSP
+   dele (decisao do Henrique, 12/10/2026; a aba comum do WhatsApp nao muda). A regra fixa (regras.json) cuida da
    primeira carga, quando quem pede e o Fourtime OS. Esta regra por aba cuida
    do resto: toda troca de endereco do WhatsApp DENTRO do quadro (quem pede
    ai e o proprio WhatsApp). Vale so para abas que se anunciaram como o
@@ -51,7 +54,10 @@ async function liberarNaAba(tabId) {
           priority: 2,
           action: {
             type: 'modifyHeaders',
-            responseHeaders: [{ header: 'x-frame-options', operation: 'remove' }],
+            responseHeaders: [
+              { header: 'x-frame-options', operation: 'remove' },
+              { header: 'content-security-policy', operation: 'remove' },
+            ],
             requestHeaders: [{ header: 'sec-fetch-dest', operation: 'set', value: 'document' }],
           },
           condition: { urlFilter: '||web.whatsapp.com/', resourceTypes: ['sub_frame'], tabIds: [tabId] },

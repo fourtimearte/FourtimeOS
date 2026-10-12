@@ -7,6 +7,10 @@
 # qualquer navegador). Ele nao vai para o repositorio.
 #
 # Uso:  VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... sh extensao/empacotar.sh
+#
+# Com LOJA=1, o pacote da Chrome Web Store (extensao/loja/LEIA.md): o
+# manifest.json na raiz do zip (a loja pede assim) e sem os enderecos de teste
+# (127.0.0.1 e localhost), que so servem no computador de quem desenvolve.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -18,6 +22,7 @@ esac
 
 VERSAO=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' extensao/manifest.json)
 PASTA="dist-extensao/fourtime-os-$VERSAO"
+[ "${LOJA:-}" = 1 ] && PASTA="dist-extensao/loja-$VERSAO"
 rm -rf "$PASTA" "$PASTA.zip"
 mkdir -p "$PASTA"
 cp extensao/manifest.json extensao/regras.json extensao/*.js extensao/*.css extensao/*.html extensao/icone.png "$PASTA"/
@@ -29,5 +34,20 @@ self.FOURTIME = {
   sistema: 'https://fourtimeos.arte-adc.workers.dev',
 }
 EOF
+if [ "${LOJA:-}" = 1 ]; then
+  node -e '
+    const fs = require("fs"); const f = process.argv[1]
+    const m = JSON.parse(fs.readFileSync(f, "utf8"))
+    const deTeste = (u) => /127\.0\.0\.1|localhost/.test(u)
+    m.host_permissions = m.host_permissions.filter((u) => !deTeste(u))
+    for (const c of m.content_scripts) c.matches = c.matches.filter((u) => !deTeste(u))
+    fs.writeFileSync(f, JSON.stringify(m, null, 2) + "\n")
+  ' "$PASTA/manifest.json"
+  rm -f "dist-extensao/fourtime-os-$VERSAO-loja.zip"
+  (cd "$PASTA" && zip -qr "../fourtime-os-$VERSAO-loja.zip" .)
+  rm -rf "$PASTA"
+  echo "dist-extensao/fourtime-os-$VERSAO-loja.zip"
+  exit 0
+fi
 (cd dist-extensao && zip -qr "fourtime-os-$VERSAO.zip" "fourtime-os-$VERSAO")
 echo "$PASTA.zip"

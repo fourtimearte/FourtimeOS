@@ -1398,3 +1398,59 @@ export function usoMesAMes(
       meses: calendario.map(c => ({ ...c, usado: serie.total.get(c.mes) ?? 0 })),
     }))
 }
+
+/* --- a compra sugerida por fornecedor (12/10/2026, fase 4 do plano) ---------
+   O que esta abaixo do minimo, separado por quem vende. A quantidade e o que
+   falta para voltar ao minimo, arredondada para cima no inteiro da unidade:
+   ninguem compra 0,3 kg de malha nem meio cone. Quem decide comprar mais e a
+   pessoa; a conta so diz o piso.
+
+   O fornecedor vem de quem chama (a ligacao material-fornecedor mora no
+   modulo do Estoque). Material sem fornecedor cai no grupo do fim, para a
+   pessoa escolher o fornecedor antes de pedir. */
+export type ItemDaCompra = { material: Material; comprar: number }
+export type CompraDoFornecedor = {
+  /** vazio: o grupo dos sem fornecedor */
+  fornecedorId: string
+  fornecedor: string
+  /** o contato escrito no cadastro do fornecedor, para o WhatsApp */
+  contato: string
+  itens: ItemDaCompra[]
+}
+
+export function compraSugerida(
+  abaixo: Material[],
+  fornecedorDe: (m: Material) => { id: string; nome: string; contato: string } | null,
+): CompraDoFornecedor[] {
+  const grupos = new Map<string, CompraDoFornecedor>()
+  for (const m of abaixo) {
+    const falta = faltaDoMaterial(m)
+    if (falta <= 0) continue
+    const f = fornecedorDe(m)
+    const chave = f?.id ?? ''
+    const g = grupos.get(chave) ?? { fornecedorId: chave, fornecedor: f?.nome ?? '', contato: f?.contato ?? '', itens: [] }
+    g.itens.push({ material: m, comprar: Math.ceil(falta - 1e-9) })
+    grupos.set(chave, g)
+  }
+  const lista = [...grupos.values()]
+  lista.forEach((g) => g.itens.sort((a, b) => a.material.nome.localeCompare(b.material.nome, 'pt-BR')))
+  return lista.sort(
+    (a, b) =>
+      Number(!a.fornecedorId) - Number(!b.fornecedorId) ||
+      b.itens.length - a.itens.length ||
+      a.fornecedor.localeCompare(b.fornecedor, 'pt-BR'),
+  )
+}
+
+/** O texto do pedido para mandar ao fornecedor, uma linha por material. */
+export function textoDaCompra(g: CompraDoFornecedor, empresa: string, hoje = new Date()): string {
+  const dia = hoje.toLocaleDateString('pt-BR')
+  return [
+    `Pedido de compra ${empresa} · ${dia}`,
+    g.fornecedor ? `Para: ${g.fornecedor}` : '',
+    '',
+    ...g.itens.map((i) => `${quantoNaUnidade(i.comprar, i.material.unidade)} de ${i.material.nome}`),
+  ]
+    .filter((l, k) => l !== '' || k === 2)
+    .join('\n')
+}

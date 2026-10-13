@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CalendarBlank, ListBullets, Plus, Stack, Table } from '@phosphor-icons/react'
+import { ArrowLeft, CalendarBlank, ListBullets, Plus, ShoppingCart, Stack, Table } from '@phosphor-icons/react'
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
 import {
@@ -42,6 +42,7 @@ import { fornecedoresParaOEstoque } from '@dominio/fornecedor'
 import { pode, useSessao } from '@dominio/sessao'
 import { materialDoMovimento, plural, type Fornecimento } from './apoio'
 import { chaveDoMaterial } from './arvore'
+import { CompraSugerida } from './compra'
 import { BotaoEditarODeposito, Deposito } from './deposito'
 import { EditarGrupo } from './editar-grupo'
 import { EditorDoDeposito } from './editor-do-deposito'
@@ -145,6 +146,8 @@ export function TelaEstoque() {
   const [lendoDeposito, setLendoDeposito] = useState(true)
   const [erroDoDeposito, setErroDoDeposito] = useState('')
   const [editandoDeposito, setEditandoDeposito] = useState(false)
+  /* a compra sugerida por fornecedor (12/10/2026): so le, nao grava */
+  const [naCompra, setNaCompra] = useState(false)
   const [marcando, setMarcando] = useState<{
     m: Material
     outro?: boolean
@@ -472,16 +475,25 @@ export function TelaEstoque() {
           acima: 'Materiais',
           titulo: 'Estoque',
           sub,
-          acoes:
-            podeEditar && !celular ? (
-              <>
-                {maisAcoes}
-                <Botao onClick={() => abrirNovo()}>Novo material</Botao>
-                <Botao tom="primario" onClick={abrirMovimento}>
-                  Registrar movimento
+          acoes: !celular ? (
+            <>
+              {baixo.length ? (
+                <Botao onClick={() => setNaCompra(true)}>
+                  <ShoppingCart size={17} />
+                  Compra sugerida
                 </Botao>
-              </>
-            ) : undefined,
+              ) : null}
+              {podeEditar ? (
+                <>
+                  {maisAcoes}
+                  <Botao onClick={() => abrirNovo()}>Novo material</Botao>
+                  <Botao tom="primario" onClick={abrirMovimento}>
+                    Registrar movimento
+                  </Botao>
+                </>
+              ) : null}
+            </>
+          ) : undefined,
         }
 
   /* O EDITOR DO DEPÓSITO TOMA A PÁGINA: tem os próprios botões no topo
@@ -931,6 +943,18 @@ export function TelaEstoque() {
           await recarregar()
         }}
         aoCriarFornecedor={recarregarFornecedores}
+      />
+      <CompraSugerida
+        aberto={naCompra}
+        abaixo={baixo}
+        fornecimento={fornecimento}
+        aoFechar={() => setNaCompra(false)}
+        aoEscolher={m => {
+          setNaCompra(false)
+          setCategoria(m.categoria)
+          escolher(chaveDoMaterial(m.id))
+          setVista('lista')
+        }}
       />
     </Pagina>
   )

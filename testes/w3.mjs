@@ -95,6 +95,23 @@ async function rodada(comBanco) {
   const { ctx, pg, rpc, erros } = await rodada(true)
   const topo = await pg.locator('.fn-wa-status').first().innerText().catch(() => '')
   conta(/fica registrada no lead/.test(topo), '1. o topo diz que a conversa fica registrada no lead (' + topo.replace(/\s+/g, ' ') + ')')
+  const diario = await pg.evaluate(() => window.__ftWhatsApp?.cargas ?? [])
+  conta(diario.length === 1 && diario[0].carga === 'navigate', '   o diario das cargas anota a primeira, como navigate (' + JSON.stringify(diario) + ')')
+
+  /* 0.6.2: a coluna e so da aba do WhatsApp, e nao do navegador inteiro */
+  const [sw] = ctx.serviceWorkers()
+  const wa = await ctx.newPage()
+  await wa.goto('https://web.whatsapp.com/')
+  await wa.waitForTimeout(1500)
+  const opcoes = await sw.evaluate(async () => {
+    const abas = await chrome.tabs.query({})
+    const daAba = async (pedaco) => { const a = abas.find((x) => (x.url || '').includes(pedaco)); return a ? chrome.sidePanel.getOptions({ tabId: a.id }) : null }
+    return { geral: await chrome.sidePanel.getOptions({}), whatsapp: await daAba('web.whatsapp.com'), sistema: await daAba('/funil') }
+  })
+  conta(opcoes.geral.enabled === false && opcoes.whatsapp?.enabled === true && opcoes.whatsapp?.path === 'lado.html' && opcoes.sistema?.enabled === false,
+    '   a coluna: desligada no geral e no sistema, ligada so na aba do WhatsApp (' + JSON.stringify(opcoes) + ')')
+  await wa.close()
+  await pg.bringToFront()
 
   const primeira = rpc.conversa[0]
   const ms = primeira?.p_mensagens ?? []

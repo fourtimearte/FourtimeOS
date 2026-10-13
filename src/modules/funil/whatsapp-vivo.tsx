@@ -112,6 +112,14 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
       const d = e.data as { fourtime?: string; tipo?: string; jid?: string; telefone?: string; jeito?: string }
       if (!d || d.fourtime !== 'whatsapp') return
       if (d.tipo === 'pronto') {
+        /* O DIARIO DAS CARGAS (13/10/2026): cada vez que o WhatsApp de dentro
+           nasce, fica anotado quando e como (navigate, reload), e o console
+           diz. Em window.__ftWhatsApp, para achar quem recarrega o WhatsApp
+           sem ninguem pedir. A primeira carga e a normal. */
+        const x = d as { carga?: string; endereco?: string; versao?: string }
+        const diario = ((window as unknown as { __ftWhatsApp?: { cargas: unknown[] } }).__ftWhatsApp ??= { cargas: [] })
+        diario.cargas.push({ em: new Date().toISOString(), carga: String(x.carga ?? ''), endereco: String(x.endereco ?? ''), versao: String(x.versao ?? ''), visivel: document.visibilityState })
+        if (diario.cargas.length > 1) console.info('[fourtime] o WhatsApp de dentro carregou de novo', diario.cargas[diario.cargas.length - 1])
         setPronto(true)
         /* o quadro que RECARREGOU (a troca de conversa pelo endereco) nasce sem
            o tema: ele vai de novo a cada "pronto", e nao so no primeiro */

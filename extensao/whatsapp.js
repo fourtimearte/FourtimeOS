@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.6.1).
+   A extensao dentro do WhatsApp Web (0.6.2).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -62,7 +62,14 @@
     else chrome.runtime.sendMessage(dados).catch(() => {})
   }
   if (dentro) {
-    const pronto = () => contar({ tipo: 'pronto', versao: chrome.runtime.getManifest().version })
+    /* (0.6.2) como esta carga aconteceu: navigate (abriu ou trocou de
+       endereco) ou reload (alguem recarregou o WhatsApp). A pagina guarda,
+       para achar quem recarrega o WhatsApp quando ninguem pediu */
+    const carga = () => {
+      const n = performance.getEntriesByType && performance.getEntriesByType('navigation')[0]
+      return (n && n.type) || ''
+    }
+    const pronto = () => contar({ tipo: 'pronto', versao: chrome.runtime.getManifest().version, carga: carga(), endereco: location.pathname })
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pronto, { once: true })
     else pronto()
   }

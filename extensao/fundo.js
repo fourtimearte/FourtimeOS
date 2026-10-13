@@ -16,8 +16,15 @@ try {
 }
 const CFG = self.FOURTIME || {}
 
+/* A COLUNA E SO DA ABA DO WHATSAPP (0.6.2, 13/10/2026). Ate a 0.6.1 o
+   manifest dava a coluna para o navegador inteiro (side_panel.default_path):
+   aberta uma vez, ela sumia nas outras abas e VOLTAVA sozinha toda vez que a
+   aba do WhatsApp voltava para a frente ou recarregava ("o painel da extensao
+   fica abrindo sozinho"). Agora nao ha coluna geral; cada aba do WhatsApp tem
+   a dela, e ela so abre pelo icone. */
 chrome.runtime.onInstalled.addListener((d) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {})
+  chrome.sidePanel.setOptions({ enabled: false }).catch(() => {})
   if (d.reason === 'update') void religarAsAbas()
 })
 
@@ -102,12 +109,18 @@ async function religarAsAbas() {
   }
 }
 
+/* so mexe quando a aba MUDA de lado (virou ou deixou de ser WhatsApp):
+   repetir o setOptions a cada carga era o que trazia a coluna de volta */
+const painelLigado = new Map()
 async function ajustarPainel(tabId, url) {
   const noWhatsApp = typeof url === 'string' && url.startsWith(WHATSAPP)
+  if (painelLigado.get(tabId) === noWhatsApp) return
+  painelLigado.set(tabId, noWhatsApp)
   await chrome.sidePanel
-    .setOptions({ tabId, path: 'lado.html', enabled: noWhatsApp })
+    .setOptions(noWhatsApp ? { tabId, path: 'lado.html', enabled: true } : { tabId, enabled: false })
     .catch(() => {})
 }
+chrome.tabs.onRemoved.addListener((tabId) => painelLigado.delete(tabId))
 
 chrome.tabs.onUpdated.addListener((tabId, mudou, tab) => {
   if (mudou.url || mudou.status === 'complete') void ajustarPainel(tabId, tab.url)

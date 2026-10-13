@@ -47,7 +47,7 @@ const impressao = (f) => createHash('sha256').update(readFileSync(f)).digest('he
 function conferencia(versao, troca = {}) {
   const arquivos = {}
   for (const n of readdirSync(EXT).sort()) {
-    if (n === 'versao.json' || statSync(join(EXT, n)).isDirectory()) continue
+    if (n === 'versao.json' || statSync(join(EXT, n)).isDirectory() || !/\.(js|css|html|json)$/.test(n)) continue
     arquivos[n] = troca[n] ?? impressao(join(EXT, n))
   }
   writeFileSync(join(EXT, 'versao.json'), JSON.stringify({ versao, arquivos }, null, 2))

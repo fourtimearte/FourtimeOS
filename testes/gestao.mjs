@@ -60,13 +60,15 @@ const nav = await chromium.launch()
 let ruins = 0
 const conta = (certo, texto) => { if (!certo) ruins++; console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
-async function abrir(rota, pedidos, { sem075 = false, gravados = [] } = {}) {
+async function abrir(rota, pedidos, { sem075 = false, gravados = [], extras = {} } = {}) {
   const ctx = await nav.newContext({ viewport:{width:1440,height:900}, reducedMotion:'reduce', acceptDownloads:true })
   const pedidosLidos = { n: 0 }
   await ctx.route('**supabase.co/**', async (r) => {
     const u = r.request().url()
     let corpo = []
+    const extra = Object.keys(extras).find((k) => u.includes(k))
     if (u.includes('meu_perfil')) corpo = PERFIL
+    else if (extra) corpo = extras[extra]
     else if (u.includes('pedido_na_fabrica') && sem075 && u.includes('tem_fatias')) {
       return r.fulfill({ status:400, contentType:'application/json', headers:{'access-control-allow-origin':'*'},
         body: JSON.stringify({ code:'42703', message:'column pedido_na_fabrica.nome does not exist' }) })
@@ -155,6 +157,35 @@ const depois = (pg) => pg.evaluate(() => ({
   const { ctx, pg } = await abrir('/relatorio', [])
   conta(await botao(pg, 'Baixar planilha').isDisabled() && await botao(pg, 'Imprimir').isDisabled(),
     'relatorio vazio: Baixar e Imprimir ficam desligados')
+  await ctx.close()
+}
+
+/* ---- relatorio: o que cada um vendeu ---- */
+{
+  const m = `${ano}-${mes}-01`
+  const outro = `${ano}-${String(((hoje.getMonth() + 11) % 12) + 1).padStart(2, '0')}-01`
+  const extras = {
+    venda_por_mes: [
+      { mes: m, vendedor_id: 'v1', vendedor_nome: 'Dani', pedidos: 3, pecas: 300, vendido: 7500 },
+      { mes: m, vendedor_id: 'v2', vendedor_nome: 'Lucas', pedidos: 1, pecas: 40, vendido: 2500 },
+      { mes: m, vendedor_id: null, vendedor_nome: '(sem vendedor)', pedidos: 1, pecas: 10, vendido: 0 },
+      { mes: outro, vendedor_id: 'v2', vendedor_nome: 'Lucas', pedidos: 9, pecas: 900, vendido: 99999 },
+    ],
+    cotacao_sem_vendedor: [{ id: 'c9', numero: 'CO2026-0199', cliente_nome: 'Escola Sem Dono', total: 1000, estado: 'enviada' }],
+  }
+  const { ctx, pg } = await abrir('/relatorio', PEDIDOS, { extras })
+  const linhas = await pg.evaluate(() => [...document.querySelectorAll('.rl-vd-tab tbody tr')].map((r) => r.innerText.replace(/\s+/g, ' ').trim()))
+  conta(linhas.length === 4 && /^Dani 3 300 7\.500,00 75%/.test(linhas[0]) && /^Lucas 1 40 2\.500,00 25%/.test(linhas[1]) && /^\(sem vendedor\)/.test(linhas[2]) && /^Total 5 350 10\.000,00/.test(linhas[3]),
+    'relatorio: o que cada um vendeu no mes, do que mais vendeu para o menos, e o total: ' + linhas.join(' | '))
+  const sem = await pg.evaluate(() => document.querySelector('.rl-vd-sem')?.innerText.replace(/\s+/g, ' ') ?? '')
+  conta(/1 cotação aberta está sem vendedor/.test(sem) && /CO2026-0199 · Escola Sem Dono/.test(sem), 'relatorio: o admin ve a cotacao sem vendedor (' + sem + ')')
+  for (const tema of ['light', 'dark']) {
+    await pg.evaluate((t) => { document.documentElement.dataset.theme = t }, tema)
+    const c = pg.locator('.rl-vd'); await c.scrollIntoViewIfNeeded(); await c.screenshot({ path: `testes/atual/gestao-vendeu-${tema}.png` })
+  }
+  await pg.getByRole('button', { name: /CO2026-0199/ }).click()
+  await pg.waitForTimeout(500)
+  conta(new URL(pg.url()).pathname === '/cotacao' && new URL(pg.url()).search === '?c=c9', 'relatorio: clicar abre a cotacao (' + new URL(pg.url()).pathname + new URL(pg.url()).search + ')')
   await ctx.close()
 }
 

@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, imprimirAPagina } from '@ds'
-import { DownloadSimple, Printer } from '@phosphor-icons/react'
+import { Botao, BotaoComMenu, Pagina, Seletor, TituloCartao, Vazio, imprimirAPagina } from '@ds'
+import { useNavigate } from 'react-router-dom'
+import { DownloadSimple, Printer, UsersThree, Warning } from '@phosphor-icons/react'
 import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
 import { carregarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
+import { souAdmin, useSessao } from '@dominio/sessao'
+import {
+  carregarCotacoesSemVendedor,
+  carregarVendaPorMes,
+  somarPorVendedor,
+  type CotacaoSemVendedor,
+  type VendaDoMes,
+} from '@dominio/venda'
 import './relatorio.css'
 
 /* ==========================================================================
@@ -51,6 +60,37 @@ export function TelaRelatorio() {
   }, [])
   const hoje = new Date()
   const [ano, setAno] = useState(hoje.getFullYear())
+  const navegar = useNavigate()
+  const { estado: sessao } = useSessao()
+  const admin = souAdmin(sessao.fase === 'dentro' ? sessao.pessoa : null)
+
+  /* O QUE CADA UM VENDEU, pelo mes em que o cliente aprovou (venda_por_mes).
+     Le o ano escolhido inteiro, e o recorte dos meses e conta na tela. Se a
+     leitura falhar, so este cartao some: o relatorio de pedidos continua. */
+  const [vendas, setVendas] = useState<VendaDoMes[] | null>(null)
+  useEffect(() => {
+    let vivo = true
+    setVendas(null)
+    carregarVendaPorMes(ano)
+      .then((v) => vivo && setVendas(v))
+      .catch(() => vivo && setVendas([]))
+    return () => {
+      vivo = false
+    }
+  }, [ano])
+  const [semVendedor, setSemVendedor] = useState<CotacaoSemVendedor[]>([])
+  useEffect(() => {
+    if (!admin) return
+    let vivo = true
+    carregarCotacoesSemVendedor()
+      .then((c) => vivo && setSemVendedor(c))
+      .catch(() => {
+        /* aviso de canto nao vale uma tela de erro */
+      })
+    return () => {
+      vivo = false
+    }
+  }, [admin])
   const [meses, setMeses] = useState<number[]>([hoje.getMonth()])
   const [vendedor, setVendedor] = useState('')
 
@@ -298,6 +338,14 @@ export function TelaRelatorio() {
             )}
           </div>
 
+          <OQueCadaUmVendeu
+            vendas={vendas}
+            meses={naOrdem}
+            periodo={rotuloDoPeriodo}
+            semVendedor={semVendedor}
+            aoAbrirCotacao={(id) => navegar('/cotacao?c=' + id)}
+          />
+
           <p className="rl-rodape">
             O valor de sublimação aparece em vermelho, com asterisco, quando o pedido tem layout de
             outra técnica junto. A semana é do mês; com vários meses o cabeçalho diz qual.
@@ -305,6 +353,98 @@ export function TelaRelatorio() {
         </div>
       </div>
     </Pagina>
+  )
+}
+
+function OQueCadaUmVendeu({
+  vendas,
+  meses,
+  periodo,
+  semVendedor,
+  aoAbrirCotacao,
+}: {
+  vendas: VendaDoMes[] | null
+  meses: number[]
+  periodo: string
+  semVendedor: CotacaoSemVendedor[]
+  aoAbrirCotacao: (id: string) => void
+}) {
+  const linhas = vendas ? somarPorVendedor(vendas, meses) : []
+  const soma = (f: (x: (typeof linhas)[number]) => number) => linhas.reduce((t, x) => t + f(x), 0)
+  return (
+    <section className="cartao rl-vd" aria-label="O que cada um vendeu">
+      <header className="rl-vd-cab">
+        <TituloCartao icone={UsersThree}>O que cada um vendeu</TituloCartao>
+        <span className="rl-vd-nota">{periodo}, pelo mês em que o cliente aprovou</span>
+      </header>
+      {vendas === null ? (
+        <p className="rl-vd-nada">Somando as vendas...</p>
+      ) : !linhas.length ? (
+        <p className="rl-vd-nada">Nenhuma cotação aprovada no período.</p>
+      ) : (
+        <div className="rl-vd-rolo">
+          <table className="rl-tab rl-vd-tab">
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                <th className="num">Pedidos</th>
+                <th className="num">Peças</th>
+                <th className="num">Vendido R$</th>
+                <th className="rl-vd-col-parte">Do total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map((x) => (
+                <tr key={x.vendedor}>
+                  <td className="rl-cliente">{x.vendedor}</td>
+                  <td className="num">{x.pedidos}</td>
+                  <td className="num">{x.pecas.toLocaleString('pt-BR')}</td>
+                  <td className="num forte">{formatarNumeroExato(x.vendido)}</td>
+                  <td className="rl-vd-col-parte">
+                    <span className="rl-vd-parte">
+                      <span className="rl-vd-barra" aria-hidden="true">
+                        <i style={{ width: Math.round(x.parte * 100) + '%' }} />
+                      </span>
+                      <span className="rl-vd-pct">{Math.round(x.parte * 100)}%</span>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {linhas.length > 1 ? (
+                <tr className="rl-total periodo">
+                  <td>Total</td>
+                  <td className="num">{soma((x) => x.pedidos)}</td>
+                  <td className="num">{soma((x) => x.pecas).toLocaleString('pt-BR')}</td>
+                  <td className="num">{formatarNumeroExato(soma((x) => x.vendido))}</td>
+                  <td className="rl-vd-col-parte" />
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {/* AS COTACOES SEM VENDEDOR (so o administrador ve): a venda que sair
+          delas cai em "(sem vendedor)" e nao conta para ninguem. */}
+      {semVendedor.length ? (
+        <div className="rl-vd-sem" role="status">
+          <Warning size={16} weight="bold" aria-hidden="true" />
+          <span>
+            {semVendedor.length === 1
+              ? '1 cotação aberta está sem vendedor: se virar pedido, a venda não conta para ninguém.'
+              : semVendedor.length + ' cotações abertas estão sem vendedor: se virarem pedido, a venda não conta para ninguém.'}
+          </span>
+          <span className="rl-vd-sem-lista">
+            {semVendedor.slice(0, 6).map((c) => (
+              <button key={c.id} type="button" className="rl-vd-sem-item" onClick={() => aoAbrirCotacao(c.id)}>
+                {c.numero}
+                {c.cliente ? ' · ' + c.cliente : ''}
+              </button>
+            ))}
+            {semVendedor.length > 6 ? <small>e mais {semVendedor.length - 6}</small> : null}
+          </span>
+        </div>
+      ) : null}
+    </section>
   )
 }
 

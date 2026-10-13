@@ -30,9 +30,14 @@ export const WHATSAPP = 'https://web.whatsapp.com'
 
 export type Conversa = { jid: string; telefone: string; nome: string; aberta: boolean }
 
+export type ModoDoFunil = 'quadro' | 'whatsapp'
+
 type WhatsAppVivo = {
   ligado: boolean
   ligar: () => void
+  /** o modo em que a pessoa deixou o Funil: volta nele ao voltar para a pagina */
+  modo: ModoDoFunil
+  guardarModo: (m: ModoDoFunil) => void
   /** o retangulo da pagina onde o WhatsApp aparece; null esconde */
   mostrarEm: (lugar: HTMLElement | null) => void
   pronto: boolean
@@ -49,6 +54,8 @@ const SEM_CONVERSA: Conversa = { jid: '', telefone: '', nome: '', aberta: false 
 const Contexto = createContext<WhatsAppVivo>({
   ligado: false,
   ligar: () => {},
+  modo: 'quadro',
+  guardarModo: () => {},
   mostrarEm: () => {},
   pronto: false,
   conversa: SEM_CONVERSA,
@@ -61,6 +68,11 @@ export const useWhatsApp = () => useContext(Contexto)
 
 export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   const [ligado, setLigado] = useState(false)
+  /* O MODO DO FUNIL MORA AQUI (13/10/2026, pedido do Henrique): quem estava no
+     WhatsApp, vai a outra pagina e volta, cai direto no WhatsApp. So enquanto a
+     pagina do sistema esta aberta: recarregar ou entrar de novo abre no Quadro,
+     como ele pediu em 12/10/2026 (nada guardado no navegador). */
+  const [modo, guardarModo] = useState<ModoDoFunil>('quadro')
   const [lugar, setLugar] = useState<HTMLElement | null>(null)
   const quadro = useRef<HTMLIFrameElement>(null)
   const caixa = useRef<HTMLDivElement>(null)
@@ -183,8 +195,8 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   }, [lugar, ligado])
 
   const valor = useMemo<WhatsAppVivo>(
-    () => ({ ligado, ligar, mostrarEm: setLugar, pronto, conversa, recarregou, pedir, escrever }),
-    [ligado, ligar, pronto, conversa, recarregou, pedir, escrever],
+    () => ({ ligado, ligar, modo, guardarModo, mostrarEm: setLugar, pronto, conversa, recarregou, pedir, escrever }),
+    [ligado, ligar, modo, pronto, conversa, recarregou, pedir, escrever],
   )
 
   return (

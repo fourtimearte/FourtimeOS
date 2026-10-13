@@ -13,8 +13,9 @@
      2. Quadro e WhatsApp de novo: nao recarrega
      3. trocar de aba do navegador e voltar: nao recarrega
      4. em outra pagina o WhatsApp fica invisivel e nao pega clique
-     5. voltar ao Funil e ao modo WhatsApp: o mesmo quadro, sem recarregar,
-        de novo em cima do lugar
+     5. voltar ao Funil: ele abre no modo em que foi deixado (WhatsApp ou
+        Quadro), com o mesmo quadro, sem recarregar; ?lead= abre no Quadro
+     7. recarregar a pagina abre no Quadro
      6. sem rolagem de lado e sem erro de JavaScript
 
    Uso:  node testes/whatsapp-fica.mjs http://127.0.0.1:4173
@@ -93,15 +94,35 @@ conta(p.existe && !p.visivel && !p.clique && cargas === 1, `4. em Clientes o Wha
 const rola = await pg.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth, document.documentElement.scrollHeight, innerHeight])
 
 await pg.locator('a[href="/funil"]').first().click()
-await pg.waitForURL('**/funil'); await pg.waitForTimeout(1000)
-await modoWhatsApp(); await pg.waitForTimeout(1000)
+await pg.waitForURL('**/funil'); await pg.waitForTimeout(1200)
 p = await posicao()
-conta(cargas === 1 && await mesmo() && p.visivel && p.cobre, `5. de volta ao Funil, o mesmo quadro em cima do lugar, sem recarregar (${cargas} carga, ${JSON.stringify(p)})`)
+conta(cargas === 1 && await mesmo() && p.visivel && p.cobre, `5. de volta ao Funil, ja no modo WhatsApp (sem clicar), o mesmo quadro em cima do lugar, sem recarregar (${cargas} carga, ${JSON.stringify(p)})`)
+
+/* deixado no Quadro, volta no Quadro */
+await modoQuadro(); await pg.waitForTimeout(400)
+await pg.locator('a[href="/clientes"]').first().click(); await pg.waitForURL('**/clientes'); await pg.waitForTimeout(600)
+await pg.locator('a[href="/funil"]').first().click(); await pg.waitForURL('**/funil'); await pg.waitForTimeout(1000)
+p = await posicao()
+conta(!p.visivel && await pg.evaluate(() => !!document.querySelector('.fn-mesa:not(.fn-guardado)')) && cargas === 1, '   deixado no Quadro, o Funil volta no Quadro')
+
+/* o lead pedido pelo endereco abre no Quadro, mesmo com o Funil deixado no WhatsApp */
+await modoWhatsApp(); await pg.waitForTimeout(600)
+await pg.evaluate(() => { history.pushState({}, '', '/funil?lead=L1'); dispatchEvent(new PopStateEvent('popstate')) })
+await pg.waitForTimeout(1200)
+conta(!(await posicao()).visivel && await pg.evaluate(() => !!document.querySelector('.fn-mesa:not(.fn-guardado)') && !!document.querySelector('.fn-inbox')) && cargas === 1, '   /funil?lead= abre o lead no Quadro, com o inbox aberto')
+await pg.keyboard.press('Escape'); await pg.waitForTimeout(400)
+if (await pg.locator('.fn-inbox').count()) await pg.locator('.fn-inbox button[aria-label*="Fechar"]').first().click().catch(() => {})
+await pg.waitForTimeout(300)
+await modoWhatsApp(); await pg.waitForTimeout(800)
 
 /* a janela muda de tamanho: o quadro segue o lugar */
 await pg.setViewportSize({ width: 1200, height: 800 }); await pg.waitForTimeout(600)
 p = await posicao()
 conta(p.cobre && cargas === 1, `   a janela menor: o quadro segue o lugar (${JSON.stringify(p)})`)
+
+/* recarregar a pagina volta ao Quadro (pedido de 12/10/2026) */
+await pg.reload({ waitUntil: 'networkidle' }); await pg.waitForTimeout(1200)
+conta(await pg.evaluate(() => !!document.querySelector('.fn-mesa:not(.fn-guardado)') && !document.querySelector('.fn-wa-vivo.na-pagina')), '7. recarregar a pagina abre o Funil no Quadro')
 
 conta(rola[0] <= rola[1] + 1, `6. sem rolagem de lado em Clientes com o WhatsApp escondido (${rola[0]} em ${rola[1]})`)
 conta(!erros.length, 'sem erro de JavaScript ' + erros.join(' | '))

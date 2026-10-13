@@ -126,25 +126,6 @@ export function TelaFunil() {
     }
   }, [recarregar])
 
-  /* ?lead=<id> ABRE AQUELE LEAD. E por onde a coluna lateral da extensao, no
-     WhatsApp, traz o vendedor para o cartao da conversa que ele esta lendo.
-     O parametro sai da barra depois de usado, senao fechar o inbox e o React
-     redesenhar abriria o mesmo lead de novo (o mesmo cuidado de ?abrir= nos
-     clientes). */
-  const [parametros, setParametros] = useSearchParams()
-  const pedidoDeLead = parametros.get('lead') ?? ''
-  useEffect(() => {
-    if (!pedidoDeLead || carregando) return
-    if (leads.some((l) => l.id === pedidoDeLead)) setAbertoId(pedidoDeLead)
-    else avisar('Esse lead não está no seu funil', 'warn')
-    setParametros(
-      (p) => {
-        p.delete('lead')
-        return p
-      },
-      { replace: true },
-    )
-  }, [pedidoDeLead, carregando, leads, setParametros])
 
   const aberto = leads.find((l) => l.id === abertoId) ?? null
 
@@ -156,19 +137,45 @@ export function TelaFunil() {
      (whatsapp-vivo.tsx): nem a troca de modo nem a troca de pagina
      recarregam ele. */
   const podeWhatsApp = noComputador()
-  const { ligado: montado, ligar } = useWhatsApp()
-  const [modo, setModoBruto] = useState<'quadro' | 'whatsapp'>('quadro')
+  /* O MODO TAMBEM MORA NA CASCA: sair do Funil no WhatsApp e voltar abre no
+     WhatsApp (13/10/2026). Recarregar a pagina volta ao Quadro. */
+  const { ligado: montado, ligar, modo: modoGuardado, guardarModo } = useWhatsApp()
+  const modo = podeWhatsApp ? modoGuardado : 'quadro'
   const [pedido, setPedido] = useState<PedidoDeConversa | null>(null)
   const setModo = useCallback(
     (m: 'quadro' | 'whatsapp') => {
-      setModoBruto(m)
+      guardarModo(m)
       if (m === 'whatsapp') {
         ligar()
         setAbertoId('')
       }
     },
-    [ligar],
+    [ligar, guardarModo],
   )
+
+  /* ?lead=<id> ABRE AQUELE LEAD. E por onde a coluna lateral da extensao, no
+     WhatsApp, traz o vendedor para o cartao da conversa que ele esta lendo.
+     O parametro sai da barra depois de usado, senao fechar o inbox e o React
+     redesenhar abriria o mesmo lead de novo (o mesmo cuidado de ?abrir= nos
+     clientes). */
+  const [parametros, setParametros] = useSearchParams()
+  const pedidoDeLead = parametros.get('lead') ?? ''
+  useEffect(() => {
+    if (!pedidoDeLead || carregando) return
+    /* o lead pedido aparece no Quadro, mesmo se a pessoa tinha deixado o
+       Funil no WhatsApp */
+    if (leads.some((l) => l.id === pedidoDeLead)) {
+      setModo('quadro')
+      setAbertoId(pedidoDeLead)
+    } else avisar('Esse lead não está no seu funil', 'warn')
+    setParametros(
+      (p) => {
+        p.delete('lead')
+        return p
+      },
+      { replace: true },
+    )
+  }, [pedidoDeLead, carregando, leads, setParametros, setModo])
 
   /* O BOTAO DO WHATSAPP DO FUNIL, com a extensao, troca a conversa no
      WhatsApp daqui de dentro em vez de abrir outra aba */

@@ -51,7 +51,8 @@
     "senha": "node testes/senha.mjs http://127.0.0.1:4173",
     "rodizio": "node testes/rodizio.mjs http://127.0.0.1:4173",
     "clientes": "node testes/clientes.mjs http://127.0.0.1:4173",
-    "inspetor": "node testes/inspetor.mjs"
+    "inspetor": "node testes/inspetor.mjs",
+    "gestao": "node testes/gestao.mjs http://127.0.0.1:4173"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

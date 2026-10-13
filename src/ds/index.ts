@@ -92,6 +92,6 @@ export { Casca, Pagina } from './componentes/casca'
 export type { ItemDeNavegacao, SecaoDeNavegacao } from './componentes/casca'
 
 export { TelaKit } from './kit/tela-kit'
-export { aplicarTema, temaAtual, temaGuardado, type Tema } from './kit/tema'
+export { aplicarTema, imprimirAPagina, temaAtual, temaGuardado, type Tema } from './kit/tema'
 export { ligarLuz } from './luz'
 export { LINHA_ESCOLHIDA } from './escolhida'

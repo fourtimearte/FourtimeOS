@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
 import { ArrowsClockwise, DotsSixVertical, Path, Printer } from '@phosphor-icons/react'
-import { Aviso as Faixa, Botao, DataEmPilula, Pagina, Seletor, avisar } from '@ds'
+import { Aviso as Faixa, Botao, DataEmPilula, Pagina, Seletor, avisar, imprimirAPagina } from '@ds'
 import {
   AVISO,
   AVISOS,
@@ -362,19 +362,22 @@ export function TelaAtividades() {
             vazio="Todas as etapas"
             aoEscolher={setEtapa}
           />
-          <Botao
-            tom="forte"
-            onClick={() => avisar('A varredura do Drive entra junto com o kanban', 'info')}
-          >
-            <ArrowsClockwise size={17} />
-            Conferir agora
-          </Botao>
+          {/* ATUALIZAR E IMPRIMIR DE VERDADE (12/10/2026). Antes eram dois
+              recados: "Conferir agora" prometia a varredura do Drive, que nao
+              existe, e virou ler os pedidos de novo agora (ele ja rele sozinho
+              a cada 30 segundos); "Impressao" imprime a semana como esta. */}
           <Botao
             tom="contorno"
-            onClick={() => avisar('A folha A4 do painel entra junto com o kanban', 'info')}
+            onClick={() => {
+              void recarregar().then(() => avisar('Pedidos lidos de novo.', 'ok'))
+            }}
           >
+            <ArrowsClockwise size={17} />
+            Atualizar
+          </Botao>
+          <Botao tom="contorno" onClick={imprimirAPagina}>
             <Printer size={17} />
-            Impressão
+            Imprimir
           </Botao>
         </>
       }

@@ -423,7 +423,11 @@ export function Pagina({
           <h1>{titulo}</h1>
           {sub ? <p className="sub">{sub}</p> : null}
         </div>
-        {acoes ? <div style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap' }}>{acoes}</div> : null}
+        {acoes ? (
+          <div className="pagina-acoes" style={{ display: 'flex', gap: 'var(--gap-btn)', flexWrap: 'wrap' }}>
+            {acoes}
+          </div>
+        ) : null}
       </div>
       {children}
     </div>

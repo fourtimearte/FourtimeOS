@@ -2386,3 +2386,27 @@ dialog.cmdk .caixa {
 .m-patch {
   --mae: var(--tec-patch-vivo);
 }
+
+/* --- imprimir uma pagina de tela (imprimirAPagina, em kit/tema.ts) ---------
+   Escondem-se os irmaos da vista (menu, topo, barra de baixo) e os botoes do
+   topo da pagina; o resto sai como esta na tela, no tema claro. */
+@media print {
+  body.imprimindo-pagina .casca > *:not(.vista),
+  body.imprimindo-pagina .pilha-recados,
+  body.imprimindo-pagina .pagina-topo .pagina-acoes,
+  body.imprimindo-pagina .nao-imprime {
+    display: none !important;
+  }
+  body.imprimindo-pagina .casca,
+  body.imprimindo-pagina .vista {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: var(--surface) !important;
+  }
+  body.imprimindo-pagina .cartao {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

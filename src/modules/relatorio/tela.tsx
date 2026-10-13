@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, avisar } from '@ds'
+import { Botao, BotaoComMenu, Pagina, Seletor, Vazio, imprimirAPagina } from '@ds'
+import { DownloadSimple, Printer } from '@phosphor-icons/react'
 import { formatarDinheiroExato, formatarNumeroExato } from '@shared'
 import { carregarTodosOsPedidos, misto, valorDoPedido, type Pedido } from '@dominio/producao'
 import './relatorio.css'
@@ -93,6 +94,23 @@ export function TelaRelatorio() {
     return [...mapa.entries()]
   }, [itens])
 
+  function baixar() {
+    const q = (v: string | number) => '"' + String(v).replace(/"/g, '""') + '"'
+    const n = (v: number) => (v ? v.toFixed(2).replace('.', ',') : '')
+    const cab = ['Mês', 'Dia', 'Pedido', 'Cliente', 'Vendedor', 'Departamento', 'Pçs subli', 'Pçs pers.', 'Pçs', 'Subli R$', 'Person. R$', 'Total R$']
+    const linhas = itens.map((x) =>
+      [MES_CURTO[x.mes], x.dia, x.numero, x.cliente, x.vendedor, x.departamento, x.pecasSubli || '', x.pecasPersonalizadas || '', x.pecasSubli + x.pecasPersonalizadas, n(x.valorSubli), n(x.valorPersonalizado), n(valorDoPedido(x))]
+        .map(q)
+        .join(';'),
+    )
+    const blob = new Blob(['\uFEFF' + [cab.map(q).join(';'), ...linhas].join('\r\n')], { type: 'text/csv;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'relatorio-' + ano + '-' + naOrdem.map((m) => String(m + 1).padStart(2, '0')).join('-') + (vendedor ? '-' + vendedor.toLowerCase().replace(/\s+/g, '-') : '') + '.csv'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   function marcarMes(i: number) {
     setMeses((atual) => {
       if (atual.includes(i)) {
@@ -120,8 +138,9 @@ export function TelaRelatorio() {
       sub="Marcar um mês abre o relatório normal; marcar dois ou mais soma. Um arquivo por mês, sem migração."
       acoes={
         <>
-          <Botao tom="contorno" onClick={() => avisar('A folha A4 do relatório entra junto com o kanban', 'info')}>
-            Imprimir A4
+          <Botao tom="contorno" onClick={imprimirAPagina} disabled={!itens.length}>
+            <Printer size={17} />
+            Imprimir
           </Botao>
           {/* O período saiu da coluna da esquerda e virou uma pílula com o
               mesmo menu de antes: passo de ano em cima e a grade dos doze
@@ -196,8 +215,12 @@ export function TelaRelatorio() {
             vazio="Todos os vendedores"
             aoEscolher={setVendedor}
           />
-          <Botao tom="primario" onClick={() => avisar('Gerar e guardar no Drive entra com o Supabase', 'info')}>
-            Gerar / atualizar
+          {/* BAIXAR A PLANILHA (12/10/2026). Antes, "Gerar / atualizar" prometia
+              guardar no Drive, que ainda nao tem ponte: virou o CSV do periodo
+              e do vendedor escolhidos, com as mesmas colunas da tabela. */}
+          <Botao tom="primario" onClick={baixar} disabled={!itens.length}>
+            <DownloadSimple size={17} />
+            Baixar planilha
           </Botao>
         </>
       }

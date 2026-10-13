@@ -17,6 +17,12 @@ export {
   trocarDonoDoLead,
 } from './repositorio'
 export type { DonoPossivel, TrocaDeDono } from './repositorio'
+export {
+  registrarConversaDoWhatsApp,
+  registrarErroDaExtensao,
+  semRegistro,
+  type MensagemLida,
+} from './whatsapp-registro'
 export { carregarRodizio, daVez, salvarNaFila, zerarRodizio, type NaFila } from './rodizio'
 export {
   carregarRegraDoLeadDoSite,

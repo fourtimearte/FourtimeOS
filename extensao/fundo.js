@@ -7,6 +7,14 @@
    mostrar.
    ========================================================================== */
 const WHATSAPP = 'https://web.whatsapp.com/'
+/* o endereco do banco e a chave publicavel (config.js, escrito pelo
+   empacotar.sh); sem ele o fundo so nao grava os erros da aba comum */
+try {
+  importScripts('config.js')
+} catch {
+  /* pacote sem config.js */
+}
+const CFG = self.FOURTIME || {}
 
 chrome.runtime.onInstalled.addListener((d) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {})
@@ -14,7 +22,7 @@ chrome.runtime.onInstalled.addListener((d) => {
 })
 
 /* ==========================================================================
-   A ATUALIZACAO SOZINHA (0.5.0, 13/10/2026).
+   A ATUALIZACAO SOZINHA (0.5.0, 13/10/2026; a conferencia e da 0.6.0).
 
    No computador do Henrique a extensao e carregada SEM COMPACTACAO de uma
    pasta (D:\CLAUDE\extensao fourtime os), e o Claude grava a versao nova
@@ -32,13 +40,39 @@ chrome.alarms.onAlarm.addListener((a) => {
   if (a.name === 'procurar-versao-nova') void procurarVersaoNova()
 })
 
+/* A CONFERENCIA (0.6.0, 13/10/2026). A pasta pode ser do Google Drive, que
+   baixa os arquivos um a um e em qualquer ordem: recarregar so porque o
+   manifest.json mudou pegaria a versao nova pela metade. O pacote leva o
+   versao.json, gravado POR ULTIMO, com a impressao (SHA-256) de cada arquivo.
+   A extensao so recarrega quando o versao.json diz outra versao E todo
+   arquivo da lista ja chegou com a impressao certa. Pasta sem versao.json (a
+   0.5.x) cai no jeito antigo: o manifest. */
+const lerDoDisco = (nome) => fetch(chrome.runtime.getURL(nome) + '?t=' + Date.now(), { cache: 'no-store' })
+const hexa = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+
 async function procurarVersaoNova() {
+  const rodando = chrome.runtime.getManifest().version
+  let conferencia = null
   try {
-    const r = await fetch(chrome.runtime.getURL('manifest.json') + '?t=' + Date.now(), { cache: 'no-store' })
-    const noDisco = (await r.json()).version
-    if (noDisco && noDisco !== chrome.runtime.getManifest().version) chrome.runtime.reload()
+    conferencia = await (await lerDoDisco('versao.json')).json()
   } catch {
-    /* arquivo pela metade (a copia ainda gravando): tenta no proximo relogio */
+    conferencia = null
+  }
+  try {
+    if (!conferencia || !conferencia.versao || !conferencia.arquivos) {
+      const noDisco = (await (await lerDoDisco('manifest.json')).json()).version
+      if (noDisco && noDisco !== rodando) chrome.runtime.reload()
+      return
+    }
+    if (conferencia.versao === rodando) return
+    for (const [nome, impressao] of Object.entries(conferencia.arquivos)) {
+      const conteudo = await (await lerDoDisco(nome)).arrayBuffer()
+      if (hexa(await crypto.subtle.digest('SHA-256', conteudo)) !== impressao) return /* ainda chegando */
+    }
+    const manifest = await (await lerDoDisco('manifest.json')).json()
+    if (manifest.version === conferencia.versao) chrome.runtime.reload()
+  } catch {
+    /* arquivo pela metade ou ainda sem existir: tenta no proximo relogio */
   }
 }
 
@@ -142,7 +176,37 @@ chrome.runtime.onMessage.addListener((m, quem) => {
   }
   /* o Fourtime OS pediu para abrir uma conversa */
   if (m && m.tipo === 'abrir') void abrir(m.telefone, m.texto)
+  /* o WhatsApp da aba comum nao achou o que procura (0.6.0): grava com a
+     entrada da coluna, se houver. Dentro do Fourtime OS quem grava e a pagina */
+  if (m && m.tipo === 'erro' && quem.tab) void gravarErro(m)
 })
+
+/* --- o erro da aba comum, gravado com a entrada da coluna (lado.js) ------- */
+async function entradaDaColuna() {
+  const { sessao: s } = await chrome.storage.local.get('sessao')
+  if (!s || !CFG.supabase) return null
+  if (Date.now() < s.venceEm - 60_000) return s
+  const r = await fetch(`${CFG.supabase}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { apikey: CFG.chave, 'content-type': 'application/json' },
+    body: JSON.stringify({ refresh_token: s.renovacao }),
+  }).catch(() => null)
+  const d = r && r.ok ? await r.json().catch(() => null) : null
+  if (!d || !d.access_token) return null
+  const nova = { ...s, acesso: d.access_token, renovacao: d.refresh_token, venceEm: Date.now() + (d.expires_in || 3600) * 1000 }
+  await chrome.storage.local.set({ sessao: nova })
+  return nova
+}
+
+async function gravarErro(m) {
+  const s = await entradaDaColuna().catch(() => null)
+  if (!s) return
+  await fetch(`${CFG.supabase}/rest/v1/rpc/registrar_erro_da_extensao`, {
+    method: 'POST',
+    headers: { apikey: CFG.chave, authorization: 'Bearer ' + s.acesso, 'content-type': 'application/json' },
+    body: JSON.stringify({ p_versao: String(m.versao || ''), p_onde: String(m.onde || ''), p_o_que: String(m.oque || ''), p_estrutura: m.estrutura || null }),
+  }).catch(() => {})
+}
 
 /* ACHA A ABA DO WHATSAPP E TROCA A CONVERSA LA DENTRO. Sem aba aberta, abre
    uma; com aba aberta, traz ela para a frente e pede ao whatsapp.js para

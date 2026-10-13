@@ -58,14 +58,14 @@ Mostrar o WhatsApp Web do vendedor dentro do sistema interno Fourtime OS e, ao l
 - **declarativeNetRequest:** permitir que o WhatsApp Web apareça dentro das páginas do Fourtime OS (e só delas), retirando para esse quadro os cabeçalhos que impedem a página de ser mostrada dentro de outra.
 - **alarms:** a cada 30 segundos, conferir se o arquivo da própria extensão mudou de versão (só tem efeito quando ela é carregada de uma pasta, no computador de quem desenvolve; instalada pela loja, a versão nunca muda por ali).
 - **scripting:** depois de a extensão ser atualizada, religar as abas do Fourtime OS que já estavam abertas e recarregar o WhatsApp Web dentro delas, para o código novo valer sem a pessoa recarregar o sistema.
-- **Acesso a web.whatsapp.com:** aplicar as cores do sistema e ler o número da conversa aberta (o texto das mensagens não é lido).
+- **Acesso a web.whatsapp.com:** aplicar as cores do sistema, ler o número da conversa aberta e, só quando a conversa é de um lead do funil e o vendedor está no Fourtime OS, ler as mensagens na tela para guardar no lead (desde a 0.6.0, W3). Quando não acha o que procura, manda o desenho da página sem texto para a Fourtime consertar.
 - **Acesso a *.supabase.co:** consultar no banco do Fourtime OS o lead daquele telefone, com as permissões de quem entrou.
 - **Acesso a fourtimeos.arte-adc.workers.dev:** avisar o sistema de que a extensão está instalada e receber o pedido de abrir uma conversa.
 - **Código remoto:** não usa. Todo o código vai no pacote.
 
 ## Uso de dados (formulário da loja)
 
-- Coleta: "Informações de identificação pessoal" NÃO; "Comunicações pessoais": o número de telefone da conversa aberta, usado só para achar o lead (marcar se o formulário perguntar sobre dados de contato); "Autenticação": a sessão do Fourtime OS na coluna lateral.
+- Coleta: "Informações de identificação pessoal" NÃO; "Comunicações pessoais" SIM (desde a 0.6.0): o número de telefone da conversa aberta, para achar o lead, e as mensagens da conversa de trabalho com um lead do funil, guardadas no lead; "Autenticação": a sessão do Fourtime OS na coluna lateral.
 - Marcar as três declarações: não vende dados a terceiros; não usa nem transfere dados para fins não relacionados à finalidade única; não usa para avaliar crédito ou empréstimo.
 
 ## As imagens desta pasta

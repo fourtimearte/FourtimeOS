@@ -67,7 +67,7 @@ export function PainelDoWhatsApp({
   aoRegistrar: (l: Lead, texto: string) => void
   eu: Eu
 }) {
-  const { mostrarEm, pronto, conversa, recarregou, pedir, escrever } = useWhatsApp()
+  const { mostrarEm, pronto, conversa, recarregou, pedir, escrever, registrar } = useWhatsApp()
   const extensao = versaoDaExtensao()
 
   /* O LUGAR DO WHATSAPP NESTA PAGINA. O WhatsApp mesmo mora na casca
@@ -92,6 +92,25 @@ export function PainelDoWhatsApp({
     const doTelefone = leads.filter((l) => fim(l.telefone) === fim(conversa.telefone))
     return doTelefone.find((l) => !ESTAGIO_FECHADO.includes(l.estagio)) ?? doTelefone[0] ?? null
   }, [leads, conversa.telefone])
+
+  /* W3, O REGISTRO NO LEAD (13/10/2026): com a conversa de um lead aberta
+     e o modo WhatsApp na frente, a pagina pede a extensao as mensagens na
+     tela e grava as novas no lead: ao abrir a conversa e a cada 15 segundos.
+     Conversa que nao e de lead nao e pedida, e a extensao nem le. So enquanto
+     a aba esta na frente: escondida, ninguem esta conversando por aqui. */
+  const leadId = lead?.id ?? ''
+  useEffect(() => {
+    if (!visivel || !pronto || !leadId || !conversa.jid || !extensao) return
+    const agora = () => {
+      if (document.visibilityState === 'visible') void registrar(leadId, conversa.jid)
+    }
+    const primeira = setTimeout(agora, 1200)
+    const t = setInterval(agora, 15_000)
+    return () => {
+      clearTimeout(primeira)
+      clearInterval(t)
+    }
+  }, [visivel, pronto, leadId, conversa.jid, extensao, registrar])
 
   if (!extensao) return visivel ? <AvisoDaExtensao fixo /> : null
 

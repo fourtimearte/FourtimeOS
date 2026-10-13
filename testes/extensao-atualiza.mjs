@@ -11,12 +11,17 @@
         pagina (o anuncio.js de novo)
      3. a aba do WhatsApp recarrega (o tema e o envio voltam a funcionar)
      4. sem mudar a versao, nada recarrega
+     5. (0.6.0, a conferencia) o manifest novo SEM o versao.json novo nao
+        recarrega; o versao.json novo com um arquivo ainda velho (a pasta do
+        Google Drive no meio da copia) nao recarrega; quando o ultimo arquivo
+        chega com a impressao certa, recarrega
 
    Uso:  node testes/extensao-atualiza.mjs http://127.0.0.1:4173
    ========================================================================== */
 
 import { createRequire } from 'node:module'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 const require = createRequire(import.meta.url)
@@ -37,6 +42,17 @@ cpSync(resolve('extensao'), EXT, { recursive: true })
 writeFileSync(join(EXT, 'config.js'), "self.FOURTIME = { supabase: 'https://ensaio.supabase.co', chave: 'ensaio', sistema: '" + SITE + "' }\n")
 const MANIFEST = join(EXT, 'manifest.json')
 const VERSAO = JSON.parse(readFileSync(MANIFEST, 'utf8')).version
+/* o versao.json, como o empacotar.sh escreve */
+const impressao = (f) => createHash('sha256').update(readFileSync(f)).digest('hex')
+function conferencia(versao, troca = {}) {
+  const arquivos = {}
+  for (const n of readdirSync(EXT).sort()) {
+    if (n === 'versao.json' || statSync(join(EXT, n)).isDirectory()) continue
+    arquivos[n] = troca[n] ?? impressao(join(EXT, n))
+  }
+  writeFileSync(join(EXT, 'versao.json'), JSON.stringify({ versao, arquivos }, null, 2))
+}
+conferencia(VERSAO)
 
 /* O MODO DO DESENVOLVEDOR LIGADO, como no Chrome dele: sem ele o Chrome
    desliga a extensao sem compactacao na primeira recarga
@@ -79,11 +95,22 @@ conta(await versaoRodando() === VERSAO && await sistema.evaluate(() => document.
 await sistema.waitForTimeout(35_000)
 conta(await versaoRodando() === VERSAO && await wa.evaluate(() => window.__antes === true), 'sem versao nova, nada recarrega')
 
-/* 1. a versao nova gravada na pasta */
+/* 5a. o manifest novo chegou, o versao.json ainda e o velho: nao recarrega */
 const m = JSON.parse(readFileSync(MANIFEST, 'utf8'))
 const NOVA = VERSAO.replace(/\d+$/, (n) => String(Number(n) + 1))
 m.version = NOVA
 writeFileSync(MANIFEST, JSON.stringify(m, null, 2))
+await sistema.waitForTimeout(33_000)
+conta(await versaoRodando() === VERSAO && await wa.evaluate(() => window.__antes === true), '5. o manifest novo sem o versao.json novo nao recarrega')
+
+/* 5b. o versao.json novo chegou antes do lado.js novo (a copia do Drive no meio) */
+const LADO_NOVO = readFileSync(join(EXT, 'lado.js'), 'utf8') + '\n/* versao nova */\n'
+conferencia(NOVA, { 'lado.js': createHash('sha256').update(LADO_NOVO).digest('hex') })
+await sistema.waitForTimeout(33_000)
+conta(await versaoRodando() === VERSAO, '   o versao.json novo com um arquivo ainda velho nao recarrega')
+
+/* 1. o ultimo arquivo chega: agora recarrega */
+writeFileSync(join(EXT, 'lado.js'), LADO_NOVO)
 const inicio = Date.now()
 let novo = null
 while (Date.now() - inicio < 45_000) {
@@ -91,7 +118,7 @@ while (Date.now() - inicio < 45_000) {
   if (novo) break
   await sistema.waitForTimeout(1000)
 }
-conta(!!novo, `a extensao recarregou sozinha com a ${NOVA} em ${Math.round((Date.now() - inicio) / 1000)} s`)
+conta(!!novo, `1. com o ultimo arquivo conferido, a extensao recarregou sozinha com a ${NOVA} em ${Math.round((Date.now() - inicio) / 1000)} s`)
 await sistema.waitForTimeout(2500)
 
 /* 2. o Fourtime OS sabe da versao nova, sem recarregar a pagina */

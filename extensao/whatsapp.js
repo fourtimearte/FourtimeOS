@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.4.3).
+   A extensao dentro do WhatsApp Web (0.6.0).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -20,7 +20,15 @@
         aberta e, quando pedem, aperta o enviar do WhatsApp. So na conversa
         do telefone que a pagina disse: se a conversa aberta for outra,
         nao escreve nada (mandar para a pessoa errada e o pior erro daqui).
-   O registro das mensagens no lead e a W3.
+     5. (0.6.0) O VIGIA: quando nao acha o que procura (o campo de escrever,
+        o botao de enviar, a identidade da conversa), conta o erro com o
+        esqueleto da pagina em volta: so etiquetas e marcadores do proprio
+        WhatsApp, NENHUM texto, nome ou numero. A pagina (ou o fundo) grava.
+     6. (0.6.0) O REGISTRO NO LEAD (W3): quando a PAGINA do Fourtime OS pede,
+        e so para a conversa que ela disse (a de um lead do funil), le as
+        mensagens que estao na tela: quem mandou, a hora, o texto, e de foto,
+        audio, video e documento so o fato. Conversa que nao e de lead a
+        pagina nem pede, e a extensao nem le.
    ========================================================================== */
 ;(() => {
   const SISTEMA = [
@@ -65,6 +73,7 @@
      termina em @g.us e fica de fora. Conversa que o WhatsApp identifica por
      @lid nao traz o numero: ai tenta o titulo do topo, que mostra o numero
      quando o contato nao esta salvo. */
+  const RE_ID = /^(true|false)_([^_]+@(?:c\.us|s\.whatsapp\.net|lid|g\.us))_(.+)$/
   function conversaAberta() {
     const main = document.querySelector('#main')
     if (!main) return { jid: '', telefone: '', nome: '', aberta: false }
@@ -189,7 +198,10 @@
     if (jid && aberta.jid && jid !== aberta.jid) return { ok: false, motivo: 'outra-conversa' }
     if (telefone && aberta.telefone && fimDe(aberta.telefone) !== fimDe(telefone)) return { ok: false, motivo: 'outra-conversa' }
     const campo = campoDeEscrever()
-    if (!campo) return { ok: false, motivo: 'sem-campo' }
+    if (!campo) {
+      reportar('campo-de-escrever', 'a conversa esta aberta e nao achei o campo de escrever', document.querySelector('#main footer'))
+      return { ok: false, motivo: 'sem-campo' }
+    }
     campo.focus()
     document.execCommand('selectAll', false)
     const dt = new DataTransfer()
@@ -202,15 +214,121 @@
       document.execCommand('insertText', false, texto)
       await espera(80)
     }
-    if (!textoDoCampo(campo).includes(comeco)) return { ok: false, motivo: 'nao-escreveu' }
+    if (!textoDoCampo(campo).includes(comeco)) {
+      reportar('escrever', 'o texto colado nao entrou no campo', document.querySelector('#main footer'))
+      return { ok: false, motivo: 'nao-escreveu' }
+    }
     if (!enviar) return { ok: true, enviado: false }
     await espera(120)
     const b = botaoDeEnviar()
+    if (!b) reportar('botao-de-enviar', 'nao achei o botao de enviar; fui pelo Enter', document.querySelector('#main footer'))
     if (b) b.click()
     else campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true }))
     await espera(300)
     const saiu = !textoDoCampo(campoDeEscrever() || campo).includes(comeco)
+    if (!saiu) reportar('enviar', 'o texto continuou no campo depois de enviar', document.querySelector('#main footer'))
     return saiu ? { ok: true, enviado: true } : { ok: false, motivo: 'nao-enviou' }
+  }
+
+  /* --- o vigia (0.6.0) ---------------------------------------------------
+     O ESQUELETO: a arvore de etiquetas em volta do que sumiu, com os
+     marcadores do proprio WhatsApp (data-testid, data-icon, role, o id das
+     caixas grandes, contenteditable). Nada de texto, title ou aria-label,
+     que levam nome de contato. No maximo 300 pecas. Cada erro vai uma vez
+     por hora por pagina; o banco junta o dia. */
+  const VERSAO = chrome.runtime.getManifest().version
+  const desde = Date.now()
+  const contados = new Map()
+  function esqueleto(raiz) {
+    let pecas = 0
+    const olhar = (el, fundo) => {
+      if (!el || pecas >= 300 || fundo > 6) return null
+      pecas++
+      const o = { t: el.tagName.toLowerCase() }
+      const tid = el.getAttribute('data-testid')
+      if (tid) o.i = tid.slice(0, 60)
+      const ic = el.getAttribute('data-icon')
+      if (ic) o.c = ic.slice(0, 60)
+      const r = el.getAttribute('role')
+      if (r) o.r = r.slice(0, 30)
+      if (el.id && /^[a-z][\w-]{0,30}$/i.test(el.id) && !/\d{3,}/.test(el.id)) o.id = el.id
+      if (el.getAttribute('contenteditable') === 'true') o.e = 1
+      if (el.hasAttribute('data-tab')) o.d = String(el.getAttribute('data-tab')).slice(0, 4)
+      const filhos = [...el.children].slice(0, 10).map((f) => olhar(f, fundo + 1)).filter(Boolean)
+      if (filhos.length) o.f = filhos
+      if (el.children.length > 10) o.mais = el.children.length - 10
+      return o
+    }
+    return olhar(raiz, 0)
+  }
+  function reportar(onde, oque, raiz) {
+    const chave = onde + '|' + oque
+    if (Date.now() - (contados.get(chave) || 0) < 3_600_000) return
+    contados.set(chave, Date.now())
+    contar({ tipo: 'erro', versao: VERSAO, onde, oque, estrutura: raiz ? esqueleto(raiz) : null })
+  }
+  function conferirAPagina() {
+    const app = document.querySelector('#app')
+    if (!app || !app.children.length) return
+    const main = document.querySelector('#main')
+    const lista = document.querySelector('#pane-side')
+    const qr = document.querySelector('canvas, [data-ref]')
+    if (!main && !lista && !qr && Date.now() - desde > 90_000)
+      reportar('lista-de-conversas', 'nao achei a lista de conversas (#pane-side), a conversa (#main) nem o QR Code', app)
+    if (!main) return
+    const rodape = main.querySelector('footer')
+    if (rodape && !campoDeEscrever()) reportar('campo-de-escrever', 'a conversa tem rodape e nao achei o campo de escrever', rodape)
+    const ids = [...main.querySelectorAll('[data-id]')]
+    if (ids.length && !ids.some((el) => RE_ID.test(el.getAttribute('data-id') || '')))
+      reportar('identidade-da-conversa', 'as mensagens tem data-id num formato que nao conheco', main)
+  }
+  setInterval(conferirAPagina, 60_000)
+  setTimeout(conferirAPagina, 95_000)
+
+  /* --- o registro no lead (W3, 0.6.0) -----------------------------------
+     So quando a pagina pede, e so a conversa que ela disse. A hora sai do
+     data-pre-plain-text ("[14:32, 13/10/2026] Nome: "); o nome nao sai daqui.
+     Sem a hora, vai vazio e o banco usa a hora do registro. */
+  function horaDe(t) {
+    const m = /\[(\d{1,2}):(\d{2})(?:\s*([AaPp])\.?\s*[Mm]\.?)?,\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\]/.exec(t || '')
+    if (!m) return ''
+    let h = Number(m[1])
+    const ampm = (m[3] || '').toLowerCase()
+    if (ampm === 'p' && h < 12) h += 12
+    if (ampm === 'a' && h === 12) h = 0
+    /* com AM/PM a data vem mes/dia (ingles); sem, dia/mes */
+    const dia = ampm ? Number(m[5]) : Number(m[4])
+    const mes = ampm ? Number(m[4]) : Number(m[5])
+    const d = new Date(Number(m[6]), mes - 1, dia, h, Number(m[2]))
+    return isNaN(d.getTime()) ? '' : d.toISOString()
+  }
+  function lerUma(el, id, eu) {
+    const pre = el.querySelector('[data-pre-plain-text]')
+    const corpo = el.querySelector('.selectable-text, [data-pre-plain-text] span[dir]')
+    const texto = corpo ? (corpo.innerText || corpo.textContent || '').trim().slice(0, 4000) : ''
+    let tipo = 'texto'
+    if (el.querySelector('audio, [data-icon*="audio"], [data-icon*="ptt"]')) tipo = 'audio'
+    else if (el.querySelector('video, [data-icon*="video"]')) tipo = 'video'
+    else if (el.querySelector('[data-icon*="document"], [data-icon*="doc-"]')) tipo = 'arquivo'
+    else if (el.querySelector('img[src^="blob:"]:not(.emoji)')) tipo = 'imagem'
+    if (tipo === 'texto' && !texto) return null /* figurinha, apagada, localizacao: fica de fora */
+    return { id, eu, em: horaDe(pre && pre.getAttribute('data-pre-plain-text')), tipo, texto }
+  }
+  function lerMensagens(jidPedido) {
+    const main = document.querySelector('#main')
+    const aberta = conversaAberta()
+    if (!main || !aberta.jid || aberta.jid !== jidPedido) return { ok: false, motivo: 'outra-conversa', mensagens: [] }
+    const vistas = new Set()
+    const lista = []
+    for (const el of main.querySelectorAll('[data-id]')) {
+      const id = el.getAttribute('data-id') || ''
+      const m = RE_ID.exec(id)
+      if (!m || m[2] !== jidPedido || vistas.has(id)) continue
+      vistas.add(id)
+      const uma = lerUma(el, id, m[1] === 'true')
+      if (uma) lista.push(uma)
+    }
+    return { ok: true, mensagens: lista.slice(-80) }
   }
 
   if (dentro) {
@@ -223,6 +341,10 @@
       if (d.tipo === 'tema') {
         temaDaPagina = d.tema === 'dark' ? 'escuro' : 'claro'
         aplicarTema()
+        return
+      }
+      if (d.tipo === 'ler-mensagens') {
+        contar({ tipo: 'mensagens', marca: d.marca, jid: String(d.jid || ''), ...lerMensagens(String(d.jid || '')) })
         return
       }
       if (d.tipo === 'escrever') {

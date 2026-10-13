@@ -49,5 +49,19 @@ if [ "${LOJA:-}" = 1 ]; then
   echo "dist-extensao/fourtime-os-$VERSAO-loja.zip"
   exit 0
 fi
+# A CONFERENCIA (0.6.0): versao.json com a impressao SHA-256 de cada arquivo
+# do pacote. Quem grava numa pasta (a D:\ ou a do Google Drive) grava este
+# arquivo POR ULTIMO; a extensao so recarrega quando todos os da lista ja
+# chegaram com a impressao certa (fundo.js, procurarVersaoNova).
+node -e '
+  const fs = require("fs"), path = require("path"), crypto = require("crypto")
+  const pasta = process.argv[1], versao = process.argv[2]
+  const arquivos = {}
+  for (const nome of fs.readdirSync(pasta).sort()) {
+    if (nome === "versao.json" || fs.statSync(path.join(pasta, nome)).isDirectory()) continue
+    arquivos[nome] = crypto.createHash("sha256").update(fs.readFileSync(path.join(pasta, nome))).digest("hex")
+  }
+  fs.writeFileSync(path.join(pasta, "versao.json"), JSON.stringify({ versao, arquivos }, null, 2) + "\n")
+' "$PASTA" "$VERSAO"
 (cd dist-extensao && zip -qr "fourtime-os-$VERSAO.zip" "fourtime-os-$VERSAO")
 echo "$PASTA.zip"

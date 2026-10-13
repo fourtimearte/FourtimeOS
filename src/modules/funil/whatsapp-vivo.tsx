@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { versaoDaExtensao } from '@shared'
-import type { Escrita } from './painel'
+import { registrarConversaDoWhatsApp, registrarErroDaExtensao, semRegistro, type MensagemLida } from '@dominio/funil'
 import './funil.css'
 
 /* ==========================================================================
@@ -28,6 +28,9 @@ import './funil.css'
 
 export const WHATSAPP = 'https://web.whatsapp.com'
 
+/** a resposta da extensao ao escrever na conversa aberta */
+export type Escrita = { ok: boolean; enviado?: boolean; motivo?: string }
+
 export type Conversa = { jid: string; telefone: string; nome: string; aberta: boolean }
 
 export type ModoDoFunil = 'quadro' | 'whatsapp'
@@ -45,6 +48,11 @@ type WhatsAppVivo = {
   recarregou: boolean
   pedir: (telefone: string, texto?: string) => void
   escrever: (texto: string, enviar: boolean) => Promise<Escrita>
+  /** W3: le a conversa aberta (so se for esta) e grava no lead o que e novo.
+      Devolve quantas entraram, ou null quando nao deu para registrar. */
+  registrar: (leadId: string, jid: string) => Promise<number | null>
+  /** o que o registro ja fez nesta visita: quantas gravou e se esta parado */
+  registro: { gravadas: number; parado: boolean }
 }
 
 const SEM_CONVERSA: Conversa = { jid: '', telefone: '', nome: '', aberta: false }
@@ -62,6 +70,8 @@ const Contexto = createContext<WhatsAppVivo>({
   recarregou: false,
   pedir: () => {},
   escrever: async () => ({ ok: false, motivo: 'sem-quadro' }),
+  registrar: async () => null,
+  registro: { gravadas: 0, parado: false },
 })
 
 export const useWhatsApp = () => useContext(Contexto)
@@ -82,6 +92,11 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   const conversaAgora = useRef(conversa)
   conversaAgora.current = conversa
   const escritas = useRef(new Map<number, (r: Escrita) => void>())
+  const leituras = useRef(new Map<number, (r: MensagemLida[] | null) => void>())
+  /* o que ja foi gravado nesta visita, para nao mandar de novo a cada leitura */
+  const jaGravadas = useRef(new Set<string>())
+  const [registro, setRegistro] = useState({ gravadas: 0, parado: false })
+  const parado = useRef(false)
 
   const contarOTema = useCallback(() => {
     quadro.current?.contentWindow?.postMessage(
@@ -111,6 +126,20 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
         setConversa({ jid, telefone, nome: String(x.nome ?? ''), aberta: x.aberta ?? !!(jid || telefone) })
       }
       if (d.tipo === 'abriu') setRecarregou(d.jeito === 'recarregando')
+      /* O VIGIA: a extensao nao achou o que procura no WhatsApp. A pagina
+         grava com a entrada de quem esta usando (so o esqueleto, sem texto) */
+      if (d.tipo === 'erro') {
+        const x = d as unknown as { versao?: string; onde?: string; oque?: string; estrutura?: unknown }
+        void registrarErroDaExtensao({ versao: String(x.versao ?? ''), onde: String(x.onde ?? ''), oque: String(x.oque ?? ''), estrutura: x.estrutura ?? null })
+      }
+      if (d.tipo === 'mensagens') {
+        const r = d as unknown as { marca?: number; ok?: boolean; mensagens?: MensagemLida[] }
+        const esperando = leituras.current.get(Number(r.marca))
+        if (esperando) {
+          leituras.current.delete(Number(r.marca))
+          esperando(r.ok && Array.isArray(r.mensagens) ? r.mensagens : null)
+        }
+      }
       if (d.tipo === 'escreveu') {
         const r = d as unknown as Escrita & { marca?: number }
         const esperando = escritas.current.get(Number(r.marca))
@@ -160,6 +189,38 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
     quadro.current?.contentWindow?.postMessage({ fourtime: 'pedido', tipo: 'abrir', telefone, texto }, WHATSAPP)
   }, [])
 
+  /* W3, O REGISTRO NO LEAD: pede a extensao as mensagens da conversa aberta
+     (ela confere se a aberta e mesmo esta) e grava so as que ainda nao foram.
+     Sem a 078 no banco, para de tentar e o painel diz. */
+  const registrar = useCallback(async (leadId: string, jid: string): Promise<number | null> => {
+    if (parado.current || !leadId || !jid || !quadro.current?.contentWindow) return null
+    const lidas = await new Promise<MensagemLida[] | null>((resolver) => {
+      const marca = Date.now() + Math.random()
+      leituras.current.set(marca, resolver)
+      quadro.current?.contentWindow?.postMessage({ fourtime: 'pedido', tipo: 'ler-mensagens', jid, marca }, WHATSAPP)
+      setTimeout(() => {
+        if (!leituras.current.has(marca)) return
+        leituras.current.delete(marca)
+        resolver(null)
+      }, 2500)
+    })
+    if (!lidas) return null
+    const novas = lidas.filter((m) => m && m.id && !jaGravadas.current.has(m.id))
+    if (!novas.length) return 0
+    try {
+      const n = await registrarConversaDoWhatsApp(leadId, novas)
+      novas.forEach((m) => jaGravadas.current.add(m.id))
+      if (n) setRegistro((r) => ({ ...r, gravadas: r.gravadas + n }))
+      return n
+    } catch (e) {
+      if (semRegistro(e)) {
+        parado.current = true
+        setRegistro((r) => ({ ...r, parado: true }))
+      }
+      return null
+    }
+  }, [])
+
   const ligar = useCallback(() => setLigado(true), [])
 
   /* SEGUIR O LUGAR. A cada quadro de desenho, enquanto ha lugar marcado, o
@@ -195,8 +256,8 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   }, [lugar, ligado])
 
   const valor = useMemo<WhatsAppVivo>(
-    () => ({ ligado, ligar, modo, guardarModo, mostrarEm: setLugar, pronto, conversa, recarregou, pedir, escrever }),
-    [ligado, ligar, modo, pronto, conversa, recarregou, pedir, escrever],
+    () => ({ ligado, ligar, modo, guardarModo, mostrarEm: setLugar, pronto, conversa, recarregou, pedir, escrever, registrar, registro }),
+    [ligado, ligar, modo, pronto, conversa, recarregou, pedir, escrever, registrar, registro],
   )
 
   return (

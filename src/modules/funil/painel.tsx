@@ -42,6 +42,7 @@ import {
   type Mensagem,
 } from '@dominio/funil'
 import { FichaDoSite } from './inbox'
+import { useWhatsApp, type Escrita } from './whatsapp-vivo'
 
 /* ==========================================================================
    O PAINEL AO LADO DO WHATSAPP (pranchas 150 a 152, aprovadas em 12/10/2026:
@@ -60,7 +61,7 @@ import { FichaDoSite } from './inbox'
    a W3, que espera a decisao do Henrique.
    ========================================================================== */
 
-export type Escrita = { ok: boolean; enviado?: boolean; motivo?: string }
+export type { Escrita }
 export type Eu = { id: string; nome: string; chefe: boolean }
 type Aba = 'atendimento' | 'cliente'
 
@@ -205,11 +206,17 @@ function TopoDaConversa({
   aoVirarCliente: (l: Lead) => void
   aoAbrirCliente: (id: string) => void
 }) {
+  /* W3: a conversa de um lead fica registrada nele, e o topo diz isso, para
+     ninguem ser pego de surpresa (decisao do Henrique em 13/10/2026) */
+  const { registro } = useWhatsApp()
   const status = (
     <p className="fn-wa-status">
       <span className={pronto ? 'fn-wa-ponto ligado' : 'fn-wa-ponto'} aria-hidden="true" />
       {pronto ? 'WhatsApp aberto aqui dentro' : 'Abrindo o WhatsApp... na primeira vez, escaneie o QR Code'}
       {recarregou ? <small>trocou de conversa recarregando</small> : null}
+      {pronto && l && conversa.jid ? (
+        <small>{registro.parado ? 'o registro no lead ainda não está ligado no banco' : 'esta conversa fica registrada no lead'}</small>
+      ) : null}
     </p>
   )
 

@@ -211,12 +211,18 @@ export type Aprovacao = {
    se preenche uma vez e serve aos dois destinos. Estes campos nunca foram do
    comercial: eles são o que a fábrica precisa saber depois do sim, e por isso
    ficam num bloco só, separados do que o cliente lê. */
-export const MARCAS = ['URGENTE', 'ATRASADO'] as const
+/* EVENTO, VIP E PRIORIDADE entraram em 12/10/2026: o cartao do kanban ja
+   sabia pinta-las (TOM_DA_MARCA, em producao/cartao.ts), e nao havia onde
+   marca-las. As cores sao os tons das tags, os mesmos do cartao. */
+export const MARCAS = ['URGENTE', 'ATRASADO', 'PRIORIDADE', 'EVENTO', 'VIP'] as const
 export type Marca = (typeof MARCAS)[number]
 
 export const COR_DA_MARCA: Record<string, string> = {
   URGENTE: 'var(--brand)',
-  ATRASADO: '#e8590c',
+  ATRASADO: 'var(--tom-laranja)',
+  PRIORIDADE: 'var(--tom-laranja)',
+  EVENTO: 'var(--tom-roxa)',
+  VIP: 'var(--tom-amarela)',
 }
 
 export type DadosDeProducao = {

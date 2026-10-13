@@ -38,6 +38,7 @@ import {
   Rotulo,
   entregaEmTexto,
 } from './pecas-do-modal'
+import { TravouESeparar } from './travou-e-separar'
 import './cartao-aberto.css'
 
 /* ==========================================================================
@@ -510,6 +511,8 @@ export function CartaoAberto({
                   </span>
                 </section>
 
+                <TravouESeparar fatia={fatia} blocos={blocos} rota={rota} podeMover={podeMover} aoMexer={mexer} />
+
                 {/* A ROTA INTEIRA, de cima para baixo, com o de agora em
                     destaque. Ela responde a pergunta que o operador faz sem
                     falar: quanto falta. */}
@@ -680,6 +683,9 @@ function frase(e: EventoDoCartao): string {
   if (e.tipo === 'tag') return `${quem} ${e.texto}`
   if (e.tipo === 'pegou') return `${quem} pegou o cartão`
   if (e.tipo === 'soltou') return `${quem} soltou o cartão`
+  if (e.tipo === 'travou') return `${quem} marcou que travou aqui: ${e.texto}`
+  if (e.tipo === 'destravou') return `${quem} destravou o cartão`
+  if (e.tipo === 'separou') return `${e.texto}, por ${quem}`
   return e.texto || 'o cartão nasceu'
 }
 

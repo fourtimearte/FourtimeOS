@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowUUpLeft, Bell, ChatCircleText, Globe, Package, Truck, UserSwitch } from '@phosphor-icons/react'
+import { ArrowUUpLeft, Bell, ChatCircleText, Globe, Package, Truck, UserSwitch, Warning } from '@phosphor-icons/react'
 import { Flutuante } from '@ds'
 import { carregarMeusAvisos, lerAvisos, type AvisoDoSino } from '@dominio/sino'
 import './sino.css'
@@ -141,6 +141,8 @@ export function Sino() {
                       <Package size={17} />
                     ) : a.tipo === 'pronto' ? (
                       <Truck size={17} />
+                    ) : a.tipo === 'travou' ? (
+                      <Warning size={17} />
                     ) : (
                       <ChatCircleText size={17} />
                     )}

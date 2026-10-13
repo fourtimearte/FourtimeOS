@@ -1307,7 +1307,7 @@ dialog.modal.largo {
 dialog.modal.gigante {
   max-width: 1400px;
 }
-dialog.modal.gigante .caixa {
+dialog.modal.gigante > .caixa {
   height: calc(100dvh - 32px);
 }
 /* O CHEIO E O CARTAO DO KANBAN DESDE 01/10: a tela quase inteira, com 40px
@@ -1320,7 +1320,7 @@ dialog.modal.cheio {
   width: calc(100% - 80px);
   max-width: none;
 }
-dialog.modal.cheio .caixa {
+dialog.modal.cheio > .caixa {
   height: calc(100dvh - 64px);
   max-height: none;
 }
@@ -1333,7 +1333,7 @@ dialog.modal.tela {
   width: calc(100% - 48px);
   max-width: 1760px;
 }
-dialog.modal.tela .caixa {
+dialog.modal.tela > .caixa {
   max-height: calc(100dvh - 48px);
 }
 
@@ -1422,7 +1422,7 @@ dialog.gaveta .caixa {
   dialog.modal.cheio {
     width: auto;
   }
-  dialog.modal.cheio .caixa {
+  dialog.modal.cheio > .caixa {
     height: 92dvh;
     max-height: 92dvh;
   }

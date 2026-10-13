@@ -56,6 +56,11 @@ export type FatiaNoQuadro = {
      ter que mexer no cartão de novo no dia do Drive; deixar o ícone aceso sem
      anexo seria um clipe que não abre nada, que é pior. */
   anexos: number
+  /* TRAVOU AQUI (076): quando, por que e quem. Vazio quando nao travou, ou
+     antes de a 076 rodar. Andar de posto destrava sozinho. */
+  travadaEm: string
+  travadaMotivo: string
+  travadaPorNome: string
 }
 
 type LinhaDaFatia = {
@@ -82,6 +87,9 @@ type LinhaDaFatia = {
   pego_por_nome: string | null
   pego_em: string | null
   falas: number | null
+  travada_em?: string | null
+  travada_motivo?: string | null
+  travada_por_nome?: string | null
 }
 
 function deLinhaDaFatia(l: LinhaDaFatia): FatiaNoQuadro {
@@ -110,6 +118,9 @@ function deLinhaDaFatia(l: LinhaDaFatia): FatiaNoQuadro {
     pegoEm: l.pego_em ?? '',
     falas: Number(l.falas) || 0,
     anexos: 0,
+    travadaEm: l.travada_em ?? '',
+    travadaMotivo: l.travada_motivo || '',
+    travadaPorNome: l.travada_por_nome || '',
   }
 }
 

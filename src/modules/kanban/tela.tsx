@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Kanban } from '@phosphor-icons/react'
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
 import { avisar, Esqueleto, IconeDoTitulo, Vazio } from '@ds'
@@ -151,7 +152,7 @@ export function TelaKanban() {
   const oQueArrasta = useRef<FatiaNoQuadro | null>(null)
   const quadroDeVideo = useRef(0)
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (quieto = false) => {
     try {
       const [f, r, t] = await Promise.all([
         carregarOQuadro(),
@@ -161,8 +162,11 @@ export function TelaKanban() {
       setFatias(f)
       setRotas(r)
       setTags(t)
+      setErro('')
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não consegui ler o quadro.')
+      /* a releitura de fundo que falha nao derruba o quadro que ja esta na
+         tela: tenta de novo no proximo relogio */
+      if (!quieto) setErro(e instanceof Error ? e.message : 'Não consegui ler o quadro.')
     } finally {
       setCarregando(false)
     }
@@ -170,6 +174,44 @@ export function TelaKanban() {
 
   useEffect(() => {
     void carregar()
+  }, [carregar])
+
+  /* O SINO ABRE O CARTAO: o aviso de "travou" (076) leva a /kanban?cartao=id.
+     Abre assim que o quadro tem o cartao, e tira o parametro do endereco para
+     fechar e reler nao abrirem de novo. */
+  const [endereco, setEndereco] = useSearchParams()
+  const pedidoDoSino = endereco.get('cartao') ?? ''
+  useEffect(() => {
+    if (!pedidoDoSino || !fatias.length) return
+    if (fatias.some((f) => f.id === pedidoDoSino)) setAberto(pedidoDoSino)
+    setEndereco((e) => {
+      const n = new URLSearchParams(e)
+      n.delete('cartao')
+      return n
+    }, { replace: true })
+  }, [pedidoDoSino, fatias, setEndereco])
+
+  /* A RELEITURA SOZINHA (12/10/2026). O quadro fica aberto o dia inteiro num
+     tablet do galpao, e ate hoje so se relia ao abrir e depois de cada mexida
+     DESTA tela: o cartao que outro posto terminou continuava parado aqui.
+     Os mesmos tres relogios do painel de atividades: a cada 30 segundos, ao
+     voltar para a aba e ao voltar o foco. Nunca no meio de um arrasto, que
+     trocaria a lista embaixo do dedo. */
+  const arrastando = useRef(false)
+  arrastando.current = !!arrasto
+  useEffect(() => {
+    const reler = () => {
+      if (document.visibilityState !== 'visible' || arrastando.current) return
+      void carregar(true)
+    }
+    const relogio = window.setInterval(reler, 30_000)
+    document.addEventListener('visibilitychange', reler)
+    window.addEventListener('focus', reler)
+    return () => {
+      window.clearInterval(relogio)
+      document.removeEventListener('visibilitychange', reler)
+      window.removeEventListener('focus', reler)
+    }
   }, [carregar])
 
   const porPosto = useMemo(() => {
@@ -201,6 +243,7 @@ export function TelaKanban() {
       pecas: fatias.filter((f) => f.etapa !== 'finalizado').reduce((s, f) => s + f.pecas, 0),
       parados: fatias.filter((f) => f.etapa !== 'finalizado' && paradoHa(f.etapaEm) >= 3).length,
       prontos: fatias.filter((f) => f.etapa === 'finalizado').length,
+      travados: fatias.filter((f) => f.etapa !== 'finalizado' && f.travadaEm).length,
     }),
     [fatias],
   )
@@ -404,6 +447,11 @@ export function TelaKanban() {
               <span className={conta.parados ? 'kb-dado alerta' : 'kb-dado'}>
                 <b>{conta.parados}</b> parados 3 dias ou mais
               </span>
+              {conta.travados ? (
+                <span className="kb-dado alerta">
+                  <b>{conta.travados}</b> {conta.travados === 1 ? 'travado' : 'travados'}
+                </span>
+              ) : null}
               <span className="kb-dado">
                 <b>{conta.prontos}</b> finalizados
               </span>

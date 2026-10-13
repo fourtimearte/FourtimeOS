@@ -890,3 +890,34 @@
     transform: none;
   }
 }
+
+/* --- travou aqui (076) -----------------------------------------------------
+   A borda vermelha diz de longe que o cartão parou por um motivo; a linha diz
+   qual. Mesmo vermelho da marca, como o atraso. */
+.kb-cartao.travado {
+  border-color: var(--brand);
+}
+.kb-travou {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-colado);
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--brand-text);
+}
+.kb-travou svg {
+  flex-shrink: 0;
+  margin-top: var(--re-1);
+}
+.kb-travou span {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.kb-cartao.escuro .kb-travou {
+  color: var(--brand-no-ink, var(--brand));
+}

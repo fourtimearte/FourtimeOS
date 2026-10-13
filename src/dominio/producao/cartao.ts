@@ -108,7 +108,7 @@ export function tomDaMarca(marca: string): TomDeTag {
 /* --- a linha do tempo ----------------------------------------------------
    A fala e o fato na mesma lista, de propósito: um comentário lido sem saber
    que o cartão mudou de posto três minutos antes é meio comentário. */
-export type TipoDeEvento = 'fala' | 'posto' | 'tag' | 'pegou' | 'soltou' | 'nasceu'
+export type TipoDeEvento = 'fala' | 'posto' | 'tag' | 'pegou' | 'soltou' | 'nasceu' | 'travou' | 'destravou' | 'separou'
 
 export type EventoDoCartao = {
   id: string
@@ -153,6 +153,38 @@ export function pegarOCartao(fatiaId: string) {
 
 export function soltarOCartao(fatiaId: string) {
   return chamar<unknown>('soltar_a_fatia', { p_fatia: fatiaId })
+}
+
+/* --- travou aqui (076) ----------------------------------------------------
+   O motivo e obrigatorio e o banco confere: travar sem dizer por que e so um
+   cartao vermelho que ninguem sabe destravar. Andar de posto destrava. */
+export function travarOCartao(fatiaId: string, motivo: string) {
+  return chamar<unknown>('travar_a_fatia', { p_fatia: fatiaId, p_motivo: motivo })
+}
+
+export function destravarOCartao(fatiaId: string) {
+  return chamar<unknown>('destravar_a_fatia', { p_fatia: fatiaId })
+}
+
+/* --- separar (076) ---------------------------------------------------------
+   Os layouts escolhidos saem para um cartao novo, da mesma tecnica, no posto
+   escolhido; o cartao de origem segue com o resto. As pecas vem da grade da
+   cotacao, que a tela ja leu; o banco confere que ficam entre 1 e as do
+   cartao menos 1. */
+export function separarDoCartao(
+  fatiaId: string,
+  layouts: number[],
+  pecas: number,
+  posto: Etapa,
+  motivo: string,
+) {
+  return chamar<unknown>('separar_da_fatia', {
+    p_fatia: fatiaId,
+    p_layouts: layouts,
+    p_pecas: pecas,
+    p_posto: posto,
+    p_motivo: motivo,
+  })
 }
 
 /* --- a conferência do Terminei -------------------------------------------

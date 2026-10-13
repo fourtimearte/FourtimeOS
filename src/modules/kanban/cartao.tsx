@@ -1,5 +1,5 @@
 import type { CSSProperties, PointerEvent as EventoDePonteiro } from 'react'
-import { Paperclip } from '@phosphor-icons/react'
+import { Paperclip, Warning } from '@phosphor-icons/react'
 import { Etiqueta } from '@ds'
 import {
   NOME_DA_TECNICA,
@@ -95,6 +95,7 @@ export function CartaoDaFatia({
     arrastando ? 'saindo' : '',
     aceso ? 'escuro' : '',
     apagado ? 'apagado' : '',
+    fatia.travadaEm ? 'travado' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -147,6 +148,15 @@ export function CartaoDaFatia({
             )
           })}
         </div>
+      ) : null}
+
+      {/* TRAVOU AQUI (076): o motivo escrito, em vermelho, em cima do pé.
+          Some sozinho quando o cartão anda de posto. */}
+      {fatia.travadaEm ? (
+        <p className="kb-travou" title={'Travou aqui' + (fatia.travadaPorNome ? ', por ' + fatia.travadaPorNome : '')}>
+          <Warning size={13} weight="bold" aria-hidden="true" />
+          <span>Travou: {fatia.travadaMotivo}</span>
+        </p>
       ) : null}
 
       <footer className="kb-pe">

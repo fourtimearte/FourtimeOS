@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A extensao dentro do WhatsApp Web (0.6.0).
+   A extensao dentro do WhatsApp Web (0.6.1).
 
    DOIS LUGARES, O MESMO TRABALHO:
      - DENTRO DO FOURTIME OS (pranchas 131 a 133): o WhatsApp Web aberto num
@@ -261,11 +261,12 @@
     }
     return olhar(raiz, 0)
   }
-  function reportar(onde, oque, raiz) {
+  function reportar(onde, oque, raiz, extra) {
     const chave = onde + '|' + oque
     if (Date.now() - (contados.get(chave) || 0) < 3_600_000) return
     contados.set(chave, Date.now())
-    contar({ tipo: 'erro', versao: VERSAO, onde, oque, estrutura: raiz ? esqueleto(raiz) : null })
+    const estrutura = raiz ? esqueleto(raiz) : null
+    contar({ tipo: 'erro', versao: VERSAO, onde, oque, estrutura: extra ? { ...extra, pagina: estrutura } : estrutura })
   }
   function conferirAPagina() {
     const app = document.querySelector('#app')
@@ -278,10 +279,25 @@
     if (!main) return
     const rodape = main.querySelector('footer')
     if (rodape && !campoDeEscrever()) reportar('campo-de-escrever', 'a conversa tem rodape e nao achei o campo de escrever', rodape)
-    const ids = [...main.querySelectorAll('[data-id]')]
-    if (ids.length && !ids.some((el) => RE_ID.test(el.getAttribute('data-id') || '')))
-      reportar('identidade-da-conversa', 'as mensagens tem data-id num formato que nao conheco', main)
+    /* CANAL E LISTA DE TRANSMISSAO nao sao conversa com pessoa: o data-id
+       deles termina em @newsletter ou @broadcast, e o primeiro alarme do vigia
+       de verdade (13/10/2026) foi isso. Ficam de fora. Quando o formato e
+       mesmo novo, vai junto a FORMA dele, sem numero nem codigo
+       ("false_9@algo_X"), para o conserto saber o que mudou. */
+    const ids = [...main.querySelectorAll('[data-id]')].map((el) => el.getAttribute('data-id') || '')
+    if (ids.some((id) => /@(newsletter|broadcast)(?![a-z])/i.test(id))) return
+    if (ids.length && !ids.some((id) => RE_ID.test(id))) {
+      const formas = [...new Set(ids.map(formaDoId))].slice(0, 5)
+      reportar('identidade-da-conversa', 'as mensagens tem data-id num formato que nao conheco', main, { formas })
+    }
   }
+  /* codigo comprido com numero vira X, numero solto vira 9; palavra (c.us,
+     lid, newsletter) fica, que e ela que conta o formato */
+  const formaDoId = (id) =>
+    id
+      .replace(/[A-Za-z0-9]{8,}/g, (m) => (/\d/.test(m) ? 'X' : m))
+      .replace(/\d+/g, '9')
+      .slice(0, 60)
   setInterval(conferirAPagina, 60_000)
   setTimeout(conferirAPagina, 95_000)
 
@@ -341,6 +357,11 @@
       if (d.tipo === 'tema') {
         temaDaPagina = d.tema === 'dark' ? 'escuro' : 'claro'
         aplicarTema()
+        return
+      }
+      /* o vigia agora, sem esperar o relogio (os testes usam) */
+      if (d.tipo === 'conferir') {
+        conferirAPagina()
         return
       }
       if (d.tipo === 'ler-mensagens') {

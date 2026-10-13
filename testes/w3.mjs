@@ -12,13 +12,16 @@
      4. trocando para uma conversa que NAO e de lead, nada e pedido nem gravado
      5. o vigia: sem o campo de escrever, pedir para escrever grava o erro
         "campo-de-escrever" com o esqueleto do rodape, sem texto nenhum
+     5b. (0.6.1) canal e lista de transmissao (@newsletter, @broadcast) nao
+        disparam o vigia; um data-id de formato novo dispara, com a FORMA dele
+        sem numero nem codigo
      6. sem a 078 no banco, o topo avisa e para de tentar
      7. sem erro de JavaScript
 
    Uso:  node testes/w3.mjs http://127.0.0.1:4173
    ========================================================================== */
 import { createRequire } from 'node:module'
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 const require = createRequire(import.meta.url)
@@ -32,6 +35,7 @@ const SITE = process.argv[2] || 'http://127.0.0.1:4173'
 let ruins = 0
 const conta = (certo, texto) => { if (!certo) ruins++; console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
+const VERSAO = JSON.parse(readFileSync(resolve('extensao/manifest.json'), 'utf8')).version
 const EXT = mkdtempSync(join(tmpdir(), 'ext-'))
 cpSync(resolve('extensao'), EXT, { recursive: true })
 writeFileSync(join(EXT, 'config.js'), "self.FOURTIME = { supabase: 'https://ensaio.supabase.co', chave: 'ensaio', sistema: '" + SITE + "' }\n")
@@ -126,8 +130,26 @@ async function rodada(comBanco) {
   await pg.waitForTimeout(1500)
   const e = rpc.erro.find((x) => x.p_onde === 'campo-de-escrever')
   const esq = JSON.stringify(e?.p_estrutura ?? null)
-  conta(!!e && e.p_versao === '0.6.0' && /"t":"footer"/.test(esq) && /"c":"send"/.test(esq) && !/Rafa|Digite|camisas|Enviar/.test(esq),
+  conta(!!e && e.p_versao === VERSAO && /"t":"footer"/.test(esq) && /"c":"send"/.test(esq) && !/Rafa|Digite|camisas|Enviar/.test(esq),
     `5. o vigia grava "campo-de-escrever" com o esqueleto do rodape, sem texto (${esq.slice(0, 140)})`)
+
+  /* 5b. o canal nao e alarme; o formato novo e, com a forma sem numero */
+  const conferir = () => pg.evaluate(() => document.querySelector('.fn-wa-frame').contentWindow.postMessage({ fourtime: 'pedido', tipo: 'conferir' }, 'https://web.whatsapp.com'))
+  await quadro().evaluate(() => {
+    document.querySelector('.msgs').innerHTML = '<div data-id="false_120363041234567890@newsletter_3EB0ABCDEF1234567890"><span class="selectable-text">post do canal</span></div>'
+  })
+  await pg.waitForTimeout(800)
+  await conferir(); await pg.waitForTimeout(800)
+  const doCanal = rpc.erro.filter((x) => x.p_onde === 'identidade-da-conversa').length
+  await quadro().evaluate(() => {
+    document.querySelector('.msgs').innerHTML = '<div data-id="msg:5562999990001:3EB0ABCDEF1234567890"><span class="selectable-text">formato novo</span></div>'
+  })
+  await pg.waitForTimeout(800)
+  await conferir(); await pg.waitForTimeout(1000)
+  const novo = rpc.erro.find((x) => x.p_onde === 'identidade-da-conversa')
+  const formas = JSON.stringify(novo?.p_estrutura?.formas ?? null)
+  conta(doCanal === 0 && !!novo && /msg:X:X/.test(formas) && !/5562|3EB0|formato novo/.test(JSON.stringify(novo.p_estrutura)),
+    `5b. canal nao dispara; formato novo dispara com a forma sem numero (${formas})`)
   conta(!erros.length, '7. sem erro de JavaScript ' + erros.join(' | '))
   await ctx.close()
 }

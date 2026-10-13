@@ -1,3 +1,4 @@
+import { chamar, tabela } from '@shared/supabase'
 import { mascaraDoCnpj } from './fornecedor/cnpj'
 /* ==========================================================================
    Os dados da fábrica, num lugar só.
@@ -13,8 +14,10 @@ import { mascaraDoCnpj } from './fornecedor/cnpj'
    por dentro, o próximo desenho já lê o valor novo, e não existe uma segunda
    cópia em lugar nenhum para divergir da primeira.
 
-   Hoje a gravação é no próprio navegador. Quando o Supabase entrar, SÓ ESTE
-   ARQUIVO muda: quem imprime continua lendo EMPRESA.
+   DESDE A 075 ELES MORAM NO BANCO (tabela `empresa`, uma linha só): todo
+   mundo lê, quem edita as Configurações grava. O navegador guarda uma cópia
+   (`ft.empresa`) para a folha impressa sair certa antes de o banco responder.
+   Só este arquivo mudou: quem imprime continua lendo EMPRESA.
    ========================================================================== */
 
 export type DadosDaEmpresa = {
@@ -89,14 +92,77 @@ function lerGuardado(): Partial<DadosDaEmpresa> {
     objeto alterado por dentro, e não substituído. */
 export const EMPRESA: DadosDaEmpresa = { ...EMPRESA_PADRAO, ...lerGuardado() }
 
-export function salvarEmpresa(novo: DadosDaEmpresa): DadosDaEmpresa {
-  Object.assign(EMPRESA, novo)
+function guardarCopia() {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(EMPRESA))
   } catch {
     /* navegador anônimo ou armazenamento cheio: vale só nesta aba */
   }
-  return EMPRESA
+}
+
+/* Só texto, e só os campos que existem: o que vier a mais do banco ou do
+   navegador não entra no objeto que a folha imprime. */
+function soOsCampos(x: unknown): Partial<DadosDaEmpresa> {
+  const saida: Partial<DadosDaEmpresa> = {}
+  if (!x || typeof x !== 'object') return saida
+  for (const k of Object.keys(EMPRESA_PADRAO) as (keyof DadosDaEmpresa)[]) {
+    const v = (x as Record<string, unknown>)[k]
+    if (typeof v === 'string') saida[k] = v
+  }
+  return saida
+}
+
+/** De onde vieram os dados que estão na tela agora. */
+export type OrigemDaEmpresa =
+  /** do banco, iguais para a fábrica inteira */
+  | 'banco'
+  /** o banco ainda está vazio, e o que aparece foi gravado só neste navegador */
+  | 'navegador'
+  /** a 075 não rodou: o banco não tem onde guardar */
+  | 'sem-tabela'
+
+let origem: OrigemDaEmpresa = 'navegador'
+export const origemDaEmpresa = () => origem
+
+const semTabela = (e: unknown) =>
+  e instanceof Error && /PGRST20[25]|42P01|42883|schema cache|Não encontrei/i.test(e.message)
+
+/* Lê do banco e põe dentro de EMPRESA. Banco vazio não apaga o que este
+   navegador já tinha: os dados de antes da 075 continuam saindo na folha, e
+   a tela da empresa avisa que falta salvar para valer para todo mundo. */
+export async function carregarEmpresa(): Promise<OrigemDaEmpresa> {
+  try {
+    const linhas = await tabela<{ dados: unknown }[]>('empresa?select=dados&limit=1')
+    const dados = soOsCampos(linhas[0]?.dados)
+    if (Object.keys(dados).length) {
+      Object.assign(EMPRESA, EMPRESA_PADRAO, dados)
+      guardarCopia()
+      origem = 'banco'
+    } else {
+      origem = 'navegador'
+    }
+  } catch (e) {
+    if (!semTabela(e)) throw e
+    origem = 'sem-tabela'
+  }
+  return origem
+}
+
+/* Grava no banco, pela funcao da 075, e o banco devolve o que guardou (so os
+   campos conhecidos, aparados). Sem a 075, grava so neste navegador, como
+   antes, e diz isso. */
+export async function salvarEmpresa(novo: DadosDaEmpresa): Promise<OrigemDaEmpresa> {
+  try {
+    const gravado = await chamar<unknown>('salvar_empresa', { p_dados: novo })
+    Object.assign(EMPRESA, EMPRESA_PADRAO, soOsCampos(gravado))
+    origem = 'banco'
+  } catch (e) {
+    if (!semTabela(e)) throw e
+    Object.assign(EMPRESA, novo)
+    origem = 'sem-tabela'
+  }
+  guardarCopia()
+  return origem
 }
 
 /** Quais campos do documento ainda estão em branco. */

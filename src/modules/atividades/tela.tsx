@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as PointerEventoReact } from 'react'
-import { ArrowsClockwise, DotsSixVertical, Path, Printer } from '@phosphor-icons/react'
-import { Aviso as Faixa, Botao, DataEmPilula, Pagina, Seletor, avisar, imprimirAPagina } from '@ds'
+import { ArrowsClockwise, DotsSixVertical, Path, PencilSimple, Printer } from '@phosphor-icons/react'
+import { Aviso as Faixa, Botao, Campo, DataEmPilula, Entrada, Etiqueta, Modal, Pagina, Seletor, avisar, imprimirAPagina } from '@ds'
 import {
   AVISO,
   AVISOS,
@@ -21,6 +21,7 @@ import {
   hojeISO,
   iso,
   carregarPedidos,
+  darNomeAoPedido,
   montarSemana,
   moverEtapa,
   mudarAviso,
@@ -29,11 +30,13 @@ import {
   semanaDeslocada,
   semanaDoAno,
   tituloDaSemana,
+  tomDaMarca,
   type Aviso,
   type Colocacao,
   type Etapa,
   type Pedido,
 } from '@dominio/producao'
+import { pode, useSessao } from '@dominio/sessao'
 import { ModalDaTimeline } from './timeline'
 import './atividades.css'
 
@@ -168,6 +171,12 @@ export function TelaAtividades() {
      minuto atras aberta na frente de quem foi justamente conferir onde ele
      esta agora. */
   const [linhaDoTempo, setLinhaDoTempo] = useState('')
+  /* o pedido que esta ganhando nome, e quem pode dar: quem edita o painel ou
+     o kanban (a mesma pergunta que a funcao da 075 faz no banco) */
+  const [nomeando, setNomeando] = useState<AlvoDoNome | null>(null)
+  const { estado: sessao } = useSessao()
+  const eu = sessao.fase === 'dentro' ? sessao.pessoa : null
+  const podeDarNome = !!eu && (pode(eu, 'atividades', 'editar') || pode(eu, 'kanban', 'editar'))
 
   /* 0 e esta semana, -1 a passada, +1 a que vem */
   const [semana, setSemana] = useState(0)
@@ -554,6 +563,7 @@ export function TelaAtividades() {
                     }}
                     aoPegar={(ev) => pegar(ev, p)}
                     aoVerATimeline={() => setLinhaDoTempo(p.id)}
+                    aoDarNome={podeDarNome ? () => setNomeando({ id: p.id, numero: p.numero, nome: p.nome, cliente: p.cliente }) : undefined}
                     aoTrocarEtapa={(e) => {
                       const de = POSTO[p.etapa].nome
                       avisar(p.numero + ': ' + de + ' para ' + POSTO[e].nome, 'ok')
@@ -596,6 +606,16 @@ export function TelaAtividades() {
         </div>
       ) : null}
 
+      <ModalDoNome
+        alvo={nomeando}
+        aoFechar={() => setNomeando(null)}
+        aoGravar={async (id, nome) => {
+          const limpo = await darNomeAoPedido(id, nome)
+          setTodos((l) => l.map((x) => (x.id === id ? { ...x, nome: limpo } : x)))
+          avisar(limpo ? 'O pedido agora se chama ' + limpo + '.' : 'O pedido voltou a aparecer pelo cliente.', 'ok')
+        }}
+      />
+
       {/* A TIMELINE LÊ O PEDIDO DA LISTA VIVA, pelo id guardado. Se o painel
           reler enquanto o modal está aberto, o modal acompanha; se o pedido
           sair da semana por uma mexida de outra pessoa, o modal fecha sozinho
@@ -627,6 +647,7 @@ function Linha({
   carregando,
   aoPegar,
   aoVerATimeline,
+  aoDarNome,
   aoTrocarEtapa,
   aoTrocarAviso,
   aoTrocarEntrega,
@@ -638,6 +659,8 @@ function Linha({
   carregando: boolean
   aoPegar: (e: PointerEventoReact<HTMLElement>) => void
   aoVerATimeline: () => void
+  /** sem: quem olha nao edita o painel nem o kanban, e o nome so se le */
+  aoDarNome?: () => void
   aoTrocarEtapa: (e: Etapa) => void
   aoTrocarAviso: (a: Aviso) => void
   aoTrocarEntrega: (d: string) => void
@@ -685,8 +708,27 @@ function Linha({
         <span className="at-antes-do-nome">
           {p.numero} · {p.pecas} pçs
         </span>
-        <b>{p.cliente}</b>
+        {/* O NOME DO PEDIDO (075), o mesmo do cartao do kanban: "Uniforme
+            Equipe Verão". Sem nome, vale o cliente, como sempre foi; com nome,
+            o cliente desce para a linha miúda. As marcas da cotação (EVENTO,
+            VIP, PRIORIDADE) vão ao lado, como no cartão. */}
+        <span className="at-nome-linha">
+          {aoDarNome ? (
+            <button type="button" className="at-nome" onClick={aoDarNome} title="Dar nome ao pedido">
+              <b>{p.nome || p.cliente}</b>
+              <PencilSimple size={13} aria-hidden="true" />
+            </button>
+          ) : (
+            <b>{p.nome || p.cliente}</b>
+          )}
+          {p.marcas.map((m) => (
+            <Etiqueta key={m} mestre pequena tom={tomDaMarca(m)}>
+              {m}
+            </Etiqueta>
+          ))}
+        </span>
         <small>
+          {p.nome ? p.cliente + ' · ' : ''}
           {p.vendedor}
           {p.pecasSubli ? (
             <span className="at-qtd subli" title={p.pecasSubli + ' peças de sublimação'}>
@@ -773,16 +815,32 @@ function Linha({
             pergunta nasce, encostado na resposta curta. Uma coluna nova no fim
             da tabela seria o mesmo botão longe do motivo dele. */}
         <span className="at-etapa-linha">
-          <Seletor
-            tamanho="sm"
-            bloco
-            comBusca={false}
-            cor={POSTO[p.etapa].cor}
-            valor={p.etapa}
-            opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
-            vazio="sem etapa"
-            aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
-          />
+          {/* A TRAVA (075): pedido com fatia anda pelos cartões do kanban, e
+              a etapa dele é a da fatia mais atrasada. Mudar aqui era desfeito
+              pela próxima fatia que andasse; agora o banco recusa, e a tela
+              mostra a etapa sem oferecer a troca. Passar o mouse diz onde
+              está cada parte; o botão ao lado abre a timeline. */}
+          {p.temFatias ? (
+            <span
+              className="at-etapa-fixa"
+              style={{ '--c': POSTO[p.etapa].cor } as CSSProperties}
+              title={'Anda pelo kanban' + (p.fatiasAbertas ? ': ' + p.fatiasAbertas.replace(/:/g, ' em ') : '')}
+            >
+              <i aria-hidden="true" />
+              <span>{p.tag || POSTO[p.etapa].nome}</span>
+            </span>
+          ) : (
+            <Seletor
+              tamanho="sm"
+              bloco
+              comBusca={false}
+              cor={POSTO[p.etapa].cor}
+              valor={p.etapa}
+              opcoes={ETAPAS.map((e) => ({ valor: e, rotulo: POSTO[e].nome }))}
+              vazio="sem etapa"
+              aoEscolher={(v) => aoTrocarEtapa((v || p.etapa) as Etapa)}
+            />
+          )}
           <button
             type="button"
             className="at-timeline"
@@ -799,7 +857,7 @@ function Linha({
             então escolher a sexta passada aqui tira a linha desta semana e a
             põe de volta lá, sozinha. Só aparece quando a etapa é finalizado,
             porque em qualquer outra o banco zera esta data. */}
-        {p.etapa === 'finalizado' ? (
+        {p.etapa === 'finalizado' && !p.temFatias ? (
           <DataEmPilula
             rotulo="Pronto em"
             valor={p.fechadoEm}
@@ -810,6 +868,72 @@ function Linha({
         ) : null}
       </span>
     </div>
+  )
+}
+
+/* --- o nome do pedido -------------------------------------------------- */
+type AlvoDoNome = { id: string; numero: string; nome: string; cliente: string }
+
+function ModalDoNome({
+  alvo,
+  aoFechar,
+  aoGravar,
+}: {
+  alvo: AlvoDoNome | null
+  aoFechar: () => void
+  aoGravar: (id: string, nome: string) => Promise<void>
+}) {
+  const [texto, setTexto] = useState('')
+  const [gravando, setGravando] = useState(false)
+  const [falha, setFalha] = useState('')
+  useEffect(() => {
+    setTexto(alvo?.nome ?? '')
+    setFalha('')
+  }, [alvo])
+
+  async function gravar() {
+    if (!alvo) return
+    setGravando(true)
+    setFalha('')
+    try {
+      await aoGravar(alvo.id, texto)
+      aoFechar()
+    } catch (e) {
+      setFalha(e instanceof Error ? e.message : 'Não consegui gravar o nome.')
+    } finally {
+      setGravando(false)
+    }
+  }
+
+  return (
+    <Modal
+      aberto={!!alvo}
+      aoFechar={aoFechar}
+      titulo={'Nome do ' + (alvo?.numero ?? 'pedido')}
+      pe={
+        <>
+          <Botao tom="limpo" onClick={aoFechar} disabled={gravando}>
+            Cancelar
+          </Botao>
+          <Botao tom="primario" onClick={() => void gravar()} carregando={gravando} disabled={gravando}>
+            Salvar
+          </Botao>
+        </>
+      }
+    >
+      <form
+        className="pilha"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void gravar()
+        }}
+      >
+        <Campo rotulo="Nome do pedido" dica={'Sai no painel e no cartão do kanban. Vazio volta a mostrar ' + (alvo?.cliente || 'o cliente') + '.'}>
+          <Entrada value={texto} maxLength={80} autoFocus placeholder={alvo?.cliente ?? ''} onChange={(e) => setTexto(e.target.value)} />
+        </Campo>
+        {falha ? <p className="at-nome-falha" role="alert">{falha}</p> : null}
+      </form>
+    </Modal>
   )
 }
 

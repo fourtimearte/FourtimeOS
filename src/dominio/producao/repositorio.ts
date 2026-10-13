@@ -41,6 +41,10 @@ type LinhaDaFabrica = {
   cotacao_id: string | null
   tag: string | null
   fatias_abertas: string | null
+  /* 075: chegam quando a migracao rodou; antes dela, nao vem nenhuma */
+  nome?: string | null
+  marcas?: string[] | null
+  tem_fatias?: boolean | null
 }
 
 const COLUNAS =
@@ -48,6 +52,25 @@ const COLUNAS =
   'planejamento_manual,aviso,pecas,layouts,tecnicas,total,pecas_subli,' +
   'pecas_personalizadas,valor_subli,valor_personalizado,fechado_em,teste,cotacao_id,' +
   'tag,fatias_abertas'
+
+/* AS TRES COLUNAS DA 075 (o nome, as marcas e se tem fatia). Pedidas junto
+   com as outras; se o banco ainda nao tem a 075, a leitura repete sem elas e
+   lembra disso ate a pagina recarregar. Assim a tela nao quebra no intervalo
+   entre subir o codigo e o Henrique apertar o Run. */
+const COLUNAS_075 = COLUNAS + ',nome,marcas,tem_fatias'
+let sem075 = false
+
+async function lerDaFabrica(filtro: string): Promise<LinhaDaFabrica[]> {
+  if (!sem075) {
+    try {
+      return await tabela<LinhaDaFabrica[]>(`pedido_na_fabrica?select=${COLUNAS_075}${filtro}`)
+    } catch (e) {
+      if (!(e instanceof Error && /42703|tem_fatias|marcas|does not exist|não existe/i.test(e.message))) throw e
+      sem075 = true
+    }
+  }
+  return tabela<LinhaDaFabrica[]>(`pedido_na_fabrica?select=${COLUNAS}${filtro}`)
+}
 
 function deLinha(l: LinhaDaFabrica): Pedido {
   return {
@@ -78,6 +101,10 @@ function deLinha(l: LinhaDaFabrica): Pedido {
     /* o que a tag esconde, para o passar o mouse e para o modal da timeline:
        "subli:costura, dtf:dtf" */
     fatiasAbertas: l.fatias_abertas ?? '',
+    nome: (l.nome ?? '').trim(),
+    marcas: Array.isArray(l.marcas) ? l.marcas.filter(Boolean) : [],
+    /* sem a 075 nao da para saber; as fatias abertas sao a melhor pista */
+    temFatias: l.tem_fatias ?? !!l.fatias_abertas,
     atualizadoEm: l.etapa_em,
     pecasSubli: Number(l.pecas_subli) || 0,
     pecasPersonalizadas: Number(l.pecas_personalizadas) || 0,
@@ -133,26 +160,19 @@ function diaLocal(ts: string | null): string {
    O pedido não some do sistema: ele está no PCP, que é a tela onde ele espera
    e onde alguém precisa olhar para ele. */
 export async function carregarPedidos(): Promise<Pedido[]> {
-  const linhas = await tabela<LinhaDaFabrica[]>(
-    `pedido_na_fabrica?select=${COLUNAS}&estado=in.(producao,pronto)` +
-      '&order=entrega_em.asc.nullslast,numero.asc',
-  )
+  const linhas = await lerDaFabrica('&estado=in.(producao,pronto)&order=entrega_em.asc.nullslast,numero.asc')
   return linhas.map(deLinha)
 }
 
 /** Tudo, inclusive o que já saiu. É o que o relatório mensal soma. */
 export async function carregarTodosOsPedidos(): Promise<Pedido[]> {
-  const linhas = await tabela<LinhaDaFabrica[]>(
-    `pedido_na_fabrica?select=${COLUNAS}&order=fechado_em.desc.nullslast,numero.desc`,
-  )
+  const linhas = await lerDaFabrica('&order=fechado_em.desc.nullslast,numero.desc')
   return linhas.map(deLinha)
 }
 
 export async function acharPedido(id: string): Promise<Pedido | null> {
   if (!id) return null
-  const linhas = await tabela<LinhaDaFabrica[]>(
-    `pedido_na_fabrica?select=${COLUNAS}&id=eq.${encodeURIComponent(id)}`,
-  )
+  const linhas = await lerDaFabrica(`&id=eq.${encodeURIComponent(id)}`)
   return linhas.length ? deLinha(linhas[0]) : null
 }
 
@@ -198,6 +218,15 @@ export async function liberarParaProducao(
   await chamar('liberar_para_producao', { p_pedido: id, p_fatias: fatias })
 }
 
+/* O NOME DO PEDIDO ("Uniforme Equipe Verão"), que o cartao do kanban e o
+   painel mostram no lugar do cliente. Pela funcao da 075, que confere quem
+   edita o painel ou o kanban e limpa o espaco. Vazio volta para o cliente. */
+export async function darNomeAoPedido(id: string, nome: string): Promise<string> {
+  return chamar<string>('dar_nome_ao_pedido', { p_pedido: id, p_nome: nome })
+}
+
+/* PEDIDO COM FATIA ANDA PELAS FATIAS (024), e desde a 075 o banco recusa
+   mudar a etapa dele por aqui. A tela nem oferece: o seletor fica travado. */
 export function moverEtapa(id: string, etapa: Etapa) {
   return mexer(id, { etapa })
 }

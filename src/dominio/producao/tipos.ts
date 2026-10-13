@@ -131,6 +131,13 @@ export type Pedido = {
   tag: string
   /** o que a tag esconde: "subli:costura, dtf:dtf" */
   fatiasAbertas: string
+  /** o nome que a fabrica deu ao pedido (075); vazio quando ninguem deu */
+  nome: string
+  /** as marcas da cotacao: EVENTO, VIP, PRIORIDADE (075) */
+  marcas: string[]
+  /* TEM FATIA: a etapa e a da fatia mais atrasada e anda pelo kanban, e nao
+     pelo painel (075 trava). */
+  temFatias: boolean
   /* Em que DIA ele esta planejado, em ISO.
      Era so o indice do dia da semana, 0 a 5, e isso amarrava o painel a uma
      semana so: navegar para a semana que vem mostraria os mesmos pedidos de

@@ -5,6 +5,7 @@ export {
   acharPedido,
   carregarPedidos,
   carregarTodosOsPedidos,
+  darNomeAoPedido,
   finalizarEm,
   liberarParaProducao,
   moverEtapa,

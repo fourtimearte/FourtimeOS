@@ -13,6 +13,9 @@
         cabecalho e uma linha por pedido do mes
      4. Relatorio: "Imprimir" tambem imprime
      5. Relatorio sem pedido no periodo: os dois botoes ficam desligados
+     6. Painel (075): o nome do pedido no lugar do cliente, as marcas ao lado,
+        a etapa travada no pedido com fatia, e o modal que da nome
+     7. Painel sem a 075 no banco: a leitura repete sem as colunas novas
 
    Uso:  node testes/gestao.mjs http://127.0.0.1:4173
    ========================================================================== */
@@ -57,14 +60,23 @@ const nav = await chromium.launch()
 let ruins = 0
 const conta = (certo, texto) => { if (!certo) ruins++; console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
-async function abrir(rota, pedidos) {
+async function abrir(rota, pedidos, { sem075 = false, gravados = [] } = {}) {
   const ctx = await nav.newContext({ viewport:{width:1440,height:900}, reducedMotion:'reduce', acceptDownloads:true })
   const pedidosLidos = { n: 0 }
   await ctx.route('**supabase.co/**', async (r) => {
     const u = r.request().url()
     let corpo = []
     if (u.includes('meu_perfil')) corpo = PERFIL
+    else if (u.includes('pedido_na_fabrica') && sem075 && u.includes('tem_fatias')) {
+      return r.fulfill({ status:400, contentType:'application/json', headers:{'access-control-allow-origin':'*'},
+        body: JSON.stringify({ code:'42703', message:'column pedido_na_fabrica.nome does not exist' }) })
+    }
     else if (u.includes('pedido_na_fabrica')) { pedidosLidos.n++; corpo = pedidos }
+    else if (u.includes('/rpc/')) {
+      const corpoPedido = r.request().postDataJSON()
+      gravados.push({ rpc: u.split('/rpc/')[1].split('?')[0], corpo: corpoPedido })
+      corpo = u.includes('dar_nome_ao_pedido') ? corpoPedido.p_nome.trim().replace(/\s+/g, ' ') : null
+    }
     return r.fulfill({ status:200, contentType:'application/json',
       headers:{'access-control-allow-origin':'*'}, body: JSON.stringify(corpo) })
   })
@@ -143,6 +155,52 @@ const depois = (pg) => pg.evaluate(() => ({
   const { ctx, pg } = await abrir('/relatorio', [])
   conta(await botao(pg, 'Baixar planilha').isDisabled() && await botao(pg, 'Imprimir').isDisabled(),
     'relatorio vazio: Baixar e Imprimir ficam desligados')
+  await ctx.close()
+}
+
+/* ---- painel: nome, marcas e a trava (075) ---- */
+{
+  const COM = [
+    { ...PEDIDOS[0], planejado_em: planejado, fechado_em: null, etapa: 'calandra', nome: 'Uniforme Equipe Verão', marcas: ['VIP', 'EVENTO'],
+      tem_fatias: true, tag: 'Impressão', fatias_abertas: 'subli:calandra, dtf:corte' },
+    { ...PEDIDOS[1], planejado_em: planejado, fechado_em: null, nome: '', marcas: [], tem_fatias: false },
+  ]
+  const gravados = []
+  const { ctx, pg } = await abrir('/atividades', COM, { gravados })
+  const linhas = await pg.evaluate(() => [...document.querySelectorAll('.at-linha')].map((l) => ({
+    texto: l.querySelector('.at-quem').innerText.replace(/\s+/g, ' '),
+    fixa: l.querySelector('.at-etapa-fixa')?.innerText ?? null,
+    titulo: l.querySelector('.at-etapa-fixa')?.title ?? '',
+    seletor: !!l.querySelector('.at-etapa .sel'),
+    marcas: l.querySelectorAll('.at-nome-linha .etq, .at-nome-linha [class*=etiq]').length,
+  })))
+  const a = linhas.find((l) => l.texto.includes('PD-TESTE-0101')) ?? linhas[0]
+  const b = linhas.find((l) => l.texto.includes('PD-TESTE-0102')) ?? linhas[1]
+  conta(/Uniforme Equipe Verão/.test(a.texto) && /Drogaria "Viver" Bem · Dani/.test(a.texto), 'painel: o nome no lugar do cliente, e o cliente desce (' + a.texto + ')')
+  conta(/VIP/.test(a.texto) && /EVENTO/.test(a.texto), 'painel: as marcas da cotacao ao lado do nome')
+  conta(/Igreja Araguaia/.test(b.texto) && !/·.*Igreja/.test(b.texto), 'painel: sem nome, vale o cliente (' + b.texto + ')')
+  conta(a.fixa === 'Impressão' && !a.seletor && /subli em calandra, dtf em corte/.test(a.titulo), 'painel: com fatia, a etapa fica travada e mostra a tag (' + a.fixa + ' / ' + a.titulo + ')')
+  conta(b.fixa === null && b.seletor, 'painel: sem fatia, o seletor de etapa continua')
+
+  await pg.locator('.at-nome').first().click()
+  await pg.waitForTimeout(300)
+  const campo = pg.getByLabel('Nome do pedido')
+  conta(await campo.inputValue() === 'Uniforme Equipe Verão', 'painel: o modal abre com o nome de agora')
+  await campo.fill('  Time   Azul ')
+  await pg.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await pg.waitForTimeout(600)
+  const g = gravados.find((x) => x.rpc === 'dar_nome_ao_pedido')
+  conta(!!g && g.corpo.p_pedido === 'p1' && g.corpo.p_nome === '  Time   Azul ', 'painel: Salvar chama dar_nome_ao_pedido')
+  conta(await pg.locator('.at-linha', { hasText: 'Time Azul' }).count() === 1 && await pg.getByRole('dialog').count() === 0,
+    'painel: a linha mostra o nome que o banco devolveu e o modal fecha')
+  await pg.screenshot({ path: 'testes/atual/gestao-painel-nome.png' })
+  await ctx.close()
+}
+
+/* ---- painel sem a 075 ---- */
+{
+  const { ctx, pg, pedidosLidos } = await abrir('/atividades', PEDIDOS.map((p) => ({ ...p, planejado_em: planejado, fechado_em: null })), { sem075: true })
+  conta(pedidosLidos.n >= 1 && await pg.locator('.at-linha').count() === 2, 'painel sem a 075: le de novo sem as colunas novas e desenha as linhas')
   await ctx.close()
 }
 

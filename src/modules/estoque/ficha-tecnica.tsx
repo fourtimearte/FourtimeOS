@@ -422,7 +422,10 @@ export function EditarFicha({
       /* O NOME DO TECIDO vai primeiro, e é do catálogo: vale para todas as
          cores, aqui e em Configurações. Depois dele, o nome guardado em cada
          material ("PIQUET · Preto"), que é o que os movimentos e a separação
-         mostram, acompanha. */
+         mostram, acompanha. DESDE A 075 o banco faz isso sozinho, na mesma
+         gravação do catálogo (e também quando se renomeia em Configurações,
+         Banco de dados); o laço abaixo vira conferência: grava o mesmo nome
+         que o banco já gravou. Ele fica para o intervalo antes do Run. */
       if (tecido && mudouOTecido) {
         try {
           await renomearTecido(tecido.id, tecidoNovo)

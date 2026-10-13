@@ -51,6 +51,7 @@ import type { Painel, Pessoa } from '@dominio/sessao'
 import { paginasEscondidas } from '@dominio/regulagem'
 import { ESTAGIO_FECHADO, NOME_DO_ESTAGIO, carregarLeads } from '@dominio/funil'
 import { carregarClientes } from '@dominio/cliente'
+import { carregarEmpresa } from '@dominio/empresa'
 import { NOME_DO_ESTADO_DA_COTACAO, carregarCotacoes } from '@dominio/cotacao'
 import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
@@ -111,6 +112,17 @@ export function App() {
       cancelado = true
     }
   }, [souAdmin, local.pathname])
+
+  /* OS DADOS DA EMPRESA (075): uma leitura por entrada. A folha impressa le
+     EMPRESA por dentro, entao basta o objeto estar cheio antes de alguem
+     imprimir; ate la vale a copia que o navegador guardou. */
+  const pessoaId = pessoa?.id ?? ''
+  useEffect(() => {
+    if (!pessoaId) return
+    void carregarEmpresa().catch(() => {
+      /* fica a copia do navegador */
+    })
+  }, [pessoaId])
 
   /* o kit tem o seu proprio controle de tema: ao voltar de la, o icone do topo
      precisa concordar com o que esta na tela */

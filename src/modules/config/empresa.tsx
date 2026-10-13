@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Buildings, MapPin, Phone } from '@phosphor-icons/react'
 import { Aviso, Botao, Campo, Cartao, Entrada, Pagina, TituloCartao, avisar } from '@ds'
 import {
   CAMPOS_DO_DOCUMENTO,
   EMPRESA,
+  EMPRESA_PADRAO,
   camposEmBranco,
+  carregarEmpresa,
   mascaraDeCep,
   mascaraDeCnpj,
   mascaraDeTelefone,
+  origemDaEmpresa,
   salvarEmpresa,
   type DadosDaEmpresa,
+  type OrigemDaEmpresa,
 } from '@dominio/empresa'
 import { AbasDaConfig } from './abas'
 import './config.css'
@@ -52,6 +56,27 @@ const ROTULOS: Record<keyof DadosDaEmpresa, string> = {
 export function TelaEmpresa() {
   const [d, setD] = useState<DadosDaEmpresa>({ ...EMPRESA })
   const [sujo, setSujo] = useState(false)
+  const [gravando, setGravando] = useState(false)
+  const [origem, setOrigem] = useState<OrigemDaEmpresa>(origemDaEmpresa())
+
+  /* RELE DO BANCO AO ABRIR: outra pessoa pode ter mudado o CNPJ desde que
+     este navegador leu. So troca o que esta na tela se ninguem mexeu ainda. */
+  useEffect(() => {
+    let vivo = true
+    carregarEmpresa()
+      .then((o) => {
+        if (!vivo) return
+        setOrigem(o)
+        setD((atual) => (sujo ? atual : { ...EMPRESA }))
+      })
+      .catch(() => {
+        /* fica o que o navegador tinha; o Salvar diz se o banco recusar */
+      })
+    return () => {
+      vivo = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const mudar = (parte: Partial<DadosDaEmpresa>) => {
     setD((x) => ({ ...x, ...parte }))
@@ -61,10 +86,19 @@ export function TelaEmpresa() {
   const faltando = camposEmBranco(d)
   const noPapel = (k: keyof DadosDaEmpresa) => CAMPOS_DO_DOCUMENTO.includes(k)
 
-  function gravar() {
-    salvarEmpresa(d)
-    setSujo(false)
-    avisar('Dados da empresa salvos', 'ok')
+  async function gravar() {
+    setGravando(true)
+    try {
+      const o = await salvarEmpresa(d)
+      setOrigem(o)
+      setD({ ...EMPRESA })
+      setSujo(false)
+      avisar(o === 'banco' ? 'Dados da empresa salvos para a fábrica inteira' : 'Dados da empresa salvos só neste navegador', 'ok')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui salvar os dados da empresa', 'warn')
+    } finally {
+      setGravando(false)
+    }
   }
 
   /* o campo, com a dica de onde ele aparece e o aviso de que está em branco */
@@ -93,12 +127,19 @@ export function TelaEmpresa() {
       titulo="Empresa"
       sub="O que vai impresso no rodapé da folha, no cabeçalho do PDF do cliente e na ficha da produção."
       acoes={
-        <Botao tom="primario" onClick={gravar} disabled={!sujo}>
+        <Botao tom="primario" onClick={() => void gravar()} disabled={!sujo || gravando} carregando={gravando}>
           {sujo ? 'Salvar' : 'Salvo'}
         </Botao>
       }
     >
       <AbasDaConfig atual="empresa" />
+
+      {origem === 'navegador' && Object.values(EMPRESA).some((v, i) => v !== Object.values(EMPRESA_PADRAO)[i]) ? (
+        <Aviso tom="info" titulo="Estes dados ainda estão só neste navegador">
+          Eles foram preenchidos antes de a empresa ir para o banco. Confira e aperte Salvar: a partir
+          daí valem para todo mundo da fábrica, em qualquer computador.
+        </Aviso>
+      ) : null}
 
       {faltando.length ? (
         <Aviso
@@ -145,9 +186,9 @@ export function TelaEmpresa() {
           {campo('site')}
         </div>
         <p className="cfg-nada">
-          Hoje estes dados ficam gravados neste navegador. Quando a tabela da empresa entrar no
-          banco, eles passam a valer para todo mundo da fábrica, e este arquivo é o único que
-          muda: quem imprime continua lendo do mesmo lugar.
+          {origem === 'sem-tabela'
+            ? 'O banco ainda não tem onde guardar estes dados (falta a migração 075): por enquanto eles ficam só neste navegador.'
+            : 'Estes dados valem para todo mundo da fábrica. Só quem edita as Configurações muda.'}
         </p>
       </Cartao>
     </Pagina>

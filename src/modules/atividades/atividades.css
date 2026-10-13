@@ -740,3 +740,92 @@
   flex: 1;
   min-width: 0;
 }
+
+/* --- o nome do pedido e as marcas (075) -----------------------------------
+   O nome ocupa o lugar do cliente; as marcas da cotação vão ao lado, sem
+   quebrar a linha: quem encolhe é o nome, com reticências. */
+.at-nome-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-miudo);
+  min-width: 0;
+}
+.at-nome-linha > :not(.at-nome):not(b) {
+  flex-shrink: 0;
+}
+.at-nome {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--gap-colado);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+}
+.at-nome b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.at-nome svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+}
+.at-nome:hover svg,
+.at-nome:focus-visible svg {
+  opacity: 1;
+}
+.at-nome:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .at-nome svg {
+    opacity: 1;
+  }
+}
+.at-nome-falha {
+  color: var(--brand-text);
+  font-size: 13px;
+}
+
+/* --- a etapa de quem anda pelas fatias (075) ------------------------------
+   Sem seletor: a etapa é a da fatia mais atrasada e muda no kanban. O ponto
+   leva a cor do posto, como o seletor levava. */
+.at-etapa-fixa {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  height: var(--btn-h-sm);
+  min-width: 0;
+  padding: var(--pad-botao-sm);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: default;
+}
+.at-etapa-fixa span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.at-etapa-fixa i {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c, var(--text-3));
+}

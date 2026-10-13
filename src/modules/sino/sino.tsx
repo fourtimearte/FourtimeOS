@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowUUpLeft, Bell, ChatCircleText, Globe } from '@phosphor-icons/react'
+import { ArrowUUpLeft, Bell, ChatCircleText, Globe, Package, Truck, UserSwitch } from '@phosphor-icons/react'
 import { Flutuante } from '@ds'
 import { carregarMeusAvisos, lerAvisos, type AvisoDoSino } from '@dominio/sino'
 import './sino.css'
@@ -117,8 +117,8 @@ export function Sino() {
             </p>
           ) : !avisos.length ? (
             <p className="sn-nada">
-              Nenhum aviso. Quando alguém escrever na conversa de um pedido com você, ele aparece
-              aqui.
+              Nenhum aviso. Aparece aqui a conversa de um pedido com você, o lead que passar a
+              ser seu, a cotação aprovada e o pedido pronto para enviar.
             </p>
           ) : (
             <div className="mn-lista sn-lista">
@@ -135,6 +135,12 @@ export function Sino() {
                       <ArrowUUpLeft size={17} />
                     ) : a.tipo === 'lead' ? (
                       <Globe size={17} />
+                    ) : a.tipo === 'dono' ? (
+                      <UserSwitch size={17} />
+                    ) : a.tipo === 'pedido' ? (
+                      <Package size={17} />
+                    ) : a.tipo === 'pronto' ? (
+                      <Truck size={17} />
                     ) : (
                       <ChatCircleText size={17} />
                     )}

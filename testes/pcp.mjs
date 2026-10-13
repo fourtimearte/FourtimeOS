@@ -99,6 +99,10 @@ const EQUIPE = [{ id: PESSOA.dani, nome: 'Dani Exemplo', papel: 'vendedor' }, { 
 const AVISOS = [
   { id: 'a1', tipo: 'conversa', texto: 'PD004413: É sim, igual às outras.', link: '/pcp?pedido=' + ID(413), pedido_id: ID(413), de_nome: 'Dani Exemplo', criado_em: AGORA, lido_em: null },
   { id: 'a2', tipo: 'devolvido', texto: 'PD004420 voltou do PCP: O L-03 está sem etiqueta.', link: '/pcp?pedido=' + ID(420), pedido_id: ID(420), de_nome: 'Bruna', criado_em: AGORA, lido_em: AGORA },
+  /* os tres da 074: lidos, para a bolinha continuar contando so o a1 */
+  { id: 'a3', tipo: 'dono', texto: 'O lead passou para você: Escola Exemplo (Dani de férias)', link: '/funil?lead=l1', pedido_id: null, de_nome: 'Henrique', criado_em: AGORA, lido_em: AGORA },
+  { id: 'a4', tipo: 'pedido', texto: 'Cotação aprovada: PD004430 · Escola Exemplo chegou na separação', link: '/separacao?pedido=' + ID(430), pedido_id: ID(430), de_nome: 'Dani Exemplo', criado_em: AGORA, lido_em: AGORA },
+  { id: 'a5', tipo: 'pronto', texto: 'PD004431 · Escola Exemplo está pronto para enviar', link: '/cotacao?c=c1', pedido_id: ID(431), de_nome: '', criado_em: AGORA, lido_em: AGORA },
 ]
 
 const PAGINAS = ['inicio', 'funil', 'clientes', 'cotacao', 'separacao', 'pcp', 'ficha', 'kanban', 'produtos', 'estoque', 'atividades', 'relatorio', 'transporte', 'banco', 'config', 'kit']
@@ -370,7 +374,10 @@ await secao(async () => {
   await pg.getByRole('button', { name: /^Avisos/ }).click()
   await pausa(pg)
   const avs = await pg.evaluate(() => [...document.querySelectorAll('.sn-item')].map((b) => [b.className, b.innerText.replace(/\s+/g, ' ').trim()]))
-  conta(avs.length === 2 && /sn-novo/.test(avs[0][0]) && /PD004413: É sim/.test(avs[0][1]) && /Dani Exemplo/.test(avs[0][1]) && !/sn-novo/.test(avs[1][0]), 'a lista do sino: o novo em negrito, o lido apagado: ' + avs.map((a) => a[1]).join(' | '))
+  conta(avs.length === 5 && /sn-novo/.test(avs[0][0]) && /PD004413: É sim/.test(avs[0][1]) && /Dani Exemplo/.test(avs[0][1]) && !/sn-novo/.test(avs[1][0]), 'a lista do sino: o novo em negrito, o lido apagado: ' + avs.map((a) => a[1]).join(' | '))
+  const icones = await pg.evaluate(() => [...document.querySelectorAll('.sn-item .sn-ic svg')].map((x) => x.innerHTML.length + ':' + x.innerHTML.slice(0, 40)))
+  conta(icones.length === 5 && new Set(icones).size === 5, 'cada tipo de aviso tem o seu icone (' + new Set(icones).size + ' diferentes em ' + icones.length + ')')
+  conta(avs.slice(2).every((a) => !/sn-novo/.test(a[0])) && /O lead passou para você/.test(avs[2][1]) && /chegou na separação/.test(avs[3][1]) && /pronto para enviar/.test(avs[4][1]), 'os avisos da 074 aparecem na lista')
   await foto(pg, '1920-sino', false)
   await pg.locator('.sn-item').first().click()
   await pausa(pg, 800)

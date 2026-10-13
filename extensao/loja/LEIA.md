@@ -56,6 +56,8 @@ Mostrar o WhatsApp Web do vendedor dentro do sistema interno Fourtime OS e, ao l
 - **storage:** guardar a sessão de quem entrou na coluna lateral e o número da conversa aberta (este só durante a sessão do navegador).
 - **tabs:** achar a aba do WhatsApp Web para abrir a conversa que o vendedor escolheu no Fourtime OS, e ligar a coluna lateral só na aba do WhatsApp.
 - **declarativeNetRequest:** permitir que o WhatsApp Web apareça dentro das páginas do Fourtime OS (e só delas), retirando para esse quadro os cabeçalhos que impedem a página de ser mostrada dentro de outra.
+- **alarms:** a cada 30 segundos, conferir se o arquivo da própria extensão mudou de versão (só tem efeito quando ela é carregada de uma pasta, no computador de quem desenvolve; instalada pela loja, a versão nunca muda por ali).
+- **scripting:** depois de a extensão ser atualizada, religar as abas do Fourtime OS que já estavam abertas e recarregar o WhatsApp Web dentro delas, para o código novo valer sem a pessoa recarregar o sistema.
 - **Acesso a web.whatsapp.com:** aplicar as cores do sistema e ler o número da conversa aberta (o texto das mensagens não é lido).
 - **Acesso a *.supabase.co:** consultar no banco do Fourtime OS o lead daquele telefone, com as permissões de quem entrou.
 - **Acesso a fourtimeos.arte-adc.workers.dev:** avisar o sistema de que a extensão está instalada e receber o pedido de abrir uma conversa.

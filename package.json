@@ -55,7 +55,8 @@
     "gestao": "node testes/gestao.mjs http://127.0.0.1:4173",
     "empresa": "node testes/empresa.mjs http://127.0.0.1:4173",
     "travou": "node testes/travou.mjs http://127.0.0.1:4173",
-    "compra": "node testes/compra.mjs http://127.0.0.1:4173"
+    "compra": "node testes/compra.mjs http://127.0.0.1:4173",
+    "extensao-atualiza": "node testes/extensao-atualiza.mjs http://127.0.0.1:4173"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

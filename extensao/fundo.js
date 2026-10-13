@@ -8,9 +8,65 @@
    ========================================================================== */
 const WHATSAPP = 'https://web.whatsapp.com/'
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((d) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {})
+  if (d.reason === 'update') void religarAsAbas()
 })
+
+/* ==========================================================================
+   A ATUALIZACAO SOZINHA (0.5.0, 13/10/2026).
+
+   No computador do Henrique a extensao e carregada SEM COMPACTACAO de uma
+   pasta (D:\CLAUDE\extensao fourtime os), e o Claude grava a versao nova
+   direto nessa pasta. Extensao sem compactacao le os arquivos do disco, mas
+   so troca o codigo que esta rodando quando alguem aperta "Recarregar" em
+   chrome://extensions. Este relogio faz isso sozinho: a cada 30 segundos le
+   o manifest.json DO DISCO e, se a versao escrita la nao e a que esta
+   rodando, recarrega a extensao.
+
+   Instalada pela loja (ou de um zip que ninguem mexe), o manifest do disco e
+   sempre o mesmo, e o relogio nunca faz nada.
+   ========================================================================== */
+chrome.alarms.create('procurar-versao-nova', { periodInMinutes: 0.5 })
+chrome.alarms.onAlarm.addListener((a) => {
+  if (a.name === 'procurar-versao-nova') void procurarVersaoNova()
+})
+
+async function procurarVersaoNova() {
+  try {
+    const r = await fetch(chrome.runtime.getURL('manifest.json') + '?t=' + Date.now(), { cache: 'no-store' })
+    const noDisco = (await r.json()).version
+    if (noDisco && noDisco !== chrome.runtime.getManifest().version) chrome.runtime.reload()
+  } catch {
+    /* arquivo pela metade (a copia ainda gravando): tenta no proximo relogio */
+  }
+}
+
+/* DEPOIS DE RECARREGAR, AS ABAS ABERTAS CONTINUAM COM O CODIGO VELHO, que
+   perdeu a ligacao com a extensao. As do Fourtime OS ganham o anuncio.js
+   novo (ele so marca a versao e avisa o fundo, pode rodar de novo sem
+   estrago). O WhatsApp, que tem o tema e o envio das mensagens rapidas, e
+   recarregado: dentro do Fourtime OS so o quadro dele recarrega, e a pagina
+   do sistema fica como estava. */
+async function religarAsAbas() {
+  const sistema = await chrome.tabs.query({}).catch(() => [])
+  for (const aba of sistema) {
+    if (!aba.id || !aba.url) continue
+    if (SISTEMA.test(aba.url)) {
+      await chrome.scripting.executeScript({ target: { tabId: aba.id }, files: ['anuncio.js'] }).catch(() => {})
+      await chrome.scripting
+        .executeScript({
+          target: { tabId: aba.id, allFrames: true },
+          func: () => {
+            if (location.hostname === 'web.whatsapp.com') location.reload()
+          },
+        })
+        .catch(() => {})
+    } else if (aba.url.startsWith(WHATSAPP)) {
+      await chrome.tabs.reload(aba.id).catch(() => {})
+    }
+  }
+}
 
 async function ajustarPainel(tabId, url) {
   const noWhatsApp = typeof url === 'string' && url.startsWith(WHATSAPP)

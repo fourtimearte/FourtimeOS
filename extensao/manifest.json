@@ -1,9 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Fourtime OS",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "O WhatsApp Web do vendedor dentro do Fourtime OS, com a cara do sistema e o lead da conversa aberta ao lado.",
-  "permissions": ["sidePanel", "storage", "tabs", "declarativeNetRequest"],
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "declarativeNetRequest",
+    "alarms",
+    "scripting"
+  ],
   "host_permissions": [
     "https://web.whatsapp.com/*",
     "https://*.supabase.co/*",
@@ -12,28 +19,58 @@
     "http://localhost/*"
   ],
   "declarative_net_request": {
-    "rule_resources": [{ "id": "whatsapp-no-sistema", "enabled": true, "path": "regras.json" }]
+    "rule_resources": [
+      {
+        "id": "whatsapp-no-sistema",
+        "enabled": true,
+        "path": "regras.json"
+      }
+    ]
   },
-  "background": { "service_worker": "fundo.js" },
-  "side_panel": { "default_path": "lado.html" },
-  "action": { "default_title": "Fourtime OS" },
-  "icons": { "128": "icone.png" },
+  "background": {
+    "service_worker": "fundo.js"
+  },
+  "side_panel": {
+    "default_path": "lado.html"
+  },
+  "action": {
+    "default_title": "Fourtime OS"
+  },
+  "icons": {
+    "128": "icone.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://fourtimeos.arte-adc.workers.dev/*", "http://127.0.0.1/*", "http://localhost/*"],
-      "js": ["anuncio.js"],
+      "matches": [
+        "https://fourtimeos.arte-adc.workers.dev/*",
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "anuncio.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://web.whatsapp.com/*"],
-      "js": ["whatsapp.js"],
-      "css": ["whatsapp.css"],
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "js": [
+        "whatsapp.js"
+      ],
+      "css": [
+        "whatsapp.css"
+      ],
       "all_frames": true,
       "run_at": "document_start"
     },
     {
-      "matches": ["https://web.whatsapp.com/*"],
-      "js": ["foco.js"],
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "js": [
+        "foco.js"
+      ],
       "world": "MAIN",
       "all_frames": true,
       "run_at": "document_start"

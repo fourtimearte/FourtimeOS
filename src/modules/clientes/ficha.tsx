@@ -33,6 +33,7 @@ import {
   type Segmento,
 } from '@dominio/cliente'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
+import { usarTransportadoras } from './transportadoras'
 import { carregarDonosPossiveis, type DonoPossivel } from '@dominio/funil'
 import './clientes.css'
 
@@ -134,11 +135,12 @@ export function FichaDoCliente({
   /* A melhor sugestao de frete: a lista vem em ordem de confianca, entao a
      primeira e a que tem a origem mais firme. A lista inteira fica na tela de
      clientes, ao clicar na cidade. */
+  const transportadoras = usarTransportadoras()
   const frete = useMemo(() => {
-    if (!c) return null
-    const achadas = transportadorasPara(c, cepsPorCidade(base))
+    if (!c || !transportadoras) return null
+    const achadas = transportadorasPara(c, cepsPorCidade(base), transportadoras)
     return achadas[0] ?? null
-  }, [c, base])
+  }, [c, base, transportadoras])
 
   if (!c) return null
 
@@ -408,13 +410,21 @@ export function FichaDoCliente({
             <b>Frete</b>
             <span>
               {frete
-                ? frete.transportadora.nome + ', ' + frete.transportadora.prazo
-                : 'Sem CEP e sem cidade'}
+                ? [frete.transportadora.nome, frete.transportadora.prazo].filter(Boolean).join(', ')
+                : transportadoras && !transportadoras.length
+                  ? 'Nenhuma transportadora cadastrada'
+                  : c.cidade || c.cep
+                    ? 'Ninguém do cadastro atende aqui'
+                    : 'Sem CEP e sem cidade'}
             </span>
             <small>
               {frete
                 ? 'Achada pelo ' + NOME_DA_ORIGEM[frete.origem] + '.'
-                : 'Preencha cidade ou CEP para o sistema sugerir quem entrega.'}
+                : transportadoras && !transportadoras.length
+                  ? 'Cadastre em Transporte, Quem transporta, com o campo Onde atende.'
+                  : c.cidade || c.cep
+                    ? 'Confira o Onde atende das transportadoras em Transporte.'
+                    : 'Preencha cidade ou CEP para o sistema sugerir quem entrega.'}
             </small>
           </div>
         </section>

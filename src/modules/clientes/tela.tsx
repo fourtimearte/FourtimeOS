@@ -32,6 +32,7 @@ import {
   transportadorasPara,
   type Sugestao,
 } from '@dominio/entrega'
+import { usarTransportadoras } from './transportadoras'
 import './clientes.css'
 
 /* ==========================================================================
@@ -148,6 +149,8 @@ export function TelaClientes() {
   }, [])
   const duplicados = useMemo(() => idsDuplicados(todos), [todos])
   const cepsDaCidade = useMemo(() => cepsPorCidade(todos), [todos])
+  /* quem entrega sai do cadastro de Transporte (042), e nao de uma lista fixa */
+  const transportadoras = usarTransportadoras() ?? []
 
   /* a ficha: ao lado (escolhido) no computador, por cima (naFicha) no resto,
      e por cima tambem para editar e para o cliente novo */
@@ -554,7 +557,7 @@ export function TelaClientes() {
                         hoje={hoje}
                         ligada={mostraLado && c.id === escolhidoId}
                         duplicado={duplicados.has(c.id)}
-                        transportadoras={c.cidade ? transportadorasPara(c, cepsDaCidade).length : 0}
+                        transportadoras={c.cidade ? transportadorasPara(c, cepsDaCidade, transportadoras).length : 0}
                         aoAbrir={() => abrir(c)}
                         aoVerEntrega={() => setNaEntrega(c)}
                       />
@@ -655,7 +658,8 @@ export function TelaClientes() {
 
       <Entrega
         cliente={naEntrega}
-        sugestoes={naEntrega ? transportadorasPara(naEntrega, cepsDaCidade) : []}
+        sugestoes={naEntrega ? transportadorasPara(naEntrega, cepsDaCidade, transportadoras) : []}
+        semCadastro={!transportadoras.length}
         aoFechar={() => setNaEntrega(null)}
       />
       <ImportarDoBling aberto={importando} base={todos} aoFechar={() => setImportando(false)} aoImportar={() => void recarregar()} />
@@ -778,10 +782,12 @@ function Linha({
 function Entrega({
   cliente,
   sugestoes,
+  semCadastro,
   aoFechar,
 }: {
   cliente: Cliente | null
   sugestoes: Sugestao[]
+  semCadastro: boolean
   aoFechar: () => void
 }) {
   if (!cliente) return null
@@ -792,8 +798,8 @@ function Entrega({
       titulo={'Transportadoras · ' + cliente.cidade + (cliente.uf ? ' · ' + cliente.uf : '')}
     >
       <p className="cl-nota">
-        Cobertura calculada pelo CEP {cliente.cep ? formatarCep(cliente.cep) : 'da cidade'}. A tabela
-        de faixas fica editável em Configurações.
+        Cobertura calculada pelo CEP {cliente.cep ? formatarCep(cliente.cep) : 'da cidade'} e pelo
+        campo Onde atende de cada transportadora e motoboy, em Transporte.
       </p>
       {sugestoes.length ? (
         sugestoes.map(({ transportadora, origem }) => (
@@ -813,8 +819,12 @@ function Entrega({
         ))
       ) : (
         <Vazio
-          titulo="Sem cobertura calculada"
-          texto="Cadastre cidade ou CEP para o sistema sugerir a transportadora."
+          titulo={semCadastro ? 'Nenhuma transportadora cadastrada' : 'Sem cobertura calculada'}
+          texto={
+            semCadastro
+              ? 'Cadastre em Transporte, Quem transporta, e escreva em Onde atende as cidades, os estados ou as faixas de CEP.'
+              : 'Ninguém do cadastro diz que atende esta cidade. Confira o Onde atende em Transporte, ou o CEP do cliente.'
+          }
         />
       )}
     </Gaveta>

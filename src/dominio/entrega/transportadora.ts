@@ -1,4 +1,5 @@
 import type { Cliente } from '../cliente/tipos'
+import { carregarTransportadores, type Transportador } from '../transporte'
 
 /* ==========================================================================
    Quem leva a encomenda ate o cliente.
@@ -15,7 +16,14 @@ import type { Cliente } from '../cliente/tipos'
    palpite bom. Quem esta no atendimento precisa saber qual das duas esta
    olhando antes de prometer prazo para alguem.
 
-   A tabela de faixas e provisoria e sai daqui quando Configuracoes existir.
+   DESDE 12/10/2026 A LISTA E O CADASTRO DE TRANSPORTE (tabela transportador,
+   042), e nao mais a lista fixa que morava aqui. A cobertura sai do campo
+   "Onde atende" de cada transportadora e motoboy, lido por `deCadastro`:
+     "Brasil", "nacional" ou "todo o país"      o Brasil inteiro
+     siglas de estado (GO, DF, SP)              o estado inteiro
+     faixas de CEP (74000-000 a 74999-999)      a faixa
+     o nome da cidade ("Goiânia e Aparecida")   a cidade
+   Uber e taxi nao entram: nao levam encomenda.
    ========================================================================== */
 
 export type Transportadora = {
@@ -26,10 +34,14 @@ export type Transportadora = {
   faixas?: [string, string][]
   /** siglas de UF, ou '*' para o Brasil inteiro */
   ufs?: string[]
+  /** nomes de cidade, sem acento e em minuscula, tirados do "Onde atende" */
+  cidades?: string[]
   /** a variavel de cor do Design System que pinta o icone */
   cor: string
 }
 
+/* A LISTA DE ANTES (ate 12/10/2026). Fica so como exemplo para o /kit e
+   para os testes: a tela de clientes le o cadastro de transporte. */
 export const TRANSPORTADORAS: Transportadora[] = [
   {
     nome: 'Correios · PAC / SEDEX',
@@ -79,7 +91,7 @@ export type Origem = 'cep' | 'cidade' | 'uf'
 
 export const NOME_DA_ORIGEM: Record<Origem, string> = {
   cep: 'CEP do cliente',
-  cidade: 'CEP da cidade',
+  cidade: 'nome ou CEP da cidade',
   uf: 'cobertura estadual',
 }
 
@@ -114,18 +126,85 @@ const dentro = (cep: string, faixas: [string, string][]) =>
 
 const ORDEM: Record<Origem, number> = { cep: 0, cidade: 1, uf: 2 }
 
-export function transportadorasPara(c: Cliente, cepsDaCidade: Map<string, string[]>): Sugestao[] {
+const UFS = new Set('AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' '))
+const CORES = ['--tec-ribana', '--tec-silk', '--tec-dtf', '--tec-subli', '--tec-bordado', '--tec-patch', '--tec-costura']
+
+/* a cor segue a transportadora, e nao a posicao dela na lista: tirar uma do
+   cadastro nao pode repintar as outras */
+function corDe(id: string): string {
+  let h = 0
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return CORES[h % CORES.length]
+}
+
+/** Le o "Onde atende" escrito a mao e devolve a cobertura que ele descreve. */
+export function coberturaDoTexto(texto: string): Pick<Transportadora, 'faixas' | 'ufs' | 'cidades'> {
+  const t = texto || ''
+  const faixas: [string, string][] = []
+  const reFaixa = /(\d{5})-?(\d{3})\s*(?:a|até|ate|-)\s*(\d{5})-?(\d{3})/gi
+  let m: RegExpExecArray | null
+  while ((m = reFaixa.exec(t))) faixas.push([m[1] + m[2], m[3] + m[4]])
+  const semFaixa = t.replace(reFaixa, ' ')
+  const nacional = /brasil|nacional|todo o pa[ií]s/i.test(semFaixa)
+  const ufs = nacional ? ['*'] : [...new Set((semFaixa.match(/\b[A-Z]{2}\b/g) ?? []).filter((x) => UFS.has(x)))]
+  /* o resto, sem as siglas, separado por virgula, "e", "/" e ponto e
+     virgula: cada pedaco que sobra e um nome de cidade */
+  const cidades = nacional
+    ? []
+    : semAcento(semFaixa.replace(/\b[A-Z]{2}\b/g, ' '))
+        .split(/,|;|\/|\s+e\s+|\(|\)|\n|\s+-\s+/)
+        .map((x) => x.replace(/\s+/g, ' ').trim())
+        .filter((x) => x.length >= 3 && !/^(capita(l|is)|estado|regiao|interior|grande|so|somente|apenas)$/.test(x))
+  return { faixas: faixas.length ? faixas : undefined, ufs: ufs.length ? ufs : undefined, cidades: cidades.length ? cidades : undefined }
+}
+
+/** O cadastro de transporte, na forma que a sugestao de frete usa. */
+export function deCadastro(lista: Transportador[]): Transportadora[] {
+  return lista
+    .filter((t) => t.meio === 'transportadora' || t.meio === 'motoboy')
+    .map((t) => ({
+      nome: t.nome,
+      prazo: t.prazo,
+      observacao: t.observacao || t.ondeAtende,
+      ...coberturaDoTexto(t.ondeAtende),
+      cor: corDe(t.id),
+    }))
+}
+
+export function transportadorasPara(
+  c: Cliente,
+  cepsDaCidade: Map<string, string[]>,
+  lista: Transportadora[] = TRANSPORTADORAS,
+): Sugestao[] {
   const cepDoCliente = so(c.cep)
   const daCidade = c.cidade ? (cepsDaCidade.get(chaveDaCidade(c.cidade, c.uf)) ?? []) : []
   const achadas: Sugestao[] = []
-  TRANSPORTADORAS.forEach((t) => {
+  const cidade = semAcento(c.cidade)
+  lista.forEach((t) => {
     let origem: Origem | '' = ''
     if (t.faixas) {
       if (cepDoCliente.length === 8 && dentro(cepDoCliente, t.faixas)) origem = 'cep'
       else if (daCidade.some((cep) => dentro(cep, t.faixas!))) origem = 'cidade'
     }
+    if (!origem && cidade && t.cidades?.includes(cidade)) origem = 'cidade'
     if (!origem && t.ufs && (t.ufs.includes('*') || (c.uf && t.ufs.includes(c.uf)))) origem = 'uf'
     if (origem) achadas.push({ transportadora: t, origem })
   })
   return achadas.sort((a, b) => ORDEM[a.origem] - ORDEM[b.origem])
+}
+
+/* UMA LEITURA POR ABA. A tela de clientes pergunta a cobertura de centenas de
+   clientes de uma vez, e o cadastro de transporte muda pouco: a lista fica
+   guardada ate a pagina recarregar. Falhou, tenta de novo na proxima vez. */
+let guardada: Promise<Transportadora[]> | null = null
+export function carregarTransportadorasDoCadastro(): Promise<Transportadora[]> {
+  if (!guardada) {
+    guardada = carregarTransportadores()
+      .then(deCadastro)
+      .catch((e) => {
+        guardada = null
+        throw e
+      })
+  }
+  return guardada
 }

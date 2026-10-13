@@ -473,7 +473,7 @@ function FormularioDeTransportador({
               placeholder="Telefone ou nome de quem atende"
             />
           </Campo>
-          <Campo rotulo="Onde atende">
+          <Campo rotulo="Onde atende" dica="Cidades, siglas de estado (GO, DF), faixas de CEP (74000-000 a 74999-999) ou Brasil. A ficha do cliente usa isto para sugerir quem entrega.">
             <Entrada
               value={ondeAtende}
               onChange={(e) => setOndeAtende(e.currentTarget.value)}

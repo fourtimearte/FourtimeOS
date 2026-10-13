@@ -57,6 +57,12 @@ async function abrir({ tema, larg, alt }) {
     else if (r.request().method() === 'POST' && /\/rest\/v1\/cliente(\?|$)/.test(u)) { importados.push(...JSON.parse(r.request().postData() ?? '[]')); corpo = [] }
     else if (u.includes('/equipe?')) corpo = [{ id: '00000000-0000-4000-8000-0000000000a1', nome: 'Dani Ribeiro' }, { id: '00000000-0000-4000-8000-0000000000a2', nome: 'Rafa Lima' }]
     else if (u.includes('meu_perfil')) corpo = PERFIL
+    /* o cadastro de Transporte (042): a ficha sugere o frete por ele */
+    else if (u.includes('transportador_na_lista')) corpo = [
+      { id: 'T1', nome: 'Motoboy Fourtime', meio: 'motoboy', cnpj: null, contato: '', onde_atende: 'Goiânia e Aparecida de Goiânia', prazo: 'mesmo dia', observacao: '' },
+      { id: 'T2', nome: 'Jadlog', meio: 'transportadora', cnpj: null, contato: '', onde_atende: 'GO e DF', prazo: '1 a 3 dias úteis', observacao: '' },
+      { id: 'T3', nome: 'Uber', meio: 'uber', cnpj: null, contato: '', onde_atende: 'Goiânia', prazo: '', observacao: '' },
+    ]
     else if (u.includes('cliente_na_lista')) corpo = u.includes('id=eq.') ? CLIENTES.filter((c) => u.includes(c.id)) : CLIENTES
     else if (u.includes('/pedido?')) corpo = u.includes('C1') ? PEDIDOS : []
     else if (u.includes('/cliente?select=pedidos_antigos')) corpo = [{ pedidos_antigos: u.includes('C1') ? 6 : 0, total_antigo: 14300, ultimo_pedido_antigo: '2025-02-01' }]
@@ -96,7 +102,7 @@ for (const tema of ['light', 'dark']) {
       const ficha = await pg.evaluate(() => ({ t: document.querySelector('.cl-lado')?.innerText ?? '', modal: !!document.querySelector('dialog[open]'), ligada: document.querySelector('.cl-tab tr.ligado')?.innerText ?? '' }))
       conta(!ficha.modal && /Colégio Exemplo/.test(ficha.t) && /Colégio Exemplo/.test(ficha.ligada), `${T} clicar numa linha abre a ficha AO LADO, sem modal, e marca a linha`)
       conta(/Quando ele compra/i.test(ficha.t) && /ago/.test(ficha.t) && /PD004120/.test(ficha.t) && /CO2026-0131/.test(ficha.t), `${T} o resumo traz quando ele compra, os últimos pedidos e a cotação aberta`)
-      conta(/Ana Paula/.test(ficha.t) && /Motoboy|Correios|Jadlog|Braspress|Total|Sem CEP/.test(ficha.t), `${T} o resumo traz quem fala com a gente e a entrega`)
+      conta(/Ana Paula/.test(ficha.t) && /Motoboy Fourtime/.test(ficha.t) && !/Uber/.test(ficha.t), `${T} o resumo traz quem fala com a gente e a entrega, pelo cadastro de Transporte (o motoboy de Goiânia, e não o Uber)`)
       await pg.screenshot({ path: `${PASTA}/clientes-ficha-${tema}-${nome}.png` })
       if (tema === 'light' && nome === 'grande') {
         await pg.evaluate(() => [...document.querySelectorAll('.cl-lado-abas button')].find((b) => /Pedidos/.test(b.innerText)).click())

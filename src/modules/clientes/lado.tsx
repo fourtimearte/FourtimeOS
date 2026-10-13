@@ -38,6 +38,7 @@ import {
 } from '@dominio/cliente'
 import { carregarCotacoes, type CotacaoNaLista } from '@dominio/cotacao'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
+import { usarTransportadoras } from './transportadoras'
 
 /* ==========================================================================
    A FICHA AO LADO (prancha 147, ideia A, escolhida em 12/10/2026): clicar
@@ -99,7 +100,11 @@ export function FichaAoLado({
     }
   }, [c.id])
 
-  const frete = useMemo(() => transportadorasPara(c, cepsPorCidade(base))[0] ?? null, [c, base])
+  const transportadoras = usarTransportadoras()
+  const frete = useMemo(
+    () => (transportadoras ? (transportadorasPara(c, cepsPorCidade(base), transportadoras)[0] ?? null) : null),
+    [c, base, transportadoras],
+  )
   const situacao = situacaoDoCliente(c, hoje)
   const validos = pedidos.filter((p) => p.estado !== 'cancelado')
   const ticket = c.pedidos ? c.total / c.pedidos : 0

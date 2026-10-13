@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { versaoDaExtensao } from '@shared'
 import { ESTAGIO_FECHADO, type Estagio, type Lead } from '@dominio/funil'
 import { AvisoDaExtensao } from './barra'
-import { PainelAoLado, type Escrita, type Eu } from './painel'
+import { PainelAoLado, type Eu } from './painel'
+import { useWhatsApp } from './whatsapp-vivo'
 
 /* ==========================================================================
    O WHATSAPP DENTRO DO FOURTIME OS (pranchas 131 a 133).
@@ -24,12 +25,12 @@ import { PainelAoLado, type Escrita, type Eu } from './painel'
    mensagem rapida vai no sentido contrario: a pagina pede, a extensao
    escreve na conversa aberta e envia (0.4.0).
 
-   O QUADRO NAO E DESMONTADO ao voltar para o quadro do funil: so fica
-   escondido. Recarregar o WhatsApp a cada troca custaria segundos e, sem a
-   extensao pegar o link, a conversa aberta.
+   O QUADRO NAO E DESMONTADO nem ao voltar para o quadro do funil nem ao
+   trocar de pagina: ele mora na casca (whatsapp-vivo.tsx, 13/10/2026), e
+   aqui fica so o lugar onde ele aparece. Recarregar o WhatsApp a cada troca
+   custaria segundos e a conversa aberta.
    ========================================================================== */
 
-const WHATSAPP = 'https://web.whatsapp.com'
 const fim = (t: string) => t.replace(/\D/g, '').slice(-8)
 
 export type PedidoDeConversa = { telefone: string; texto: string; marca: number }
@@ -66,90 +67,17 @@ export function PainelDoWhatsApp({
   aoRegistrar: (l: Lead, texto: string) => void
   eu: Eu
 }) {
-  const quadro = useRef<HTMLIFrameElement>(null)
-  const [pronto, setPronto] = useState(false)
-  const [conversa, setConversa] = useState<{ jid: string; telefone: string; nome: string; aberta: boolean }>({
-    jid: '',
-    telefone: '',
-    nome: '',
-    aberta: false,
-  })
-  const [recarregou, setRecarregou] = useState(false)
+  const { mostrarEm, pronto, conversa, recarregou, pedir, escrever } = useWhatsApp()
   const extensao = versaoDaExtensao()
 
-  /* o que a extensao conta, e so dela: a origem e a janela do quadro */
-  useEffect(() => {
-    const ouvir = (e: MessageEvent) => {
-      if (e.origin !== WHATSAPP || e.source !== quadro.current?.contentWindow) return
-      const d = e.data as { fourtime?: string; tipo?: string; jid?: string; telefone?: string; jeito?: string }
-      if (!d || d.fourtime !== 'whatsapp') return
-      if (d.tipo === 'pronto') {
-        setPronto(true)
-        /* o quadro que RECARREGOU (a troca de conversa pelo endereco) nasce sem
-           o tema: ele vai de novo a cada "pronto", e nao so no primeiro */
-        quadro.current?.contentWindow?.postMessage(
-          { fourtime: 'pedido', tipo: 'tema', tema: document.documentElement.getAttribute('data-theme') || 'light' },
-          WHATSAPP,
-        )
-      }
-      /* a 0.4.1 conta tambem se ha uma conversa aberta (aberta), mesmo quando o
-         WhatsApp nao mostra o numero; a de antes, so o jid e o telefone */
-      if (d.tipo === 'conversa') {
-        const x = d as { jid?: string; telefone?: string; nome?: string; aberta?: boolean }
-        const jid = String(x.jid ?? '')
-        const telefone = String(x.telefone ?? '')
-        setConversa({ jid, telefone, nome: String(x.nome ?? ''), aberta: x.aberta ?? !!(jid || telefone) })
-      }
-      if (d.tipo === 'abriu') setRecarregou(d.jeito === 'recarregando')
-      if (d.tipo === 'escreveu') {
-        const r = d as unknown as Escrita & { marca?: number }
-        const esperando = escritas.current.get(Number(r.marca))
-        if (esperando) {
-          escritas.current.delete(Number(r.marca))
-          esperando({ ok: !!r.ok, enviado: !!r.enviado, motivo: r.motivo })
-        }
-      }
-    }
-    window.addEventListener('message', ouvir)
-    return () => window.removeEventListener('message', ouvir)
-  }, [])
-
-  /* ESCREVER (E ENVIAR) NA CONVERSA ABERTA: a extensao responde com a mesma
-     marca. Sem resposta em 2,5 s, a extensao e de antes da 0.4.0, que nao
-     sabe escrever: o painel cai no jeito antigo (abrir com o texto). */
-  const escritas = useRef(new Map<number, (r: Escrita) => void>())
-  const escrever = (texto: string, enviar: boolean) =>
-    new Promise<Escrita>((resolver) => {
-      const marca = Date.now() + Math.random()
-      escritas.current.set(marca, resolver)
-      quadro.current?.contentWindow?.postMessage(
-        { fourtime: 'pedido', tipo: 'escrever', jid: conversa.jid, telefone: conversa.telefone, texto, enviar, marca },
-        WHATSAPP,
-      )
-      setTimeout(() => {
-        if (!escritas.current.has(marca)) return
-        escritas.current.delete(marca)
-        resolver({ ok: false, motivo: 'extensao-antiga' })
-      }, 2500)
-    })
-
-  const pedir = (telefone: string, texto = '') =>
-    quadro.current?.contentWindow?.postMessage({ fourtime: 'pedido', tipo: 'abrir', telefone, texto }, WHATSAPP)
-
-  /* O TEMA DO FOURTIME OS VAI PARA DENTRO: a extensao pinta o WhatsApp de
-     Gelo ou de Grafite (whatsapp.css), e repinta quando o tema da pagina muda */
-  useEffect(() => {
-    if (!pronto) return
-    const contar = () =>
-      quadro.current?.contentWindow?.postMessage(
-        { fourtime: 'pedido', tipo: 'tema', tema: document.documentElement.getAttribute('data-theme') || 'light' },
-        WHATSAPP,
-      )
-    contar()
-    const vigia = new MutationObserver(contar)
-    vigia.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => vigia.disconnect()
-  }, [pronto])
+  /* O LUGAR DO WHATSAPP NESTA PAGINA. O WhatsApp mesmo mora na casca
+     (whatsapp-vivo.tsx) e aparece em cima deste retangulo enquanto o modo
+     WhatsApp esta na frente. Sair da pagina so tira o lugar: ele fica ligado. */
+  const lugar = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    mostrarEm(visivel ? lugar.current : null)
+    return () => mostrarEm(null)
+  }, [visivel, mostrarEm, extensao])
 
   /* o pedido do quadro vai para o WhatsApp assim que ele estiver de pe */
   const ultimoPedido = useRef(0)
@@ -157,7 +85,7 @@ export function PainelDoWhatsApp({
     if (!pedido || !pronto || pedido.marca === ultimoPedido.current) return
     ultimoPedido.current = pedido.marca
     pedir(pedido.telefone, pedido.texto)
-  }, [pedido, pronto])
+  }, [pedido, pronto, pedir])
 
   const lead = useMemo(() => {
     if (!conversa.telefone) return null
@@ -169,15 +97,7 @@ export function PainelDoWhatsApp({
 
   return (
     <div className={visivel ? 'fn-wa' : 'fn-wa fn-guardado'} aria-hidden={!visivel}>
-      <section className="fn-wa-quadro" aria-label="WhatsApp Web">
-        <iframe
-          ref={quadro}
-          className="fn-wa-frame"
-          src={WHATSAPP + '/'}
-          title="WhatsApp Web"
-          allow="clipboard-read; clipboard-write; microphone; camera; autoplay; fullscreen"
-        />
-      </section>
+      <section ref={lugar} className="fn-wa-quadro" aria-label="WhatsApp Web" />
 
       <PainelAoLado
         lead={lead}

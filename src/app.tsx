@@ -57,6 +57,7 @@ import { abaixoDoMinimo, carregarMateriais } from '@dominio/estoque'
 import { contarEsperando } from '@dominio/equipe'
 import { abasDaConfigDe, ICONE_DA_ABA } from '@modules/config'
 import { Sino } from '@modules/sino'
+import { ProvedorDoWhatsApp } from '@modules/funil'
 import { Inspetor } from '@modules/inspetor'
 
 /* Esta e a raiz que monta o sistema: o unico lugar que conhece a casca, o
@@ -572,8 +573,10 @@ export function App() {
     ...dadosDaBusca,
   ]
 
+  /* O PROVEDOR DO WHATSAPP ABRACA A CASCA: o WhatsApp do Funil mora aqui, e
+     nao na pagina, para nao recarregar a cada troca de pagina (13/10/2026) */
   return (
-    <>
+    <ProvedorDoWhatsApp>
       <Casca
         encolhida={encolhida}
         aoEncolher={() => setEncolhida((e) => !e)}
@@ -642,6 +645,6 @@ export function App() {
       <PilhaDeRecados />
       {/* temporário: Ctrl+Shift+X copia o endereço de qualquer elemento (só o admin) */}
       <Inspetor ligavel={souAdmin} />
-    </>
+    </ProvedorDoWhatsApp>
   )
 }

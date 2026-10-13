@@ -32,6 +32,7 @@ import { EditarLead } from './editar'
 import { Inbox } from './inbox'
 import { Quadro } from './quadro'
 import { PainelDoWhatsApp, type PedidoDeConversa } from './whatsapp'
+import { useWhatsApp } from './whatsapp-vivo'
 import './funil.css'
 
 /* ==========================================================================
@@ -150,20 +151,24 @@ export function TelaFunil() {
   /* QUADRO OU WHATSAPP (pranchas 131 a 133). So no computador: no celular o
      botao do WhatsApp abre o aplicativo. A pagina SEMPRE abre no Quadro
      (pedido do Henrique em 12/10/2026: antes a escolha ficava lembrada e o
-     Funil abria no WhatsApp). O WhatsApp so e montado na primeira vez que
-     alguem entra no modo, e depois fica montado, escondido, para nao
-     recarregar a cada troca. */
+     Funil abria no WhatsApp). O WhatsApp so liga na primeira vez que
+     alguem entra no modo, e depois fica ligado, escondido, na casca
+     (whatsapp-vivo.tsx): nem a troca de modo nem a troca de pagina
+     recarregam ele. */
   const podeWhatsApp = noComputador()
+  const { ligado: montado, ligar } = useWhatsApp()
   const [modo, setModoBruto] = useState<'quadro' | 'whatsapp'>('quadro')
-  const [montado, setMontado] = useState(false)
   const [pedido, setPedido] = useState<PedidoDeConversa | null>(null)
-  const setModo = useCallback((m: 'quadro' | 'whatsapp') => {
-    setModoBruto(m)
-    if (m === 'whatsapp') {
-      setMontado(true)
-      setAbertoId('')
-    }
-  }, [])
+  const setModo = useCallback(
+    (m: 'quadro' | 'whatsapp') => {
+      setModoBruto(m)
+      if (m === 'whatsapp') {
+        ligar()
+        setAbertoId('')
+      }
+    },
+    [ligar],
+  )
 
   /* O BOTAO DO WHATSAPP DO FUNIL, com a extensao, troca a conversa no
      WhatsApp daqui de dentro em vez de abrir outra aba */

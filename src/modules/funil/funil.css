@@ -931,6 +931,26 @@
 .fn-wa-ponto.ligado {
   background: var(--wa);
 }
+/* O WHATSAPP QUE MORA NA CASCA (whatsapp-vivo.tsx). Ele e desenhado em cima
+   do lugar (.fn-wa-quadro), por dentro da borda; a posicao e o tamanho vem
+   do lugar, escritos a cada mudanca. Sem lugar (outra pagina ou o modo
+   Quadro), fica fixo, invisivel e do mesmo tamanho: nao se redesenha e nao
+   aumenta a rolagem. Abaixo do topo (30) e de qualquer menu ou modal. */
+.fn-wa-vivo {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  visibility: hidden;
+  pointer-events: none;
+}
+.fn-wa-vivo.na-pagina {
+  position: absolute;
+  visibility: visible;
+  pointer-events: auto;
+}
 .fn-wa-frame {
   flex: 1;
   width: 100%;

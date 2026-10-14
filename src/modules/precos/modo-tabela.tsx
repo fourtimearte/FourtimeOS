@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { CaretRight, ClipboardText, Copy, Plus, X } from '@phosphor-icons/react'
-import { Aviso, Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar } from '@ds'
+import { Aviso, Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar, useSelecaoDeLinhas } from '@ds'
 import { formatarNumeroExato } from '@shared'
 import {
   ajustarEmLote,
@@ -21,7 +21,7 @@ import {
   type EntradaDoCatalogo,
   type TabelaDePreco,
 } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao, usarMarcarEmFaixa } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao } from './campo'
 import { achaNaBusca, type GrupoDoCatalogo, type PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -144,7 +144,8 @@ export function ModoTabela({
 
   const marcar = (cods: string[], sim: boolean) =>
     setMarcados((m) => (sim ? [...new Set([...m, ...cods])] : m.filter((c) => !cods.includes(c))))
-  const marcarUma = usarMarcarEmFaixa(
+  /* a seleção do Kit de Comportamento: caixa, clique, Ctrl, Shift, Esc e Ctrl+A */
+  const selecao = useSelecaoDeLinhas(
     ordem.map((p) => p.codigo),
     marcados,
     setMarcados,
@@ -257,7 +258,7 @@ export function ModoTabela({
         coluna copiada da planilha. O botão de copiar ao lado do nome leva os preços de uma peça para outras.
       </p>
 
-      <div className="pr-rola">
+      <div className="pr-rola" onKeyDown={podeMexer ? selecao.naTecla : undefined}>
         <table className="pr-grade pr-mt-tab">
           <thead>
             <tr>
@@ -356,14 +357,19 @@ export function ModoTabela({
                                 ? ['', 'soma das peças']
                                 : ['', 'pela regra']
                         return (
-                          <tr key={p.codigo} className={[marcado ? 'pr-marcada' : '', it ? '' : 'pr-mt-fora'].filter(Boolean).join(' ')}>
+                          <tr
+                            key={p.codigo}
+                            className={[marcado ? 'pr-marcada' : '', it ? '' : 'pr-mt-fora'].filter(Boolean).join(' ')}
+                            aria-selected={marcado}
+                            onClick={podeMexer ? (e) => selecao.naLinha(p.codigo, e) : undefined}
+                          >
                             <td className="pr-ck-col">
                               {podeMexer ? (
                                 <Marcacao
                                   aria-label={'Marcar ' + p.codigo}
                                   checked={marcado}
                                   onChange={() => {}}
-                                  onClick={(e) => marcarUma(p.codigo, e)}
+                                  onClick={(e) => selecao.naCaixa(p.codigo, e)}
                                 />
                               ) : null}
                             </td>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
 import { CaretRight, Plus } from '@phosphor-icons/react'
-import { Botao, Busca, Entrada, Flutuante, Marcacao, Segmentado, avisar } from '@ds'
+import { Botao, Busca, Entrada, Flutuante, Marcacao, Segmentado, avisar, useSelecaoDeLinhas } from '@ds'
 import { numeroDoTexto, type EntradaDoCatalogo } from '@dominio/preco'
 import { achaNaBusca, type GrupoDoCatalogo } from './catalogo'
 
@@ -39,6 +39,14 @@ export function AdicionarDoCatalogo({
     .map((g) => ({ ...g, pecas: g.pecas.filter((p) => achaNaBusca(busca, p.codigo, p.nome, g.cod, g.nome)) }))
     .filter((g) => g.pecas.length)
   const todas = grupos.flatMap((g) => g.pecas)
+  /* a seleção do Kit de Comportamento: o Shift pega a faixa das peças à vista
+     (grupos abertos, fora as que já estão na tabela); Esc solta; Ctrl+A marca */
+  const abertoNaTela = (cod: string) => !!busca.trim() || abertos.includes(cod) || comBusca.length === 1
+  const selecao = useSelecaoDeLinhas(
+    comBusca.flatMap((g) => (abertoNaTela(g.cod) ? g.pecas.filter((p) => !naTabela.has(p.codigo)).map((p) => p.codigo) : [])),
+    marcados,
+    setMarcados,
+  )
   const nRef = grupos.filter((g) => g.cod !== 'KIT').reduce((n, g) => n + g.pecas.length, 0)
   const nKit = grupos.find((g) => g.cod === 'KIT')?.pecas.length ?? 0
 
@@ -77,7 +85,7 @@ export function AdicionarDoCatalogo({
           ]}
         />
       </div>
-      <div className="pr-ad-lista">
+      <div className="pr-ad-lista" onKeyDown={selecao.naTecla}>
         {comBusca.length === 0 ? <p className="pr-nada">Nada no catálogo com isso.</p> : null}
         {comBusca.map((g) => {
           const livres = g.pecas.filter((p) => !naTabela.has(p.codigo)).map((p) => p.codigo)
@@ -122,7 +130,8 @@ export function AdicionarDoCatalogo({
                           aria-label={'Marcar ' + p.codigo}
                           disabled={ja}
                           checked={marcada}
-                          onChange={() => setMarcados((m) => (marcada ? m.filter((c) => c !== p.codigo) : [...m, p.codigo]))}
+                          onChange={() => {}}
+                          onClick={(e) => selecao.naCaixa(p.codigo, e)}
                         />
                         <span className="pr-cod">{p.codigo}</span>
                         <b className="corta">{p.nome}</b>

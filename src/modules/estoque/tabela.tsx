@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { CaretRight, MapPin, Plus, X } from '@phosphor-icons/react'
-import { Botao, Chip, Marcacao, Segmentado, Vazio } from '@ds'
+import { Botao, Chip, Marcacao, Segmentado, Vazio, useSelecaoDeLinhas } from '@ds'
 import {
   CATEGORIAS,
   NOME_DA_SITUACAO_DO_MATERIAL,
@@ -247,11 +247,22 @@ export function TabelaDeMateriais({
       return novo
     })
   const quantos = (itens: Material[]) => itens.filter(m => marcados.has(m.id)).length
+  /* a seleção do Kit de Comportamento: a caixa, o clique na linha e o Ctrl
+     alternam; o Shift pega a faixa na ordem da tela (só as faixas abertas);
+     Esc solta; Ctrl+A marca as à vista */
+  const ordemNaTela = faixas.flatMap(g =>
+    !aberta(g.chave)
+      ? []
+      : g.filhas.length
+        ? g.filhas.flatMap(t => (aberta(t.chave) ? t.itens.map(m => m.id) : []))
+        : g.itens.map(m => m.id),
+  )
+  const selecao = useSelecaoDeLinhas(ordemNaTela, marcados, novos => setMarcados(new Set(novos)))
   const escolhidos = useMemo(() => linhas.filter(m => marcados.has(m.id)), [linhas, marcados])
 
   /* A caixa de marcar de uma linha. A célula segura o clique: sem isso ele
      sobe para a linha, que abre a faixa (ou marca a cor de novo, e desfaz). */
-  const caixa = (itens: Material[], rotulo: string, cabeca = false) => {
+  const caixa = (itens: Material[], rotulo: string, cabeca = false, linha?: string) => {
     if (!podeEditar) return null
     /* o grupo e o tecido sem cor nenhuma não têm o que marcar */
     if (!itens.length && !cabeca) return <td className="es-ck" />
@@ -261,7 +272,8 @@ export function TabelaDeMateriais({
         checked={n > 0 && n === itens.length}
         meio={n > 0 && n < itens.length}
         aria-label={rotulo}
-        onChange={e => marcar(itens, e.currentTarget.checked)}
+        onChange={linha ? () => {} : e => marcar(itens, e.currentTarget.checked)}
+        onClick={linha ? e => selecao.naCaixa(linha, e) : undefined}
       />
     )
     return cabeca ? (
@@ -310,9 +322,10 @@ export function TabelaDeMateriais({
         key={m.id}
         className={marcado ? 'es-folha marcada' : 'es-folha'}
         data-material={m.nome}
-        onClick={podeEditar ? () => marcar([m], !marcado) : () => aoAbrir(m)}
+        aria-selected={podeEditar ? marcado : undefined}
+        onClick={podeEditar ? e => selecao.naLinha(m.id, e) : () => aoAbrir(m)}
       >
-        {caixa([m], 'Marcar ' + nomeInteiro(m))}
+        {caixa([m], 'Marcar ' + nomeInteiro(m), false, m.id)}
         <td className={degrau === 2 ? 'es-degrau-2' : 'es-degrau-1'}>
           <span className="es-celula">
             <Bola cor={m.corHex} />
@@ -571,7 +584,7 @@ export function TabelaDeMateriais({
           />
         )
       ) : (
-        <div className="tabela-rola">
+        <div className="tabela-rola" onKeyDown={podeEditar ? selecao.naTecla : undefined}>
           <table className="tabela es-tabela es-tb" data-tabela="">
             <thead>
               <tr>

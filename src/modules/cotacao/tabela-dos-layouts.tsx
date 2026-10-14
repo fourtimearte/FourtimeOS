@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as EventoDeTecla } from 'react'
 import { CaretDown, Check, Plus, Table, Warning, X } from '@phosphor-icons/react'
-import { Flutuante, Marcacao, MenuTecidoECor, TituloCartao } from '@ds'
+import { Flutuante, Marcacao, MenuTecidoECor, TituloCartao, useSelecaoDeLinhas } from '@ds'
 import {
   comEtiqueta,
   etiquetaDoDesign,
@@ -123,13 +123,12 @@ export function TabelaDosLayouts({
   const primeiro = indicesMarcados.length ? produtos[indicesMarcados[0]] : null
   const todasMarcadas = linhas.length > 0 && linhas.every(({ p }) => marcados.has(p.bloco.id))
 
-  const marcar = (id: string, sim: boolean) =>
-    setMarcados(m => {
-      const n = new Set(m)
-      if (sim) n.add(id)
-      else n.delete(id)
-      return n
-    })
+  /* a seleção do Kit de Comportamento: caixa, clique, Ctrl, Shift, Esc e Ctrl+A */
+  const selecao = useSelecaoDeLinhas(
+    linhas.map(({ p }) => p.bloco.id),
+    marcados,
+    novos => setMarcados(new Set(novos)),
+  )
   const noLote = (troca: (p: ProdutoCotado) => ProdutoCotado) =>
     indicesMarcados.forEach(i => aoMudarProduto(i, troca))
   const mudarBloco = (i: number, b: Bloco) => aoMudarProduto(i, x => ({ ...x, bloco: b }))
@@ -241,7 +240,7 @@ export function TabelaDosLayouts({
         </div>
       )}
 
-      <div className="ct-tb-rolo">
+      <div className="ct-tb-rolo" onKeyDown={travado ? undefined : selecao.naTecla}>
         <table className="ct-tb-tab">
           <thead>
             <tr>
@@ -251,11 +250,7 @@ export function TabelaDosLayouts({
                     aria-label="Marcar todos"
                     checked={todasMarcadas}
                     meio={!todasMarcadas && marcadas.length > 0}
-                    onChange={() =>
-                      setMarcados(
-                        todasMarcadas ? new Set() : new Set(linhas.map(({ p }) => p.bloco.id)),
-                      )
-                    }
+                    onChange={() => selecao.todas(!todasMarcadas)}
                   />
                 ) : null}
               </th>
@@ -282,13 +277,19 @@ export function TabelaDosLayouts({
               const tc = b.tecidos[0]
               const g = GENERO[b.genero]
               return (
-                <tr key={b.id} className={marcado ? 'ct-tb-marcada' : undefined}>
+                <tr
+                  key={b.id}
+                  className={marcado ? 'ct-tb-marcada' : undefined}
+                  aria-selected={marcado}
+                  onClick={travado ? undefined : e => selecao.naLinha(b.id, e)}
+                >
                   <td className="ct-tb-ck ct-tb-x-ck">
                     {!travado ? (
                       <Marcacao
                         aria-label={'Marcar ' + codigoDoLayout(b.n)}
                         checked={marcado}
-                        onChange={e => marcar(b.id, e.target.checked)}
+                        onChange={() => {}}
+                        onClick={e => selecao.naCaixa(b.id, e)}
                       />
                     ) : null}
                   </td>
@@ -384,6 +385,13 @@ export function TabelaDosLayouts({
                       }}
                       aoMudar={v => aoMudarProduto(i, x => comPrecoEscrito(x, v))}
                       aoDescer={() => precos.current[k + 1]?.focus()}
+                      aoSubir={() => precos.current[k - 1]?.focus()}
+                      aoColar={valores =>
+                        valores.forEach((v, j) => {
+                          const alvo = linhas[k + j]
+                          if (alvo) aoMudarProduto(alvo.i, x => comPrecoEscrito(x, v))
+                        })
+                      }
                     />
                   </td>
                   {comTabela ? (
@@ -630,12 +638,17 @@ function CampoDoPreco({
   refEl,
   aoMudar,
   aoDescer,
+  aoSubir,
+  aoColar,
 }: {
   p: ProdutoCotado
   travado: boolean
   refEl: (el: HTMLInputElement | null) => void
   aoMudar: (v: number) => void
   aoDescer: () => void
+  aoSubir: () => void
+  /** um bloco colado da planilha: um preço por linha, desta para baixo */
+  aoColar: (valores: number[]) => void
 }) {
   const [texto, setTexto] = useState<string | null>(null)
   const gravar = () => {
@@ -646,8 +659,10 @@ function CampoDoPreco({
   }
   const tecla = (e: EventoDeTecla<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault()
       gravar()
-      aoDescer()
+      if (e.shiftKey) aoSubir()
+      else aoDescer()
     }
     if (e.key === 'Escape') {
       setTexto(null)
@@ -669,6 +684,17 @@ function CampoDoPreco({
             e.currentTarget.select()
           }}
           onChange={e => setTexto(e.target.value)}
+          onPaste={e => {
+            /* colar uma coluna da planilha preenche desta linha para baixo */
+            const linhas = e.clipboardData.getData('text').split(/\r?\n/).filter(x => x.trim() !== '')
+            if (linhas.length < 2) return
+            e.preventDefault()
+            const valores = linhas.map(x => lerPreco(x.split('\t')[0]))
+            if (valores.some(v => v == null)) return
+            setTexto(null)
+            aoColar(valores as number[])
+            e.currentTarget.blur()
+          }}
           onBlur={gravar}
           onKeyDown={tecla}
         />

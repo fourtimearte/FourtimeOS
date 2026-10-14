@@ -402,6 +402,13 @@ textarea.entrada {
   font-size: 14px;
   min-height: 40px;
 }
+/* A LINHA QUE SE MARCA (Kit de Comportamento, seleção de linhas): a tabela ou
+   lista que usa useSelecaoDeLinhas põe aria-selected na linha, e a linha
+   inteira vira alvo de clique (Ctrl alterna, Shift pega a faixa). */
+tr[aria-selected],
+li[aria-selected] {
+  cursor: pointer;
+}
 .ck input {
   position: absolute;
   opacity: 0;

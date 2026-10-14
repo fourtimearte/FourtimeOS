@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Plus, Warning } from '@phosphor-icons/react'
-import { Botao, Marcacao } from '@ds'
+import { Botao, Marcacao, useSelecaoDeLinhas } from '@ds'
 import { celula, nomeDaFaixa, type Contexto, type TabelaDePreco } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao, usarMarcarEmFaixa } from './campo'
+import { CampoDePreco, usarAlca, usarEdicao } from './campo'
 import type { LinhaDaGrade, PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -59,7 +59,8 @@ export function GradeDaTabela({
     aoColar: (cod, i, texto) => aoColar(ordem, ordem.indexOf(cod), i, texto),
   })
 
-  const marcarUma = usarMarcarEmFaixa(ordem, marcados, aoMarcar)
+  /* a seleção do Kit de Comportamento: caixa, clique, Ctrl, Shift, Esc e Ctrl+A */
+  const selecao = useSelecaoDeLinhas(ordem, marcados, aoMarcar)
   const alca = usarAlca({
     ordem,
     valorDe: (cod, i) => {
@@ -79,7 +80,7 @@ export function GradeDaTabela({
   const colunas = tabela.faixas.length + 2
 
   return (
-    <div className="pr-rola">
+    <div className="pr-rola" onKeyDown={podeMexer ? selecao.naTecla : undefined}>
       <table className="pr-grade">
         <thead>
           <tr>
@@ -109,14 +110,19 @@ export function GradeDaTabela({
                 const marcado = marcados.includes(l.item.codigo)
                 const semBase = celula(tabela, l.item, 0, ctx).valor == null
                 return (
-                  <tr key={l.item.codigo} className={marcado ? 'pr-marcada' : ''}>
+                  <tr
+                    key={l.item.codigo}
+                    className={marcado ? 'pr-marcada' : ''}
+                    aria-selected={marcado}
+                    onClick={podeMexer ? (e) => selecao.naLinha(l.item.codigo, e) : undefined}
+                  >
                     <td className="pr-ck-col">
                       {podeMexer ? (
                         <Marcacao
                           aria-label={'Marcar ' + l.item.codigo}
                           checked={marcado}
                           onChange={() => {}}
-                          onClick={(e) => marcarUma(l.item.codigo, e)}
+                          onClick={(e) => selecao.naCaixa(l.item.codigo, e)}
                         />
                       ) : null}
                     </td>

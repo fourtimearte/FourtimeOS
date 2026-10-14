@@ -432,9 +432,7 @@ export function TelaPcp() {
                   podeAprovar={podeAprovar}
                   escolhidos={naMesa}
                   ocupado={aprovando}
-                  aoEscolher={id =>
-                    setNaMesa(m => (m.includes(id) ? m.filter(x => x !== id) : [...m, id]))
-                  }
+                  aoMarcar={setNaMesa}
                   aoAprovar={() => setConfirmando(mesa.filter(p => naMesa.includes(p.id)))}
                   aoAbrir={abrir}
                 />

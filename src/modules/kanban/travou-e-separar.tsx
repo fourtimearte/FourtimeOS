@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowsSplit, Warning } from '@phosphor-icons/react'
-import { AreaTexto, Botao, Campo, Marcacao, Modal, Seletor } from '@ds'
+import { AreaTexto, Botao, Campo, Marcacao, Modal, Seletor, useSelecaoDeLinhas } from '@ds'
 import { totalDaGrade, type Bloco } from '@dominio/layout'
 import {
   destravarOCartao,
@@ -202,9 +202,12 @@ function ModalDeSeparar({
   const pecasBoas = pecas >= 1 && pecas < fatia.pecas
   const valido = escolhidos.length > 0 && !todos && pecasBoas && !!posto && motivo.trim().length >= 3
 
-  function alternar(n: number) {
-    setEscolhidos((x) => (x.includes(n) ? x.filter((y) => y !== n) : [...x, n].sort((a, b) => a - b)))
-  }
+  /* a seleção do Kit de Comportamento: Shift pega a faixa, Esc solta, Ctrl+A marca todos */
+  const selecao = useSelecaoDeLinhas(
+    fatia.layouts.map(String),
+    escolhidos.map(String),
+    (novos) => setEscolhidos(fatia.layouts.filter((n) => novos.includes(String(n)))),
+  )
 
   async function gravar() {
     if (!valido || !posto) return
@@ -241,9 +244,14 @@ function ModalDeSeparar({
     >
       <div className="pilha">
         <Campo rotulo="Layouts que saem">
-          <div className="ca-sep-lista">
+          <div className="ca-sep-lista" onKeyDown={selecao.naTecla}>
             {fatia.layouts.map((n) => (
-              <Marcacao key={n} checked={escolhidos.includes(n)} onChange={() => alternar(n)}>
+              <Marcacao
+                key={n}
+                checked={escolhidos.includes(n)}
+                onChange={() => {}}
+                onClick={(e) => selecao.naCaixa(String(n), e)}
+              >
                 {rotulo(n)} · {pecasDe(n)} pçs
               </Marcacao>
             ))}

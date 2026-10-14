@@ -8,6 +8,8 @@
 
 export { Botao, Chip } from './componentes/botao'
 export { BotaoComMenu } from './componentes/botao-menu'
+export { cliqueEmControle, useSelecaoDeLinhas } from './componentes/selecao'
+export type { CliqueDeSelecao, SelecaoDeLinhas } from './componentes/selecao'
 export type { TomBotao, TamanhoBotao } from './componentes/botao'
 
 export {

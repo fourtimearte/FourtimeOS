@@ -1,5 +1,5 @@
 import { CalendarCheck, Check, UserCheck } from '@phosphor-icons/react'
-import { Botao, Kpi, Marcacao, Selo, TituloCartao } from '@ds'
+import { Botao, Kpi, Marcacao, Selo, TituloCartao, useSelecaoDeLinhas } from '@ds'
 import type { PedidoNoPcp } from '@dominio/producao'
 import { dataCurta, emDias, temFalta } from './fila'
 
@@ -42,7 +42,7 @@ export function ResumoDoPcp({
   podeAprovar,
   escolhidos,
   ocupado,
-  aoEscolher,
+  aoMarcar,
   aoAprovar,
   aoAbrir,
 }: {
@@ -56,7 +56,8 @@ export function ResumoDoPcp({
   podeAprovar: boolean
   escolhidos: string[]
   ocupado: boolean
-  aoEscolher: (id: string) => void
+  /** o novo conjunto marcado na mesa (Kit de Comportamento: seleção de linhas) */
+  aoMarcar: (ids: string[]) => void
   aoAprovar: () => void
   aoAbrir: (id: string) => void
 }) {
@@ -70,6 +71,13 @@ export function ResumoDoPcp({
     .slice(0, VISIVEIS)
   const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
   const marcadosNaMesa = mesa.filter(p => escolhidos.includes(p.id))
+  /* a seleção do Kit de Comportamento: caixa, clique, Ctrl, Shift, Esc e Ctrl+A */
+  const selecao = useSelecaoDeLinhas(
+    mesa.map(p => p.id),
+    escolhidos,
+    aoMarcar,
+  )
+  const marca = podeAprovar && !ocupado
   const comFaltaNaMesa = mesa.filter(temFalta).length
 
   return (
@@ -151,15 +159,22 @@ export function ResumoDoPcp({
             </p>
           ) : (
             <>
-              <ul className="pc-lista">
+              <ul className="pc-lista" onKeyDown={marca ? selecao.naTecla : undefined}>
                 {mesa.map(p => (
-                  <li key={p.id} className="pc-mesa-linha" data-mesa={p.numero}>
+                  <li
+                    key={p.id}
+                    className="pc-mesa-linha"
+                    data-mesa={p.numero}
+                    aria-selected={podeAprovar ? escolhidos.includes(p.id) : undefined}
+                    onClick={marca ? e => selecao.naLinha(p.id, e) : undefined}
+                  >
                     {podeAprovar ? (
                       <Marcacao
                         checked={escolhidos.includes(p.id)}
                         disabled={ocupado}
                         aria-label={'Escolher ' + p.numero}
-                        onChange={() => aoEscolher(p.id)}
+                        onChange={() => {}}
+                        onClick={e => selecao.naCaixa(p.id, e)}
                       />
                     ) : null}
                     <span className="pilha colada pc-linha-meio">

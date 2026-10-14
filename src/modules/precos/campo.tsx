@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type {
   ClipboardEvent as EventoDeColar,
   KeyboardEvent as EventoDeTecla,
@@ -206,26 +206,6 @@ export function usarAlca({
   }
 }
 
-/* --- MARCAR VÁRIAS DE UMA VEZ (pedido de 12/10/2026): como em qualquer lista,
-   Shift mais clique marca (ou desmarca) tudo entre a última marcada e esta,
-   na ordem da tela; Ctrl ou só o clique troca uma por uma. O clique da
-   caixa chega com a tecla porque o rótulo repassa o Shift para o campo. -- */
-export function usarMarcarEmFaixa(ordem: string[], marcados: string[], aplicar: (novos: string[]) => void) {
-  const ancora = useRef<string | null>(null)
-  return (codigo: string, e: { shiftKey: boolean }) => {
-    const sim = !marcados.includes(codigo)
-    let cods = [codigo]
-    const a = ancora.current
-    if (e.shiftKey && a && a !== codigo && ordem.includes(a) && ordem.includes(codigo)) {
-      const i = ordem.indexOf(a)
-      const j = ordem.indexOf(codigo)
-      cods = ordem.slice(Math.min(i, j), Math.max(i, j) + 1)
-      window.getSelection()?.removeAllRanges()
-    }
-    ancora.current = codigo
-    aplicar(sim ? [...new Set([...marcados, ...cods])] : marcados.filter((c) => !cods.includes(c)))
-  }
-}
 
 export function CampoDePreco({
   codigo,

@@ -19,6 +19,7 @@ import {
 } from '@dominio/cotacao'
 import { AbasDoEditor } from './abas-do-editor'
 import { CorpoDoEditor } from './corpo-do-editor'
+import { useModoDoEditor } from './modo-do-editor'
 import { GavetaDosDados } from './gaveta-dos-dados'
 import { PerguntaDeApagar } from './pergunta-de-apagar'
 import { TopoDoEditor, type Porta } from './topo-do-editor'
@@ -85,6 +86,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const admin = souAdmin(pessoa)
   const chefia = admin || (!!pessoa && pessoa.papel === 'gerente')
   const [c, setC] = useState<Cotacao>(inicial)
+  const [modo, setModo] = useModoDoEditor()
   const [sujo, setSujo] = useState(false)
   const [podeColar, setPodeColar] = useState(() => temCopia())
   const [porta, setPorta] = useState<Porta>('')
@@ -138,8 +140,12 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     setSujo(true)
   }
 
-  const mudarProduto = (i: number, troca: (p: ProdutoCotado) => ProdutoCotado) =>
-    mudar({ produtos: c.produtos.map((p, k) => (k === i ? troca(p) : p)) })
+  /* sobre o estado mais novo, e não sobre o desta pintura: a tabela muda
+     vários layouts de uma vez (o lote), uma chamada atrás da outra */
+  const mudarProduto = (i: number, troca: (p: ProdutoCotado) => ProdutoCotado) => {
+    setC((x) => ({ ...x, produtos: x.produtos.map((p, k) => (k === i ? troca(p) : p)) }))
+    setSujo(true)
+  }
 
   function novoProduto() {
     mudar({
@@ -359,6 +365,8 @@ function Editor({ inicial }: { inicial: Cotacao }) {
 
       {c.produtos.length ? (
         <CorpoDoEditor
+          modo={modo}
+          aoMudarModo={setModo}
           cotacao={c}
           produtos={c.produtos}
           escolhido={atual}

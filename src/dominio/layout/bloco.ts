@@ -51,7 +51,13 @@ export type Design = {
   tecnica: Tecnica
   /** codigos do banco: 001 a 300 no DTF, S01 a S87 na sublimacao */
   cores: { cod: string; hex: string }[]
+  /** o tamanho do bordado ou do patch (14/10/2026): pequeno, medio ou
+      grande. Vai ter preco fixo na tabela de preco; sem ele, ainda nao
+      escolhido. So bordado e patch usam. */
+  tamanho?: TamanhoDeAplique
 }
+
+export type TamanhoDeAplique = 'P' | 'M' | 'G'
 
 export type TecidoDoBloco = {
   nome: string

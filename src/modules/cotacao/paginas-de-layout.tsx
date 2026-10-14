@@ -418,6 +418,7 @@ function Tecnicas({ b }: { b: Bloco }) {
   const pil = (d: (typeof semCor)[number], i: number) => (
     <span key={d.tecnica + i} className={'dc-pil ' + TEC[d.tecnica][1]}>
       {TEC[d.tecnica][0]}
+      {d.tamanho ? ' ' + d.tamanho : ''}
     </span>
   )
   return (

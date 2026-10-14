@@ -316,7 +316,7 @@ await secao(async () => {
   await pausa(pg, 400)
   const grupos = await pg.evaluate(() => [...document.querySelectorAll('[popover]:popover-open .mn-g:not(.mn-g2) > .mn-grupo')].filter((b) => b.querySelector('.mn-gcod')).map((b) => b.innerText.replace(/\s+/g, ' ').trim()))
   conta(grupos.length === 2 && /^DRY Dryfit 2/.test(grupos[0]) && /^ALG Algodão 1/.test(grupos[1]), 'o + abre o menu com os grupos de tecido do estoque: ' + grupos.join(' | '))
-  conta(/5 cores no estoque/.test(await texto(pg, '.mn-pe')), 'só as cores de tecido cadastradas (o aviamento fica de fora)')
+  conta(/5 cores no estoque/.test(await texto(pg, '[popover]:popover-open .mn-pe')), 'só as cores de tecido cadastradas (o aviamento fica de fora)')
   await foto(pg, '1920-menu-tecido', false)
   await pg.keyboard.type('mescla')
   await pausa(pg, 300)
@@ -403,10 +403,11 @@ await secao(async () => {
   await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Atacado Prova' }).click()
   await naGaveta(pg).getByRole('button', { name: 'Concluir' }).click()
   await pausa(pg, 500)
-  conta(/não está na tabela/.test(await texto(pg, '.ct-preco-origem')), 'o L-01 (FT-010) não está na Atacado Prova: o preço é o escrito: ' + await texto(pg, '.ct-preco-origem'))
+  const valorDoM = () => pg.inputValue('input[aria-label="Valor do M"]')
+  conta(await valorDoM() === '62,00' && await pg.locator('.ct-gd-cab .ct-preco-do-layout').count() === 1, 'o L-01 (FT-010) não está na Atacado Prova: fica com o preço dele (62,00), e o seletor mora no cabeçalho da grade: ' + await valorDoM())
   await pg.locator('.ct-ly-linha').nth(1).click()
   await pausa(pg, 400)
-  conta(/Valores da Atacado Prova, faixa 101 ou mais/.test(await texto(pg, '.ct-preco-origem')), 'o L-02 (FT-090) segue a tabela, na faixa do total da cotação (186 peças): ' + await texto(pg, '.ct-preco-origem'))
+  conta(/Da cotação \(Atacado Prova\)/.test(await texto(pg, '.ct-gd-cab .ct-preco-do-layout')), 'o L-02 (FT-090) segue a tabela da cotação, e o seletor do cabeçalho diz qual: ' + await texto(pg, '.ct-gd-cab .ct-preco-do-layout'))
   /* o L-01 passa a seguir a Varejo Prova, sozinho na faixa dele (89 peças) */
   await pg.locator('.ct-ly-linha').nth(0).click()
   await pausa(pg, 400)
@@ -414,7 +415,8 @@ await secao(async () => {
   await pausa(pg, 300)
   await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Varejo Prova' }).click()
   await pausa(pg, 400)
-  conta(/Valores da Varejo Prova, faixa 51 a 100/.test(await texto(pg, '.ct-preco-origem')), 'o L-01 segue outra tabela, com a faixa dela: ' + await texto(pg, '.ct-preco-origem'))
+  conta(/Varejo Prova/.test(await texto(pg, '.ct-gd-cab .ct-preco-do-layout')), 'o L-01 segue outra tabela, escolhida no cabeçalho da grade: ' + await texto(pg, '.ct-gd-cab .ct-preco-do-layout'))
+  conta(await pg.locator('.ct-preco-origem, .ct-gd-nota').count() === 0, 'sem a frase de origem e sem a nota da grade (pedido de 14/10)')
   await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
   await pausa(pg, 700)
   const g = banco.gravados.filter((x) => x.metodo === 'PATCH').pop()
@@ -720,6 +722,92 @@ await secao(async () => {
   conta(altaH && Math.abs(altaH[0] - altaH[1]) <= 1, `sem mural, a caixa da arte em pé segue a mesma conta (${altaH})`)
   conta(!erros.length, 'sem erro de JavaScript (3c): ' + erros.join(' | '))
 })
+
+/* 3d. o modo Tabela e o botão direito na ficha (14/10/2026) */
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920, tabelas: [] })
+  await ir(pg)
+  await pg.waitForSelector('.ct-fab-pares', { timeout: 8000 })
+  /* o botão direito em cima da cor tira a cor */
+  const antes = await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').count()
+  await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').first().click({ button: 'right' })
+  await pausa(pg, 200)
+  conta(antes >= 1 && await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').count() === antes - 1, `o botão direito na cor tira a cor (${antes} para ${await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').count()})`)
+  /* o botão direito no Patch: P, M e G */
+  await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Patch' }).click({ button: 'right' })
+  await pausa(pg, 250)
+  const itens = await pg.locator('[popover]:popover-open .mn-item').allInnerTexts()
+  conta(itens.length === 3 && /P\s+Pequeno/.test(itens[0]) && /G\s+Grande/.test(itens[2]), 'o botão direito no Patch mostra P, M e G: ' + itens.join(' | '))
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Médio' }).click()
+  await pausa(pg, 200)
+  conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch M' }).count() === 1, 'escolher o M liga o Patch já com o tamanho (Patch M)')
+  /* o seletor Lista | Tabela no cabeçalho do cartão Layouts, com nome */
+  const seg = pg.locator('.ct-lys-cab .ct-modo button')
+  conta(await seg.count() === 2 && /Lista/.test(await seg.nth(0).innerText()) && /Tabela/.test(await seg.nth(1).innerText()), 'o cartão Layouts tem o seletor Lista | Tabela, com nome')
+  await seg.nth(1).click()
+  await pausa(pg, 400)
+  conta(await pg.locator('.ct-tb-tab tbody tr').count() === 3 && await pg.locator('.ct-ly-ficha').count() === 0, 'no modo Tabela, uma linha por layout e nada do editor de um layout')
+  conta(await pg.locator('.ct-tb-tab tbody tr .ct-tb-mini img').count() === 3, 'cada linha com a miniatura da arte do layout')
+  conta(/Patch M/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(1)')), 'a linha do L-01 mostra o Patch M')
+  conta(/falta a etiqueta/.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(3)')), 'o L-03 diz que falta a etiqueta')
+  await foto(pg, '1920-modo-tabela', false)
+  /* o preço na célula: Enter grava e desce */
+  const p1 = pg.locator('input[aria-label="Preço por peça do L-01"]')
+  await p1.click()
+  await p1.fill('55')
+  await p1.press('Enter')
+  await pausa(pg, 200)
+  conta(await p1.inputValue() === '55,00' && await pg.evaluate(() => document.activeElement?.getAttribute('aria-label')) === 'Preço por peça do L-02', 'o preço escrito na célula grava e o Enter desce para o L-02')
+  conta(/R\$\s*4\.895,00/.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(1) .ct-tb-x-sub')), 'o preço da célula vale para todos os tamanhos: 89 x 55 = 4.895,00 (' + await texto(pg, '.ct-tb-tab tbody tr:nth-child(1) .ct-tb-x-sub') + ')')
+  await pg.keyboard.press('Escape')
+  /* o lote: marcar dois e aplicar o preço */
+  await pg.locator('.ct-tb-tab tbody tr:nth-child(2) .ck').click()
+  await pg.locator('.ct-tb-tab tbody tr:nth-child(3) .ck').click()
+  await pausa(pg, 200)
+  conta(/2\s*layouts marcados/.test(await texto(pg, '.ct-tb-lote')), 'marcar duas linhas abre a barra do lote')
+  await pg.locator('input[aria-label="Preço por peça dos marcados"]').fill('40')
+  await pg.locator('.ct-tb-lote button', { hasText: 'Aplicar preço' }).click()
+  await pausa(pg, 200)
+  conta(await pg.inputValue('input[aria-label="Preço por peça do L-02"]') === '40,00' && await pg.inputValue('input[aria-label="Preço por peça do L-03"]') === '40,00' && await pg.inputValue('input[aria-label="Preço por peça do L-01"]') === '55,00', 'o preço do lote vale para os dois marcados, e só para eles')
+  /* as técnicas no lote */
+  await pg.locator('.ct-tb-lote button', { hasText: 'Técnicas' }).click()
+  await pausa(pg, 250)
+  await pg.locator('.ct-tb-balao .ct-chave', { hasText: 'Bordado' }).click()
+  await pausa(pg, 200)
+  await pg.keyboard.press('Escape')
+  await pausa(pg, 150)
+  conta(/Bordado/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(2)')) && /Bordado/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(3)')) && !/Bordado/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(1)')), 'ligar o Bordado no lote liga nos dois marcados')
+  await foto(pg, '1920-modo-tabela-lote', false)
+  /* o design de uma linha abre as peças da ficha */
+  await pg.locator('.ct-tb-tab tbody tr:nth-child(1) .ct-tb-x-des .ct-tb-cel').click()
+  await pausa(pg, 250)
+  conta(await pg.locator('.ct-tb-balao .ct-chaves-5 .ct-chave').count() === 5, 'o design da linha abre os cinco interruptores da ficha')
+  await foto(pg, '1920-modo-tabela-design', false)
+  await pg.keyboard.press('Escape')
+  /* a miniatura volta para a Lista naquele layout */
+  await pg.locator('.ct-tb-tab tbody tr:nth-child(2) .ct-tb-mini').click()
+  await pausa(pg, 400)
+  conta(await pg.locator('.ct-ly-ficha').count() === 1 && /Layout 2 de 3/.test(await texto(pg, '.ct-ly-conta')), 'clicar na miniatura volta para a Lista, no L-02')
+  conta(await sobra(pg) <= 0, 'nada rola de lado na página (1920)')
+  void banco
+  conta(!erros.length, 'sem erro de JavaScript (modo tabela): ' + erros.join(' | '))
+})
+
+for (const tema of ['light', 'dark']) {
+  for (const [largura, altura] of [[1440, 900], [820, 1180], [390, 844]]) {
+    await secao(async () => {
+      const { pg, erros } = await abrir(nav, { largura, altura, tema })
+      await pg.addInitScript(() => { try { localStorage.setItem('ft-cotacao-modo', 'tabela') } catch { /* sem armazenamento */ } })
+      await ir(pg)
+      await pg.waitForSelector('.ct-tb-tab', { timeout: 8000 })
+      await pausa(pg, 300)
+      conta(await sobra(pg) <= 0, `tabela ${largura} ${tema}: nada rola de lado na página (${await sobra(pg)})`)
+      conta(await pg.locator('.ct-tb-tab tbody tr').count() === 3, `tabela ${largura} ${tema}: o modo fica guardado e abre na tabela`)
+      await foto(pg, `tabela-${largura}-${tema}`)
+      conta(!erros.length, `sem erro de JavaScript (tabela ${largura} ${tema}): ` + erros.join(' | '))
+    })
+  }
+}
 
 /* 4. o vendedor não vê a engrenagem; as abas que não cabem vão para os três pontos */
 await secao(async () => {

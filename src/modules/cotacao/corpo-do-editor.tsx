@@ -17,7 +17,9 @@ import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
 import { MuralDaArte } from './mural-da-arte'
-import { OrigemDoPreco, PrecoDoLayout } from './tabelas-da-cotacao'
+import { PrecoDoLayout } from './tabelas-da-cotacao'
+import { TabelaDosLayouts } from './tabela-dos-layouts'
+import type { ModoDoEditor } from './modo-do-editor'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -39,6 +41,8 @@ const GENEROS: [string, string, string][] = [
 ]
 
 export function CorpoDoEditor({
+  modo,
+  aoMudarModo,
   cotacao,
   produtos,
   escolhido,
@@ -51,6 +55,8 @@ export function CorpoDoEditor({
   aoDuplicar,
   aoRemover,
 }: {
+  modo: ModoDoEditor
+  aoMudarModo: (m: ModoDoEditor) => void
   cotacao: Cotacao
   produtos: ProdutoCotado[]
   escolhido: number
@@ -65,6 +71,23 @@ export function CorpoDoEditor({
 }) {
   const p = produtos[escolhido]
   const mudarBloco = (b: Bloco) => aoMudarProduto(escolhido, (x) => ({ ...x, bloco: b }))
+
+  if (modo === 'tabela')
+    return (
+      <TabelaDosLayouts
+        cotacao={cotacao}
+        produtos={produtos}
+        travado={travado}
+        modo={modo}
+        aoMudarModo={aoMudarModo}
+        aoMudarProduto={aoMudarProduto}
+        aoAbrir={(i) => {
+          aoEscolher(i)
+          aoMudarModo('lista')
+        }}
+        aoAdicionar={aoAdicionar}
+      />
+    )
 
   return (
     <div className="ct-ly">
@@ -116,7 +139,6 @@ export function CorpoDoEditor({
                 aoMudar={(tabelaId) => aoMudarProduto(escolhido, (x) => ({ ...x, tabelaId }))}
               />
             }
-            origemDoPreco={<OrigemDoPreco c={cotacao} produto={p} />}
           />
           <div className="ct-ly-ficha">
             <FichaDoLayout bloco={p.bloco} travado={travado} aoMudar={mudarBloco} />
@@ -125,6 +147,8 @@ export function CorpoDoEditor({
       ) : null}
       <div className="ct-ly-coluna">
         <ColunaDosLayouts
+          modo={modo}
+          aoMudarModo={aoMudarModo}
           produtos={produtos}
           escolhido={escolhido}
           travado={travado}

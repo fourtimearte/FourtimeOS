@@ -131,7 +131,7 @@ export function LayoutDeLeitura({
                 {bloco.design.length ? (
                   bloco.design.map((d, i) => (
                     <div className="lr-design" key={i}>
-                      <span className="lr-design-tag">{d.tag}</span>
+                      <span className="lr-design-tag">{d.tamanho ? d.tag + ' ' + d.tamanho : d.tag}</span>
                       {d.cores.map((c, j) => (
                         <span className="lr-cod" key={j}>
                           <span className="lr-cod-amostra" style={{ background: hexDoBanco(c.cod, c.hex) || 'transparent' }} />

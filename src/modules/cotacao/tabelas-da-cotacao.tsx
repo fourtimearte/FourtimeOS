@@ -4,7 +4,6 @@ import { carregarKits } from '@dominio/produto'
 import { carregarTabelasDePreco, tabelasParaEscolher, type TabelaDePreco } from '@dominio/preco'
 import {
   SEM_TABELA,
-  origemDoPreco,
   type Cotacao,
   type ProdutoCotado,
 } from '@dominio/cotacao'
@@ -61,18 +60,21 @@ export function usarCarregarTabelas(chefia: boolean): TabelasDaCotacao {
 
 /* O PREÇO DESTE LAYOUT: segue a tabela da cotação, segue outra tabela, ou
    não segue tabela nenhuma (o preço é o escrito por alguém). O seletor mora no
-   cabeçalho do cartão da grade, à esquerda de Adulta e Infantil (14/10/2026);
-   a frase de onde o número veio fica embaixo da grade (OrigemDoPreco). */
+   cabeçalho do cartão da grade, à esquerda de Adulta e Infantil (14/10/2026).
+   A frase de onde o número veio e a nota da grade saíram a pedido (14/10). */
 export function PrecoDoLayout({
   c,
   produto,
   travado,
   aoMudar,
+  compacto,
 }: {
   c: Cotacao
   produto: ProdutoCotado
   travado: boolean
   aoMudar: (tabelaId: string) => void
+  /** na tabela do editor: sem o rótulo PREÇO e na altura de ação de linha */
+  compacto?: boolean
 }) {
   const { todas, escolhiveis, semBanco } = usarTabelasDaCotacao()
   if (semBanco || !todas.length || travado) return null
@@ -89,26 +91,14 @@ export function PrecoDoLayout({
   if (atual && !opcoes.some((o) => o.valor === valor)) opcoes.push({ valor, rotulo: atual.nome })
   return (
     <span className="ct-preco-do-layout">
-      <Seletor rotulo="PREÇO" valor={valor} vazio={opcoes[0].rotulo} opcoes={opcoes.slice(1)} aoEscolher={aoMudar} />
+      <Seletor
+        rotulo={compacto ? undefined : 'PREÇO'}
+        tamanho={compacto ? 'sm' : 'md'}
+        valor={valor}
+        vazio={opcoes[0].rotulo}
+        opcoes={opcoes.slice(1)}
+        aoEscolher={aoMudar}
+      />
     </span>
-  )
-}
-
-/** A frase de onde o preço do layout veio, embaixo da grade. */
-export function OrigemDoPreco({ c, produto }: { c: Cotacao; produto: ProdutoCotado }) {
-  const { todas, semBanco } = usarTabelasDaCotacao()
-  if (semBanco || !todas.length) return null
-  const valor = produto.tabelaId || ''
-  const origem = origemDoPreco(c, produto, todas)
-  return (
-    <p className="ct-preco-origem">
-      {origem
-        ? `Valores da ${origem.tabela}, faixa ${origem.faixa} peças`
-        : valor === SEM_TABELA
-          ? 'O preço é o escrito na grade'
-          : produto.bloco.referencia.trim()
-            ? 'Esta referência não está na tabela: o preço é o escrito na grade'
-            : 'Sem referência: o preço é o escrito na grade'}
-    </p>
   )
 }

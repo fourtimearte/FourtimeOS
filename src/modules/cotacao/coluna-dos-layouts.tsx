@@ -5,6 +5,7 @@ import { AreaDeTextoRico, LINHA_ESCOLHIDA, TituloCartao, type IconeDoPacote } fr
 import { etiquetaDoDesign, totalDaGrade, type Bloco } from '@dominio/layout'
 import { pecasDoProduto, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import './cotacao.css'
+import { SeletorDoModo, type ModoDoEditor } from './modo-do-editor'
 
 /* ==========================================================================
    A COLUNA DOS LAYOUTS, na extrema direita do editor (decisões 162 e 163).
@@ -38,6 +39,8 @@ const codigoDoLayout = (n: number) => 'L-' + String(n).padStart(2, '0')
 const temTexto = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== ''
 
 export function ColunaDosLayouts({
+  modo,
+  aoMudarModo,
   produtos,
   escolhido,
   travado,
@@ -47,6 +50,8 @@ export function ColunaDosLayouts({
   aoColar,
   aoMudarObservacao,
 }: {
+  modo: ModoDoEditor
+  aoMudarModo: (m: ModoDoEditor) => void
   produtos: ProdutoCotado[]
   escolhido: number
   travado: boolean
@@ -66,16 +71,21 @@ export function ColunaDosLayouts({
       <section className="cartao ct-lys">
         <header className="ct-lys-cab">
           <TituloCartao icone={ListBullets}>Layouts</TituloCartao>
+          <SeletorDoModo modo={modo} aoMudar={aoMudarModo} />
+        </header>
+        {/* a conta desceu do cabeçalho quando o seletor Lista | Tabela subiu
+            para lá (14/10/2026): o que falta fica na mesma fileira, à direita */}
+        <p className="ct-lys-aviso">
           <span className="ct-lys-conta">
             {produtos.length} {produtos.length === 1 ? 'layout' : 'layouts'} · {pecas} peças
           </span>
-        </header>
-        {comFalta ? (
-          <p className="ct-lys-aviso">
-            <Warning size={15} weight="fill" />
-            {comFalta} com algo por preencher
-          </p>
-        ) : null}
+          {comFalta ? (
+            <span className="ct-lys-falta">
+              <Warning size={15} weight="fill" />
+              {comFalta} com algo por preencher
+            </span>
+          ) : null}
+        </p>
         <div className="ct-lys-lista" role="listbox" aria-label="Layouts da cotação">
           {produtos.map((p, i) => {
             const falta = faltaNoLayout(p.bloco)

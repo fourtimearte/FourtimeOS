@@ -31,7 +31,6 @@ export function CartaoDaGrade({
   travado,
   aoMudarProduto,
   seletorDoPreco,
-  origemDoPreco,
 }: {
   produto: ProdutoCotado
   travado: boolean
@@ -39,8 +38,6 @@ export function CartaoDaGrade({
   /** de qual tabela de preço o layout segue (068); fica no cabeçalho, à
       esquerda de Adulta e Infantil */
   seletorDoPreco?: ReactNode
-  /** a frase de onde o preço veio; fica embaixo da grade */
-  origemDoPreco?: ReactNode
 }) {
   const b = produto.bloco
   const tamanhos = tamanhosNaOrdem(b.faixa, b.grade)
@@ -242,13 +239,6 @@ export function CartaoDaGrade({
           </tbody>
         </table>
       </div>
-      {origemDoPreco}
-      {!travado ? (
-        <p className="ct-gd-nota">
-          O valor em cinza é o da tabela de preço. Escreva por cima para mudar só naquele tamanho; apague para voltar ao
-          da tabela. Arraste pela alça de uma célula para repetir o número nas vizinhas.
-        </p>
-      ) : null}
     </section>
   )
 }

@@ -1,21 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { ArrowSquareOut, Check, ClipboardText, Minus, Plus, Warning } from '@phosphor-icons/react'
-import { MenuCodigoDeCor, MenuTecidoECor, TituloCartao } from '@ds'
-import {
-  hexDoBanco,
-  usarAbasDeCor,
-  comEtiqueta,
-  etiquetaDoDesign,
-  type Bloco,
-  type Design,
-  type EtiquetaDoLayout,
-  type TecidoDoBloco,
-  type Tecnica,
-} from '@dominio/layout'
+import { ArrowSquareOut, ClipboardText, Minus, Plus, Warning } from '@phosphor-icons/react'
+import { MenuTecidoECor, TituloCartao } from '@ds'
+import { type Bloco, type TecidoDoBloco } from '@dominio/layout'
 import { carregarConstrucao, DETALHES, type ConstrucaoDoLayout } from '@dominio/produto'
 import './cotacao.css'
 import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
+import { ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
 
 /* ==========================================================================
    A FICHA TÉCNICA DO LAYOUT, "interruptores e paleta" (decisão 153).
@@ -31,15 +22,6 @@ import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
    os aviamentos. Isso é leitura: vem da página Fichas técnicas pelo código do
    layout, e o botão "Abrir a ficha" leva até lá para mudar.
    ========================================================================== */
-
-type DaTecnica = { tecnica: Tecnica; tag: string; rotulo: string; cor: boolean; aba: string; tom: string }
-const TECNICAS: DaTecnica[] = [
-  { tecnica: 'subli', tag: 'Subli', rotulo: 'Sub', cor: true, aba: 'sub', tom: 'ct-ch-subli' },
-  { tecnica: 'dtf', tag: 'DTF', rotulo: 'DTF', cor: true, aba: 'dtf', tom: 'ct-ch-dtf' },
-  { tecnica: 'silk', tag: 'Silk', rotulo: 'Silk', cor: false, aba: '', tom: 'ct-ch-silk' },
-  { tecnica: 'bordado', tag: 'Bordado', rotulo: 'Bordado', cor: false, aba: '', tom: 'ct-ch-bordado' },
-  { tecnica: 'patch', tag: 'Patch', rotulo: 'Patch', cor: false, aba: '', tom: 'ct-ch-patch' },
-]
 
 const SEM_COR = { nome: 'sem cor', hex: '' }
 
@@ -63,40 +45,12 @@ export function FichaDoLayout({
   travado: boolean
   aoMudar: (b: Bloco) => void
 }) {
-  const [menu, setMenu] = useState<'' | 'tecido' | 'codigo'>('')
+  const [menu, setMenu] = useState<'' | 'tecido'>('')
   /* o tecido e a cor vêm do que está cadastrado no Estoque (11/10/2026) */
   const doEstoque = usarTecidosDoEstoque()
-  /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
-  const coresDoBanco = usarAbasDeCor()
   const [linha, setLinha] = useState(0)
-  const [abaAberta, setAbaAberta] = useState<DaTecnica | null>(null)
   const ancora = useRef<HTMLElement | null>(null)
-  /* o que foi desligado nesta visita volta com as cores se for religado: um
-     clique sem querer no interruptor não pode apagar seis códigos */
-  const guardadas = useRef(new Map<string, Design>())
-
   const mudar = (parte: Partial<Bloco>) => aoMudar({ ...bloco, ...parte })
-  const etiqueta = etiquetaDoDesign(bloco.design)
-  const mudarEtiqueta = (e: EtiquetaDoLayout) => mudar({ design: comEtiqueta(bloco.design, e) })
-
-  function alternarTecnica(t: DaTecnica) {
-    const tem = bloco.design.find((d) => d.tag === t.tag)
-    if (tem) {
-      guardadas.current.set(t.tag, tem)
-      mudar({ design: bloco.design.filter((d) => d.tag !== t.tag) })
-    } else {
-      const volta = guardadas.current.get(t.tag) ?? { tag: t.tag, tecnica: t.tecnica, cores: [] }
-      /* a ordem do design é a da fábrica: as técnicas na ordem dos interruptores, depois do resto */
-      const outras = bloco.design.filter((d) => !TECNICAS.some((x) => x.tag === d.tag))
-      const tecnicas = TECNICAS.map((x) => (x.tag === t.tag ? volta : bloco.design.find((d) => d.tag === x.tag))).filter(
-        (d): d is Design => !!d,
-      )
-      const etiquetas = outras.filter((d) => d.tecnica === 'etiqueta')
-      const acabamentos = outras.filter((d) => d.tecnica !== 'etiqueta')
-      mudar({ design: [...etiquetas, ...tecnicas, ...acabamentos] })
-    }
-  }
-
   const tecidos: TecidoDoBloco[] = bloco.tecidos.length ? bloco.tecidos : []
   /* linha -1 é o "+": o tecido escolhido entra numa linha nova. Sem tecido
      nenhum, a primeira escolha é a linha 0 */
@@ -112,14 +66,12 @@ export function FichaDoLayout({
           <TituloCartao icone={ClipboardText}>Ficha técnica do layout</TituloCartao>
         </header>
         <p className="ct-ft-anexo">
-          Módulo de informações: anexo do pedido, e não peça de produção. Não tem tecido, design nem grade, e não entra
-          em soma nenhuma.
+          Módulo de informações: anexo do pedido, e não peça de produção. Não tem tecido, design nem
+          grade, e não entra em soma nenhuma.
         </p>
       </section>
     )
   }
-
-  const comCor = TECNICAS.filter((t) => t.cor && bloco.design.some((d) => d.tag === t.tag))
 
   return (
     <section className="cartao ct-ft">
@@ -128,7 +80,11 @@ export function FichaDoLayout({
         {bloco.referencia ? (
           <a
             className="btn btn-contorno sm"
-            href={'/produtos?' + (bloco.referencia.startsWith('FT-KIT') ? 'kit=' : 'ref=') + encodeURIComponent(bloco.referencia)}
+            href={
+              '/produtos?' +
+              (bloco.referencia.startsWith('FT-KIT') ? 'kit=' : 'ref=') +
+              encodeURIComponent(bloco.referencia)
+            }
             target="_blank"
             rel="noreferrer"
           >
@@ -149,7 +105,7 @@ export function FichaDoLayout({
                 className="ct-ft-mais"
                 aria-label="Acrescentar tecido"
                 title="Acrescentar tecido"
-                onClick={(e) => {
+                onClick={e => {
                   ancora.current = e.currentTarget
                   setLinha(-1)
                   setMenu('tecido')
@@ -168,7 +124,7 @@ export function FichaDoLayout({
                 disabled={travado}
                 aria-label={'Cor do tecido: ' + (t.cor || 'sem cor')}
                 title={t.cor || 'sem cor'}
-                onClick={(e) => {
+                onClick={e => {
                   ancora.current = e.currentTarget
                   setLinha(i)
                   setMenu('tecido')
@@ -179,7 +135,7 @@ export function FichaDoLayout({
                   type="button"
                   className="ct-tc-nome"
                   disabled={travado}
-                  onClick={(e) => {
+                  onClick={e => {
                     ancora.current = e.currentTarget
                     setLinha(i)
                     setMenu('tecido')
@@ -206,95 +162,12 @@ export function FichaDoLayout({
 
         <div className="ct-ft-lado">
           <div className="ct-ft-rot">Etiqueta</div>
-          <div className="ct-chaves ct-chaves-2">
-            {(['fourtime', 'cliente'] as const).map((tipo) => (
-              <Chave
-                key={tipo}
-                tom={tipo === 'fourtime' ? 'ct-ch-fourtime' : 'ct-ch-cliente'}
-                ligada={etiqueta.tipo === tipo}
-                travado={travado}
-                rotulo={tipo === 'fourtime' ? 'Fourtime' : 'Cliente'}
-                aoAlternar={() =>
-                  mudarEtiqueta(etiqueta.tipo === tipo ? { tipo: '', tecnica: '' } : { tipo, tecnica: etiqueta.tecnica })
-                }
-              />
-            ))}
-          </div>
-          <div className="ct-chaves ct-chaves-3">
-            {(['silk', 'sub', 'dtf'] as const).map((tec) => (
-              <Chave
-                key={tec}
-                tom={tec === 'sub' ? 'ct-ch-subli' : tec === 'dtf' ? 'ct-ch-dtf' : 'ct-ch-silk'}
-                ligada={etiqueta.tecnica === tec}
-                travado={travado || !etiqueta.tipo}
-                titulo={etiqueta.tipo ? undefined : 'Escolha antes se a etiqueta é da Fourtime ou do cliente'}
-                rotulo={tec === 'sub' ? 'Sub' : tec === 'dtf' ? 'DTF' : 'Silk'}
-                aoAlternar={() => mudarEtiqueta({ ...etiqueta, tecnica: etiqueta.tecnica === tec ? '' : tec })}
-              />
-            ))}
-          </div>
+          <ChavesDaEtiqueta bloco={bloco} travado={travado} aoMudar={aoMudar} />
         </div>
       </div>
 
       {/* --- design ----------------------------------------------------------- */}
-      <div className="ct-ft-design">
-        <div className="ct-chaves ct-chaves-5">
-          {TECNICAS.map((t) => (
-            <Chave
-              key={t.tag}
-              tom={t.tom}
-              ligada={bloco.design.some((d) => d.tag === t.tag)}
-              travado={travado}
-              rotulo={t.rotulo}
-              aoAlternar={() => alternarTecnica(t)}
-            />
-          ))}
-        </div>
-        {comCor.length ? (
-          <div className="ct-paletas">
-            {comCor.map((t) => {
-              const d = bloco.design.find((x) => x.tag === t.tag)!
-              return (
-                <div key={t.tag} className={'ct-paleta ' + t.tom}>
-                  <span className="ct-paleta-nome">{t.rotulo}</span>
-                  {d.cores.map((c) => (
-                    <button
-                      key={c.cod}
-                      type="button"
-                      className="ct-cartao-cor"
-                      disabled={travado}
-                      title={'Cor ' + c.cod + (travado ? '' : ': clique para abrir a paleta')}
-                      onClick={(e) => {
-                        ancora.current = e.currentTarget
-                        setAbaAberta(t)
-                        setMenu('codigo')
-                      }}
-                    >
-                      <i style={{ '--cor': hexDoBanco(c.cod, c.hex) } as CSSProperties} />
-                      <b>{c.cod}</b>
-                    </button>
-                  ))}
-                  {!travado ? (
-                    <button
-                      type="button"
-                      className="ct-cartao-cor ct-cartao-mais"
-                      aria-label={'Acrescentar cor em ' + t.rotulo}
-                      title="Acrescentar cor"
-                      onClick={(e) => {
-                        ancora.current = e.currentTarget
-                        setAbaAberta(t)
-                        setMenu('codigo')
-                      }}
-                    >
-                      <Plus size={15} />
-                    </button>
-                  ) : null}
-                </div>
-              )
-            })}
-          </div>
-        ) : null}
-      </div>
+      <EditorDoDesign bloco={bloco} travado={travado} aoMudar={aoMudar} />
 
       <Construcao cod={bloco.referencia} />
 
@@ -303,8 +176,8 @@ export function FichaDoLayout({
         ancora={ancora}
         aoFechar={() => setMenu('')}
         grupos={doEstoque.grupos}
-        tecido={linha >= 0 ? tecidos[linha]?.nome ?? '' : ''}
-        cor={linha >= 0 ? tecidos[linha]?.cor ?? '' : ''}
+        tecido={linha >= 0 ? (tecidos[linha]?.nome ?? '') : ''}
+        cor={linha >= 0 ? (tecidos[linha]?.cor ?? '') : ''}
         semTecidos={
           doEstoque.fase === 'falhou'
             ? 'Não consegui ler o estoque: ' + doEstoque.falha
@@ -312,59 +185,11 @@ export function FichaDoLayout({
               ? 'Nenhum tecido com cor cadastrada no Estoque'
               : 'Carregando os tecidos do estoque...'
         }
-        aoEscolher={(t, c) => escolherTecido(linha, { nome: t.nome, cor: c.nome, hex: c.hex, materialId: c.id })}
-      />
-      <MenuCodigoDeCor
-        aberto={menu === 'codigo'}
-        ancora={ancora}
-        aoFechar={() => setMenu('')}
-        abas={coresDoBanco.abas.filter((a) => !abaAberta || a.id === abaAberta.aba)}
-        semCores={coresDoBanco.fase === 'falhou' ? 'Não consegui ler as cores do banco: ' + coresDoBanco.falha : 'Carregando as cores do banco...'}
-        noLayout={bloco.design.find((d) => d.tag === abaAberta?.tag)?.cores.map((c) => c.cod) ?? []}
-        aoAlternar={(cod, hex) => {
-          if (!abaAberta) return
-          mudar({
-            design: bloco.design.map((d) =>
-              d.tag === abaAberta.tag
-                ? { ...d, cores: d.cores.some((c) => c.cod === cod) ? d.cores.filter((c) => c.cod !== cod) : [...d.cores, { cod, hex }] }
-                : d,
-            ),
-          })
-        }}
+        aoEscolher={(t, c) =>
+          escolherTecido(linha, { nome: t.nome, cor: c.nome, hex: c.hex, materialId: c.id })
+        }
       />
     </section>
-  )
-}
-
-/* O INTERRUPTOR (decisão 153): 34 px, sempre com a borda na cor dele, clara
-   desligado e cheia ligado; ligado ganha o fundo suave, o texto na cor e o visto. */
-function Chave({
-  tom,
-  ligada,
-  travado,
-  rotulo,
-  titulo,
-  aoAlternar,
-}: {
-  tom: string
-  ligada: boolean
-  travado: boolean
-  rotulo: string
-  titulo?: string
-  aoAlternar: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={['ct-chave', tom, ligada ? 'ct-chave-on' : ''].filter(Boolean).join(' ')}
-      aria-pressed={ligada}
-      disabled={travado}
-      title={titulo}
-      onClick={aoAlternar}
-    >
-      {ligada ? <Check size={12} weight="bold" /> : null}
-      {rotulo}
-    </button>
   )
 }
 
@@ -378,14 +203,15 @@ function Construcao({ cod }: { cod: string }) {
     setFalha(false)
     if (!cod.trim()) return
     construcaoDe(cod.trim())
-      .then((x) => vivo && setC(x))
+      .then(x => vivo && setC(x))
       .catch(() => vivo && setFalha(true))
     return () => {
       vivo = false
     }
   }, [cod])
 
-  if (!cod.trim()) return <p className="ct-ft-vazio">Escolha a referência para ver como a peça é feita.</p>
+  if (!cod.trim())
+    return <p className="ct-ft-vazio">Escolha a referência para ver como a peça é feita.</p>
   if (falha) return <p className="ct-ft-vazio">Não consegui ler a ficha técnica de {cod} agora.</p>
   if (!c) return <p className="ct-ft-vazio">Lendo a ficha técnica de {cod}...</p>
   if (c.tipo === 'nenhuma')
@@ -398,17 +224,20 @@ function Construcao({ cod }: { cod: string }) {
 
   return (
     <>
-      {c.pecas.map((p) => (
+      {c.pecas.map(p => (
         <div key={p.cod + p.papel} className="ct-fab">
           <div className="ct-fab-faixa">
             Fabricação da peça / {p.papel ? p.papel + ' · ' : ''}referência {p.cod}
           </div>
           <div className="ct-fab-pares">
-            {DETALHES.map((d) => {
+            {DETALHES.map(d => {
               const texto = (p.detalhes[d.chave] ?? '').trim()
               const [cabeca, ...resto] = texto.split(',')
               return (
-                <div key={d.chave} className={d.chave === 'costura' ? 'ct-fab-par ct-fab-largo' : 'ct-fab-par'}>
+                <div
+                  key={d.chave}
+                  className={d.chave === 'costura' ? 'ct-fab-par ct-fab-largo' : 'ct-fab-par'}
+                >
                   <span className="ct-fab-rot">{d.nome}</span>
                   <b>{cabeca || '-'}</b>
                   {resto.length ? <small>{resto.join(',').trim()}</small> : null}

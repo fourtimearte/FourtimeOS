@@ -532,6 +532,18 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (3): ' + erros.join(' | '))
 })
 
+/* a caixa da arte mede pela arte: a deitada na altura exata dela na largura
+   toda, a em pé com três quartos dessa altura. Devolve [esperada, medida]. */
+const alturaDaArte = (pg) => pg.evaluate(() => {
+  const q = document.querySelector('.ct-arte-quadro')
+  const cx = q && (q.querySelector('.ct-hl-area') || q.querySelector('.ct-arte-caixa'))
+  const im = q && q.querySelector('img')
+  if (!cx || !im || !im.naturalWidth) return null
+  const w = cx.getBoundingClientRect().width
+  const a = im.naturalWidth / im.naturalHeight
+  return [Math.round(a >= 1 ? w / a : (w / a) * 0.75), Math.round(cx.getBoundingClientRect().height), a >= 1 ? 'deitada' : 'em pé']
+})
+
 /* 3b. o corpo do editor (parte 3): a referência, a arte, a grade, a ficha e a coluna dos layouts */
 await secao(async () => {
   const { pg, erros, banco } = await abrir(nav, { largura: 1920 })
@@ -562,6 +574,8 @@ await secao(async () => {
   conta(await pg.locator('.ct-chave[aria-pressed="true"]', { hasText: 'Fourtime' }).count() === 1 && await pg.locator('.ct-chaves-3 .ct-chave[aria-pressed="true"]', { hasText: 'Silk' }).count() === 1, 'a etiqueta do L-01: Fourtime em Silk')
   conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]').count() === 1 && /S14/.test(await texto(pg, '.ct-paletas')), 'o design do L-01: Sub ligado, com a cor S14 na paleta')
   conta(/Redonda/.test(await texto(pg, '.ct-fab-pares')) && /ribana 1x1 de 2 cm/.test(await texto(pg, '.ct-fab-pares')) && /Linha poliéster 120/.test(await texto(pg, '.ct-fab-avi')) && /Reforço de ombro a ombro/.test(await texto(pg, '.ct-fab-atencao')), 'a construção e os aviamentos lidos da ficha da referência')
+  const larga = await alturaDaArte(pg)
+  conta(larga && Math.abs(larga[0] - larga[1]) <= 1, `a caixa da arte do L-01 tem a altura da arte (${larga})`)
   await foto(pg, '1920-corpo', false)
   await pg.locator('.ct-chaves-2 .ct-chave', { hasText: 'Cliente' }).click()
   await pausa(pg, 200)
@@ -598,8 +612,8 @@ await secao(async () => {
   await pg.locator('.ct-ly-linha').nth(1).click()
   await pausa(pg, 400)
   conta(/CALÇAO MASC SEM BOLSO/.test(await texto(pg, '.ct-rf')) && /Layout 2 de 3/.test(await texto(pg, '.ct-ly-conta')), 'escolher o L-02 na lista abre ele')
-  const quadro = await caixa(pg, '.ct-arte-quadro')
-  conta(quadro && Math.round(quadro.h) === 511, `a arte alta ganha o quadro de 511 (${quadro && Math.round(quadro.h)})`)
+  const alta = await alturaDaArte(pg)
+  conta(alta && alta[2] === 'em pé' && Math.abs(alta[0] - alta[1]) <= 1, `a arte em pé ganha três quartos da altura dela (${alta})`)
   conta(await pg.locator('.ct-chaves-2 .ct-chave[aria-pressed="true"]', { hasText: 'Cliente' }).count() === 1 && await pg.locator('.ct-chaves-3 .ct-chave[aria-pressed="true"]', { hasText: 'DTF' }).count() === 1, 'a etiqueta do L-02: Cliente em DTF')
   /* duplicar e remover */
   await pg.getByRole('button', { name: 'Próximo layout' }).click()
@@ -702,8 +716,8 @@ await secao(async () => {
   await pg.locator('.ct-ly-linha').nth(1).click()
   await pausa(pg, 400)
   conta(await pg.locator('.ct-hl-th').count() === 0 && await pg.locator('.ct-arte-caixa').count() === 1, 'o L-02 abre sem destaques, com a caixa de sempre')
-  const altaH = await caixa(pg, '.ct-arte-caixa')
-  conta(altaH && Math.round(altaH.h) === 483, `na arte alta a caixa cresce (${altaH && Math.round(altaH.h)})`)
+  const altaH = await alturaDaArte(pg)
+  conta(altaH && Math.abs(altaH[0] - altaH[1]) <= 1, `sem mural, a caixa da arte em pé segue a mesma conta (${altaH})`)
   conta(!erros.length, 'sem erro de JavaScript (3c): ' + erros.join(' | '))
 })
 

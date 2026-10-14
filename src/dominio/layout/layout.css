@@ -348,8 +348,8 @@
 .img-area.tem img {
   cursor: zoom-in;
 }
-/* A CAIXA QUE CABE: a altura vem de fora (o cartão da arte do editor, 372 px
-   na arte larga e 511 na alta), e a imagem aparece inteira dentro dela, sem
+/* A CAIXA QUE CABE: a altura vem de fora (o cartão da arte do editor, que
+   mede a caixa pela proporção da arte), e a imagem aparece inteira dentro dela, sem
    corte, sobre o fundo branco do próprio mockup. */
 .img-caixa.cabe {
   height: 100%;

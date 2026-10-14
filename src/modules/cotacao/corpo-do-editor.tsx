@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { ArrowsClockwise, CaretLeft, CaretRight, Copy, Image as Imagem_, Lock, LockOpen, Selection, Trash } from '@phosphor-icons/react'
 import { Botao, MenuReferencia, TituloCartao } from '@ds'
 import {
@@ -234,7 +235,10 @@ function CartaoDaArte({ bloco, travado, aoMudar }: { bloco: Bloco; travado: bool
       vivo = false
     }
   }, [bloco.imagem])
-  const alta = !!dim && dim.a < 1
+  /* A ALTURA DA CAIXA VEM DA ARTE. Na deitada, a caixa tem a altura que a
+     arte tem na largura toda; na em pé, três quartos dessa altura, para a
+     arte comprida não esticar o cartão até o fim da tela. */
+  const proporcao = dim ? (dim.a >= 1 ? dim.a : dim.a / 0.75) : 0
   const mural = bloco.destaques
   /* o mural aparece quando há destaque ou quando a pessoa vai escolher um;
      sem nada disso a caixa é a de sempre, que aceita arrastar e colar a arte */
@@ -294,7 +298,10 @@ function CartaoDaArte({ bloco, travado, aoMudar }: { bloco: Bloco; travado: bool
           </span>
         ) : null}
       </header>
-      <div className={alta ? 'ct-arte-quadro ct-arte-alta' : 'ct-arte-quadro'}>
+      <div
+        className={proporcao ? 'ct-arte-quadro ct-arte-medida' : 'ct-arte-quadro'}
+        style={proporcao ? ({ '--arte-proporcao': proporcao } as CSSProperties) : undefined}
+      >
         {comMural && dim ? (
           <MuralDaArte
             imagem={bloco.imagem}

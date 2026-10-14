@@ -1217,8 +1217,11 @@
   gap: var(--gap-btn);
   margin-left: auto;
 }
-/* a caixa da arte: 372 px no total na arte larga, 511 na alta (os 28 do
-   recheio entram na conta); a barra do destaque escolhido fica embaixo dela */
+/* a caixa da arte: sem arte, 344 px de alvo para arrastar e colar; com arte,
+   a altura sai da proporção dela (--arte-proporcao, posta pelo componente):
+   a deitada ocupa a largura toda na altura exata dela, a em pé fica com três
+   quartos da altura que teria na largura toda. A barra do destaque escolhido
+   fica embaixo dela. */
 .ct-arte-quadro {
   padding: var(--re-7);
 }
@@ -1226,9 +1229,10 @@
 .ct-hl-area {
   height: 344px;
 }
-.ct-arte-alta .ct-arte-caixa,
-.ct-arte-alta .ct-hl-area {
-  height: 483px;
+.ct-arte-quadro.ct-arte-medida .ct-arte-caixa,
+.ct-arte-quadro.ct-arte-medida .ct-hl-area {
+  height: auto;
+  aspect-ratio: var(--arte-proporcao, 1.6);
 }
 .ct-arte-caixa-oculta {
   display: none;
@@ -2180,9 +2184,7 @@
     flex-wrap: wrap;
   }
   .ct-arte-caixa,
-  .ct-hl-area,
-  .ct-arte-alta .ct-arte-caixa,
-  .ct-arte-alta .ct-hl-area {
+  .ct-hl-area {
     height: 300px;
   }
 }

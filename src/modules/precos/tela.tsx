@@ -18,6 +18,7 @@ import {
   TituloCartao,
   Vazio,
   avisar,
+  useRascunho,
 } from '@ds'
 import { quandoFoi } from '@shared'
 import { useSessao } from '@dominio/sessao'
@@ -153,6 +154,20 @@ export function TelaTabelasDePreco() {
 
   const t = rascunho
   const sujo = !!t && !!escolhida && JSON.stringify(t) !== JSON.stringify(escolhida)
+  /* o rascunho no navegador (Kit de Comportamento, 14/10/2026): a tabela mexida
+     e não salva volta se a página recarregar, fechar ou trocar */
+  useRascunho({
+    chave: 'tabela-de-preco:' + (escolhida?.id ?? ''),
+    ligado: !!escolhida && !!t,
+    valor: t,
+    sujo,
+    base: escolhida,
+    aoVoltar: (v) => {
+      if (v.valor && v.valor.id === escolhida?.id) setRascunho(v.valor)
+    },
+    aoDescartar: () =>
+      setRascunho(escolhida ? { ...escolhida, itens: escolhida.itens.map((i) => ({ ...i, precos: [...i.precos] })) } : null),
+  })
   const ctx = useMemo(() => (t ? contextoDe(t, catalogo) : null), [t, catalogo])
   const linhas = useMemo(() => (t ? linhasDe(t, catalogo) : []), [t, catalogo])
   const gruposDaTabela = [...new Set(linhas.map((l) => l.grupo))]

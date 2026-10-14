@@ -9,6 +9,15 @@
 export { Botao, Chip } from './componentes/botao'
 export { BotaoComMenu } from './componentes/botao-menu'
 export { cliqueEmControle, useSelecaoDeLinhas } from './componentes/selecao'
+export {
+  apagarRascunho,
+  avisarQueORascunhoVoltou,
+  impressao,
+  lerRascunho,
+  quandoFoiOrascunho,
+  useRascunho,
+} from './componentes/rascunho'
+export type { Rascunho } from './componentes/rascunho'
 export type { CliqueDeSelecao, SelecaoDeLinhas } from './componentes/selecao'
 export type { TomBotao, TamanhoBotao } from './componentes/botao'
 

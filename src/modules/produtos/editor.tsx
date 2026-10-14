@@ -26,6 +26,7 @@ import {
   Seletor,
   TituloCartao,
   avisar,
+  useRascunho,
 } from '@ds'
 import { apagarReferencia } from '@dominio/banco'
 import { TAMANHOS_ADULTO, TAMANHOS_INFANTIL } from '@dominio/layout/grade'
@@ -392,6 +393,22 @@ export function Editor({
   const moldeAVista = moldeNovo ?? molde
 
   const sujo = retratoDoRascunho(rasc) !== inicial.current || moldeNovo !== undefined
+  /* o rascunho no navegador (Kit de Comportamento, 14/10/2026): a ficha
+     digitada pela metade volta se a página recarregar ou fechar */
+  const rascunho = useRascunho({
+    chave: 'referencia:' + r.id,
+    valor: { rasc, moldeNovo },
+    sujo,
+    base: ficha,
+    aoVoltar: (v) => {
+      setRasc(v.valor.rasc)
+      setMoldeNovo(v.valor.moldeNovo)
+    },
+    aoDescartar: () => {
+      setRasc(abrirRascunho(ficha))
+      setMoldeNovo(undefined)
+    },
+  })
   useEffect(() => {
     aoSujar(sujo)
   }, [sujo, aoSujar])
@@ -645,6 +662,7 @@ export function Editor({
       }
     }
     avisar('Ficha de ' + fechado.ficha.nome + ' salva.', 'ok')
+    rascunho.limpar()
     try {
       await aoSalvou(fechado.ficha, moldeFinal)
     } finally {
@@ -724,7 +742,13 @@ export function Editor({
           <p>{r.cod || 'sem código'} · o que mudar aqui vale para os próximos orçamentos</p>
         </div>
         <div className="fileira">
-          <Botao onClick={aoCancelar} disabled={salvando}>
+          <Botao
+            onClick={() => {
+              rascunho.limpar()
+              aoCancelar()
+            }}
+            disabled={salvando}
+          >
             Cancelar
           </Botao>
           <Botao tom="primario" carregando={salvando} onClick={() => void salvar()}>

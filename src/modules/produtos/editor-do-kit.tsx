@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ClipboardText,
@@ -25,6 +25,7 @@ import {
   Seletor,
   TituloCartao,
   avisar,
+  useRascunho,
 } from '@ds'
 import { apagarReferencia } from '@dominio/banco'
 import {
@@ -140,6 +141,23 @@ export function EditorDoKit({
   const desenho = desenhoNovo ?? desenhoInicial
   const novo = !kit
   const sujo = JSON.stringify(kitParaOBanco(rasc)) !== inicial || desenhoNovo !== undefined
+  /* o rascunho no navegador (Kit de Comportamento, 14/10/2026): o kit montado
+     pela metade volta se a página recarregar ou fechar */
+  const primeiro = useRef(rasc)
+  const rascunho = useRascunho({
+    chave: 'kit:' + (kit?.id ?? 'novo'),
+    valor: { rasc, desenhoNovo },
+    sujo,
+    base: primeiro.current,
+    aoVoltar: (v) => {
+      setRasc(v.valor.rasc)
+      setDesenhoNovo(v.valor.desenhoNovo)
+    },
+    aoDescartar: () => {
+      setRasc(primeiro.current)
+      setDesenhoNovo(undefined)
+    },
+  })
 
   useEffect(() => {
     if (!sujo) return
@@ -337,6 +355,7 @@ export function EditorDoKit({
       }
     }
     avisar(novo ? rasc.nome.trim() + ' criado.' : 'Kit salvo.', 'ok')
+    rascunho.limpar()
     try {
       await aoSalvou(id)
     } finally {
@@ -840,7 +859,13 @@ export function EditorDoKit({
         pe={
           <>
             <Botao onClick={() => setSaindo(false)}>Continuar editando</Botao>
-            <Botao tom="perigo" onClick={aoSair}>
+            <Botao
+              tom="perigo"
+              onClick={() => {
+                rascunho.limpar()
+                aoSair()
+              }}
+            >
               Descartar as mudanças
             </Botao>
           </>

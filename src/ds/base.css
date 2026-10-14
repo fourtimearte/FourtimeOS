@@ -1497,6 +1497,27 @@ dialog.gaveta .caixa {
 .recado .fechar:hover {
   opacity: 1;
 }
+/* o recado do rascunho que voltou: o texto e o Descartar na mesma linha */
+.recado-rascunho {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-6);
+}
+.recado-acao {
+  flex: none;
+  height: var(--btn-h-sm);
+  padding: var(--pad-botao-sm);
+  border: 1px solid color-mix(in srgb, var(--on-ink) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.recado-acao:hover {
+  background: color-mix(in srgb, var(--on-ink) 12%, transparent);
+}
 
 /* --- busca global -------------------------------------------------------- */
 dialog.cmdk {

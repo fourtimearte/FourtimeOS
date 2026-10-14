@@ -877,6 +877,42 @@ for (const tema of ['light', 'dark']) {
   }
 }
 
+/* 3e. o rascunho no navegador (Kit de Comportamento, 14/10/2026) */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  await pg.waitForSelector('.ct-fab-pares', { timeout: 8000 })
+  const p = pg.locator('input[aria-label="Peças no P"]')
+  await p.fill('17')
+  await p.press('Enter')
+  await pausa(pg, 900)
+  await pg.reload()
+  await pg.waitForSelector('.ct-fab-pares', { timeout: 8000 })
+  await pausa(pg, 800)
+  conta(await pg.inputValue('input[aria-label="Peças no P"]') === '17', 'recarregar a página volta com o que não estava salvo (17 no P)')
+  conta(/Voltei com o que não estava salvo/.test(await texto(pg, '.pilha-recados')) && await pg.locator('.ct-salvar .ct-ponto-sujo, .ct-ponto-sujo').count() >= 1, 'o recado diz que voltou e o Salvar fica marcado como não salvo')
+  await foto(pg, '1920-rascunho-voltou', false)
+  /* trocar de página e voltar também não perde */
+  await pg.locator('input[aria-label="Peças no P"]').fill('19')
+  await pg.locator('input[aria-label="Peças no P"]').press('Enter')
+  await pausa(pg, 300)
+  /* sai pelo menu (dentro do sistema, sem recarregar) e volta pelo voltar do navegador */
+  await pg.locator('.lado a', { hasText: 'Início' }).first().click()
+  await pausa(pg, 700)
+  await pg.goBack()
+  await pg.waitForSelector('.ct-fab-pares', { timeout: 8000 })
+  await pausa(pg, 800)
+  conta(await pg.inputValue('input[aria-label="Peças no P"]') === '19', 'trocar de página e voltar não perde o que não foi salvo (19 no P)')
+  await pg.locator('.pilha-recados .recado-acao', { hasText: 'Descartar' }).first().click()
+  await pausa(pg, 400)
+  conta(await pg.inputValue('input[aria-label="Peças no P"]') !== '19', 'Descartar volta ao que está no banco: ' + await pg.inputValue('input[aria-label="Peças no P"]'))
+  await pg.reload()
+  await pg.waitForSelector('.ct-fab-pares', { timeout: 8000 })
+  await pausa(pg, 800)
+  conta(!/Voltei com o que não estava salvo/.test(await texto(pg, '.pilha-recados')), 'depois do Descartar, recarregar não traz o rascunho de volta')
+  conta(!erros.length, 'sem erro de JavaScript (rascunho): ' + erros.join(' | '))
+})
+
 /* 4. o vendedor não vê a engrenagem; as abas que não cabem vão para os três pontos */
 await secao(async () => {
   const { pg, erros } = await abrir(nav, { largura: 1180, papel: 'vendedor', abertas: 8 })

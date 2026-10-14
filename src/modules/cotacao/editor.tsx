@@ -1,8 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { emEnsaio } from '@dominio/regulagem'
 import { souAdmin, useSessao } from '@dominio/sessao'
-import { avisar, Aviso, Botao, Esqueleto, Pagina, Vazio } from '@ds'
+import {
+  apagarRascunho,
+  avisar,
+  Aviso,
+  Botao,
+  Esqueleto,
+  Pagina,
+  useRascunho,
+  Vazio,
+} from '@ds'
 import { blocoEmBranco, colarBloco, copiarBloco, temCopia } from '@dominio/layout'
 import {
   aplicarTabelas,
@@ -88,6 +97,26 @@ function Editor({ inicial }: { inicial: Cotacao }) {
   const [c, setC] = useState<Cotacao>(inicial)
   const [modo, setModo] = useModoDoEditor()
   const [sujo, setSujo] = useState(false)
+  /* O QUE ESTÁ NO BANCO, para o Descartar do rascunho voltar a ele */
+  const noBanco = useRef<Cotacao>(inicial)
+  /* O RASCUNHO NO NAVEGADOR (Kit de Comportamento, 14/10/2026): o que não foi
+     salvo fica guardado e volta se a página recarregar, o navegador fechar ou
+     a pessoa trocar de página ou de cotação. Salvar apaga. */
+  const chaveDoRascunho = 'cotacao:' + inicial.id
+  useRascunho({
+    chave: chaveDoRascunho,
+    valor: c,
+    sujo,
+    base: noBanco.current,
+    aoVoltar: (r) => {
+      setC(r.valor as Cotacao)
+      setSujo(true)
+    },
+    aoDescartar: () => {
+      setC(noBanco.current)
+      setSujo(false)
+    },
+  })
   const [podeColar, setPodeColar] = useState(() => temCopia())
   const [porta, setPorta] = useState<Porta>('')
   const [pedidoDeRecolher, setPedidoDeRecolher] = useState(0)
@@ -200,6 +229,7 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     setGravando(true)
     try {
       const salva = await salvarCotacao(qual)
+      noBanco.current = salva
       setC(salva)
       setSujo(false)
       return salva
@@ -230,6 +260,9 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     setApagando(true)
     try {
       await apagarCotacao(c.id)
+      /* a cotação apagada não deixa rascunho para trás */
+      setSujo(false)
+      await apagarRascunho(chaveDoRascunho)
       setPerguntaApagar(false)
       avisar('Cotação ' + numero + ' apagada', 'ok')
       navegar('/cotacao')

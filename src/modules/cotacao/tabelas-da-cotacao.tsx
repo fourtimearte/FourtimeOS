@@ -60,8 +60,9 @@ export function usarCarregarTabelas(chefia: boolean): TabelasDaCotacao {
 }
 
 /* O PREÇO DESTE LAYOUT: segue a tabela da cotação, segue outra tabela, ou
-   não segue tabela nenhuma (o preço é o escrito por alguém). E a frase de
-   onde o número veio, embaixo. */
+   não segue tabela nenhuma (o preço é o escrito por alguém). O seletor mora no
+   cabeçalho do cartão da grade, à esquerda de Adulta e Infantil (14/10/2026);
+   a frase de onde o número veio fica embaixo da grade (OrigemDoPreco). */
 export function PrecoDoLayout({
   c,
   produto,
@@ -74,7 +75,7 @@ export function PrecoDoLayout({
   aoMudar: (tabelaId: string) => void
 }) {
   const { todas, escolhiveis, semBanco } = usarTabelasDaCotacao()
-  if (semBanco || !todas.length) return null
+  if (semBanco || !todas.length || travado) return null
   const daCotacao = todas.find((t) => t.id === c.informe.tabelaDePrecoId)
   const valor = produto.tabelaId || ''
   const opcoes = [
@@ -86,21 +87,28 @@ export function PrecoDoLayout({
      enquanto o layout apontar para ela */
   const atual = todas.find((t) => t.id === valor)
   if (atual && !opcoes.some((o) => o.valor === valor)) opcoes.push({ valor, rotulo: atual.nome })
+  return (
+    <span className="ct-preco-do-layout">
+      <Seletor rotulo="PREÇO" valor={valor} vazio={opcoes[0].rotulo} opcoes={opcoes.slice(1)} aoEscolher={aoMudar} />
+    </span>
+  )
+}
+
+/** A frase de onde o preço do layout veio, embaixo da grade. */
+export function OrigemDoPreco({ c, produto }: { c: Cotacao; produto: ProdutoCotado }) {
+  const { todas, semBanco } = usarTabelasDaCotacao()
+  if (semBanco || !todas.length) return null
+  const valor = produto.tabelaId || ''
   const origem = origemDoPreco(c, produto, todas)
   return (
-    <div className="ct-preco-do-layout">
-      {travado ? null : (
-        <Seletor rotulo="PREÇO" valor={valor} vazio={opcoes[0].rotulo} opcoes={opcoes.slice(1)} aoEscolher={aoMudar} />
-      )}
-      <span className="ct-preco-origem">
-        {origem
-          ? `Valores da ${origem.tabela}, faixa ${origem.faixa} peças`
-          : valor === SEM_TABELA
-            ? 'O preço é o escrito na grade'
-            : produto.bloco.referencia.trim()
-              ? 'Esta referência não está na tabela: o preço é o escrito na grade'
-              : 'Sem referência: o preço é o escrito na grade'}
-      </span>
-    </div>
+    <p className="ct-preco-origem">
+      {origem
+        ? `Valores da ${origem.tabela}, faixa ${origem.faixa} peças`
+        : valor === SEM_TABELA
+          ? 'O preço é o escrito na grade'
+          : produto.bloco.referencia.trim()
+            ? 'Esta referência não está na tabela: o preço é o escrito na grade'
+            : 'Sem referência: o preço é o escrito na grade'}
+    </p>
   )
 }

@@ -31,12 +31,16 @@ export function CartaoDaGrade({
   travado,
   aoMudarProduto,
   seletorDoPreco,
+  origemDoPreco,
 }: {
   produto: ProdutoCotado
   travado: boolean
   aoMudarProduto: (troca: (p: ProdutoCotado) => ProdutoCotado) => void
-  /** de qual tabela de preço o layout segue (068); fica embaixo do título */
+  /** de qual tabela de preço o layout segue (068); fica no cabeçalho, à
+      esquerda de Adulta e Infantil */
   seletorDoPreco?: ReactNode
+  /** a frase de onde o preço veio; fica embaixo da grade */
+  origemDoPreco?: ReactNode
 }) {
   const b = produto.bloco
   const tamanhos = tamanhosNaOrdem(b.faixa, b.grade)
@@ -162,17 +166,19 @@ export function CartaoDaGrade({
       <header className="ct-gd-cab">
         <TituloCartao icone={Table}>Grade e valores</TituloCartao>
         {!travado ? (
-          <Segmentado
-            valor={b.faixa}
-            opcoes={[
-              { valor: 'adulto', rotulo: 'Adulta' },
-              { valor: 'infantil', rotulo: 'Infantil' },
-            ]}
-            aoMudar={(v) => mudarFaixa(v as Faixa)}
-          />
+          <span className="fileira ct-gd-ctl">
+            {seletorDoPreco}
+            <Segmentado
+              valor={b.faixa}
+              opcoes={[
+                { valor: 'adulto', rotulo: 'Adulta' },
+                { valor: 'infantil', rotulo: 'Infantil' },
+              ]}
+              aoMudar={(v) => mudarFaixa(v as Faixa)}
+            />
+          </span>
         ) : null}
       </header>
-      {seletorDoPreco}
       {/* NO CELULAR a grade fica EM PÉ: deitada, doze colunas não cabem em 360
           px, e tabela que rola de lado esconde o número que a pessoa veio ver.
           É a grade de sempre do módulo de layout, com o mesmo dado. */}
@@ -236,6 +242,7 @@ export function CartaoDaGrade({
           </tbody>
         </table>
       </div>
+      {origemDoPreco}
       {!travado ? (
         <p className="ct-gd-nota">
           O valor em cinza é o da tabela de preço. Escreva por cima para mudar só naquele tamanho; apague para voltar ao

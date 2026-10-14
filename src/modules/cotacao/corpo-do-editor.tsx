@@ -17,7 +17,7 @@ import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
 import { MuralDaArte } from './mural-da-arte'
-import { PrecoDoLayout } from './tabelas-da-cotacao'
+import { OrigemDoPreco, PrecoDoLayout } from './tabelas-da-cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -116,6 +116,7 @@ export function CorpoDoEditor({
                 aoMudar={(tabelaId) => aoMudarProduto(escolhido, (x) => ({ ...x, tabelaId }))}
               />
             }
+            origemDoPreco={<OrigemDoPreco c={cotacao} produto={p} />}
           />
           <div className="ct-ly-ficha">
             <FichaDoLayout bloco={p.bloco} travado={travado} aoMudar={mudarBloco} />

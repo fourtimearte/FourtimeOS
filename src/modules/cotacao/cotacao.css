@@ -3892,10 +3892,18 @@ i.ct-cv-pe {
   font-size: 13.5px;
   font-weight: 700;
 }
-.ct-tb-balao-nota {
-  margin: 0;
-  font-size: 12px;
+/* a cor que só parte dos marcados tem: tracejada, com a conta embaixo */
+.ct-cartao-parcial {
+  border-style: dashed;
+}
+.ct-cartao-conta {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 12px;
+  text-align: center;
   color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
 
 /* no tablet a tabela perde o que menos se procura; no celular fica o que

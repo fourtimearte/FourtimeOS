@@ -1,12 +1,22 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as EventoDeTecla } from 'react'
 import { CaretDown, Check, Plus, Table, Warning, X } from '@phosphor-icons/react'
-import { Flutuante, Marcacao, MenuTecidoECor, TituloCartao, useSelecaoDeLinhas } from '@ds'
+import {
+  Flutuante,
+  Marcacao,
+  MenuCodigoDeCor,
+  MenuDeContexto,
+  MenuTecidoECor,
+  TituloCartao,
+  useSelecaoDeLinhas,
+} from '@ds'
 import {
   comEtiqueta,
   etiquetaDoDesign,
   hexDoBanco,
+  usarAbasDeCor,
   type Bloco,
+  type Design,
   type EtiquetaDoLayout,
   type TecidoDoBloco,
 } from '@dominio/layout'
@@ -18,7 +28,16 @@ import {
   type ProdutoCotado,
 } from '@dominio/cotacao'
 import { faltaNoLayout } from './coluna-dos-layouts'
-import { TECNICAS, desligarTecnica, ligarTecnica, rotuloDaTecnica } from './design-do-layout'
+import {
+  TAMANHOS_DE_APLIQUE,
+  TECNICAS,
+  comTamanho,
+  desligarTecnica,
+  ligarTecnica,
+  rotuloDaTecnica,
+  tirarCor,
+  type DaTecnica,
+} from './design-do-layout'
 import { SeletorDoModo, type ModoDoEditor } from './modo-do-editor'
 import { Chave, ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
 import { PrecoDoLayout, usarTabelasDaCotacao } from './tabelas-da-cotacao'
@@ -539,35 +558,225 @@ function ConteudoDoBalao({
     )
   }
   return (
+    <DesignDoLote
+      blocos={blocos}
+      indices={indicesMarcados}
+      produtos={produtos}
+      aoMudarBloco={aoMudarBloco}
+    />
+  )
+}
+
+/* O DESIGN DOS MARCADOS DE UMA VEZ (14/10/2026: "cores devem ser possível de
+   selecionar no modo bulk edit de vários de uma vez só"). As mesmas peças do
+   design da ficha, valendo para todos os marcados:
+   - o interruptor está ligado quando TODOS têm a técnica; o clique desliga
+     em todos ou liga nos que faltam;
+   - a paleta de Sub e de DTF mostra a soma das cores dos marcados; a cor que
+     só parte deles tem vem tracejada, com a conta (3/7);
+   - escolher uma cor na paleta põe ela em todos (ligando a técnica onde
+     faltava); a que todos já têm sai de todos;
+   - o botão direito em cima da cor tira de todos, como na ficha;
+   - o botão direito no Bordado e no Patch escolhe P, M ou G para todos. */
+function DesignDoLote({
+  blocos,
+  indices,
+  produtos,
+  aoMudarBloco,
+}: {
+  blocos: Bloco[]
+  indices: number[]
+  produtos: ProdutoCotado[]
+  aoMudarBloco: (i: number, b: Bloco) => void
+}) {
+  const coresDoBanco = usarAbasDeCor()
+  const [paleta, setPaleta] = useState<DaTecnica | null>(null)
+  const ancora = useRef<HTMLElement | null>(null)
+  const [doTamanho, setDoTamanho] = useState<DaTecnica | null>(null)
+  const ancoraDoTamanho = useRef<HTMLElement | null>(null)
+  const n = blocos.length
+
+  /* muda o design de cada marcado; quem não muda não é tocado */
+  const emTodos = (troca: (design: Design[]) => Design[]) =>
+    indices.forEach(i => {
+      const x = produtos[i]?.bloco
+      if (!x) return
+      const novo = troca(x.design)
+      if (novo !== x.design) aoMudarBloco(i, { ...x, design: novo })
+    })
+  const tem = (b: Bloco, t: DaTecnica) => b.design.some(d => d.tag === t.tag)
+  const temCor = (b: Bloco, t: DaTecnica, cod: string) =>
+    !!b.design.find(d => d.tag === t.tag)?.cores.some(c => c.cod === cod)
+
+  /* põe a cor em todos (ligando a técnica onde faltava) ou tira de todos */
+  const porCor = (t: DaTecnica, cod: string, hex: string, sim: boolean) =>
+    emTodos(design => {
+      if (!sim)
+        return design.some(d => d.tag === t.tag && d.cores.some(c => c.cod === cod))
+          ? tirarCor(design, t.tag, cod)
+          : design
+      const ligado = design.some(d => d.tag === t.tag) ? design : ligarTecnica(design, t)
+      return ligado.some(d => d.tag === t.tag && d.cores.some(c => c.cod === cod))
+        ? ligado
+        : ligado.map(d => (d.tag === t.tag ? { ...d, cores: [...d.cores, { cod, hex }] } : d))
+    })
+
+  const comCor = TECNICAS.filter(t => t.cor && blocos.some(b => tem(b, t)))
+  /* a soma das cores dos marcados, na ordem em que aparecem */
+  const coresDe = (t: DaTecnica) => {
+    const vistas = new Map<string, { cod: string; hex: string; quantos: number }>()
+    for (const b of blocos)
+      for (const c of b.design.find(d => d.tag === t.tag)?.cores ?? []) {
+        const v = vistas.get(c.cod)
+        if (v) v.quantos += 1
+        else vistas.set(c.cod, { cod: c.cod, hex: c.hex, quantos: 1 })
+      }
+    return [...vistas.values()]
+  }
+  const abrirPaleta = (t: DaTecnica, el: HTMLElement) => {
+    ancora.current = el
+    setPaleta(t)
+  }
+  /* o tamanho que todos têm, para o rótulo do interruptor */
+  const tamanhoComum = (t: DaTecnica) => {
+    const tams = blocos.map(b => b.design.find(d => d.tag === t.tag)?.tamanho ?? '')
+    return tams.every(x => x && x === tams[0]) ? tams[0] : ''
+  }
+
+  return (
     <div className="ct-tb-balao">
-      <p className="ct-tb-balao-t">Técnicas dos {blocos.length} marcados</p>
+      <p className="ct-tb-balao-t">Design dos {n} marcados</p>
       <div className="ct-chaves ct-chaves-5">
         {TECNICAS.map(t => {
-          const todos = blocos.every(b => b.design.some(d => d.tag === t.tag))
+          const todos = blocos.every(b => tem(b, t))
+          const tam = t.porTamanho ? tamanhoComum(t) : ''
           return (
             <Chave
               key={t.tag}
               tom={t.tom}
               ligada={todos}
               travado={false}
-              rotulo={t.rotulo}
-              titulo={todos ? 'Desligar em todos os marcados' : 'Ligar em todos os marcados'}
+              rotulo={tam ? t.rotulo + ' ' + tam : t.rotulo}
+              titulo={
+                (todos ? 'Desligar em todos os marcados' : 'Ligar em todos os marcados') +
+                (t.porTamanho ? '. Botão direito: o tamanho (P, M ou G) para todos' : '')
+              }
               aoAlternar={() =>
-                indicesMarcados.forEach(i => {
-                  const x = produtos[i]?.bloco
-                  if (!x) return
-                  const tem = x.design.some(d => d.tag === t.tag)
-                  if (todos) aoMudarBloco(i, { ...x, design: desligarTecnica(x.design, t) })
-                  else if (!tem) aoMudarBloco(i, { ...x, design: ligarTecnica(x.design, t) })
-                })
+                emTodos(design =>
+                  todos
+                    ? desligarTecnica(design, t)
+                    : design.some(d => d.tag === t.tag)
+                      ? design
+                      : ligarTecnica(design, t),
+                )
+              }
+              aoMenu={
+                t.porTamanho
+                  ? el => {
+                      ancoraDoTamanho.current = el
+                      setDoTamanho(t)
+                    }
+                  : undefined
               }
             />
           )
         })}
       </div>
-      <p className="ct-tb-balao-nota">
-        As cores de cada layout continuam as dele: elas mudam no balão do design da linha.
-      </p>
+      {comCor.length ? (
+        <div className="ct-paletas">
+          {comCor.map(t => (
+            <div key={t.tag} className={'ct-paleta ' + t.tom}>
+              <span className="ct-paleta-nome">{t.rotulo}</span>
+              {coresDe(t).map(c => {
+                const parcial = c.quantos < n
+                return (
+                  <button
+                    key={c.cod}
+                    type="button"
+                    className={parcial ? 'ct-cartao-cor ct-cartao-parcial' : 'ct-cartao-cor'}
+                    title={
+                      'Cor ' +
+                      c.cod +
+                      (parcial ? ` em ${c.quantos} de ${n} marcados` : ' em todos os marcados') +
+                      ': clique para abrir a paleta, botão direito tira de todos'
+                    }
+                    onContextMenu={e => {
+                      e.preventDefault()
+                      porCor(t, c.cod, c.hex, false)
+                    }}
+                    onClick={e => abrirPaleta(t, e.currentTarget)}
+                  >
+                    <i style={{ '--cor': hexDoBanco(c.cod, c.hex) } as CSSProperties} />
+                    <b>{c.cod}</b>
+                    {parcial ? (
+                      <em className="ct-cartao-conta">
+                        {c.quantos}/{n}
+                      </em>
+                    ) : null}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                className="ct-cartao-cor ct-cartao-mais"
+                aria-label={'Acrescentar cor em ' + t.rotulo + ' nos marcados'}
+                title="Acrescentar cor em todos os marcados"
+                onClick={e => abrirPaleta(t, e.currentTarget)}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <MenuCodigoDeCor
+        aberto={!!paleta}
+        ancora={ancora}
+        aoFechar={() => setPaleta(null)}
+        abas={coresDoBanco.abas.filter(a => !paleta || a.id === paleta.aba)}
+        semCores={
+          coresDoBanco.fase === 'falhou'
+            ? 'Não consegui ler as cores do banco: ' + coresDoBanco.falha
+            : 'Carregando as cores do banco...'
+        }
+        /* marcada na paleta é a cor que TODOS os marcados já têm */
+        noLayout={
+          paleta
+            ? coresDe(paleta)
+                .filter(c => c.quantos === n)
+                .map(c => c.cod)
+            : []
+        }
+        aoAlternar={(cod, hex) => {
+          if (!paleta) return
+          porCor(paleta, cod, hex, !blocos.every(b => temCor(b, paleta, cod)))
+        }}
+      />
+      <MenuDeContexto
+        aberto={!!doTamanho}
+        ancora={ancoraDoTamanho}
+        aoFechar={() => setDoTamanho(null)}
+        cabecalho={
+          doTamanho
+            ? 'Tamanho do ' + doTamanho.rotulo.toLowerCase() + ' nos ' + n + ' marcados'
+            : null
+        }
+        itens={
+          doTamanho
+            ? [
+                ...TAMANHOS_DE_APLIQUE.map(x => ({
+                  rotulo: `${x.valor}  ${x.nome}`,
+                  aoEscolher: () => emTodos(design => comTamanho(design, doTamanho, x.valor)),
+                })),
+                {
+                  rotulo: 'Sem tamanho',
+                  aoEscolher: () => emTodos(design => comTamanho(design, doTamanho, '')),
+                },
+              ]
+            : []
+        }
+      />
     </div>
   )
 }
@@ -686,7 +895,10 @@ function CampoDoPreco({
           onChange={e => setTexto(e.target.value)}
           onPaste={e => {
             /* colar uma coluna da planilha preenche desta linha para baixo */
-            const linhas = e.clipboardData.getData('text').split(/\r?\n/).filter(x => x.trim() !== '')
+            const linhas = e.clipboardData
+              .getData('text')
+              .split(/\r?\n/)
+              .filter(x => x.trim() !== '')
             if (linhas.length < 2) return
             e.preventDefault()
             const valores = linhas.map(x => lerPreco(x.split('\t')[0]))

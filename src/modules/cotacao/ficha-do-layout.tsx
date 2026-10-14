@@ -16,7 +16,7 @@ import './cotacao.css'
 import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
 import { Chave, ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
 import { camposDaFabricacao, comFabricacao, type ChaveDaFabricacao } from './fabricacao-do-layout'
-import { usarListasDeDetalhe } from '../produtos/detalhes'
+import { usarListasDeDetalhe } from '../produtos'
 
 /* ==========================================================================
    A FICHA TÉCNICA DO LAYOUT, "interruptores e paleta" (decisão 153).

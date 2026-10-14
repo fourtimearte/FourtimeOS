@@ -82,3 +82,24 @@ export async function apagarArquivo(balde: string, caminho: string): Promise<voi
     throw new Error(recadoDoBalde(erro.message || '', resposta.status))
   }
 }
+
+/* Baixar de balde PRIVADO (o dos comprovantes, 080): o arquivo vem com o
+   cracha de quem pede, e a regra do balde decide. Devolve o conteudo, que a
+   tela abre com URL.createObjectURL. */
+export async function baixarArquivo(balde: string, caminho: string): Promise<Blob> {
+  const cracha = await crachaValido()
+  if (!cracha) throw new Error(SESSAO_VENCIDA)
+
+  let resposta: Response
+  try {
+    resposta = await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/${balde}/${caminho}`, {
+      headers: { apikey: SUPABASE_CHAVE, Authorization: `Bearer ${cracha.acesso}` },
+    })
+  } catch {
+    throw new Error('Não consegui falar com o servidor. Confira a internet.')
+  }
+  if (resposta.status === 404 || resposta.status === 400) throw new Error('O arquivo não está mais lá.')
+  if (resposta.status === 403) throw new Error('Seu acesso não permite abrir este arquivo.')
+  if (!resposta.ok) throw new Error(`Não consegui abrir o arquivo (${resposta.status}).`)
+  return resposta.blob()
+}

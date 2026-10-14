@@ -67,7 +67,16 @@ const deLinha = (l: Linha): MensagemRapida => ({
 /** As da equipe e as minhas, na ordem da tela. `semBanco` antes da 070. */
 export async function carregarRapidas(): Promise<{ mensagens: MensagemRapida[]; semBanco: boolean }> {
   try {
-    const linhas = await tabela<Linha[]>(`mensagem_rapida?select=${COLUNAS}&order=grupo.asc,ordem.asc,titulo.asc`)
+    /* so as de vendas: as da logistica (080) moram na aba WhatsApp do
+       Transporte. Antes da 080 a coluna lugar nao existe, e le todas. */
+    const linhas = await tabela<Linha[]>(
+      `mensagem_rapida?select=${COLUNAS}&lugar=eq.vendas&order=grupo.asc,ordem.asc,titulo.asc`,
+    ).catch((e: unknown) => {
+      if (e instanceof Error && /lugar/i.test(e.message)) {
+        return tabela<Linha[]>(`mensagem_rapida?select=${COLUNAS}&order=grupo.asc,ordem.asc,titulo.asc`)
+      }
+      throw e
+    })
     return { mensagens: linhas.map(deLinha), semBanco: false }
   } catch (e) {
     if (!semATabela(e)) throw e

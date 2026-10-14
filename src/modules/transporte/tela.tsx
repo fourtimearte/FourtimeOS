@@ -13,6 +13,12 @@ import {
   corridasDe,
   custoDe,
   temAberto,
+  aConfirmar,
+  carregarFretes,
+  combinaComFrete,
+  passaNoFiltro,
+  type FiltroDoFrete,
+  type FreteDoPedido,
   carregarLancamentos,
   carregarTransportadores,
   combinaComLancamento,
@@ -39,6 +45,8 @@ import { BotoesDoLancamento, CorpoDoLancamento, IconeDoMeio, ResumoDoMes, Situac
 import { FolhaDeLancamento, type InicioDoLancamento } from './folha'
 import { QuemTransporta } from './quem'
 import { Lixeira } from './lixeira'
+import { ConfirmacaoDoFrete } from './confirmacao'
+import { WhatsAppDaLogistica } from './whatsapp'
 import { RelatorioDeTransporte } from './relatorio'
 import './transporte.css'
 
@@ -53,11 +61,17 @@ import './transporte.css'
    nada escolhido, o lado mostra o mês: quanto foi, o que está aberto para
    acertar e como se reparte. Com uma corrida escolhida, mostra a corrida.
 
+   DUAS ABAS DA LOGÍSTICA (080, 14/10/2026): a Confirmação do frete (o
+   frete que o cliente paga antes, em três passos) e o WhatsApp (o mesmo do
+   Funil, com os pedidos PRONTOS e as mensagens da logística ao lado). São
+   abas daqui, e não páginas nem itens do menu, a pedido do Henrique.
+
    O MÊS É O FILTRO DE TUDO. Lançamento, cadastro e relatório leem o mesmo
    mês, que mora na barra de controle.
    ========================================================================== */
 
-type Aba = 'lancamentos' | 'quem' | 'relatorio' | 'lixeira'
+type Aba = 'lancamentos' | 'frete' | 'whatsapp' | 'quem' | 'relatorio' | 'lixeira'
+type EntregaFiltro = 'hoje' | 'semana' | 'todas'
 type Filtro = '' | Meio | 'aberto'
 
 export function TelaTransporte() {
@@ -74,6 +88,12 @@ export function TelaTransporte() {
   const [transportadores, setTransportadores] = useState<Transportador[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [anteriores, setAnteriores] = useState<Lancamento[]>([])
+  /* a Confirmação do frete e o WhatsApp (080): null antes da 080 rodar */
+  const [fretes, setFretes] = useState<FreteDoPedido[] | null>([])
+  const [filtroDoFrete, setFiltroDoFrete] = useState<FiltroDoFrete>('aconfirmar')
+  const [entrega, setEntrega] = useState<EntregaFiltro>('semana')
+  const [buscaDoFrete, setBuscaDoFrete] = useState('')
+  const [conversa, setConversa] = useState<{ id: string; marca: number } | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
 
@@ -91,14 +111,17 @@ export function TelaTransporte() {
   const ler = useCallback(async () => {
     const agora = lerMes(mes)
     const antes = lerMes(mesAnterior(mes))
-    const [ts, ls, as] = await Promise.all([
+    const [ts, ls, as, fs] = await Promise.all([
       carregarTransportadores(),
       carregarLancamentos(limitesDoMes(agora.ano, agora.mes).de, limitesDoMes(agora.ano, agora.mes).ate),
       /* o mês anterior é só a comparação: sem ele a página ainda funciona */
       carregarLancamentos(limitesDoMes(antes.ano, antes.mes).de, limitesDoMes(antes.ano, antes.mes).ate).catch(
         () => [] as Lancamento[],
       ),
+      /* o frete é outra aba: se falhar, os lançamentos ainda abrem */
+      carregarFretes().catch(() => null),
     ])
+    setFretes(fs)
     setTransportadores(ts)
     setLancamentos(ls)
     setAnteriores(as)
@@ -133,6 +156,23 @@ export function TelaTransporte() {
   const corridas = useMemo(() => corridasDe(lancamentos), [lancamentos])
   const corridasAntes = useMemo(() => corridasDe(anteriores), [anteriores])
   const somaDoDia = (ls: Lancamento[]) => ls.reduce((s, l) => s + custoDe(l), 0)
+
+  const fretesFiltrados = useMemo(() => {
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const hojeIso = iso(hoje)
+    const domingo = new Date(hoje)
+    domingo.setDate(hoje.getDate() + ((7 - hoje.getDay()) % 7))
+    const fimDaSemana = iso(domingo)
+    return (fretes ?? []).filter((f) => {
+      if (!passaNoFiltro(f, filtroDoFrete)) return false
+      if (entrega === 'hoje' && !(f.entregaEm && f.entregaEm <= hojeIso)) return false
+      if (entrega === 'semana' && f.entregaEm && f.entregaEm > fimDaSemana) return false
+      return combinaComFrete(f, buscaDoFrete)
+    })
+  }, [fretes, filtroDoFrete, entrega, buscaDoFrete, hoje])
+  const quantosDoFrete = (k: FiltroDoFrete) => (fretes ?? []).filter((f) => passaNoFiltro(f, k)).length
+  const faltamConfirmar = (fretes ?? []).filter(aConfirmar).length
 
   const filtrados = useMemo(
     () =>
@@ -233,6 +273,17 @@ export function TelaTransporte() {
           }}
           opcoes={[
             { valor: 'lancamentos', rotulo: 'Lançamentos' },
+            {
+              valor: 'frete',
+              rotulo: faltamConfirmar ? (
+                <>
+                  Confirmação do frete <span className="tp-conta">{faltamConfirmar}</span>
+                </>
+              ) : (
+                'Confirmação do frete'
+              ),
+            },
+            { valor: 'whatsapp', rotulo: 'WhatsApp' },
             { valor: 'quem', rotulo: 'Quem transporta' },
             { valor: 'relatorio', rotulo: 'Relatório' },
             ...(podeApagar || admin ? [{ valor: 'lixeira' as const, rotulo: 'Lixeira' }] : []),
@@ -262,12 +313,52 @@ export function TelaTransporte() {
               </Chip>
             </div>
           </>
+        ) : aba === 'frete' && fretes ? (
+          <>
+            <Busca
+              className="tp-busca"
+              value={buscaDoFrete}
+              onChange={(e) => setBuscaDoFrete(e.currentTarget.value)}
+              placeholder="Buscar pedido ou cliente"
+              aria-label="Buscar pedido"
+            />
+            <div className="tp-chips">
+              {(
+                [
+                  ['aconfirmar', 'A confirmar'],
+                  ['confirmados', 'Confirmados'],
+                  ['fourtime', 'Frete da Fourtime'],
+                  ['todos', 'Todos'],
+                ] as [FiltroDoFrete, string][]
+              ).map(([k, r]) => (
+                <Chip key={k} ligado={filtroDoFrete === k} onClick={() => setFiltroDoFrete(k)}>
+                  {r} <span className="tp-conta">{quantosDoFrete(k)}</span>
+                </Chip>
+              ))}
+            </div>
+          </>
         ) : aba === 'quem' && podeEditar ? (
           <Botao onClick={() => setCadastrando(true)}>
             <Plus size={16} weight="bold" />
             Novo cadastro
           </Botao>
         ) : null}
+        {aba === 'frete' ? (
+          <span className="tp-fim">
+            <Seletor
+              campo
+              rotulo="Entrega"
+              valor={entrega}
+              opcoes={[
+                { valor: 'hoje', rotulo: 'Até hoje' },
+                { valor: 'semana', rotulo: 'Esta semana' },
+                { valor: 'todas', rotulo: 'Todas' },
+              ]}
+              aoEscolher={(v) => setEntrega((v || 'semana') as EntregaFiltro)}
+              vazio="Esta semana"
+            />
+          </span>
+        ) : aba === 'whatsapp' ? null : (
         <span className="tp-fim">
           <Seletor
             campo
@@ -281,6 +372,7 @@ export function TelaTransporte() {
             vazio={nomeDoMes(meses[0])}
           />
         </span>
+        )}
       </div>
 
       {erro ? (
@@ -297,6 +389,31 @@ export function TelaTransporte() {
             <Esqueleto altura={18} />
           </div>
         </section>
+      ) : aba === 'frete' || aba === 'whatsapp' ? (
+        fretes === null ? (
+          <section className="cartao tp-quadro">
+            <Vazio
+              titulo="Esta aba espera a migração 080"
+              texto="A confirmação do frete e o WhatsApp da logística chegam quando a 080 rodar no banco."
+            />
+          </section>
+        ) : aba === 'frete' ? (
+          <ConfirmacaoDoFrete
+            fretes={fretesFiltrados}
+            todos={fretes}
+            hoje={hoje}
+            podeEditar={podeEditar}
+            larga={larga}
+            estreita={estreita}
+            aoMudar={recarregar}
+            aoConversar={(f) => {
+              setConversa({ id: f.pedidoId, marca: Date.now() })
+              setAba('whatsapp')
+            }}
+          />
+        ) : (
+          <WhatsAppDaLogistica fretes={fretes} hoje={hoje} pedidoInicial={conversa} />
+        )
       ) : aba === 'lixeira' ? (
         <Lixeira podeDevolver={admin} hoje={hoje} aoDevolver={recarregar} />
       ) : aba === 'quem' ? (

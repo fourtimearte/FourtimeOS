@@ -91,10 +91,39 @@ for (let d = 1; d <= 30; d++) {
 }
 export const lancamentos = [...outubro, ...setembro]
 
+/* 080: o frete de cada pedido que ainda vai sair. Hoje e sexta 23/10; a
+   semana termina no domingo 25. Quatro a confirmar (um fica para a semana que
+   vem), um confirmado, um da Fourtime e um sem frete. */
+const F = (numero, estado, entrega, liberado, envio, quem, passo, extra = {}) => ({
+  pedido_id: 'p-' + numero, numero, cliente: P(numero).cliente, telefone: '6299990' + numero.slice(-4), estado,
+  entrega_em: entrega, liberado_em: liberado, envio, quem_paga: quem, registrado: passo > 0 || !!extra.registrado,
+  valor_combinado: extra.combinado ?? null, valor_pago: extra.pago ?? null, comprovante: extra.comprovante ?? null,
+  comprovante_nome: extra.comprovante ? 'comprovante-pix.pdf' : '', observacao: '', passo,
+  pedido_em: passo >= 1 ? '2026-10-23T12:10:00Z' : null, pedido_por: passo >= 1 ? 'Expedição' : '',
+  recebido_em: passo >= 2 ? '2026-10-23T12:40:00Z' : null, recebido_por: passo >= 2 ? 'Expedição' : '',
+  confirmado_em: passo >= 3 ? '2026-10-23T13:00:00Z' : null, confirmado_por: passo >= 3 ? 'Financeiro' : '',
+})
+export const fretes = [
+  F('PD-0423', 'pronto', '2026-10-23', '2026-10-23T11:12:00Z', 'Correios SEDEX', 'cliente', 2, { combinado: 64.3, pago: 64.3, comprovante: 'p-PD-0423/1-comprovante-pix.pdf' }),
+  F('PD-0420', 'pronto', '2026-10-23', '2026-10-23T12:30:00Z', 'Jadlog', 'cliente', 3, { combinado: 148.5, pago: 148.5 }),
+  F('PD-0418', 'pronto', '2026-10-23', '2026-10-23T13:05:00Z', 'MOTOBOY', 'fourtime', 0, { combinado: 22, registrado: true }),
+  F('PD-0415', 'pronto', '2026-10-24', '2026-10-23T14:40:00Z', 'Latam', 'cliente', 1, { combinado: 212 }),
+  F('PD-0412', 'producao', '2026-10-24', null, 'CORREIOS', 'cliente', 0),
+  F('PD-0410', 'producao', '2026-10-30', null, 'TRANSPORTADORA', 'cliente', 0),
+  F('PD-0407', 'aprovado', null, null, 'FABRICA', 'sem_frete', 0),
+]
+export const rapidasDaLogistica = [
+  { id: 'r1', titulo: 'Valor do frete', texto: 'Olá, {nome}! O pedido {pedido} está pronto. O frete pelos {envio} fica em {frete}. Pode pagar no Pix e mandar o comprovante aqui?', grupo: 'Frete' },
+  { id: 'r2', titulo: 'Recebi o comprovante', texto: 'Recebi o comprovante, obrigado! Assim que o financeiro confirmar, o pedido {pedido} sai.', grupo: 'Frete' },
+  { id: 'r3', titulo: 'Saiu para entrega', texto: 'O pedido {pedido} saiu hoje pelos {envio}.', grupo: 'Envio' },
+  { id: 'r4', titulo: 'Pronto para retirar', texto: 'O pedido {pedido} está pronto para retirar na Fourtime.', grupo: 'Retirada' },
+]
+
 /* a resposta do Supabase de mentira para o que e de transporte */
 export function bancoDoTransporte() {
   let lista = [...lancamentos]
   let lixeira = []
+  let listaDeFretes = fretes.map((f) => ({ ...f }))
   const gravados = []
   const extra = async (u, m, req) => {
     if (u.includes('transportador_na_lista')) return transportadores
@@ -131,6 +160,18 @@ export function bancoDoTransporte() {
       return {}
     }
     if (u.includes('lancamento_na_lixeira')) return lixeira
+    if (u.includes('frete_na_lista')) return listaDeFretes
+    if (u.includes('mensagem_rapida') && u.includes('lugar=eq.logistica')) return rapidasDaLogistica
+    if (u.includes('rpc/passo_do_frete')) {
+      const a = JSON.parse(req.postData()); gravados.push(['passo', a])
+      listaDeFretes = listaDeFretes.map((f) => (f.pedido_id === a.p_pedido ? { ...f, passo: a.p_passo, registrado: true } : f))
+      return {}
+    }
+    if (u.includes('rpc/salvar_frete_do_pedido')) {
+      const a = JSON.parse(req.postData()); gravados.push(['frete', a])
+      listaDeFretes = listaDeFretes.map((f) => (f.pedido_id === a.p_pedido ? { ...f, quem_paga: a.p_quem_paga, envio: a.p_envio, valor_combinado: a.p_valor_combinado, valor_pago: a.p_valor_pago, registrado: true } : f))
+      return {}
+    }
     return undefined
   }
   return { extra, gravados }

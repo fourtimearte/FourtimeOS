@@ -529,3 +529,4 @@ export const PAGO_NA_HORA: Record<Meio, boolean> = {
   correios: true,
   transportadora: false,
 }
+export * from './frete'

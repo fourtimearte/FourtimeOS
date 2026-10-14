@@ -740,12 +740,18 @@
   }
 }
 @media (max-width: 767px) {
+  /* seis abas não cabem em 390: a fileira rola dentro dela, sem barra */
   .tp-barra .tp-aba {
     width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tp-barra .tp-aba::-webkit-scrollbar {
+    display: none;
   }
   .tp-barra .tp-aba button {
-    flex: 1;
-    padding-inline: var(--re-4);
+    flex: 1 0 auto;
+    padding-inline: var(--re-6);
   }
   .tp-barra .tp-busca {
     flex: 1 1 100%;
@@ -920,6 +926,250 @@
 }
 /* Apagar fica sozinho à esquerda; Editar e Marcar como pago, juntos à direita */
 .tp-ficha-pe .tp-empurra,
+.tp-comprovante .tp-empurra,
 .sobre-pe .tp-empurra {
   margin-left: auto;
+}
+
+/* --- 080: a Confirmação do frete -------------------------------------------- */
+.tp-paga {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 var(--re-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tp-paga.cliente {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--info) 14%, var(--surface));
+  color: var(--info);
+}
+.tp-passos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2);
+}
+.tp-passo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-2);
+  height: 26px;
+  padding: 0 var(--re-4);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.tp-passo.feito {
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  color: var(--ok);
+}
+.tp-passo.agora {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--ring);
+  color: var(--text);
+}
+.tp-passo-liga {
+  display: inline-block;
+  width: 8px;
+  height: 1.5px;
+  background: var(--border-2);
+}
+.tp-ficha-frete .tp-ficha-topo h2 {
+  margin-top: var(--re-3);
+  font-size: 20px;
+}
+.tp-ficha-frete .tp-ficha-corpo {
+  padding-top: var(--re-8);
+}
+.tp-comprovante {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 52px;
+  padding: var(--re-4) var(--re-6);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+.tp-trava {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-dentro);
+  padding: var(--re-6);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.tp-trava b {
+  color: var(--text);
+}
+.tp-trava svg,
+.tp-comprovante svg {
+  flex: none;
+}
+.tp-pe-da-folha {
+  margin-top: var(--sp-4);
+}
+
+/* --- 080: a aba WhatsApp ------------------------------------------------------ */
+.tp-wa {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(300px, 360px) minmax(280px, 340px);
+  gap: var(--sp-4);
+  align-items: stretch;
+  height: max(560px, calc(100dvh - var(--topbar-h) - 250px));
+  min-width: 0;
+}
+.tp-wa-quadro {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.tp-wa-aviso {
+  min-width: 0;
+}
+.tp-wa-coluna {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.tp-wa-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-dentro);
+  min-height: 0;
+  padding: var(--re-6);
+  overflow-y: auto;
+}
+.tp-pronto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  padding: var(--re-6) var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.tp-pronto:hover {
+  background: var(--surface-2);
+}
+.tp-pronto:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.tp-pronto.marcado {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+.tp-pronto-l1 {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  font-size: 14px;
+}
+.tp-ordem {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.tp-pronto-wa {
+  margin-left: auto;
+  color: var(--ok);
+}
+.tp-pronto-cliente {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.tp-pronto-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--re-6);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.tp-tarde {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.tp-rapida {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-3);
+  padding: var(--re-6) var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.tp-rapida b {
+  font-size: 13.5px;
+}
+.tp-rapida p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+  white-space: pre-line;
+}
+.tp-rapida-enviar {
+  align-self: flex-end;
+}
+@media (max-width: 1499px) {
+  .tp-wa {
+    grid-template-columns: minmax(480px, 1fr) minmax(300px, 360px);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .tp-wa-quadro,
+  .tp-wa-aviso {
+    grid-row: span 2;
+  }
+}
+/* sem o WhatsApp no quadro (celular, ou sem a extensão), as duas colunas
+   ficam lado a lado, e no celular uma embaixo da outra */
+.tp-wa.sem-quadro {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto minmax(0, 1fr);
+  height: auto;
+}
+.tp-wa.sem-quadro .tp-wa-aviso {
+  grid-column: 1 / -1;
+  grid-row: auto;
+}
+.tp-wa.sem-quadro .tp-wa-aviso:empty {
+  display: none;
+}
+@media (max-width: 767px) {
+  .tp-wa,
+  .tp-wa.sem-quadro {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
 }

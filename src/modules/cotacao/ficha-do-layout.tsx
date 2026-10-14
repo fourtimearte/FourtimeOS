@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { ArrowSquareOut, ClipboardText, Minus, Plus, Warning } from '@phosphor-icons/react'
-import { MenuTecidoECor, TituloCartao } from '@ds'
+import {
+  ArrowCounterClockwise,
+  ArrowSquareOut,
+  Check,
+  ClipboardText,
+  Minus,
+  Plus,
+  Warning,
+} from '@phosphor-icons/react'
+import { Flutuante, MenuTecidoECor, TituloCartao } from '@ds'
 import { type Bloco, type TecidoDoBloco } from '@dominio/layout'
-import { carregarConstrucao, DETALHES, type ConstrucaoDoLayout } from '@dominio/produto'
+import { carregarConstrucao, type ConstrucaoDoLayout } from '@dominio/produto'
 import './cotacao.css'
 import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
-import { ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
+import { Chave, ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
+import { camposDaFabricacao, comFabricacao, type ChaveDaFabricacao } from './fabricacao-do-layout'
+import { usarListasDeDetalhe } from '../produtos/detalhes'
 
 /* ==========================================================================
    A FICHA TÉCNICA DO LAYOUT, "interruptores e paleta" (decisão 153).
@@ -169,7 +179,7 @@ export function FichaDoLayout({
       {/* --- design ----------------------------------------------------------- */}
       <EditorDoDesign bloco={bloco} travado={travado} aoMudar={aoMudar} />
 
-      <Construcao cod={bloco.referencia} />
+      <Construcao bloco={bloco} travado={travado} aoMudar={aoMudar} />
 
       <MenuTecidoECor
         aberto={menu === 'tecido'}
@@ -194,8 +204,28 @@ export function FichaDoLayout({
 }
 
 /* --- a construção da peça, lida da ficha técnica ------------------------------ */
-function Construcao({ cod }: { cod: string }) {
+function Construcao({
+  bloco,
+  travado,
+  aoMudar,
+}: {
+  bloco: Bloco
+  travado: boolean
+  aoMudar: (b: Bloco) => void
+}) {
+  const cod = bloco.referencia
   const [c, setC] = useState<ConstrucaoDoLayout | null>(null)
+  /* o menu de um campo da fabricação: de qual peça e qual campo */
+  const [campo, setCampo] = useState<{
+    cod: string
+    chave: ChaveDaFabricacao
+    daFicha: string
+    texto: string
+  } | null>(null)
+  const ancora = useRef<HTMLElement | null>(null)
+  const { listas } = usarListasDeDetalhe()
+  const mudarPeca = (codDaPeca: string, troca: Parameters<typeof comFabricacao>[2]) =>
+    aoMudar(comFabricacao(bloco, codDaPeca, troca))
   const [falha, setFalha] = useState(false)
   useEffect(() => {
     let vivo = true
@@ -224,50 +254,164 @@ function Construcao({ cod }: { cod: string }) {
 
   return (
     <>
-      {c.pecas.map(p => (
-        <div key={p.cod + p.papel} className="ct-fab">
-          <div className="ct-fab-faixa">
-            Fabricação da peça / {p.papel ? p.papel + ' · ' : ''}referência {p.cod}
-          </div>
-          <div className="ct-fab-pares">
-            {DETALHES.map(d => {
-              const texto = (p.detalhes[d.chave] ?? '').trim()
-              const [cabeca, ...resto] = texto.split(',')
-              return (
-                <div
-                  key={d.chave}
-                  className={d.chave === 'costura' ? 'ct-fab-par ct-fab-largo' : 'ct-fab-par'}
-                >
-                  <span className="ct-fab-rot">{d.nome}</span>
-                  <b>{cabeca || '-'}</b>
-                  {resto.length ? <small>{resto.join(',').trim()}</small> : null}
-                </div>
-              )
-            })}
-          </div>
-          {p.atencao.trim() ? (
-            <div className="ct-fab-atencao">
-              <span className="ct-fab-rot">Atenção na costura</span>
-              <p>{p.atencao}</p>
+      {c.pecas.map(p => {
+        const fab = bloco.fabricacao?.[p.cod]
+        const campos = camposDaFabricacao(p.detalhes, fab)
+        return (
+          <div key={p.cod + p.papel} className="ct-fab">
+            <div className="ct-fab-faixa">
+              Fabricação da peça / {p.papel ? p.papel + ' · ' : ''}referência {p.cod}
             </div>
-          ) : null}
-          <div className="ct-fab-faixa">Aviamentos e insumos</div>
-          {p.aviamentos.length ? (
-            <div className="ct-fab-avi">
-              {p.aviamentos.map((a, i) => (
-                <div key={i} className="ct-fab-av">
-                  <b>{a.nome}</b>
-                  <span>
-                    {a.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} {a.unidade}
-                  </span>
-                </div>
-              ))}
+            {/* as escolhas rápidas do layout (14/10/2026) */}
+            {!travado || fab ? (
+              <div className="ct-fab-rapido">
+                {(['tecido', 'ribana'] as const).map(de => (
+                  <Chave
+                    key={de}
+                    tom="ct-ch-fab"
+                    ligada={fab?.gola === de}
+                    travado={travado}
+                    rotulo={de === 'tecido' ? 'Gola de tecido' : 'Gola de ribana'}
+                    titulo="Só neste layout; a ficha técnica não muda"
+                    aoAlternar={() =>
+                      mudarPeca(p.cod, f => ({ ...f, gola: f.gola === de ? undefined : de }))
+                    }
+                  />
+                ))}
+                <Chave
+                  tom="ct-ch-fab"
+                  ligada={!!fab?.trancador}
+                  travado={travado}
+                  rotulo="Costura com trançador"
+                  titulo="Só neste layout; a ficha técnica não muda"
+                  aoAlternar={() => mudarPeca(p.cod, f => ({ ...f, trancador: !f.trancador }))}
+                />
+              </div>
+            ) : null}
+            <div className="ct-fab-pares">
+              {campos.map(d => {
+                const [cabeca, ...resto] = d.texto.split(',')
+                const corpo = (
+                  <>
+                    <span className="ct-fab-rot">
+                      {d.nome}
+                      {d.trocado ? <em className="ct-fab-trocado">deste layout</em> : null}
+                    </span>
+                    <b>{cabeca || '-'}</b>
+                    {resto.length ? <small>{resto.join(',').trim()}</small> : null}
+                  </>
+                )
+                const classe = [
+                  'ct-fab-par',
+                  d.chave === 'costura' ? 'ct-fab-largo' : '',
+                  d.trocado ? 'ct-fab-par-trocado' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+                return travado ? (
+                  <div key={d.chave} className={classe}>
+                    {corpo}
+                  </div>
+                ) : (
+                  <button
+                    key={d.chave}
+                    type="button"
+                    className={classe + ' ct-fab-par-bt'}
+                    title={'Trocar ' + d.nome.toLowerCase() + ' só neste layout'}
+                    onClick={e => {
+                      ancora.current = e.currentTarget
+                      setCampo({
+                        cod: p.cod,
+                        chave: d.chave,
+                        daFicha: d.daFicha,
+                        texto: fab?.detalhes?.[d.chave] ?? d.daFicha,
+                      })
+                    }}
+                  >
+                    {corpo}
+                  </button>
+                )
+              })}
             </div>
-          ) : (
-            <p className="ct-ft-vazio">A ficha não tem aviamento nenhum.</p>
-          )}
-        </div>
-      ))}
+            {p.atencao.trim() ? (
+              <div className="ct-fab-atencao">
+                <span className="ct-fab-rot">Atenção na costura</span>
+                <p>{p.atencao}</p>
+              </div>
+            ) : null}
+            <div className="ct-fab-faixa">Aviamentos e insumos</div>
+            {p.aviamentos.length ? (
+              <div className="ct-fab-avi">
+                {p.aviamentos.map((a, i) => (
+                  <div key={i} className="ct-fab-av">
+                    <b>{a.nome}</b>
+                    <span>
+                      {a.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}{' '}
+                      {a.unidade}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="ct-ft-vazio">A ficha não tem aviamento nenhum.</p>
+            )}
+          </div>
+        )
+      })}
+      <Flutuante
+        aberto={!!campo}
+        ancora={ancora}
+        aoFechar={() => setCampo(null)}
+        opcoes={{ alinhar: 'esquerda' }}
+      >
+        {campo ? (
+          <div className="mn-lista ct-fab-menu">
+            <p className="ct-fab-menu-t">Só neste layout</p>
+            {campo.texto !== campo.daFicha ||
+            bloco.fabricacao?.[campo.cod]?.detalhes?.[campo.chave] != null ? (
+              <button
+                type="button"
+                className="mn-item"
+                onClick={() => {
+                  mudarPeca(campo.cod, f => ({
+                    ...f,
+                    detalhes: { ...f.detalhes, [campo.chave]: undefined },
+                  }))
+                  setCampo(null)
+                }}
+              >
+                <ArrowCounterClockwise size={15} />
+                <span className="nm">Como na ficha{campo.daFicha ? ': ' + campo.daFicha : ''}</span>
+              </button>
+            ) : null}
+            {listas[campo.chave].map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className={item.nome === campo.texto ? 'mn-item on' : 'mn-item'}
+                onClick={() => {
+                  mudarPeca(campo.cod, f => ({
+                    ...f,
+                    detalhes: {
+                      ...f.detalhes,
+                      [campo.chave]: item.nome === campo.daFicha ? undefined : item.nome,
+                    },
+                  }))
+                  setCampo(null)
+                }}
+              >
+                <span className="nm">{item.nome}</span>
+                {item.nome === campo.texto ? <Check size={15} className="ok" /> : null}
+              </button>
+            ))}
+            {!listas[campo.chave].length ? (
+              <p className="ct-fab-menu-t">
+                A lista está vazia: ela se preenche nas Fichas técnicas.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </Flutuante>
     </>
   )
 }

@@ -322,6 +322,12 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
       return { status: 200, corpo: MATERIAIS.filter((m) => ids.includes(m.referencia_id)) }
     }
     if (u.includes('/rest/v1/kit_na_ficha')) return { status: 200, corpo: [] }
+    if (u.includes('/rest/v1/item_de_detalhe_na_lista')) return { status: 200, corpo: [
+      { id: 'd1', detalhe: 'gola', nome: 'Redonda', ordem: 1, referencias: 2, kits: 0 },
+      { id: 'd2', detalhe: 'gola', nome: 'Gola V', ordem: 2, referencias: 1, kits: 0 },
+      { id: 'd3', detalhe: 'costura', nome: 'Overloque de 4 fios', ordem: 1, referencias: 2, kits: 0 },
+      { id: 'd4', detalhe: 'costura', nome: 'Costura reta com galoneira', ordem: 2, referencias: 0, kits: 0 },
+    ] }
     if (u.includes('/rest/v1/permissao_da_acao')) return { status: 200, corpo: ACOES }
     if (u.includes('/rest/v1/rpc/mover_pedido')) {
       const p = PEDIDOS.find((x) => x.id === corpo?.p_pedido)

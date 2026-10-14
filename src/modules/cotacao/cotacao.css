@@ -1826,6 +1826,62 @@
   text-transform: uppercase;
   color: var(--text-3);
 }
+/* AS ESCOLHAS RÁPIDAS DA FABRICAÇÃO (14/10/2026): gola de tecido ou de
+   ribana e a costura com trançador, só neste layout */
+.ct-fab-rapido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--re-4);
+  padding: var(--re-6) var(--re-7);
+  border-bottom: 1px solid var(--border);
+}
+.ct-fab-rapido .ct-chave {
+  padding: var(--pad-botao-sm);
+}
+.ct-ch-fab {
+  --tc: var(--ink);
+  --ts: var(--ink-soft);
+  --tf: var(--text);
+}
+/* o campo trocado no layout: o campo vira botão, e o trocado ganha a marca */
+.ct-fab-par-bt {
+  border-top: 0;
+  border-right: 0;
+  border-left-color: var(--border);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+}
+.ct-fab-par-bt:hover {
+  background: var(--surface-2);
+}
+.ct-fab-par-bt:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.ct-fab-trocado {
+  margin-left: var(--re-3);
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-xs);
+  background: var(--ink-soft);
+  color: var(--text);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.ct-fab-menu {
+  min-width: 260px;
+}
+.ct-fab-menu-t {
+  margin: 0;
+  padding: var(--re-3) var(--re-5);
+  font-size: 12px;
+  color: var(--text-3);
+}
 .ct-fab-pares {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

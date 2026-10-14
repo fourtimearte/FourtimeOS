@@ -59,6 +59,23 @@ export type Design = {
 
 export type TamanhoDeAplique = 'P' | 'M' | 'G'
 
+/** A gola da peça neste layout: de tecido ou de ribana (14/10/2026). */
+export type GolaDe = 'tecido' | 'ribana'
+
+/* A FABRICAÇÃO TROCADA NO LAYOUT (14/10/2026, "modo override de fabricação da
+   peça"): a ficha técnica da referência diz como a peça é feita, e o layout
+   pode trocar qualquer campo (gola, manga, punho, barra, costura) só para ele.
+   A gola de tecido ou de ribana e a costura com trançador são as escolhas
+   rápidas. Vai por código da peça, porque o kit tem várias. O que não está
+   aqui segue a ficha. */
+export type FabricacaoDaPeca = {
+  /** o texto trocado de cada campo; o campo ausente segue a ficha */
+  detalhes?: Partial<Record<'gola' | 'manga' | 'punho' | 'barra' | 'costura', string>>
+  gola?: GolaDe
+  /** a costura leva trançador */
+  trancador?: boolean
+}
+
 export type TecidoDoBloco = {
   nome: string
   cor: string
@@ -88,6 +105,8 @@ export type Bloco = {
   observacao: string
   /** as regioes da arte que viram destaque, em fracoes da imagem original */
   destaques: Mural
+  /** a fabricacao trocada neste layout, por codigo da peca (14/10/2026) */
+  fabricacao?: Record<string, FabricacaoDaPeca>
   /** o formato em que o bloco foi gravado; carimbado na leitura */
   versao?: number
 }

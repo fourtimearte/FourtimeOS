@@ -20,6 +20,7 @@ import {
 import { pecasDoProduto, precoNaGrade, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import type { ConstrucaoDoLayout } from '@dominio/produto'
 import { construcaoDe } from './ficha-do-layout'
+import { construcaoDoLayout } from './fabricacao-do-layout'
 import { n2, pecas, reais, Rotulo, Titulo } from './pagina-um'
 import './documento.css'
 
@@ -661,7 +662,8 @@ export function ModuloNaFolha({
   const dest = tem('dest') ? <FaixaDeDestaques b={b} im={imagem} largura={largura} modo={modo} /> : null
   const grade = tem('grade') ? <GradeVendida p={p} comValor={comValor} modo={modo} /> : null
   const ficha = tem('ficha') ? <FichaDoLayoutNaFolha b={b} modo={modo} /> : null
-  const fab = construcao && tem('fab') ? <Fabricacao c={construcao} kit={kit} /> : null
+  /* a fabricação com o que o layout trocou por cima da ficha (14/10/2026) */
+  const fab = construcao && tem('fab') ? <Fabricacao c={construcaoDoLayout(construcao, b)} kit={kit} /> : null
   const avi = construcao && tem('avi') ? <Aviamentos c={construcao} /> : null
   const obs = tem('obs') ? <Observacao b={b} /> : null
 

@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react'
-import { Car, Motorcycle, NotePencil, Taxi, Truck, Wallet } from '@phosphor-icons/react'
+import { useState, type CSSProperties } from 'react'
+import { Airplane, Bus, Car, Motorcycle, NotePencil, Package, Taxi, Truck, Wallet } from '@phosphor-icons/react'
 import { Botao, IconeDoTitulo, TituloCartao } from '@ds'
 import {
   MEIOS,
@@ -8,6 +8,7 @@ import {
   NOME_DO_MOTIVO,
   abertos,
   repartir,
+  temAberto,
   somaDe,
   type Fatia,
   type Lancamento,
@@ -21,7 +22,20 @@ import { diaEMes, dinheiro, dinheiroCurto, lerMes, mesAnterior, MES_LONGO, plura
    ========================================================================== */
 
 export function IconeDoMeio({ meio, tamanho = 18 }: { meio: Meio; tamanho?: number }) {
-  const Icone = meio === 'motoboy' ? Motorcycle : meio === 'uber' ? Car : meio === 'taxi' ? Taxi : Truck
+  const Icone =
+    meio === 'motoboy'
+      ? Motorcycle
+      : meio === 'uber'
+        ? Car
+        : meio === 'taxi'
+          ? Taxi
+          : meio === 'aereo'
+            ? Airplane
+            : meio === 'onibus'
+              ? Bus
+              : meio === 'correios'
+                ? Package
+                : Truck
   return (
     <span className="tp-icone" aria-hidden="true">
       <Icone size={tamanho} />
@@ -37,6 +51,21 @@ export function Situacao({ pago, texto }: { pago: boolean; texto?: string }) {
       {texto ?? (pago ? 'Pago' : 'A pagar')}
     </span>
   )
+}
+
+/* A situação de um lançamento inteiro: o envio pago pelo cliente não conta,
+   a coleta conta. "A pagar" enquanto qualquer frete da Fourtime estiver
+   aberto. */
+export function SituacaoDaLinha({ l }: { l: Lancamento }) {
+  if (l.fretePagoPor === 'cliente' && !l.coleta) {
+    return (
+      <span className="tp-situacao" style={{ '--c': 'var(--text-3)' } as CSSProperties}>
+        <i />
+        Pelo cliente
+      </span>
+    )
+  }
+  return <Situacao pago={!temAberto(l)} />
 }
 
 /* As barras: uma linha por fatia, da maior para a menor. Uma cor só, a tinta
@@ -213,7 +242,11 @@ export function CorpoDoLancamento({ l, hoje }: { l: Lancamento; hoje: Date }) {
   return (
     <div className="tp-ficha-corpo">
       <div className="tp-ficha-estado">
-        <Situacao pago={l.pago} texto={l.pago ? `Pago${l.pagoEm ? ' em ' + diaEMes(l.pagoEm) : ''}` : 'A pagar'} />
+        {l.fretePagoPor === 'cliente' ? (
+          <SituacaoDaLinha l={l} />
+        ) : (
+          <Situacao pago={l.pago} texto={l.pago ? `Pago${l.pagoEm ? ' em ' + diaEMes(l.pagoEm) : ''}` : 'A pagar'} />
+        )}
         <span className="tp-apoio">{quandoFoi(l.quando, hoje)}</span>
       </div>
       <div className="tp-dados">
@@ -225,7 +258,20 @@ export function CorpoDoLancamento({ l, hoje }: { l: Lancamento; hoje: Date }) {
           <span>Para quê</span>
           <b>{NOME_DO_MOTIVO[l.motivo]}</b>
         </div>
-        {l.pedido ? (
+        {l.pedidos.length > 1 ? (
+          <div className="tp-dado tp-dado-lista">
+            <span>Pedidos</span>
+            <span className="pilha">
+              {l.pedidos.map((p) => (
+                <b key={p.numero}>
+                  {[p.numero, p.cliente, p.entrega ? `entrega ${diaEMes(p.entrega + 'T12:00:00')}` : '']
+                    .filter(Boolean)
+                    .join(' · ')}
+                </b>
+              ))}
+            </span>
+          </div>
+        ) : l.pedido ? (
           <div className="tp-dado">
             <span>Pedido</span>
             <b>{[l.pedido, l.cliente].filter(Boolean).join(' · ')}</b>
@@ -241,10 +287,32 @@ export function CorpoDoLancamento({ l, hoje }: { l: Lancamento; hoje: Date }) {
           <span>{l.motivo === 'busca' ? 'De onde veio' : 'Para onde foi'}</span>
           {l.destino ? <b>{l.destino}</b> : <b className="tp-falta">não foi escrito</b>}
         </div>
-        <div className="tp-dado">
-          <span>Pagamento</span>
-          <b>{NOME_DA_FORMA[l.forma]}</b>
-        </div>
+        {l.motivo === 'entrega' ? (
+          <div className="tp-dado">
+            <span>Frete pago por</span>
+            <b>{l.fretePagoPor === 'cliente' ? 'Cliente' : 'Fourtime'}</b>
+          </div>
+        ) : null}
+        {l.fretePagoPor === 'cliente' ? (
+          <div className="tp-dado">
+            <span>Valor do frete</span>
+            {l.valor ? <b>{dinheiro(l.valor)}</b> : <b className="tp-falta">não foi escrito</b>}
+          </div>
+        ) : (
+          <div className="tp-dado">
+            <span>Pagamento</span>
+            <b>{NOME_DA_FORMA[l.forma]}</b>
+          </div>
+        )}
+        {l.coleta ? (
+          <div className="tp-dado">
+            <span>Frete de coleta</span>
+            <b>
+              {l.coleta.transportador} · {dinheiro(l.coleta.valor)} · {NOME_DA_FORMA[l.coleta.forma]} ·{' '}
+              {l.coleta.pago ? 'pago' : 'a pagar'}
+            </b>
+          </div>
+        ) : null}
         <div className="tp-dado">
           <span>Lançado por</span>
           <b>{l.quem || 'sistema'}</b>
@@ -265,26 +333,52 @@ export function CorpoDoLancamento({ l, hoje }: { l: Lancamento; hoje: Date }) {
   )
 }
 
+/* APAGAR MANDA PARA A LIXEIRA (079), e por isso a pergunta é na própria
+   fileira de botões, sem janela: o primeiro clique pergunta, o segundo
+   apaga. O administrador devolve pela aba Lixeira. */
 export function BotoesDoLancamento({
   l,
   podeEditar,
+  podeApagar,
   aoAcertar,
   aoEditar,
+  aoApagar,
 }: {
   l: Lancamento
   podeEditar: boolean
+  podeApagar: boolean
   aoAcertar: () => void
   aoEditar: () => void
+  aoApagar: () => void
 }) {
-  if (!podeEditar) return null
+  const [perguntando, setPerguntando] = useState(false)
+  if (!podeEditar && !podeApagar) return null
+  if (perguntando) {
+    return (
+      <>
+        <span className="tp-pergunta">Mandar para a lixeira?</span>
+        <Botao className="tp-empurra" onClick={() => setPerguntando(false)}>
+          Não
+        </Botao>
+        <Botao tom="primario" onClick={aoApagar}>
+          Apagar
+        </Botao>
+      </>
+    )
+  }
   return (
     <>
-      <Botao onClick={aoEditar}>Editar</Botao>
-      {l.pago ? null : (
+      {podeApagar ? <Botao onClick={() => setPerguntando(true)}>Apagar</Botao> : null}
+      {podeEditar ? (
+        <Botao className={podeApagar ? 'tp-empurra' : undefined} onClick={aoEditar}>
+          Editar
+        </Botao>
+      ) : null}
+      {podeEditar && temAberto(l) ? (
         <Botao tom="primario" onClick={aoAcertar}>
           Marcar como pago
         </Botao>
-      )}
+      ) : null}
     </>
   )
 }

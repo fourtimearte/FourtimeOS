@@ -848,3 +848,78 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* --- 079: os dois fretes, os pedidos da entrega e a lixeira ------------------ */
+.tp-folha-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.tp-coleta {
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.tp-pedido-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--gap-dentro);
+  align-items: center;
+}
+.tp-tirar {
+  display: grid;
+  place-items: center;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.tp-tirar:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.tp-tirar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.tp-dado-lista {
+  align-items: flex-start;
+}
+.tp-dado-lista .pilha {
+  align-items: flex-end;
+  color: var(--text);
+}
+.tp-pergunta {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tp-lixeira {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tp-lixo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--row-h);
+  padding: var(--re-8) var(--re-10);
+  border-bottom: 1px solid var(--border);
+}
+.tp-lixo:last-child {
+  border-bottom: 0;
+}
+.tp-lixo .tp-nome {
+  flex: 1;
+}
+/* Apagar fica sozinho à esquerda; Editar e Marcar como pago, juntos à direita */
+.tp-ficha-pe .tp-empurra,
+.sobre-pe .tp-empurra {
+  margin-left: auto;
+}

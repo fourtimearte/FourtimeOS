@@ -7,20 +7,23 @@ import {
   NOME_DA_FORMA,
   NOME_DO_MEIO,
   NOME_DO_MOTIVO,
-  abertos,
+  abertosDe,
   acertarTransporte,
+  apagarLancamento,
+  corridasDe,
+  custoDe,
+  temAberto,
   carregarLancamentos,
   carregarTransportadores,
   combinaComLancamento,
   limitesDoMes,
   paraQue,
   planilhaDoPeriodo,
-  somaDe,
   type Lancamento,
   type Meio,
   type Transportador,
 } from '@dominio/transporte'
-import { pode, useSessao } from '@dominio/sessao'
+import { pode, souAdmin, useSessao } from '@dominio/sessao'
 import {
   chaveDoDia,
   diaPorExtenso,
@@ -32,9 +35,10 @@ import {
   plural,
   ultimosMeses,
 } from './apoio'
-import { BotoesDoLancamento, CorpoDoLancamento, IconeDoMeio, ResumoDoMes, Situacao } from './resumo'
+import { BotoesDoLancamento, CorpoDoLancamento, IconeDoMeio, ResumoDoMes, SituacaoDaLinha } from './resumo'
 import { FolhaDeLancamento, type InicioDoLancamento } from './folha'
 import { QuemTransporta } from './quem'
+import { Lixeira } from './lixeira'
 import { RelatorioDeTransporte } from './relatorio'
 import './transporte.css'
 
@@ -53,13 +57,15 @@ import './transporte.css'
    mês, que mora na barra de controle.
    ========================================================================== */
 
-type Aba = 'lancamentos' | 'quem' | 'relatorio'
+type Aba = 'lancamentos' | 'quem' | 'relatorio' | 'lixeira'
 type Filtro = '' | Meio | 'aberto'
 
 export function TelaTransporte() {
   const { estado } = useSessao()
   const pessoa = estado.fase === 'dentro' ? estado.pessoa : null
   const podeEditar = !!pessoa && pode(pessoa, 'transporte', 'editar')
+  const podeApagar = !!pessoa && pode(pessoa, 'transporte', 'deletar')
+  const admin = souAdmin(pessoa)
 
   const [hoje] = useState(() => new Date())
   const meses = useMemo(() => ultimosMeses(hoje), [hoje])
@@ -122,10 +128,16 @@ export function TelaTransporte() {
     }
   }, [ler])
 
+  /* AS CORRIDAS são o que a Fourtime pagou, uma por frete (o envio e a
+     coleta): é sobre elas que o resumo, o A pagar e o relatório fazem conta */
+  const corridas = useMemo(() => corridasDe(lancamentos), [lancamentos])
+  const corridasAntes = useMemo(() => corridasDe(anteriores), [anteriores])
+  const somaDoDia = (ls: Lancamento[]) => ls.reduce((s, l) => s + custoDe(l), 0)
+
   const filtrados = useMemo(
     () =>
       lancamentos.filter((l) => {
-        if (filtro === 'aberto' && l.pago) return false
+        if (filtro === 'aberto' && !temAberto(l)) return false
         if (filtro && filtro !== 'aberto' && l.meio !== filtro) return false
         return combinaComLancamento(l, busca)
       }),
@@ -142,9 +154,21 @@ export function TelaTransporte() {
     return [...mapa.entries()]
   }, [filtrados])
 
-  const escolhido = lancamentos.find((l) => l.id === aberto) ?? null
+  /* a coleta escolhida no A pagar abre o lançamento dela */
+  const escolhido = lancamentos.find((l) => l.id === aberto || l.coleta?.id === aberto) ?? null
   const noLado = larga && !!escolhido
   const naFolha = !!escolhido && !larga
+
+  async function apagar(l: Lancamento) {
+    try {
+      await apagarLancamento(l.id)
+      avisar(admin ? 'Foi para a lixeira. Dá para devolver na aba Lixeira.' : 'Foi para a lixeira. O administrador pode devolver.', 'ok')
+      setAberto('')
+      await recarregar()
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não consegui apagar.', 'brand')
+    }
+  }
 
   async function acertar(ids: string[], quem: string) {
     if (!ids.length) return
@@ -169,10 +193,13 @@ export function TelaTransporte() {
   const corpoDoLancamento = escolhido ? <CorpoDoLancamento l={escolhido} hoje={hoje} /> : null
   const botoesDoLancamento = escolhido ? (
     <BotoesDoLancamento
+      key={escolhido.id}
       l={escolhido}
       podeEditar={podeEditar}
-      aoAcertar={() => void acertar([escolhido.id], escolhido.transportador)}
+      podeApagar={podeApagar}
+      aoAcertar={() => void acertar(abertosDe(escolhido), escolhido.transportador)}
       aoEditar={() => setLancando({ editar: escolhido })}
+      aoApagar={() => void apagar(escolhido)}
     />
   ) : null
 
@@ -180,7 +207,7 @@ export function TelaTransporte() {
     <Pagina
       acima="Gestão"
       titulo="Transporte"
-      sub="O que a Fourtime paga para levar e buscar: transportadora, motoboy, Uber e táxi."
+      sub="O que a Fourtime paga para levar e buscar: transportadora, Correios, aéreo, ônibus, motoboy, Uber e táxi."
       acoes={
         <>
           <Botao onClick={baixarPlanilha} disabled={!lancamentos.length}>
@@ -208,6 +235,7 @@ export function TelaTransporte() {
             { valor: 'lancamentos', rotulo: 'Lançamentos' },
             { valor: 'quem', rotulo: 'Quem transporta' },
             { valor: 'relatorio', rotulo: 'Relatório' },
+            ...(podeApagar || admin ? [{ valor: 'lixeira' as const, rotulo: 'Lixeira' }] : []),
           ]}
         />
         {aba === 'lancamentos' ? (
@@ -223,13 +251,14 @@ export function TelaTransporte() {
               <Chip ligado={filtro === ''} onClick={() => setFiltro('')}>
                 Todos <span className="tp-conta">{lancamentos.length}</span>
               </Chip>
-              {MEIOS.map((m) => (
+              {/* só os tipos que têm lançamento no mês: sete chips vazios só ocupam a barra */}
+              {MEIOS.filter((m) => m === filtro || lancamentos.some((l) => l.meio === m)).map((m) => (
                 <Chip key={m} ligado={filtro === m} onClick={() => setFiltro(filtro === m ? '' : m)}>
                   {NOME_DO_MEIO[m]} <span className="tp-conta">{lancamentos.filter((l) => l.meio === m).length}</span>
                 </Chip>
               ))}
               <Chip ligado={filtro === 'aberto'} onClick={() => setFiltro(filtro === 'aberto' ? '' : 'aberto')}>
-                A pagar <span className="tp-conta">{abertos(lancamentos).length}</span>
+                A pagar <span className="tp-conta">{lancamentos.filter(temAberto).length}</span>
               </Chip>
             </div>
           </>
@@ -268,10 +297,12 @@ export function TelaTransporte() {
             <Esqueleto altura={18} />
           </div>
         </section>
+      ) : aba === 'lixeira' ? (
+        <Lixeira podeDevolver={admin} hoje={hoje} aoDevolver={recarregar} />
       ) : aba === 'quem' ? (
         <QuemTransporta
           transportadores={transportadores}
-          lancamentos={lancamentos}
+          lancamentos={corridas}
           mes={mes}
           hoje={hoje}
           podeEditar={podeEditar}
@@ -284,8 +315,8 @@ export function TelaTransporte() {
         />
       ) : aba === 'relatorio' ? (
         <RelatorioDeTransporte
-          lancamentos={lancamentos}
-          anteriores={anteriores}
+          lancamentos={corridas}
+          anteriores={corridasAntes}
           mes={mes}
           hoje={hoje}
           estreita={estreita}
@@ -307,7 +338,7 @@ export function TelaTransporte() {
                   <Fragment key={dia}>
                     <div className="tp-faixa">
                       <b>{diaPorExtenso(doDia[0].quando, hoje)}</b>
-                      <span>{dinheiro(somaDe(doDia))}</span>
+                      <span>{dinheiro(somaDoDia(doDia))}</span>
                     </div>
                     {doDia.map((l) => (
                       <button key={l.id} type="button" className="tp-item" onClick={() => setAberto(l.id)}>
@@ -319,8 +350,8 @@ export function TelaTransporte() {
                           </small>
                         </span>
                         <span className="tp-item-fim">
-                          <b>{dinheiro(l.valor)}</b>
-                          <Situacao pago={l.pago} />
+                          <b>{dinheiro(custoDe(l) || l.valor)}</b>
+                          <SituacaoDaLinha l={l} />
                         </span>
                       </button>
                     ))}
@@ -351,7 +382,7 @@ export function TelaTransporte() {
                               <span>{plural(doDia.length, 'corrida', 'corridas')}</span>
                             </span>
                           </td>
-                          <td className="dir tp-numero-forte tp-do-grupo">{dinheiro(somaDe(doDia))}</td>
+                          <td className="dir tp-numero-forte tp-do-grupo">{dinheiro(somaDoDia(doDia))}</td>
                           <td className="tp-some-estreito" colSpan={2} />
                         </tr>
                         {doDia.map((l) => (
@@ -374,14 +405,22 @@ export function TelaTransporte() {
                               <span className="tp-nome">
                                 <b>{paraQue(l)}</b>
                                 <small>
-                                  {[NOME_DO_MOTIVO[l.motivo], l.destino].filter(Boolean).join(' · ')}
+                                  {[
+                                    NOME_DO_MOTIVO[l.motivo],
+                                    l.destino,
+                                    l.coleta ? `coleta ${l.coleta.transportador} ${dinheiro(l.coleta.valor)}` : '',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                                 </small>
                               </span>
                             </td>
-                            <td className="tp-apoio tp-some-medio">{NOME_DA_FORMA[l.forma]}</td>
-                            <td className="dir tp-numero-forte">{dinheiro(l.valor)}</td>
+                            <td className="tp-apoio tp-some-medio">
+                              {l.fretePagoPor === 'cliente' ? 'Pelo cliente' : NOME_DA_FORMA[l.forma]}
+                            </td>
+                            <td className="dir tp-numero-forte">{dinheiro(custoDe(l) || l.valor)}</td>
                             <td className="tp-some-estreito">
-                              <Situacao pago={l.pago} />
+                              <SituacaoDaLinha l={l} />
                             </td>
                             <td className="tp-some-estreito">
                               <span className="tp-direita">
@@ -403,7 +442,7 @@ export function TelaTransporte() {
               <section className="cartao tp-ficha">
                 <div className="tp-ficha-topo">
                   <div>
-                    <h2>{dinheiro(escolhido.valor)}</h2>
+                    <h2>{dinheiro(custoDe(escolhido) || escolhido.valor)}</h2>
                     <p>
                       {escolhido.transportador === NOME_DO_MEIO[escolhido.meio]
                         ? escolhido.transportador
@@ -419,8 +458,8 @@ export function TelaTransporte() {
               </section>
             ) : (
               <ResumoDoMes
-                lancamentos={lancamentos}
-                anteriores={anteriores}
+                lancamentos={corridas}
+                anteriores={corridasAntes}
                 mes={mes}
                 hoje={hoje}
                 podeEditar={podeEditar}
@@ -435,7 +474,7 @@ export function TelaTransporte() {
       <Gaveta
         aberto={naFolha}
         aoFechar={() => setAberto('')}
-        titulo={escolhido ? `${dinheiro(escolhido.valor)} · ${escolhido.transportador}` : ''}
+        titulo={escolhido ? `${dinheiro(custoDe(escolhido) || escolhido.valor)} · ${escolhido.transportador}` : ''}
         pe={botoesDoLancamento ?? undefined}
       >
         <div className="tp-na-folha">{corpoDoLancamento}</div>

@@ -160,7 +160,12 @@ export function useRascunho<T>({
 
   /* ao abrir: há rascunho desta chave? */
   useEffect(() => {
-    if (!ligado || conferido.current === chave) return
+    /* desligou (a folha fechou): abrir de novo confere o rascunho de novo */
+    if (!ligado) {
+      conferido.current = ''
+      return
+    }
+    if (conferido.current === chave) return
     conferido.current = chave
     let vivo = true
     void lerRascunho<T>(chave).then(r => {
@@ -188,7 +193,11 @@ export function useRascunho<T>({
   const pausado = useRef(false)
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (!ligado) return
+    if (!ligado) {
+      /* fechar não é salvar: o rascunho fica para quando abrir de novo */
+      sujoEm.current = null
+      return
+    }
     if (!sujo) {
       if (sujoEm.current === chave) void apagarRascunho(chave)
       sujoEm.current = null
@@ -203,8 +212,9 @@ export function useRascunho<T>({
     }, 400)
     return () => {
       if (espera.current) clearTimeout(espera.current)
-      /* a tela trocou de documento com mudança por guardar: guarda o de antes já */
-      if (ultimo.current.chave !== chave && !pausado.current)
+      /* a tela trocou de documento, ou a folha fechou, com mudança por
+         guardar: guarda o de antes já */
+      if ((ultimo.current.chave !== chave || !ultimo.current.ligado) && !pausado.current)
         void guardarRascunho(chave, { valor, em: Date.now(), base })
     }
   }, [chave, valor, sujo, ligado])

@@ -94,6 +94,7 @@ export const lancamentos = [...outubro, ...setembro]
 /* a resposta do Supabase de mentira para o que e de transporte */
 export function bancoDoTransporte() {
   let lista = [...lancamentos]
+  let lixeira = []
   const gravados = []
   const extra = async (u, m, req) => {
     if (u.includes('transportador_na_lista')) return transportadores
@@ -103,7 +104,33 @@ export function bancoDoTransporte() {
     }
     if (u.includes('pedido_na_fabrica') && u.includes('select=numero,cliente')) return pedidos
     if (u.includes('rpc/acertar_transporte')) { const a = JSON.parse(req.postData()); gravados.push(['acertar', a]); lista = lista.map((l) => a.p_lancamentos.includes(l.id) ? { ...l, pago: true, pago_em: HOJE } : l); return {} }
-    if (u.includes('rpc/lancar_transporte')) { const a = JSON.parse(req.postData()); gravados.push(['lancar', a]); const t = T(a.p_transportador); lista = [{ id: 'novo' + gravados.length, quando: a.p_quando, meio: t.meio, transportador_id: t.id, transportador: t.nome, motivo: a.p_motivo, pedido: a.p_pedido, cliente: P(a.p_pedido)?.cliente ?? null, fornecedor_id: a.p_fornecedor, fornecedor: null, destino: a.p_destino, valor: a.p_valor, forma: a.p_forma, pago: a.p_pago, pago_em: a.p_pago ? HOJE : null, quem_nome: 'Henrique', observacao: a.p_observacao }, ...lista]; return {} }
+    if (u.includes('rpc/lancar_transporte')) {
+      const a = JSON.parse(req.postData()); gravados.push(['lancar', a]); const t = T(a.p_transportador)
+      const ps = (a.p_pedidos ?? []).map((nu) => ({ numero: nu, cliente: P(nu)?.cliente ?? '', entrega: null }))
+      const k = a.p_coleta ? T(a.p_coleta.transportador) : null
+      lista = [{
+        id: 'novo' + gravados.length, quando: a.p_quando, meio: t.meio, transportador_id: t.id, transportador: t.nome, motivo: a.p_motivo,
+        pedido: ps[0]?.numero ?? null, cliente: ps[0]?.cliente ?? null, fornecedor_id: a.p_fornecedor, fornecedor: null, destino: a.p_destino,
+        valor: a.p_valor, forma: a.p_forma, pago: a.p_pago, pago_em: a.p_pago ? HOJE : null, quem_nome: 'Henrique', observacao: a.p_observacao,
+        frete_pago_por: a.p_frete_pago_por, pedidos: ps,
+        coleta_id: k ? 'coleta' + gravados.length : null, coleta_transportador_id: k?.id ?? null, coleta_transportador: k?.nome ?? null,
+        coleta_meio: k?.meio ?? null, coleta_valor: a.p_coleta?.valor ?? null, coleta_forma: a.p_coleta?.forma ?? null, coleta_pago: a.p_coleta?.pago ?? null,
+      }, ...lista]
+      return {}
+    }
+    if (u.includes('rpc/apagar_lancamento_de_transporte')) {
+      const a = JSON.parse(req.postData()); gravados.push(['apagar', a])
+      const x = lista.find((l) => l.id === a.p_id); lista = lista.filter((l) => l.id !== a.p_id)
+      if (x) lixeira = [{ ...x, apagado_em: HOJE, apagado_por: 'Henrique' }, ...lixeira]
+      return {}
+    }
+    if (u.includes('rpc/devolver_lancamento_de_transporte')) {
+      const a = JSON.parse(req.postData()); gravados.push(['devolver', a])
+      const x = lixeira.find((l) => l.id === a.p_id); lixeira = lixeira.filter((l) => l.id !== a.p_id)
+      if (x) lista = [x, ...lista]
+      return {}
+    }
+    if (u.includes('lancamento_na_lixeira')) return lixeira
     return undefined
   }
   return { extra, gravados }

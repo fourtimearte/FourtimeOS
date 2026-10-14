@@ -202,7 +202,7 @@ begin
   -- 17. as transportadoras da 041 estao em transporte, ligadas ao fornecedor
   select count(*) into n from public.transportador t
     join public.fornecedor f on f.id = t.fornecedor_id
-   where t.meio = 'transportadora' and lower(t.nome) in ('correios', 'jadlog', 'braspress', 'total express');
+   where t.meio in ('transportadora', 'correios') and lower(t.nome) in ('correios', 'jadlog', 'braspress', 'total express');
   txt := txt || E'\n' || case when n = 4 then 'ok  ' else 'RUIM' end || ' 17. as quatro transportadoras da 041 vieram (' || n || ')';
 
   raise exception E'PROVA DA 042 (tudo desfeito):%', txt;

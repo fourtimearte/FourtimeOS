@@ -9,12 +9,13 @@ import {
   Gaveta,
   IconeDoTitulo,
   Modal,
-  Segmentado,
+  Seletor,
   Vazio,
 } from '@ds'
 import { cnpjNaTela, cnpjValido, mascaraDoCnpj } from '@dominio/fornecedor'
 import {
   MEIOS,
+  TEM_CNPJ,
   NOME_DO_MEIO,
   abertos,
   paraQue,
@@ -42,6 +43,9 @@ const NOVO_EM: Record<Meio, string> = {
   motoboy: 'Novo motoboy',
   uber: 'Novo aplicativo',
   taxi: 'Novo táxi',
+  aereo: 'Nova empresa aérea',
+  onibus: 'Nova viação',
+  correios: 'Nova agência dos Correios',
   transportadora: 'Nova transportadora',
 }
 
@@ -184,7 +188,7 @@ export function QuemTransporta({
                               </span>
                             </td>
                             <td className="tp-numero tp-some-estreito">
-                              {t.meio === 'transportadora' ? (
+                              {TEM_CNPJ[t.meio] ? (
                                 t.cnpj ? (
                                   cnpjNaTela(t.cnpj)
                                 ) : (
@@ -254,7 +258,7 @@ export function QuemTransporta({
               </div>
 
               <div className="tp-dados">
-                {escolhido.meio === 'transportadora' ? (
+                {TEM_CNPJ[escolhido.meio] ? (
                   <div className="tp-dado">
                     <span>CNPJ</span>
                     {escolhido.cnpj ? <b>{cnpjNaTela(escolhido.cnpj)}</b> : <b className="tp-falta">falta o CNPJ</b>}
@@ -276,7 +280,7 @@ export function QuemTransporta({
                 ) : null}
               </div>
 
-              {escolhido.meio === 'transportadora' ? (
+              {TEM_CNPJ[escolhido.meio] ? (
                 <p className="tp-ajuda">
                   {escolhido.cnpj
                     ? 'O Verificador de Boleto reconhece este CNPJ quando o boleto da transportadora chegar.'
@@ -391,7 +395,7 @@ function FormularioDeTransportador({
     setObservacao(atual?.observacao ?? '')
   }, [inicio, atual])
 
-  const cnpjRuim = meio === 'transportadora' && cnpj.trim() !== '' && !cnpjValido(cnpj)
+  const cnpjRuim = TEM_CNPJ[meio] && cnpj.trim() !== '' && !cnpjValido(cnpj)
   const valido = nome.trim() !== '' && !cnpjRuim
 
   async function gravar() {
@@ -402,7 +406,7 @@ function FormularioDeTransportador({
         id: inicio?.id,
         nome,
         meio,
-        cnpj: meio === 'transportadora' ? cnpj : '',
+        cnpj: TEM_CNPJ[meio] ? cnpj : '',
         contato,
         ondeAtende,
         prazo,
@@ -432,29 +436,41 @@ function FormularioDeTransportador({
       }
     >
       <div className="pilha solta">
-        <Campo rotulo="O que é">
-          <Segmentado
-            className="tp-seg-cheio"
+        <Campo rotulo="Tipo de envio">
+          <Seletor
+            campo
+            bloco
             valor={meio}
-            aoMudar={setMeio}
             opcoes={MEIOS.map((m) => ({ valor: m, rotulo: NOME_DO_MEIO[m] }))}
+            aoEscolher={(v) => setMeio((v || 'motoboy') as Meio)}
+            vazio="Escolha o tipo"
           />
         </Campo>
         <Campo rotulo={meio === 'motoboy' ? 'Nome do motoboy' : 'Nome'}>
           <Entrada
             value={nome}
             onChange={(e) => setNome(e.currentTarget.value)}
-            placeholder={meio === 'transportadora' ? 'Jadlog' : meio === 'motoboy' ? 'Como a fábrica o chama' : 'Uber'}
+            placeholder={
+              meio === 'transportadora'
+                ? 'Jadlog'
+                : meio === 'aereo'
+                  ? 'Latam'
+                  : meio === 'onibus'
+                    ? 'Nome da viação'
+                    : meio === 'motoboy'
+                      ? 'Como a fábrica o chama'
+                      : NOME_DO_MEIO[meio]
+            }
           />
         </Campo>
-        {meio === 'transportadora' ? (
+        {TEM_CNPJ[meio] ? (
           <Campo
             rotulo="CNPJ"
             erro={cnpjRuim}
             dica={
               cnpjRuim
                 ? 'Este CNPJ não fecha a conta dos dígitos.'
-                : 'É por ele que o Verificador de Boleto reconhece a transportadora. Marcar como confiável continua sendo do administrador.'
+                : 'É por ele que o Verificador de Boleto reconhece a empresa. Marcar como confiável continua sendo do administrador.'
             }
           >
             <Entrada
@@ -481,7 +497,7 @@ function FormularioDeTransportador({
             />
           </Campo>
         </div>
-        {meio === 'transportadora' || meio === 'motoboy' ? (
+        {TEM_CNPJ[meio] || meio === 'motoboy' ? (
           <Campo rotulo="Prazo de costume">
             <Entrada
               value={prazo}

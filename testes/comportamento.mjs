@@ -26,7 +26,7 @@ const EXCECOES = {
   'src/modules/config/tags.tsx': 'os postos de uma tag: opção do cadastro da tag',
   'src/modules/config/equipe.tsx': 'as páginas de uma pessoa: opção do cadastro da pessoa',
   'src/modules/config/acessos.tsx': 'a matriz de acessos: cada caixa é uma permissão',
-  'src/modules/transporte/folha.tsx': 'uma caixa só (pago)',
+  'src/modules/transporte/folha.tsx': 'caixas soltas de um formulário (pago do envio e da coleta), não é lista',
   'src/modules/fornecedores/formulario.tsx': 'uma caixa só (já marcar como confiável)',
   'src/modules/ferramentas/boleto.tsx': 'uma caixa só (confirmei)',
   'src/modules/estoque/ficha-tecnica.tsx': 'opções do cadastro da ficha',

@@ -162,7 +162,7 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
         if (oque !== 'clique' && oque !== 'inicio') {
           if (diarioEspera.current) clearTimeout(diarioEspera.current)
           diarioEspera.current = setTimeout(() => {
-            const ultimos = lista.slice(-150)
+            const ultimos = lista.slice(-60)
             void registrarErroDaExtensao({
               versao: 'diario-' + (versaoDaExtensao() || ''),
               onde: 'diario',

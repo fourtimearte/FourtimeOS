@@ -82,6 +82,162 @@
   color: var(--text-3);
 }
 
+.ficha-frete .ficha-frete-costume {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+/* --- os outros cadastros (082) ------------------------------------------- */
+.cl-extras {
+  display: grid;
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
+}
+.cl-extra-bloco {
+  display: grid;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.cl-extra-bloco > header b {
+  font-size: 13px;
+  font-weight: 700;
+}
+.cl-extra-bloco > header small {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.cl-extra-vazio {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.cl-extra {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--pad-cartao);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.cl-extra-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-btn);
+}
+.cl-extra-cab b {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.cl-extras-lidos {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+/* --- juntar com outro cliente (082) -------------------------------------- */
+.cl-juntar {
+  display: grid;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+  padding: var(--pad-cartao);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.cl-juntar-cab {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  color: var(--icon-accent);
+}
+.cl-juntar-cab b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.cl-juntar-texto {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.cl-juntar-texto b {
+  color: var(--text);
+}
+.cl-juntar-lista {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.cl-juntar-item {
+  display: grid;
+  gap: var(--re-1);
+  min-height: var(--row-h);
+  padding: var(--pad-linha);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cl-juntar-item:last-child {
+  border-bottom: 0;
+}
+.cl-juntar-item:hover {
+  background-color: var(--surface-2);
+}
+.cl-juntar-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.cl-juntar-item b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.cl-juntar-item small {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.cl-juntar-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+.cl-juntar-lado {
+  display: grid;
+  gap: var(--re-1);
+  min-width: 0;
+  padding: var(--pad-cartao);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.cl-juntar-lado.fica {
+  box-shadow: inset 0 0 0 1.5px var(--ring);
+}
+.cl-juntar-lado small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.cl-juntar-lado b {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.cl-juntar-lado span {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
 /* --- historico ----------------------------------------------------------- */
 .ficha-resumo {
   display: grid;

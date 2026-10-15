@@ -270,6 +270,14 @@ export type Cotacao = {
     email: string
     cidade: string
     uf: string
+    /** o endereço de entrega desta cotação, numa linha (082). Opcional:
+        a cotação de antes não tem, e nada muda para ela */
+    endereco?: string
+    /** de qual cadastro da ficha veio cada um (082): 'principal' ou o id
+        do outro cadastro. Vazio quando foi escrito à mão */
+    documentoDe?: string
+    contatoDe?: string
+    enderecoDe?: string
   }
   produtos: ProdutoCotado[]
   ajustes: Ajuste[]

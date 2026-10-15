@@ -343,7 +343,17 @@ export function bancoDoOrcamento({ papel = 'admin', ensaio = true, abertas = 6, 
     if (u.includes('/rest/v1/meu_perfil')) return { status: 200, corpo: perfilBase(papel) }
     if (u.includes('/rest/v1/regulagem')) return { status: 200, corpo: [{ valor: ensaio ? 'teste' : 'real' }] }
     if (u.includes('/rest/v1/cotacao_na_lista')) return { status: 200, corpo: lista.filter((l) => corpos.has(l.id)) }
-    if (u.includes('/rest/v1/cliente_na_lista')) return { status: 200, corpo: clientes }
+    if (u.includes('/rest/v1/cliente_na_lista')) {
+      const so = (u.match(/id=eq\.([^&]+)/) || [])[1]
+      return { status: 200, corpo: so ? clientes.filter((c) => c.id === so) : clientes }
+    }
+    /* os outros cadastros e o frete de costume do Clube Novo (082) */
+    if (u.includes('/rest/v1/extras_do_cliente')) return { status: 200, corpo: u.includes('k2') ? [{ cliente_id: 'k2',
+      documentos: [{ id: 'D9', tipo: 'J', documento: '11222333000181', nome: 'Clube Novo Filial Ltda' }],
+      enderecos: [{ id: 'E9', apelido: 'Quadra do clube', endereco: 'Rua da Quadra, 9', complemento: '', bairro: 'Jundiaí', cidade: 'Anápolis', uf: 'GO', cep: '75110000' }],
+      contatos: [{ id: 'K9', nome: 'Bia', cargo: 'Compras', celular: '62977776666', telefone: '', email: 'bia@exemplo.com' }],
+    }] : [] }
+    if (u.includes('/rest/v1/frete_do_cliente')) return { status: 200, corpo: u.includes('k2') ? [{ modo: 'TRANSPORTADORA', vezes: 2, pedidos: 3, ultimo_envio: '', ultimo_transportador: 'Jadlog' }] : [] }
     const id = (u.match(/cotacao\?.*id=eq\.([^&]+)/) || [])[1]
     if (u.includes('/rest/v1/cotacao?') && id) {
       if (metodo === 'GET') {

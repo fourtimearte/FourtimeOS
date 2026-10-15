@@ -1,5 +1,5 @@
 import { carregarListasDoCabecalho } from '@dominio/banco'
-import type { Cliente } from '@dominio/cliente'
+import { enderecoEmLinha, type Cliente } from '@dominio/cliente'
 import { carregarTabelasDePreco, type TabelaDePreco } from '@dominio/preco'
 import { informesParaCotacaoNova } from './informes-da-casa'
 import { cotacaoEmBranco, mascaraDeDocumento, type Cotacao } from './tipos'
@@ -61,5 +61,10 @@ export function clienteDaCotacao(x: Cliente): Partial<Cotacao['cliente']> {
     email: x.email,
     cidade: x.cidade,
     uf: x.uf,
+    /* o principal da ficha; a cotação troca por outro cadastro (082) */
+    endereco: enderecoEmLinha(x),
+    documentoDe: x.documento ? 'principal' : '',
+    contatoDe: x.contato || x.celular || x.telefone || x.email ? 'principal' : '',
+    enderecoDe: x.endereco || x.cidade || x.cep ? 'principal' : '',
   }
 }

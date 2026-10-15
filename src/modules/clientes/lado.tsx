@@ -4,6 +4,7 @@ import {
   CalendarBlank,
   ChartBar,
   ChatCircleText,
+  ClockCounterClockwise,
   Envelope,
   FileText,
   IdentificationCard,
@@ -35,7 +36,15 @@ import {
   type Pedido,
   type Segmento,
   type Situacao,
+  EXTRAS_VAZIOS,
+  carregarExtras,
+  carregarFreteDoCliente,
+  enderecoEmLinha,
+  frasesDoFrete,
+  type ExtrasDoCliente,
+  type FreteDoCliente,
 } from '@dominio/cliente'
+import { ExtrasNaLeitura } from './extras'
 import { carregarCotacoes, type CotacaoNaLista } from '@dominio/cotacao'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
 import { usarTransportadoras } from './transportadoras'
@@ -79,6 +88,19 @@ export function FichaAoLado({
   const [antigo, setAntigo] = useState<AntesDoSistema>({ pedidos: 0, total: 0, ultimo: '' })
   const [cotacoes, setCotacoes] = useState<CotacaoNaLista[]>([])
   const [buscando, setBuscando] = useState(true)
+  /* os outros cadastros e o frete de costume (082) */
+  const [extras, setExtras] = useState<ExtrasDoCliente>(EXTRAS_VAZIOS)
+  const [freteDeCostume, setFreteDeCostume] = useState<FreteDoCliente | null>(null)
+  useEffect(() => {
+    let vivo = true
+    setExtras(EXTRAS_VAZIOS)
+    setFreteDeCostume(null)
+    void carregarExtras(c.id).then((x) => vivo && setExtras(x))
+    void carregarFreteDoCliente(c.id).then((f) => vivo && setFreteDeCostume(f))
+    return () => {
+      vivo = false
+    }
+  }, [c.id])
 
   useEffect(() => {
     let vivo = true
@@ -254,6 +276,39 @@ export function FichaAoLado({
             ) : (
               <p className="cl-falta">Sem contato: não dá para avisar nem cobrar. Complete em Editar.</p>
             )}
+            {extras.contatos.map((k, i) => {
+              const comEle = { ...c, contato: k.nome, celular: k.celular, telefone: k.telefone }
+              const zapDele = numeroDeWhatsApp(comEle)
+              return (
+                <div key={k.id ?? i} className="cl-pessoa">
+                  <span className="cl-av" aria-hidden="true">
+                    {(k.nome || '?').trim().slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="pilha cl-pessoa-t">
+                    <b>{[k.nome || 'Sem nome', k.cargo].filter(Boolean).join(' · ')}</b>
+                    <small>{[formatarTelefone(k.celular || k.telefone), k.email].filter(Boolean).join(' · ')}</small>
+                  </div>
+                  <div className="fileira colada">
+                    {zapDele ? (
+                      <Botao
+                        tom="contorno"
+                        tamanho="sm"
+                        icone
+                        aria-label={'Abrir ' + (k.nome || 'o contato') + ' no WhatsApp'}
+                        onClick={() => abrirClienteNoWhatsApp(comEle, 'Olá, ' + (k.nome || 'tudo bem') + '! Aqui é da Fourtime.')}
+                      >
+                        <ChatCircleText size={16} />
+                      </Botao>
+                    ) : null}
+                    {k.email ? (
+                      <a className="btn btn-contorno sm icone" href={'mailto:' + k.email} aria-label={'Mandar e-mail para ' + (k.nome || 'o contato')}>
+                        <Envelope size={16} />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <div className="cl-lado-bloco">
@@ -303,6 +358,12 @@ export function FichaAoLado({
                   .join(' · ') || 'Sem endereço'}
               </span>
             </div>
+            {extras.enderecos.map((e, i) => (
+              <div key={e.id ?? i} className="cl-linha">
+                <MapPin size={16} />
+                <span>{(e.apelido ? e.apelido + ': ' : '') + enderecoEmLinha(e)}</span>
+              </div>
+            ))}
             <div className="cl-linha">
               <Truck size={16} />
               <span>{frete ? frete.transportadora.nome + ', ' + frete.transportadora.prazo : 'Sem CEP e sem cidade'}</span>
@@ -312,6 +373,12 @@ export function FichaAoLado({
                 </button>
               ) : null}
             </div>
+            {frasesDoFrete(freteDeCostume).map((f) => (
+              <div key={f} className="cl-linha">
+                <ClockCounterClockwise size={16} />
+                <span>{f}</span>
+              </div>
+            ))}
           </div>
         </>
       ) : aba === 'cadastro' ? (
@@ -331,6 +398,7 @@ export function FichaAoLado({
             <Dado rotulo="Vendedor" valor={c.vendedor} />
             <Dado rotulo="Cliente desde" valor={formatarData(c.criadoEm)} />
           </dl>
+          <ExtrasNaLeitura x={extras} />
           <Botao tom="contorno" className="cl-alinha" onClick={aoEditar}>
             <IdentificationCard size={16} />
             Editar o cadastro

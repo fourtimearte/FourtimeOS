@@ -42,6 +42,15 @@ const PEDIDOS = [
 const COTACOES = [{ id: 'Q1', numero: 'CO2026-0131', cliente_id: 'C1', cliente_nome: 'Colégio Exemplo', cliente_cidade: 'Goiânia', cliente_uf: 'GO', lead_id: null, estado: 'enviada',
   vendedor_nome: 'Dani', total: 5940, pecas: 180, valida_ate: null, criada_em: dias(3), atualizado_em: dias(3), pedido_numero: null, teste: true }]
 
+/* os outros cadastros e o frete de costume (082) */
+const EXTRAS_C1 = {
+  documentos: [{ id: 'D1', tipo: 'J', documento: '55666777000188', nome: 'Colégio Exemplo Filial Ltda' }],
+  enderecos: [{ id: 'E1', apelido: 'Quadra do colégio', endereco: 'Rua da Quadra, 5', complemento: '', bairro: 'Setor Oeste', cidade: 'Goiânia', uf: 'GO', cep: '74100000' }],
+  contatos: [{ id: 'K1', nome: 'Carlos Financeiro', cargo: 'Financeiro', celular: '62977770003', telefone: '', email: 'fin@exemplo.com.br' }],
+}
+const FRETE_C1 = { modo: 'TRANSPORTADORA', vezes: 4, pedidos: 6, ultimo_envio: '', ultimo_transportador: 'Jadlog' }
+const chamadas = []
+
 const nav = await chromium.launch()
 const achados = []
 const gravados = []
@@ -53,7 +62,10 @@ async function abrir({ tema, larg, alt }) {
   await ctx.route('**supabase.co/**', async (r) => {
     const u = r.request().url()
     let corpo = []
-    if (r.request().method() === 'PATCH' && u.includes('/cliente?')) { gravados.push(JSON.parse(r.request().postData() ?? '{}')); corpo = [] }
+    if (u.includes('/rpc/')) { chamadas.push({ f: u.split('/rpc/')[1].split('?')[0], corpo: JSON.parse(r.request().postData() ?? '{}') }); corpo = null }
+    else if (u.includes('extras_do_cliente')) corpo = u.includes('C1') ? [{ cliente_id: 'C1', ...EXTRAS_C1 }] : []
+    else if (u.includes('frete_do_cliente')) corpo = u.includes('C1') ? [FRETE_C1] : []
+    else if (r.request().method() === 'PATCH' && u.includes('/cliente?')) { gravados.push(JSON.parse(r.request().postData() ?? '{}')); corpo = [] }
     else if (r.request().method() === 'POST' && /\/rest\/v1\/cliente(\?|$)/.test(u)) { importados.push(...JSON.parse(r.request().postData() ?? '[]')); corpo = [] }
     else if (u.includes('/equipe?')) corpo = [{ id: '00000000-0000-4000-8000-0000000000a1', nome: 'Dani Ribeiro' }, { id: '00000000-0000-4000-8000-0000000000a2', nome: 'Rafa Lima' }]
     else if (u.includes('meu_perfil')) corpo = PERFIL
@@ -103,6 +115,8 @@ for (const tema of ['light', 'dark']) {
       conta(!ficha.modal && /Colégio Exemplo/.test(ficha.t) && /Colégio Exemplo/.test(ficha.ligada), `${T} clicar numa linha abre a ficha AO LADO, sem modal, e marca a linha`)
       conta(/Quando ele compra/i.test(ficha.t) && /ago/.test(ficha.t) && /PD004120/.test(ficha.t) && /CO2026-0131/.test(ficha.t), `${T} o resumo traz quando ele compra, os últimos pedidos e a cotação aberta`)
       conta(/Ana Paula/.test(ficha.t) && /Motoboy Fourtime/.test(ficha.t) && !/Uber/.test(ficha.t), `${T} o resumo traz quem fala com a gente e a entrega, pelo cadastro de Transporte (o motoboy de Goiânia, e não o Uber)`)
+      conta(/Carlos Financeiro · Financeiro/.test(ficha.t) && /Quadra do colégio: Rua da Quadra, 5/.test(ficha.t) && /Transportadora em 4 de 6 pedidos/.test(ficha.t) && /levou: Jadlog/.test(ficha.t),
+        `${T} 082: o resumo traz o outro contato, o outro endereço e o frete de costume`)
       await pg.screenshot({ path: `${PASTA}/clientes-ficha-${tema}-${nome}.png` })
       if (tema === 'light' && nome === 'grande') {
         await pg.evaluate(() => [...document.querySelectorAll('.cl-lado-abas button')].find((b) => /Pedidos/.test(b.innerText)).click())
@@ -125,6 +139,63 @@ for (const tema of ['light', 'dark']) {
         conta(gravados.length === 1 && gravados[0].vendedor_id === '00000000-0000-4000-8000-0000000000a2' && gravados[0].vendedor === 'Rafa Lima', 'trocar a carteira grava a pessoa e o nome (' + JSON.stringify(gravados.map((g) => [g.vendedor_id, g.vendedor])) + ')')
         await pg.keyboard.press('Escape')
         await pg.waitForTimeout(300)
+
+        /* 082: os outros cadastros no formulário, gravados depois da ficha */
+        await pg.evaluate(() => [...document.querySelectorAll('.cl-tab tbody tr')].find((t) => t.innerText.includes('Colégio Exemplo')).click())
+        await pg.waitForTimeout(500)
+        await pg.locator('.cl-lado button', { hasText: 'Editar' }).first().click()
+        await pg.waitForTimeout(500)
+        const blocos = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .cl-extra-bloco')].map((b) => b.innerText.replace(/\s+/g, ' ')))
+        conta(blocos.length === 3 && /55666777000188/.test(await pg.locator('dialog[open] .cl-extra-bloco').first().locator('input').first().inputValue().catch(() => '') + blocos[0] + (await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .cl-extra-bloco input')].map((i) => i.value).join(' ')))),
+          '082: Editar mostra os três blocos, com o outro CNPJ já preenchido')
+        await pg.screenshot({ path: `${PASTA}/clientes-extras-editando.png`, fullPage: false })
+        await pg.locator('dialog[open] button', { hasText: 'Outro contato' }).click()
+        await pg.waitForTimeout(200)
+        const novoNome = pg.locator('dialog[open] .cl-extra-bloco').nth(2).locator('.cl-extra').nth(1).locator('input').first()
+        await novoNome.fill('Bia Compras')
+        await pg.locator('dialog[open] .cl-extra-bloco').nth(1).scrollIntoViewIfNeeded()
+        await pg.screenshot({ path: `${PASTA}/clientes-extras-blocos.png` })
+        await pg.locator('dialog[open] .cl-extra-bloco').nth(1).locator('button', { hasText: 'Tornar principal' }).click()
+        await pg.waitForTimeout(200)
+        const endPrincipal = await pg.evaluate(() => [...document.querySelectorAll('dialog[open] .ficha-form .campo')].find((c) => /^Endereço/.test(c.innerText.trim()))?.querySelector('input')?.value ?? '')
+        conta(endPrincipal === 'Rua da Quadra, 5', '082: Tornar principal troca o endereço de lugar com o da ficha (' + endPrincipal + ')')
+        const antes = gravados.length
+        await pg.locator('dialog[open] button', { hasText: 'Salvar' }).first().click()
+        await pg.waitForTimeout(800)
+        const ext = chamadas.find((c) => c.f === 'salvar_extras_do_cliente')
+        conta(gravados.length === antes + 1 && gravados.at(-1).endereco === 'Rua da Quadra, 5', '082: a ficha grava com o endereço novo como principal')
+        conta(!!ext && ext.corpo.p_cliente === 'C1' && ext.corpo.p_contatos.length === 2 && ext.corpo.p_contatos[1].nome === 'Bia Compras'
+          && ext.corpo.p_enderecos.length === 1 && ext.corpo.p_enderecos[0].endereco === 'Rua Exemplo, 100' && ext.corpo.p_enderecos[0].apelido === 'Endereço anterior'
+          && ext.corpo.p_documentos[0].documento === '55666777000188',
+          '082: os extras gravam as três listas, e o endereço antigo desce para a lista (' + JSON.stringify(ext?.corpo.p_enderecos?.map((e) => e.endereco)) + ')')
+        await pg.keyboard.press('Escape')
+        await pg.waitForTimeout(300)
+
+        /* 082: juntar com outro cliente */
+        await pg.evaluate(() => [...document.querySelectorAll('.cl-tab tbody tr')].find((t) => t.innerText.includes('Colégio Exemplo')).click())
+        await pg.waitForTimeout(400)
+        await pg.locator('.cl-lado button', { hasText: 'Editar' }).first().click()
+        await pg.waitForTimeout(400)
+        await pg.locator('dialog[open] button', { hasText: 'Cancelar' }).click()
+        await pg.waitForTimeout(200)
+        await pg.locator('dialog[open] button', { hasText: 'Juntar com outro cliente' }).click()
+        await pg.waitForTimeout(200)
+        await pg.fill('dialog[open] .cl-juntar input', 'atletico')
+        await pg.waitForTimeout(200)
+        await pg.locator('dialog[open] .cl-juntar-item', { hasText: 'Atlético Exemplo' }).click()
+        await pg.waitForTimeout(200)
+        const par = await pg.evaluate(() => document.querySelector('dialog[open] .cl-juntar')?.innerText.replace(/\s+/g, ' ') ?? '')
+        conta(/Fica Colégio Exemplo/.test(par) && /Entra e some Atlético Exemplo/.test(par) && !chamadas.some((c) => c.f === 'juntar_clientes'),
+          '082: juntar mostra quem fica e quem sai, e ainda não juntou')
+        await pg.screenshot({ path: `${PASTA}/clientes-juntar.png` })
+        await pg.locator('dialog[open] .cl-juntar button', { hasText: 'Trocar quem fica' }).click()
+        await pg.locator('dialog[open] .cl-juntar button', { hasText: 'Trocar quem fica' }).click()
+        await pg.locator('dialog[open] .cl-juntar button', { hasText: 'Juntar as duas' }).click()
+        await pg.waitForTimeout(600)
+        const junta = chamadas.find((c) => c.f === 'juntar_clientes')
+        conta(!!junta && junta.corpo.p_fica === 'C1' && junta.corpo.p_sai === 'C3' && !(await pg.evaluate(() => !!document.querySelector('dialog[open]'))),
+          '082: Juntar as duas chama o banco com quem fica e quem sai, e a ficha fecha (' + JSON.stringify(junta?.corpo) + ')')
+
         /* importar do Bling (12/10/2026): os montes antes de gravar */
         await pg.locator('.pagina-topo button', { hasText: 'Importar do Bling' }).click()
         await pg.waitForTimeout(300)

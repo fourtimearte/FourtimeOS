@@ -644,6 +644,11 @@ export function TelaClientes() {
         base={todos}
         comecarEditando={editarNaFicha}
         aoFechar={() => setNaFicha(null)}
+        aoJuntar={(ficou) => {
+          setNaFicha(null)
+          setEscolhidoId(ficou)
+          void recarregar()
+        }}
         aoSalvar={(c) => {
           /* A lista volta do banco, e não do que a ficha devolveu: gravar um
              cliente pode mexer em mais coisa do que o campo que a pessoa

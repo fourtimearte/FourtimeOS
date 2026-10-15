@@ -12,3 +12,4 @@ export {
 } from './repositorio'
 export * from './importar'
 export { CLIENTES_DE_EXEMPLO } from './exemplo'
+export * from './extras'

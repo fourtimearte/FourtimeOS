@@ -4,7 +4,21 @@ import { Factory, Handshake, MagnifyingGlass, Plus, UserCircle, X } from '@phosp
 import { Botao, Busca, Campo, CampoDeData, Entrada, Flutuante, Seletor, TituloCartao, semAcento } from '@ds'
 import { comOValorAtual, opcoesDeDepartamento, usarListasDoCabecalho } from '@dominio/banco'
 import { pode, useSessao } from '@dominio/sessao'
-import { carregarClientes, type Cliente } from '@dominio/cliente'
+import {
+  EXTRAS_VAZIOS,
+  acharCliente,
+  carregarClientes,
+  carregarExtras,
+  carregarFreteDoCliente,
+  contatosDoCliente,
+  documentosDoCliente,
+  enderecoEmLinha,
+  enderecosDoCliente,
+  frasesDoFrete,
+  type Cliente,
+  type ExtrasDoCliente,
+  type FreteDoCliente,
+} from '@dominio/cliente'
 import {
   COR_DA_MARCA,
   MARCAS,
@@ -54,13 +68,54 @@ export function dadosCompletos(c: Cotacao): boolean {
   return !!(c.cliente.nome.trim() && c.vendedor && c.validaAte && c.informe.prazo.trim() && c.informe.pagamento)
 }
 
+/* O CADASTRO DA FICHA (082): os outros CPF/CNPJ, contatos e endereços do
+   cliente ligado a esta cotação, e o frete de costume dos últimos pedidos.
+   Sem cliente ligado, ou antes da 082, tudo vem vazio e o cartão é o de
+   sempre. */
+function usarCadastroDoCliente(id: string) {
+  const [lido, setLido] = useState<{ id: string; cliente: Cliente | null; extras: ExtrasDoCliente; frete: FreteDoCliente | null }>({
+    id: '',
+    cliente: null,
+    extras: EXTRAS_VAZIOS,
+    frete: null,
+  })
+  useEffect(() => {
+    if (!id) return
+    let vivo = true
+    void Promise.all([acharCliente(id).catch(() => null), carregarExtras(id), carregarFreteDoCliente(id)]).then(
+      ([cliente, extras, frete]) => vivo && setLido({ id, cliente, extras, frete }),
+    )
+    return () => {
+      vivo = false
+    }
+  }, [id])
+  return lido.id === id ? lido : { id, cliente: null, extras: EXTRAS_VAZIOS, frete: null }
+}
+
 export function QuemCompra({ c, mudar, travado }: Props) {
   const cli = (parte: Partial<Cotacao['cliente']>) => mudar({ cliente: { ...c.cliente, ...parte } })
+  const cad = usarCadastroDoCliente(c.cliente.id)
+  const docs = cad.cliente ? documentosDoCliente(cad.cliente, cad.extras) : []
+  const contatos = cad.cliente ? contatosDoCliente(cad.cliente, cad.extras) : []
+  const enderecos = cad.cliente ? enderecosDoCliente(cad.cliente, cad.extras) : []
+  const escolhe = !travado && (docs.length > 1 || contatos.length > 1 || enderecos.length > 1)
+  const costume = frasesDoFrete(cad.frete)
+
+  /* ESCOLHER UM CLIENTE da base: o principal da ficha entra, e a Entrega
+     vazia ganha o modo que os últimos pedidos dele mais usaram */
+  const escolherCliente = (x: Cliente) => {
+    mudar({ cliente: { ...c.cliente, ...clienteDaCotacao(x) } })
+    if (c.informe.entrega) return
+    void carregarFreteDoCliente(x.id).then((f) => {
+      if (f?.modo) mudar({ informe: { ...c.informe, entrega: f.modo } })
+    })
+  }
+
   return (
     <section className="cartao ct-mc">
       <header className="ct-mc-cab">
         <TituloCartao icone={UserCircle}>Quem compra</TituloCartao>
-        {!travado ? <BuscarEmClientes aoEscolher={(x) => cli(clienteDaCotacao(x))} /> : null}
+        {!travado ? <BuscarEmClientes aoEscolher={escolherCliente} /> : null}
       </header>
       <div className="ct-mc-corpo ct-mc-2">
         <Campo rotulo="Cliente" className="ct-mc-toda">
@@ -71,6 +126,65 @@ export function QuemCompra({ c, mudar, travado }: Props) {
             onChange={(e) => cli({ nome: e.target.value })}
           />
         </Campo>
+        {escolhe ? (
+          <div className="ct-mc-toda ct-do-cadastro" aria-label="Escolher do cadastro do cliente">
+            <small>Esta ficha tem mais de um cadastro. Escolha qual vale nesta cotação:</small>
+            <div className="ct-do-cadastro-grade">
+              {docs.length > 1 ? (
+                <Campo rotulo="Qual CPF/CNPJ">
+                  <Seletor
+                    bloco
+                    campo
+                    valor={c.cliente.documentoDe ?? ''}
+                    opcoes={docs.map((d) => ({ valor: d.valor, rotulo: d.rotulo + ' · ' + mascaraDeDocumento(d.dado.documento) }))}
+                    vazio="Escrito à mão"
+                    aoEscolher={(v) => {
+                      const d = docs.find((x) => x.valor === v)
+                      if (!d) return
+                      cli({
+                        documento: mascaraDeDocumento(d.dado.documento),
+                        documentoDe: v,
+                        ...(v !== 'principal' && d.dado.nome ? { nome: d.dado.nome } : v === 'principal' && cad.cliente ? { nome: cad.cliente.nome } : {}),
+                      })
+                    }}
+                  />
+                </Campo>
+              ) : null}
+              {contatos.length > 1 ? (
+                <Campo rotulo="Qual contato">
+                  <Seletor
+                    bloco
+                    campo
+                    valor={c.cliente.contatoDe ?? ''}
+                    opcoes={contatos.map((k) => ({ valor: k.valor, rotulo: k.rotulo }))}
+                    vazio="Escrito à mão"
+                    aoEscolher={(v) => {
+                      const k = contatos.find((x) => x.valor === v)
+                      if (!k) return
+                      cli({ contato: k.dado.nome, telefone: k.dado.celular || k.dado.telefone, email: k.dado.email, contatoDe: v })
+                    }}
+                  />
+                </Campo>
+              ) : null}
+              {enderecos.length > 1 ? (
+                <Campo rotulo="Qual endereço de entrega">
+                  <Seletor
+                    bloco
+                    campo
+                    valor={c.cliente.enderecoDe ?? ''}
+                    opcoes={enderecos.map((e) => ({ valor: e.valor, rotulo: e.rotulo }))}
+                    vazio="Escrito à mão"
+                    aoEscolher={(v) => {
+                      const e = enderecos.find((x) => x.valor === v)
+                      if (!e) return
+                      cli({ endereco: enderecoEmLinha(e.dado), cidade: e.dado.cidade || c.cliente.cidade, uf: e.dado.uf || c.cliente.uf, enderecoDe: v })
+                    }}
+                  />
+                </Campo>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         <Campo rotulo="CPF / CNPJ">
           <Entrada
             value={c.cliente.documento}
@@ -102,6 +216,18 @@ export function QuemCompra({ c, mudar, travado }: Props) {
             disabled={travado}
             maxLength={2}
             onChange={(e) => cli({ uf: e.target.value.toUpperCase() })}
+          />
+        </Campo>
+        <Campo
+          rotulo="Endereço de entrega"
+          className="ct-mc-toda"
+          dica={costume.length ? 'De costume: ' + costume.join('. ') : undefined}
+        >
+          <Entrada
+            value={c.cliente.endereco ?? ''}
+            disabled={travado}
+            placeholder="Rua, número, bairro, cidade e CEP"
+            onChange={(e) => cli({ endereco: e.target.value, enderecoDe: '' })}
           />
         </Campo>
       </div>

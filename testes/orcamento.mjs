@@ -382,6 +382,51 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (vendedor sem controle total): ' + erros.join(' | '))
 })
 
+/* 2f2. o cliente de muitos cadastros (082): a cotação escolhe o documento,
+   o contato e o endereço de entrega da ficha, e diz o frete de costume */
+await secao(async () => {
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920 })
+  await ir(pg)
+  await pg.locator('.ct-porta', { hasText: 'Dados do pedido' }).click()
+  await pausa(pg, 400)
+  await naGaveta(pg).getByRole('button', { name: 'Buscar em Clientes' }).click()
+  await pausa(pg, 400)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Clube Novo Exemplo' }).click()
+  await pausa(pg, 700)
+  const bloco = await texto(pg, '.ct-do-cadastro')
+  conta(/Qual CPF\/CNPJ/.test(bloco) && /Qual contato/.test(bloco) && /Qual endereço de entrega/.test(bloco), '082: a ficha com mais de um cadastro mostra as três escolhas: ' + bloco.replace(/\s+/g, ' ').slice(0, 120))
+  const quemCompra = naGaveta(pg).locator('.ct-mc').first()
+  const dica = await quemCompra.locator('.campo', { hasText: /^Endereço de entrega/ }).innerText()
+  conta(/De costume: Transportadora em 2 de 3 pedidos/.test(dica) && /Jadlog/.test(dica), '082: o endereço de entrega diz o frete de costume: ' + dica.replace(/\s+/g, ' '))
+  await foto(pg, '1920-quem-compra-cadastros', false)
+  await quemCompra.locator('.campo', { hasText: 'Qual contato' }).locator('button.cb').click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Bia' }).click()
+  await pausa(pg, 200)
+  await quemCompra.locator('.campo', { hasText: 'Qual endereço de entrega' }).locator('button.cb').click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Quadra do clube' }).click()
+  await pausa(pg, 200)
+  await quemCompra.locator('.campo', { hasText: 'Qual CPF/CNPJ' }).locator('button.cb').click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Clube Novo Filial' }).click()
+  await pausa(pg, 200)
+  const contato = await quemCompra.locator('.campo', { hasText: /^Contato/ }).locator('input').inputValue()
+  const endereco = await quemCompra.locator('.campo', { hasText: /^Endereço de entrega/ }).locator('input').inputValue()
+  const nome = await quemCompra.locator('.campo', { hasText: /^Cliente/ }).locator('input').inputValue()
+  conta(contato === 'Bia' && /Rua da Quadra, 9, Jundiaí, Anápolis\/GO, CEP 75110-000/.test(endereco) && nome === 'Clube Novo Filial Ltda',
+    '082: escolher troca o contato, o endereço de entrega e o nome do outro CNPJ (' + [contato, endereco, nome].join(' / ') + ')')
+  await naGaveta(pg).getByRole('button', { name: 'Concluir' }).click()
+  await pausa(pg)
+  await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
+  await pausa(pg, 700)
+  const g = banco.gravados.filter((x) => x.metodo === 'PATCH' && x.u === 'cotacao').pop()
+  const cli = g?.corpo?.corpo?.cliente ?? {}
+  conta(cli.id === 'k2' && cli.contatoDe === 'K9' && cli.enderecoDe === 'E9' && cli.documentoDe === 'D9' && cli.documento === '11.222.333/0001-81' && /Rua da Quadra/.test(cli.endereco ?? ''),
+    '082: a cotação grava de qual cadastro veio cada um: ' + JSON.stringify([cli.documentoDe, cli.contatoDe, cli.enderecoDe, cli.documento]))
+  conta(!erros.length, 'sem erro de JavaScript (cliente de muitos cadastros): ' + erros.join(' | '))
+})
+
 /* 2g. as tabelas de preço (068, prancha 137): a da cotação no cabeçalho, a de
    cada layout no cartão da grade, e o preço que a tabela escreve */
 await secao(async () => {

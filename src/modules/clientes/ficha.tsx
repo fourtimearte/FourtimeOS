@@ -11,6 +11,7 @@ import {
   Seletor,
   Selo,
   Tabela,
+  useRascunho,
   Vazio,
 } from '@ds'
 import {
@@ -31,7 +32,16 @@ import {
   type Cliente,
   type Pedido,
   type Segmento,
+  EXTRAS_VAZIOS,
+  carregarExtras,
+  carregarFreteDoCliente,
+  frasesDoFrete,
+  salvarExtras,
+  type ExtrasDoCliente,
+  type FreteDoCliente,
 } from '@dominio/cliente'
+import { pode, souAdmin, useSessao } from '@dominio/sessao'
+import { ExtrasNaLeitura, ExtrasNoFormulario, JuntarClientes } from './extras'
 import { NOME_DA_ORIGEM, cepsPorCidade, transportadorasPara } from '@dominio/entrega'
 import { usarTransportadoras } from './transportadoras'
 import { carregarDonosPossiveis, type DonoPossivel } from '@dominio/funil'
@@ -60,6 +70,7 @@ export function FichaDoCliente({
   gravar = salvarCliente,
   titulo,
   comecarEditando = false,
+  aoJuntar,
 }: {
   cliente: Cliente | null
   /* A base inteira, para achar o CEP da cidade. Vem de cima em vez de a ficha
@@ -76,10 +87,21 @@ export function FichaDoCliente({
   titulo?: string
   /* a ficha ao lado (147) abre esta ja no formulario, pelo Editar */
   comecarEditando?: boolean
+  /* JUNTAR (082): quem abriu a ficha recarrega a lista e mostra quem ficou */
+  aoJuntar?: (ficouId: string, saiuId: string) => void
 }) {
   const [rascunho, setRascunho] = useState<Cliente | null>(cliente)
   const [editando, setEditando] = useState(false)
   const [gravando, setGravando] = useState(false)
+  const [juntando, setJuntando] = useState(false)
+  const { estado } = useSessao()
+  const eu = estado.fase === 'dentro' ? estado.pessoa : null
+  const podeJuntar = !!eu && (souAdmin(eu) || pode(eu, 'clientes', 'deletar'))
+
+  /* OS OUTROS CADASTROS (082): o que esta no banco e o que esta na tela */
+  const [extrasDoBanco, setExtrasDoBanco] = useState<ExtrasDoCliente>(EXTRAS_VAZIOS)
+  const [extras, setExtras] = useState<ExtrasDoCliente>(EXTRAS_VAZIOS)
+  const [freteDeCostume, setFreteDeCostume] = useState<FreteDoCliente | null>(null)
 
   /* A CARTEIRA E DE UMA PESSOA (011): o lead deste telefone volta para ela, antes
      do rodizio. O texto antigo (do Bling) aparece enquanto ninguem escolher. */
@@ -98,7 +120,50 @@ export function FichaDoCliente({
     setRascunho(cliente)
     /* cliente sem id e cliente novo: ele ja nasce em modo de edicao */
     setEditando(!!cliente && (!cliente.id || comecarEditando))
+    setJuntando(false)
   }, [cliente, comecarEditando])
+
+  const idDeFora = cliente?.id ?? ''
+  useEffect(() => {
+    setExtrasDoBanco(EXTRAS_VAZIOS)
+    setExtras(EXTRAS_VAZIOS)
+    setFreteDeCostume(null)
+    if (!idDeFora) return
+    let vivo = true
+    void carregarExtras(idDeFora).then((x) => {
+      if (!vivo) return
+      setExtrasDoBanco(x)
+      setExtras(x)
+    })
+    void carregarFreteDoCliente(idDeFora).then((f) => vivo && setFreteDeCostume(f))
+    return () => {
+      vivo = false
+    }
+  }, [idDeFora])
+
+  /* O RASCUNHO NO NAVEGADOR (Kit de Comportamento, item 11): o que foi
+     digitado e nao salvo volta se a pagina recarregar */
+  const naTela = useMemo(() => ({ c: rascunho, x: extras }), [rascunho, extras])
+  const doBanco = useMemo(() => ({ c: cliente, x: extrasDoBanco }), [cliente, extrasDoBanco])
+  const sujo = editando && JSON.stringify(naTela) !== JSON.stringify(doBanco)
+  const guardado = useRascunho<{ c: Cliente | null; x: ExtrasDoCliente }>({
+    chave: 'cliente:' + (cliente?.id || 'novo:' + (cliente?.nome ?? '')),
+    ligado: !!cliente,
+    valor: naTela,
+    sujo,
+    base: doBanco,
+    aoVoltar: (r) => {
+      if (!r.valor.c) return
+      setRascunho(r.valor.c)
+      setExtras(r.valor.x ?? EXTRAS_VAZIOS)
+      setEditando(true)
+    },
+    aoDescartar: () => {
+      setRascunho(cliente)
+      setExtras(extrasDoBanco)
+      setEditando(!!cliente && !cliente.id)
+    },
+  })
 
   const c = rascunho
   const novo = !!c && !c.id
@@ -159,6 +224,19 @@ export function FichaDoCliente({
     setGravando(true)
     try {
       const salvo = await gravar(c)
+      /* os outros cadastros so gravam depois da ficha, porque o cliente
+         novo ainda nao tem id antes dela */
+      if (JSON.stringify(extras) !== JSON.stringify(extrasDoBanco) || novo) {
+        try {
+          await salvarExtras(salvo.id, extras)
+          const lidos = await carregarExtras(salvo.id)
+          setExtrasDoBanco(lidos)
+          setExtras(lidos)
+        } catch (e) {
+          avisar('A ficha foi salva, mas os outros cadastros não: ' + (e instanceof Error ? e.message : 'o banco recusou'), 'warn')
+        }
+      }
+      guardado.limpar()
       aoSalvar(salvo)
       setEditando(false)
       avisar(novo ? 'Cliente cadastrado' : 'Cliente salvo', 'ok')
@@ -231,9 +309,11 @@ export function FichaDoCliente({
             <Botao
               tom="limpo"
               onClick={() => {
+                guardado.limpar()
                 if (novo) aoFechar()
                 else {
                   setRascunho(cliente)
+                  setExtras(extrasDoBanco)
                   setEditando(false)
                 }
               }}
@@ -252,6 +332,11 @@ export function FichaDoCliente({
             >
               WhatsApp
             </Botao>
+            {podeJuntar && aoJuntar && !juntando ? (
+              <Botao tom="limpo" onClick={() => setJuntando(true)}>
+                Juntar com outro cliente
+              </Botao>
+            ) : null}
             <Botao tom="contorno" onClick={() => setEditando(true)}>
               Editar
             </Botao>
@@ -269,7 +354,20 @@ export function FichaDoCliente({
             Cadastro
           </h3>
 
+          {juntando && !editando && aoJuntar ? (
+            <JuntarClientes
+              c={c}
+              base={base}
+              aoVoltar={() => setJuntando(false)}
+              aoJuntar={(ficou, saiu) => {
+                setJuntando(false)
+                aoJuntar(ficou, saiu)
+              }}
+            />
+          ) : null}
+
           {editando ? (
+            <>
             <div className="ficha-form">
               <Campo rotulo="Nome" className="col-2">
                 <Entrada
@@ -385,7 +483,17 @@ export function FichaDoCliente({
                 />
               </Campo>
             </div>
+            <ExtrasNoFormulario
+              c={c}
+              x={extras}
+              aoMudar={(novoC, novoX) => {
+                setRascunho(novoC)
+                setExtras(novoX)
+              }}
+            />
+            </>
           ) : (
+            <>
             <dl className="ficha-dados">
               <Linha rotulo="Nome fantasia" valor={c.fantasia} />
               <Linha rotulo="Tipo" valor={c.tipo === 'J' ? 'Pessoa jurídica' : 'Pessoa física'} />
@@ -404,6 +512,8 @@ export function FichaDoCliente({
               <Linha rotulo="Vendedor" valor={c.vendedor} />
               <Linha rotulo="Cliente desde" valor={formatarData(c.criadoEm)} />
             </dl>
+            <ExtrasNaLeitura x={extras} />
+            </>
           )}
 
           <div className="ficha-frete">
@@ -426,6 +536,12 @@ export function FichaDoCliente({
                     ? 'Confira o Onde atende das transportadoras em Transporte.'
                     : 'Preencha cidade ou CEP para o sistema sugerir quem entrega.'}
             </small>
+            {/* O FRETE DE COSTUME (082): o que os últimos pedidos dizem */}
+            {frasesDoFrete(freteDeCostume).map((f) => (
+              <span key={f} className="ficha-frete-costume">
+                {f}
+              </span>
+            ))}
           </div>
         </section>
 

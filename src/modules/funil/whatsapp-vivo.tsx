@@ -98,6 +98,7 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   const jaGravadas = useRef(new Set<string>())
   const [registro, setRegistro] = useState({ gravadas: 0, parado: false })
   const parado = useRef(false)
+  const diarioEspera = useRef<ReturnType<typeof setTimeout> | null>(null)
   /* o PDF que o WhatsApp quis abrir, no visor desta pagina */
   const [arquivo, setArquivo] = useState<{ url: string; nome: string } | null>(null)
   const fecharArquivo = useCallback(() => {
@@ -154,6 +155,22 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
         const lista = (w.__ftWhatsAppDiario ??= [])
         lista.push({ em: new Date().toISOString().slice(11, 23), ...(d as object) })
         if (lista.length > 400) lista.splice(0, lista.length - 400)
+        /* e grava no banco (a tabela do vigia, com a versao "diario", que o
+           vigia ignora), 8 segundos depois do ultimo movimento que nao e so
+           clique: e o que o Claude le pelo SQL Editor */
+        const oque = String((d as { oque?: string }).oque ?? '')
+        if (oque !== 'clique' && oque !== 'inicio') {
+          if (diarioEspera.current) clearTimeout(diarioEspera.current)
+          diarioEspera.current = setTimeout(() => {
+            const ultimos = lista.slice(-150)
+            void registrarErroDaExtensao({
+              versao: 'diario-' + (versaoDaExtensao() || ''),
+              onde: 'diario',
+              oque: 'arquivo',
+              estrutura: ultimos,
+            })
+          }, 8000)
+        }
       }
       if (d.tipo === 'arquivo') {
         const x = d as unknown as { acao?: string; nome?: string; mime?: string; dados?: ArrayBuffer }

@@ -55,9 +55,28 @@ export type Design = {
       grande. Vai ter preco fixo na tabela de preco; sem ele, ainda nao
       escolhido. So bordado e patch usam. */
   tamanho?: TamanhoDeAplique
+  /** O PATCH (16/10/2026, pedido do Henrique: "patch não será mais P M G,
+      será liso, relevo, 3D, e preciso poder escolher a quantidade"): o
+      tipo e quantos patches vão em cada peça. O preço a somar por patch
+      vai morar na tabela de preço. O tamanho P, M ou G continua só no
+      bordado; num patch antigo ele é ignorado. */
+  tipoDePatch?: TipoDePatch
+  /** quantos patches em cada peça; sem o campo, 1 */
+  quantidade?: number
 }
 
 export type TamanhoDeAplique = 'P' | 'M' | 'G'
+export type TipoDePatch = 'liso' | 'relevo' | '3d'
+export const NOME_DO_TIPO_DE_PATCH: Record<TipoDePatch, string> = { liso: 'Liso', relevo: 'Relevo', '3d': '3D' }
+
+/** O que acompanha o nome da técnica: "M" no bordado, "Relevo ×2" no patch. */
+export function detalheDoAplique(d: Pick<Design, 'tecnica' | 'tamanho' | 'tipoDePatch' | 'quantidade'>): string {
+  if (d.tecnica === 'patch') {
+    const qtd = d.quantidade && d.quantidade > 1 ? '×' + d.quantidade : ''
+    return [d.tipoDePatch ? NOME_DO_TIPO_DE_PATCH[d.tipoDePatch] : '', qtd].filter(Boolean).join(' ')
+  }
+  return d.tamanho ?? ''
+}
 
 /** A gola da peça neste layout: de tecido ou de ribana (14/10/2026). */
 export type GolaDe = 'tecido' | 'ribana'

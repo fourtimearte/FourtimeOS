@@ -59,7 +59,7 @@ const pausa = (pg, ms = 350) => pg.waitForTimeout(ms)
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo: !!certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 async function caso(nome, fn) {
-  try { await fn() } catch (e) { conta(false, `${nome}: o caso parou no meio (${String(e).split('\n')[0].slice(0, 200)})`) }
+  try { await fn() } catch (e) { conta(false, `${nome}: o caso parou no meio (${String(e.stack || e).split("\n").filter((l) => l.includes("estoque.mjs") || l.includes("Error") || l.includes("locator")).slice(0, 4).join(" | ").slice(0, 600)})`) }
 }
 const igual = (a, b, folga = 0.6) => Math.abs(a - b) < folga
 const caixa = async (pg, seletor) => {

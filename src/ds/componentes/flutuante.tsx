@@ -183,6 +183,9 @@ export function Flutuante({
     }
   }, [aberto, aoFechar, ancora, repor])
 
+  /* fechado, nao existe na pagina: o Bitwarden conta cada [popover] do DOM
+     (ver o Modal, em sobreposicao.tsx) */
+  if (!aberto) return null
   return (
     <div ref={el} popover="manual" className={['mn', className].filter(Boolean).join(' ')}>
       {children}

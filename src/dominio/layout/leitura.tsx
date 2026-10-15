@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { VisorDeImagem } from '@ds'
 import { hexDoBanco } from './banco'
-import type { Bloco } from './bloco'
+import { detalheDoAplique, type Bloco } from './bloco'
 import { tamanhosNaOrdem, totalDaGrade } from './grade'
 import { sanitizarTextoRico } from './texto'
 import { usarCoresDeImpressao } from './usar-cores-de-impressao'
@@ -131,7 +131,7 @@ export function LayoutDeLeitura({
                 {bloco.design.length ? (
                   bloco.design.map((d, i) => (
                     <div className="lr-design" key={i}>
-                      <span className="lr-design-tag">{d.tamanho ? d.tag + ' ' + d.tamanho : d.tag}</span>
+                      <span className="lr-design-tag">{[d.tag, detalheDoAplique(d)].filter(Boolean).join(' ')}</span>
                       {d.cores.map((c, j) => (
                         <span className="lr-cod" key={j}>
                           <span className="lr-cod-amostra" style={{ background: hexDoBanco(c.cod, c.hex) || 'transparent' }} />

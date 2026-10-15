@@ -79,7 +79,7 @@ export function BuscaGlobal({
     const fechou = () => aoFechar()
     d.addEventListener('close', fechou)
     return () => d.removeEventListener('close', fechou)
-  }, [aoFechar])
+  }, [aoFechar, aberto])
 
   useEffect(() => {
     setFoco(0)
@@ -106,6 +106,8 @@ export function BuscaGlobal({
 
   let indice = -1
 
+  /* fechada, nao existe na pagina (ver o Modal, em sobreposicao.tsx) */
+  if (!aberto) return null
   return (
     <dialog
       ref={ref}

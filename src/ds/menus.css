@@ -860,6 +860,12 @@
 .mn-ctx .mn-item.risco:hover {
   background: var(--brand-soft);
 }
+/* o que vem depois dos itens e não fecha o menu: a quantidade do patch */
+.mn-ctx-extra {
+  margin-top: var(--re-3);
+  padding: var(--re-4) var(--re-5) var(--re-2);
+  border-top: 1px solid var(--border);
+}
 
 /* --- a faixa de cores C1 ------------------------------------------------- */
 .fx {

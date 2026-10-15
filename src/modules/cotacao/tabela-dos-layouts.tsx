@@ -5,7 +5,6 @@ import {
   Flutuante,
   Marcacao,
   MenuCodigoDeCor,
-  MenuDeContexto,
   MenuTecidoECor,
   TituloCartao,
   useSelecaoDeLinhas,
@@ -28,11 +27,12 @@ import {
   type ProdutoCotado,
 } from '@dominio/cotacao'
 import { faltaNoLayout } from './coluna-dos-layouts'
+import { MenuDoAplique } from './menu-do-aplique'
 import {
-  TAMANHOS_DE_APLIQUE,
   TECNICAS,
-  comTamanho,
   desligarTecnica,
+  dicaDoMenu,
+  quantidadeDe,
   ligarTecnica,
   rotuloDaTecnica,
   tirarCor,
@@ -637,10 +637,20 @@ function DesignDoLote({
     ancora.current = el
     setPaleta(t)
   }
-  /* o tamanho que todos têm, para o rótulo do interruptor */
-  const tamanhoComum = (t: DaTecnica) => {
-    const tams = blocos.map(b => b.design.find(d => d.tag === t.tag)?.tamanho ?? '')
-    return tams.every(x => x && x === tams[0]) ? tams[0] : ''
+  /* o que todos os marcados têm igual no aplique, para o rótulo do
+     interruptor e para o menu do botão direito */
+  const comum = (t: DaTecnica) => {
+    const ds = blocos.map(b => b.design.find(d => d.tag === t.tag))
+    const igual = (f: (d: (typeof ds)[number]) => string | number) => {
+      const vs = ds.map(f)
+      return vs.every(v => v === vs[0]) ? vs[0] : null
+    }
+    return {
+      tamanho: String(igual(d => d?.tamanho ?? '') ?? ''),
+      tipo: String(igual(d => d?.tipoDePatch ?? '') ?? ''),
+      quantidade: igual(d => quantidadeDe(d)) as number | null,
+      design: ds.every(Boolean) ? ds[0] : undefined,
+    }
   }
 
   return (
@@ -649,17 +659,20 @@ function DesignDoLote({
       <div className="ct-chaves ct-chaves-5">
         {TECNICAS.map(t => {
           const todos = blocos.every(b => tem(b, t))
-          const tam = t.porTamanho ? tamanhoComum(t) : ''
+          const c = t.menu ? comum(t) : null
+          const igual = c?.design
+            ? { ...c.design, tamanho: c.tamanho as Design['tamanho'], tipoDePatch: (c.tipo || undefined) as Design['tipoDePatch'], quantidade: c.quantidade ?? undefined }
+            : undefined
           return (
             <Chave
               key={t.tag}
               tom={t.tom}
               ligada={todos}
               travado={false}
-              rotulo={tam ? t.rotulo + ' ' + tam : t.rotulo}
+              rotulo={rotuloDaTecnica(t, igual)}
               titulo={
                 (todos ? 'Desligar em todos os marcados' : 'Ligar em todos os marcados') +
-                (t.porTamanho ? '. Botão direito: o tamanho (P, M ou G) para todos' : '')
+                (t.menu ? '. ' + dicaDoMenu(t) + ' para todos' : '')
               }
               aoAlternar={() =>
                 emTodos(design =>
@@ -671,7 +684,7 @@ function DesignDoLote({
                 )
               }
               aoMenu={
-                t.porTamanho
+                t.menu
                   ? el => {
                       ancoraDoTamanho.current = el
                       setDoTamanho(t)
@@ -753,29 +766,13 @@ function DesignDoLote({
           porCor(paleta, cod, hex, !blocos.every(b => temCor(b, paleta, cod)))
         }}
       />
-      <MenuDeContexto
-        aberto={!!doTamanho}
+      <MenuDoAplique
+        t={doTamanho}
         ancora={ancoraDoTamanho}
         aoFechar={() => setDoTamanho(null)}
-        cabecalho={
-          doTamanho
-            ? 'Tamanho do ' + doTamanho.rotulo.toLowerCase() + ' nos ' + n + ' marcados'
-            : null
-        }
-        itens={
-          doTamanho
-            ? [
-                ...TAMANHOS_DE_APLIQUE.map(x => ({
-                  rotulo: `${x.valor}  ${x.nome}`,
-                  aoEscolher: () => emTodos(design => comTamanho(design, doTamanho, x.valor)),
-                })),
-                {
-                  rotulo: 'Sem tamanho',
-                  aoEscolher: () => emTodos(design => comTamanho(design, doTamanho, '')),
-                },
-              ]
-            : []
-        }
+        atual={doTamanho ? comum(doTamanho) : { tamanho: '', tipo: '', quantidade: 1 }}
+        aplicar={muda => emTodos(muda)}
+        nosMarcados={n}
       />
     </div>
   )

@@ -866,7 +866,13 @@ export function MenuCodigoDeCor({
 }
 
 /* --- menu de contexto do botao direito ---------------------------------- */
-export type ItemDeContexto = { rotulo: string; risco?: boolean; aoEscolher: () => void }
+export type ItemDeContexto = {
+  rotulo: string
+  risco?: boolean
+  /** a escolha que já está valendo: fundo marcado e o visto */
+  on?: boolean
+  aoEscolher: () => void
+}
 
 export function MenuDeContexto({
   aberto,
@@ -874,7 +880,14 @@ export function MenuDeContexto({
   aoFechar,
   cabecalho,
   itens,
-}: Base & { cabecalho?: ReactNode; itens: ItemDeContexto[] }) {
+  extra,
+}: Base & {
+  cabecalho?: ReactNode
+  itens: ItemDeContexto[]
+  /** o que vem depois dos itens e NÃO fecha o menu ao clicar (a quantidade
+      do patch, 16/10/2026) */
+  extra?: ReactNode
+}) {
   return (
     <Flutuante
       aberto={aberto}
@@ -888,15 +901,20 @@ export function MenuDeContexto({
         <button
           type="button"
           key={i.rotulo}
-          className={['mn-item', i.risco ? 'risco' : ''].filter(Boolean).join(' ')}
+          className={['mn-item', i.risco ? 'risco' : '', i.on ? 'on' : ''].filter(Boolean).join(' ')}
+          aria-current={i.on ? 'true' : undefined}
           onClick={() => {
             i.aoEscolher()
             aoFechar()
           }}
         >
-          {i.rotulo}
+          <span className="nm">{i.rotulo}</span>
+          <span className="ok" aria-hidden="true">
+            {VISTO}
+          </span>
         </button>
       ))}
+      {extra ? <div className="mn-ctx-extra">{extra}</div> : null}
     </Flutuante>
   )
 }

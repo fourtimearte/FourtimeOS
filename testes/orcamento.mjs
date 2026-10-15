@@ -778,14 +778,25 @@ await secao(async () => {
   await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').first().click({ button: 'right' })
   await pausa(pg, 200)
   conta(antes >= 1 && await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').count() === antes - 1, `o botão direito na cor tira a cor (${antes} para ${await pg.locator('.ct-paleta .ct-cartao-cor:not(.ct-cartao-mais)').count()})`)
-  /* o botão direito no Patch: P, M e G */
+  /* o botão direito no Patch (16/10/2026): Liso, Relevo e 3D, e quantos patches */
   await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Patch' }).click({ button: 'right' })
   await pausa(pg, 250)
-  const itens = await pg.locator('[popover]:popover-open .mn-item').allInnerTexts()
-  conta(itens.length === 3 && /P\s+Pequeno/.test(itens[0]) && /G\s+Grande/.test(itens[2]), 'o botão direito no Patch mostra P, M e G: ' + itens.join(' | '))
-  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Médio' }).click()
+  const itens = (await pg.locator('[popover]:popover-open .mn-item').allInnerTexts()).map((x) => x.replace(/\s+/g, ' ').trim())
+  conta(itens.length === 3 && /^Liso/.test(itens[0]) && /^Relevo/.test(itens[1]) && /^3D/.test(itens[2]) && /Patches por peça/.test(await texto(pg, '[popover]:popover-open [data-quantidade-de-patches]')),
+    'o botão direito no Patch mostra Liso, Relevo e 3D, e os patches por peça: ' + itens.join(' | '))
+  await foto(pg, '1920-menu-do-patch', false)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Relevo' }).click()
   await pausa(pg, 200)
-  conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch M' }).count() === 1, 'escolher o M liga o Patch já com o tamanho (Patch M)')
+  conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch Relevo' }).count() === 1, 'escolher Relevo liga o Patch já com o tipo (Patch Relevo)')
+  await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Patch' }).click({ button: 'right' })
+  await pausa(pg, 250)
+  await pg.locator('[popover]:popover-open button[aria-label="Um patch a mais"]').click()
+  await pausa(pg, 150)
+  conta(await pg.locator('[popover]:popover-open .mn-item.on', { hasText: 'Relevo' }).count() === 1 && /2/.test(await texto(pg, '[popover]:popover-open .ct-qtd-patch-n')),
+    'o menu continua aberto, marca o Relevo e conta 2 patches: ' + await texto(pg, '[popover]:popover-open .ct-qtd-patch-n'))
+  await pg.keyboard.press('Escape')
+  await pausa(pg, 150)
+  conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch Relevo ×2' }).count() === 1, 'o interruptor diz Patch Relevo ×2')
   /* a fabricação trocada no layout (14/10/2026): escolhas rápidas e o campo pela lista */
   const gola = () => texto(pg, '.ct-fab-par[data-chave="gola"], .ct-fab-pares > :nth-child(1)')
   await pg.locator('.ct-fab-rapido .ct-chave', { hasText: 'Gola de tecido' }).click()
@@ -813,7 +824,7 @@ await secao(async () => {
   await pausa(pg, 400)
   conta(await pg.locator('.ct-tb-tab tbody tr').count() === 3 && await pg.locator('.ct-ly-ficha').count() === 0, 'no modo Tabela, uma linha por layout e nada do editor de um layout')
   conta(await pg.locator('.ct-tb-tab tbody tr .ct-tb-mini img').count() === 3, 'cada linha com a miniatura da arte do layout')
-  conta(/Patch M/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(1)')), 'a linha do L-01 mostra o Patch M')
+  conta(/Patch Relevo ×2/i.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(1)')), 'a linha do L-01 mostra o Patch Relevo ×2')
   conta(/falta a etiqueta/.test(await texto(pg, '.ct-tb-tab tbody tr:nth-child(3)')), 'o L-03 diz que falta a etiqueta')
   await foto(pg, '1920-modo-tabela', false)
   /* o preço na célula: Enter grava e desce */

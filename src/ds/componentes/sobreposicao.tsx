@@ -37,7 +37,9 @@ function usarDialogo(aberto: boolean, aoFechar: () => void) {
     const fechou = () => aoFechar()
     d.addEventListener('close', fechou)
     return () => d.removeEventListener('close', fechou)
-  }, [aoFechar])
+    /* aberto entra porque o <dialog> nasce ao abrir: sem ele o ouvinte do
+       Esc nunca chegava ao dialogo novo */
+  }, [aoFechar, aberto])
   return ref
 }
 
@@ -76,7 +78,13 @@ export function Modal({
   /** um cabeçalho próprio no lugar do título simples */
   topo?: ReactNode
 }) {
+/* SO EXISTE NA PAGINA ENQUANTO ESTA ABERTO (16/10/2026). O Bitwarden conta
+   cada <dialog> e cada [popover] da pagina e, com um modal aberto, "sobe" o
+   menu dele uma vez para cada um, a cada leitura da pagina. Com mais de cinco
+   em cinco segundos ele acha que a pagina esta brigando com ele, mostra um
+   alerta e desliga o preenchimento. Fechado, entao, nao fica nada no DOM. */
   const ref = usarDialogo(aberto, aoFechar)
+  if (!aberto) return null
   return (
     <dialog
       ref={ref}
@@ -108,6 +116,8 @@ export function Modal({
    que é onde o polegar alcança. */
 export function Gaveta({ aberto, aoFechar, titulo, children, pe }: Props) {
   const ref = usarDialogo(aberto, aoFechar)
+  /* fechada, nao existe (ver o Modal) */
+  if (!aberto) return null
   return (
     <dialog ref={ref} className="sobrepoe gaveta" onClick={(e) => cliqueNoEscuro(e, aoFechar)}>
       <div className="caixa">

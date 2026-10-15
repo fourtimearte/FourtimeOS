@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Check, Plus } from '@phosphor-icons/react'
-import { MenuCodigoDeCor, MenuDeContexto } from '@ds'
+import { MenuCodigoDeCor } from '@ds'
 import {
   comEtiqueta,
   etiquetaDoDesign,
@@ -12,16 +12,17 @@ import {
   type EtiquetaDoLayout,
 } from '@dominio/layout'
 import {
-  TAMANHOS_DE_APLIQUE,
   TECNICAS,
   alternarCor,
-  comTamanho,
   desligarTecnica,
+  dicaDoMenu,
+  quantidadeDe,
   ligarTecnica,
   rotuloDaTecnica,
   tirarCor,
   type DaTecnica,
 } from './design-do-layout'
+import { MenuDoAplique } from './menu-do-aplique'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -134,10 +135,10 @@ export function EditorDoDesign({
                 t,
                 bloco.design.find(d => d.tag === t.tag),
               )}
-              titulo={t.porTamanho && !travado ? 'Botão direito: o tamanho (P, M ou G)' : undefined}
+              titulo={t.menu && !travado ? dicaDoMenu(t) : undefined}
               aoAlternar={() => alternarTecnica(t)}
               aoMenu={
-                t.porTamanho
+                t.menu
                   ? el => {
                       ancoraDoTamanho.current = el
                       setDoTamanho(t)
@@ -217,30 +218,15 @@ export function EditorDoDesign({
           mudar({ design: alternarCor(bloco.design, abaAberta.tag, cod, hex) })
         }}
       />
-      <MenuDeContexto
-        aberto={!!doTamanho}
+      <MenuDoAplique
+        t={doTamanho}
         ancora={ancoraDoTamanho}
         aoFechar={() => setDoTamanho(null)}
-        cabecalho={doTamanho ? 'Tamanho do ' + doTamanho.rotulo.toLowerCase() : null}
-        itens={
-          doTamanho
-            ? [
-                ...TAMANHOS_DE_APLIQUE.map(x => ({
-                  rotulo: `${x.valor}  ${x.nome}`,
-                  aoEscolher: () => mudar({ design: comTamanho(bloco.design, doTamanho, x.valor) }),
-                })),
-                ...(bloco.design.find(d => d.tag === doTamanho.tag)?.tamanho
-                  ? [
-                      {
-                        rotulo: 'Sem tamanho',
-                        aoEscolher: () =>
-                          mudar({ design: comTamanho(bloco.design, doTamanho, '') }),
-                      },
-                    ]
-                  : []),
-              ]
-            : []
-        }
+        atual={(() => {
+          const d = doTamanho ? bloco.design.find(x => x.tag === doTamanho.tag) : undefined
+          return { tamanho: d?.tamanho ?? '', tipo: d?.tipoDePatch ?? '', quantidade: quantidadeDe(d) }
+        })()}
+        aplicar={muda => mudar({ design: muda(bloco.design) })}
       />
     </>
   )

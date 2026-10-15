@@ -1,4 +1,4 @@
-import type { Design, TamanhoDeAplique, Tecnica } from '@dominio/layout'
+import { NOME_DO_TIPO_DE_PATCH, detalheDoAplique, type Design, type TamanhoDeAplique, type Tecnica, type TipoDePatch } from '@dominio/layout'
 
 /* ==========================================================================
    AS CONTAS DO DESIGN DE UM LAYOUT, divididas pela ficha do layout e pela
@@ -14,8 +14,9 @@ export type DaTecnica = {
   cor: boolean
   aba: string
   tom: string
-  /** bordado e patch têm tamanho P, M ou G (botão direito no interruptor) */
-  porTamanho?: boolean
+  /** o botão direito no interruptor: o bordado escolhe o tamanho P, M ou G;
+      o patch escolhe o tipo (liso, relevo, 3D) e a quantidade (16/10/2026) */
+  menu?: 'tamanho' | 'patch'
 }
 
 export const TECNICAS: DaTecnica[] = [
@@ -29,7 +30,7 @@ export const TECNICAS: DaTecnica[] = [
     cor: false,
     aba: '',
     tom: 'ct-ch-bordado',
-    porTamanho: true,
+    menu: 'tamanho',
   },
   {
     tecnica: 'patch',
@@ -38,7 +39,7 @@ export const TECNICAS: DaTecnica[] = [
     cor: false,
     aba: '',
     tom: 'ct-ch-patch',
-    porTamanho: true,
+    menu: 'patch',
   },
 ]
 
@@ -48,10 +49,51 @@ export const TAMANHOS_DE_APLIQUE: { valor: TamanhoDeAplique; nome: string }[] = 
   { valor: 'G', nome: 'Grande' },
 ]
 
-/** O rótulo do interruptor: "Patch" ou, com tamanho, "Patch M". */
+export const TIPOS_DE_PATCH: { valor: TipoDePatch; nome: string }[] = (
+  Object.keys(NOME_DO_TIPO_DE_PATCH) as TipoDePatch[]
+).map(valor => ({ valor, nome: NOME_DO_TIPO_DE_PATCH[valor] }))
+
+/** O rótulo do interruptor: "Bordado M", "Patch Relevo ×2" ou só o nome. */
 export function rotuloDaTecnica(t: DaTecnica, d: Design | undefined): string {
-  return d?.tamanho ? `${t.rotulo} ${d.tamanho}` : t.rotulo
+  const det = d ? detalheDoAplique(d) : ''
+  return det ? `${t.rotulo} ${det}` : t.rotulo
 }
+
+/** O texto da dica do botão direito, para o interruptor e para o lote. */
+export function dicaDoMenu(t: DaTecnica): string {
+  return t.menu === 'patch'
+    ? 'Botão direito: o tipo (liso, relevo ou 3D) e quantos patches'
+    : t.menu === 'tamanho'
+      ? 'Botão direito: o tamanho (P, M ou G)'
+      : ''
+}
+
+/** Muda um campo do aplique; a técnica desligada liga já com ele. */
+function comAplique(design: Design[], t: DaTecnica, parte: Partial<Design>, tirar: (keyof Design)[]): Design[] {
+  const limpa = (d: Design): Design => {
+    const novo = { ...d, ...parte }
+    for (const k of tirar) delete novo[k]
+    return novo
+  }
+  const tem = design.find(d => d.tag === t.tag)
+  if (!tem) return ligarTecnica(design, t, limpa({ tag: t.tag, tecnica: t.tecnica, cores: [] }))
+  return design.map(d => (d.tag === t.tag ? limpa(d) : d))
+}
+
+/** O tipo do patch; '' tira o tipo. O tamanho antigo (P, M, G) sai junto. */
+export function comTipoDePatch(design: Design[], t: DaTecnica, tipo: TipoDePatch | ''): Design[] {
+  if (!tipo && !design.some(d => d.tag === t.tag)) return design
+  return comAplique(design, t, tipo ? { tipoDePatch: tipo } : {}, tipo ? ['tamanho'] : ['tamanho', 'tipoDePatch'])
+}
+
+/** Quantos patches em cada peça, de 1 a 20; 1 não precisa ser guardado. */
+export function comQuantidade(design: Design[], t: DaTecnica, n: number): Design[] {
+  const q = Math.max(1, Math.min(20, Math.round(n) || 1))
+  return comAplique(design, t, q > 1 ? { quantidade: q } : {}, q > 1 ? ['tamanho'] : ['tamanho', 'quantidade'])
+}
+
+/** A quantidade que está no aplique (1 quando não tem o campo). */
+export const quantidadeDe = (d: Design | undefined) => (d?.quantidade && d.quantidade > 1 ? d.quantidade : 1)
 
 /** Liga a técnica (com o que ela tinha antes, se tinha) na ordem da fábrica:
     as etiquetas, depois as técnicas na ordem dos interruptores, depois o resto. */

@@ -227,7 +227,7 @@ export function TelaSeparacao() {
       sub={
         <>
           <b>{conta.fila}</b> {conta.fila === 1 ? 'pedido aprovado' : 'pedidos aprovados'} na fila · {pecas.toLocaleString('pt-BR')} peças · o material
-          sai da prateleira quando é separado
+          é pesado aqui e sai do estoque no primeiro posto da produção
         </>
       }
       acoes={
@@ -345,9 +345,9 @@ function RegistroDoPedido({ r, aoFechar }: { r: Registro; aoFechar: () => void }
     },
     {
       chave: 'saiu',
-      titulo: 'Saiu',
+      titulo: 'Pesado',
       numero: true,
-      celula: (l) => (l.baixada ? <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b> : <span className="sp-pouco">não saiu</span>),
+      celula: (l) => (l.baixada ? <b className="sp-saiu">{numeroNaUnidade(l.separado, l.unidade)}</b> : <span className="sp-pouco">não pesou</span>),
     },
   ]
   return (

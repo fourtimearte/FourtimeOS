@@ -9,11 +9,11 @@
 -- primeiro layout dele o material e o consumo que faltavam. Depois separa,
 -- desfaz, separa de novo e conclui.
 --
--- A regra que ela confere esta na migracao 027:
---   separar tira da PRATELEIRA e nao mexe no LIVRE, porque o livre ja estava
---     descontado pela reserva: a promessa virou fato, e o total nao muda;
---   separar menos do que foi reservado DEVOLVE a diferenca para o livre;
---   desfazer e uma devolucao com linha propria, e nao um movimento apagado;
+-- A regra que ela confere esta na migracao 081 (a de antes era a 027):
+--   separar PESA E GUARDA: anota o peso e nao mexe na prateleira nem no
+--     razao; o reservado passa a ser o peso anotado;
+--   pesar menos do que foi reservado devolve a diferenca para o livre;
+--   desfazer uma pesagem so esquece o peso (nada tinha saido);
 --   concluir move o pedido para o PCP mesmo com falta, e carimba o aviso;
 --   e o pedido passa por `separacao` no caminho, para a trava da 022 deixar.
 do $$
@@ -129,16 +129,16 @@ begin
   perform public.separar_material(id_res, reservado, 'prova');
   select m.saldo, m.livre into saldo, livre
     from public.material_na_prateleira m where m.id = id_mat;
-  r := r || case when saldo = 100 - reservado then 'ok    ' else 'FALHA ' end
-         || 'separar tira da prateleira [' || round(coalesce(saldo,0), 3) || ']' || E'\n';
+  r := r || case when saldo = 100 then 'ok    ' else 'FALHA ' end
+         || 'pesar NAO tira da prateleira, a baixa e no primeiro posto [' || round(coalesce(saldo,0), 3) || ']' || E'\n';
   r := r || case when livre = 100 - reservado then 'ok    ' else 'FALHA ' end
-         || 'e NAO mexe no livre, que a reserva ja tinha descontado ['
+         || 'e o livre continua descontado pela reserva ['
          || round(coalesce(livre,0), 3) || ']' || E'\n';
 
   select count(*) into n from public.movimento_de_estoque
-   where material_id = id_mat and motivo = 'separacao' and pedido_id = id_ped;
-  r := r || case when n = 1 then 'ok    ' else 'FALHA ' end
-         || 'e o razao guarda de que pedido a saida veio' || E'\n';
+   where material_id = id_mat and pedido_id = id_ped;
+  r := r || case when n = 0 then 'ok    ' else 'FALHA ' end
+         || 'e o razao nao ganha linha nenhuma' || E'\n';
 
   /* 4. separar duas vezes a mesma linha e recusado */
   begin
@@ -152,17 +152,17 @@ begin
   perform public.desfazer_a_separacao(id_res);
   select m.saldo into saldo from public.material_na_prateleira m where m.id = id_mat;
   r := r || case when saldo = 100 then 'ok    ' else 'FALHA ' end
-         || 'desfazer devolve a prateleira [' || round(coalesce(saldo,0), 3) || ']' || E'\n';
+         || 'desfazer a pesagem deixa a prateleira como estava [' || round(coalesce(saldo,0), 3) || ']' || E'\n';
   select count(*) into n from public.movimento_de_estoque where material_id = id_mat;
-  r := r || case when n = 3 then 'ok    ' else 'FALHA ' end
-         || 'e o razao fica com tres linhas, e nao com uma apagada [' || n || ']' || E'\n';
+  r := r || case when n = 1 then 'ok    ' else 'FALHA ' end
+         || 'e o razao fica so com a entrada [' || n || ']' || E'\n';
 
   /* 6. separar MENOS devolve a diferenca para o livre */
   perform public.separar_material(id_res, round(reservado / 2, 3), 'metade');
   select m.saldo, m.livre into saldo, livre
     from public.material_na_prateleira m where m.id = id_mat;
-  r := r || case when livre = saldo then 'ok    ' else 'FALHA ' end
-         || 'separando metade, o que sobrou da reserva volta a ficar livre ['
+  r := r || case when livre = saldo - round(reservado / 2, 3) then 'ok    ' else 'FALHA ' end
+         || 'pesando metade, o que sobrou da reserva volta a ficar livre ['
          || round(coalesce(livre,0), 3) || ']' || E'\n';
 
   /* 7. concluir move para o PCP e carimba a falta */

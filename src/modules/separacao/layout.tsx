@@ -24,7 +24,7 @@ function ComoEsta({ r }: { r?: ReservaDoPedido }) {
   if (r.baixada)
     return (
       <span className="sp-como sp-separado">
-        <CheckCircle size={16} weight="bold" /> separado
+        <CheckCircle size={16} weight="bold" /> {r.pesada ? 'pesado' : 'separado'}
       </span>
     )
   if (!r.semConsumo && r.saldo < r.quantidade)

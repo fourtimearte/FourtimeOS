@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CaretDown, ListBullets, NotePencil, Package, Plus, Warning } from '@phosphor-icons/react'
 import { AreaDeTextoRico, LINHA_ESCOLHIDA, TituloCartao, type IconeDoPacote } from '@ds'
 import { etiquetaDoDesign, totalDaGrade, type Bloco } from '@dominio/layout'
 import { pecasDoProduto, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
+import { carregarNegociadoDaCotacao, quantoNaUnidade } from '@dominio/estoque'
 import './cotacao.css'
 import { SeletorDoModo, type ModoDoEditor } from './modo-do-editor'
 
@@ -17,7 +18,7 @@ import { SeletorDoModo, type ModoDoEditor } from './modo-do-editor'
    o Adicionar layout.
 
    Embaixo, duas sanfonas fechadas: as Observações do layout escolhido (com um
-   ponto quando há texto) e os Materiais reservados. Abrir uma fecha a outra,
+   ponto quando há texto) e o Material negociado (081). Abrir uma fecha a outra,
    para a coluna não crescer além da primeira tela.
    ========================================================================== */
 
@@ -49,7 +50,12 @@ export function ColunaDosLayouts({
   aoAdicionar,
   aoColar,
   aoMudarObservacao,
+  cotacaoId,
+  estado,
 }: {
+  /** para o Material negociado: o que esta cotação marca no Estoque */
+  cotacaoId?: string
+  estado?: string
   modo: ModoDoEditor
   aoMudarModo: (m: ModoDoEditor) => void
   produtos: ProdutoCotado[]
@@ -152,16 +158,14 @@ export function ColunaDosLayouts({
 
       <Sanfona
         icone={Package}
-        titulo="Materiais reservados para este orçamento"
+        titulo="Material negociado neste orçamento"
         aberta={aberta === 'mat'}
         aoAlternar={() => setAberta((a) => (a === 'mat' ? '' : 'mat'))}
       >
-        {/* decisão 132: o material NÃO sai do estoque na cotação, ele só fica
-            marcado como negociado; sai depois de aprovado para a produção */}
-        <p className="ct-sf-texto">
-          O tecido e os aviamentos destes layouts ficam reservados no Estoque enquanto a cotação está aberta: eles não
-          saem da prateleira, só ficam marcados como negociados. Saem de verdade depois de aprovados para a produção.
-        </p>
+        {/* 081 (14/10/2026): aberta, a cotação NEGOCIA (não tira do livre, só
+            avisa os outros vendedores); aprovada, RESERVA; a separação pesa;
+            a baixa é no primeiro posto da produção */}
+        {aberta === 'mat' ? <MaterialNegociado cotacaoId={cotacaoId} estado={estado} /> : null}
       </Sanfona>
     </div>
   )
@@ -196,5 +200,41 @@ function Sanfona({
       </header>
       {aberta ? <div className="ct-sf-corpo">{children}</div> : null}
     </section>
+  )
+}
+
+function MaterialNegociado({ cotacaoId, estado }: { cotacaoId?: string; estado?: string }) {
+  const [linhas, setLinhas] = useState<Awaited<ReturnType<typeof carregarNegociadoDaCotacao>> | undefined>(undefined)
+  useEffect(() => {
+    if (!cotacaoId) return
+    let vivo = true
+    void carregarNegociadoDaCotacao(cotacaoId).then((l) => {
+      if (vivo) setLinhas(l)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [cotacaoId])
+  const aberta = !estado || estado === 'rascunho' || estado === 'enviada'
+  return (
+    <div className="pilha">
+      <p className="ct-sf-texto">
+        {aberta
+          ? 'Enquanto a cotação está aberta, o tecido e os aviamentos destes layouts ficam marcados como negociados no Estoque: não saem do livre, só avisam os outros vendedores. Aprovada, viram reservados para o pedido; a separação pesa, e a baixa no estoque é quando o pedido entra no primeiro posto da produção.'
+          : 'Esta cotação não está mais aberta: o material dela não aparece como negociado. Se foi aprovada, ele está reservado para o pedido.'}
+      </p>
+      {aberta && linhas && linhas.length ? (
+        <ul className="ct-sf-lista">
+          {linhas.map((l) => (
+            <li key={l.material}>
+              <span>{l.material}</span>
+              <b>{l.semConsumo ? 'sem consumo' : quantoNaUnidade(l.quantidade, l.unidade)}</b>
+            </li>
+          ))}
+        </ul>
+      ) : aberta && linhas && !linhas.length ? (
+        <p className="ct-sf-texto">Nenhum material do Estoque ligado a estes layouts ainda. Salve a cotação para atualizar.</p>
+      ) : null}
+    </div>
   )
 }

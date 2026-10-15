@@ -632,9 +632,9 @@ await secao(async () => {
   await pg.getByRole('button', { name: 'Observações do layout' }).click()
   await pausa(pg, 200)
   conta(/Reforço de ombro a ombro/.test(await texto(pg, '.ct-sf-aberta')), 'a sanfona das observações abre com o texto do layout')
-  await pg.getByRole('button', { name: 'Materiais reservados para este orçamento' }).click()
+  await pg.getByRole('button', { name: 'Material negociado neste orçamento' }).click()
   await pausa(pg, 200)
-  conta(await pg.locator('.ct-sf-aberta').count() === 1 && /reservados no Estoque/.test(await texto(pg, '.ct-sf-aberta')), 'abrir os materiais fecha as observações')
+  conta(await pg.locator('.ct-sf-aberta').count() === 1 && /marcados como negociados/.test(await texto(pg, '.ct-sf-aberta')), 'abrir os materiais fecha as observações')
   await foto(pg, '1920-corpo-mexido', false)
   /* salvar leva tudo */
   await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()

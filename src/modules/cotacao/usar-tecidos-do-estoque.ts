@@ -47,7 +47,10 @@ export function montarGrupos(
       id: m.id,
       nome: m.cor || m.nome,
       hex: m.corHex,
-      nota: m.livre > 0 ? num(m.livre) + ' ' + m.unidade : 'sem saldo',
+      /* o negociado (081) avisa: outra cotação aberta está pedindo esta cor */
+      nota:
+        (m.livre > 0 ? num(m.livre) + ' ' + m.unidade : 'sem saldo') +
+        (m.negociado > 0 ? ' · ' + num(m.negociado) + ' negociado' : ''),
     })
   }
   const tecidos = [...porTecido.values()]

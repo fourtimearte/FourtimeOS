@@ -157,6 +157,8 @@ export function CorpoDoEditor({
           aoAdicionar={aoAdicionar}
           aoColar={aoColar}
           aoMudarObservacao={(html) => p && mudarBloco({ ...p.bloco, observacao: html })}
+          cotacaoId={cotacao.id}
+          estado={cotacao.estado}
         />
       </div>
     </div>

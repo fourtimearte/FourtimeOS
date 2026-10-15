@@ -41,6 +41,9 @@ export type Material = {
   pedidosReservando: number
   /** algum pedido reserva este material sem consumo cadastrado */
   reservaSemConsumo: boolean
+  /** o que as cotações abertas pedem (081): não tira do livre, só avisa */
+  negociado: number
+  cotacoesNegociando: number
   tecidoId: string
   corId: string
   tecido: string
@@ -70,10 +73,10 @@ export type Material = {
 
 export type Fibra = { fibra: string; pct: number }
 
-/* Os cinco motivos que o banco aceita. A tela só oferece três: separação nasce
-   da separação de material e devolução nasce do que voltou dela, e nenhuma das
-   duas é alguém digitando. */
-export type Motivo = 'entrada' | 'saida' | 'ajuste' | 'separacao' | 'devolucao'
+/* Os seis motivos que o banco aceita. A tela só oferece três: separação (o
+   jeito antigo, até a 081), produção (a baixa no primeiro posto, 081) e
+   devolução nascem do caminho do pedido, e nenhuma delas é alguém digitando. */
+export type Motivo = 'entrada' | 'saida' | 'ajuste' | 'separacao' | 'devolucao' | 'producao'
 
 export const NOME_DO_MOTIVO: Record<Motivo, string> = {
   entrada: 'Entrada',
@@ -81,6 +84,7 @@ export const NOME_DO_MOTIVO: Record<Motivo, string> = {
   ajuste: 'Ajuste',
   separacao: 'Separação',
   devolucao: 'Devolução',
+  producao: 'Produção',
 }
 
 export type Movimento = {
@@ -119,6 +123,9 @@ type LinhaDoMaterial = {
   livre: number | string
   pedidos_reservando: number | string
   reserva_sem_consumo: boolean
+  /* 081 */
+  negociado?: number | string | null
+  cotacoes_negociando?: number | string | null
   tecido_id: string | null
   cor_id: string | null
   tecido: string | null
@@ -162,6 +169,8 @@ function deLinha(l: LinhaDoMaterial): Material {
     livre: numero(l.livre),
     pedidosReservando: numero(l.pedidos_reservando),
     reservaSemConsumo: !!l.reserva_sem_consumo,
+    negociado: numero(l.negociado ?? 0),
+    cotacoesNegociando: numero(l.cotacoes_negociando ?? 0),
     tecidoId: l.tecido_id ?? '',
     corId: l.cor_id ?? '',
     tecido: l.tecido ?? '',
@@ -1071,8 +1080,11 @@ export type ReservaDoPedido = {
   unidade: string
   pecas: number
   semConsumo: boolean
+  /** já separada: pesada na separação (081) ou baixada do estoque */
   baixada: boolean
-  /** o que saiu da prateleira de verdade; 0 enquanto não separou */
+  /** pesada e ainda no estoque, esperando o primeiro posto (081) */
+  pesada: boolean
+  /** o peso anotado na separação; 0 enquanto não pesou */
   separado: number
   saldo: number
   oEstoqueCobre: boolean
@@ -1093,15 +1105,15 @@ type LinhaDaReserva = {
   separado: number | string | null
   saldo: number | string
   o_estoque_cobre: boolean
+  /* 081; antes dela a coluna nao existe */
+  pesada?: boolean
 }
-
-const COLUNAS_DA_RESERVA =
-  'id,pedido_id,pedido,material_id,material,categoria,quantidade,unidade,pecas,' +
-  'sem_consumo,baixada,separado,saldo,o_estoque_cobre'
 
 export async function carregarReservasDoPedido(pedidoId: string): Promise<ReservaDoPedido[]> {
   const linhas = await tabela<LinhaDaReserva[]>(
-    `reserva_do_pedido?select=${COLUNAS_DA_RESERVA}&pedido_id=eq.${pedidoId}` +
+    /* select=* e nao a lista: a 081 traz a coluna pesada, e antes dela a
+       lista com ela quebraria a separacao inteira */
+    `reserva_do_pedido?select=*&pedido_id=eq.${pedidoId}` +
       '&order=categoria.asc,material.asc',
   )
   return linhas.map(l => ({
@@ -1115,7 +1127,8 @@ export async function carregarReservasDoPedido(pedidoId: string): Promise<Reserv
     unidade: l.unidade,
     pecas: Number(l.pecas) || 0,
     semConsumo: !!l.sem_consumo,
-    baixada: !!l.baixada,
+    baixada: !!l.baixada || !!l.pesada,
+    pesada: !!l.pesada,
     separado: numero(l.separado),
     saldo: numero(l.saldo),
     oEstoqueCobre: !!l.o_estoque_cobre,
@@ -1453,4 +1466,67 @@ export function textoDaCompra(g: CompraDoFornecedor, empresa: string, hoje = new
   ]
     .filter((l, k) => l !== '' || k === 2)
     .join('\n')
+}
+
+/* ---------- o negociado (081) ---------------------------------------------- */
+
+/** Uma cotação aberta que pede este material. */
+export type Negociacao = {
+  cotacaoId: string
+  numero: string
+  cliente: string
+  vendedor: string
+  quantidade: number
+  unidade: string
+  semConsumo: boolean
+  pecas: number
+}
+
+/** O que uma cotação aberta negocia, material por material (081). */
+export async function carregarNegociadoDaCotacao(
+  cotacaoId: string,
+): Promise<{ material: string; quantidade: number; unidade: string; semConsumo: boolean }[] | null> {
+  try {
+    const linhas = await tabela<
+      { material: string; quantidade: number | string; unidade: string; sem_consumo: boolean }[]
+    >(`negociado_na_lista?select=material,quantidade,unidade,sem_consumo&cotacao_id=eq.${cotacaoId}&order=categoria.asc,material.asc`)
+    return linhas.map((l) => ({
+      material: l.material,
+      quantidade: numero(l.quantidade),
+      unidade: l.unidade,
+      semConsumo: !!l.sem_consumo,
+    }))
+  } catch {
+    return null
+  }
+}
+
+/** As cotações abertas que negociam um material. Vazia antes da 081. */
+export async function carregarNegociado(materialId: string): Promise<Negociacao[]> {
+  try {
+    const linhas = await tabela<
+      {
+        cotacao_id: string
+        numero: string
+        cliente: string | null
+        vendedor: string | null
+        quantidade: number | string
+        unidade: string
+        sem_consumo: boolean
+        pecas: number
+      }[]
+    >(`negociado_na_lista?select=*&material_id=eq.${materialId}&order=atualizado_em.desc`)
+    return linhas.map((l) => ({
+      cotacaoId: l.cotacao_id,
+      numero: l.numero,
+      cliente: l.cliente ?? '',
+      vendedor: l.vendedor ?? '',
+      quantidade: numero(l.quantidade),
+      unidade: l.unidade,
+      semConsumo: !!l.sem_consumo,
+      pecas: Number(l.pecas) || 0,
+    }))
+  } catch {
+    return []
+  }
 }

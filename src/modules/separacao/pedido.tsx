@@ -124,7 +124,7 @@ export function PedidoAberto({
     if (ocupado) return
     const quanto = fixo ?? lido(pesado[l.id] ?? '')
     if (quanto <= 0) {
-      avisar('Escreva quanto saiu da prateleira.', 'warn')
+      avisar('Escreva quanto pesou.', 'warn')
       return
     }
     setOcupado(l.id)
@@ -134,7 +134,7 @@ export function PedidoAberto({
       if (p.estado === 'aprovado') await comecarASeparacao(p.id)
       await separarMaterial(l.id, quanto)
       await Promise.all([abrir(), aoMexer()])
-      avisar(`${numeroNaUnidade(quanto, l.unidade)} de ${l.material} saiu da prateleira.`, 'ok')
+      avisar(`${numeroNaUnidade(quanto, l.unidade)} de ${l.material} pesado e guardado. Sai do estoque quando o pedido entrar na produção.`, 'ok')
     } catch (e) {
       avisar(e instanceof Error ? e.message : 'Não consegui separar.', 'brand')
     } finally {
@@ -148,7 +148,7 @@ export function PedidoAberto({
     try {
       await desfazerASeparacao(l.id)
       await Promise.all([abrir(), aoMexer()])
-      avisar(`${l.material} voltou para a prateleira.`, 'ok')
+      avisar(l.pesada ? `A pesagem de ${l.material} foi desfeita.` : `${l.material} voltou para a prateleira.`, 'ok')
     } catch (e) {
       avisar(e instanceof Error ? e.message : 'Não consegui desfazer.', 'brand')
     } finally {
@@ -233,7 +233,7 @@ export function PedidoAberto({
     },
     {
       chave: 'saiu',
-      titulo: 'Saiu',
+      titulo: 'Pesado',
       numero: true,
       celula: (l) =>
         l.baixada ? (
@@ -246,7 +246,7 @@ export function PedidoAberto({
             value={pesado[l.id] ?? ''}
             disabled={ocupado === l.id}
             placeholder={casasDaUnidade(l.unidade) ? '0,0' : '0'}
-            aria-label={'Quanto saiu de ' + l.material + ', em ' + l.unidade}
+            aria-label={'Quanto pesou ' + l.material + ', em ' + l.unidade}
             onChange={(e) => {
               const v = e.currentTarget.value
               setPesado((x) => ({ ...x, [l.id]: v }))
@@ -264,12 +264,12 @@ export function PedidoAberto({
           </Botao>
         ) : curto(l) && l.saldo > 0 ? (
           <Botao tom="contorno" tamanho="sm" onClick={() => separarOQueTem(l)} carregando={ocupado === l.id} disabled={!!ocupado}>
-            <span className="sp-fora-do-celular">Separar o que tem</span>
+            <span className="sp-fora-do-celular">Pesar o que tem</span>
             <span className="sp-no-celular">O que tem</span>
           </Botao>
         ) : (
           <Botao tom="forte" tamanho="sm" onClick={() => void separar(l)} carregando={ocupado === l.id} disabled={!!ocupado}>
-            Separar
+            Pesar e guardar
           </Botao>
         ),
     },
@@ -337,7 +337,7 @@ export function PedidoAberto({
         <header className="sp-cab">
           <TituloCartao icone={Sigma}>Soma de tudo</TituloCartao>
           <span className="sp-cab-apoio">
-            {blocos && blocos.length > 1 ? `os ${blocos.length} layouts juntos · ` : ''}aqui se marca o que saiu
+            {blocos && blocos.length > 1 ? `os ${blocos.length} layouts juntos · ` : ''}aqui se anota o que pesou
           </span>
         </header>
         {abrindo ? (

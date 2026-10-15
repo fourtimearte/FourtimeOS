@@ -3,15 +3,15 @@ import { chamar, tabela } from '@shared/supabase'
 /* ==========================================================================
    A separação.
 
-   A reserva (026) diz o que um pedido aprovado comprometeu. A separação é onde
-   isso deixa de ser promessa: o material sai da prateleira de verdade, e o que
-   não saiu vira um aviso que viaja com o pedido até o PCP.
+   A reserva (026) diz o que um pedido aprovado comprometeu. A separação PESA
+   E GUARDA (081, resposta do Henrique em 14/10/2026): anota quanto pesou, e o
+   material segue reservado pelo peso. O que não foi pesado vira um aviso que
+   viaja com o pedido até o PCP.
 
-   SEPARAR NÃO MEXE NO LIVRE, MEXE NA PRATELEIRA. O livre já estava descontado
-   pela reserva, então a promessa virar fato não muda o total disponível. Se o
-   livre caísse de novo aqui, o mesmo material teria sido descontado duas vezes.
-   Separar MENOS do que foi reservado devolve a diferença para o livre, porque
-   aquele pedaço de malha voltou a estar disponível para outro pedido.
+   A BAIXA NO ESTOQUE é no PRIMEIRO POSTO: quando o PCP libera e os cartões
+   nascem no kanban, o peso anotado sai da prateleira (e, do que ninguém
+   pesou, sai o que estava reservado). Pesar MENOS do que foi reservado
+   devolve a diferença para o livre na hora.
    ========================================================================== */
 
 export type EstadoDaSeparacao = 'aprovado' | 'separacao'

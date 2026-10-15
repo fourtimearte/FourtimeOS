@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   ArrowsLeftRight,
   BookmarkSimple,
+  ChatsCircle,
   ClipboardText,
   Handshake,
   MapPin,
@@ -16,6 +17,7 @@ import { chaveDaCelula, lugarPorExtenso, type Lugar, type Movel } from '@dominio
 import {
   NOME_DA_CATEGORIA,
   NOME_DO_MOTIVO,
+  carregarNegociado,
   composicaoPorExtenso,
   faltaDoMaterial,
   medidasDoTecido,
@@ -25,6 +27,7 @@ import {
   type GrupoNaArvore,
   type Material,
   type Movimento,
+  type Negociacao,
   type ReservaEmAberto,
   type TecidoNaArvore,
 } from '@dominio/estoque'
@@ -83,6 +86,54 @@ function Caixa({
       </div>
       {solta ? children : <div className="em-corpo">{children}</div>}
     </section>
+  )
+}
+
+/* O NEGOCIADO (081): as cotações abertas que pedem este material. Não tira
+   do livre; é o aviso para quem vai vender o mesmo tecido. */
+function NegociadoDoMaterial({ m }: { m: Material }) {
+  const [lista, setLista] = useState<Negociacao[] | null>(null)
+  useEffect(() => {
+    let vivo = true
+    if (m.negociado <= 0) {
+      setLista([])
+      return
+    }
+    void carregarNegociado(m.id).then(l => {
+      if (vivo) setLista(l)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [m.id, m.negociado])
+  if (m.negociado <= 0) return null
+  return (
+    <Caixa
+      titulo="Negociado em cotações abertas"
+      icone={ChatsCircle}
+      solta
+      direita={<span className="em-topo-n">{plural(m.cotacoesNegociando, 'cotação', 'cotações')}</span>}
+    >
+      {!lista || lista.length === 0 ? (
+        <p className="em-sem-linhas">
+          {quantoNaUnidade(m.negociado, m.unidade)} em cotações abertas. Não sai do livre: só avisa quem vende.
+        </p>
+      ) : (
+        lista.slice(0, 6).map(n => (
+          <div key={n.cotacaoId} className="em-lin">
+            <span className="em-txt">
+              <b>{n.numero}</b>
+              <small>
+                {[n.cliente, n.vendedor ? 'com ' + n.vendedor : '', n.semConsumo ? 'sem consumo cadastrado' : '']
+                  .filter(Boolean)
+                  .join(' · ')}
+              </small>
+            </span>
+            <span className="em-val">{quantoNaUnidade(n.quantidade, n.unidade)}</span>
+          </div>
+        ))
+      )}
+    </Caixa>
   )
 }
 
@@ -819,6 +870,11 @@ export function FichaDoMaterial({
                 <span>
                   reservado <b>{quantoNaUnidade(m.reservado, m.unidade)}</b>
                 </span>
+                {m.negociado > 0 ? (
+                  <span>
+                    negociado <b>{quantoNaUnidade(m.negociado, m.unidade)}</b>
+                  </span>
+                ) : null}
                 <span>
                   mínimo <b>{quantoNaUnidade(m.minimo, m.unidade)}</b>
                 </span>
@@ -878,6 +934,8 @@ export function FichaDoMaterial({
               ))
             )}
           </Caixa>
+
+          <NegociadoDoMaterial m={m} />
 
           <OQueAndou
             movimentos={movimentos}

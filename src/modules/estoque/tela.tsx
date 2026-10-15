@@ -85,7 +85,7 @@ type Aba = 'materiais' | 'separacao' | 'comprar' | 'razao' | 'deposito' | 'uso'
 type Vista = 'lista' | 'tabela'
 
 const SEM_FORNECIMENTO: Fornecimento = { fornecedores: [], ligacoes: [], disponivel: false }
-const MOTIVOS: Motivo[] = ['entrada', 'saida', 'ajuste', 'separacao', 'devolucao']
+const MOTIVOS: Motivo[] = ['entrada', 'saida', 'ajuste', 'separacao', 'producao', 'devolucao']
 
 function abaDoEndereco(valor: string | null): Aba {
   return valor === 'razao' || valor === 'deposito' || valor === 'uso' ? valor : 'materiais'

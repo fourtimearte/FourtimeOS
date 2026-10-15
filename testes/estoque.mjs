@@ -520,7 +520,7 @@ for (const tema of ['light', 'dark']) {
     const chips = (await pg.locator('[data-tabela-topo] .chip').allInnerTexts()).map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')
     conta(/Tecido 10 Aviamentos 7 Insumo 9/.test(abas) && chips === 'Para comprar 2 | Sem fornecedor 1 | Sem lugar marcado 1 | Sem ficha técnica 8' && await pg.locator('[data-barra] .es-chips').count() === 0, `${T} tabela: as três abas com a conta, e os filtros dentro do cartão da tabela (${abas}; ${chips})`)
     const cab = (await pg.locator(`${TB} thead th`).allInnerTexts()).map((c) => c.trim()).join(' | ')
-    conta(cab === ' | Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Reservado | Mínimo | Situação' && (await sobra(pg)) <= 0, `${T} tabela: a caixa de marcar na frente, e as oito colunas da prancha (${cab})`)
+    conta(cab === ' | Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Negociado | Reservado | Mínimo | Situação' && (await sobra(pg)) <= 0, `${T} tabela: a caixa de marcar na frente, e as nove colunas, com o Negociado (${cab})`)
     await foto('tabela')
     await pg.locator(`${TB} tr[data-faixa="DRY FIT"]`).click(); await pausa(pg, 300)
     conta(await pg.locator(`${TB} tr.es-malha.es-recolhe`).count() === 1 && await pg.locator(`${TB} tr.es-malha.es-vazia`).count() === 1 && await folhas() === 0, `${T} tabela: abrir o grupo mostra o tecido que tem estoque, ainda fechado, e o do catálogo que não tem`)
@@ -640,7 +640,7 @@ await caso('quem só lê', async () => {
   await pg.locator('[data-barra] .em-barra-fim').getByRole('tab', { name: 'Tabela' }).click(); await pausa(pg, 400)
   await pg.locator('table.es-tb tr[data-faixa="DRY FIT"]').click(); await pausa(pg, 250)
   await pg.locator('table.es-tb tr.es-malha.es-recolhe').click(); await pausa(pg, 250)
-  conta(await pg.locator('table.es-tb .es-ck').count() === 0 && await pg.locator('table.es-tb thead th').count() === 8 && await pg.locator('table.es-tb tbody tr.es-folha').count() === 4, 'quem só lê: a tabela não tem caixa de marcar, e continua com as oito colunas')
+  conta(await pg.locator('table.es-tb .es-ck').count() === 0 && await pg.locator('table.es-tb thead th').count() === 9 && await pg.locator('table.es-tb tbody tr.es-folha').count() === 4, 'quem só lê: a tabela não tem caixa de marcar, e continua com as nove colunas')
   await pg.locator('table.es-tb tr.es-folha[data-material="DRYFIT POLIESTER 100% · Preto"]').click(); await pausa(pg, 500)
   conta(await pg.locator('[data-lote-da-tabela]').count() === 0 && /› cor/.test(await texto(pg, '[data-ficha] .em-trilha')), 'quem só lê: clicar na linha da tabela abre a ficha da cor, e nenhuma faixa de lote aparece')
   conta(erros.length === 0, `quem só lê: nenhum erro de JavaScript (${erros.join(' | ') || 'limpo'})`)
@@ -1018,7 +1018,7 @@ for (const movimento of [true, false]) {
 /* A TABELA NÃO ROLA DE LADO: ela perde coluna. Em 1440 cabem as oito; em 1366
    saem "Na prateleira" e "Reservado"; em 1100 sai também "Onde está". O nome,
    o livre, o mínimo, a situação e a seta da ficha ficam sempre à vista. */
-for (const [largura, esperadas] of [[1440, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Reservado | Mínimo | Situação'], [1366, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Mínimo | Situação'], [1100, 'Grupo, tecido e cor | Fornecedor | Livre | Mínimo | Situação']]) {
+for (const [largura, esperadas] of [[1440, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Na prateleira | Negociado | Reservado | Mínimo | Situação'], [1366, 'Grupo, tecido e cor | Fornecedor | Onde está | Livre | Mínimo | Situação'], [1100, 'Grupo, tecido e cor | Fornecedor | Livre | Mínimo | Situação']]) {
   await caso(`tabela ${largura}`, async () => {
     const { ctx, pg, erros } = await abrir(nav, { largura, altura: 800, tema: 'light', estoque: 'grande' })
     await ir(pg, '/estoque', '[data-barra]')
@@ -1077,7 +1077,7 @@ await caso('tabela sem depósito', async () => {
   const cab = (await pg.locator('table.es-tb thead th').allInnerTexts()).map((c) => c.trim()).join(' | ')
   const celulas = await pg.locator('table.es-tb tbody tr').evaluateAll((l) => [...new Set(l.map((tr) => tr.children.length))].join(','))
   const chips = (await pg.locator('[data-tabela-topo] .chip').allInnerTexts()).map((c) => c.replace(/\s+/g, ' ').trim()).join(' | ')
-  conta(cab === ' | Grupo, tecido e cor | Fornecedor | Livre | Na prateleira | Reservado | Mínimo | Situação' && celulas === '8' && !/Sem lugar/.test(chips), `tabela sem depósito: a coluna "Onde está" e o filtro "Sem lugar marcado" não aparecem, e toda linha tem as mesmas 8 células (${cab}; ${celulas} células; ${chips})`)
+  conta(cab === ' | Grupo, tecido e cor | Fornecedor | Livre | Na prateleira | Negociado | Reservado | Mínimo | Situação' && celulas === '9' && !/Sem lugar/.test(chips), `tabela sem depósito: a coluna "Onde está" e o filtro "Sem lugar marcado" não aparecem, e toda linha tem as mesmas 9 células (${cab}; ${celulas} células; ${chips})`)
   await pg.locator('table.es-tb tr.es-malha.es-recolhe td.es-ck .ck').click(); await pausa(pg, 300)
   const botoes = (await pg.locator('[data-lote-da-tabela]').getByRole('button').allInnerTexts()).map((b) => b.trim()).join(' | ')
   conta(botoes === 'Definir fornecedor | Definir mínimo | Ficha técnica | Limpar a seleção', `tabela sem depósito: o lote não oferece "Definir onde está" (${botoes})`)
@@ -1257,7 +1257,7 @@ await caso('tabela igual à lista', async () => {
   conta(tecidosDaTabela.join(' | ') === tecidosDaLista.join(' | ') && tecidosDaTabela.join(' | ') === 'DRYFIT POLIESTER 100% | DRYFIT JAKAR 100% (vazio)', `tabela igual à lista: os mesmos tecidos do grupo, o que tem estoque primeiro (${tecidosDaTabela.join(' | ')})`)
   const vazio = pg.locator(`${TB} tr[data-sem-estoque="DRYFIT JAKAR 100%"]`)
   const celulas = await pg.locator(`${TB} tbody tr`).evaluateAll((l) => [...new Set(l.map((tr) => tr.children.length))].join(','))
-  conta(/^DRYFIT JAKAR 100% sem estoque Nova cor$/.test((await vazio.innerText()).replace(/\s+/g, ' ').trim()) && await vazio.locator('.ck').count() === 0 && celulas === '9', `tabela igual à lista: o tecido sem cor vem apagado, com "sem estoque" e "Nova cor", sem caixa de marcar e com as mesmas 9 células das outras linhas (${celulas})`)
+  conta(/^DRYFIT JAKAR 100% sem estoque Nova cor$/.test((await vazio.innerText()).replace(/\s+/g, ' ').trim()) && await vazio.locator('.ck').count() === 0 && celulas === '10', `tabela igual à lista: o tecido sem cor vem apagado, com "sem estoque" e "Nova cor", sem caixa de marcar e com as mesmas 10 células das outras linhas (${celulas})`)
   await pg.screenshot({ path: `${PASTA}/tabela-catalogo-1440-light.png`, fullPage: true })
   /* a caixa do cabeçalho continua marcando só o que existe */
   await pg.locator(`${TB} thead th.es-ck .ck`).click(); await pausa(pg, 300)

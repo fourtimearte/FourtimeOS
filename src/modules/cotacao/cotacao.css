@@ -4020,3 +4020,29 @@ i.ct-cv-pe {
   }
 }
 
+/* o material negociado da cotação (081) */
+.ct-sf-lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ct-sf-lista li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 34px;
+  padding: var(--re-3) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.ct-sf-lista li:last-child {
+  border-bottom: 0;
+}
+.ct-sf-lista b {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

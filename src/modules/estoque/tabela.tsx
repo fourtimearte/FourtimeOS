@@ -361,6 +361,12 @@ export function TabelaDeMateriais({
           <b className={pouco ? 'es-pouco' : ''}>{quantoNaUnidade(m.livre, m.unidade)}</b>
         </td>
         <td className="dir es-apoio es-some-1">{quantoNaUnidade(m.saldo, m.unidade)}</td>
+        <td
+          className="dir es-apoio es-some-1"
+          title={m.negociado > 0 ? `em ${m.cotacoesNegociando === 1 ? '1 cotação aberta' : m.cotacoesNegociando + ' cotações abertas'}` : undefined}
+        >
+          {m.negociado > 0 ? quantoNaUnidade(m.negociado, m.unidade) : ''}
+        </td>
         <td className="dir es-apoio es-some-1">
           {m.reservado > 0 ? quantoNaUnidade(m.reservado, m.unidade) : ''}
         </td>
@@ -448,6 +454,9 @@ export function TabelaDeMateriais({
         </td>
         <td className="dir es-apoio es-some-1">{soma(itens, m => m.saldo)}</td>
         <td className="dir es-apoio es-some-1">
+          {itens.some(m => m.negociado > 0) ? soma(itens, m => m.negociado) : ''}
+        </td>
+        <td className="dir es-apoio es-some-1">
           {itens.some(m => m.reservado > 0) ? soma(itens, m => m.reservado) : ''}
         </td>
         <td />
@@ -474,6 +483,7 @@ export function TabelaDeMateriais({
       <td />
       {guardado.planta ? <td className="es-some-2" /> : null}
       <td />
+      <td className="es-some-1" />
       <td className="es-some-1" />
       <td className="es-some-1" />
       <td />
@@ -595,6 +605,9 @@ export function TabelaDeMateriais({
                 {guardado.planta ? <th className="es-c-onde es-some-2">Onde está</th> : null}
                 <th className="dir es-c-num">Livre</th>
                 <th className="dir es-c-prat es-some-1">Na prateleira</th>
+                <th className="dir es-c-res es-some-1" title="O que as cotações abertas pedem: não tira do livre, só avisa">
+                  Negociado
+                </th>
                 <th className="dir es-c-res es-some-1">Reservado</th>
                 <th className="dir es-c-num">Mínimo</th>
                 <th className="es-c-sit">Situação</th>

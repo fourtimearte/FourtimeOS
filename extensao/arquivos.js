@@ -35,6 +35,81 @@
   const doSistema = SISTEMAS.some((s) => pai === s || pai.startsWith(s + ':'))
   if (!doSistema) return
 
+  /* O DIARIO (0.6.4, 15/10/2026): o PDF continuava girando dentro do
+     WhatsApp, e o defeito nao aparece em teste. Anota o que o WhatsApp faz
+     quando a pessoa abre um arquivo: elementos que carregam algo (iframe,
+     embed, object, img, video), workers, o service worker, os erros e as
+     respostas que falharam. SO O ESQUELETO: a etiqueta, o esquema e o
+     comeco do endereco, nunca texto de conversa. A pagina do Fourtime OS
+     guarda em window.__ftWhatsAppDiario. */
+  const anotar = (oque, extra) => {
+    try {
+      window.parent.postMessage({ fourtime: 'whatsapp', tipo: 'diario', oque: String(oque).slice(0, 60), extra: extra || {} }, pai)
+    } catch (e) { /* o diario nunca quebra o WhatsApp */ }
+  }
+  const curto = (u) => {
+    const t = String(u || '')
+    if (/^blob:/i.test(t)) return 'blob:' + t.replace(/^blob:/i, '').split('/').slice(0, 3).join('/') + '/...'
+    if (/^data:/i.test(t)) return t.slice(0, 30)
+    try { const x = new URL(t, location.href); return x.protocol + '//' + x.host + x.pathname.slice(0, 40) } catch (e) { return t.slice(0, 40) }
+  }
+  try {
+    const sw = navigator.serviceWorker
+    anotar('inicio', { sw: !!sw, controlado: !!(sw && sw.controller), versao: '0.6.4' })
+    if (sw) sw.addEventListener('controllerchange', () => anotar('sw-trocou', {}))
+  } catch (e) { anotar('sw-erro', { m: String(e).slice(0, 80) }) }
+  const olharEl = (el, como) => {
+    if (!el || !el.tagName) return
+    const tag = el.tagName.toLowerCase()
+    if (!['iframe', 'embed', 'object', 'video', 'img', 'canvas'].includes(tag)) return
+    const src = el.getAttribute('src') || el.getAttribute('data') || ''
+    if (tag === 'img' && !/^blob:/i.test(src)) return
+    if (tag === 'canvas') { if (el.width > 300 && el.height > 300) anotar('canvas-grande', { como, w: el.width, h: el.height }); return }
+    anotar('elemento', { como, tag, src: curto(src), tipo: el.getAttribute('type') || '' })
+  }
+  try {
+    new MutationObserver((ms) => {
+      for (const m of ms) {
+        if (m.type === 'attributes') olharEl(m.target, 'mudou-' + m.attributeName)
+        else m.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return
+          olharEl(n, 'entrou')
+          if (n.querySelectorAll) n.querySelectorAll('iframe,embed,object,video,canvas').forEach((x) => olharEl(x, 'entrou-dentro'))
+        })
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data'] })
+  } catch (e) { anotar('observador-erro', { m: String(e).slice(0, 80) }) }
+  try {
+    for (const nome of ['Worker', 'SharedWorker']) {
+      const Orig = window[nome]
+      if (!Orig) continue
+      window[nome] = function (url, ...resto) {
+        anotar('worker', { nome, url: curto(url) })
+        try { return new Orig(url, ...resto) } catch (e) { anotar('worker-erro', { nome, m: String(e && e.message || e).slice(0, 120) }); throw e }
+      }
+      window[nome].prototype = Orig.prototype
+    }
+  } catch (e) { /* segue */ }
+  try {
+    const fetchOrig = window.fetch
+    window.fetch = function (rec, ...resto) {
+      const u = typeof rec === 'string' ? rec : (rec && rec.url) || ''
+      const p = fetchOrig.call(this, rec, ...resto)
+      if (/pdf|document|blob:|\/stream|mms|media/i.test(u)) {
+        p.then((r) => anotar('fetch', { url: curto(u), status: r.status, tipo: (r.headers.get('content-type') || '').slice(0, 40) }),
+               (e) => anotar('fetch-falhou', { url: curto(u), m: String(e && e.message || e).slice(0, 100) }))
+      }
+      return p
+    }
+  } catch (e) { /* segue */ }
+  window.addEventListener('error', (e) => anotar('erro', { m: String(e.message || '').slice(0, 140), arq: curto(e.filename) }), true)
+  window.addEventListener('unhandledrejection', (e) => anotar('promessa', { m: String(e.reason && (e.reason.message || e.reason) || '').slice(0, 140) }))
+  window.addEventListener('securitypolicyviolation', (e) => anotar('csp', { dir: e.violatedDirective, url: curto(e.blockedURI) }))
+  window.addEventListener('pointerdown', (e) => {
+    const t = e.target && e.target.closest ? e.target.closest('[data-icon],[role="button"],a,button') : null
+    if (t) anotar('clique', { tag: t.tagName.toLowerCase(), icone: t.getAttribute('data-icon') || '', role: t.getAttribute('role') || '' })
+  }, true)
+
   /* o nome do arquivo: o do link, ou o texto "algo.pdf" perto do ultimo clique */
   let ultimoAlvo = null
   window.addEventListener('pointerdown', (e) => { ultimoAlvo = e.target }, true)
@@ -80,6 +155,7 @@
   const abrirOriginal = window.open
   window.open = function (url, ...resto) {
     const u = url == null ? '' : String(url)
+    anotar('window-open', { url: curto(u) })
     if (ehBlob(u)) {
       void entregar(u, 'abrir', '')
       return null
@@ -104,6 +180,7 @@
 
   /* 2 e 3. o link blob: com download, baixar; com alvo novo, abrir */
   const doLink = (a) => {
+    if (a && a.href) anotar('link', { url: curto(a.href), download: a.hasAttribute('download'), alvo: a.target || '' })
     if (!a || !ehBlob(a.href)) return false
     if (a.hasAttribute('download')) { void entregar(a.href, 'baixar', a.getAttribute('download') || ''); return true }
     if ((a.target || '').toLowerCase() === '_blank') { void entregar(a.href, 'abrir', ''); return true }

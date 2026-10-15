@@ -147,6 +147,14 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
          blob do iframe nao vale aqui fora, entao a extensao manda os bytes.
          Baixar vai pela pagina de cima, onde o Chrome deixa (e pergunta
          quando sao varios); abrir PDF mostra no visor desta pagina. */
+      /* o diario da extensao 0.6.4: so o esqueleto do que o WhatsApp faz ao
+         abrir um arquivo, para achar o PDF que gira para sempre */
+      if (d.tipo === 'diario') {
+        const w = window as unknown as { __ftWhatsAppDiario?: unknown[] }
+        const lista = (w.__ftWhatsAppDiario ??= [])
+        lista.push({ em: new Date().toISOString().slice(11, 23), ...(d as object) })
+        if (lista.length > 400) lista.splice(0, lista.length - 400)
+      }
       if (d.tipo === 'arquivo') {
         const x = d as unknown as { acao?: string; nome?: string; mime?: string; dados?: ArrayBuffer }
         if (!(x.dados instanceof ArrayBuffer)) return

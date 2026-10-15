@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { Botao, Modal } from '@ds'
 import { versaoDaExtensao } from '@shared'
 import { registrarConversaDoWhatsApp, registrarErroDaExtensao, semRegistro, type MensagemLida } from '@dominio/funil'
 import './funil.css'
@@ -97,6 +98,14 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
   const jaGravadas = useRef(new Set<string>())
   const [registro, setRegistro] = useState({ gravadas: 0, parado: false })
   const parado = useRef(false)
+  /* o PDF que o WhatsApp quis abrir, no visor desta pagina */
+  const [arquivo, setArquivo] = useState<{ url: string; nome: string } | null>(null)
+  const fecharArquivo = useCallback(() => {
+    setArquivo((antes) => {
+      if (antes) URL.revokeObjectURL(antes.url)
+      return null
+    })
+  }, [])
 
   const contarOTema = useCallback(() => {
     quadro.current?.contentWindow?.postMessage(
@@ -134,6 +143,31 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
         setConversa({ jid, telefone, nome: String(x.nome ?? ''), aberta: x.aberta ?? !!(jid || telefone) })
       }
       if (d.tipo === 'abriu') setRecarregou(d.jeito === 'recarregando')
+      /* O ARQUIVO QUE O WHATSAPP QUIS ABRIR OU BAIXAR (extensao 0.6.3): o
+         blob do iframe nao vale aqui fora, entao a extensao manda os bytes.
+         Baixar vai pela pagina de cima, onde o Chrome deixa (e pergunta
+         quando sao varios); abrir PDF mostra no visor desta pagina. */
+      if (d.tipo === 'arquivo') {
+        const x = d as unknown as { acao?: string; nome?: string; mime?: string; dados?: ArrayBuffer }
+        if (!(x.dados instanceof ArrayBuffer)) return
+        const nome = String(x.nome || 'arquivo')
+        const pdf = /pdf/i.test(String(x.mime)) || /\.pdf$/i.test(nome)
+        const mime = pdf ? 'application/pdf' : String(x.mime || 'application/octet-stream')
+        const url = URL.createObjectURL(new Blob([x.dados], { type: mime }))
+        if (x.acao === 'baixar') {
+          baixarDaqui(url, nome)
+          setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        } else if (pdf) {
+          setArquivo((antes) => {
+            if (antes) URL.revokeObjectURL(antes.url)
+            return { url, nome: /\.pdf$/i.test(nome) ? nome : nome + '.pdf' }
+          })
+        } else {
+          const janela = window.open(url, '_blank')
+          if (!janela) baixarDaqui(url, nome)
+          setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        }
+      }
       /* O VIGIA: a extensao nao achou o que procura no WhatsApp. A pagina
          grava com a entrada de quem esta usando (so o esqueleto, sem texto) */
       if (d.tipo === 'erro') {
@@ -286,6 +320,35 @@ export function ProvedorDoWhatsApp({ children }: { children: ReactNode }) {
             document.body,
           )
         : null}
+      <Modal
+        aberto={!!arquivo}
+        aoFechar={fecharArquivo}
+        titulo={arquivo?.nome ?? ''}
+        cheio
+        solto
+        pe={
+          arquivo ? (
+            <>
+              <Botao onClick={() => window.open(arquivo.url, '_blank')}>Abrir em outra aba</Botao>
+              <Botao tom="primario" onClick={() => baixarDaqui(arquivo.url, arquivo.nome)}>
+                Baixar
+              </Botao>
+            </>
+          ) : undefined
+        }
+      >
+        {arquivo ? <iframe className="fn-wa-pdf" src={arquivo.url} title={arquivo.nome} /> : null}
+      </Modal>
     </Contexto.Provider>
   )
+}
+
+/** Baixa pela pagina do Fourtime OS (e nao pelo iframe do WhatsApp). */
+function baixarDaqui(url: string, nome: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nome
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }

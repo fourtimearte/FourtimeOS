@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fourtime OS",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "O WhatsApp Web do vendedor dentro do Fourtime OS, com a cara do sistema e o lead da conversa aberta ao lado.",
   "permissions": [
     "sidePanel",
@@ -66,7 +66,8 @@
         "https://web.whatsapp.com/*"
       ],
       "js": [
-        "foco.js"
+        "foco.js",
+        "arquivos.js"
       ],
       "world": "MAIN",
       "all_frames": true,

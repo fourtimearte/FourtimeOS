@@ -1,4 +1,5 @@
 import type { Bloco } from '../layout/bloco'
+import type { ParteDaConta } from '../preco/adicionais'
 import { totalDaGrade } from '../layout/grade'
 import { ENTREGAS, PAGAMENTOS } from '../banco/dados'
 
@@ -57,6 +58,14 @@ export type ProdutoCotado = {
   /** o que a tabela deu por tamanho (plus e infantil); o adulto fica no
       precoBase. Escrito pelo sistema, e nao por alguem (formato 6) */
   precoDaTabela?: Partial<Record<string, number>>
+  /** OS ADICIONAIS (083): o que soma em cada peça por cima do preço da peça
+      (o tecido, a Sub, o Silk, o DTF, o Patch, o Bordado). Escrito pelo
+      sistema a partir da tabela e das escolhas do layout */
+  adicional?: number
+  /** a conta dos adicionais, parte por parte, para a tela e a folha */
+  conta?: ParteDaConta[]
+  /** os extras novos da tabela (nem Patch nem Bordado) escolhidos no layout */
+  extras?: { extra: string; opcao: string; qtd: number }[]
 }
 
 /** um acrescimo ou desconto no total, em reais ou em por cento */
@@ -339,7 +348,13 @@ export function pecasDoProduto(p: ProdutoCotado): number {
    para aquele tamanho (plus, infantil); depois o preco base. Um lugar so,
    para a grade, o total e a folha darem o mesmo numero. */
 export function precoNaGrade(p: ProdutoCotado, tam: string): number {
-  return p.precoPorTamanho[tam] ?? p.precoDaTabela?.[tam] ?? p.precoBase
+  return p.precoPorTamanho[tam] ?? precoSemMao(p, tam)
+}
+
+/** O preço de um tamanho sem o escrito à mão: a peça (com plus e infantil)
+    mais os adicionais (083). */
+export function precoSemMao(p: ProdutoCotado, tam: string): number {
+  return Math.round(((p.precoDaTabela?.[tam] ?? p.precoBase) + (p.adicional ?? 0)) * 100) / 100
 }
 
 export function totalDoProduto(p: ProdutoCotado): number {

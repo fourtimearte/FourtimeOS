@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Plus, Warning } from '@phosphor-icons/react'
-import { Botao, Marcacao, useSelecaoDeLinhas } from '@ds'
+import { Botao, Marcacao, PilulaTecnica, useSelecaoDeLinhas } from '@ds'
 import { celula, nomeDaFaixa, type Contexto, type TabelaDePreco } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao } from './campo'
+import { CampoDePreco, celulaDaColuna, colunasDaGrade, escritoNaColuna, usarAlca, usarEdicao } from './campo'
 import type { LinhaDaGrade, PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -48,13 +48,9 @@ export function GradeDaTabela({
   const ordem = linhas.map((l) => l.item.codigo)
   const edicao = usarEdicao({
     ordem,
-    faixas: tabela.faixas.length,
-    valorDe: (cod, i) => {
-      const it = tabela.itens.find((x) => x.codigo === cod)
-      if (!it) return null
-      /* abrir mostra o que esta escrito: a base, ou o a mao da faixa */
-      return i === 0 ? it.base : (it.precos[i] ?? null)
-    },
+    faixas: colunasDaGrade(tabela),
+    /* abrir mostra o que esta escrito: a base, o a mao da faixa, a Sub ou o Silk */
+    valorDe: (cod, i) => escritoNaColuna(tabela, tabela.itens.find((x) => x.codigo === cod), i),
     aoEscrever,
     aoColar: (cod, i, texto) => aoColar(ordem, ordem.indexOf(cod), i, texto),
   })
@@ -65,7 +61,7 @@ export function GradeDaTabela({
     ordem,
     valorDe: (cod, i) => {
       const it = tabela.itens.find((x) => x.codigo === cod)
-      return it ? celula(tabela, it, i, ctx).valor : null
+      return it ? celulaDaColuna(tabela, it, i, ctx).valor : null
     },
     aoPreencher,
   })
@@ -77,7 +73,7 @@ export function GradeDaTabela({
     else grupos.push([l.grupo, l.grupoCod, [l]])
   }
   const marcouTodos = ordem.length > 0 && ordem.every((c) => marcados.includes(c))
-  const colunas = tabela.faixas.length + 2
+  const colunas = tabela.faixas.length + 4
 
   return (
     <div className="pr-rola" onKeyDown={podeMexer ? selecao.naTecla : undefined}>
@@ -101,6 +97,14 @@ export function GradeDaTabela({
                 <small>{i === 0 ? nomeDaFaixa(f) + ' peças' : 'peças'}</small>
               </th>
             ))}
+            <th className="pr-tec pr-col-tec">
+              <PilulaTecnica tecnica="subli" tamanho="sm">SUB</PilulaTecnica>
+              <small>por peça</small>
+            </th>
+            <th className="pr-tec">
+              <PilulaTecnica tecnica="silk" tamanho="sm">SILK</PilulaTecnica>
+              <small>por tela</small>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -147,6 +151,20 @@ export function GradeDaTabela({
                           podeMexer={podeMexer}
                           edicao={edicao}
                           alca={alca}
+                        />
+                      </td>
+                    ))}
+                    {(['sub', 'silk'] as const).map((tec, k) => (
+                      <td key={tec} className={k === 0 ? 'pr-tec pr-col-tec' : 'pr-tec'}>
+                        <CampoDePreco
+                          codigo={l.item.codigo}
+                          faixa={tabela.faixas.length + k}
+                          celula={celulaDaColuna(tabela, l.item, tabela.faixas.length + k, ctx)}
+                          rotulo={`${l.item.codigo}, ${tec === 'sub' ? 'Sublimação por peça' : 'Silk por tela'}`}
+                          podeMexer={podeMexer}
+                          edicao={edicao}
+                          alca={alca}
+                          vazioDiz="não faz"
                         />
                       </td>
                     ))}

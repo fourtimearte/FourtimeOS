@@ -9,6 +9,7 @@ import {
   type SituacaoDaTabela,
   type TabelaDePreco,
 } from './tipos'
+import { adicionaisDe } from './adicionais'
 
 /* ==========================================================================
    A conversa das tabelas de preço com o banco (068).
@@ -28,13 +29,22 @@ type LinhaDaTabela = {
   so_gerente: boolean
   faixas: { de: number; ate: number | null }[] | null
   regras: Record<string, unknown> | null
-  itens: { codigo: string; tipo: string; base: number | null; precos: (number | null)[] | null }[] | null
+  itens: { codigo: string; tipo: string; base: number | null; precos: (number | null)[] | null; sub?: number | null; silk?: number | null }[] | null
   observacao: string | null
+  /** só existe depois da 083 */
+  adicionais?: unknown
   teste: boolean
   atualizado_em: string
 }
 
-const COLUNAS = 'id,nome,situacao,padrao,vale_ate,so_gerente,faixas,regras,itens,observacao,teste,atualizado_em'
+const COLUNAS_068 = 'id,nome,situacao,padrao,vale_ate,so_gerente,faixas,regras,itens,observacao,teste,atualizado_em'
+const COLUNAS_083 = COLUNAS_068 + ',adicionais'
+/* ANTES DA 083 a coluna dos adicionais não existe: a leitura volta sem ela,
+   e a tela avisa que os adicionais ainda não gravam */
+let temAdicionais = true
+const colunas = () => (temAdicionais ? COLUNAS_083 : COLUNAS_068)
+const semAdicionais = (e: unknown) => e instanceof Error && /adicionais/i.test(e.message)
+export const adicionaisNoBanco = () => temAdicionais
 
 const num = (v: unknown, reserva: number) => (typeof v === 'number' && Number.isFinite(v) ? v : reserva)
 
@@ -73,8 +83,11 @@ function deLinha(l: LinhaDaTabela): TabelaDePreco {
           const v = i.precos?.[k]
           return v == null ? null : Number(v)
         }),
+        sub: i.sub == null ? null : Number(i.sub),
+        silk: i.silk == null ? null : Number(i.silk),
       }),
     ),
+    adicionais: adicionaisDe(l.adicionais),
     observacao: l.observacao ?? '',
     teste: l.teste,
     atualizadoEm: l.atualizado_em,
@@ -100,8 +113,11 @@ function paraLinha(t: TabelaDePreco) {
       tipo: i.tipo,
       base: i.base,
       precos: t.faixas.map((_, k) => i.precos[k] ?? null),
+      sub: i.sub ?? null,
+      silk: i.silk ?? null,
     })),
     observacao: t.observacao,
+    ...(temAdicionais ? { adicionais: t.adicionais } : {}),
   }
 }
 
@@ -111,9 +127,13 @@ const semATabela = (e: unknown) =>
 /** Todas as tabelas, inclusive as arquivadas (a tela separa). */
 export async function carregarTabelasDePreco(): Promise<{ tabelas: TabelaDePreco[]; semBanco: boolean }> {
   try {
-    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${COLUNAS}&order=nome.asc`)
+    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${colunas()}&order=nome.asc`)
     return { tabelas: linhas.map(deLinha), semBanco: false }
   } catch (e) {
+    if (temAdicionais && semAdicionais(e)) {
+      temAdicionais = false
+      return carregarTabelasDePreco()
+    }
     if (semATabela(e)) return { tabelas: [], semBanco: true }
     throw e
   }
@@ -122,7 +142,7 @@ export async function carregarTabelasDePreco(): Promise<{ tabelas: TabelaDePreco
 /** Cria (sem id) ou grava (com id) a tabela inteira, e devolve como ficou. */
 export async function salvarTabelaDePreco(t: TabelaDePreco): Promise<TabelaDePreco> {
   if (t.id) {
-    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?id=eq.${encodeURIComponent(t.id)}&select=${COLUNAS}`, {
+    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?id=eq.${encodeURIComponent(t.id)}&select=${colunas()}`, {
       metodo: 'PATCH',
       corpo: paraLinha(t),
       devolver: true,
@@ -130,7 +150,7 @@ export async function salvarTabelaDePreco(t: TabelaDePreco): Promise<TabelaDePre
     if (!linhas[0]) throw new Error('Seu acesso não permite mudar tabela de preço.')
     return deLinha(linhas[0])
   }
-  const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${COLUNAS}`, {
+  const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${colunas()}`, {
     metodo: 'POST',
     corpo: [paraLinha(t)],
     devolver: true,

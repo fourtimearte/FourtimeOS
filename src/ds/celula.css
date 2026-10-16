@@ -1,0 +1,116 @@
+/* A célula que se escreve, jeito planilha (componentes/celula.tsx; Kit de
+   Comportamento, seção 3). Subiu das Tabelas de preço em 16/10/2026. */
+.cel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--re-3);
+  width: 100px;
+  height: 34px;
+  padding: 0 var(--re-5);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+button.cel:not(:disabled) {
+  cursor: text;
+}
+button.cel:not(:disabled):hover {
+  border-color: var(--text-3);
+}
+button.cel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.cel-base,
+.cel-mao {
+  font-weight: 600;
+}
+.cel-regra,
+.cel-kit {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.cel-mao::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-right: auto;
+  border-radius: var(--radius-pill);
+  background: var(--warn);
+}
+.cel-vazio {
+  justify-content: flex-start;
+  border: 1.5px dashed var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.cel-espera,
+.cel-fora {
+  justify-content: center;
+  border: 1px dashed var(--border-2);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.cel-fora {
+  border-color: var(--border);
+}
+.cel-campo {
+  border: 2px solid var(--ring);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+  font-weight: 600;
+  text-align: right;
+}
+.cel-campo:focus-visible {
+  outline: none;
+}
+.cel-caixa {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+}
+.cel-sel .cel {
+  border-color: var(--ring);
+  background: var(--ink-soft);
+}
+.cel-alca {
+  position: absolute;
+  right: calc(-1 * var(--re-1));
+  bottom: calc(-1 * var(--re-1));
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--surface);
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  cursor: crosshair;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+  touch-action: none;
+}
+.cel-caixa:hover .cel-alca,
+.cel-caixa:focus-within .cel-alca,
+.cel-sel .cel-alca {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .cel-alca {
+    width: 14px;
+    height: 14px;
+    opacity: 1;
+  }
+}
+@media (pointer: coarse) {
+  .cel {
+    height: 44px;
+  }
+}

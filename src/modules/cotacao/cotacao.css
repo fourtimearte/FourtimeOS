@@ -4078,10 +4078,199 @@ i.ct-cv-pe {
   font-weight: 600;
   color: var(--text-2);
 }
-.ct-qtd-patch-n {
-  min-width: 34px;
-  text-align: center;
-  font-size: 14px;
+
+/* ==========================================================================
+   A CONTA DA PEÇA (083, conta-da-peca.tsx): embaixo da grade, um bloco por
+   parte do preço, cada um com o seu controle, e o igual no fim.
+   ========================================================================== */
+.ct-conta {
+  border-top: 1px solid var(--border);
+  padding: var(--re-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-5);
+}
+.ct-conta-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-dentro);
+  font-size: 13.5px;
+}
+.ct-conta-nota {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ct-conta-partes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: var(--re-4);
+}
+.ct-conta-p {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  min-width: 0;
+  padding: var(--re-5) var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ct-conta-p > .fileira:first-child {
+  min-width: 0;
+  flex-wrap: nowrap;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ct-conta-p.falta {
+  border-color: var(--brand);
+  border-style: dashed;
+}
+.ct-conta-p.falta small {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.ct-conta-v {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ct-conta-p small {
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ct-conta-ctl {
+  padding-top: var(--re-2);
+  border-top: 1px solid var(--border);
+}
+.ct-conta-mais {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+}
+.ct-conta-igual {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--re-1);
+  padding: var(--re-5) var(--re-6);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.ct-conta-igual small {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.ct-conta-igual b {
+  font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* o modal do DTF */
+.ct-dtf {
+  gap: var(--sp-3);
+}
+.ct-dtf-sobre {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.ct-dtf-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: var(--re-5);
+}
+.ct-dtf-op {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-height: 132px;
+  padding: var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.ct-dtf-op:hover {
+  background: var(--surface-2);
+}
+.ct-dtf-op:focus-visible,
+.ct-dtf-radio:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.ct-dtf-op.ligado {
+  border-color: var(--tec-dtf);
+  background: var(--tec-dtf-soft);
+}
+.ct-dtf-camisas .dtf-camisa {
+  width: 56px;
+  height: 56px;
+}
+.ct-dtf-preco {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ct-dtf-sem {
+  justify-content: center;
+  align-items: center;
+  border-style: dashed;
+  color: var(--text-2);
+}
+.ct-dtf-sem b {
+  color: var(--text);
+}
+.ct-dtf-metro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 160px;
+  align-items: center;
+  gap: var(--gap-dentro);
+  padding: var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.ct-dtf-metro b {
+  font-size: 14px;
+  color: var(--text);
+}
+.ct-dtf-metro.ligado {
+  border-color: var(--tec-dtf);
+  background: var(--tec-dtf-soft);
+}
+.ct-dtf-radio {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  cursor: pointer;
+}
+.ct-dtf-metro.ligado .ct-dtf-radio {
+  border: 6px solid var(--tec-dtf);
+}
+.ct-dtf-pe {
+  width: 100%;
+}
+@media (max-width: 699px) {
+  .ct-dtf-metro {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .ct-dtf-metro .ct-dtf-valor {
+    grid-column: 1 / -1;
+  }
 }

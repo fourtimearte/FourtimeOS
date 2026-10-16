@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { CaretRight, ClipboardText, Copy, Plus, X } from '@phosphor-icons/react'
-import { Aviso, Botao, Chip, Entrada, Interruptor, Marcacao, Seletor, avisar, useSelecaoDeLinhas } from '@ds'
+import { Aviso, Botao, Chip, Entrada, Interruptor, Marcacao, PilulaTecnica, Seletor, avisar, useSelecaoDeLinhas } from '@ds'
 import { formatarNumeroExato } from '@shared'
 import {
   ajustarEmLote,
@@ -21,7 +21,7 @@ import {
   type EntradaDoCatalogo,
   type TabelaDePreco,
 } from '@dominio/preco'
-import { CampoDePreco, usarAlca, usarEdicao } from './campo'
+import { CampoDePreco, celulaDaColuna, colunasDaGrade, escritoNaColuna, usarAlca, usarEdicao } from './campo'
 import { achaNaBusca, type GrupoDoCatalogo, type PecaDoCatalogo } from './catalogo'
 
 /* ==========================================================================
@@ -100,11 +100,8 @@ export function ModoTabela({
 
   const edicao = usarEdicao({
     ordem: ordem.map((p) => p.codigo),
-    faixas: t.faixas.length,
-    valorDe: (cod, i) => {
-      const it = item(cod)
-      return it ? (i === 0 ? it.base : (it.precos[i] ?? null)) : null
-    },
+    faixas: colunasDaGrade(t),
+    valorDe: (cod, i) => escritoNaColuna(t, item(cod), i),
     aoEscrever: (cod, i, v) => mudar((x) => escrever(porNaTabela(x, entradas([cod])), cod, i, v)),
     aoColar: (cod, i, texto) => {
       const k = ordem.findIndex((p) => p.codigo === cod)
@@ -123,7 +120,7 @@ export function ModoTabela({
     ordem: ordem.map((p) => p.codigo),
     valorDe: (cod, i) => {
       const it = item(cod)
-      return it ? celula(t, it, i, ctx).valor : null
+      return it ? celulaDaColuna(t, it, i, ctx).valor : null
     },
     aoPreencher: (alvos, v) => {
       const tipo = (c: string) => grupos.flatMap((g) => g.pecas).find((p) => p.codigo === c)?.tipo ?? 'referencia'
@@ -171,7 +168,7 @@ export function ModoTabela({
     avisar(`${tem} de ${marcados.length} vieram da ${o.nome}`, tem ? 'ok' : 'warn')
   }
 
-  const colunas = t.faixas.length + 6
+  const colunas = t.faixas.length + 8
   return (
     <div className="pr-mt">
       <div className="fileira miuda pr-mt-filtros" role="group" aria-label="Mostrar">
@@ -271,6 +268,14 @@ export function ModoTabela({
                   <small>{i === 0 ? nomeDaFaixa(f) : 'peças'}</small>
                 </th>
               ))}
+              <th className="pr-tec pr-col-tec">
+                <PilulaTecnica tecnica="subli" tamanho="sm">SUB</PilulaTecnica>
+                <small>por peça</small>
+              </th>
+              <th className="pr-tec">
+                <PilulaTecnica tecnica="silk" tamanho="sm">SILK</PilulaTecnica>
+                <small>por tela</small>
+              </th>
               <th className="pr-mt-calc">
                 Plus G1 a G4<small>na base</small>
               </th>
@@ -421,6 +426,21 @@ export function ModoTabela({
                                   podeMexer={podeMexer}
                                   edicao={edicao}
                                   alca={alca}
+                                />
+                              </td>
+                            ))}
+                            {(['sub', 'silk'] as const).map((tec, k) => (
+                              <td key={tec} className={k === 0 ? 'pr-tec pr-col-tec' : 'pr-tec'}>
+                                <CampoDePreco
+                                  codigo={p.codigo}
+                                  faixa={t.faixas.length + k}
+                                  celula={it ? celulaDaColuna(t, it, t.faixas.length + k, ctx) : { valor: null, origem: 'vazio' }}
+                                  fora={!it}
+                                  rotulo={`${p.codigo}, ${tec === 'sub' ? 'Sublimação por peça' : 'Silk por tela'}`}
+                                  podeMexer={podeMexer}
+                                  edicao={edicao}
+                                  alca={alca}
+                                  vazioDiz="não faz"
                                 />
                               </td>
                             ))}

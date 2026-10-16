@@ -304,7 +304,7 @@
   align-items: center;
   gap: var(--gap-dentro);
 }
-.pr-leg .pr-pc {
+.pr-leg .cel {
   width: 84px;
   height: 28px;
   font-size: 12.5px;
@@ -360,92 +360,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (pointer: coarse) {
-  .pr-pc {
-    height: 44px;
-  }
-}
 
 
 /* ==========================================================================
    A REVISÃO DE 12/10/2026 (pranchas 139 a 143)
    ========================================================================== */
 
-/* --- o campo do preço: sempre à vista (campo.tsx) --------------------------- */
-.pr-pc {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--re-3);
-  width: 100px;
-  height: 34px;
-  padding: 0 var(--re-5);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-button.pr-pc:not(:disabled) {
-  cursor: text;
-}
-button.pr-pc:not(:disabled):hover {
-  border-color: var(--text-3);
-}
-button.pr-pc:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
-}
-.pr-pc-base,
-.pr-pc-mao {
-  font-weight: 600;
-}
-.pr-pc-regra,
-.pr-pc-kit {
-  border-color: var(--border);
-  background: var(--surface-2);
-  color: var(--text-3);
-}
-.pr-pc-mao::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  margin-right: auto;
-  border-radius: var(--radius-pill);
-  background: var(--warn);
-}
-.pr-pc-vazio {
-  justify-content: flex-start;
-  border: 1.5px dashed var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand-text);
-  font-size: 13px;
-  font-weight: 600;
-}
-.pr-pc-dabase,
-.pr-pc-fora {
-  justify-content: center;
-  border: 1px dashed var(--border-2);
-  background: transparent;
-  color: var(--text-3);
-  font-size: 12px;
-}
-.pr-pc-fora {
-  border-color: var(--border);
-}
-.pr-pc-campo {
-  border: 2px solid var(--ring);
-  box-shadow: 0 0 0 3px var(--ink-soft);
-  font-weight: 600;
-  text-align: right;
-}
-.pr-pc-campo:focus-visible {
-  outline: none;
-}
 /* a coluna do preço base, destacada */
 .pr-grade th.pr-col-base {
   background: var(--surface-2);
@@ -913,42 +833,6 @@ button.pr-pc:focus-visible {
   top: var(--re-5);
   right: var(--re-5);
 }
-/* a alça do campo (como a grade do editor da cotação) */
-.pr-pc-caixa {
-  position: relative;
-  display: inline-flex;
-  border-radius: var(--radius-sm);
-}
-.pr-pc-sel .pr-pc {
-  border-color: var(--ring);
-  background: var(--ink-soft);
-}
-.pr-pc-alca {
-  position: absolute;
-  right: calc(-1 * var(--re-1));
-  bottom: calc(-1 * var(--re-1));
-  width: 9px;
-  height: 9px;
-  border: 1.5px solid var(--surface);
-  border-radius: var(--radius-xs);
-  background: var(--ink);
-  cursor: crosshair;
-  opacity: 0;
-  transition: opacity var(--t-fast) var(--ease-out);
-  touch-action: none;
-}
-.pr-pc-caixa:hover .pr-pc-alca,
-.pr-pc-caixa:focus-within .pr-pc-alca,
-.pr-pc-sel .pr-pc-alca {
-  opacity: 1;
-}
-@media (pointer: coarse) {
-  .pr-pc-alca {
-    width: 14px;
-    height: 14px;
-    opacity: 1;
-  }
-}
 /* copiar os preços de uma peça */
 .pr-mt-copia {
   margin: var(--re-6) var(--re-9) 0;
@@ -969,4 +853,413 @@ button.pr-pc:focus-visible {
 .pr-mt-colar-g {
   margin-left: var(--re-6);
   vertical-align: middle;
+}
+
+/* ==========================================================================
+   A TABELA DE PREÇO NOVA (083, wireframe de 16/10/2026): as colunas da
+   técnica, as quatro abas, o Material, os Extras e o DTF.
+   ========================================================================== */
+
+/* a Sub e o Silk: um risco separa a técnica das faixas */
+.pr-grade th.pr-col-tec,
+.pr-grade td.pr-col-tec {
+  border-left: 1px solid var(--border);
+}
+.pr-grade th .tec {
+  margin-bottom: var(--re-1);
+}
+
+/* as abas da tabela */
+.pr-abas {
+  padding: var(--re-6) var(--re-9);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.pr-conta {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--re-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* o resumo dos adicionais, na coluna das regras: cada linha leva para a aba */
+.pr-resumo {
+  gap: 0;
+}
+.pr-resumo button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-dentro);
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.pr-resumo button:last-child {
+  border-bottom: 0;
+}
+.pr-resumo button b {
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+}
+.pr-resumo button:hover b {
+  color: var(--brand-text);
+}
+.pr-resumo button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.pr-lote-fim {
+  margin-left: auto;
+}
+
+/* --- a aba Material ------------------------------------------------------------- */
+.pr-mat-nome {
+  align-items: center;
+}
+.pr-amostras {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--re-1);
+}
+.pr-amostras small {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.pr-grade.pr-mat td.pr-col-base,
+.pr-grade.pr-mat th.pr-col-base {
+  width: 160px;
+}
+
+/* --- a aba Extras: um mini editor por extra ---------------------------------------- */
+.pr-ex-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: var(--sp-4);
+  padding: var(--re-9);
+  align-items: start;
+}
+.pr-ex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-4);
+  min-width: 0;
+  padding: var(--pad-cartao);
+}
+.pr-ex-cab {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gap-dentro);
+  min-height: 34px;
+}
+.pr-ex-cab b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pr-ex-cab small {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.pr-ex-nome {
+  flex: 1;
+  min-width: 140px;
+  max-width: 240px;
+  font-weight: 600;
+}
+.pr-ex-fim {
+  margin-left: auto;
+}
+.pr-ex-nota {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+  margin: 0 0 var(--re-2);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-ex-op {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 100px 34px;
+  align-items: center;
+  gap: var(--re-4);
+}
+.pr-ex-op.sem-medida {
+  grid-template-columns: minmax(0, 2fr) 100px 34px;
+}
+.pr-ex-op-cab {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pr-ex-dir {
+  text-align: right;
+}
+.pr-ex-pe {
+  display: flex;
+  padding-top: var(--re-2);
+}
+.pr-ex-novo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--re-3);
+  min-height: 160px;
+  padding: var(--pad-cartao);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.pr-ex-novo b {
+  font-size: 15px;
+  color: var(--text);
+}
+.pr-ex-novo:hover {
+  background: var(--surface-2);
+}
+.pr-ex-novo:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* a pergunta antes de apagar, na própria página (Kit, seção 7) */
+.pr-ex-pergunta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  padding: var(--re-5) var(--re-7);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* --- a aba DTF: as combinações à esquerda, a escolhida à direita -------------------- */
+.pr-dtf {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  min-height: 520px;
+}
+.pr-dtf-l {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+}
+.pr-dtf-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-btn);
+  padding: var(--re-6) var(--re-9);
+  border-bottom: 1px solid var(--border);
+}
+.pr-dtf-lista {
+  display: flex;
+  flex-direction: column;
+}
+.pr-dtf-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 64px;
+  padding: var(--re-5) var(--re-9);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.pr-dtf-item:hover {
+  background: var(--surface-2);
+}
+.pr-dtf-item.ligado {
+  border-left-color: var(--tec-dtf);
+  background: var(--tec-dtf-soft);
+}
+.pr-dtf-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.pr-dtf-item b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.pr-dtf-item small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-dtf-preco {
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pr-dtf-preco.falta {
+  color: var(--brand-text);
+}
+.pr-dtf-copiar {
+  margin-top: auto;
+  padding: var(--re-6) var(--re-9);
+  border-top: 1px solid var(--border);
+}
+.pr-dtf-r {
+  min-width: 0;
+  gap: var(--sp-4);
+  padding: var(--re-9);
+}
+.pr-dtf-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+.pr-dtf-campos .cel {
+  width: 100%;
+  height: var(--btn-h);
+}
+.pr-dtf-camisas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  gap: var(--sp-6);
+}
+.pr-dtf-camisa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--re-3);
+  margin: 0;
+  padding: var(--re-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.pr-dtf-camisa .dtf-camisa {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1;
+}
+.pr-dtf-camisa figcaption {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.pr-sobre {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pr-dtf-pos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: var(--re-4);
+}
+.pr-dtf-p {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-dentro);
+  min-height: 48px;
+  padding: var(--re-4) var(--re-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.pr-dtf-p:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.pr-dtf-p:disabled {
+  cursor: default;
+}
+.pr-dtf-p:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.pr-dtf-p.ligado {
+  border-color: var(--tec-dtf);
+  background: var(--tec-dtf-soft);
+}
+.pr-dtf-p b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pr-dtf-p small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pr-dtf-ck {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--branco);
+}
+.pr-dtf-p.ligado .pr-dtf-ck {
+  border-color: var(--tec-dtf);
+  background: var(--tec-dtf);
+}
+@media (max-width: 899px) {
+  .pr-dtf {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .pr-dtf-l {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pr-dtf-campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (pointer: coarse) {
+  .pr-ex-op {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 100px 44px;
+  }
+  .pr-ex-op.sem-medida {
+    grid-template-columns: minmax(0, 2fr) 100px 44px;
+  }
+}
+.pr-grade th.pr-tec {
+  white-space: nowrap;
 }

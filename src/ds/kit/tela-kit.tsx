@@ -14,6 +14,8 @@ import {
 } from '../componentes/formulario'
 import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/busca-global'
 import { CampoDeData } from '../componentes/data'
+import { CampoDeCelula, usarAlcaDeCelulas, usarEdicaoDeCelulas, type EstadoDaCelula } from '../componentes/celula'
+import { Passo } from '../componentes/passo'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { DataEmPilula } from '../componentes/data'
@@ -50,6 +52,7 @@ const SECOES: [string, string][] = [
   ['campos', 'Campos'],
   ['marcacao', 'Marcação'],
   ['segmentado', 'Segmentado'],
+  ['celula', 'Célula e passo'],
   ['cartoes', 'Cartões'],
   ['tinta', 'Luz e tinta'],
   ['selos', 'Selos e tags'],
@@ -415,6 +418,16 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
           >
             <div className="kit-bancada">
               <SegmentadoDemo />
+            </div>
+          </Secao>
+
+          <Secao
+            id="celula"
+            titulo="Célula que se escreve, e o passo"
+            texto="A célula jeito planilha (Kit de Comportamento, seção 3): clicar ou começar a digitar abre, Enter grava e desce, Tab vai para o lado, Esc desiste, colar um bloco preenche, e a alça do canto repete o valor nas vizinhas. O estado diz como ela aparece. O passo é o menos e o mais de uma quantidade: patches, bordados, telas."
+          >
+            <div className="kit-bancada">
+              <CelulaDemo />
             </div>
           </Secao>
 
@@ -811,6 +824,64 @@ function DataDemo() {
         <CampoDeData valor={outra} aoMudar={setOutra} />
       </Campo>
     </>
+  )
+}
+
+const ESTADOS_DA_CELULA: [EstadoDaCelula, string, number | null, string?][] = [
+  ['base', 'escrito por alguém', 49.9],
+  ['mao', 'à mão, por cima da regra', 47],
+  ['regra', 'veio da regra', 44.9],
+  ['kit', 'a soma das peças', 82.9],
+  ['vazio', 'falta o que importa', null, 'sem preço'],
+  ['espera', 'espera outro valor', null, 'não faz'],
+]
+
+function CelulaDemo() {
+  const [valores, setValores] = useState<Record<string, number | null>>({ a: 10, b: 12, c: null })
+  const [qtd, setQtd] = useState(2)
+  const ordem = ['a', 'b', 'c']
+  const edicao = usarEdicaoDeCelulas({
+    ordem,
+    colunas: 1,
+    valorDe: (id) => valores[id] ?? null,
+    aoEscrever: (id, _c, v) => setValores((x) => ({ ...x, [id]: v })),
+    aoColar: () => {},
+  })
+  const alca = usarAlcaDeCelulas({
+    ordem,
+    valorDe: (id) => valores[id] ?? null,
+    aoPreencher: (alvos, v) => setValores((x) => ({ ...x, ...Object.fromEntries(alvos.map((a) => [a.id, v])) })),
+  })
+  const parada = usarEdicaoDeCelulas({ ordem: [], colunas: 1, valorDe: () => null, aoEscrever: () => {}, aoColar: () => {} })
+  return (
+    <div className="pilha">
+      <div className="fileira">
+        {ESTADOS_DA_CELULA.map(([estado, texto, valor, escrito]) => (
+          <span key={estado} className="pilha miuda">
+            <CampoDeCelula id={estado} coluna={0} valor={valor} estado={estado} texto={escrito} rotulo={texto} podeMexer={false} edicao={parada} />
+            <small>{texto}</small>
+          </span>
+        ))}
+      </div>
+      <div className="fileira">
+        {ordem.map((id) => (
+          <CampoDeCelula
+            key={id}
+            id={id}
+            coluna={0}
+            valor={valores[id] ?? null}
+            estado={valores[id] == null ? 'vazio' : 'base'}
+            texto={valores[id] == null ? 'sem preço' : undefined}
+            rotulo={'Célula ' + id}
+            podeMexer
+            edicao={edicao}
+            alca={alca}
+          />
+        ))}
+        <Passo valor={qtd} rotulo="telas do Silk" unidade={qtd === 1 ? 'tela' : 'telas'} aoMudar={setQtd} />
+        <Passo valor={null} rotulo="patches dos marcados" aoMudar={() => {}} />
+      </div>
+    </div>
   )
 }
 

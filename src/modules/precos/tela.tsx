@@ -25,6 +25,7 @@ import { useSessao } from '@dominio/sessao'
 import {
   NOME_DA_SITUACAO,
   ajustarEmLote,
+  adicionaisNoBanco,
   apagarTabelaDePreco,
   celula,
   carregarTabelasDePreco,
@@ -49,6 +50,9 @@ import { AdicionarDoCatalogo } from './adicionar'
 import { MudarAsFaixas } from './faixas'
 import { GradeDaTabela } from './grade'
 import { ModoTabela } from './modo-tabela'
+import { AbaMaterial } from './material'
+import { AbaExtras } from './extras'
+import { AbaDtf } from './dtf'
 import { NovaTabela } from './nova'
 import './precos.css'
 
@@ -75,6 +79,9 @@ export const ARREDONDAR: { valor: Arredondar; rotulo: string }[] = [
   { valor: '00', rotulo: ',00' },
   { valor: '', rotulo: 'Não arredondar' },
 ]
+
+type Aba = 'pecas' | 'material' | 'extras' | 'dtf'
+const ABAS: Aba[] = ['pecas', 'material', 'extras', 'dtf']
 
 export function TelaTabelasDePreco() {
   const navegar = useNavigate()
@@ -109,6 +116,14 @@ export function TelaTabelasDePreco() {
 
   const escolhidaId = params.get('t') ?? ''
   const modo: 'lista' | 'tabela' = params.get('modo') === 'tabela' ? 'tabela' : 'lista'
+  /* as abas da tabela (083): a Lista e a Tabela só valem nas peças */
+  const aba: Aba = ABAS.find((a) => a === params.get('aba')) ?? 'pecas'
+  const trocarAba = (a: Aba) => {
+    const p = new URLSearchParams(params)
+    if (a === 'pecas') p.delete('aba')
+    else p.set('aba', a)
+    setParams(p, { replace: true })
+  }
   const trocarModo = (m: 'lista' | 'tabela') => {
     const p = new URLSearchParams(params)
     if (m === 'tabela') p.set('modo', 'tabela')
@@ -317,6 +332,44 @@ export function TelaTabelasDePreco() {
     />
   )
 
+  const temAdicionais = adicionaisNoBanco()
+  const mexeNosAdicionais = podeMexer && temAdicionais
+  const abas = t ? (
+    <div className="pr-abas">
+      <Segmentado<Aba>
+        valor={aba}
+        aoMudar={trocarAba}
+        opcoes={[
+          { valor: 'pecas', rotulo: <span className="pr-seg">Peças e técnicas<em className="pr-conta">{t.itens.length}</em></span> },
+          { valor: 'material', rotulo: <span className="pr-seg">Material<em className="pr-conta">{t.adicionais.materiais.length}</em></span> },
+          { valor: 'extras', rotulo: <span className="pr-seg">Extras<em className="pr-conta">{t.adicionais.extras.length}</em></span> },
+          { valor: 'dtf', rotulo: <span className="pr-seg">DTF<em className="pr-conta">{t.adicionais.dtf.length}</em></span> },
+        ]}
+      />
+    </div>
+  ) : null
+  const semAdicionais = !temAdicionais ? (
+    <div className="pr-aviso">
+      <Aviso tom="warn" titulo="Os adicionais ainda não estão no banco">
+        Falta rodar a migração 083 (banco/083-os-adicionais-da-tabela-de-preco.sql) no Supabase. Até lá, esta aba só mostra, e o
+        Salvar grava a peça, a Sub e o Silk como antes.
+      </Aviso>
+    </div>
+  ) : null
+  const abaDosAdicionais =
+    t && aba !== 'pecas' ? (
+      <>
+        {semAdicionais}
+        {aba === 'material' ? (
+          <AbaMaterial key={t.id} tabela={t} podeMexer={mexeNosAdicionais} mudar={mudar} />
+        ) : aba === 'extras' ? (
+          <AbaExtras key={t.id} tabela={t} podeMexer={mexeNosAdicionais} mudar={mudar} />
+        ) : (
+          <AbaDtf key={t.id} tabela={t} outras={tabelas.filter((x) => x.id !== t.id)} podeMexer={mexeNosAdicionais} mudar={mudar} />
+        )}
+      </>
+    ) : null
+
   const rodape = (
     <p className="pr-pe">
       {sujo ? 'Há mudanças não salvas: elas só valem na cotação depois do Salvar.' : 'Tudo salvo.'}
@@ -445,10 +498,11 @@ export function TelaTabelasDePreco() {
         <Aviso tom="brand" titulo="Não consegui ler as tabelas de preço">
           {falha}
         </Aviso>
-      ) : modo === 'tabela' && t && ctx ? (
+      ) : modo === 'tabela' && aba === 'pecas' && t && ctx ? (
         /* O MODO TABELA ocupa a largura toda: o catálogo inteiro precisa de lugar */
         <section className="cartao pr-cartao" aria-label={'Tabela ' + t.nome + ', modo tabela'}>
           {cabecalho(t)}
+          {abas}
           <div className="fileira pr-ferr">
             <Seletor
               rotulo="TABELA"
@@ -549,7 +603,14 @@ export function TelaTabelasDePreco() {
           ) : (
             <section className="cartao pr-cartao" aria-label={'Tabela ' + t.nome}>
               {cabecalho(t)}
-
+              {abas}
+              {abaDosAdicionais ? (
+                <>
+                  {abaDosAdicionais}
+                  {rodape}
+                </>
+              ) : (
+                <>
               <div className="fileira pr-ferr">
                 <Busca
                   placeholder="Buscar código, nome ou grupo"
@@ -675,10 +736,12 @@ export function TelaTabelasDePreco() {
                 )
               ) : null}
               {rodape}
+                </>
+              )}
             </section>
           )}
 
-          {t ? (
+          {t && aba !== 'dtf' ? (
             <aside className="pilha pr-col">
               <div className="cartao cartao-pad pilha pr-bloco">
                 <TituloCartao icone={Tag}>As faixas de quantidade</TituloCartao>
@@ -715,6 +778,32 @@ export function TelaTabelasDePreco() {
                 <Regra rotulo="Kit sem base: a soma das peças (%)" valor={t.regras.kitPct} podeMexer={podeMexer} aoMudar={(v) => regra({ kitPct: v })} />
               </div>
               <div className="cartao cartao-pad pilha pr-bloco">
+                <TituloCartao icone={Tag}>Os adicionais desta tabela</TituloCartao>
+                <p className="pr-nota">O preço da peça na cotação é a soma: a peça, o material, a técnica e os extras.</p>
+                <div className="pilha pr-resumo">
+                  <button type="button" onClick={() => trocarAba('material')}>
+                    <span>Material</span>
+                    <b>
+                      {t.adicionais.materiais.length} {t.adicionais.materiais.length === 1 ? 'tecido soma' : 'tecidos somam'}
+                    </b>
+                  </button>
+                  <button type="button" onClick={() => trocarAba('pecas')}>
+                    <span>Sublimação e Silk</span>
+                    <b>nas colunas da grade</b>
+                  </button>
+                  <button type="button" onClick={() => trocarAba('extras')}>
+                    <span>Extras</span>
+                    <b>{t.adicionais.extras.map((e) => e.nome).join(', ')}</b>
+                  </button>
+                  <button type="button" onClick={() => trocarAba('dtf')}>
+                    <span>DTF</span>
+                    <b>
+                      {t.adicionais.dtf.length} {t.adicionais.dtf.length === 1 ? 'combinação' : 'combinações'}
+                    </b>
+                  </button>
+                </div>
+              </div>
+              <div className="cartao cartao-pad pilha pr-bloco">
                 <TituloCartao icone={Tag}>Onde ela vale</TituloCartao>
                 <Campo rotulo="Vale até" dica="Vazio: sem data para acabar">
                   <Entrada
@@ -735,22 +824,22 @@ export function TelaTabelasDePreco() {
                 <TituloCartao icone={Tag}>Como ler a grade</TituloCartao>
                 <div className="pilha pr-leg">
                   <span>
-                    <i className="pr-pc pr-pc-base">49,90</i>a base, escrita por alguém
+                    <i className="cel cel-base">49,90</i>a base, escrita por alguém
                   </span>
                   <span>
-                    <i className="pr-pc pr-pc-regra">44,90</i>cinza: veio da regra
+                    <i className="cel cel-regra">44,90</i>cinza: veio da regra
                   </span>
                   <span>
-                    <i className="pr-pc pr-pc-mao">47,00</i>ponto: escrito à mão
+                    <i className="cel cel-mao">47,00</i>ponto: escrito à mão
                   </span>
                   <span>
-                    <i className="pr-pc pr-pc-kit">82,90</i>o kit pela soma das peças
+                    <i className="cel cel-kit">82,90</i>o kit pela soma das peças
                   </span>
                   <span>
-                    <i className="pr-pc pr-pc-vazio">R$ 0,00</i>falta o preço: não sai na cotação
+                    <i className="cel cel-vazio">R$ 0,00</i>falta o preço: não sai na cotação
                   </span>
                   <span>
-                    <i className="pr-pc pr-pc-dabase">da base</i>espera o preço base
+                    <i className="cel cel-espera">da base</i>espera o preço base
                   </span>
                 </div>
               </div>

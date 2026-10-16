@@ -14,6 +14,8 @@
    Tudo aqui é conta pura, sem rede: o teste roda em node (testes/precos.mjs).
    ========================================================================== */
 
+import { adicionaisEmBranco, type Adicionais } from './adicionais-base'
+
 export type Faixa = { de: number; ate: number | null }
 
 export type Arredondar = '90' | '00' | ''
@@ -39,6 +41,10 @@ export type ItemDaTabela = {
   base: number | null
   /** o escrito à mão em cada faixa; null = a regra */
   precos: (number | null)[]
+  /** a Sublimação, em reais por peça (083); null ou ausente = não faz */
+  sub?: number | null
+  /** o Silk, em reais por TELA (083): a cotação diz quantas telas */
+  silk?: number | null
 }
 
 export type SituacaoDaTabela = 'rascunho' | 'ativa' | 'arquivada'
@@ -57,6 +63,8 @@ export type TabelaDePreco = {
   observacao: string
   teste: boolean
   atualizadoEm: string
+  /** o material, os extras e as combinações de DTF (083) */
+  adicionais: Adicionais
 }
 
 export const FAIXAS_PADRAO: Faixa[] = [
@@ -97,6 +105,7 @@ export function tabelaEmBranco(nome = ''): TabelaDePreco {
     observacao: '',
     teste: false,
     atualizadoEm: '',
+    adicionais: adicionaisEmBranco(),
   }
 }
 
@@ -203,8 +212,10 @@ export function voltarParaARegra(t: TabelaDePreco, codigos: string[]): TabelaDeP
   }
 }
 
-/** Escreve numa célula: a primeira faixa é a base; as outras ficam "à mão". */
+/** Escreve numa célula: a primeira faixa é a base; as outras ficam "à mão".
+    As duas colunas depois das faixas são a Sub e o Silk da peça (083). */
 export function escrever(t: TabelaDePreco, codigo: string, i: number, valor: number | null): TabelaDePreco {
+  if (i >= t.faixas.length) return escreverTecnica(t, [codigo], i === t.faixas.length ? 'sub' : 'silk', valor)
   return {
     ...t,
     itens: t.itens.map((it) => {
@@ -222,11 +233,13 @@ export function escrever(t: TabelaDePreco, codigo: string, i: number, valor: num
    em por cento na base e no escrito à mão. */
 export function copiarDe(origem: TabelaDePreco, nome: string, pct: number, modo: Arredondar): TabelaDePreco {
   const ajustada = ajustarEmLote(origem, origem.itens.map((i) => i.codigo), pct, modo)
+  const g = (v: number | null | undefined) => (v == null ? v : arredondar(v * (1 + pct / 100), ''))
   return {
     ...tabelaEmBranco(nome),
     faixas: origem.faixas.map((f) => ({ ...f })),
     regras: { ...origem.regras, arredondar: modo },
-    itens: ajustada.itens.map((i) => ({ ...i, precos: [...i.precos] })),
+    itens: ajustada.itens.map((i) => ({ ...i, precos: [...i.precos], sub: g(i.sub), silk: g(i.silk) })),
+    adicionais: JSON.parse(JSON.stringify(origem.adicionais)) as Adicionais,
   }
 }
 
@@ -345,7 +358,7 @@ export function copiarPrecosDe(
     itens: com.itens.map((i) => {
       const o = daOrigem.get(i.codigo)
       if (!o) return i
-      return { ...i, base: f(o.base), precos: mesmas ? o.precos.map(f) : t.faixas.map(() => null) }
+      return { ...i, base: f(o.base), precos: mesmas ? o.precos.map(f) : t.faixas.map(() => null), sub: o.sub ?? null, silk: o.silk ?? null }
     }),
   }
 }
@@ -380,7 +393,7 @@ export function colarNaTabela(
     if (!alvo) return
     cols.forEach((v, dc) => {
       const k = faixa + dc
-      if (k >= t.faixas.length || (v != null && (!Number.isFinite(v) || v < 0))) return
+      if (k >= t.faixas.length + COLUNAS_DE_TECNICA || (v != null && (!Number.isFinite(v) || v < 0))) return
       out = escrever(porNaTabela(out, [alvo]), alvo.codigo, k, v)
       coladas++
     })
@@ -399,7 +412,9 @@ export function colarPrecosDaPeca(t: TabelaDePreco, origem: string, destinos: En
   const cods = new Set(alvos.map((d) => d.codigo))
   return {
     ...com,
-    itens: com.itens.map((i) => (cods.has(i.codigo) ? { ...i, base: o.base, precos: t.faixas.map((_, k) => o.precos[k] ?? null) } : i)),
+    itens: com.itens.map((i) =>
+      cods.has(i.codigo) ? { ...i, base: o.base, precos: t.faixas.map((_, k) => o.precos[k] ?? null), sub: o.sub ?? null, silk: o.silk ?? null } : i,
+    ),
   }
 }
 
@@ -415,4 +430,11 @@ export function preencherCelulas(
   let out = t
   for (const a of alvos) out = escrever(porNaTabela(out, [{ codigo: a.codigo, tipo: a.tipo }]), a.codigo, a.faixa, valor)
   return out
+}
+
+/* --- a Sub e o Silk da peça (083): escrever, e mudar em lote ------------------ */
+/** depois das faixas, a grade tem a coluna da Sub e a do Silk */
+export const COLUNAS_DE_TECNICA = 2
+export function escreverTecnica(t: TabelaDePreco, codigos: string[], campo: 'sub' | 'silk', valor: number | null): TabelaDePreco {
+  return { ...t, itens: t.itens.map((it) => (codigos.includes(it.codigo) ? { ...it, [campo]: valor } : it)) }
 }

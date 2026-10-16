@@ -9,6 +9,9 @@
 export { Botao, Chip } from './componentes/botao'
 export { BotaoComMenu } from './componentes/botao-menu'
 export { cliqueEmControle, useSelecaoDeLinhas } from './componentes/selecao'
+export { CampoDeCelula, lerNumero, usarAlcaDeCelulas, usarEdicaoDeCelulas } from './componentes/celula'
+export { Passo } from './componentes/passo'
+export type { AlcaDeCelulas, EdicaoDeCelulas, EstadoDaCelula, PontoDaGrade } from './componentes/celula'
 export {
   apagarRascunho,
   avisarQueORascunhoVoltou,

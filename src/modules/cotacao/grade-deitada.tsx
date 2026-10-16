@@ -3,7 +3,7 @@ import type { PointerEvent as EventoDePonteiro, ReactNode } from 'react'
 import { Table } from '@phosphor-icons/react'
 import { Segmentado, TituloCartao } from '@ds'
 import { GradeDeTamanhos, foraDaFaixa, tamanhosNaOrdem, type Faixa, type Grade, type Tamanho } from '@dominio/layout'
-import { pecasDoProduto, precoNaGrade, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
+import { pecasDoProduto, precoNaGrade, precoSemMao, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import './cotacao.css'
 
 /* ==========================================================================
@@ -31,6 +31,7 @@ export function CartaoDaGrade({
   travado,
   aoMudarProduto,
   seletorDoPreco,
+  conta,
 }: {
   produto: ProdutoCotado
   travado: boolean
@@ -38,6 +39,8 @@ export function CartaoDaGrade({
   /** de qual tabela de preço o layout segue (068); fica no cabeçalho, à
       esquerda de Adulta e Infantil */
   seletorDoPreco?: ReactNode
+  /** a conta da peça embaixo da grade (083): conta-da-peca.tsx */
+  conta?: ReactNode
 }) {
   const b = produto.bloco
   const tamanhos = tamanhosNaOrdem(b.faixa, b.grade)
@@ -62,7 +65,7 @@ export function CartaoDaGrade({
       aoMudarProduto((p) => {
         const novo = { ...p.precoPorTamanho }
         for (const t of alvos) {
-          if (n === null || n === (p.precoDaTabela?.[t] ?? p.precoBase)) delete novo[t]
+          if (n === null || n === precoSemMao(p, t)) delete novo[t]
           else novo[t] = n
         }
         return { ...p, precoPorTamanho: novo }
@@ -185,7 +188,7 @@ export function CartaoDaGrade({
           faixa={b.faixa}
           grade={b.grade}
           aoMudar={travado ? undefined : mudarGrade}
-          precoBase={produto.precoBase}
+          precoBase={Math.round((produto.precoBase + (produto.adicional ?? 0)) * 100) / 100}
           precoPorTamanho={produto.precoPorTamanho}
           aoMudarPreco={(t, valor) => gravar('valor', [t], valor)}
         />
@@ -239,6 +242,7 @@ export function CartaoDaGrade({
           </tbody>
         </table>
       </div>
+      {conta}
     </section>
   )
 }

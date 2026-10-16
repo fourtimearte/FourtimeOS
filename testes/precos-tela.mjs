@@ -46,6 +46,18 @@ const REFS = [
 ]
 const KITS = [{ id: 'k1', cod: 'KT01', nome: 'Kit camiseta e short', genero: 'U', ativo: true, ficha_em: null, pecas: 2, pecas_cod: ['CT01', 'SH01'], pecas_sem_tecido: 0, pecas_sem_etiqueta: 0, tem_desenho: false }]
 
+/* os tecidos do Estoque (083: a aba Material) */
+const GRUPOS_DE_TECIDO = [{ cod: 'DRY', nome: 'Dryfit', ordem: 1 }, { cod: 'ALG', nome: 'Algodão', ordem: 2 }]
+const TECIDOS = [
+  { id: 'tc1', nome: 'Dryfit poliéster 100%', grupo: 'DRY', gramatura: 160, largura: 1.8, ordem: 1, ativo: true },
+  { id: 'tc2', nome: 'Dry fit PET 160', grupo: 'DRY', gramatura: 160, largura: 1.8, ordem: 2, ativo: true },
+  { id: 'tc3', nome: 'Algodão 100%', grupo: 'ALG', gramatura: 180, largura: 1.7, ordem: 3, ativo: true },
+]
+const MATERIAIS = [
+  { id: 'm1', categoria: 'tecido', nome: 'Dry fit PET 160 Azul', unidade: 'kg', minimo: 0, saldo: 10, reservado: 0, livre: 10, pedidos_reservando: 0, tecido_id: 'tc2', cor_hex: '#1d4ed8', abaixo_do_minimo: false },
+  { id: 'm2', categoria: 'tecido', nome: 'Dry fit PET 160 Verde', unidade: 'kg', minimo: 0, saldo: 10, reservado: 0, livre: 10, pedidos_reservando: 0, tecido_id: 'tc2', cor_hex: '#0f766e', abaixo_do_minimo: false },
+]
+
 const nav = await chromium.launch()
 const achados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
@@ -81,6 +93,9 @@ async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false, tabel
         corpo = [novo]
       } else corpo = estado.tabelas
     }
+    else if (u.includes('grupo_de_tecido')) corpo = GRUPOS_DE_TECIDO
+    else if (u.includes('/tecido?')) corpo = TECIDOS
+    else if (u.includes('material_na_prateleira')) corpo = MATERIAIS
     else if (u.includes('grupo_de_referencia')) corpo = GRUPOS
     else if (u.includes('referencia_na_ficha')) corpo = REFS
     else if (u.includes('kit_na_ficha')) corpo = KITS
@@ -97,7 +112,7 @@ async function abrir({ tema, larg, alt, papel = 'admin', semBanco = false, tabel
 
 const celulas = (pg, cod) => pg.evaluate((c) => {
   const tr = [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === c)
-  return tr ? [...tr.querySelectorAll('td .pr-pc')].map((b) => b.textContent.trim() + (b.className.includes('pr-pc-mao') ? '*' : b.className.includes('pr-pc-regra') ? '~' : b.className.includes('pr-pc-kit') ? 'k' : '')) : []
+  return tr ? [...tr.querySelectorAll('td:not(.pr-tec) .cel')].map((b) => b.textContent.trim() + (b.className.includes('cel-mao') ? '*' : b.className.includes('cel-regra') ? '~' : b.className.includes('cel-kit') ? 'k' : '')) : []
 }, cod)
 
 for (const tema of ['light', 'dark']) {
@@ -122,7 +137,7 @@ for (const tema of ['light', 'dark']) {
 
     if (tema === 'light' && nome === 'computador') {
       /* escrever numa celula: a primeira faixa vira a base e a regra segue */
-      await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === 'CT01').querySelector('td .pr-pc').click())
+      await pg.evaluate(() => [...document.querySelectorAll('.pr-grade tbody tr')].find((x) => x.querySelector('.pr-cod')?.textContent === 'CT01').querySelector('td .cel').click())
       await pg.keyboard.press('Control+a'); await pg.keyboard.type('59,90'); await pg.keyboard.press('Enter')
       await pg.waitForTimeout(200)
       const novo = await celulas(pg, 'CT01')
@@ -188,7 +203,7 @@ for (const tema of ['light', 'dark']) {
   const v = await pg.evaluate(() => ({
     nova: [...document.querySelectorAll('button')].some((b) => /Nova tabela/.test(b.innerText)),
     salvar: [...document.querySelectorAll('button')].some((b) => /^Salv/.test(b.innerText.trim())),
-    celulaTravada: document.querySelector('.pr-grade td .pr-pc')?.disabled ?? false,
+    celulaTravada: document.querySelector('.pr-grade td .cel')?.disabled ?? false,
   }))
   conta(!v.nova && !v.salvar && v.celulaTravada, 'vendedora: vê a tabela, sem Nova tabela, sem Salvar e com as células travadas')
   await ctx.close()
@@ -232,7 +247,7 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.keyboard.type('44,90'); await pg.keyboard.press('Enter')
   await pg.waitForTimeout(150)
   const rg2 = await celulas(pg, 'RG01')
-  const abertoAgora = await pg.evaluate(() => document.querySelector('.pr-pc-campo')?.getAttribute('aria-label') ?? '')
+  const abertoAgora = await pg.evaluate(() => document.querySelector('.cel-campo')?.getAttribute('aria-label') ?? '')
   conta(rg2[0] === '44,90' && rg2[1] === '40,90~' && abertoAgora !== '', '139: escrever a base no campo, e o Enter desce para a peça de baixo (' + rg2.join(' ') + ' · aberto: ' + abertoAgora + ')')
   await pg.keyboard.press('Escape')
   await pg.screenshot({ path: `${PASTA}/precos-139.png`, fullPage: true })
@@ -249,7 +264,7 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.screenshot({ path: `${PASTA}/precos-141.png` })
   await pg.locator('dialog[open] button', { hasText: 'Usar estas faixas' }).click()
   await pg.waitForTimeout(250)
-  const cab = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade thead th')].slice(2).map((t) => t.innerText.replace(/\s+/g, ' ')))
+  const cab = await pg.evaluate(() => [...document.querySelectorAll('.pr-grade thead th:not(.pr-tec)')].slice(2).map((t) => t.innerText.replace(/\s+/g, ' ')))
   const ct2 = await celulas(pg, 'CT02')
   conta(cab.join(' | ') === 'Preço base 1 a 25 peças | 26 a 100 peças | 101 ou mais peças' && ct2[0] === '54,90' && !ct2[1].includes('*'), '141: a grade troca de faixas, a base fica e o à mão da faixa que mudou volta para a regra (' + cab.join(' | ') + ' · ' + ct2.join(' ') + ')')
 
@@ -302,7 +317,7 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.locator('[data-celula="CT02:0"]').click()
   await pg.evaluate(() => {
     const dt = new DataTransfer(); dt.setData('text/plain', '50\n60,5\t55')
-    document.querySelector('.pr-pc-campo').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+    document.querySelector('.cel-campo').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
   })
   await pg.waitForTimeout(250)
   const col = await pg.evaluate(() => ['CT02:0', 'RG01:0', 'RG01:1'].map((c) => document.querySelector(`[data-celula="${c}"]`)?.textContent))
@@ -358,10 +373,10 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900 })
   await pg.goto(SITE + '/tabelas?modo=tabela', { waitUntil: 'networkidle' })
   await pg.waitForTimeout(800)
-  const val = (cods) => pg.evaluate((cs) => cs.map((c) => document.querySelector(`[data-celula="${c}"] .pr-pc`)?.textContent.trim()), cods)
+  const val = (cods) => pg.evaluate((cs) => cs.map((c) => document.querySelector(`[data-celula="${c}"] .cel`)?.textContent.trim()), cods)
   async function arrastar(de, ate) {
     await pg.locator(`[data-celula="${de}"]`).hover()
-    const a = await pg.locator(`[data-celula="${de}"] .pr-pc-alca`).boundingBox()
+    const a = await pg.locator(`[data-celula="${de}"] .cel-alca`).boundingBox()
     const b = await pg.locator(`[data-celula="${ate}"]`).boundingBox()
     await pg.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
     await pg.mouse.down()
@@ -381,7 +396,7 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.locator('button[aria-label="Desmarcar todas"]').click()
   await pg.waitForTimeout(150)
   await arrastar('CT01:0', 'CT02:0')
-  const sel = await pg.evaluate(() => document.querySelectorAll('.pr-pc-sel').length)
+  const sel = await pg.evaluate(() => document.querySelectorAll('.cel-sel').length)
   await pg.screenshot({ path: `${PASTA}/precos-alca.png` })
   await pg.mouse.up()
   await pg.waitForTimeout(200)
@@ -392,14 +407,14 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   const lado = await val(['CT02:1', 'CT02:2', 'CT02:3'])
   conta(lado.join() === '48,90,48,90,48,90', 'alça: arrastar para o lado repete o valor nas faixas seguintes (' + lado.join(' ') + ')')
   await arrastar('CT01:1', 'CT02:2')
-  const selD = await pg.evaluate(() => [...document.querySelectorAll('.pr-pc-sel')].map((e) => e.dataset.celula).sort().join())
+  const selD = await pg.evaluate(() => [...document.querySelectorAll('.cel-sel')].map((e) => e.dataset.celula).sort().join())
   await pg.screenshot({ path: `${PASTA}/precos-alca-diagonal.png` })
   await pg.mouse.up()
   await pg.waitForTimeout(200)
   const diag = await val(['CT01:1', 'CT01:2', 'CT02:1', 'CT02:2'])
   conta(selD === 'CT01:1,CT01:2,CT02:1,CT02:2' && diag.join() === '44,90,44,90,44,90,44,90', 'alça: arrastar na diagonal preenche o retângulo inteiro (' + selD + ' · ' + diag.join(' ') + ')')
   /* devolve o 48,90 da CT02 para o copiar e colar de baixo */
-  await pg.locator('[data-celula="CT02:1"] .pr-pc').click()
+  await pg.locator('[data-celula="CT02:1"] .cel').click()
   await pg.keyboard.press('Control+a'); await pg.keyboard.type('48,90'); await pg.keyboard.press('Enter')
   await pg.waitForTimeout(150)
   await arrastar('CT02:1', 'CT02:3')
@@ -419,6 +434,130 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   await pg.screenshot({ path: `${PASTA}/precos-copiar.png`, fullPage: true })
   conta(!erros.length, 'alça e copiar: nenhum erro de JavaScript ' + erros.join(' | '))
   await ctx.close()
+}
+
+{
+  /* 083: as quatro abas da tabela, a Sub e o Silk na grade, o Material, os Extras e o DTF */
+  const comAdicionais = tabelasIniciais().map((t, i) => ({
+    ...t,
+    itens: t.itens.map((it) => (it.codigo === 'CT01' ? { ...it, sub: 8, silk: 10 } : it)),
+    adicionais: i === 1 ? { materiais: [], extras: [], dtf: [{ id: 'dtf-9', nome: 'Só a nuca', posicoes: ['nuca'], valor: 4 }] } : { materiais: [{ tecido: 'Dry fit PET 160', valor: 2.5 }], extras: [], dtf: [] },
+  }))
+  for (const tema of ['light', 'dark']) {
+    const { ctx, pg, estado, erros } = await abrir({ tema, larg: 1440, alt: 900, tabelas: tema === 'light' ? comAdicionais : JSON.parse(JSON.stringify(comAdicionais)) })
+    const T = '083 ' + tema + ':'
+    await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+    await pg.waitForTimeout(800)
+    const abas = await pg.evaluate(() => [...document.querySelectorAll('.pr-abas [role=radio], .pr-abas button')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()))
+    conta(abas.join(' | ') === 'Peças e técnicas 4 | Material 1 | Extras 2 | DTF 0', T + ' as quatro abas com as contas (' + abas.join(' | ') + ')')
+    const tec = await pg.evaluate(() => ['CT01:4', 'CT01:5', 'CT02:4'].map((c) => document.querySelector(`[data-celula="${c}"] .cel`)?.textContent.trim()))
+    conta(tec.join() === '8,00,10,00,não faz', T + ' a Sub e o Silk são colunas da grade, e o vazio diz não faz (' + tec.join(' ') + ')')
+    if (tema === 'light') {
+      await pg.locator('[data-celula="CT02:4"] .cel').click()
+      await pg.keyboard.type('9'); await pg.keyboard.press('Tab'); await pg.keyboard.type('12'); await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(200)
+      const escrito = await pg.evaluate(() => ['CT02:4', 'CT02:5'].map((c) => document.querySelector(`[data-celula="${c}"] .cel`)?.textContent.trim()))
+      conta(escrito.join() === '9,00,12,00', T + ' escrever a Sub e, com Tab, o Silk (' + escrito.join(' ') + ')')
+    }
+    await pg.screenshot({ path: `${PASTA}/precos-083-pecas-${tema}.png`, fullPage: true })
+
+    /* Material */
+    await pg.locator('.pr-abas button, .pr-abas [role=radio]', { hasText: 'Material' }).first().click()
+    await pg.waitForTimeout(500)
+    conta(new URL(pg.url()).searchParams.get('aba') === 'material', T + ' a aba fica no endereço')
+    const mat = await pg.evaluate(() => [...document.querySelectorAll('.pr-mat tbody tr:not(.pr-grupo)')].map((t) => t.querySelector('.pr-nm b').textContent + '=' + t.querySelector('.cel').textContent.trim() + ':' + t.querySelectorAll('.amostra').length))
+    conta(mat.join() === 'Dryfit poliéster 100%=não soma:0,Dry fit PET 160=2,50:2,Algodão 100%=não soma:0', T + ' os tecidos do Estoque por grupo, com as cores e o que somam (' + mat.join(' | ') + ')')
+    if (tema === 'light') {
+      const ck = (n) => pg.locator(`.pr-mat label.ck:has(input[aria-label="Marcar ${n}"])`)
+      await ck('Dryfit poliéster 100%').click()
+      await ck('Algodão 100%').click({ modifiers: ['Shift'] })
+      await pg.waitForTimeout(150)
+      const lote = await pg.evaluate(() => document.querySelector('.pr-lote')?.innerText.replace(/\s+/g, ' ') ?? '')
+      await pg.fill('.pr-lote input[aria-label="Soma por peça"]', '3')
+      await pg.screenshot({ path: `${PASTA}/precos-083-material-lote.png` })
+      await pg.locator('.pr-lote button', { hasText: 'Aplicar nos 3' }).click()
+      await pg.waitForTimeout(200)
+      const depois = await pg.evaluate(() => [...document.querySelectorAll('.pr-mat tbody .cel')].map((c) => c.textContent.trim()))
+      conta(/3 marcados/.test(lote) && depois.join() === '3,00,3,00,3,00', T + ' marcar com Shift e dar o mesmo valor aos 3 (' + lote + ' · ' + depois.join(' ') + ')')
+      await pg.locator('[data-celula="tc1:0"] .cel').click()
+      await pg.keyboard.press('Control+a'); await pg.keyboard.press('Backspace'); await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(150)
+      const tirou = await pg.evaluate(() => document.querySelector('[data-celula="tc1:0"] .cel')?.textContent.trim())
+      conta(tirou === 'não soma', T + ' apagar o valor tira o tecido da tabela (' + tirou + ')')
+    }
+    await pg.screenshot({ path: `${PASTA}/precos-083-material-${tema}.png`, fullPage: true })
+
+    /* Extras */
+    await pg.locator('.pr-abas button, .pr-abas [role=radio]', { hasText: 'Extras' }).first().click()
+    await pg.waitForTimeout(300)
+    const ex = await pg.evaluate(() => [...document.querySelectorAll('.pr-ex')].map((e) => e.getAttribute('aria-label') + ':' + [...e.querySelectorAll('.pr-ex-op:not(.pr-ex-op-cab) input.entrada')].filter((i) => !i.placeholder.includes('cm')).map((i) => i.value).join('/')))
+    conta(ex.join(' | ') === 'Patch:Liso/Relevo/3D | Bordado:P/M/G', T + ' o Patch com os tipos e o Bordado com os tamanhos (' + ex.join(' | ') + ')')
+    if (tema === 'light') {
+      await pg.locator('[data-celula="relevo:0"] .cel').click()
+      await pg.keyboard.type('5'); await pg.keyboard.press('Enter'); await pg.keyboard.type('7,5'); await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(150)
+      const precos = await pg.evaluate(() => ['liso', 'relevo', '3d'].map((o) => document.querySelector(`.pr-ex[data-extra="patch"] [data-celula="${o}:0"] .cel`)?.textContent.trim()))
+      conta(precos.join() === 'sem preço,5,00,7,50', T + ' o preço é a célula: Enter grava e desce para a opção de baixo (' + precos.join(' ') + ')')
+      await pg.locator('.pr-ex-novo').click()
+      await pg.waitForTimeout(200)
+      await pg.keyboard.press('Control+a'); await pg.keyboard.type('Etiqueta bordada')
+      const novo = await pg.evaluate(() => document.querySelectorAll('.pr-ex').length)
+      await pg.locator('.pr-ex', { hasText: 'opção' }).last().locator('button[aria-label^="Apagar o extra"]').click()
+      await pg.waitForTimeout(150)
+      const pergunta = await pg.evaluate(() => document.querySelector('.pr-ex-pergunta')?.innerText.replace(/\s+/g, ' ') ?? '')
+      await pg.screenshot({ path: `${PASTA}/precos-083-extras-apagar.png`, fullPage: true })
+      await pg.locator('.pr-ex-pergunta button', { hasText: 'Apagar' }).click()
+      await pg.waitForTimeout(150)
+      const sobrou = await pg.evaluate(() => document.querySelectorAll('.pr-ex').length)
+      conta(novo === 3 && /Apagar o extra Etiqueta bordada\?/.test(pergunta) && sobrou === 2, T + ' Novo extra, e apagar pergunta na página antes (' + novo + ', ' + pergunta + ', ' + sobrou + ')')
+    }
+    await pg.screenshot({ path: `${PASTA}/precos-083-extras-${tema}.png`, fullPage: true })
+
+    /* DTF */
+    await pg.locator('.pr-abas button, .pr-abas [role=radio]', { hasText: 'DTF' }).first().click()
+    await pg.waitForTimeout(300)
+    conta((await pg.locator('.pr-mesa > aside').count()) === 0, T + ' a aba DTF usa a largura toda, sem a coluna das regras')
+    if (tema === 'light') {
+      await pg.locator('.pr-dtf-cab button', { hasText: 'Nova combinação' }).click()
+      await pg.waitForTimeout(150)
+      await pg.locator('.pr-dtf-camisa rect[aria-label="Manga direita"]').click()
+      await pg.locator('.pr-dtf-p', { hasText: 'Costas grande' }).click()
+      await pg.waitForTimeout(150)
+      const nome = await pg.inputValue('.pr-dtf-campos input.entrada')
+      await pg.locator('.pr-dtf-campos .cel').click()
+      await pg.keyboard.type('16'); await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(150)
+      const item = await pg.evaluate(() => document.querySelector('.pr-dtf-item.ligado')?.innerText.replace(/\s+/g, ' ') ?? '')
+      const ligadas = await pg.evaluate(() => document.querySelectorAll('.pr-dtf-camisa .dtf-pos-on').length)
+      conta(nome === 'Peito grande, manga direita e costas grande' && /R\$ 16,00/.test(item) && ligadas === 3, T + ' a camisa e a lista ligam as posições, o nome se escreve e o preço entra (' + nome + ' · ' + item + ' · ' + ligadas + ')')
+      await pg.locator('.pr-dtf-copiar button.cb').click()
+      await pg.waitForTimeout(150)
+      await pg.locator('.mn-item', { hasText: 'Varejo 2026' }).first().click()
+      await pg.locator('.pr-dtf-copiar button', { hasText: /^Copiar$/ }).click()
+      await pg.waitForTimeout(200)
+      const lista = await pg.evaluate(() => [...document.querySelectorAll('.pr-dtf-item b')].map((b) => b.textContent))
+      conta(lista.join() === 'Peito grande, manga direita e costas grande,Só a nuca', T + ' copiar as combinações de outra tabela (' + lista.join(' | ') + ')')
+      await pg.screenshot({ path: `${PASTA}/precos-083-dtf-${tema}.png`, fullPage: true })
+      await pg.locator('.pr-cab button', { hasText: 'Salvar' }).click()
+      await pg.waitForTimeout(400)
+      const g = estado.gravado?.adicionais
+      const ct2 = estado.gravado?.itens?.find((i) => i.codigo === 'CT02')
+      conta(!!g && g.dtf.length === 2 && g.materiais.length === 2 && g.extras.find((e) => e.tecnica === 'patch')?.opcoes[1].valor === 5 && ct2?.sub === 9 && ct2?.silk === 12,
+        T + ' o Salvar grava os adicionais e a Sub e o Silk de cada peça (' + JSON.stringify({ dtf: g?.dtf.length, mat: g?.materiais, sub: ct2?.sub, silk: ct2?.silk }) + ')')
+    } else await pg.screenshot({ path: `${PASTA}/precos-083-dtf-${tema}.png`, fullPage: true })
+    conta(!erros.length, T + ' nenhum erro de JavaScript ' + erros.join(' | '))
+    await ctx.close()
+  }
+  /* no celular, as abas e o DTF empilham sem rolar de lado */
+  for (const aba of ['material', 'extras', 'dtf']) {
+    const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 390, alt: 844, tabelas: comAdicionais })
+    await pg.goto(SITE + '/tabelas?aba=' + aba, { waitUntil: 'networkidle' })
+    await pg.waitForTimeout(700)
+    const rola = await pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)
+    await pg.screenshot({ path: `${PASTA}/precos-083-${aba}-celular.png`, fullPage: true })
+    conta(!rola && !erros.length, '083 celular, ' + aba + ': a página não rola de lado ' + erros.join(' | '))
+    await ctx.close()
+  }
 }
 
 await nav.close()

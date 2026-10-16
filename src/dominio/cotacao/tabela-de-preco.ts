@@ -6,6 +6,7 @@ import {
   precoDoTamanho,
   type TabelaDePreco,
 } from '../preco/tipos'
+import { contaDosAdicionais, type EscolhasDoLayout } from '../preco/adicionais'
 import { pecasDoProduto, type Cotacao, type ProdutoCotado } from './tipos'
 
 /* ==========================================================================
@@ -43,14 +44,37 @@ export function pecasPorTabela(c: Cotacao): Map<string, number> {
 
 export type OrigemDoPreco = { tabela: string; faixa: string } | null
 
+/* O QUE O LAYOUT ESCOLHEU (083), lido da ficha do layout: o tecido, as
+   técnicas ligadas com as telas do Silk, o DTF, o Patch e o Bordado com a
+   quantidade, e os extras novos. */
+export function escolhasDoLayout(p: ProdutoCotado): EscolhasDoLayout {
+  const d = (tec: string) => p.bloco.design.find((x) => x.tecnica === tec)
+  const silk = d('silk')
+  const dtf = d('dtf')
+  const patch = d('patch')
+  const bordado = d('bordado')
+  const qtd = (x: { quantidade?: number } | undefined) => (x?.quantidade && x.quantidade > 1 ? x.quantidade : 1)
+  return {
+    tecidos: p.bloco.tecidos.map((t) => t.nome).filter(Boolean),
+    sub: !!d('subli'),
+    silk: silk ? qtd(silk) : null,
+    dtf: dtf ? { combinacao: dtf.combinacao ?? '', porPeca: dtf.dtfPorPeca ?? null } : null,
+    patch: patch ? { opcao: String(patch.tipoDePatch ?? ''), qtd: qtd(patch) } : null,
+    bordado: bordado ? { opcao: String(bordado.tamanho ?? ''), qtd: qtd(bordado) } : null,
+    extras: p.extras ?? [],
+  }
+}
+
 /* Devolve a cotação com os preços da tabela aplicados, ou a MESMA cotação
-   (o mesmo objeto) quando nada muda: quem chama compara por identidade. */
+   (o mesmo objeto) quando nada muda: quem chama compara por identidade.
+   Desde a 083 o preço é a peça (a faixa, com plus e infantil) mais os
+   adicionais do layout. */
 export function aplicarTabelas(
   c: Cotacao,
   tabelas: TabelaDePreco[],
   pecasDoKit: (codigo: string) => string[],
 ): Cotacao {
-  if (c.aprovacao || !tabelas.length) return c
+  if (c.aprovacao) return c
   const total = pecasPorTabela(c)
   let mudou = false
   const produtos = c.produtos.map((p) => {
@@ -58,21 +82,31 @@ export function aplicarTabelas(
     const t = id ? tabelas.find((x) => x.id === id) : undefined
     const cod = p.bloco.referencia.trim()
     const item = t && cod ? t.itens.find((i) => i.codigo === cod) : undefined
-    if (!t || !item) return p
-    const i = faixaDe(t.faixas, total.get(id) ?? 0)
-    const ctx = {
-      achar: (k: string) => t.itens.find((x) => x.codigo === k),
-      pecasDoKit,
+    const ctx = t ? { achar: (k: string) => t.itens.find((x) => x.codigo === k), pecasDoKit } : undefined
+    let novo: ProdutoCotado = p
+    if (t && item && ctx) {
+      const i = faixaDe(t.faixas, total.get(id) ?? 0)
+      const v = celula(t, item, i, ctx).valor
+      if (v != null) {
+        const daTabela: Partial<Record<string, number>> = {}
+        for (const tam of [...TAMANHOS_PLUS, ...TAMANHOS_INFANTIS]) daTabela[tam] = precoDoTamanho(t, v, tam)
+        if (p.precoBase !== v || JSON.stringify(p.precoDaTabela ?? {}) !== JSON.stringify(daTabela))
+          novo = { ...novo, precoBase: v, precoDaTabela: daTabela }
+      }
     }
-    const v = celula(t, item, i, ctx).valor
-    if (v == null) return p
-    const daTabela: Partial<Record<string, number>> = {}
-    for (const tam of [...TAMANHOS_PLUS, ...TAMANHOS_INFANTIS]) daTabela[tam] = precoDoTamanho(t, v, tam)
-    const igual =
-      p.precoBase === v && JSON.stringify(p.precoDaTabela ?? {}) === JSON.stringify(daTabela)
-    if (igual) return p
-    mudou = true
-    return { ...p, precoBase: v, precoDaTabela: daTabela }
+    /* a conta só existe quando o layout segue uma tabela que tem a peça: sem
+       tabela o preço é o escrito, e não há o que somar */
+    const conta = t && item && ctx ? contaDosAdicionais(t, item, ctx, escolhasDoLayout(p)) : { partes: [], adicional: 0 }
+    const adicional = conta.partes.length ? conta.adicional : undefined
+    const partes = conta.partes.length ? conta.partes : undefined
+    if ((novo.adicional ?? undefined) !== adicional || JSON.stringify(novo.conta ?? null) !== JSON.stringify(partes ?? null)) {
+      const { adicional: _a, conta: _c, ...resto } = novo
+      void _a
+      void _c
+      novo = { ...resto, ...(adicional != null ? { adicional } : {}), ...(partes ? { conta: partes } : {}) }
+    }
+    if (novo !== p) mudou = true
+    return novo
   })
   return mudou ? { ...c, produtos } : c
 }

@@ -1,0 +1,22 @@
+/* O passo (componentes/passo.tsx): menos, o número, mais. */
+.passo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.passo-n {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--re-1);
+  min-width: 34px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.passo-n small {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}

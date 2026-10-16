@@ -83,13 +83,38 @@ function comAplique(design: Design[], t: DaTecnica, parte: Partial<Design>, tira
 /** O tipo do patch; '' tira o tipo. O tamanho antigo (P, M, G) sai junto. */
 export function comTipoDePatch(design: Design[], t: DaTecnica, tipo: TipoDePatch | ''): Design[] {
   if (!tipo && !design.some(d => d.tag === t.tag)) return design
-  return comAplique(design, t, tipo ? { tipoDePatch: tipo } : {}, tipo ? ['tamanho'] : ['tamanho', 'tipoDePatch'])
+  return comAplique(design, t, tipo ? { tipoDePatch: tipo } : {}, tipo ? ['tamanho', 'opcaoNome'] : ['tamanho', 'tipoDePatch', 'opcaoNome'])
 }
 
-/** Quantos patches em cada peça, de 1 a 20; 1 não precisa ser guardado. */
+/** Quantos em cada peça (patches, bordados, telas do Silk), de 1 a 20; 1 não
+    precisa ser guardado. No patch o tamanho antigo (P, M, G) sai junto; no
+    bordado o tamanho fica (16/10/2026: o bordado tem tamanho E quantidade). */
 export function comQuantidade(design: Design[], t: DaTecnica, n: number): Design[] {
   const q = Math.max(1, Math.min(20, Math.round(n) || 1))
-  return comAplique(design, t, q > 1 ? { quantidade: q } : {}, q > 1 ? ['tamanho'] : ['tamanho', 'quantidade'])
+  const velho: (keyof Design)[] = t.menu === 'patch' ? ['tamanho'] : []
+  return comAplique(design, t, q > 1 ? { quantidade: q } : {}, q > 1 ? velho : [...velho, 'quantidade'])
+}
+
+/** A técnica pelo nome dela (silk, dtf, patch, bordado). */
+export const daTecnica = (tecnica: Tecnica): DaTecnica => TECNICAS.find(x => x.tecnica === tecnica)!
+
+/** A opção da tabela de preço (083): o tipo do patch ou o tamanho do bordado,
+    com o nome como a tabela chama, para a folha e o interruptor dizerem igual. */
+export function comOpcaoDoAplique(design: Design[], t: DaTecnica, opcao: string, nome: string): Design[] {
+  if (t.menu === 'patch') return comAplique(design, t, { tipoDePatch: opcao, opcaoNome: nome }, ['tamanho'])
+  return comAplique(design, t, { tamanho: opcao, opcaoNome: nome }, [])
+}
+
+/** O DTF do layout (083): uma combinação da tabela, ou vendido na metragem
+    com o preço por peça escrito aqui. */
+export function comDtf(
+  design: Design[],
+  escolha: { combinacao: string; nome: string } | { porPeca: number },
+): Design[] {
+  const t = daTecnica('dtf')
+  return 'porPeca' in escolha
+    ? comAplique(design, t, { dtfPorPeca: escolha.porPeca }, ['combinacao', 'combinacaoNome'])
+    : comAplique(design, t, { combinacao: escolha.combinacao, combinacaoNome: escolha.nome }, ['dtfPorPeca'])
 }
 
 /** A quantidade que está no aplique (1 quando não tem o campo). */
@@ -126,8 +151,9 @@ export function comTamanho(
       : design
   return design.map(d => {
     if (d.tag !== t.tag) return d
-    const { tamanho: _velho, ...resto } = d
+    const { tamanho: _velho, opcaoNome: _nome, ...resto } = d
     void _velho
+    void _nome
     return tamanho ? { ...resto, tamanho } : resto
   })
 }

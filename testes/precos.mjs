@@ -10,6 +10,8 @@ import {
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
+import { adicionaisDe, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido } from './compilado/preco/adicionais.js'
+import { escolhasDoLayout } from './compilado/cotacao/tabela-de-preco.js'
 
 let ruins = 0
 const ok = (certo, texto) => { if (!certo) ruins++; console.log((certo ? '  ok   ' : '  RUIM ') + texto) }
@@ -143,6 +145,60 @@ console.log('copiar os preços de uma peça e a alça')
   ok(p.itens.find((i) => i.codigo === 'B').base === 50 && p.itens.find((i) => i.codigo === 'D').base === 50, 'a alça para baixo na base: as peças ganham a mesma base, e quem faltava entra')
   const h = preencherCelulas(b, [{ codigo: 'A', tipo: 'referencia', faixa: 2 }, { codigo: 'A', tipo: 'referencia', faixa: 3 }], 44)
   ok(h.itens[0].precos.join() === ',44,44,44' && h.itens[0].base === 50, 'a alça para o lado: as faixas seguintes ficam à mão com o mesmo valor')
+}
+
+console.log('os adicionais (083): a peça mais o material, a técnica e os extras')
+{
+  const a0 = adicionaisDe({})
+  ok(a0.extras.length === 2 && a0.extras[0].tecnica === 'patch' && a0.extras[1].opcoes.map((o) => o.id).join() === 'P,M,G', 'sem nada no banco, o Patch e o Bordado já existem, com P, M e G')
+  const ad = adicionaisDe({
+    materiais: [{ tecido: 'Dry fit PET 160', valor: 2.5 }, { tecido: 'MOLETOM', valor: null }],
+    extras: [
+      { id: 'patch', nome: 'Patch', tecnica: 'patch', opcoes: [{ id: 'relevo', nome: 'Relevo', medida: '', valor: 5 }] },
+      { id: 'bordado', nome: 'Bordado', tecnica: 'bordado', opcoes: [{ id: 'M', nome: 'M', medida: '6 x 6 cm', valor: 7 }] },
+      { id: 'x1', nome: 'Termocolante', tecnica: '', opcoes: [{ id: 'o1', nome: 'Escudo', medida: '', valor: 3 }] },
+    ],
+    dtf: [{ id: 'c1', nome: 'Peito grande e manga', posicoes: ['peito-grande', 'manga-direita'], valor: 14 }],
+  })
+  ok(valorDoTecido(ad, 'DRY FIT PET 160') === 2.5 && valorDoTecido(ad, 'Moletom') === null && valorDoTecido(ad, 'Algodão') === undefined, 'o tecido sem acento e sem caixa; sem preço é null; fora da lista é undefined')
+  ok(nomeDaCombinacao(['manga-direita', 'peito-grande']) === 'Peito grande e manga direita', 'o nome da combinação sai das posições, na ordem do desenho')
+  const tab = { ...tabelaEmBranco('A'), adicionais: ad, itens: [
+    { codigo: 'CT01', tipo: 'referencia', base: 49.9, precos: [null, null, null, null], sub: 8, silk: 10 },
+    { codigo: 'SH01', tipo: 'referencia', base: 39.9, precos: [null, null, null, null], sub: 6, silk: null },
+    { codigo: 'KT01', tipo: 'kit', base: null, precos: [null, null, null, null] },
+  ] }
+  const ctx = { achar: (k) => tab.itens.find((i) => i.codigo === k), pecasDoKit: (k) => (k === 'KT01' ? ['CT01', 'SH01'] : []) }
+  ok(tecnicaDoItem(tab, tab.itens[2], 'sub', ctx).valor === 14 && tecnicaDoItem(tab, tab.itens[2], 'silk', ctx).valor === null, 'o kit sem Sub própria soma as peças (8 + 6); o Silk falta porque o short não tem')
+  const esc = { tecidos: ['DRY FIT PET 160'], sub: false, silk: 2, dtf: { combinacao: 'c1', porPeca: null }, patch: { opcao: 'relevo', qtd: 2 }, bordado: { opcao: 'M', qtd: 1 }, extras: [{ extra: 'x1', opcao: 'o1', qtd: 1 }] }
+  const r = contaDosAdicionais(tab, tab.itens[0], ctx, esc)
+  ok(r.adicional === 2.5 + 20 + 14 + 10 + 7 + 3 && r.partes.map((p) => p.tipo).join() === 'material,silk,dtf,patch,bordado,extra', 'a conta: tecido 2,50 + Silk 2 telas de 10 + DTF 14 + Patch Relevo 2 x 5 + Bordado M 7 + Termocolante 3 = 56,50 (' + r.adicional + ')')
+  const m = contaDosAdicionais(tab, tab.itens[0], ctx, { ...esc, dtf: { combinacao: 'c1', porPeca: 12 } })
+  ok(m.partes.find((p) => p.tipo === 'dtf').valor === 12 && m.partes.find((p) => p.tipo === 'dtf').rotulo === 'Na metragem', 'o DTF na metragem passa por cima da combinação')
+  const f = contaDosAdicionais(tab, tab.itens[1], ctx, { tecidos: ['MOLETOM'], sub: true, silk: 1, dtf: { combinacao: '', porPeca: null }, patch: null, bordado: { opcao: 'G', qtd: 1 }, extras: [] })
+  ok(f.partes.filter((p) => p.falta).map((p) => p.tipo).join() === 'material,silk,dtf,bordado' && f.adicional === 6, 'o que falta aparece e soma zero: tecido sem preço, Silk sem preço, DTF sem escolha, Bordado G fora da tabela; só a Sub soma (' + f.adicional + ')')
+  const semTabela = contaDosAdicionais(undefined, undefined, undefined, { ...esc, dtf: { combinacao: '', porPeca: 9 } })
+  ok(semTabela.partes.find((p) => p.tipo === 'dtf').valor === 9 && semTabela.adicional === 9, 'sem tabela, só o DTF escrito na metragem soma')
+  const comMat = comPrecoDoTecido(ad, ['Algodão 100%', 'moletom'], 4)
+  ok(valorDoTecido(comMat, 'ALGODAO 100%') === 4 && valorDoTecido(comMat, 'Moletom') === 4 && comMat.materiais.length === 3, 'o preço de vários tecidos de uma vez, sem repetir o que já estava')
+
+  /* na cotação: a peça da faixa mais os adicionais, e o escrito à mão ganhando */
+  const c = cotacaoEmBranco('CO-1')
+  c.informe.tabelaDePrecoId = 't1'
+  const b = blocoEmBranco(1)
+  b.referencia = 'CT01'
+  b.grade = { M: 60, G1: 2 }
+  b.tecidos = [{ nome: 'DRY FIT PET 160', cor: 'Azul', hex: '#1d4ed8' }]
+  b.design = [{ tag: 'Silk', tecnica: 'silk', cores: [], quantidade: 2 }, { tag: 'DTF', tecnica: 'dtf', cores: [], combinacao: 'c1' }, { tag: 'Patch', tecnica: 'patch', cores: [], tipoDePatch: 'relevo', quantidade: 2 }]
+  c.produtos = [{ bloco: b, precoPorTamanho: {}, precoBase: 0 }]
+  ok(JSON.stringify(escolhasDoLayout(c.produtos[0])) === JSON.stringify({ tecidos: ['DRY FIT PET 160'], sub: false, silk: 2, dtf: { combinacao: 'c1', porPeca: null }, patch: { opcao: 'relevo', qtd: 2 }, bordado: null, extras: [] }), 'as escolhas saem da ficha do layout: tecido, telas do Silk, a combinação do DTF e o Patch')
+  const ap = aplicarTabelas(c, [{ ...tab, id: 't1' }], () => [])
+  const pr = ap.produtos[0]
+  ok(pr.precoBase === 40.9 && pr.adicional === 2.5 + 20 + 14 + 10 && precoNaGrade(pr, 'M') === 87.4 && precoNaGrade(pr, 'G1') === 93.4, '62 peças: a peça na faixa 51 a 100 (40,90) mais 46,50 = 87,40; o plus soma os 6 só na peça (93,40)')
+  ok(aplicarTabelas(ap, [{ ...tab, id: 't1' }], () => []) === ap, 'aplicar de novo sem mudança devolve a mesma cotação')
+  const mao = { ...pr, precoPorTamanho: { M: 80 } }
+  ok(precoNaGrade(mao, 'M') === 80, 'o escrito à mão ganha da soma')
+  const foraDaTabela = { ...c, informe: { ...c.informe, tabelaDePrecoId: '' }, produtos: [{ ...c.produtos[0], bloco: { ...b, design: [{ tag: 'Subli', tecnica: 'subli', cores: [] }] } }] }
+  ok(aplicarTabelas(foraDaTabela, [], () => []) === foraDaTabela, 'sem tabela não há conta: a cotação volta a mesma, sem parte "falta" (o editor não fica sujo)')
 }
 
 console.log(ruins ? `\n${ruins} RUINS` : '\ntabelas de preço: tudo certo')

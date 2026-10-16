@@ -78,9 +78,14 @@ function lerPreco(t: string): number | null {
    os tamanhos. Ele deixa de seguir tabela, e saem junto o plus e o infantil
    que a tabela tinha dado e o preço próprio de cada tamanho escrito na grade.
    Sem isso a célula mostrava 55 e o subtotal continuava contando 62. */
+/* Desde a 083 o preço mostrado é a peça mais os adicionais; o layout que
+   deixa de seguir tabela só guarda o DTF escrito na metragem, e por isso a
+   peça fica com o resto. */
+const metragemDe = (p: ProdutoCotado) => p.bloco.design.find((d) => d.tecnica === 'dtf')?.dtfPorPeca ?? 0
+const precoDoLayoutInteiro = (p: ProdutoCotado) => Math.round((p.precoBase + (p.adicional ?? 0)) * 100) / 100
 const comPrecoEscrito = (p: ProdutoCotado, v: number): ProdutoCotado => ({
   ...p,
-  precoBase: v,
+  precoBase: Math.max(0, Math.round((v - metragemDe(p)) * 100) / 100),
   tabelaId: SEM_TABELA,
   precoDaTabela: undefined,
   precoPorTamanho: {},
@@ -861,7 +866,7 @@ function CampoDoPreco({
     if (texto == null) return
     const v = lerPreco(texto)
     setTexto(null)
-    if (v != null && v !== p.precoBase) aoMudar(v)
+    if (v != null && v !== precoDoLayoutInteiro(p)) aoMudar(v)
   }
   const tecla = (e: EventoDeTecla<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -884,9 +889,9 @@ function CampoDoPreco({
           inputMode="decimal"
           disabled={travado}
           aria-label={'Preço por peça do ' + codigoDoLayout(p.bloco.n)}
-          value={texto ?? n2(p.precoBase)}
+          value={texto ?? n2(precoDoLayoutInteiro(p))}
           onFocus={e => {
-            setTexto(n2(p.precoBase))
+            setTexto(n2(precoDoLayoutInteiro(p)))
             e.currentTarget.select()
           }}
           onChange={e => setTexto(e.target.value)}

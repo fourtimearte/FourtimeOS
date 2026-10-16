@@ -16,6 +16,7 @@ import type { Cotacao, ProdutoCotado } from '@dominio/cotacao'
 import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
+import { ContaDaPeca } from './conta-da-peca'
 import { MuralDaArte } from './mural-da-arte'
 import { PrecoDoLayout } from './tabelas-da-cotacao'
 import { TabelaDosLayouts } from './tabela-dos-layouts'
@@ -131,6 +132,7 @@ export function CorpoDoEditor({
             produto={p}
             travado={travado}
             aoMudarProduto={(troca) => aoMudarProduto(escolhido, troca)}
+            conta={<ContaDaPeca c={cotacao} produto={p} travado={travado} aoMudarProduto={(troca) => aoMudarProduto(escolhido, troca)} />}
             seletorDoPreco={
               <PrecoDoLayout
                 c={cotacao}

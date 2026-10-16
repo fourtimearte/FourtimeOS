@@ -5,6 +5,7 @@ import {
   cotacaoEmBranco,
   informesEmBranco,
   type Cotacao,
+  type ProdutoCotado,
 } from './tipos'
 
 /* ==========================================================================
@@ -251,6 +252,9 @@ export function arrumarCotacao(corpo: Bruto, versao: number, versaoDoBloco: numb
       precoBase: Number(p.precoBase ?? 0),
       tabelaId: String(p.tabelaId ?? ''),
       precoDaTabela: (p.precoDaTabela ?? {}) as Record<string, number>,
+      ...(p.adicional != null ? { adicional: Number(p.adicional) || 0 } : {}),
+      ...(Array.isArray(p.conta) ? { conta: p.conta as ProdutoCotado['conta'] } : {}),
+      ...(Array.isArray(p.extras) ? { extras: p.extras as ProdutoCotado['extras'] } : {}),
     }
   })
 

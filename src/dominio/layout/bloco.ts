@@ -54,28 +54,42 @@ export type Design = {
   /** o tamanho do bordado ou do patch (14/10/2026): pequeno, medio ou
       grande. Vai ter preco fixo na tabela de preco; sem ele, ainda nao
       escolhido. So bordado e patch usam. */
-  tamanho?: TamanhoDeAplique
+  tamanho?: TamanhoDeAplique | string
   /** O PATCH (16/10/2026, pedido do Henrique: "patch não será mais P M G,
       será liso, relevo, 3D, e preciso poder escolher a quantidade"): o
-      tipo e quantos patches vão em cada peça. O preço a somar por patch
-      vai morar na tabela de preço. O tamanho P, M ou G continua só no
-      bordado; num patch antigo ele é ignorado. */
-  tipoDePatch?: TipoDePatch
-  /** quantos patches em cada peça; sem o campo, 1 */
+      tipo e quantos patches vão em cada peça. O tamanho P, M ou G continua
+      só no bordado; num patch antigo ele é ignorado. Desde a 083 o tipo é o
+      id de uma opção da tabela de preço (liso, relevo, 3d, ou outra nova). */
+  tipoDePatch?: TipoDePatch | string
+  /** quantos em cada peça: patches, bordados, ou TELAS no Silk; sem o campo, 1 */
   quantidade?: number
+  /** o nome da opção escolhida da tabela (Relevo, G), para mostrar mesmo
+      quando a opção é nova (083) */
+  opcaoNome?: string
+  /** O DTF (083): a combinação de posições da tabela de preço, ou o preço
+      por peça escrito na cotação (vendido na metragem), que ganha da tabela */
+  combinacao?: string
+  combinacaoNome?: string
+  dtfPorPeca?: number
 }
 
 export type TamanhoDeAplique = 'P' | 'M' | 'G'
 export type TipoDePatch = 'liso' | 'relevo' | '3d'
 export const NOME_DO_TIPO_DE_PATCH: Record<TipoDePatch, string> = { liso: 'Liso', relevo: 'Relevo', '3d': '3D' }
 
-/** O que acompanha o nome da técnica: "M" no bordado, "Relevo ×2" no patch. */
-export function detalheDoAplique(d: Pick<Design, 'tecnica' | 'tamanho' | 'tipoDePatch' | 'quantidade'>): string {
+/** O que acompanha o nome da técnica: "M ×2" no bordado, "Relevo ×2" no
+    patch, "2 telas" no silk, a combinação no DTF. */
+export function detalheDoAplique(
+  d: Pick<Design, 'tecnica' | 'tamanho' | 'tipoDePatch' | 'quantidade' | 'opcaoNome' | 'combinacaoNome' | 'dtfPorPeca'>,
+): string {
+  const qtd = d.quantidade && d.quantidade > 1 ? '×' + d.quantidade : ''
   if (d.tecnica === 'patch') {
-    const qtd = d.quantidade && d.quantidade > 1 ? '×' + d.quantidade : ''
-    return [d.tipoDePatch ? NOME_DO_TIPO_DE_PATCH[d.tipoDePatch] : '', qtd].filter(Boolean).join(' ')
+    const nome = d.tipoDePatch ? d.opcaoNome || NOME_DO_TIPO_DE_PATCH[d.tipoDePatch as TipoDePatch] || d.tipoDePatch : ''
+    return [nome, qtd].filter(Boolean).join(' ')
   }
-  return d.tamanho ?? ''
+  if (d.tecnica === 'bordado') return [d.tamanho ? d.opcaoNome || d.tamanho : '', qtd].filter(Boolean).join(' ')
+  if (d.tecnica === 'silk') return d.quantidade && d.quantidade > 1 ? d.quantidade + ' telas' : ''
+  return ''
 }
 
 /** A gola da peça neste layout: de tecido ou de ribana (14/10/2026). */

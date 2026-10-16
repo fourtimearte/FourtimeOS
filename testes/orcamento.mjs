@@ -473,6 +473,105 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (tabelas de preço): ' + erros.join(' | '))
 })
 
+/* 2h. a conta da peça (083, telas 5 e 6 do wireframe de 16/10/2026): a peça,
+   o tecido, a Sub, o Silk com as telas, o Patch, o Bordado, o DTF pelo modal
+   e o extra novo, cada um com o seu controle, embaixo da grade */
+await secao(async () => {
+  const faixas = [{ de: 10, ate: 20 }, { de: 21, ate: 50 }, { de: 51, ate: 100 }, { de: 101, ate: null }]
+  const regras = { passo_pct: -10, arredondar: '90', plus_reais: 6, infantil_pct: -10, kit_pct: -8 }
+  const adicionais = {
+    materiais: [{ tecido: 'Dryfit poliéster 100%', valor: 2.5 }],
+    extras: [
+      { id: 'patch', nome: 'Patch', tecnica: 'patch', opcoes: [{ id: 'liso', nome: 'Liso', medida: '', valor: 3.5 }, { id: 'relevo', nome: 'Relevo', medida: '', valor: 5 }, { id: '3d', nome: '3D', medida: '', valor: 7.5 }] },
+      { id: 'bordado', nome: 'Bordado', tecnica: 'bordado', opcoes: [{ id: 'P', nome: 'P', medida: '3 x 3 cm', valor: 4 }, { id: 'M', nome: 'M', medida: '6 x 6 cm', valor: 7 }, { id: 'G', nome: 'G', medida: '9 x 9 cm', valor: 11 }] },
+      { id: 'extra-1', nome: 'Etiqueta bordada', tecnica: '', opcoes: [{ id: 'op1', nome: 'Pequena', medida: '', valor: 2 }] },
+    ],
+    dtf: [{ id: 'dtf-1', nome: 'Peito grande e manga direita', posicoes: ['peito-grande', 'manga-direita'], valor: 14 }],
+  }
+  const tabelas = [{ id: 'TP1', nome: 'Atacado Prova', situacao: 'ativa', padrao: true, vale_ate: null, so_gerente: false, faixas, regras, observacao: '', teste: true, atualizado_em: '2026-10-12T00:00:00Z',
+    itens: [{ codigo: 'FT-010-000M', tipo: 'referencia', base: 40, precos: [null, null, null, null], sub: 8, silk: 10 }], adicionais }]
+  const { pg, erros, banco } = await abrir(nav, { largura: 1920, tabelas })
+  await ir(pg)
+  await pg.locator('.ct-preco-do-layout .sel', { hasText: 'PREÇO' }).locator('button.cb').click()
+  await pausa(pg, 300)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Atacado Prova' }).click()
+  await pausa(pg, 500)
+  const partes = () => pg.evaluate(() => [...document.querySelectorAll('.ct-conta-p:not(.ct-conta-mais)')].map((p) => (p.dataset.parte ?? 'peca') + '=' + p.querySelector('.ct-conta-v').textContent))
+  const igual = () => texto(pg, '.ct-conta-igual b')
+  const num = (t) => Number(t.replace(/[^\d,]/g, '').replace(',', '.'))
+  const p0 = await partes()
+  const peca = num(p0[0].split('=')[1])
+  conta(p0.length === 3 && /^peca=/.test(p0[0]) && p0[1] === 'material=2,50' && p0[2] === 'sub=8,00' && Math.abs(num(await igual()) - (peca + 10.5)) < 0.01,
+    'a conta do L-01: a peça da faixa, o tecido (2,50) e a Sub (8,00), e o igual é a soma: ' + p0.join(' ') + ' = ' + await igual())
+  /* ligar o Silk na ficha: a conta ganha o bloco, com as telas */
+  await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Silk' }).click()
+  await pausa(pg, 300)
+  await pg.locator('.ct-conta-p[data-parte="silk"] button[aria-label="Mais telas do Silk"]').click()
+  await pausa(pg, 300)
+  const silk = await texto(pg, '.ct-conta-p[data-parte="silk"]')
+  conta(/20,00/.test(silk) && /2 x R\$ 10,00/.test(silk) && await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Silk 2 telas' }).count() === 1,
+    'o Silk liga na ficha e as telas multiplicam na conta (e o interruptor diz Silk 2 telas): ' + silk)
+  /* o Bordado sem tamanho pede o tamanho; escolher na conta resolve */
+  await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Bordado' }).click()
+  await pausa(pg, 300)
+  const semTam = await texto(pg, '.ct-conta-p[data-parte="bordado"]')
+  await pg.locator('.ct-conta-p[data-parte="bordado"] button.cb').click()
+  await pausa(pg, 250)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'M · 6 x 6 cm' }).click()
+  await pausa(pg, 300)
+  await pg.locator('.ct-conta-p[data-parte="bordado"] button[aria-label="Mais bordados por peça"]').click()
+  await pausa(pg, 300)
+  const bord = await texto(pg, '.ct-conta-p[data-parte="bordado"]')
+  conta(/escolher o tamanho/.test(semTam) && /14,00/.test(bord) && /2 x R\$ 7,00/.test(bord) && await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Bordado M ×2' }).count() === 1,
+    'o Bordado pede o tamanho, e o tamanho e a quantidade escolhidos na conta valem na ficha: ' + semTam + ' / ' + bord)
+  /* o DTF pelo modal: uma combinação da tabela, depois na metragem */
+  await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'DTF' }).click()
+  await pausa(pg, 300)
+  await pg.locator('.ct-conta-p[data-parte="dtf"] button', { hasText: 'Escolher' }).click()
+  await pausa(pg, 300)
+  const ops = await naModal(pg).locator('.ct-dtf-op').allInnerTexts()
+  await foto(pg, '1920-dtf-modal', false)
+  await naModal(pg).locator('.ct-dtf-op', { hasText: 'Peito grande e manga direita' }).click()
+  await naModal(pg).getByRole('button', { name: 'Usar esta' }).click()
+  await pausa(pg, 300)
+  const dtf1 = await texto(pg, '.ct-conta-p[data-parte="dtf"]')
+  await pg.locator('.ct-conta-p[data-parte="dtf"] button', { hasText: 'Trocar' }).click()
+  await pausa(pg, 300)
+  await naModal(pg).locator('input[aria-label="Preço do DTF por peça"]').fill('12')
+  await naModal(pg).getByRole('button', { name: 'Usar esta' }).click()
+  await pausa(pg, 300)
+  const dtf2 = await texto(pg, '.ct-conta-p[data-parte="dtf"]')
+  conta(ops.length === 2 && /Sem DTF/.test(ops[1]) && /Peito grande e manga direita/.test(dtf1) && /14,00/.test(dtf1) && /Na metragem/.test(dtf2) && /12,00/.test(dtf2) && await pg.locator('dialog.modal[open]').count() === 0,
+    'o DTF escolhe a combinação no modal e depois vende na metragem: ' + dtf1 + ' / ' + dtf2)
+  /* o extra novo da tabela */
+  await pg.locator('.ct-conta-mais button.cb').click()
+  await pausa(pg, 250)
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Etiqueta bordada' }).click()
+  await pausa(pg, 300)
+  const p1 = await partes()
+  const soma = p1.reduce((s, x) => s + num(x.split('=')[1]), 0)
+  conta(p1.some((x) => x === 'extra=2,00') && Math.abs(num(await igual()) - soma) < 0.01, 'o extra novo entra na conta, e o igual é a soma de todos: ' + p1.join(' ') + ' = ' + await igual())
+  await foto(pg, '1920-conta-da-peca', true)
+  await pg.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  await pg.locator('.ct-conta').scrollIntoViewIfNeeded()
+  await pg.screenshot({ path: `${PASTA}/1920-conta-da-peca-escuro.png` })
+  await pg.setViewportSize({ width: 390, height: 844 })
+  await pausa(pg, 300)
+  conta(await sobra(pg) <= 0, 'em 390 a conta da peça não rola de lado: ' + await sobra(pg))
+  await pg.locator('.ct-conta').scrollIntoViewIfNeeded()
+  await pg.screenshot({ path: `${PASTA}/390-conta-da-peca-escuro.png` })
+  await pg.setViewportSize({ width: 1920, height: 946 })
+  await pg.evaluate(() => { document.documentElement.dataset.theme = 'light' })
+  await pg.getByRole('button', { name: 'Salvar, há mudança não salva' }).click()
+  await pausa(pg, 700)
+  const g = banco.gravados.filter((x) => x.metodo === 'PATCH').pop()
+  const p = g && g.corpo.corpo.produtos[0]
+  const dtfD = p && p.bloco.design.find((d) => d.tecnica === 'dtf')
+  conta(p && p.adicional > 0 && p.conta.length === 6 && dtfD.dtfPorPeca === 12 && !dtfD.combinacao && p.extras[0].extra === 'extra-1',
+    'o banco recebe o adicional, a conta e as escolhas do layout: ' + (p && JSON.stringify({ adicional: p.adicional, partes: p.conta.length, dtf: dtfD, extras: p.extras })))
+  conta(!erros.length, 'sem erro de JavaScript (conta da peça): ' + erros.join(' | '))
+})
+
 /* 2c. as cores de impressão do menu vêm do banco: 300 do DTF e 87 da sublimação (11/10/2026) */
 await secao(async () => {
   const { pg, erros, banco } = await abrir(nav, { largura: 1920, rica: true })
@@ -790,10 +889,10 @@ await secao(async () => {
   conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch Relevo' }).count() === 1, 'escolher Relevo liga o Patch já com o tipo (Patch Relevo)')
   await pg.locator('.ct-chaves-5 .ct-chave', { hasText: 'Patch' }).click({ button: 'right' })
   await pausa(pg, 250)
-  await pg.locator('[popover]:popover-open button[aria-label="Um patch a mais"]').click()
+  await pg.locator('[popover]:popover-open button[aria-label="Mais patches por peça"]').click()
   await pausa(pg, 150)
-  conta(await pg.locator('[popover]:popover-open .mn-item.on', { hasText: 'Relevo' }).count() === 1 && /2/.test(await texto(pg, '[popover]:popover-open .ct-qtd-patch-n')),
-    'o menu continua aberto, marca o Relevo e conta 2 patches: ' + await texto(pg, '[popover]:popover-open .ct-qtd-patch-n'))
+  conta(await pg.locator('[popover]:popover-open .mn-item.on', { hasText: 'Relevo' }).count() === 1 && /2/.test(await texto(pg, '[popover]:popover-open .passo-n')),
+    'o menu continua aberto, marca o Relevo e conta 2 patches: ' + await texto(pg, '[popover]:popover-open .passo-n'))
   await pg.keyboard.press('Escape')
   await pausa(pg, 150)
   conta(await pg.locator('.ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch Relevo ×2' }).count() === 1, 'o interruptor diz Patch Relevo ×2')

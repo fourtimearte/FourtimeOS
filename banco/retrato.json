@@ -1,5 +1,5 @@
 {
- "migracoes": "6b9a2a9ea28925579d81dd5cbf014859be0f6cd53f68d0cdd5113a9e1a5f509b",
+ "migracoes": "c2bce462594f2d9f67fe4ebc768e68ac1d58ff5765794f4c485fc82193e2ca21",
  "relacoes": {
   "acao": {
    "tipo": "tabela",
@@ -3350,7 +3350,7 @@
     "padrao": [],
     "retorna": "text[]",
     "definer": false,
-    "anon": true
+    "anon": false
    }
   ],
   "material_acompanha_o_nome": [

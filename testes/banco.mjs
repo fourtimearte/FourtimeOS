@@ -120,6 +120,13 @@ export function auditar(r) {
     if (f.definer && f.retorna !== 'trigger' && f.exec_anon && !TRAVAS.test(f.fonte))
       achar('SEGURANÇA', 'definer-anon', f.nome, `${ass} é DEFINER, quem não entrou consegue chamar e ela não confere quem chamou`)
   }
+  /* a trava que aceita nulo: "if not sou_admin()" e "if meu_papel() not in" deixam
+     passar quem não entrou, porque nulo não é verdadeiro (achado de 17/10/2026) */
+  const sa = r.funcoes.find((f) => f.nome === 'sou_admin')
+  if (sa && !/coalesce/i.test(sa.fonte)) achar('SEGURANÇA', 'trava-aceita-nulo', 'sou_admin', 'sou_admin() pode devolver nulo: "if not sou_admin()" deixa passar quem não entrou')
+  for (const f of r.funcoes)
+    if (/meu_papel\(\)\s+(not\s+in|<>|!=)/i.test(f.fonte) && !/coalesce\(\s*public\.meu_papel\(\)/i.test(f.fonte))
+      achar('SEGURANÇA', 'trava-aceita-nulo', f.nome, `${f.nome} pergunta "meu_papel() not in": com nulo a trava não fecha`)
   contas['definer-com-trava-aberta-a-anon'] = r.funcoes.filter((f) => f.definer && f.retorna !== 'trigger' && f.exec_anon && TRAVAS.test(f.fonte)).length
 
   /* --- INTEGRIDADE -------------------------------------------------------- */
@@ -358,9 +365,11 @@ function provar() {
       { nome: 'sem_caminho', args: '', definer: true, config: null, retorna: 'integer', exec_anon: false, fonte: 'select 1' },
     ],
   }
+  r.funcoes.push({ nome: 'sou_admin', args: '', definer: true, config: ['search_path=public'], retorna: 'boolean', exec_anon: false, fonte: "select public.meu_papel() = 'admin'" })
+  r.funcoes.push({ nome: 'com_not_in', args: '', definer: true, config: ['search_path=public'], retorna: 'void', exec_anon: false, fonte: "if public.meu_papel() not in ('admin') then raise" })
   const { achados } = auditar(r)
   const tem = (chave) => achados.some((a) => a.chave === chave)
-  const esperado = ['rls-desligada:sem_rls', 'sem-chave-primaria:sem_chave', 'fk-sem-indice:com_fk(certa_id)', 'grant-anon:aberta', 'view-definer:vista', 'definer-anon:sem_trava', 'definer-sem-search-path:sem_caminho()']
+  const esperado = ['trava-aceita-nulo:sou_admin', 'trava-aceita-nulo:com_not_in', 'rls-desligada:sem_rls', 'sem-chave-primaria:sem_chave', 'fk-sem-indice:com_fk(certa_id)', 'grant-anon:aberta', 'view-definer:vista', 'definer-anon:sem_trava', 'definer-sem-search-path:sem_caminho()']
   const calado = ['rls-desligada:certa', 'definer-anon:com_trava']
   let falhas = 0
   for (const k of esperado) if (!tem(k)) (falhas++, console.log(`RUIM  a prova da auditoria não acusou ${k}`))

@@ -881,7 +881,7 @@ function AbaCliente({
           <ul className="fn-pa-tl">
             {ultimas.map((m) => (
               <li key={m.id}>
-                <span>{formatarData(m.em.slice(0, 10))}</span>
+                <span>{formatarData(m.em)}</span>
                 <p>
                   <b>{m.quem === 'cliente' ? 'Cliente' : m.quem === 'nos' ? 'Fourtime' : 'Sistema'}:</b>{' '}
                   {m.texto || (m.tipo === 'audio' ? 'um áudio' : m.tipo === 'imagem' ? 'uma imagem' : m.nomeDoArquivo || 'um arquivo')}

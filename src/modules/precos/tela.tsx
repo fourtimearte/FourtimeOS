@@ -25,7 +25,6 @@ import { useSessao } from '@dominio/sessao'
 import {
   NOME_DA_SITUACAO,
   ajustarEmLote,
-  adicionaisNoBanco,
   apagarTabelaDePreco,
   celula,
   carregarTabelasDePreco,
@@ -332,8 +331,6 @@ export function TelaTabelasDePreco() {
     />
   )
 
-  const temAdicionais = adicionaisNoBanco()
-  const mexeNosAdicionais = podeMexer && temAdicionais
   const abas = t ? (
     <div className="pr-abas">
       <Segmentado<Aba>
@@ -348,24 +345,15 @@ export function TelaTabelasDePreco() {
       />
     </div>
   ) : null
-  const semAdicionais = !temAdicionais ? (
-    <div className="pr-aviso">
-      <Aviso tom="warn" titulo="Os adicionais ainda não estão no banco">
-        Falta rodar a migração 083 (banco/083-os-adicionais-da-tabela-de-preco.sql) no Supabase. Até lá, esta aba só mostra, e o
-        Salvar grava a peça, a Sub e o Silk como antes.
-      </Aviso>
-    </div>
-  ) : null
   const abaDosAdicionais =
     t && aba !== 'pecas' ? (
       <>
-        {semAdicionais}
         {aba === 'material' ? (
-          <AbaMaterial key={t.id} tabela={t} podeMexer={mexeNosAdicionais} mudar={mudar} />
+          <AbaMaterial key={t.id} tabela={t} podeMexer={podeMexer} mudar={mudar} />
         ) : aba === 'extras' ? (
-          <AbaExtras key={t.id} tabela={t} podeMexer={mexeNosAdicionais} mudar={mudar} />
+          <AbaExtras key={t.id} tabela={t} podeMexer={podeMexer} mudar={mudar} />
         ) : (
-          <AbaDtf key={t.id} tabela={t} outras={tabelas.filter((x) => x.id !== t.id)} podeMexer={mexeNosAdicionais} mudar={mudar} />
+          <AbaDtf key={t.id} tabela={t} outras={tabelas.filter((x) => x.id !== t.id)} podeMexer={podeMexer} mudar={mudar} />
         )}
       </>
     ) : null

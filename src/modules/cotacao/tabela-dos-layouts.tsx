@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as EventoDeTecla } from 'react'
 import { CaretDown, Check, Plus, Table, Warning, X } from '@phosphor-icons/react'
@@ -65,13 +66,8 @@ const n2 = (v: number) =>
 const codigoDoLayout = (n: number) => 'L-' + String(n).padStart(2, '0')
 
 function lerPreco(t: string): number | null {
-  const limpo = t
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.')
-  if (!limpo.trim()) return null
-  const v = Number(limpo)
-  return Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : null
+  const v = lerNumero(t.replace(/[^\d,.-]/g, ''))
+  return v != null && Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : null
 }
 
 /* O PREÇO ESCRITO NA TABELA É O PREÇO DO LAYOUT INTEIRO: vale para todos

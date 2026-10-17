@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { CaretRight, Check, LockSimple, Paperclip, WhatsappLogo, X } from '@phosphor-icons/react'
 import {
@@ -274,8 +275,8 @@ type Form = { quemPaga: QuemPagaOFrete; envio: string; combinado: string; pago: 
 
 const escrever = (n: number | null) => (n == null ? '' : String(n).replace('.', ','))
 const ler = (t: string): number | null | undefined => {
-  if (!t.trim()) return null
-  const n = Number(t.replace(/\./g, '').replace(',', '.'))
+  const n = lerNumero(t)
+  if (n == null) return null
   return Number.isFinite(n) && n >= 0 ? n : undefined
 }
 

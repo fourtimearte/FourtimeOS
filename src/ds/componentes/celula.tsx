@@ -28,7 +28,10 @@ import type {
 export function lerNumero(texto: string): number | null {
   const s = texto.replace(/[^\d,.-]/g, '')
   if (!s) return null
-  const limpo = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s
+  /* a mesma regra do lerNumero de @shared (o ds não importa de lá): com
+     vírgula, ponto é milhar; sem vírgula, mais de um ponto é milhar e um
+     ponto só é decimal */
+  const limpo = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : (s.match(/\./g) ?? []).length > 1 ? s.replace(/\./g, '') : s
   return Number(limpo)
 }
 

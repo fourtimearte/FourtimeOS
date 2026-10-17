@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, X } from '@phosphor-icons/react'
 import {
@@ -83,8 +84,8 @@ type Form = {
 }
 
 const lerValor = (v: string) => {
-  const n = Number(v.replace(/\./g, '').replace(',', '.'))
-  return v.trim() !== '' && Number.isFinite(n) ? n : null
+  const n = lerNumero(v)
+  return n != null && Number.isFinite(n) ? n : null
 }
 const escreverValor = (n: number) => String(n).replace('.', ',')
 

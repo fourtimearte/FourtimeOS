@@ -37,14 +37,12 @@ type LinhaDaTabela = {
   atualizado_em: string
 }
 
-const COLUNAS_068 = 'id,nome,situacao,padrao,vale_ate,so_gerente,faixas,regras,itens,observacao,teste,atualizado_em'
-const COLUNAS_083 = COLUNAS_068 + ',adicionais'
-/* ANTES DA 083 a coluna dos adicionais não existe: a leitura volta sem ela,
-   e a tela avisa que os adicionais ainda não gravam */
-let temAdicionais = true
-const colunas = () => (temAdicionais ? COLUNAS_083 : COLUNAS_068)
-const semAdicionais = (e: unknown) => e instanceof Error && /adicionais/i.test(e.message)
-export const adicionaisNoBanco = () => temAdicionais
+/* As colunas da tabela. A 083 (os adicionais) rodou em 17/10/2026: a
+   reserva que lia sem eles saiu na auditoria do mesmo dia, porque o teste
+   dela era largo demais (qualquer erro que citasse "adicionais" desligava a
+   coluna até recarregar, e o Salvar seguinte gravava a tabela sem eles). */
+const COLUNAS = 'id,nome,situacao,padrao,vale_ate,so_gerente,faixas,regras,itens,observacao,teste,atualizado_em,adicionais'
+const colunas = () => COLUNAS
 
 const num = (v: unknown, reserva: number) => (typeof v === 'number' && Number.isFinite(v) ? v : reserva)
 
@@ -117,7 +115,7 @@ function paraLinha(t: TabelaDePreco) {
       silk: i.silk ?? null,
     })),
     observacao: t.observacao,
-    ...(temAdicionais ? { adicionais: t.adicionais } : {}),
+    adicionais: t.adicionais,
   }
 }
 
@@ -130,10 +128,6 @@ export async function carregarTabelasDePreco(): Promise<{ tabelas: TabelaDePreco
     const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${colunas()}&order=nome.asc`)
     return { tabelas: linhas.map(deLinha), semBanco: false }
   } catch (e) {
-    if (temAdicionais && semAdicionais(e)) {
-      temAdicionais = false
-      return carregarTabelasDePreco()
-    }
     if (semATabela(e)) return { tabelas: [], semBanco: true }
     throw e
   }

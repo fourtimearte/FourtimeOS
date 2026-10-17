@@ -42,10 +42,29 @@ export function formatarNumeroExato(v: number) {
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+/* A DATA PURA NÃO PASSA PELO RELÓGIO (auditoria de 17/10/2026). new Date
+   ('2026-10-05') é meia-noite em Londres, que em Brasília ainda é dia 4: a
+   ficha do cliente mostrava o último pedido um dia antes. Data sem hora
+   ("AAAA-MM-DD", o tipo date do banco e o slice(0, 10) de um carimbo) é lida
+   pelo texto; carimbo com hora passa pelo fuso de quem está olhando. */
 export function formatarData(iso: string) {
   if (!iso) return ''
+  const pura = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim())
+  if (pura) return `${pura[3]}/${pura[2]}/${pura[1]}`
   const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+/** O dia de um carimbo no relógio de Brasília, como "AAAA-MM-DD". O
+    slice(0, 10) do carimbo dá o dia de Londres: o pedido aprovado às 22h
+    caía no dia seguinte. */
+export function diaEmBrasilia(iso: string): string {
+  if (!iso) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso.trim())) return iso.trim()
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
 }
 
 export function formatarCep(cep: string) {
@@ -133,3 +152,27 @@ export const semAcento = (s: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+
+/* O NÚMERO DIGITADO DO JEITO BRASILEIRO. "2,16", "2.16", "1.250,50" e "60"
+   são todos números para quem está no galpão, e a calculadora não pode
+   responder "valor inválido" para nenhum deles.
+
+   Com vírgula, a vírgula é o decimal e os pontos são milhar. Sem vírgula, um
+   ponto só é decimal: ninguém escreve "2.16" querendo dizer duzentos e
+   dezesseis metros. Vazio devolve nulo, que é diferente de zero: campo em
+   branco não é erro, é campo que a pessoa ainda não preencheu.
+
+   Nasceu na Calculadora de DTF e virou a regra do sistema inteiro na
+   auditoria de 17/10/2026: a grade da cotação, o preço do modo Tabela e o
+   valor do frete apagavam TODO ponto ("49.90" virava 4990), e a pesagem da
+   Separação só trocava a vírgula ("1.234,5" virava zero). */
+export function lerNumero(texto: string): number | null {
+  const t = texto.trim().replace(/\s/g, '').replace(/^R\$/i, '')
+  if (!t) return null
+  let limpo: string
+  if (t.includes(',')) limpo = t.replace(/\./g, '').replace(',', '.')
+  else if ((t.match(/\./g) ?? []).length > 1) limpo = t.replace(/\./g, '')
+  else limpo = t
+  if (!/^\d*\.?\d*$/.test(limpo) || limpo === '.') return NaN
+  return Number(limpo)
+}

@@ -67,24 +67,10 @@ export async function gravarPrecoDoMetro(preco: number): Promise<PrecoDoMetro> {
    A CONTA
    ========================================================================== */
 
-/* O NÚMERO DIGITADO DO JEITO BRASILEIRO. "2,16", "2.16", "1.250,50" e "60"
-   são todos números para quem está no galpão, e a calculadora não pode
-   responder "valor inválido" para nenhum deles.
-
-   Com vírgula, a vírgula é o decimal e os pontos são milhar. Sem vírgula, um
-   ponto só é decimal: ninguém escreve "2.16" querendo dizer duzentos e
-   dezesseis metros. Vazio devolve nulo, que é diferente de zero: campo em
-   branco não é erro, é campo que a pessoa ainda não preencheu. */
-export function lerNumero(texto: string): number | null {
-  const t = texto.trim().replace(/\s/g, '').replace(/^R\$/i, '')
-  if (!t) return null
-  let limpo: string
-  if (t.includes(',')) limpo = t.replace(/\./g, '').replace(',', '.')
-  else if ((t.match(/\./g) ?? []).length > 1) limpo = t.replace(/\./g, '')
-  else limpo = t
-  if (!/^\d*\.?\d*$/.test(limpo) || limpo === '.') return NaN
-  return Number(limpo)
-}
+/* O número digitado mora em @shared (lerNumero): a regra é uma só no
+   sistema inteiro desde a auditoria de 17/10/2026. */
+import { lerNumero } from '@shared'
+export { lerNumero }
 
 export type ContaDoDtf = {
   /** o comprimento inteiro, em centímetros, já somado metro com centímetro */

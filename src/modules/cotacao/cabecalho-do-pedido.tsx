@@ -82,7 +82,7 @@ function usarCadastroDoCliente(id: string) {
   useEffect(() => {
     if (!id) return
     let vivo = true
-    void Promise.all([acharCliente(id).catch(() => null), carregarExtras(id), carregarFreteDoCliente(id)]).then(
+    void Promise.all([acharCliente(id).catch(() => null), carregarExtras(id).catch(() => EXTRAS_VAZIOS), carregarFreteDoCliente(id)]).then(
       ([cliente, extras, frete]) => vivo && setLido({ id, cliente, extras, frete }),
     )
     return () => {

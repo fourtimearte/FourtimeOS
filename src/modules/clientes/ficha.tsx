@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ClockCounterClockwise, IdentificationCard } from '@phosphor-icons/react'
 import {
   avisar,
+  Aviso,
   Botao,
   Campo,
   type Coluna,
@@ -101,6 +102,9 @@ export function FichaDoCliente({
   /* OS OUTROS CADASTROS (082): o que esta no banco e o que esta na tela */
   const [extrasDoBanco, setExtrasDoBanco] = useState<ExtrasDoCliente>(EXTRAS_VAZIOS)
   const [extras, setExtras] = useState<ExtrasDoCliente>(EXTRAS_VAZIOS)
+  /* a leitura dos outros cadastros falhou: eles não se editam nem se gravam,
+     porque gravar a lista da tela apagaria o que está no banco */
+  const [extrasFalharam, setExtrasFalharam] = useState(false)
   const [freteDeCostume, setFreteDeCostume] = useState<FreteDoCliente | null>(null)
 
   /* A CARTEIRA E DE UMA PESSOA (011): o lead deste telefone volta para ela, antes
@@ -130,11 +134,15 @@ export function FichaDoCliente({
     setFreteDeCostume(null)
     if (!idDeFora) return
     let vivo = true
-    void carregarExtras(idDeFora).then((x) => {
-      if (!vivo) return
-      setExtrasDoBanco(x)
-      setExtras(x)
-    })
+    setExtrasFalharam(false)
+    void carregarExtras(idDeFora).then(
+      (x) => {
+        if (!vivo) return
+        setExtrasDoBanco(x)
+        setExtras(x)
+      },
+      () => vivo && setExtrasFalharam(true),
+    )
     void carregarFreteDoCliente(idDeFora).then((f) => vivo && setFreteDeCostume(f))
     return () => {
       vivo = false
@@ -226,7 +234,7 @@ export function FichaDoCliente({
       const salvo = await gravar(c)
       /* os outros cadastros so gravam depois da ficha, porque o cliente
          novo ainda nao tem id antes dela */
-      if (JSON.stringify(extras) !== JSON.stringify(extrasDoBanco) || novo) {
+      if (!extrasFalharam && (JSON.stringify(extras) !== JSON.stringify(extrasDoBanco) || novo)) {
         try {
           await salvarExtras(salvo.id, extras)
           const lidos = await carregarExtras(salvo.id)
@@ -483,14 +491,20 @@ export function FichaDoCliente({
                 />
               </Campo>
             </div>
-            <ExtrasNoFormulario
-              c={c}
-              x={extras}
-              aoMudar={(novoC, novoX) => {
-                setRascunho(novoC)
-                setExtras(novoX)
-              }}
-            />
+            {extrasFalharam ? (
+              <Aviso tom="warn" titulo="Não consegui ler os outros CPF/CNPJ, endereços e contatos">
+                Eles ficam como estão no banco: dá para salvar a ficha, e os outros cadastros se mexem depois de abrir a ficha de novo.
+              </Aviso>
+            ) : (
+              <ExtrasNoFormulario
+                c={c}
+                x={extras}
+                aoMudar={(novoC, novoX) => {
+                  setRascunho(novoC)
+                  setExtras(novoX)
+                }}
+              />
+            )}
             </>
           ) : (
             <>

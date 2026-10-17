@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
 import { Botao, Busca, Entrada, Seletor, Vazio, avisar } from '@ds'
@@ -197,10 +198,8 @@ function Medidas({
   }, [tecido.gramatura, tecido.largura])
 
   function lido(texto: string): number | null {
-    const t = texto.trim()
-    if (!t) return null
-    const n = Number(t.replace(',', '.'))
-    return Number.isFinite(n) && n > 0 ? n : null
+    const n = lerNumero(texto)
+    return n != null && Number.isFinite(n) && n > 0 ? n : null
   }
 
   async function gravar() {

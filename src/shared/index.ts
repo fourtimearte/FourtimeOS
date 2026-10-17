@@ -2,7 +2,9 @@
    Regra: shared/ só pode importar de ds/. Nunca de dominio/ nem de modules/. */
 export {
   formatarCep,
+  diaEmBrasilia,
   formatarData,
+  lerNumero,
   formatarDinheiro,
   formatarDinheiroExato,
   formatarNumeroExato,

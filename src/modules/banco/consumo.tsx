@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { useEffect, useMemo, useState } from 'react'
 import { Botao, Busca, Entrada, Gaveta, Selo, Vazio, avisar } from '@ds'
 import { apagarConsumo, combina, gravarConsumo, referenciasPorGrupo } from '@dominio/banco'
@@ -38,10 +39,8 @@ function texto(v: number | null): string {
 }
 
 function lido(t: string): number | null {
-  const s = t.trim()
-  if (!s) return null
-  const n = Number(s.replace(',', '.'))
-  return Number.isFinite(n) && n >= 0 ? n : null
+  const n = lerNumero(t)
+  return n != null && Number.isFinite(n) && n >= 0 ? n : null
 }
 
 export function ConsumoDeTecido({

@@ -57,12 +57,13 @@ const gravados = []
 const importados = []
 const conta = (certo, texto) => { achados.push({ certo, texto }); console.log((certo ? 'ok   ' : 'RUIM ') + texto) }
 
-async function abrir({ tema, larg, alt }) {
+async function abrir({ tema, larg, alt, extrasQuebrados = false }) {
   const ctx = await nav.newContext({ viewport: { width: larg, height: alt }, reducedMotion: 'reduce', hasTouch: larg < 1024, acceptDownloads: true })
   await ctx.route('**supabase.co/**', async (r) => {
     const u = r.request().url()
     let corpo = []
     if (u.includes('/rpc/')) { chamadas.push({ f: u.split('/rpc/')[1].split('?')[0], corpo: JSON.parse(r.request().postData() ?? '{}') }); corpo = null }
+    else if (u.includes('extras_do_cliente') && extrasQuebrados) return r.fulfill({ status: 500, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ message: 'falha de mentira' }) })
     else if (u.includes('extras_do_cliente')) corpo = u.includes('C1') ? [{ cliente_id: 'C1', ...EXTRAS_C1 }] : []
     else if (u.includes('frete_do_cliente')) corpo = u.includes('C1') ? [FRETE_C1] : []
     else if (r.request().method() === 'PATCH' && u.includes('/cliente?')) { gravados.push(JSON.parse(r.request().postData() ?? '{}')); corpo = [] }
@@ -254,6 +255,28 @@ for (const tema of ['light', 'dark']) {
     conta(!erros.length, `${T} nenhum erro de JavaScript ` + erros.join(' | '))
     await ctx.close()
   }
+}
+{
+  /* AUDITORIA DE 17/10/2026: a leitura dos outros cadastros que falha não
+     vira lista vazia. Antes, ela voltava vazia, a pessoa salvava a ficha e o
+     salvarExtras gravava as três listas vazias por cima das de verdade. */
+  const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 1920, alt: 1080, extrasQuebrados: true })
+  await pg.goto(SITE + '/clientes', { waitUntil: 'networkidle' })
+  await pg.waitForTimeout(700)
+  await pg.evaluate(() => [...document.querySelectorAll('.cl-tab tbody tr')].find((t) => t.innerText.includes('Colégio Exemplo')).click())
+  await pg.waitForTimeout(600)
+  await pg.locator('.cl-lado button', { hasText: 'Editar' }).first().click()
+  await pg.waitForTimeout(600)
+  const aviso = await pg.evaluate(() => document.querySelector('dialog[open] .aviso')?.innerText ?? '')
+  const blocos = await pg.locator('dialog[open] .cl-extra-bloco').count()
+  conta(/Não consegui ler os outros/.test(aviso) && blocos === 0, 'auditoria: com a leitura dos outros cadastros falhando, a ficha avisa e não mostra listas vazias para editar (' + aviso.slice(0, 60) + ')')
+  const antes = chamadas.filter((c) => c.f === 'salvar_extras_do_cliente').length
+  await pg.locator('dialog[open] button', { hasText: 'Salvar' }).first().click()
+  await pg.waitForTimeout(800)
+  conta(chamadas.filter((c) => c.f === 'salvar_extras_do_cliente').length === antes, 'auditoria: o Salvar grava a ficha e NÃO apaga os outros cadastros que não foram lidos')
+  await pg.screenshot({ path: `${PASTA}/clientes-extras-falharam.png` })
+  conta(!erros.length, 'auditoria: nenhum erro de JavaScript ' + erros.join(' | '))
+  await ctx.close()
 }
 await nav.close()
 const ruins = achados.filter((a) => !a.certo)

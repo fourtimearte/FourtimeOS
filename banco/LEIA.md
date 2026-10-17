@@ -84,3 +84,41 @@ do banco:
 Fingir uma sessao e legitimo e esta no arquivo: `set_config('request.jwt.claims',
 ...)` faz `auth.uid()` devolver a pessoa escolhida, e sem isso as travas de
 papel nao valem no SQL Editor e o teste passaria por engano.
+
+## A auditoria e o cruzamento (17/10/2026)
+
+Três conferências cuidam do banco, e as três rodam sem tocar na produção:
+
+- `npm run banco` sobe o banco inteiro pelas migrações no ensaio, tira o
+  retrato dele (`banco/ferramentas/catalogo.sql`) e confere segurança (RLS,
+  regras, grants, views que passam por cima da RLS, funções DEFINER que quem
+  não entrou chama), integridade (chave primária, chave estrangeira sem
+  índice) e desempenho (índice repetido, regra que chama função por linha,
+  view que abre o corpo da cotação). Grava o retrato enxuto em
+  `banco/retrato.json`. **Rodar depois de toda migração nova.**
+- `npm run cruzamento` (faz parte do `npm run conferir`) lê o código com o
+  compilador do TypeScript, acha cada conversa com o banco (tabela, view,
+  coluna, filtro, ordem, função e os NOMES dos argumentos) e confere contra o
+  retrato. Coluna que o código pede e o banco não tem reprova aqui, antes de
+  virar um 400 na cara de quem está usando. Reprova também quando o retrato
+  está velho (migração nova sem `npm run banco`).
+- `node testes/banco.mjs --comparar producao.json` compara o retrato da
+  produção com o das migrações. O retrato da produção sai do mesmo
+  `catalogo.sql`, rodado no SQL Editor (ele só lê).
+
+As duas conferências provam a si mesmas antes de rodar: um banco e um código
+de mentira com um defeito de cada tipo, que têm de acusar, e um certo, que
+tem de ficar calado.
+
+## A porta das funções (084)
+
+Toda função do schema public vira `/rest/v1/rpc/<nome>` para quem tem a chave
+pública do site. Desde a 084, função nova nasce fechada para quem não entrou
+(default privileges): só `authenticated` e a chave de serviço chamam. Abrir
+para fora é uma linha escrita na migração, com o motivo. Hoje só duas são de
+fora: `painel_do_parceiro` (a página do parceiro) e
+`erros_da_extensao_para_o_vigia` (o vigia agendado).
+
+Função DEFINER que muda dado confere quem chamou lá dentro (`posso`,
+`posso_a_acao`, `sou_admin`, `auth.uid()`), mesmo fechada: `authenticated`
+inclui quem ainda espera aprovação.

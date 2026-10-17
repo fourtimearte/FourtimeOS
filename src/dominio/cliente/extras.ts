@@ -67,21 +67,22 @@ type LinhaDosExtras = {
   contatos: ContatoExtra[]
 }
 
+/* A LEITURA QUE FALHA NÃO VIRA LISTA VAZIA (auditoria de 17/10/2026). O
+   salvarExtras grava as três listas inteiras: se uma falha de rede virasse
+   "nenhum outro documento", a pessoa acrescentaria um contato e o Salvar
+   apagaria os documentos, endereços e contatos que já existiam. Quem só
+   mostra pode trocar o erro por vazio; quem edita precisa saber que falhou. */
 export async function carregarExtras(clienteId: string): Promise<ExtrasDoCliente> {
   if (!clienteId) return EXTRAS_VAZIOS
-  try {
-    const l = await tabela<LinhaDosExtras[]>(
-      `extras_do_cliente?select=documentos,enderecos,contatos&cliente_id=eq.${encodeURIComponent(clienteId)}`,
-    )
-    const x = l[0]
-    if (!x) return EXTRAS_VAZIOS
-    return {
-      documentos: (x.documentos ?? []).map((d) => ({ ...d, nome: d.nome ?? '' })),
-      enderecos: x.enderecos ?? [],
-      contatos: x.contatos ?? [],
-    }
-  } catch {
-    return EXTRAS_VAZIOS
+  const l = await tabela<LinhaDosExtras[]>(
+    `extras_do_cliente?select=documentos,enderecos,contatos&cliente_id=eq.${encodeURIComponent(clienteId)}`,
+  )
+  const x = l[0]
+  if (!x) return EXTRAS_VAZIOS
+  return {
+    documentos: (x.documentos ?? []).map((d) => ({ ...d, nome: d.nome ?? '' })),
+    enderecos: x.enderecos ?? [],
+    contatos: x.contatos ?? [],
   }
 }
 

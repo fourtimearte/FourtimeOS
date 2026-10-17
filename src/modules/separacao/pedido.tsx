@@ -1,3 +1,4 @@
+import { lerNumero } from '@shared'
 import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { CheckCircle, FileText, Sigma, X } from '@phosphor-icons/react'
@@ -116,8 +117,8 @@ export function PedidoAberto({
   }, [abrir])
 
   const lido = (texto: string) => {
-    const n = Number(texto.trim().replace(',', '.'))
-    return Number.isFinite(n) ? n : 0
+    const n = lerNumero(texto)
+    return n != null && Number.isFinite(n) ? n : 0
   }
 
   async function separar(l: ReservaDoPedido, fixo?: number) {

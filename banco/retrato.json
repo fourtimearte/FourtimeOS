@@ -1,0 +1,4299 @@
+{
+ "migracoes": "6b9a2a9ea28925579d81dd5cbf014859be0f6cd53f68d0cdd5113a9e1a5f509b",
+ "relacoes": {
+  "acao": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "nome",
+    "grupo",
+    "painel",
+    "linha",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {
+    "painel": "painel"
+   },
+   "cresce": false
+  },
+  "acordo_do_parceiro": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "parceiro_id",
+    "tipo",
+    "valor",
+    "base",
+    "vale_desde",
+    "criado_por",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "pessoa",
+    "parceiro_id": "parceiro"
+   },
+   "cresce": false
+  },
+  "aviso_da_loja": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "recebido_em",
+    "topico",
+    "pedido_id",
+    "pedido",
+    "itens",
+    "resultado"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": true
+  },
+  "aviso_do_sino": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "pessoa_id",
+    "tipo",
+    "texto",
+    "link",
+    "pedido_id",
+    "de",
+    "criado_em",
+    "lido_em",
+    "lead_id"
+   ],
+   "geradas": [],
+   "chaves": {
+    "de": "pessoa",
+    "lead_id": "lead",
+    "pedido_id": "pedido",
+    "pessoa_id": "pessoa"
+   },
+   "cresce": true
+  },
+  "aviso_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "tipo",
+    "texto",
+    "link",
+    "pedido_id",
+    "de_nome",
+    "criado_em",
+    "lido_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "cliente": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "fantasia",
+    "tipo",
+    "documento",
+    "contato",
+    "telefone",
+    "celular",
+    "email",
+    "endereco",
+    "complemento",
+    "bairro",
+    "cidade",
+    "uf",
+    "cep",
+    "tipo_de_contato",
+    "segmento",
+    "vendedor",
+    "criado_em",
+    "atualizado_em",
+    "vendedor_id",
+    "teste",
+    "pedidos_antigos",
+    "total_antigo",
+    "ultimo_pedido_antigo"
+   ],
+   "geradas": [],
+   "chaves": {
+    "vendedor_id": "pessoa"
+   },
+   "cresce": true
+  },
+  "cliente_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "fantasia",
+    "tipo",
+    "documento",
+    "contato",
+    "telefone",
+    "celular",
+    "email",
+    "endereco",
+    "complemento",
+    "bairro",
+    "cidade",
+    "uf",
+    "cep",
+    "tipo_de_contato",
+    "segmento",
+    "vendedor",
+    "vendedor_id",
+    "teste",
+    "criado_em",
+    "atualizado_em",
+    "pedidos_antigos",
+    "total_antigo",
+    "ultimo_pedido_antigo",
+    "pedidos",
+    "total",
+    "ultimo_pedido"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "conferencia_de_boleto": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "quando",
+    "quem",
+    "quem_nome",
+    "linha",
+    "arquivo",
+    "banco",
+    "banco_nome",
+    "valor",
+    "vencimento",
+    "beneficiario",
+    "cnpj",
+    "pagador",
+    "pagador_documento",
+    "resultado",
+    "situacao",
+    "checagens",
+    "motivo",
+    "fornecedor_id",
+    "decidido_por",
+    "decidido_por_nome",
+    "decidido_em",
+    "nota_da_decisao",
+    "teste"
+   ],
+   "geradas": [],
+   "chaves": {
+    "decidido_por": "pessoa",
+    "fornecedor_id": "fornecedor",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "consumo_da_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "referencia_id",
+    "tamanho",
+    "metros",
+    "quilos",
+    "observacao",
+    "atualizado_em",
+    "teste",
+    "area"
+   ],
+   "geradas": [],
+   "chaves": {
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "consumo_do_layout": {
+   "tipo": "tabela",
+   "colunas": [
+    "pedido_id",
+    "ordem",
+    "material_id",
+    "quantidade",
+    "unidade",
+    "sem_consumo",
+    "pecas",
+    "tipo",
+    "como"
+   ],
+   "geradas": [],
+   "chaves": {
+    "material_id": "material",
+    "pedido_id": "pedido"
+   },
+   "cresce": true
+  },
+  "contador": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "valor"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "contato_do_cliente": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "cliente_id",
+    "nome",
+    "cargo",
+    "celular",
+    "telefone",
+    "email",
+    "ordem",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cliente_id": "cliente"
+   },
+   "cresce": true
+  },
+  "conversa_do_pedido": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "com",
+    "quem",
+    "texto",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "com": "pessoa",
+    "pedido_id": "pedido",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "conversa_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "com",
+    "com_nome",
+    "com_papel",
+    "quem",
+    "quem_nome",
+    "texto",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "convite": {
+   "tipo": "tabela",
+   "colunas": [
+    "email",
+    "papel",
+    "paineis",
+    "criado_em",
+    "criado_por",
+    "usado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "auth.users",
+    "papel": "papel_do_sistema"
+   },
+   "cresce": false
+  },
+  "cor_de_impressao": {
+   "tipo": "tabela",
+   "colunas": [
+    "codigo",
+    "tecnica",
+    "numero",
+    "hex",
+    "nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "cor_de_tecido": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "hex",
+    "grupo",
+    "ordem",
+    "ativo"
+   ],
+   "geradas": [],
+   "chaves": {
+    "grupo": "grupo_de_cor"
+   },
+   "cresce": false
+  },
+  "corrida_de_transporte": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "lancamento_id",
+    "coleta",
+    "quando",
+    "meio",
+    "transportador_id",
+    "transportador",
+    "motivo",
+    "valor",
+    "forma",
+    "pago",
+    "pago_em",
+    "frete_pago_por"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "cotacao": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "numero",
+    "corpo",
+    "versao_do_formato",
+    "cliente_id",
+    "cliente_nome",
+    "lead_id",
+    "estado",
+    "vendedor_id",
+    "total",
+    "pecas",
+    "valida_ate",
+    "criada_em",
+    "atualizado_em",
+    "teste",
+    "cliente_cidade",
+    "cliente_uf",
+    "vendedor_nome",
+    "entrega",
+    "telefone_do_cliente",
+    "marcas"
+   ],
+   "geradas": [
+    "entrega",
+    "telefone_do_cliente",
+    "marcas"
+   ],
+   "chaves": {
+    "cliente_id": "cliente",
+    "lead_id": "lead",
+    "vendedor_id": "pessoa"
+   },
+   "cresce": true
+  },
+  "cotacao_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cliente_id",
+    "cliente_nome",
+    "cliente_cidade",
+    "cliente_uf",
+    "lead_id",
+    "estado",
+    "vendedor_id",
+    "vendedor_nome",
+    "total",
+    "pecas",
+    "valida_ate",
+    "teste",
+    "versao_do_formato",
+    "criada_em",
+    "atualizado_em",
+    "pedido_numero"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "cotacao_sem_vendedor": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cliente_nome",
+    "vendedor_nome",
+    "total",
+    "estado"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "dado_de_teste": {
+   "tipo": "view",
+   "colunas": [
+    "tabela",
+    "linhas"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "deposito": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "largura",
+    "fundo",
+    "atualizado_por",
+    "criado_em",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "atualizado_por": "pessoa"
+   },
+   "cresce": false
+  },
+  "documento_do_cliente": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "cliente_id",
+    "tipo",
+    "documento",
+    "nome",
+    "ordem",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cliente_id": "cliente"
+   },
+   "cresce": true
+  },
+  "empresa": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "dados",
+    "atualizado_em",
+    "atualizado_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "atualizado_por": "pessoa"
+   },
+   "cresce": false
+  },
+  "endereco_do_cliente": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "cliente_id",
+    "apelido",
+    "endereco",
+    "complemento",
+    "bairro",
+    "cidade",
+    "uf",
+    "cep",
+    "ordem",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cliente_id": "cliente"
+   },
+   "cresce": true
+  },
+  "envio_do_site": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "impressao",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": true
+  },
+  "equipe": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "papel",
+    "situacao"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "erro_da_extensao": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "dia",
+    "versao",
+    "onde",
+    "o_que",
+    "estrutura",
+    "vezes",
+    "primeira_em",
+    "ultima_em",
+    "quem"
+   ],
+   "geradas": [],
+   "chaves": {
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "evento_da_fatia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "fatia_id",
+    "tipo",
+    "texto",
+    "quem",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "fatia_id": "fatia",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "extras_do_cliente": {
+   "tipo": "view",
+   "colunas": [
+    "cliente_id",
+    "documentos",
+    "enderecos",
+    "contatos"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "familia_do_posto": {
+   "tipo": "tabela",
+   "colunas": [
+    "posto",
+    "familia"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "fatia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "tecnica",
+    "etapa",
+    "etapa_em",
+    "fechado_em",
+    "layouts",
+    "pecas",
+    "criado_em",
+    "pego_por",
+    "pego_em",
+    "travada_em",
+    "travada_motivo",
+    "travada_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "pedido_id": "pedido",
+    "pego_por": "pessoa",
+    "travada_por": "pessoa"
+   },
+   "cresce": true
+  },
+  "fatia_na_fabrica": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "numero",
+    "nome",
+    "cliente",
+    "vendedor",
+    "tecnica",
+    "etapa",
+    "etapa_em",
+    "fechado_em",
+    "layouts",
+    "pecas",
+    "ordem_na_rota",
+    "entrega_em",
+    "planejado_em",
+    "aviso",
+    "estado",
+    "teste",
+    "pego_por",
+    "pego_em",
+    "pego_por_nome",
+    "marcas",
+    "tags",
+    "falas",
+    "cliente_id",
+    "travada_em",
+    "travada_motivo",
+    "travada_por_nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "fornecedor": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "razao_social",
+    "cnpj",
+    "cidade",
+    "uf",
+    "contato",
+    "pagamento",
+    "prazo",
+    "o_que_fornece",
+    "situacao",
+    "entrou_por",
+    "receita",
+    "aprovado_por",
+    "aprovado_em",
+    "motivo_do_bloqueio",
+    "ativo",
+    "teste",
+    "criado_por",
+    "criado_em",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "aprovado_por": "pessoa",
+    "criado_por": "pessoa"
+   },
+   "cresce": false
+  },
+  "fornecedor_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "razao_social",
+    "cnpj",
+    "cidade",
+    "uf",
+    "contato",
+    "pagamento",
+    "prazo",
+    "o_que_fornece",
+    "situacao",
+    "entrou_por",
+    "receita",
+    "aprovado_por",
+    "aprovado_por_nome",
+    "aprovado_em",
+    "motivo_do_bloqueio",
+    "criado_em",
+    "tipos",
+    "materiais",
+    "entradas",
+    "ultima_entrada",
+    "boletos",
+    "ultimo_boleto"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "fornecedor_tipo": {
+   "tipo": "tabela",
+   "colunas": [
+    "fornecedor_id",
+    "tipo"
+   ],
+   "geradas": [],
+   "chaves": {
+    "fornecedor_id": "fornecedor",
+    "tipo": "tipo_de_fornecedor"
+   },
+   "cresce": false
+  },
+  "frete_do_cliente": {
+   "tipo": "view",
+   "colunas": [
+    "cliente_id",
+    "modo",
+    "vezes",
+    "pedidos",
+    "ultimo_envio",
+    "ultimo_transportador"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "frete_do_pedido": {
+   "tipo": "tabela",
+   "colunas": [
+    "pedido_id",
+    "quem_paga",
+    "envio",
+    "valor_combinado",
+    "valor_pago",
+    "comprovante",
+    "comprovante_nome",
+    "observacao",
+    "pedido_em",
+    "pedido_por",
+    "recebido_em",
+    "recebido_por",
+    "confirmado_em",
+    "confirmado_por",
+    "criado_em",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "confirmado_por": "pessoa",
+    "pedido_id": "pedido",
+    "pedido_por": "pessoa",
+    "recebido_por": "pessoa"
+   },
+   "cresce": true
+  },
+  "frete_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "pedido_id",
+    "numero",
+    "cliente",
+    "cliente_id",
+    "telefone",
+    "estado",
+    "entrega_em",
+    "liberado_em",
+    "envio",
+    "quem_paga",
+    "registrado",
+    "valor_combinado",
+    "valor_pago",
+    "comprovante",
+    "comprovante_nome",
+    "observacao",
+    "passo",
+    "pedido_em",
+    "pedido_por",
+    "recebido_em",
+    "recebido_por",
+    "confirmado_em",
+    "confirmado_por",
+    "teste"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "grupo_de_cor": {
+   "tipo": "tabela",
+   "colunas": [
+    "cod",
+    "nome",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "grupo_de_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "cod",
+    "nome",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "grupo_de_tecido": {
+   "tipo": "tabela",
+   "colunas": [
+    "cod",
+    "nome",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "informe_da_casa": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "grupo",
+    "texto",
+    "nasce_marcado",
+    "ordem",
+    "criado_em",
+    "alterado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "item_de_detalhe": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "detalhe",
+    "nome",
+    "ordem",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "item_de_detalhe_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "detalhe",
+    "nome",
+    "ordem",
+    "referencias",
+    "kits"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "juntada_de_cliente": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "ficou_id",
+    "saiu",
+    "quem",
+    "quando"
+   ],
+   "geradas": [],
+   "chaves": {
+    "ficou_id": "cliente",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "kit_na_ficha": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "cod",
+    "nome",
+    "genero",
+    "ativo",
+    "ficha_em",
+    "pecas",
+    "pecas_cod",
+    "pecas_sem_tecido",
+    "pecas_sem_etiqueta",
+    "tem_desenho"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "lancamento_de_transporte": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "quando",
+    "transportador_id",
+    "motivo",
+    "pedido_id",
+    "fornecedor_id",
+    "destino",
+    "valor",
+    "forma",
+    "pago",
+    "pago_em",
+    "pago_por",
+    "quem",
+    "quem_nome",
+    "observacao",
+    "teste",
+    "criado_em",
+    "atualizado_em",
+    "frete_pago_por",
+    "coleta_de",
+    "apagado_em",
+    "apagado_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "apagado_por": "pessoa",
+    "coleta_de": "lancamento_de_transporte",
+    "fornecedor_id": "fornecedor",
+    "pago_por": "pessoa",
+    "pedido_id": "pedido",
+    "quem": "pessoa",
+    "transportador_id": "transportador"
+   },
+   "cresce": true
+  },
+  "lancamento_de_transporte_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "quando",
+    "meio",
+    "transportador_id",
+    "transportador",
+    "motivo",
+    "pedido_id",
+    "pedido",
+    "cliente",
+    "fornecedor_id",
+    "fornecedor",
+    "destino",
+    "valor",
+    "forma",
+    "pago",
+    "pago_em",
+    "quem",
+    "quem_nome",
+    "observacao",
+    "teste",
+    "frete_pago_por",
+    "coleta_de",
+    "pedidos",
+    "coleta_id",
+    "coleta_transportador_id",
+    "coleta_transportador",
+    "coleta_meio",
+    "coleta_valor",
+    "coleta_forma",
+    "coleta_pago"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "lancamento_na_lixeira": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "quando",
+    "meio",
+    "transportador",
+    "motivo",
+    "pedido",
+    "destino",
+    "valor",
+    "apagado_em",
+    "apagado_por"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "layout_do_pedido": {
+   "tipo": "tabela",
+   "colunas": [
+    "pedido_id",
+    "ordem",
+    "layout",
+    "referencia",
+    "nome",
+    "genero",
+    "faixa",
+    "arte",
+    "grade",
+    "pecas",
+    "tecnicas"
+   ],
+   "geradas": [],
+   "chaves": {
+    "pedido_id": "pedido"
+   },
+   "cresce": true
+  },
+  "layout_na_fabrica": {
+   "tipo": "view",
+   "colunas": [
+    "pedido_id",
+    "numero",
+    "pedido_nome",
+    "cliente",
+    "estado",
+    "etapa",
+    "etapa_em",
+    "aprovado_em",
+    "fechado_em",
+    "teste",
+    "ordem",
+    "layout",
+    "referencia",
+    "nome",
+    "genero",
+    "faixa",
+    "arte",
+    "grade",
+    "pecas",
+    "tecnicas",
+    "referencia_id",
+    "kit"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "lead": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "contato",
+    "telefone",
+    "cliente_id",
+    "estagio",
+    "valor",
+    "vendedor_id",
+    "dono_desde",
+    "origem",
+    "anuncio",
+    "ctwa_clid",
+    "ultima_msg",
+    "ultima_msg_em",
+    "nao_lidas",
+    "janela_ate",
+    "criado_em",
+    "atualizado_em",
+    "teste",
+    "id_envio",
+    "email",
+    "briefing",
+    "consentimento_em",
+    "consentimento_texto",
+    "prioridade"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cliente_id": "cliente",
+    "vendedor_id": "pessoa"
+   },
+   "cresce": true
+  },
+  "linha_do_tempo_da_fatia": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "fatia_id",
+    "tipo",
+    "texto",
+    "em",
+    "quem",
+    "quem_nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "lista_do_cabecalho": {
+   "tipo": "tabela",
+   "colunas": [
+    "tipo",
+    "valor",
+    "ordem",
+    "ativo"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "lugar_do_material": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "material_id",
+    "movel_id",
+    "vao",
+    "nivel",
+    "principal",
+    "criado_por",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "pessoa",
+    "material_id": "material",
+    "movel_id": "movel_do_deposito"
+   },
+   "cresce": false
+  },
+  "lugar_do_material_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "material_id",
+    "movel_id",
+    "deposito_id",
+    "tipo",
+    "movel",
+    "vao",
+    "vao_nome",
+    "nivel",
+    "principal",
+    "codigo",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "material": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "categoria",
+    "nome",
+    "unidade",
+    "minimo",
+    "saldo",
+    "ativo",
+    "teste",
+    "tecido_id",
+    "cor_id",
+    "criado_em",
+    "atualizado_em",
+    "grupo",
+    "onde_fica",
+    "composicao",
+    "gramatura",
+    "largura",
+    "detalhes",
+    "cuidados"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cor_id": "cor_de_tecido",
+    "tecido_id": "tecido"
+   },
+   "cresce": false
+  },
+  "material_da_fila": {
+   "tipo": "view",
+   "colunas": [
+    "material_id",
+    "material",
+    "categoria",
+    "unidade",
+    "cor_hex",
+    "onde_fica",
+    "saldo",
+    "pede",
+    "pedidos",
+    "sem_consumo",
+    "depois",
+    "numeros"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "material_da_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "referencia_id",
+    "material_id",
+    "nome",
+    "quantidade",
+    "unidade",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {
+    "material_id": "material",
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "material_fornecedor": {
+   "tipo": "tabela",
+   "colunas": [
+    "material_id",
+    "fornecedor_id",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "fornecedor_id": "fornecedor",
+    "material_id": "material"
+   },
+   "cresce": false
+  },
+  "material_na_prateleira": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "categoria",
+    "nome",
+    "unidade",
+    "minimo",
+    "saldo",
+    "reservado",
+    "livre",
+    "pedidos_reservando",
+    "reserva_sem_consumo",
+    "ativo",
+    "tecido_id",
+    "cor_id",
+    "tecido",
+    "cor",
+    "cor_hex",
+    "abaixo_do_minimo",
+    "atualizado_em",
+    "ultimo_movimento",
+    "grupo",
+    "onde_fica",
+    "criado_em",
+    "composicao",
+    "gramatura",
+    "largura",
+    "detalhes",
+    "cuidados",
+    "negociado",
+    "cotacoes_negociando"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "medida_da_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "referencia_id",
+    "nome",
+    "como_medir",
+    "ordem",
+    "valores"
+   ],
+   "geradas": [],
+   "chaves": {
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "mensagem": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "lead_id",
+    "quem",
+    "tipo",
+    "texto",
+    "arquivo",
+    "nome_do_arquivo",
+    "id_externo",
+    "situacao",
+    "pessoa_id",
+    "em",
+    "canal"
+   ],
+   "geradas": [],
+   "chaves": {
+    "lead_id": "lead",
+    "pessoa_id": "pessoa"
+   },
+   "cresce": true
+  },
+  "mensagem_rapida": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "titulo",
+    "texto",
+    "grupo",
+    "dono_id",
+    "criado_por",
+    "ordem",
+    "criado_em",
+    "atualizado_em",
+    "lugar"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "pessoa",
+    "dono_id": "pessoa"
+   },
+   "cresce": false
+  },
+  "meu_perfil": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "email",
+    "papel",
+    "situacao",
+    "foto_em",
+    "paineis",
+    "permissoes"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "molde_da_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "referencia_id",
+    "tamanho",
+    "svg",
+    "atualizado_em",
+    "cm_por_unidade"
+   ],
+   "geradas": [],
+   "chaves": {
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "movel_do_deposito": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "deposito_id",
+    "tipo",
+    "nome",
+    "uso",
+    "x",
+    "y",
+    "largura",
+    "fundo",
+    "em_pe",
+    "vaos",
+    "niveis",
+    "nomes_dos_vaos",
+    "grade",
+    "criado_em",
+    "atualizado_em",
+    "apelido"
+   ],
+   "geradas": [],
+   "chaves": {
+    "deposito_id": "deposito"
+   },
+   "cresce": false
+  },
+  "movimento_de_estoque": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "material_id",
+    "quantidade",
+    "motivo",
+    "pedido_id",
+    "observacao",
+    "quem",
+    "quando",
+    "fornecedor_id"
+   ],
+   "geradas": [],
+   "chaves": {
+    "fornecedor_id": "fornecedor",
+    "material_id": "material",
+    "pedido_id": "pedido",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "movimento_de_peca": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "lote_id",
+    "tipo",
+    "grade",
+    "motivo",
+    "quem",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "lote_id": "peca_pronta",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "movimento_do_estoque": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "material_id",
+    "material",
+    "unidade",
+    "categoria",
+    "quantidade",
+    "motivo",
+    "observacao",
+    "pedido_id",
+    "pedido",
+    "quem",
+    "quem_nome",
+    "quando",
+    "fornecedor_id",
+    "fornecedor",
+    "tecido_id",
+    "grupo",
+    "tecido",
+    "cor",
+    "cor_hex",
+    "quem_na_equipe",
+    "material_ativo"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "negociado": {
+   "tipo": "tabela",
+   "colunas": [
+    "cotacao_id",
+    "material_id",
+    "quantidade",
+    "unidade",
+    "sem_consumo",
+    "pecas",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "cotacao_id": "cotacao",
+    "material_id": "material"
+   },
+   "cresce": true
+  },
+  "negociado_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "material_id",
+    "cotacao_id",
+    "numero",
+    "cliente",
+    "vendedor",
+    "estado",
+    "quantidade",
+    "unidade",
+    "sem_consumo",
+    "pecas",
+    "atualizado_em",
+    "material",
+    "categoria"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "painel": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "nome",
+    "grupo",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "papel_do_sistema": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "nome",
+    "linha",
+    "fixo",
+    "ordem",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "parceiro": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "colecao",
+    "colecao_nome",
+    "chave",
+    "senha",
+    "ativo",
+    "erros",
+    "travado_ate",
+    "aberta_em",
+    "produtos_em",
+    "criado_por",
+    "criado_em",
+    "atualizado_em",
+    "imposto",
+    "mostrar_desde"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "pessoa"
+   },
+   "cresce": false
+  },
+  "parceiro_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "colecao",
+    "colecao_nome",
+    "chave",
+    "senha",
+    "ativo",
+    "aberta_em",
+    "travado_ate",
+    "produtos_em",
+    "criado_em",
+    "acordo_tipo",
+    "acordo_valor",
+    "acordo_base",
+    "acordo_desde",
+    "ultimo_tipo",
+    "ultimo_valor",
+    "ultimo_base",
+    "ultimo_desde",
+    "produtos",
+    "imposto",
+    "mostrar_desde"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "parte_da_referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "referencia_id",
+    "nome",
+    "vezes",
+    "unidade",
+    "ordem",
+    "quantidades"
+   ],
+   "geradas": [],
+   "chaves": {
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "passo_do_pcp": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "tipo",
+    "texto",
+    "quem",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "pedido_id": "pedido",
+    "quem": "pessoa"
+   },
+   "cresce": true
+  },
+  "passo_do_pcp_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "tipo",
+    "texto",
+    "em",
+    "quem_nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "peca_do_kit": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "kit_id",
+    "referencia_id",
+    "papel",
+    "ordem",
+    "tecidos",
+    "design",
+    "etiqueta",
+    "etiqueta_onde",
+    "observacao",
+    "detalhes"
+   ],
+   "geradas": [],
+   "chaves": {
+    "kit_id": "referencia",
+    "referencia_id": "referencia"
+   },
+   "cresce": false
+  },
+  "peca_do_kit_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "kit_id",
+    "kit_cod",
+    "kit_nome",
+    "kit_ativo",
+    "referencia_id",
+    "cod",
+    "nome",
+    "genero",
+    "grupo",
+    "detalhes",
+    "tamanhos",
+    "papel",
+    "ordem",
+    "tecidos",
+    "design",
+    "etiqueta",
+    "etiqueta_onde",
+    "observacao",
+    "detalhes_do_kit"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "peca_pronta": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "referencia_id",
+    "cod",
+    "nome",
+    "cor",
+    "origem",
+    "pedido",
+    "grade",
+    "onde",
+    "guardado_em",
+    "guardado_por",
+    "atualizado_em",
+    "teste"
+   ],
+   "geradas": [],
+   "chaves": {
+    "guardado_por": "pessoa",
+    "referencia_id": "referencia"
+   },
+   "cresce": true
+  },
+  "pedido": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "numero",
+    "cotacao_id",
+    "cliente_id",
+    "lead_id",
+    "estado",
+    "total",
+    "pecas",
+    "vendedor_id",
+    "vendedor_nome",
+    "versao_aprovada",
+    "aprovado_por",
+    "aprovado_em",
+    "data_de_envio",
+    "departamento",
+    "criado_em",
+    "atualizado_em",
+    "teste",
+    "etapa",
+    "etapa_em",
+    "planejado_em",
+    "planejamento_manual",
+    "aviso",
+    "layouts",
+    "tecnicas",
+    "pecas_subli",
+    "pecas_personalizadas",
+    "valor_subli",
+    "valor_personalizado",
+    "fechado_em",
+    "marcado_em",
+    "marcado_por",
+    "devolvido_motivo",
+    "devolvido_em",
+    "devolvido_por",
+    "nome",
+    "conferindo_em",
+    "conferindo_por",
+    "vendedor_motivo",
+    "vendedor_em",
+    "vendedor_por",
+    "liberado_em",
+    "liberado_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "aprovado_por": "pessoa",
+    "cliente_id": "cliente",
+    "conferindo_por": "pessoa",
+    "cotacao_id": "cotacao",
+    "devolvido_por": "pessoa",
+    "lead_id": "lead",
+    "liberado_por": "pessoa",
+    "marcado_por": "pessoa",
+    "vendedor_id": "pessoa",
+    "vendedor_por": "pessoa"
+   },
+   "cresce": true
+  },
+  "pedido_do_lancamento": {
+   "tipo": "tabela",
+   "colunas": [
+    "lancamento_id",
+    "pedido_id",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {
+    "lancamento_id": "lancamento_de_transporte",
+    "pedido_id": "pedido"
+   },
+   "cresce": true
+  },
+  "pedido_liberado": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cotacao_id",
+    "cliente",
+    "estado",
+    "etapa",
+    "pecas",
+    "total",
+    "entrega_em",
+    "layouts",
+    "tecnicas",
+    "teste",
+    "aviso",
+    "liberado_em",
+    "liberado_por_nome",
+    "marcado_por_nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "pedido_na_fabrica": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cliente",
+    "vendedor",
+    "departamento",
+    "etapa",
+    "etapa_em",
+    "estado",
+    "entrega_em",
+    "planejado_em",
+    "planejamento_manual",
+    "aviso",
+    "pecas",
+    "layouts",
+    "tecnicas",
+    "total",
+    "pecas_subli",
+    "pecas_personalizadas",
+    "valor_subli",
+    "valor_personalizado",
+    "fechado_em",
+    "aprovado_em",
+    "teste",
+    "cotacao_numero",
+    "cotacao_id",
+    "tag",
+    "fatias_abertas",
+    "cliente_id",
+    "nome",
+    "marcas",
+    "tem_fatias"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "pedido_na_separacao": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cliente_id",
+    "cliente",
+    "estado",
+    "aviso",
+    "pecas",
+    "entrega_em",
+    "departamento",
+    "criado_em",
+    "materiais",
+    "separados",
+    "sem_consumo",
+    "nao_cobre",
+    "tudo_separado",
+    "cotacao_id",
+    "layouts",
+    "vendedor_nome"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "pedido_no_pcp": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cotacao_id",
+    "cliente_id",
+    "cliente",
+    "estado",
+    "aviso",
+    "pecas",
+    "total",
+    "entrega_em",
+    "departamento",
+    "layouts",
+    "tecnicas",
+    "teste",
+    "criado_em",
+    "marcado_em",
+    "marcado_por_nome",
+    "devolvido_motivo",
+    "devolvido_em",
+    "devolvido_por_nome",
+    "marcado",
+    "materiais",
+    "faltando",
+    "cotacao_numero",
+    "vendedor_nome",
+    "conferindo_em",
+    "conferindo_por_nome",
+    "com_o_vendedor",
+    "vendedor_motivo",
+    "vendedor_em",
+    "vendedor_por_nome",
+    "vendedor_id"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "pedido_separado": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "cliente",
+    "estado",
+    "aviso",
+    "pecas",
+    "layouts",
+    "entrega_em",
+    "cotacao_id",
+    "materiais",
+    "separados",
+    "separado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "permissao": {
+   "tipo": "tabela",
+   "colunas": [
+    "papel",
+    "painel",
+    "ver",
+    "editar",
+    "deletar",
+    "total",
+    "mexido_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "painel": "painel",
+    "papel": "papel_do_sistema"
+   },
+   "cresce": false
+  },
+  "permissao_da_acao": {
+   "tipo": "tabela",
+   "colunas": [
+    "papel",
+    "acao",
+    "mexido_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "acao": "acao",
+    "papel": "papel_do_sistema"
+   },
+   "cresce": false
+  },
+  "pessoa": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "papel",
+    "criado_em",
+    "situacao",
+    "paineis",
+    "aprovado_em",
+    "aprovado_por",
+    "email",
+    "foto_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "aprovado_por": "auth.users",
+    "id": "auth.users",
+    "papel": "papel_do_sistema"
+   },
+   "cresce": false
+  },
+  "preset_de_impressao": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "dono",
+    "nome",
+    "equipe",
+    "valor",
+    "campos",
+    "fora",
+    "abre",
+    "criado_em",
+    "alterado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "dono": "pessoa"
+   },
+   "cresce": false
+  },
+  "produto_do_parceiro": {
+   "tipo": "tabela",
+   "colunas": [
+    "produto_id",
+    "parceiro_id",
+    "titulo",
+    "visto_em",
+    "imagem"
+   ],
+   "geradas": [],
+   "chaves": {
+    "parceiro_id": "parceiro"
+   },
+   "cresce": false
+  },
+  "referencia": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "cod",
+    "nome",
+    "grupo",
+    "genero",
+    "ordem",
+    "ativo",
+    "criado_em",
+    "detalhes",
+    "observacao",
+    "tamanhos",
+    "ficha_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "grupo": "grupo_de_referencia"
+   },
+   "cresce": false
+  },
+  "referencia_com_problema": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "cod",
+    "nome",
+    "problema"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "referencia_na_ficha": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "cod",
+    "nome",
+    "grupo",
+    "genero",
+    "ordem",
+    "ativo",
+    "detalhes",
+    "observacao",
+    "tamanhos",
+    "ficha_em",
+    "medidas",
+    "partes_com_tecido",
+    "materiais",
+    "tem_molde"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "regra_do_lead_do_site": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "modo",
+    "pessoa_id",
+    "atualizado_em",
+    "atualizado_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "atualizado_por": "pessoa",
+    "pessoa_id": "pessoa"
+   },
+   "cresce": false
+  },
+  "regulagem": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "valor",
+    "nota",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "reserva": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "material_id",
+    "quantidade",
+    "unidade",
+    "pecas",
+    "sem_consumo",
+    "baixada",
+    "criada_em",
+    "atualizado_em",
+    "separado",
+    "pesado_em",
+    "pesado_por"
+   ],
+   "geradas": [],
+   "chaves": {
+    "material_id": "material",
+    "pedido_id": "pedido",
+    "pesado_por": "pessoa"
+   },
+   "cresce": true
+  },
+  "reserva_do_pedido": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "pedido",
+    "material_id",
+    "material",
+    "categoria",
+    "quantidade",
+    "unidade",
+    "pecas",
+    "sem_consumo",
+    "baixada",
+    "separado",
+    "falta",
+    "saldo",
+    "o_estoque_cobre",
+    "criada_em",
+    "pesada",
+    "pesado_em",
+    "pesado_por"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "reserva_em_aberto": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "pedido_id",
+    "pedido",
+    "entrega",
+    "material_id",
+    "quantidade",
+    "unidade",
+    "pecas",
+    "sem_consumo"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "rodizio": {
+   "tipo": "tabela",
+   "colunas": [
+    "pessoa_id",
+    "ordem",
+    "ativo",
+    "levou",
+    "ultimo_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "pessoa_id": "pessoa"
+   },
+   "cresce": false
+  },
+  "rota_da_tecnica": {
+   "tipo": "tabela",
+   "colunas": [
+    "tecnica",
+    "ordem",
+    "posto"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "simbolo_de_cuidado": {
+   "tipo": "tabela",
+   "colunas": [
+    "cod",
+    "grupo",
+    "ordem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "tabela_de_preco": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "situacao",
+    "padrao",
+    "vale_ate",
+    "so_gerente",
+    "faixas",
+    "regras",
+    "itens",
+    "observacao",
+    "teste",
+    "criado_em",
+    "atualizado_em",
+    "atualizado_por",
+    "adicionais"
+   ],
+   "geradas": [],
+   "chaves": {
+    "atualizado_por": "pessoa"
+   },
+   "cresce": false
+  },
+  "tag": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "nome",
+    "tom",
+    "em_todo_posto",
+    "ordem",
+    "ativa",
+    "criada_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "tag_da_fatia": {
+   "tipo": "tabela",
+   "colunas": [
+    "fatia_id",
+    "tag",
+    "posta_por",
+    "posta_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "fatia_id": "fatia",
+    "posta_por": "pessoa",
+    "tag": "tag"
+   },
+   "cresce": true
+  },
+  "tag_do_posto": {
+   "tipo": "tabela",
+   "colunas": [
+    "tag",
+    "posto"
+   ],
+   "geradas": [],
+   "chaves": {
+    "tag": "tag"
+   },
+   "cresce": false
+  },
+  "tecido": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "grupo",
+    "ordem",
+    "ativo",
+    "gramatura",
+    "largura"
+   ],
+   "geradas": [],
+   "chaves": {
+    "grupo": "grupo_de_tecido"
+   },
+   "cresce": false
+  },
+  "tipo_de_fornecedor": {
+   "tipo": "tabela",
+   "colunas": [
+    "chave",
+    "nome",
+    "ordem",
+    "fixo"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "transferencia_de_lead": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "lead_id",
+    "de_quem",
+    "para_quem",
+    "motivo",
+    "quem_fez",
+    "em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "de_quem": "pessoa",
+    "lead_id": "lead",
+    "para_quem": "pessoa",
+    "quem_fez": "pessoa"
+   },
+   "cresce": true
+  },
+  "transportador": {
+   "tipo": "tabela",
+   "colunas": [
+    "id",
+    "nome",
+    "meio",
+    "fornecedor_id",
+    "contato",
+    "onde_atende",
+    "prazo",
+    "observacao",
+    "ativo",
+    "teste",
+    "criado_por",
+    "criado_em",
+    "atualizado_em"
+   ],
+   "geradas": [],
+   "chaves": {
+    "criado_por": "pessoa",
+    "fornecedor_id": "fornecedor"
+   },
+   "cresce": false
+  },
+  "transportador_na_lista": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "nome",
+    "meio",
+    "cnpj",
+    "situacao_do_cnpj",
+    "fornecedor_id",
+    "contato",
+    "onde_atende",
+    "prazo",
+    "observacao",
+    "criado_em"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "venda_da_loja": {
+   "tipo": "tabela",
+   "colunas": [
+    "item_id",
+    "pedido_id",
+    "pedido",
+    "vendido_em",
+    "produto_id",
+    "variante_id",
+    "produto",
+    "variante",
+    "quantidade",
+    "devolvida",
+    "preco",
+    "desconto",
+    "situacao",
+    "cancelado_em",
+    "atualizado_em",
+    "recebido_em",
+    "origem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": true
+  },
+  "venda_do_parceiro": {
+   "tipo": "view",
+   "colunas": [
+    "item_id",
+    "parceiro_id",
+    "pedido_id",
+    "pedido",
+    "vendido_em",
+    "mes",
+    "produto_id",
+    "produto",
+    "variante",
+    "quantidade",
+    "devolvida",
+    "conta",
+    "aparece",
+    "motivo",
+    "pecas",
+    "valor",
+    "cheio",
+    "acordo_tipo",
+    "acordo_valor",
+    "acordo_base",
+    "parte",
+    "situacao",
+    "cancelado_em",
+    "imagem"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "venda_por_mes": {
+   "tipo": "view",
+   "colunas": [
+    "mes",
+    "vendedor_id",
+    "vendedor_nome",
+    "pedidos",
+    "pecas",
+    "vendido"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  },
+  "venda_por_pedido": {
+   "tipo": "view",
+   "colunas": [
+    "id",
+    "numero",
+    "aprovado_em",
+    "mes",
+    "vendedor_id",
+    "vendedor_nome",
+    "cliente_id",
+    "cliente_nome",
+    "cotacao_numero",
+    "total",
+    "pecas",
+    "estado",
+    "teste"
+   ],
+   "geradas": [],
+   "chaves": {},
+   "cresce": false
+  }
+ },
+ "funcoes": {
+  "abrir_a_janela": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "abrir_no_pcp": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "acertar_escala_do_molde": [
+   {
+    "args": [
+     "p_referencia",
+     "p_cm_por_unidade",
+     "p_tamanho"
+    ],
+    "padrao": [
+     "p_tamanho"
+    ],
+    "retorna": "numeric",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "acertar_etapa_do_pedido": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "acertar_pedido_pelas_fatias": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "acertar_saldo_do_material": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "acertar_transporte": [
+   {
+    "args": [
+     "p_lancamentos"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "adicionar_item_de_detalhe": [
+   {
+    "args": [
+     "p_detalhe",
+     "p_nome"
+    ],
+    "padrao": [],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "anexar_comprovante_do_frete": [
+   {
+    "args": [
+     "p_pedido",
+     "p_caminho",
+     "p_nome"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "anotar_a_mensagem_rapida": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "anotar_a_regra_do_lead": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "anotar_a_tabela_de_preco": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "anotar_o_pcp": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "anotar_troca_de_dono": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "ao_criar_conta": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "apagar_dados_de_teste": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "apagar_lancamento_de_transporte": [
+   {
+    "args": [
+     "p_id"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "apagar_papel": [
+   {
+    "args": [
+     "p_chave"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "aprovar_cotacao": [
+   {
+    "args": [
+     "p_cotacao",
+     "p_versao",
+     "p_layouts",
+     "p_tecnicas",
+     "p_pecas_subli",
+     "p_pecas_personalizadas",
+     "p_valor_subli",
+     "p_valor_personalizado"
+    ],
+    "padrao": [
+     "p_versao",
+     "p_layouts",
+     "p_tecnicas",
+     "p_pecas_subli",
+     "p_pecas_personalizadas",
+     "p_valor_subli",
+     "p_valor_personalizado"
+    ],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "avisar_a_devolucao": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "avisar_o_dono_do_lead": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "avisar_o_pedido_novo": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "avisar_o_pedido_pronto": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "baixar_no_primeiro_posto": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "carimbar_a_conferencia": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "carimbar_atualizacao": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "chave_do_nome": [
+   {
+    "args": [
+     "t"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "colecoes_dos_parceiros": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "TABLE(parceiro_id uuid, colecao text)",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "comentar_na_fatia": [
+   {
+    "args": [
+     "p_fatia",
+     "p_texto"
+    ],
+    "padrao": [],
+    "retorna": "evento_da_fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "concluir_a_separacao": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "conferir_a_ficha_do_material": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "conferir_a_saida": [
+   {
+    "args": [
+     "p_fatia"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "conferir_o_razao": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "TABLE(material text, saldo_guardado numeric, soma_do_razao numeric)",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "conferir_os_acessos": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "TABLE(aviso text, detalhe text)",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "consumo_da_peca": [
+   {
+    "args": [
+     "p_referencia",
+     "p_tamanho",
+     "p_tecido"
+    ],
+    "padrao": [],
+    "retorna": "TABLE(metros numeric, quilos numeric)",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "consumo_do_documento": [
+   {
+    "args": [
+     "doc"
+    ],
+    "padrao": [],
+    "retorna": "TABLE(o_seq integer, o_ordem integer, o_material uuid, o_quantidade numeric, o_unidade text, o_sem_consumo boolean, o_pecas integer, o_tipo text, o_como text)",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "copiar_layouts_do_pedido": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "costurar_vendedor": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "cotacao_negocia": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "cotacao_recopia_os_layouts": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "criar_papel": [
+   {
+    "args": [
+     "p_chave",
+     "p_nome",
+     "p_linha"
+    ],
+    "padrao": [
+     "p_linha"
+    ],
+    "retorna": "papel_do_sistema",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "dar_baixa_de_pecas": [
+   {
+    "args": [
+     "p_lote",
+     "p_grade",
+     "p_motivo"
+    ],
+    "padrao": [],
+    "retorna": "peca_pronta",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "dar_nome_ao_pedido": [
+   {
+    "args": [
+     "p_pedido",
+     "p_nome"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "decidir_o_boleto": [
+   {
+    "args": [
+     "p_conferencia",
+     "p_decisao",
+     "p_nota"
+    ],
+    "padrao": [
+     "p_nota"
+    ],
+    "retorna": "conferencia_de_boleto",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "definir_cadastro": [
+   {
+    "args": [
+     "p_materiais",
+     "p_mudanca"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "definir_lugares": [
+   {
+    "args": [
+     "p_materiais",
+     "p_lugares"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "desfazer_a_separacao": [
+   {
+    "args": [
+     "p_reserva"
+    ],
+    "padrao": [],
+    "retorna": "reserva",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "desmarcar_do_pcp": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "destravar_a_fatia": [
+   {
+    "args": [
+     "p_fatia"
+    ],
+    "padrao": [],
+    "retorna": "fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "devolver_ao_vendedor": [
+   {
+    "args": [
+     "p_pedido",
+     "p_motivo"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "devolver_do_pcp": [
+   {
+    "args": [
+     "p_pedido",
+     "p_motivo"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "devolver_lancamento_de_transporte": [
+   {
+    "args": [
+     "p_id"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "dono_do_lead": [
+   {
+    "args": [
+     "p_telefone"
+    ],
+    "padrao": [],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "erro_nos_valores_por_tamanho": [
+   {
+    "args": [
+     "p_valores",
+     "p_tamanhos",
+     "p_teto",
+     "p_de_quem"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "erros_da_extensao_para_o_vigia": [
+   {
+    "args": [
+     "p_desde"
+    ],
+    "padrao": [],
+    "retorna": "TABLE(versao text, onde text, o_que text, estrutura jsonb, vezes bigint, pessoas bigint, primeira_em timestamp with time zone, ultima_em timestamp with time zone)",
+    "definer": true,
+    "anon": true
+   }
+  ],
+  "etapa_do_pedido_e_das_fatias": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "falar_no_pedido": [
+   {
+    "args": [
+     "p_pedido",
+     "p_com",
+     "p_texto"
+    ],
+    "padrao": [],
+    "retorna": "conversa_do_pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "falta_na_rota": [
+   {
+    "args": [
+     "p_tecnica",
+     "p_posto"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "familia_ou_posto": [
+   {
+    "args": [
+     "p"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "fatia_conta_o_que_andou": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "fatia_no_lugar": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "fim_do_telefone": [
+   {
+    "args": [
+     "t"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "grade_limpa": [
+   {
+    "args": [
+     "p"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "guardar_o_fornecedor": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "guardar_pecas": [
+   {
+    "args": [
+     "p_referencia",
+     "p_cor",
+     "p_origem",
+     "p_pedido",
+     "p_grade",
+     "p_onde"
+    ],
+    "padrao": [],
+    "retorna": "peca_pronta",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "informe_da_casa_alterado": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "juntar_clientes": [
+   {
+    "args": [
+     "p_fica",
+     "p_sai"
+    ],
+    "padrao": [],
+    "retorna": "cliente",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "juntar_fornecedores": [
+   {
+    "args": [
+     "p_fica",
+     "p_some"
+    ],
+    "padrao": [],
+    "retorna": "fornecedor",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "lancar_transporte": [
+   {
+    "args": [
+     "p_id",
+     "p_quando",
+     "p_transportador",
+     "p_motivo",
+     "p_pedidos",
+     "p_fornecedor",
+     "p_destino",
+     "p_valor",
+     "p_forma",
+     "p_pago",
+     "p_observacao",
+     "p_frete_pago_por",
+     "p_coleta"
+    ],
+    "padrao": [],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "lead_do_telefone": [
+   {
+    "args": [
+     "p_telefone",
+     "p_nome",
+     "p_ctwa",
+     "p_anuncio"
+    ],
+    "padrao": [
+     "p_nome",
+     "p_ctwa",
+     "p_anuncio"
+    ],
+    "retorna": "lead",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "lead_vira_cliente": [
+   {
+    "args": [
+     "p_lead",
+     "p_cadastro",
+     "p_cliente"
+    ],
+    "padrao": [
+     "p_cadastro",
+     "p_cliente"
+    ],
+    "retorna": "cliente",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "ler_avisos": [
+   {
+    "args": [
+     "p_ids"
+    ],
+    "padrao": [
+     "p_ids"
+    ],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "liberar_para_producao": [
+   {
+    "args": [
+     "p_pedido",
+     "p_fatias"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "liberar_pedido_real": [
+   {
+    "args": [
+     "p_ultimo"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "marcar_minha_foto": [
+   {
+    "args": [
+     "tem"
+    ],
+    "padrao": [],
+    "retorna": "timestamp with time zone",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "marcar_para_aprovacao": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "marcas_do_corpo": [
+   {
+    "args": [
+     "p_corpo"
+    ],
+    "padrao": [],
+    "retorna": "text[]",
+    "definer": false,
+    "anon": true
+   }
+  ],
+  "material_acompanha_o_nome": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "meu_papel": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "mexer_no_estoque": [
+   {
+    "args": [
+     "p_material",
+     "p_quantidade",
+     "p_motivo",
+     "p_observacao",
+     "p_pedido",
+     "p_fornecedor"
+    ],
+    "padrao": [
+     "p_observacao",
+     "p_pedido",
+     "p_fornecedor"
+    ],
+    "retorna": "material",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "mover_pedido": [
+   {
+    "args": [
+     "p_pedido",
+     "p_para"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "mudar_lugar_do_lote": [
+   {
+    "args": [
+     "p_lote",
+     "p_onde"
+    ],
+    "padrao": [],
+    "retorna": "peca_pronta",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "mudar_meu_nome": [
+   {
+    "args": [
+     "novo"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "negociar_a_cotacao": [
+   {
+    "args": [
+     "p_cotacao"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "nome_livre_de_fornecedor": [
+   {
+    "args": [
+     "p_nome",
+     "p_cnpj"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "ordem_na_rota": [
+   {
+    "args": [
+     "p_tecnica",
+     "p_posto"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "paineis_do_papel": [
+   {
+    "args": [
+     "p"
+    ],
+    "padrao": [],
+    "retorna": "text[]",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "painel_do_parceiro": [
+   {
+    "args": [
+     "p_chave",
+     "p_senha"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": true,
+    "anon": true
+   }
+  ],
+  "papeis_da_acao": [
+   {
+    "args": [
+     "p_acao"
+    ],
+    "padrao": [],
+    "retorna": "text[]",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "passo_do_frete": [
+   {
+    "args": [
+     "p_pedido",
+     "p_passo"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "pedido_copia_os_layouts": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "pedido_em_teste": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "boolean",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "pedido_espera_o_frete": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "pedir_aprovacao_do_boleto": [
+   {
+    "args": [
+     "p_conferencia",
+     "p_motivo"
+    ],
+    "padrao": [
+     "p_motivo"
+    ],
+    "retorna": "conferencia_de_boleto",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "pegar_a_fatia": [
+   {
+    "args": [
+     "p_fatia"
+    ],
+    "padrao": [],
+    "retorna": "fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "permissoes_de": [
+   {
+    "args": [
+     "p_papel",
+     "p_paineis"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "por_a_tag": [
+   {
+    "args": [
+     "p_fatia",
+     "p_tag"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "posso": [
+   {
+    "args": [
+     "p_painel",
+     "p_nivel"
+    ],
+    "padrao": [],
+    "retorna": "boolean",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "posso_a_acao": [
+   {
+    "args": [
+     "p_acao"
+    ],
+    "padrao": [],
+    "retorna": "boolean",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "preset_de_impressao_alterado": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "proximo_numero_de_cotacao": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "proximo_numero_de_pedido": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "quem_pode_a_passagem": [
+   {
+    "args": [
+     "de",
+     "para"
+    ],
+    "padrao": [],
+    "retorna": "text[]",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "refazer_as_reservas_abertas": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "registrar_conversa_do_whatsapp": [
+   {
+    "args": [
+     "p_lead",
+     "p_mensagens"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "registrar_erro_da_extensao": [
+   {
+    "args": [
+     "p_versao",
+     "p_onde",
+     "p_o_que",
+     "p_estrutura"
+    ],
+    "padrao": [
+     "p_estrutura"
+    ],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "registrar_lead_do_site": [
+   {
+    "args": [
+     "p_ficha",
+     "p_impressao"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "registrar_pedido_da_loja": [
+   {
+    "args": [
+     "p_pedido",
+     "p_topico",
+     "p_origem"
+    ],
+    "padrao": [
+     "p_topico",
+     "p_origem"
+    ],
+    "retorna": "jsonb",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "registrar_produtos_do_parceiro": [
+   {
+    "args": [
+     "p_parceiro",
+     "p_produtos"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "reservar_o_pedido": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_acordo_do_parceiro": [
+   {
+    "args": [
+     "p_parceiro",
+     "p_tipo",
+     "p_valor",
+     "p_base",
+     "p_vale_desde",
+     "p_refazer"
+    ],
+    "padrao": [
+     "p_base",
+     "p_vale_desde",
+     "p_refazer"
+    ],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_deposito": [
+   {
+    "args": [
+     "p_planta",
+     "p_soltar"
+    ],
+    "padrao": [
+     "p_soltar"
+    ],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_empresa": [
+   {
+    "args": [
+     "p_dados"
+    ],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_exibicao_do_parceiro": [
+   {
+    "args": [
+     "p_parceiro",
+     "p_imposto",
+     "p_mostrar_desde"
+    ],
+    "padrao": [],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_extras_do_cliente": [
+   {
+    "args": [
+     "p_cliente",
+     "p_documentos",
+     "p_enderecos",
+     "p_contatos"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_ficha_da_referencia": [
+   {
+    "args": [
+     "p_referencia",
+     "p_ficha"
+    ],
+    "padrao": [],
+    "retorna": "timestamp with time zone",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_frete_do_pedido": [
+   {
+    "args": [
+     "p_pedido",
+     "p_quem_paga",
+     "p_envio",
+     "p_valor_combinado",
+     "p_valor_pago",
+     "p_observacao"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_kit": [
+   {
+    "args": [
+     "p_kit",
+     "p_ficha"
+    ],
+    "padrao": [],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_listas_de_detalhe": [
+   {
+    "args": [
+     "p_listas"
+    ],
+    "padrao": [],
+    "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_molde_da_referencia": [
+   {
+    "args": [
+     "p_referencia",
+     "p_svg",
+     "p_tamanho"
+    ],
+    "padrao": [
+     "p_tamanho"
+    ],
+    "retorna": "boolean",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_papel": [
+   {
+    "args": [
+     "p_chave",
+     "p_chave_nova",
+     "p_nome",
+     "p_linha"
+    ],
+    "padrao": [
+     "p_linha"
+    ],
+    "retorna": "papel_do_sistema",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_parceiro": [
+   {
+    "args": [
+     "p_id",
+     "p_nome",
+     "p_colecao",
+     "p_colecao_nome",
+     "p_ativo"
+    ],
+    "padrao": [
+     "p_colecao",
+     "p_colecao_nome",
+     "p_ativo"
+    ],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_permissao": [
+   {
+    "args": [
+     "p_papel",
+     "p_painel",
+     "p_ver",
+     "p_editar",
+     "p_deletar",
+     "p_total"
+    ],
+    "padrao": [],
+    "retorna": "permissao",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "salvar_transportador": [
+   {
+    "args": [
+     "p_id",
+     "p_nome",
+     "p_meio",
+     "p_cnpj",
+     "p_contato",
+     "p_onde_atende",
+     "p_prazo",
+     "p_observacao"
+    ],
+    "padrao": [
+     "p_cnpj",
+     "p_contato",
+     "p_onde_atende",
+     "p_prazo",
+     "p_observacao"
+    ],
+    "retorna": "uuid",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "senha_nova_de_parceiro": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "separar_da_fatia": [
+   {
+    "args": [
+     "p_fatia",
+     "p_layouts",
+     "p_pecas",
+     "p_posto",
+     "p_motivo"
+    ],
+    "padrao": [],
+    "retorna": "fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "separar_material": [
+   {
+    "args": [
+     "p_reserva",
+     "p_quantidade",
+     "p_observacao"
+    ],
+    "padrao": [
+     "p_observacao"
+    ],
+    "retorna": "reserva",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "soltar_a_fatia": [
+   {
+    "args": [
+     "p_fatia"
+    ],
+    "padrao": [],
+    "retorna": "fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "soltar_a_reserva_do_cancelado": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "sou_admin": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "boolean",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "tabela_de_preco_padrao": [
+   {
+    "args": [
+     "p_id"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "tag_do_pedido": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "tamanhos_da_fabrica": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "text[]",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "tirar_a_tag": [
+   {
+    "args": [
+     "p_fatia",
+     "p_tag"
+    ],
+    "padrao": [],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "transferir_lead": [
+   {
+    "args": [
+     "p_lead",
+     "p_para",
+     "p_motivo"
+    ],
+    "padrao": [
+     "p_motivo"
+    ],
+    "retorna": "void",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "travar_a_fatia": [
+   {
+    "args": [
+     "p_fatia",
+     "p_motivo"
+    ],
+    "padrao": [],
+    "retorna": "fatia",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "trocar_dono_do_lead": [
+   {
+    "args": [
+     "p_lead",
+     "p_para",
+     "p_motivo"
+    ],
+    "padrao": [
+     "p_motivo"
+    ],
+    "retorna": "void",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "trocar_link_do_parceiro": [
+   {
+    "args": [
+     "p_parceiro"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "trocar_senha_do_parceiro": [
+   {
+    "args": [
+     "p_parceiro"
+    ],
+    "padrao": [],
+    "retorna": "text",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "uso_do_estoque": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "jsonb",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "vizinho_na_rota": [
+   {
+    "args": [
+     "p_tecnica",
+     "p_posto"
+    ],
+    "padrao": [],
+    "retorna": "etapa_da_producao",
+    "definer": false,
+    "anon": false
+   }
+  ],
+  "voltar_a_conferir": [
+   {
+    "args": [
+     "p_pedido"
+    ],
+    "padrao": [],
+    "retorna": "pedido",
+    "definer": true,
+    "anon": false
+   }
+  ]
+ },
+ "usadas_no_banco": [
+  "abrir_a_janela",
+  "acao",
+  "acertar_etapa_do_pedido",
+  "acertar_pedido_pelas_fatias",
+  "acertar_saldo_do_material",
+  "acordo_do_parceiro",
+  "anotar_a_mensagem_rapida",
+  "anotar_a_regra_do_lead",
+  "anotar_a_tabela_de_preco",
+  "anotar_o_pcp",
+  "anotar_troca_de_dono",
+  "avisar_a_devolucao",
+  "avisar_o_dono_do_lead",
+  "avisar_o_pedido_novo",
+  "avisar_o_pedido_pronto",
+  "aviso_da_loja",
+  "aviso_do_sino",
+  "baixar_no_primeiro_posto",
+  "carimbar_a_conferencia",
+  "carimbar_atualizacao",
+  "chave_do_nome",
+  "cliente",
+  "conferencia_de_boleto",
+  "conferir_a_ficha_do_material",
+  "consumo_da_peca",
+  "consumo_da_referencia",
+  "consumo_do_documento",
+  "consumo_do_layout",
+  "contador",
+  "contato_do_cliente",
+  "conversa_do_pedido",
+  "convite",
+  "copiar_layouts_do_pedido",
+  "cor_de_tecido",
+  "costurar_vendedor",
+  "cotacao",
+  "cotacao_negocia",
+  "cotacao_recopia_os_layouts",
+  "deposito",
+  "documento_do_cliente",
+  "dono_do_lead",
+  "empresa",
+  "endereco_do_cliente",
+  "envio_do_site",
+  "equipe",
+  "erro_da_extensao",
+  "erro_nos_valores_por_tamanho",
+  "etapa_do_pedido_e_das_fatias",
+  "evento_da_fatia",
+  "extras_do_cliente",
+  "falta_na_rota",
+  "familia_do_posto",
+  "familia_ou_posto",
+  "fatia",
+  "fatia_conta_o_que_andou",
+  "fatia_no_lugar",
+  "fim_do_telefone",
+  "fornecedor",
+  "fornecedor_tipo",
+  "frete_do_pedido",
+  "frete_na_lista",
+  "grade_limpa",
+  "guardar_o_fornecedor",
+  "informe_da_casa",
+  "informe_da_casa_alterado",
+  "item_de_detalhe",
+  "juntada_de_cliente",
+  "lancamento_de_transporte",
+  "layout_do_pedido",
+  "lead",
+  "lugar_do_material",
+  "lugar_do_material_na_lista",
+  "marcas_do_corpo",
+  "material",
+  "material_acompanha_o_nome",
+  "material_da_referencia",
+  "material_fornecedor",
+  "medida_da_referencia",
+  "mensagem",
+  "mensagem_rapida",
+  "meu_papel",
+  "mexer_no_estoque",
+  "molde_da_referencia",
+  "movel_do_deposito",
+  "movimento_de_estoque",
+  "movimento_de_peca",
+  "negociado",
+  "negociar_a_cotacao",
+  "nome_livre_de_fornecedor",
+  "ordem_na_rota",
+  "painel",
+  "papeis_da_acao",
+  "papel_do_sistema",
+  "parceiro",
+  "parte_da_referencia",
+  "passo_do_frete",
+  "passo_do_pcp",
+  "peca_do_kit",
+  "peca_pronta",
+  "pedido",
+  "pedido_copia_os_layouts",
+  "pedido_do_lancamento",
+  "pedido_em_teste",
+  "pedido_espera_o_frete",
+  "permissao",
+  "permissao_da_acao",
+  "permissoes_de",
+  "pessoa",
+  "posso",
+  "posso_a_acao",
+  "preset_de_impressao",
+  "preset_de_impressao_alterado",
+  "produto_do_parceiro",
+  "proximo_numero_de_pedido",
+  "quem_pode_a_passagem",
+  "referencia",
+  "regra_do_lead_do_site",
+  "regulagem",
+  "reserva",
+  "reservar_o_pedido",
+  "rodizio",
+  "rota_da_tecnica",
+  "senha_nova_de_parceiro",
+  "simbolo_de_cuidado",
+  "soltar_a_reserva_do_cancelado",
+  "sou_admin",
+  "tabela_de_preco",
+  "tag",
+  "tag_da_fatia",
+  "tag_do_pedido",
+  "tag_do_posto",
+  "tamanhos_da_fabrica",
+  "tecido",
+  "tipo_de_fornecedor",
+  "transferencia_de_lead",
+  "transportador",
+  "venda_da_loja",
+  "venda_do_parceiro",
+  "venda_por_pedido",
+  "vizinho_na_rota"
+ ]
+}

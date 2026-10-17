@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { PointerEvent as EventoDePonteiro, ReactNode } from 'react'
 import { Table } from '@phosphor-icons/react'
 import { Segmentado, TituloCartao } from '@ds'
+import { lerNumero as lerNumeroBr } from '@shared'
 import { GradeDeTamanhos, foraDaFaixa, tamanhosNaOrdem, type Faixa, type Grade, type Tamanho } from '@dominio/layout'
 import { pecasDoProduto, precoNaGrade, precoSemMao, totalDoProduto, type ProdutoCotado } from '@dominio/cotacao'
 import './cotacao.css'
@@ -18,10 +19,8 @@ import './cotacao.css'
 
 const n2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const lerNumero = (t: string): number | null => {
-  const limpo = t.trim().replace(/\./g, '').replace(',', '.')
-  if (!limpo) return null
-  const n = Number(limpo)
-  return Number.isFinite(n) && n >= 0 ? n : null
+  const n = lerNumeroBr(t)
+  return n != null && Number.isFinite(n) && n >= 0 ? n : null
 }
 
 type Linha = 'pecas' | 'valor'

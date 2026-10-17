@@ -1,4 +1,5 @@
 import { tabela } from '@shared/supabase'
+import { diaEmBrasilia } from '@shared'
 
 /* ==========================================================================
    O histórico de pedidos do cliente.
@@ -68,7 +69,7 @@ export async function pedidosDoCliente(clienteId: string): Promise<Pedido[]> {
   )
   return linhas.map((l) => ({
     numero: l.numero,
-    data: (l.aprovado_em ?? '').slice(0, 10),
+    data: diaEmBrasilia(l.aprovado_em ?? ''),
     pecas: Number(l.pecas) || 0,
     valor: Number(l.total) || 0,
     estado: l.estado,

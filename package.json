@@ -20,7 +20,7 @@
     "sessao": "sh testes/sessao.sh",
     "semana": "sh testes/semana.sh",
     "tipos": "sh testes/tipos.sh",
-    "conferir": "npm run arquitetura && npm run tipos && npm run classes && npm run titulos && npm run comportamento && npm run tokens && npm run ligacoes && npm run contas && npm run semana && npm run boleto && npm run produto && npm run planta && npm run cuidados",
+    "conferir": "npm run arquitetura && npm run tipos && npm run classes && npm run titulos && npm run comportamento && npm run tokens && npm run ligacoes && npm run cruzamento && npm run formatar && npm run contas && npm run semana && npm run boleto && npm run produto && npm run planta && npm run cuidados",
     "titulos": "node testes/titulos.mjs",
     "cuidados": "node testes/cuidados.mjs",
     "tokens": "node testes/tokens.mjs",
@@ -59,7 +59,10 @@
     "compra": "node testes/compra.mjs http://127.0.0.1:4173",
     "extensao-atualiza": "node testes/extensao-atualiza.mjs http://127.0.0.1:4173",
     "whatsapp-fica": "node testes/whatsapp-fica.mjs http://127.0.0.1:4173",
-    "w3": "node testes/w3.mjs http://127.0.0.1:4173"
+    "w3": "node testes/w3.mjs http://127.0.0.1:4173",
+    "banco": "node testes/banco.mjs",
+    "cruzamento": "node testes/cruzamento.mjs",
+    "formatar": "TZ=America/Sao_Paulo node --experimental-strip-types testes/formatar.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

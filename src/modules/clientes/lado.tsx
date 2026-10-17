@@ -95,7 +95,9 @@ export function FichaAoLado({
     let vivo = true
     setExtras(EXTRAS_VAZIOS)
     setFreteDeCostume(null)
-    void carregarExtras(c.id).then((x) => vivo && setExtras(x))
+    void carregarExtras(c.id)
+      .catch(() => EXTRAS_VAZIOS)
+      .then((x) => vivo && setExtras(x))
     void carregarFreteDoCliente(c.id).then((f) => vivo && setFreteDeCostume(f))
     return () => {
       vivo = false

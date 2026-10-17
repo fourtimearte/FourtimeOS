@@ -122,3 +122,12 @@ fora: `painel_do_parceiro` (a página do parceiro) e
 Função DEFINER que muda dado confere quem chamou lá dentro (`posso`,
 `posso_a_acao`, `sou_admin`, `auth.uid()`), mesmo fechada: `authenticated`
 inclui quem ainda espera aprovação.
+
+## A documentação do banco
+
+A documentação completa (o mapa, a operação, cada área, a auditoria, o
+processo de verificação e o dicionário de dados) mora no projeto do Claude,
+pasta "BANCO DE DADOS", que é privado. Os achados de segurança ficam lá, e
+não aqui: este repositório é público. O dicionário é gerado:
+
+    node testes/dicionario-do-banco.mjs "BANCO 10 DICIONARIO DE DADOS.md"

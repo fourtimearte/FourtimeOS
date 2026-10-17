@@ -92,7 +92,9 @@ function tabela(t) {
     out.push(`- **Origem:** ${hist(t.nome) || '?'}${inv ? '' : ' · **roda como dona** (passa por cima da RLS)'}`)
     if (t.comentario) out.push(`- **O que é:** ${esc(t.comentario)}`)
     out.push(`- **Colunas:** ${L(t.colunas).map((c) => c.nome).join(', ')}`)
-    const de = [...new Set((t.definicao ?? '').match(/\b(?:FROM|JOIN)\s+([a-z_]+)/g)?.map((x) => x.split(/\s+/)[1]) ?? [])]
+    /* só o que é tabela ou view (FROM jsonb_each(...) é função, não fonte) */
+    const relacoes = new Set(r.tabelas.map((x) => x.nome))
+    const de = [...new Set((t.definicao ?? '').match(/\b(?:FROM|JOIN)\s+(?:public\.)?([a-z_]+)/g)?.map((x) => x.split(/\s+/)[1].replace(/^public\./, '')) ?? [])].filter((n) => relacoes.has(n))
     if (de.length) out.push(`- **Lê de:** ${de.join(', ')}`)
     out.push(`- **No código:** ${noCodigo[t.nome] ? [...noCodigo[t.nome]].sort().join(', ') : 'nenhum arquivo (só o banco usa, ou sobrou)'}`)
     out.push('')

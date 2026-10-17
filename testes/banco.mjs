@@ -70,6 +70,10 @@ const EXCECOES = {
    Reprova quando some daqui sem ter sumido do banco, e quando aparece um novo. */
 const CONHECIDOS = {}
 
+/* os achados de desempenho e de redundância que reprovam como os de segurança:
+   a conta deles chegou a zero na auditoria (085, 084) e não pode voltar */
+const REPROVAM = new Set(['fk-sem-indice', 'view-abre-o-corpo', 'funcao-repetida'])
+
 /* quanto cada aviso de desempenho pode ter, para não crescer calado */
 const LIMITES = {
   'fk-de-rastro-sem-indice': 50,
@@ -327,7 +331,7 @@ function imprimir({ achados, contas }) {
         continue
       }
       for (const a of novos) {
-        const grave = frente === 'SEGURANÇA' || frente === 'INTEGRIDADE'
+        const grave = frente === 'SEGURANÇA' || frente === 'INTEGRIDADE' || REPROVAM.has(regra)
         console.log(`  ${grave ? 'RUIM' : 'aviso'} ${a.texto}`)
         if (grave) reprova++
       }
@@ -358,20 +362,28 @@ function provar() {
       t('regra_solta', { politicas: [{ nome: 'por linha', cmd: 'r', permissiva: true, papeis: ['authenticated'], usando: 'meu_papel() IS NOT NULL' }] }),
       t('aberta', { grants: [{ papel: 'anon', priv: 'SELECT' }] }),
       { nome: 'vista', tipo: 'v', opcoes: null, colunas: [], definicao: 'select 1' },
+      { nome: 'abre_o_corpo', tipo: 'v', opcoes: ['security_invoker=true'], colunas: [], definicao: "SELECT (c.corpo -> 'informe') FROM cotacao c" },
+      { nome: 'fecha_o_corpo', tipo: 'v', opcoes: ['security_invoker=true'], colunas: [], definicao: 'SELECT c.entrega FROM cotacao c' },
+      t('fk_com_indice', { colunas: [{ nome: 'id' }, { nome: 'certa_id' }], restricoes: [{ nome: 'p', tipo: 'p', colunas: ['id'] }, { nome: 'f', tipo: 'f', colunas: ['certa_id'], alvo: 'certa', ao_apagar: 'c' }], indices: [{ nome: 'fk_com_indice_por_certa', def: 'CREATE INDEX x USING btree (certa_id)', colunas: ['certa_id'] }] }),
     ],
     funcoes: [
       { nome: 'sem_trava', args: '', definer: true, config: ['search_path=public'], retorna: 'integer', exec_anon: true, fonte: 'update x set y = 1' },
       { nome: 'com_trava', args: '', definer: true, config: ['search_path=public'], retorna: 'integer', exec_anon: true, fonte: 'if not posso(1) then raise' },
       { nome: 'sem_caminho', args: '', definer: true, config: null, retorna: 'integer', exec_anon: false, fonte: 'select 1' },
+      { nome: 'dupla', args: 'a integer', definer: false, config: null, retorna: 'integer', exec_anon: false, fonte: 'select 1' },
+      { nome: 'dupla', args: 'a integer, b integer', definer: false, config: null, retorna: 'integer', exec_anon: false, fonte: 'select 1' },
     ],
   }
   r.funcoes.push({ nome: 'sou_admin', args: '', definer: true, config: ['search_path=public'], retorna: 'boolean', exec_anon: false, fonte: "select public.meu_papel() = 'admin'" })
   r.funcoes.push({ nome: 'com_not_in', args: '', definer: true, config: ['search_path=public'], retorna: 'void', exec_anon: false, fonte: "if public.meu_papel() not in ('admin') then raise" })
   const { achados } = auditar(r)
+  let falhas0 = 0
   const tem = (chave) => achados.some((a) => a.chave === chave)
-  const esperado = ['trava-aceita-nulo:sou_admin', 'trava-aceita-nulo:com_not_in', 'rls-desligada:sem_rls', 'sem-chave-primaria:sem_chave', 'fk-sem-indice:com_fk(certa_id)', 'grant-anon:aberta', 'view-definer:vista', 'definer-anon:sem_trava', 'definer-sem-search-path:sem_caminho()']
-  const calado = ['rls-desligada:certa', 'definer-anon:com_trava']
-  let falhas = 0
+  const esperado = ['trava-aceita-nulo:sou_admin', 'trava-aceita-nulo:com_not_in', 'rls-desligada:sem_rls', 'sem-chave-primaria:sem_chave', 'fk-sem-indice:com_fk(certa_id)', 'grant-anon:aberta', 'view-definer:vista', 'definer-anon:sem_trava', 'definer-sem-search-path:sem_caminho()', 'view-abre-o-corpo:abre_o_corpo', 'funcao-repetida:dupla']
+  const calado = ['rls-desligada:certa', 'definer-anon:com_trava', 'view-abre-o-corpo:fecha_o_corpo', 'fk-sem-indice:fk_com_indice(certa_id)', 'funcao-repetida:sem_trava']
+  /* e o que reprova tem de reprovar: fk sem índice, corpo aberto e função repetida não são só aviso */
+  for (const k of ['fk-sem-indice', 'view-abre-o-corpo', 'funcao-repetida']) if (!REPROVAM.has(k)) (falhas0++, console.log(`RUIM  ${k} deixou de reprovar`))
+  let falhas = falhas0
   for (const k of esperado) if (!tem(k)) (falhas++, console.log(`RUIM  a prova da auditoria não acusou ${k}`))
   for (const k of calado) if (tem(k)) (falhas++, console.log(`RUIM  a prova da auditoria acusou ${k}, que está certo`))
   if (!achados.some((a) => a.regra === 'politica-por-linha' && a.objeto.startsWith('regra_solta'))) (falhas++, console.log('RUIM  a prova da auditoria não acusou a regra que chama função por linha'))

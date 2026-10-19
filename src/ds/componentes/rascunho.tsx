@@ -91,7 +91,22 @@ export function guardarRascunho<T>(chave: string, r: Rascunho<T>): Promise<unkno
 }
 
 export function apagarRascunho(chave: string): Promise<unknown> {
+  voltaram.delete(chave)
   return naLoja('readwrite', l => l.delete(chave))
+}
+
+/* OS RASCUNHOS QUE VOLTARAM NESTA VISITA (19/10/2026). Um rascunho guardado
+   por uma versão anterior do sistema pode não ter um campo que a tela de hoje
+   lê, e a tela cai ("Cannot read properties of undefined"), de novo a cada
+   vez que abre, porque o rascunho volta sempre. A rede de segurança pergunta
+   aqui qual foi o último que voltou e oferece descartar só ele. */
+const voltaram = new Map<string, number>()
+
+/** O último rascunho que voltou para a tela nesta visita, e de quando ele é. */
+export function ultimoRascunhoQueVoltou(): { chave: string; em: number } | null {
+  let ultimo: { chave: string; em: number } | null = null
+  for (const [chave, em] of voltaram) ultimo = { chave, em }
+  return ultimo
 }
 
 /** Uma impressão curta de um valor, para saber se o banco mudou. */
@@ -170,7 +185,17 @@ export function useRascunho<T>({
     let vivo = true
     void lerRascunho<T>(chave).then(r => {
       if (!vivo || !r) return
-      voltar.current(r)
+      voltaram.delete(chave)
+      voltaram.set(chave, r.em)
+      try {
+        voltar.current(r)
+      } catch (e) {
+        /* não deu para pôr de volta: a tela fica com o que está no banco, e o
+           rascunho continua guardado (nada se perde sem a pessoa pedir) */
+        console.error('[fourtime] o rascunho não voltou:', e)
+        avisar('Não consegui trazer de volta o que não tinha sido salvo. A tela abriu com o que está salvo.', 'warn')
+        return
+      }
       fecharRecado.current = avisarQueORascunhoVoltou(r.em, r.base !== impressao(base), () => {
         void apagarRascunho(chave)
         descartar.current()

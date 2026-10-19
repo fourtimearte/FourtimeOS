@@ -560,6 +560,66 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
   }
 }
 
+/* O RASCUNHO DE UMA VERSÃO ANTERIOR (19/10/2026). O navegador guardava uma
+   tabela mexida de antes dos adicionais (083), e a página caía ao abrir com
+   "Cannot read properties of undefined (reading 'materiais')". (1) esse
+   rascunho volta completo e a página abre; (2) um rascunho que ainda assim
+   derruba a tela ganha, na tela do tombo, o botão de descartar só ele. */
+{
+  const guardarRascunho = (ctx, chave, valor) => ctx.addInitScript(([k, v]) => {
+    const req = indexedDB.open('ft-rascunhos', 1)
+    req.onupgradeneeded = () => req.result.createObjectStore('rascunho')
+    req.onsuccess = () => {
+      const db = req.result
+      if (sessionStorage.getItem('semeado:' + k)) return
+      sessionStorage.setItem('semeado:' + k, '1')
+      db.transaction('rascunho', 'readwrite').objectStore('rascunho').put({ valor: v, em: Date.now() - 3 * 86400000, base: 'velha' }, k)
+    }
+  }, [chave, valor])
+  const daTela = (t) => ({
+    id: t.id, nome: t.nome, situacao: t.situacao, padrao: t.padrao, valeAte: t.vale_ate ?? '', soGerente: t.so_gerente,
+    faixas: t.faixas, regras: { passoPct: -10, arredondar: '90', plusReais: 6, infantilPct: -10, kitPct: -8 },
+    itens: t.itens.map((i) => ({ ...i })), observacao: '', teste: true, atualizadoEm: t.atualizado_em,
+  })
+  /* (1) o rascunho de antes da 083: sem adicionais, itens sem Sub e Silk, e um preço mexido */
+  {
+    const { ctx, pg, erros } = await abrir({ tema: 'light', larg: 1440, alt: 900 })
+    const velho = daTela(tabelasIniciais()[0])
+    velho.itens[0] = { ...velho.itens[0], base: 51.9 }
+    await guardarRascunho(ctx, 'tabela-de-preco:T1', velho)
+    await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+    await pg.waitForTimeout(1200)
+    const caiu = await pg.evaluate(() => document.body.innerText.includes('Esta tela caiu'))
+    const ct = await celulas(pg, 'CT01')
+    conta(!caiu && !erros.length, 'rascunho de antes da 083: a página abre (' + (erros.join(' | ') || 'sem erro') + ')')
+    conta(ct[0] === '51,90', 'e volta com o preço que estava mexido (' + ct.join(' ') + ')')
+    await ctx.close()
+  }
+  /* (2) um rascunho torto que derruba a tela: a tela do tombo oferece descartar */
+  {
+    const { ctx, pg } = await abrir({ tema: 'light', larg: 1440, alt: 900 })
+    const torto = { ...daTela(tabelasIniciais()[0]), faixas: null }
+    await guardarRascunho(ctx, 'tabela-de-preco:T1', torto)
+    await pg.goto(SITE + '/tabelas', { waitUntil: 'networkidle' })
+    await pg.waitForTimeout(1200)
+    const botao = pg.getByRole('button', { name: 'Descartar a mudança não salva e abrir de novo' })
+    const tem = await botao.count()
+    conta(tem === 1, 'o rascunho que derruba a tela: a tela do tombo oferece descartar só ele')
+    if (tem) {
+      await botao.click()
+      await pg.waitForTimeout(1200)
+      const caiu = await pg.evaluate(() => document.body.innerText.includes('Esta tela caiu'))
+      const ct = await celulas(pg, 'CT01')
+      conta(!caiu && ct[0] === '49,90', 'depois de descartar, a página abre com o que está salvo (' + ct.join(' ') + ')')
+      await pg.reload({ waitUntil: 'networkidle' })
+      await pg.waitForTimeout(1000)
+      const caiuDeNovo = await pg.evaluate(() => document.body.innerText.includes('Esta tela caiu'))
+      conta(!caiuDeNovo, 'e recarregar não traz o rascunho de volta')
+    }
+    await ctx.close()
+  }
+}
+
 await nav.close()
 const ruins = achados.filter((a) => !a.certo)
 console.log(`\n${achados.length - ruins.length} de ${achados.length} certos`)

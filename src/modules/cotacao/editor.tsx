@@ -12,8 +12,9 @@ import {
   useRascunho,
   Vazio,
 } from '@ds'
-import { blocoEmBranco, colarBloco, copiarBloco, temCopia } from '@dominio/layout'
+import { VERSAO_DO_BLOCO, blocoEmBranco, colarBloco, copiarBloco, temCopia } from '@dominio/layout'
 import {
+  arrumarCotacao,
   aplicarTabelas,
   apagarCotacao,
   aprovar,
@@ -109,7 +110,14 @@ function Editor({ inicial }: { inicial: Cotacao }) {
     sujo,
     base: noBanco.current,
     aoVoltar: (r) => {
-      setC(r.valor as Cotacao)
+      /* o rascunho pode ser de uma versão anterior do sistema: ele sobe a
+         MESMA escada do banco e do .cft (campo novo nasce no padrão). O que é
+         do banco (número, estado, datas) vem do banco, e não do rascunho:
+         uma cotação aprovada em outra aba não volta a "enviada" (19/10/2026) */
+      const bruto = r.valor as unknown as Record<string, unknown>
+      const arrumada = arrumarCotacao(bruto, Number(bruto.versaoDoFormato ?? 0), VERSAO_DO_BLOCO)
+      const b = noBanco.current
+      setC({ ...arrumada, id: b.id, numero: b.numero, estado: b.estado, criadaEm: b.criadaEm, alteradaEm: b.alteradaEm })
       setSujo(true)
     },
     aoDescartar: () => {

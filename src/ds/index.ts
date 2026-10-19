@@ -18,6 +18,7 @@ export {
   impressao,
   lerRascunho,
   quandoFoiOrascunho,
+  ultimoRascunhoQueVoltou,
   useRascunho,
 } from './componentes/rascunho'
 export type { Rascunho } from './componentes/rascunho'

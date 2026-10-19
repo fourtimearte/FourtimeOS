@@ -303,7 +303,7 @@ function seguro(s: string): string {
   return s
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
-    .replace(/[–—]/g, '-')
+    .replace(/[\u2013\u2014]/g, '-')
     .replace(/…/g, '...')
     .replace(/[^\x0A\x20-\x7E\xA0-\xFF×·]/g, '')
 }

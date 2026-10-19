@@ -45,6 +45,17 @@ export function nomeDaCombinacao(posicoes: string[]): string {
 const numOuNulo = (v: unknown) => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null)
 const texto = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v))
 
+/** Uma tabela guardada antes da 083 (o rascunho que ficou no navegador, de
+    antes de os adicionais existirem) volta completa: sem isto a página de
+    Tabelas de preço caía ao abrir, lendo "materiais" de nada (19/10/2026). */
+export function tabelaCompleta(t: TabelaDePreco): TabelaDePreco {
+  return {
+    ...t,
+    itens: (t.itens ?? []).map((i) => ({ ...i, precos: [...(i.precos ?? [])], sub: i.sub ?? null, silk: i.silk ?? null })),
+    adicionais: adicionaisDe(t.adicionais),
+  }
+}
+
 /** O que veio do banco, arrumado. O Patch e o Bordado existem sempre. */
 export function adicionaisDe(bruto: unknown): Adicionais {
   const x = (bruto && typeof bruto === 'object' ? bruto : {}) as Record<string, unknown>

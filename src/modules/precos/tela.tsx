@@ -38,6 +38,7 @@ import {
   preencherCelulas,
   trocarFaixas,
   salvarTabelaDePreco,
+  tabelaCompleta,
   tornarPadrao,
   voltarParaARegra,
   type Arredondar,
@@ -177,7 +178,7 @@ export function TelaTabelasDePreco() {
     sujo,
     base: escolhida,
     aoVoltar: (v) => {
-      if (v.valor && v.valor.id === escolhida?.id) setRascunho(v.valor)
+      if (v.valor && v.valor.id === escolhida?.id) setRascunho(tabelaCompleta(v.valor))
     },
     aoDescartar: () =>
       setRascunho(escolhida ? { ...escolhida, itens: escolhida.itens.map((i) => ({ ...i, precos: [...i.precos] })) } : null),

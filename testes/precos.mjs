@@ -10,7 +10,7 @@ import {
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
-import { adicionaisDe, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido } from './compilado/preco/adicionais.js'
+import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido } from './compilado/preco/adicionais.js'
 import { escolhasDoLayout } from './compilado/cotacao/tabela-de-preco.js'
 
 let ruins = 0
@@ -149,6 +149,14 @@ console.log('copiar os preços de uma peça e a alça')
 
 console.log('os adicionais (083): a peça mais o material, a técnica e os extras')
 {
+  /* o rascunho guardado no navegador antes da 083 não tem adicionais: a página
+     caía ao abrir (19/10/2026). Ele volta completo. */
+  const velho = { ...tabelaEmBranco('Velha'), itens: [{ codigo: 'CT01', tipo: 'referencia', base: 40, precos: [null, null, null, null] }] }
+  delete velho.adicionais
+  const volta = tabelaCompleta(velho)
+  ok(volta.adicionais && Array.isArray(volta.adicionais.materiais) && volta.adicionais.extras.length === 2 && Array.isArray(volta.adicionais.dtf), 'o rascunho de antes da 083 volta com os adicionais em branco')
+  ok(volta.itens[0].sub === null && volta.itens[0].silk === null && volta.itens[0].base === 40, 'e os itens ganham Sub e Silk vazios, sem perder o preço')
+
   const a0 = adicionaisDe({})
   ok(a0.extras.length === 2 && a0.extras[0].tecnica === 'patch' && a0.extras[1].opcoes.map((o) => o.id).join() === 'P,M,G', 'sem nada no banco, o Patch e o Bordado já existem, com P, M e G')
   const ad = adicionaisDe({

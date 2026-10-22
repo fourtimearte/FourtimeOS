@@ -10,7 +10,7 @@ import {
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
-import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido } from './compilado/preco/adicionais.js'
+import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido, caixaDoTamanho, centroQueCabe, medidaDoTamanho } from './compilado/preco/adicionais.js'
 import { escolhasDoLayout } from './compilado/cotacao/tabela-de-preco.js'
 
 let ruins = 0
@@ -170,6 +170,18 @@ console.log('os adicionais (083): a peça mais o material, a técnica e os extra
   })
   ok(valorDoTecido(ad, 'DRY FIT PET 160') === 2.5 && valorDoTecido(ad, 'Moletom') === null && valorDoTecido(ad, 'Algodão') === undefined, 'o tecido sem acento e sem caixa; sem preço é null; fora da lista é undefined')
   ok(nomeDaCombinacao(['manga-direita', 'peito-grande']) === 'Peito grande e manga direita', 'o nome da combinação sai das posições, na ordem do desenho')
+  /* os tamanhos de DTF editáveis (22/10/2026) */
+  ok(a0.tamanhosDtf.length === 6 && a0.tamanhosDtf.map((t) => t.id).join() === 'peito-pequeno,peito-grande,manga-direita,manga-esquerda,nuca,costas-grande', 'sem tamanhos guardados, os seis de partida, com os ids das posições de antes')
+  ok(ad.tamanhosDtf.length === 6, 'a tabela de antes de 22/10/2026 também ganha os seis')
+  const tam = adicionaisDe({ tamanhosDtf: [{ id: 't1', nome: 'Escudo', lado: 'costas', largura: '12', altura: 0, x: 50, y: 20 }, { nome: 'sem id' }] })
+  ok(tam.tamanhosDtf.length === 1 && tam.tamanhosDtf[0].largura === 12 && tam.tamanhosDtf[0].altura === 10 && tam.tamanhosDtf[0].lado === 'costas', 'o tamanho guardado volta arrumado: número lido, medida zero vira 10, sem id sai')
+  ok(adicionaisDe({ tamanhosDtf: [] }).tamanhosDtf.length === 0, 'a tabela que apagou todos os tamanhos continua sem nenhum')
+  ok(nomeDaCombinacao(['t1'], tam.tamanhosDtf) === 'Escudo', 'o nome da combinação sai dos tamanhos da tabela')
+  ok(medidaDoTamanho({ largura: 21, altura: 29.7 }) === '21 x 29,7 cm', 'a medida mostrada em cm, com vírgula')
+  const cx = caixaDoTamanho({ id: 'a', nome: 'A3', lado: 'costas', largura: 29.7, altura: 42, x: 50, y: 46 })
+  ok(Math.abs(cx[2] - 23.76) < 0.01 && Math.abs(cx[3] - 33.6) < 0.01 && Math.abs(cx[0] - 38.12) < 0.01, 'a caixa no desenho sai da medida real na escala da camisa')
+  const fora = centroQueCabe({ id: 'b', nome: 'B', lado: 'frente', largura: 20, altura: 20, x: 50, y: 50 }, 99, -5)
+  ok(fora.x === 92 && fora.y === 8, 'arrastar para fora para na borda do desenho (' + JSON.stringify(fora) + ')')
   const tab = { ...tabelaEmBranco('A'), adicionais: ad, itens: [
     { codigo: 'CT01', tipo: 'referencia', base: 49.9, precos: [null, null, null, null], sub: 8, silk: 10 },
     { codigo: 'SH01', tipo: 'referencia', base: 39.9, precos: [null, null, null, null], sub: 6, silk: null },

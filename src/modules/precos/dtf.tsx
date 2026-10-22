@@ -1,15 +1,18 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { Check, Copy, Plus, Trash } from '@phosphor-icons/react'
-import { Botao, CampoDeCelula, Campo, Entrada, Seletor, Vazio, avisar, usarEdicaoDeCelulas } from '@ds'
+import { Botao, CampoDeCelula, Campo, Entrada, Segmentado, Seletor, Vazio, avisar, usarEdicaoDeCelulas } from '@ds'
 import {
   CamisaDoDtf,
   CamisasDoDtf,
-  POSICOES_DE_DTF,
+  medidaDoTamanho,
   nomeDaCombinacao,
   novoId,
   type CombinacaoDeDtf,
   type TabelaDePreco,
+  type TamanhoDeDtf,
 } from '@dominio/preco'
+import { AbaTamanhos } from './dtf-tamanhos'
 
 /* ==========================================================================
    A ABA DTF (083, tela 4 do wireframe de 16/10/2026): o editor de
@@ -19,7 +22,13 @@ import {
    sozinho enquanto ninguém mexer nele.
 
    O DTF por quantidade fica de fora até a página especial dele.
+
+   22/10/2026: a aba ganhou a outra metade, os TAMANHOS (dtf-tamanhos.tsx).
+   Primeiro se criam os tamanhos da tabela (nome, lado, medida, lugar), e as
+   combinações se montam com eles. A troca fica no alto da coluna da lista.
    ========================================================================== */
+
+type Parte = 'combinacoes' | 'tamanhos'
 
 const moeda = (v: number | null) => (v == null ? 'sem preço' : 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 
@@ -34,7 +43,44 @@ export function AbaDtf({
   podeMexer: boolean
   mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
 }) {
+  const [parte, setParte] = useState<Parte>('combinacoes')
+  const topo = (
+    <div className="pr-dtf-parte">
+      <Segmentado<Parte>
+        valor={parte}
+        aoMudar={setParte}
+        opcoes={[
+          { valor: 'combinacoes', rotulo: <span className="pr-seg">Combinações<em className="pr-conta">{tabela.adicionais.dtf.length}</em></span> },
+          { valor: 'tamanhos', rotulo: <span className="pr-seg">Tamanhos<em className="pr-conta">{tabela.adicionais.tamanhosDtf.length}</em></span> },
+        ]}
+      />
+    </div>
+  )
+  return parte === 'tamanhos' ? (
+    <AbaTamanhos tabela={tabela} podeMexer={podeMexer} mudar={mudar} topo={topo} aoUsar={() => setParte('combinacoes')} />
+  ) : (
+    <AbaCombinacoes tabela={tabela} outras={outras} podeMexer={podeMexer} mudar={mudar} topo={topo} aoTamanhos={() => setParte('tamanhos')} />
+  )
+}
+
+function AbaCombinacoes({
+  tabela,
+  outras,
+  podeMexer,
+  mudar,
+  topo,
+  aoTamanhos,
+}: {
+  tabela: TabelaDePreco
+  outras: TabelaDePreco[]
+  podeMexer: boolean
+  mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
+  topo: ReactNode
+  aoTamanhos: () => void
+}) {
   const combos = tabela.adicionais.dtf
+  const tamanhos = tabela.adicionais.tamanhosDtf
+  const nomeDe = (posicoes: string[]) => nomeDaCombinacao(posicoes, tamanhos)
   const [escolhida, setEscolhida] = useState(combos[0]?.id ?? '')
   const [apagando, setApagando] = useState(false)
   const [copiarDe, setCopiarDe] = useState('')
@@ -56,14 +102,17 @@ export function AbaDtf({
     mudarAtual((c) => {
       const posicoes = c.posicoes.includes(pos) ? c.posicoes.filter((p) => p !== pos) : [...c.posicoes, pos]
       /* o nome acompanha as posições enquanto ninguém escreveu outro */
-      const nome = c.nome === nomeDaCombinacao(c.posicoes) ? nomeDaCombinacao(posicoes) : c.nome
+      const nome = c.nome === nomeDe(c.posicoes) ? nomeDe(posicoes) : c.nome
       return { ...c, posicoes, nome }
     })
   }
 
   function nova() {
     const id = novoId('dtf-', combos.map((c) => c.id))
-    mudarCombos((cs) => [...cs, { id, nome: nomeDaCombinacao(['peito-grande']), posicoes: ['peito-grande'], valor: null }])
+    /* começa no Peito grande quando a tabela tem; senão, no primeiro tamanho */
+    const primeiro = tamanhos.find((t) => t.id === 'peito-grande') ?? tamanhos[0]
+    const posicoes = primeiro ? [primeiro.id] : []
+    mudarCombos((cs) => [...cs, { id, nome: nomeDe(posicoes), posicoes, valor: null }])
     setEscolhida(id)
     setApagando(false)
   }
@@ -72,6 +121,10 @@ export function AbaDtf({
     const o = outras.find((x) => x.id === copiarDe)
     if (!o) return
     const usados = combos.map((c) => c.id)
+    /* os tamanhos que as combinações copiadas usam e esta tabela não tem vêm junto */
+    const meus = new Set(tamanhos.map((t) => t.id))
+    const precisa = new Set(o.adicionais.dtf.flatMap((c) => c.posicoes))
+    const vindos: TamanhoDeDtf[] = o.adicionais.tamanhosDtf.filter((t) => precisa.has(t.id) && !meus.has(t.id)).map((t) => ({ ...t }))
     const novas = o.adicionais.dtf
       .filter((c) => !combos.some((x) => x.nome.toLowerCase() === c.nome.toLowerCase()))
       .map((c) => {
@@ -79,14 +132,16 @@ export function AbaDtf({
         usados.push(id)
         return { ...c, id, posicoes: [...c.posicoes] }
       })
-    mudarCombos((cs) => [...cs, ...novas])
+    mudar((x) => ({ ...x, adicionais: { ...x.adicionais, dtf: [...x.adicionais.dtf, ...novas], tamanhosDtf: [...x.adicionais.tamanhosDtf, ...vindos] } }))
     setCopiarDe('')
-    avisar(novas.length ? `${novas.length} ${novas.length === 1 ? 'combinação veio' : 'combinações vieram'} da ${o.nome}` : 'Esta tabela já tem as combinações da ' + o.nome, 'ok')
+    const comTam = vindos.length ? ` (e ${vindos.length === 1 ? '1 tamanho' : vindos.length + ' tamanhos'})` : ''
+    avisar(novas.length ? `${novas.length} ${novas.length === 1 ? 'combinação veio' : 'combinações vieram'} da ${o.nome}${comTam}` : 'Esta tabela já tem as combinações da ' + o.nome, 'ok')
   }
 
   return (
     <div className="pr-dtf">
       <div className="pr-dtf-l">
+        {topo}
         <div className="pr-dtf-cab">
           <b>
             {combos.length} {combos.length === 1 ? 'combinação' : 'combinações'}
@@ -111,11 +166,11 @@ export function AbaDtf({
                 setApagando(false)
               }}
             >
-              <CamisasDoDtf ligadas={c.posicoes} />
+              <CamisasDoDtf ligadas={c.posicoes} tamanhos={tamanhos} />
               <span className="pilha">
                 <b className="corta">{c.nome || 'Sem nome'}</b>
                 <small>
-                  {c.posicoes.length} {c.posicoes.length === 1 ? 'posição' : 'posições'}
+                  {c.posicoes.length} {c.posicoes.length === 1 ? 'tamanho' : 'tamanhos'}
                 </small>
               </span>
               <span className={'pr-dtf-preco' + (c.valor == null ? ' falta' : '')}>{moeda(c.valor)}</span>
@@ -143,13 +198,13 @@ export function AbaDtf({
         <div className="pr-dtf-r">
           <Vazio
             titulo="Nenhuma combinação ainda"
-            texto={podeMexer ? 'Crie a primeira em Nova combinação: as posições na camisa e o preço por peça.' : 'Quando houver, ela aparece aqui.'}
+            texto={podeMexer ? 'Crie a primeira em Nova combinação: os tamanhos na camisa e o preço por peça.' : 'Quando houver, ela aparece aqui.'}
           />
         </div>
       ) : (
         <div className="pr-dtf-r pilha">
           <div className="pr-dtf-campos">
-            <Campo rotulo="Nome da combinação" dica={atual.nome === nomeDaCombinacao(atual.posicoes) ? 'Escreve-se sozinho pelas posições' : undefined}>
+            <Campo rotulo="Nome da combinação" dica={atual.nome === nomeDe(atual.posicoes) ? 'Escreve-se sozinho pelos tamanhos' : undefined}>
               <Entrada value={atual.nome} disabled={!podeMexer} onChange={(e) => mudarAtual((c) => ({ ...c, nome: e.target.value }))} />
             </Campo>
             <div className="campo">
@@ -169,14 +224,22 @@ export function AbaDtf({
           <div className="pr-dtf-camisas">
             {(['frente', 'costas'] as const).map((lado) => (
               <figure key={lado} className="pr-dtf-camisa">
-                <CamisaDoDtf lado={lado} ligadas={atual.posicoes} aoAlternar={podeMexer ? alternar : undefined} />
+                <CamisaDoDtf lado={lado} ligadas={atual.posicoes} tamanhos={tamanhos} aoAlternar={podeMexer ? alternar : undefined} />
                 <figcaption>{lado === 'frente' ? 'Frente' : 'Costas'}</figcaption>
               </figure>
             ))}
           </div>
-          <span className="pr-sobre">As posições · clique na camisa ou aqui</span>
+          <span className="fileira entre">
+            <span className="pr-sobre">Os tamanhos · clique para ligar</span>
+            {podeMexer ? (
+              <Botao tom="limpo" tamanho="sm" onClick={aoTamanhos}>
+                Mudar os tamanhos
+              </Botao>
+            ) : null}
+          </span>
+          {!tamanhos.length ? <p className="pr-tam-uso nenhum">Esta tabela não tem tamanhos de DTF. Crie em Tamanhos, e eles aparecem aqui.</p> : null}
           <div className="pr-dtf-pos">
-            {POSICOES_DE_DTF.map((p) => {
+            {tamanhos.map((p) => {
               const on = atual.posicoes.includes(p.id)
               return (
                 <button
@@ -193,7 +256,7 @@ export function AbaDtf({
                   <span className="pilha">
                     <b>{p.nome}</b>
                     <small>
-                      {p.medida} · {p.lado}
+                      {medidaDoTamanho(p)} · {p.lado}
                     </small>
                   </span>
                 </button>

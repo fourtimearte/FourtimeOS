@@ -263,7 +263,7 @@ function EscolhaDoDtf({
               className={'ct-dtf-op' + (escolha === c.id ? ' ligado' : '')}
               onClick={() => setEscolha(c.id)}
             >
-              <CamisasDoDtf ligadas={c.posicoes} className="ct-dtf-camisas" />
+              <CamisasDoDtf ligadas={c.posicoes} tamanhos={tabela.adicionais.tamanhosDtf} className="ct-dtf-camisas" />
               <span className="fileira entre">
                 <b>{c.nome}</b>
                 <span className="ct-dtf-preco">{c.valor == null ? 'sem preço' : 'R$ ' + n2(c.valor)}</span>

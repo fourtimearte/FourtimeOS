@@ -15,28 +15,55 @@
 
 import type { Contexto, ItemDaTabela, TabelaDePreco } from './tipos'
 
-export type { Adicionais, CombinacaoDeDtf, Extra, OpcaoDeExtra, PrecoDoTecido, TecnicaDoExtra } from './adicionais-base'
-export { adicionaisEmBranco, extrasPadrao } from './adicionais-base'
-import { extrasPadrao, type Adicionais, type Extra } from './adicionais-base'
+export type { Adicionais, CombinacaoDeDtf, Extra, LadoDaCamisa, OpcaoDeExtra, PrecoDoTecido, TamanhoDeDtf, TecnicaDoExtra } from './adicionais-base'
+export { adicionaisEmBranco, extrasPadrao, tamanhosPadrao } from './adicionais-base'
+import { extrasPadrao, tamanhosPadrao, type Adicionais, type Extra, type LadoDaCamisa, type TamanhoDeDtf } from './adicionais-base'
 
-/* --- as posições do DTF -------------------------------------------------------
-   As mesmas em todas as tabelas. A caixa é o lugar no desenho da camisa (de
-   0 a 100), para o editor e o modal mostrarem onde vai. */
-export type LadoDaCamisa = 'frente' | 'costas'
-export type PosicaoDeDtf = { id: string; nome: string; medida: string; lado: LadoDaCamisa; caixa: [number, number, number, number] }
+/* --- os tamanhos do DTF no desenho --------------------------------------------
+   O desenho da camisa vai de 0 a 100; o corpo tem 44 de largura, o que dá
+   uma camisa adulta de uns 55 cm. A caixa de cada tamanho sai da medida real
+   nessa escala, centrada no lugar escolhido, e nunca sai do desenho. */
+export const ESCALA_DA_CAMISA = 0.8
+export type PosicaoDeDtf = TamanhoDeDtf
+/** Os tamanhos de partida (o que uma tabela sem tamanhos guardados usa). */
+export const POSICOES_DE_DTF: TamanhoDeDtf[] = tamanhosPadrao()
 
-export const POSICOES_DE_DTF: PosicaoDeDtf[] = [
-  { id: 'peito-pequeno', nome: 'Peito pequeno', medida: 'até 10 cm', lado: 'frente', caixa: [57, 25, 11, 9] },
-  { id: 'peito-grande', nome: 'Peito grande', medida: 'até A4', lado: 'frente', caixa: [35, 30, 30, 26] },
-  { id: 'manga-direita', nome: 'Manga direita', medida: 'até 8 cm', lado: 'frente', caixa: [12, 24, 10, 8] },
-  { id: 'manga-esquerda', nome: 'Manga esquerda', medida: 'até 8 cm', lado: 'frente', caixa: [78, 24, 10, 8] },
-  { id: 'nuca', nome: 'Nuca', medida: 'até 10 cm', lado: 'costas', caixa: [43, 13, 14, 7] },
-  { id: 'costas-grande', nome: 'Costas grande', medida: 'até A3', lado: 'costas', caixa: [33, 26, 34, 38] },
+const meio = (v: number) => Math.round(v * 2) / 2
+const ladoNoDesenho = (cm: number) => Math.min(96, Math.max(2, cm * ESCALA_DA_CAMISA))
+
+/** [x, y, largura, altura] no desenho */
+export function caixaDoTamanho(p: TamanhoDeDtf): [number, number, number, number] {
+  const w = ladoNoDesenho(p.largura)
+  const h = ladoNoDesenho(p.altura)
+  const cx = Math.min(100 - w / 2, Math.max(w / 2, p.x))
+  const cy = Math.min(100 - h / 2, Math.max(h / 2, p.y))
+  return [cx - w / 2, cy - h / 2, w, h]
+}
+
+/** O centro que cabe no desenho com esta medida (arrastar não leva para fora). */
+export function centroQueCabe(p: TamanhoDeDtf, x: number, y: number): { x: number; y: number } {
+  const w = ladoNoDesenho(p.largura)
+  const h = ladoNoDesenho(p.altura)
+  return { x: meio(Math.min(100 - w / 2, Math.max(w / 2, x))), y: meio(Math.min(100 - h / 2, Math.max(h / 2, y))) }
+}
+
+const cm = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+/** "21 x 29,7 cm" */
+export const medidaDoTamanho = (p: Pick<TamanhoDeDtf, 'largura' | 'altura'>) => `${cm(p.largura)} x ${cm(p.altura)} cm`
+
+/** As medidas prontas que se clicam no editor. */
+export const MEDIDAS_PRONTAS: { nome: string; largura: number; altura: number }[] = [
+  { nome: 'A3', largura: 29.7, altura: 42 },
+  { nome: 'A4', largura: 21, altura: 29.7 },
+  { nome: 'A5', largura: 14.8, altura: 21 },
+  { nome: 'A6', largura: 10.5, altura: 14.8 },
+  { nome: '10 x 10', largura: 10, altura: 10 },
+  { nome: '8 x 8', largura: 8, altura: 8 },
 ]
 
-/** "Peito grande e manga direita", na ordem das posições */
-export function nomeDaCombinacao(posicoes: string[]): string {
-  const nomes = POSICOES_DE_DTF.filter((p) => posicoes.includes(p.id)).map((p, i) => (i ? p.nome.toLowerCase() : p.nome))
+/** "Peito grande e manga direita", na ordem dos tamanhos da tabela */
+export function nomeDaCombinacao(posicoes: string[], tamanhos: TamanhoDeDtf[] = POSICOES_DE_DTF): string {
+  const nomes = tamanhos.filter((p) => posicoes.includes(p.id)).map((p, i) => (i ? p.nome.toLowerCase() : p.nome))
   if (!nomes.length) return 'Sem posição'
   if (nomes.length === 1) return nomes[0]
   return nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1]
@@ -78,7 +105,19 @@ export function adicionaisDe(bruto: unknown): Adicionais {
       posicoes: Array.isArray(c.posicoes) ? (c.posicoes as unknown[]).map(texto) : [],
       valor: numOuNulo(c.valor),
     })),
+    /* sem a lista guardada (toda tabela de antes de 22/10/2026), os seis de
+       partida, que têm os mesmos ids das posições fixas de antes */
+    tamanhosDtf: Array.isArray(x.tamanhosDtf) ? lista(x.tamanhosDtf).map(tamanhoDe).filter((p) => p.id) : tamanhosPadrao(),
   }
+}
+
+function tamanhoDe(p: Record<string, unknown>): TamanhoDeDtf {
+  const n = (v: unknown, reserva: number) => {
+    const k = numOuNulo(v)
+    return k != null && k > 0 ? k : reserva
+  }
+  const lado: LadoDaCamisa = p.lado === 'costas' ? 'costas' : 'frente'
+  return { id: texto(p.id), nome: texto(p.nome), lado, largura: n(p.largura, 10), altura: n(p.altura, 10), x: n(p.x, 50), y: n(p.y, 45) }
 }
 
 /* --- o tecido ------------------------------------------------------------------

@@ -1,0 +1,334 @@
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+import { ArrowsClockwise, CopySimple, Plus, Trash } from '@phosphor-icons/react'
+import { Botao, Campo, Chip, Entrada, Segmentado, Vazio, lerNumero } from '@ds'
+import {
+  CamisaDoDtf,
+  CamisaDosTamanhos,
+  MEDIDAS_PRONTAS,
+  centroQueCabe,
+  medidaDoTamanho,
+  nomeDaCombinacao,
+  novoId,
+  type Adicionais,
+  type LadoDaCamisa,
+  type MudancaDoTamanho,
+  type TabelaDePreco,
+  type TamanhoDeDtf,
+} from '@dominio/preco'
+
+/* ==========================================================================
+   OS TAMANHOS DE DTF (pedido dele em 22/10/2026: "preciso poder criar
+   tamanhos de DTF, depois combiná-los para criar os templates com preço;
+   faça como um editor mesmo").
+
+   Cada tabela tem os seus. Um tamanho é o nome, o lado da camisa, a medida
+   em cm e o lugar no desenho. Na camisa, o escolhido se arrasta e o canto
+   mede; nos campos, a medida se escreve; as medidas prontas (A3, A4...) se
+   clicam. As combinações (a outra metade da aba) se montam com eles.
+   ========================================================================== */
+
+/** Troca os tamanhos e mantém as combinações de pé: o tamanho apagado sai
+    delas, e o nome que se escrevia sozinho continua se escrevendo. */
+export function comTamanhos(a: Adicionais, novos: TamanhoDeDtf[]): Adicionais {
+  const ids = new Set(novos.map(t => t.id))
+  return {
+    ...a,
+    tamanhosDtf: novos,
+    dtf: a.dtf.map(c => {
+      const posicoes = c.posicoes.filter(p => ids.has(p))
+      const nome = c.nome === nomeDaCombinacao(c.posicoes, a.tamanhosDtf) ? nomeDaCombinacao(posicoes, novos) : c.nome
+      return { ...c, posicoes, nome }
+    }),
+  }
+}
+
+const cm = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+
+/** O número em cm: escreve à vontade, grava no Enter ou ao sair. */
+function CampoCm({ valor, rotulo, podeMexer, aoMudar }: { valor: number; rotulo: string; podeMexer: boolean; aoMudar: (v: number) => void }) {
+  const [texto, setTexto] = useState(cm(valor))
+  useEffect(() => setTexto(cm(valor)), [valor])
+  const gravar = () => {
+    const n = lerNumero(texto)
+    if (n != null && Number.isFinite(n) && n > 0 && n <= 120) {
+      const v = Math.round(n * 10) / 10
+      if (v !== valor) aoMudar(v)
+      setTexto(cm(v))
+    } else setTexto(cm(valor))
+  }
+  return (
+    <Campo rotulo={rotulo}>
+      <span className="pr-cm">
+        <Entrada
+          value={texto}
+          inputMode="decimal"
+          disabled={!podeMexer}
+          aria-label={rotulo + ' em centímetros'}
+          onChange={e => setTexto(e.target.value)}
+          onFocus={e => e.currentTarget.select()}
+          onBlur={gravar}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              gravar()
+            } else if (e.key === 'Escape') setTexto(cm(valor))
+          }}
+        />
+        <small>cm</small>
+      </span>
+    </Campo>
+  )
+}
+
+export function AbaTamanhos({
+  tabela,
+  podeMexer,
+  mudar,
+  topo,
+  aoUsar,
+}: {
+  tabela: TabelaDePreco
+  podeMexer: boolean
+  mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
+  /** a troca entre Tamanhos e Combinações, no alto da coluna da lista */
+  topo: ReactNode
+  /** levar para as combinações */
+  aoUsar: () => void
+}) {
+  const tamanhos = tabela.adicionais.tamanhosDtf
+  const [escolhido, setEscolhido] = useState(tamanhos[0]?.id ?? '')
+  const [apagando, setApagando] = useState(false)
+  const atual = tamanhos.find(t => t.id === escolhido) ?? tamanhos[0]
+  const usaram = (id: string) => tabela.adicionais.dtf.filter(c => c.posicoes.includes(id))
+
+  const mudarTamanhos = (f: (ts: TamanhoDeDtf[]) => TamanhoDeDtf[]) =>
+    mudar(x => ({ ...x, adicionais: comTamanhos(x.adicionais, f(x.adicionais.tamanhosDtf)) }))
+  const mudarUm = (id: string, m: Partial<TamanhoDeDtf>) =>
+    mudarTamanhos(ts =>
+      ts.map(t => {
+        if (t.id !== id) return t
+        const novo = { ...t, ...m }
+        /* a medida nova pode não caber no lugar de antes: o centro se ajeita */
+        return { ...novo, ...centroQueCabe(novo, novo.x, novo.y) }
+      }),
+    )
+
+  function escolher(id: string) {
+    setEscolhido(id)
+    setApagando(false)
+  }
+
+  function novo() {
+    const id = novoId(
+      'tam-',
+      tamanhos.map(t => t.id),
+    )
+    const lado: LadoDaCamisa = atual?.lado ?? 'frente'
+    let n = tamanhos.length + 1
+    while (tamanhos.some(t => t.nome === 'Tamanho ' + n)) n++
+    mudarTamanhos(ts => [...ts, { id, nome: 'Tamanho ' + n, lado, largura: 10, altura: 10, x: 50, y: 45 }])
+    escolher(id)
+  }
+
+  function duplicar() {
+    if (!atual) return
+    const id = novoId(
+      'tam-',
+      tamanhos.map(t => t.id),
+    )
+    const copia = { ...atual, id, nome: atual.nome + ' (cópia)' }
+    mudarTamanhos(ts => [...ts, { ...copia, ...centroQueCabe(copia, atual.x + 4, atual.y + 4) }])
+    escolher(id)
+  }
+
+  const lista = (
+    <div className="pr-dtf-l">
+      {topo}
+      <div className="pr-dtf-cab">
+        <b>
+          {tamanhos.length} {tamanhos.length === 1 ? 'tamanho' : 'tamanhos'}
+        </b>
+        {podeMexer ? (
+          <Botao tom="contorno" tamanho="sm" onClick={novo}>
+            <Plus size={15} />
+            Novo tamanho
+          </Botao>
+        ) : null}
+      </div>
+      <div className="pr-dtf-lista" role="list" aria-label="Os tamanhos de DTF">
+        {tamanhos.map(t => {
+          const n = usaram(t.id).length
+          return (
+            <button
+              type="button"
+              role="listitem"
+              key={t.id}
+              className={'pr-dtf-item' + (t.id === atual?.id ? ' ligado' : '')}
+              aria-current={t.id === atual?.id}
+              onClick={() => escolher(t.id)}
+            >
+              <span className="dtf-par">
+                <CamisaDoDtf lado={t.lado} ligadas={[t.id]} tamanhos={tamanhos} />
+              </span>
+              <span className="pilha">
+                <b className="corta">{t.nome || 'Sem nome'}</b>
+                <small>
+                  {medidaDoTamanho(t)} · {t.lado}
+                </small>
+              </span>
+              <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  if (!atual)
+    return (
+      <div className="pr-dtf">
+        {lista}
+        <div className="pr-dtf-r">
+          <Vazio
+            titulo="Nenhum tamanho ainda"
+            texto={podeMexer ? 'Crie o primeiro em Novo tamanho: o nome, a medida em cm e o lugar na camisa.' : 'Quando houver, ele aparece aqui.'}
+          />
+        </div>
+      </div>
+    )
+
+  const combos = usaram(atual.id)
+  const pronta = MEDIDAS_PRONTAS.find(m => m.largura === atual.largura && m.altura === atual.altura)
+  return (
+    <div className="pr-dtf">
+      {lista}
+      <div className="pr-dtf-r pilha">
+        <div className="pr-tam-campos">
+          <Campo rotulo="Nome do tamanho">
+            <Entrada value={atual.nome} disabled={!podeMexer} onChange={e => mudarUm(atual.id, { nome: e.target.value })} />
+          </Campo>
+          <div className="campo">
+            <span className="campo-rotulo">Lado</span>
+            {podeMexer ? (
+              <Segmentado<LadoDaCamisa>
+                valor={atual.lado}
+                aoMudar={lado => mudarUm(atual.id, { lado })}
+                opcoes={[
+                  { valor: 'frente', rotulo: 'Frente' },
+                  { valor: 'costas', rotulo: 'Costas' },
+                ]}
+              />
+            ) : (
+              <b>{atual.lado === 'frente' ? 'Frente' : 'Costas'}</b>
+            )}
+          </div>
+        </div>
+
+        <div className="pr-tam-corpo">
+          <figure className="pr-dtf-camisa pr-tam-camisa">
+            <CamisaDosTamanhos
+              lado={atual.lado}
+              tamanhos={tamanhos}
+              escolhido={atual.id}
+              aoEscolher={escolher}
+              aoMudar={podeMexer ? (id: string, m: MudancaDoTamanho) => mudarUm(id, m) : undefined}
+            />
+            <figcaption>
+              {atual.lado === 'frente' ? 'Frente' : 'Costas'}
+              {podeMexer ? <small>Arraste para mudar o lugar; o canto muda a medida</small> : null}
+            </figcaption>
+          </figure>
+
+          <div className="pilha pr-tam-medida">
+            <span className="pr-sobre">A medida</span>
+            <div className="fileira dentro pr-tam-linha">
+              <CampoCm valor={atual.largura} rotulo="Largura" podeMexer={podeMexer} aoMudar={largura => mudarUm(atual.id, { largura })} />
+              <CampoCm valor={atual.altura} rotulo="Altura" podeMexer={podeMexer} aoMudar={altura => mudarUm(atual.id, { altura })} />
+              {podeMexer ? (
+                <Botao
+                  tom="contorno"
+                  icone
+                  aria-label="Girar: trocar a largura pela altura"
+                  title="Girar: trocar a largura pela altura"
+                  onClick={() => mudarUm(atual.id, { largura: atual.altura, altura: atual.largura })}
+                >
+                  <ArrowsClockwise size={18} />
+                </Botao>
+              ) : null}
+            </div>
+            {podeMexer ? (
+              <>
+                <span className="pr-sobre">Medidas prontas</span>
+                <div className="fileira miuda">
+                  {MEDIDAS_PRONTAS.map(m => (
+                    <Chip
+                      key={m.nome}
+                      tamanho="sm"
+                      ligado={pronta?.nome === m.nome}
+                      title={medidaDoTamanho(m)}
+                      onClick={() => mudarUm(atual.id, { largura: m.largura, altura: m.altura })}
+                    >
+                      {m.nome}
+                    </Chip>
+                  ))}
+                </div>
+              </>
+            ) : null}
+            <span className="pr-sobre">Nas combinações</span>
+            {combos.length ? (
+              <p className="pr-tam-uso">{combos.map(c => c.nome).join('; ')}</p>
+            ) : (
+              <p className="pr-tam-uso nenhum">Ainda em nenhuma combinação.</p>
+            )}
+            <div className="fileira">
+              <Botao tom="contorno" tamanho="sm" onClick={aoUsar}>
+                Montar as combinações
+              </Botao>
+            </div>
+          </div>
+        </div>
+
+        {podeMexer ? (
+          apagando ? (
+            <div className="pr-ex-pergunta" role="alert">
+              <span>
+                Apagar o tamanho <b>{atual.nome}</b>?
+                {combos.length
+                  ? ` Ele sai de ${combos.length === 1 ? '1 combinação' : combos.length + ' combinações'}: ${combos.map(c => c.nome).join('; ')}.`
+                  : ''}
+              </span>
+              <span className="fileira">
+                <Botao tom="contorno" tamanho="sm" onClick={() => setApagando(false)}>
+                  Manter
+                </Botao>
+                <Botao
+                  tom="perigo"
+                  tamanho="sm"
+                  onClick={() => {
+                    mudarTamanhos(ts => ts.filter(t => t.id !== atual.id))
+                    setApagando(false)
+                    setEscolhido('')
+                  }}
+                >
+                  Apagar
+                </Botao>
+              </span>
+            </div>
+          ) : (
+            <div className="fileira fim">
+              <Botao tom="contorno" tamanho="sm" onClick={duplicar}>
+                <CopySimple size={15} />
+                Duplicar
+              </Botao>
+              <Botao tom="contorno" tamanho="sm" onClick={() => setApagando(true)}>
+                <Trash size={15} />
+                Apagar o tamanho
+              </Botao>
+            </div>
+          )
+        ) : null}
+      </div>
+    </div>
+  )
+}

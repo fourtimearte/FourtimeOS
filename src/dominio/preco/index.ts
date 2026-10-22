@@ -2,4 +2,4 @@
 export * from './tipos'
 export { apagarTabelaDePreco, carregarTabelasDePreco, salvarTabelaDePreco, tornarPadrao } from './repositorio'
 export * from './adicionais'
-export { CamisaDoDtf, CamisasDoDtf } from './camisa'
+export { CamisaDoDtf, CamisaDosTamanhos, CamisasDoDtf, type MudancaDoTamanho } from './camisa'

@@ -787,7 +787,8 @@ export function TelaTabelasDePreco() {
                   <button type="button" onClick={() => trocarAba('dtf')}>
                     <span>DTF</span>
                     <b>
-                      {t.adicionais.dtf.length} {t.adicionais.dtf.length === 1 ? 'combinação' : 'combinações'}
+                      {t.adicionais.dtf.length} {t.adicionais.dtf.length === 1 ? 'combinação' : 'combinações'}, {t.adicionais.tamanhosDtf.length}{' '}
+                      {t.adicionais.tamanhosDtf.length === 1 ? 'tamanho' : 'tamanhos'}
                     </b>
                   </button>
                 </div>

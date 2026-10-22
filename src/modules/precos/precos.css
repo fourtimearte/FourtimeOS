@@ -1141,9 +1141,13 @@
 }
 .pr-dtf-campos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-4);
   align-items: start;
+}
+/* o nome na largura toda; embaixo, o custo calculado e o preço lado a lado */
+.pr-dtf-campos > :first-child {
+  grid-column: 1 / -1;
 }
 .pr-dtf-campos .cel {
   width: 100%;
@@ -1310,11 +1314,113 @@
 .pr-tam-pos.deitado {
   color: var(--tec-dtf-fg);
 }
+/* Largura, Altura, Custo e o Girar numa linha só, em grade: os três campos
+   repartem a largura e o botão fica no fim, com o pé na linha dos campos
+   (na .fileira ele ficava centrado, mais alto que os campos por causa do
+   rótulo, e quebrando a linha descia sozinho) */
 .pr-tam-linha {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(76px, 1fr)) auto;
+  align-items: end;
+  gap: var(--gap-dentro);
+}
+/* o custo calculado: com a altura e o raio do campo, mas sem ser campo */
+.pr-tam-custo {
+  display: flex;
+  align-items: center;
+  height: var(--btn-h);
+  padding: 0 var(--re-6);
+  border: 1px solid var(--tec-dtf);
+  border-radius: var(--radius);
+  background: var(--tec-dtf-soft);
+  color: var(--tec-dtf-fg);
+  font-size: 14.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pr-dtf-item-fim {
   align-items: flex-end;
+  gap: var(--gap-colado);
+}
+.pr-dtf-dif {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-dtf-dif.abaixo {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.pr-dtf-usar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tec-dtf-fg);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pr-dtf-usar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* a calculadora do custo, no pé da coluna da lista (embaixo do Copiar, quando ele existe) */
+.pr-dtf-copiar + .pr-dtf-custo {
+  margin-top: 0;
+}
+.pr-dtf-custo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--re-2);
+  margin-top: auto;
+  padding: var(--re-6) var(--re-9);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pr-dtf-custo .pr-sobre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-miudo);
+}
+.pr-dtf-custo-cm {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pr-dtf-custo-cm small {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.pr-dtf-custo-de {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.pr-dtf-custo-campos {
+  gap: var(--sp-3);
+}
+.pr-dtf-custo-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--re-4);
+}
+.pr-dtf-custo-conta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tec-dtf-fg);
 }
 .pr-tam-linha .campo {
-  width: 120px;
+  min-width: 0;
+}
+/* no celular o Girar desce para uma linha só dele, na largura toda */
+@media (max-width: 599px) {
+  .pr-tam-linha {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pr-tam-linha > button {
+    grid-column: 1 / -1;
+  }
 }
 .pr-cm {
   position: relative;
@@ -1351,7 +1457,6 @@
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
-  .pr-dtf-campos,
   .pr-tam-campos {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -354,7 +354,7 @@ export function TelaTabelasDePreco() {
         ) : aba === 'extras' ? (
           <AbaExtras key={t.id} tabela={t} podeMexer={podeMexer} mudar={mudar} />
         ) : (
-          <AbaDtf key={t.id} tabela={t} outras={tabelas.filter((x) => x.id !== t.id)} podeMexer={podeMexer} mudar={mudar} />
+          <AbaDtf key={t.id} tabela={t} outras={tabelas.filter((x) => x.id !== t.id)} podeMexer={podeMexer} souAdmin={souAdmin} mudar={mudar} />
         )}
       </>
     ) : null

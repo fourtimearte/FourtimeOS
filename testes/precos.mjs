@@ -10,7 +10,7 @@ import {
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
-import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido, caixaDoTamanho, centroQueCabe, medidaDoTamanho } from './compilado/preco/adicionais.js'
+import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido, caixaDoTamanho, centroQueCabe, medidaDoTamanho, CUSTO_DO_DTF_PADRAO, custoPorCm2, custoDoTamanho, custoDaCombinacao, segueOCusto } from './compilado/preco/adicionais.js'
 import { escolhasDoLayout } from './compilado/cotacao/tabela-de-preco.js'
 
 let ruins = 0
@@ -182,6 +182,14 @@ console.log('os adicionais (083): a peça mais o material, a técnica e os extra
   ok(Math.abs(cx[2] - 23.76) < 0.01 && Math.abs(cx[3] - 33.6) < 0.01 && Math.abs(cx[0] - 38.12) < 0.01, 'a caixa no desenho sai da medida real na escala da camisa')
   const fora = centroQueCabe({ id: 'b', nome: 'B', lado: 'frente', largura: 20, altura: 20, x: 50, y: 50 }, 99, -5)
   ok(fora.x === 92 && fora.y === 8, 'arrastar para fora para na borda do desenho (' + JSON.stringify(fora) + ')')
+  /* o custo do DTF (22/10/2026): R$ 60 o metro, filme de 58 cm, 80% aproveitado */
+  const cc = CUSTO_DO_DTF_PADRAO
+  ok(Math.abs(custoPorCm2(cc) - 60 / 4640) < 1e-12, 'o cm² custa o metro dividido só pela área aproveitada (60 ÷ 4.640)')
+  ok(custoDoTamanho({ largura: 21, altura: 29.7 }, cc) === 8.07 && custoDoTamanho({ largura: 29.7, altura: 42 }, cc) === 16.13 && custoDoTamanho({ largura: 10, altura: 10 }, cc) === 1.29 && custoDoTamanho({ largura: 8, altura: 8 }, cc) === 0.83, 'A4 8,07; A3 16,13; 10 x 10 1,29; 8 x 8 0,83')
+  const tp = a0.tamanhosDtf
+  ok(custoDaCombinacao(['peito-grande', 'costas-grande'], tp, cc) === 24.2 && custoDaCombinacao([], tp, cc) === null, 'a combinação soma as áreas e arredonda uma vez (A4 + A3 = 24,20); sem tamanho, sem custo')
+  ok(custoDoTamanho({ largura: 21, altura: 29.7 }, { metro: 60, largura: 60, aproveitamento: 80 }) === 7.8, 'o filme de 60 cm muda a conta (A4 7,80)')
+  ok(segueOCusto(8.07, 8.07) && segueOCusto(null, 8.07) && !segueOCusto(10, 8.07), 'o preço segue o custo quando é igual ou vazio; o escrito à mão não')
   const tab = { ...tabelaEmBranco('A'), adicionais: ad, itens: [
     { codigo: 'CT01', tipo: 'referencia', base: 49.9, precos: [null, null, null, null], sub: 8, silk: 10 },
     { codigo: 'SH01', tipo: 'referencia', base: 39.9, precos: [null, null, null, null], sub: 6, silk: null },

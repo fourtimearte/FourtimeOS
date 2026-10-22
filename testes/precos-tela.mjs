@@ -520,10 +520,13 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
     if (tema === 'light') {
       await pg.locator('.pr-dtf-cab button', { hasText: 'Nova combinação' }).click()
       await pg.waitForTimeout(150)
+      const precoNovo = await pg.evaluate(() => document.querySelector('.pr-dtf-campos .cel')?.textContent.trim())
       await pg.locator('.pr-dtf-camisa rect[aria-label="Manga direita"]').click()
       await pg.locator('.pr-dtf-p', { hasText: 'Costas grande' }).click()
       await pg.waitForTimeout(150)
       const nome = await pg.inputValue('.pr-dtf-campos input.entrada')
+      const precoSegue = await pg.evaluate(() => document.querySelector('.pr-dtf-campos .cel')?.textContent.trim() + ' | ' + document.querySelector('.pr-dtf-campos .pr-tam-custo')?.textContent.trim())
+      conta(precoNovo === '8,07' && precoSegue === '25,02 | R$ 25,02', T + ' a combinação nova nasce com o custo e o preço acompanha os tamanhos (' + precoNovo + ' · ' + precoSegue + ')')
       await pg.locator('.pr-dtf-campos .cel').click()
       await pg.keyboard.type('16'); await pg.keyboard.press('Enter')
       await pg.waitForTimeout(150)
@@ -564,6 +567,23 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
       await pg.screenshot({ path: `${PASTA}/precos-dtf-tamanhos-${tema}.png`, fullPage: true })
       conta(seis === 6 && cms.join() === '14,8,21' && antes !== depois && /Escudo costas 15 x 21 cm · costas/.test(itemTam),
         T + ' Novo tamanho: nome, lado, medida pronta, medida escrita e arrastar na camisa (' + [seis, cms.join('/'), antes, depois, itemTam].join(' · ') + ')')
+      /* a calculadora: o custo ao lado da altura, e o Girar na linha dos campos */
+      const calc = await pg.evaluate(() => {
+        const c = document.querySelector('.pr-tam-linha .pr-tam-custo')
+        const ins = document.querySelectorAll('.pr-tam-linha .pr-cm input')
+        const bt = [...document.querySelectorAll('.pr-tam-linha button')].find((b) => b.textContent.includes('Girar'))
+        const fim = (e) => Math.round(e.getBoundingClientRect().bottom)
+        return { custo: c?.textContent.trim(), linha: [fim(ins[0]), fim(ins[1]), fim(c), fim(bt)], depoisDaAltura: ins[1].closest('.campo').nextElementSibling?.contains(c) }
+      })
+      conta(calc.custo === 'R$ 4,07' && new Set(calc.linha).size === 1 && calc.depoisDaAltura,
+        T + ' o custo do tamanho ao lado da Altura (15 x 21 = R$ 4,07) e o Girar alinhado com os campos (' + JSON.stringify(calc) + ')')
+      /* o custo da fábrica: o administrador abre, a conta do cm² acompanha o que se digita */
+      await pg.locator('.pr-dtf-custo button', { hasText: 'Mudar' }).click()
+      await pg.fill('.pr-dtf-custo-grade input >> nth=1', '60')
+      const contaCusto = await pg.evaluate(() => document.querySelector('.pr-dtf-custo-conta')?.textContent)
+      await pg.locator('.pr-dtf-custo button', { hasText: 'Cancelar' }).click()
+      const voltou = await pg.evaluate(() => document.querySelector('.pr-dtf-custo-cm')?.textContent.replace(/\s+/g, ' ').trim())
+      conta(contaCusto === 'Fica 0,0125 por cm²' && voltou === 'R$ 0,012931 por cm²', T + ' a calculadora do custo: 58 cm dá 0,012931; o filme de 60 cm daria 0,0125 (' + contaCusto + ' · ' + voltou + ')')
       /* girar: o botão e a bolinha na camisa trocam a largura pela altura */
       await pg.locator('.pr-tam-linha button', { hasText: 'Girar' }).click()
       await pg.waitForTimeout(120)

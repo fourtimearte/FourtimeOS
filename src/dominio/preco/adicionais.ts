@@ -61,6 +61,44 @@ export const MEDIDAS_PRONTAS: { nome: string; largura: number; altura: number }[
   { nome: '8 x 8', largura: 8, altura: 8 },
 ]
 
+/* --- o CUSTO do DTF (pedido dele em 22/10/2026) -------------------------------
+   O metro de filme custa tudo junto (filme, pó, tinta, prensa e mão de obra),
+   e só uma parte dele vira estampa: o resto se perde entre as artes. O custo
+   de um cm² de estampa é o metro dividido só pela área aproveitada:
+     metro ÷ (100 cm × largura do filme × aproveitamento)
+   R$ 60 o metro, filme de 58 cm e 80% aproveitado dá R$ 0,012931 o cm².
+   O número vale para a fábrica inteira e mora na regulagem (custo-do-dtf.ts). */
+export type CustoDoDtf = {
+  /** o preço do metro, tudo incluído */
+  metro: number
+  /** a largura do filme, em cm */
+  largura: number
+  /** quanto do filme vira estampa, em por cento */
+  aproveitamento: number
+}
+export const CUSTO_DO_DTF_PADRAO: CustoDoDtf = { metro: 60, largura: 58, aproveitamento: 80 }
+
+/** R$ por cm² de estampa, com a perda do filme dentro */
+export const custoPorCm2 = (c: CustoDoDtf) => c.metro / (100 * c.largura * (c.aproveitamento / 100))
+
+/** o custo de uma área de estampa, em reais, com o centavo arredondado uma vez */
+export const custoDaArea = (cm2: number, c: CustoDoDtf) => Math.round(cm2 * custoPorCm2(c) * 100) / 100
+
+export const custoDoTamanho = (t: Pick<TamanhoDeDtf, 'largura' | 'altura'>, c: CustoDoDtf) => custoDaArea(t.largura * t.altura, c)
+
+/** a soma das áreas dos tamanhos ligados, arredondada uma vez; null sem tamanho */
+export function custoDaCombinacao(posicoes: string[], tamanhos: TamanhoDeDtf[], c: CustoDoDtf): number | null {
+  const ligados = tamanhos.filter((t) => posicoes.includes(t.id))
+  if (!ligados.length) return null
+  return custoDaArea(
+    ligados.reduce((s, t) => s + t.largura * t.altura, 0),
+    c,
+  )
+}
+
+/** o preço que ainda acompanha o custo (ninguém escreveu outro por cima) */
+export const segueOCusto = (valor: number | null, custo: number | null) => valor == null || (custo != null && Math.abs(valor - custo) < 0.005)
+
 /** "Peito grande e manga direita", na ordem dos tamanhos da tabela */
 export function nomeDaCombinacao(posicoes: string[], tamanhos: TamanhoDeDtf[] = POSICOES_DE_DTF): string {
   const nomes = tamanhos.filter((p) => posicoes.includes(p.id)).map((p, i) => (i ? p.nome.toLowerCase() : p.nome))

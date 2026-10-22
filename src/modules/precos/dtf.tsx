@@ -5,14 +5,19 @@ import { Botao, CampoDeCelula, Campo, Entrada, Segmentado, Seletor, Vazio, avisa
 import {
   CamisaDoDtf,
   CamisasDoDtf,
+  custoDaCombinacao,
+  custoDoTamanho,
   medidaDoTamanho,
+  segueOCusto,
+  type CustoDoDtf,
   nomeDaCombinacao,
   novoId,
   type CombinacaoDeDtf,
   type TabelaDePreco,
   type TamanhoDeDtf,
 } from '@dominio/preco'
-import { AbaTamanhos } from './dtf-tamanhos'
+import { AbaTamanhos, comTamanhos } from './dtf-tamanhos'
+import { FaixaDoCusto, dinheiro, usarCustoDoDtf } from './dtf-custo'
 
 /* ==========================================================================
    A ABA DTF (083, tela 4 do wireframe de 16/10/2026): o editor de
@@ -36,14 +41,25 @@ export function AbaDtf({
   tabela,
   outras,
   podeMexer,
+  souAdmin = false,
   mudar,
 }: {
   tabela: TabelaDePreco
   outras: TabelaDePreco[]
   podeMexer: boolean
+  souAdmin?: boolean
   mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
 }) {
   const [parte, setParte] = useState<Parte>('combinacoes')
+  const { custo, setCusto, falha } = usarCustoDoDtf()
+  /* o custo novo da fábrica: as combinações desta tabela que seguiam o custo
+     velho passam a seguir o novo (o preço escrito à mão não muda) */
+  function aoGravarCusto(novo: CustoDoDtf) {
+    const velho = custo
+    setCusto(novo)
+    if (podeMexer) mudar((x) => ({ ...x, adicionais: comTamanhos(x.adicionais, x.adicionais.tamanhosDtf, novo, velho) }))
+  }
+  const rodape = <FaixaDoCusto custo={custo} falha={falha} souAdmin={souAdmin} aoGravar={aoGravarCusto} />
   const topo = (
     <div className="pr-dtf-parte">
       <Segmentado<Parte>
@@ -57,9 +73,18 @@ export function AbaDtf({
     </div>
   )
   return parte === 'tamanhos' ? (
-    <AbaTamanhos tabela={tabela} podeMexer={podeMexer} mudar={mudar} topo={topo} aoUsar={() => setParte('combinacoes')} />
+    <AbaTamanhos tabela={tabela} podeMexer={podeMexer} mudar={mudar} topo={topo} rodape={rodape} custo={custo} aoUsar={() => setParte('combinacoes')} />
   ) : (
-    <AbaCombinacoes tabela={tabela} outras={outras} podeMexer={podeMexer} mudar={mudar} topo={topo} aoTamanhos={() => setParte('tamanhos')} />
+    <AbaCombinacoes
+      tabela={tabela}
+      outras={outras}
+      podeMexer={podeMexer}
+      mudar={mudar}
+      topo={topo}
+      rodape={rodape}
+      custo={custo}
+      aoTamanhos={() => setParte('tamanhos')}
+    />
   )
 }
 
@@ -69,6 +94,8 @@ function AbaCombinacoes({
   podeMexer,
   mudar,
   topo,
+  rodape,
+  custo,
   aoTamanhos,
 }: {
   tabela: TabelaDePreco
@@ -76,11 +103,14 @@ function AbaCombinacoes({
   podeMexer: boolean
   mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
   topo: ReactNode
+  rodape: ReactNode
+  custo: CustoDoDtf
   aoTamanhos: () => void
 }) {
   const combos = tabela.adicionais.dtf
   const tamanhos = tabela.adicionais.tamanhosDtf
   const nomeDe = (posicoes: string[]) => nomeDaCombinacao(posicoes, tamanhos)
+  const custoDe = (posicoes: string[]) => custoDaCombinacao(posicoes, tamanhos, custo)
   const [escolhida, setEscolhida] = useState(combos[0]?.id ?? '')
   const [apagando, setApagando] = useState(false)
   const [copiarDe, setCopiarDe] = useState('')
@@ -101,9 +131,10 @@ function AbaCombinacoes({
     if (!podeMexer) return
     mudarAtual((c) => {
       const posicoes = c.posicoes.includes(pos) ? c.posicoes.filter((p) => p !== pos) : [...c.posicoes, pos]
-      /* o nome acompanha as posições enquanto ninguém escreveu outro */
+      /* o nome e o preço acompanham os tamanhos enquanto ninguém escreveu outro */
       const nome = c.nome === nomeDe(c.posicoes) ? nomeDe(posicoes) : c.nome
-      return { ...c, posicoes, nome }
+      const valor = segueOCusto(c.valor, custoDe(c.posicoes)) ? custoDe(posicoes) : c.valor
+      return { ...c, posicoes, nome, valor }
     })
   }
 
@@ -112,7 +143,8 @@ function AbaCombinacoes({
     /* começa no Peito grande quando a tabela tem; senão, no primeiro tamanho */
     const primeiro = tamanhos.find((t) => t.id === 'peito-grande') ?? tamanhos[0]
     const posicoes = primeiro ? [primeiro.id] : []
-    mudarCombos((cs) => [...cs, { id, nome: nomeDe(posicoes), posicoes, valor: null }])
+    /* nasce com o preço da calculadora: o custo dos tamanhos ligados */
+    mudarCombos((cs) => [...cs, { id, nome: nomeDe(posicoes), posicoes, valor: custoDe(posicoes) }])
     setEscolhida(id)
     setApagando(false)
   }
@@ -192,6 +224,7 @@ function AbaCombinacoes({
             </Botao>
           </div>
         ) : null}
+        {rodape}
       </div>
 
       {!atual ? (
@@ -208,6 +241,12 @@ function AbaCombinacoes({
               <Entrada value={atual.nome} disabled={!podeMexer} onChange={(e) => mudarAtual((c) => ({ ...c, nome: e.target.value }))} />
             </Campo>
             <div className="campo">
+              <span className="campo-rotulo">Custo do DTF</span>
+              <span className="pr-tam-custo" aria-live="polite">
+                {custoDe(atual.posicoes) == null ? 'sem tamanho' : dinheiro(custoDe(atual.posicoes)!)}
+              </span>
+            </div>
+            <div className="campo">
               <span className="campo-rotulo">Preço por peça</span>
               <CampoDeCelula
                 id={atual.id}
@@ -219,6 +258,7 @@ function AbaCombinacoes({
                 podeMexer={podeMexer}
                 edicao={edicao}
               />
+              <DiferencaDoCusto valor={atual.valor} custo={custoDe(atual.posicoes)} podeMexer={podeMexer} aoUsar={(v) => mudarAtual((c) => ({ ...c, valor: v }))} />
             </div>
           </div>
           <div className="pr-dtf-camisas">
@@ -256,7 +296,7 @@ function AbaCombinacoes({
                   <span className="pilha">
                     <b>{p.nome}</b>
                     <small>
-                      {medidaDoTamanho(p)} · {p.lado}
+                      {medidaDoTamanho(p)} · {p.lado} · {dinheiro(custoDoTamanho(p, custo))}
                     </small>
                   </span>
                 </button>
@@ -298,5 +338,23 @@ function AbaCombinacoes({
         </div>
       )}
     </div>
+  )
+}
+
+/** O preço contra o custo: igual (segue sozinho), acima (quanto ganha) ou
+    abaixo (em vermelho), com o atalho de voltar ao custo. */
+function DiferencaDoCusto({ valor, custo, podeMexer, aoUsar }: { valor: number | null; custo: number | null; podeMexer: boolean; aoUsar: (v: number) => void }) {
+  if (custo == null) return null
+  if (valor != null && segueOCusto(valor, custo)) return <span className="pr-dtf-dif">É o custo: acompanha os tamanhos</span>
+  const dif = valor == null ? null : Math.round((valor - custo) * 100) / 100
+  return (
+    <span className={'pr-dtf-dif fileira miuda' + (dif != null && dif < 0 ? ' abaixo' : '')}>
+      {dif == null ? 'Sem preço' : dif < 0 ? dinheiro(-dif) + ' abaixo do custo' : dinheiro(dif) + ' acima do custo'}
+      {podeMexer ? (
+        <button type="button" className="pr-dtf-usar" onClick={() => aoUsar(custo)}>
+          Usar o custo
+        </button>
+      ) : null}
+    </span>
   )
 }

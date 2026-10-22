@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowsClockwise, CopySimple, Plus, Trash } from '@phosphor-icons/react'
 import { Botao, Campo, Chip, Entrada, Segmentado, Vazio, lerNumero } from '@ds'
+import { dinheiro } from './dtf-custo'
 import {
   CamisaDoDtf,
   CamisaDosTamanhos,
   MEDIDAS_PRONTAS,
   centroQueCabe,
+  custoDaCombinacao,
+  custoDoTamanho,
   medidaDoTamanho,
+  segueOCusto,
   nomeDaCombinacao,
   novoId,
   type Adicionais,
+  type CustoDoDtf,
   type LadoDaCamisa,
   type MudancaDoTamanho,
   type TabelaDePreco,
@@ -30,7 +35,7 @@ import {
 
 /** Troca os tamanhos e mantém as combinações de pé: o tamanho apagado sai
     delas, e o nome que se escrevia sozinho continua se escrevendo. */
-export function comTamanhos(a: Adicionais, novos: TamanhoDeDtf[]): Adicionais {
+export function comTamanhos(a: Adicionais, novos: TamanhoDeDtf[], custo?: CustoDoDtf, custoVelho: CustoDoDtf | undefined = custo): Adicionais {
   const ids = new Set(novos.map(t => t.id))
   return {
     ...a,
@@ -38,7 +43,10 @@ export function comTamanhos(a: Adicionais, novos: TamanhoDeDtf[]): Adicionais {
     dtf: a.dtf.map(c => {
       const posicoes = c.posicoes.filter(p => ids.has(p))
       const nome = c.nome === nomeDaCombinacao(c.posicoes, a.tamanhosDtf) ? nomeDaCombinacao(posicoes, novos) : c.nome
-      return { ...c, posicoes, nome }
+      /* o preço que seguia o custo continua seguindo: a medida mudou, o custo também */
+      const segue = custo && custoVelho && c.valor != null && segueOCusto(c.valor, custoDaCombinacao(c.posicoes, a.tamanhosDtf, custoVelho))
+      const valor = segue ? custoDaCombinacao(posicoes, novos, custo) : c.valor
+      return { ...c, posicoes, nome, valor }
     }),
   }
 }
@@ -86,6 +94,8 @@ export function AbaTamanhos({
   podeMexer,
   mudar,
   topo,
+  rodape,
+  custo,
   aoUsar,
 }: {
   tabela: TabelaDePreco
@@ -93,6 +103,9 @@ export function AbaTamanhos({
   mudar: (f: (x: TabelaDePreco) => TabelaDePreco) => void
   /** a troca entre Tamanhos e Combinações, no alto da coluna da lista */
   topo: ReactNode
+  /** a calculadora do custo, no pé da coluna da lista */
+  rodape: ReactNode
+  custo: CustoDoDtf
   /** levar para as combinações */
   aoUsar: () => void
 }) {
@@ -103,7 +116,7 @@ export function AbaTamanhos({
   const usaram = (id: string) => tabela.adicionais.dtf.filter(c => c.posicoes.includes(id))
 
   const mudarTamanhos = (f: (ts: TamanhoDeDtf[]) => TamanhoDeDtf[]) =>
-    mudar(x => ({ ...x, adicionais: comTamanhos(x.adicionais, f(x.adicionais.tamanhosDtf)) }))
+    mudar(x => ({ ...x, adicionais: comTamanhos(x.adicionais, f(x.adicionais.tamanhosDtf), custo) }))
   const mudarUm = (id: string, m: Partial<TamanhoDeDtf>) =>
     mudarTamanhos(ts =>
       ts.map(t => {
@@ -177,11 +190,15 @@ export function AbaTamanhos({
                   {medidaDoTamanho(t)} · {t.lado}
                 </small>
               </span>
-              <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
+              <span className="pilha pr-dtf-item-fim">
+                <span className="pr-dtf-preco">{dinheiro(custoDoTamanho(t, custo))}</span>
+                <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
+              </span>
             </button>
           )
         })}
       </div>
+      {rodape}
     </div>
   )
 
@@ -254,9 +271,16 @@ export function AbaTamanhos({
               <span className="pr-sobre">A medida</span>
               <span className={'pr-tam-pos' + (deitado ? ' deitado' : '')}>{posicao}</span>
             </span>
-            <div className="fileira dentro pr-tam-linha">
+            <div className="pr-tam-linha">
               <CampoCm valor={atual.largura} rotulo="Largura" podeMexer={podeMexer} aoMudar={largura => mudarUm(atual.id, { largura })} />
               <CampoCm valor={atual.altura} rotulo="Altura" podeMexer={podeMexer} aoMudar={altura => mudarUm(atual.id, { altura })} />
+              {/* a calculadora: o custo deste tamanho, sozinho, pela área e pelo custo do cm² */}
+              <div className="campo">
+                <span className="campo-rotulo">Custo</span>
+                <span className="pr-tam-custo" aria-live="polite" title={medidaDoTamanho(atual) + ' = ' + Math.round(atual.largura * atual.altura * 10) / 10 + ' cm²'}>
+                  {dinheiro(custoDoTamanho(atual, custo))}
+                </span>
+              </div>
               {podeMexer ? (
                 <Botao tom="contorno" title="Trocar a largura pela altura" disabled={atual.largura === atual.altura} onClick={girar}>
                   <ArrowsClockwise size={16} />

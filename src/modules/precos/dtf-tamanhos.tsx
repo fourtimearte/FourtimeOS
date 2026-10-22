@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
-import { ArrowsClockwise, CopySimple, DotsSixVertical, Plus, Trash } from '@phosphor-icons/react'
-import { Botao, Campo, Chip, Entrada, Segmentado, Vazio, lerNumero } from '@ds'
+import { ArrowsClockwise, CopySimple, DotsSixVertical, FolderSimplePlus, Plus, Trash } from '@phosphor-icons/react'
+import { Botao, Campo, Chip, Entrada, Segmentado, Seletor, Vazio, avisar, lerNumero } from '@ds'
 import { dinheiro } from './dtf-custo'
 import {
   CamisaDoDtf,
@@ -11,11 +11,13 @@ import {
   custoDaCombinacao,
   custoDoTamanho,
   medidaDoTamanho,
+  naOrdemDosGrupos,
   segueOCusto,
   nomeDaCombinacao,
   novoId,
   type Adicionais,
   type CustoDoDtf,
+  type GrupoDeDtf,
   type LadoDaCamisa,
   type MudancaDoTamanho,
   type TabelaDePreco,
@@ -110,13 +112,22 @@ export function AbaTamanhos({
   aoUsar: () => void
 }) {
   const tamanhos = tabela.adicionais.tamanhosDtf
+  const grupos = tabela.adicionais.gruposDtf
   const [escolhido, setEscolhido] = useState(tamanhos[0]?.id ?? '')
+  /* o tamanho da lista com o mouse em cima: a camisa grande mostra o lugar dele */
+  const [sobre, setSobre] = useState<string | undefined>()
   const [apagando, setApagando] = useState(false)
   const atual = tamanhos.find(t => t.id === escolhido) ?? tamanhos[0]
   const usaram = (id: string) => tabela.adicionais.dtf.filter(c => c.posicoes.includes(id))
 
+  /* toda mudança volta na ordem da tela: sem grupo primeiro, depois grupo a grupo */
   const mudarTamanhos = (f: (ts: TamanhoDeDtf[]) => TamanhoDeDtf[]) =>
-    mudar(x => ({ ...x, adicionais: comTamanhos(x.adicionais, f(x.adicionais.tamanhosDtf), custo) }))
+    mudar(x => ({ ...x, adicionais: comTamanhos(x.adicionais, naOrdemDosGrupos(f(x.adicionais.tamanhosDtf), x.adicionais.gruposDtf), custo) }))
+  const mudarGrupos = (f: (gs: GrupoDeDtf[]) => GrupoDeDtf[]) =>
+    mudar(x => {
+      const gruposDtf = f(x.adicionais.gruposDtf)
+      return { ...x, adicionais: comTamanhos({ ...x.adicionais, gruposDtf }, naOrdemDosGrupos(x.adicionais.tamanhosDtf, gruposDtf), custo) }
+    })
   const mudarUm = (id: string, m: Partial<TamanhoDeDtf>) =>
     mudarTamanhos(ts =>
       ts.map(t => {
@@ -147,9 +158,45 @@ export function AbaTamanhos({
     nova.splice(para, 0, x)
     return nova
   }
+  /* pelo teclado: dentro do grupo troca de lugar; na beira do grupo, passa
+     para o grupo vizinho (a ordem da tela o põe na ponta certa) */
   function mover(id: string, passo: number) {
-    mudarTamanhos(ts => levar(ts, id, ts.findIndex(t => t.id === id) + passo))
+    mudarTamanhos(ts => {
+      const i = ts.findIndex(t => t.id === id)
+      const viz = ts[i + passo]
+      if (i < 0 || !viz) return ts
+      if ((viz.grupo || '') === (ts[i].grupo || '')) return levar(ts, id, i + passo)
+      return ts.map(t => (t.id === id ? { ...t, grupo: viz.grupo || '' } : t))
+    })
     focoNaAlca.current = id
+  }
+  /* arrastando: em cima de outro tamanho, vai para o lugar dele e para o grupo
+     dele; em cima da caixa de um grupo (o título ou o vazio), vai para o fim
+     dela */
+  function largarSobre(id: string, ev: globalThis.PointerEvent) {
+    const el = document.elementFromPoint(ev.clientX, ev.clientY)
+    const alvo = el?.closest<HTMLElement>('[data-tamanho]')?.dataset.tamanho
+    if (alvo && alvo !== id) {
+      mudarTamanhos(ts => {
+        const g = ts.find(t => t.id === alvo)?.grupo || ''
+        const comGrupo = ts.map(t => (t.id === id ? { ...t, grupo: g } : t))
+        return levar(
+          comGrupo,
+          id,
+          comGrupo.findIndex(t => t.id === alvo),
+        )
+      })
+      return
+    }
+    if (alvo) return
+    const caixa = el?.closest<HTMLElement>('[data-grupo]')
+    if (!caixa) return
+    const g = caixa.dataset.grupo || ''
+    mudarTamanhos(ts => {
+      const t = ts.find(x => x.id === id)
+      if (!t || (t.grupo || '') === g) return ts
+      return [...ts.filter(x => x.id !== id), { ...t, grupo: g }]
+    })
   }
   const [presa, setPresa] = useState<string | null>(null)
   const largar = useRef<(() => void) | null>(null)
@@ -159,17 +206,7 @@ export function AbaTamanhos({
     e.preventDefault()
     largar.current?.()
     setPresa(id)
-    const aoMover = (ev: globalThis.PointerEvent) => {
-      const sobre = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('[data-tamanho]')?.dataset.tamanho
-      if (!sobre || sobre === id) return
-      mudarTamanhos(ts =>
-        levar(
-          ts,
-          id,
-          ts.findIndex(t => t.id === sobre),
-        ),
-      )
-    }
+    const aoMover = (ev: globalThis.PointerEvent) => largarSobre(id, ev)
     const aoLargar = () => {
       window.removeEventListener('pointermove', aoMover)
       window.removeEventListener('pointerup', aoLargar)
@@ -196,8 +233,34 @@ export function AbaTamanhos({
     const lado: LadoDaCamisa = atual?.lado ?? 'frente'
     let n = tamanhos.length + 1
     while (tamanhos.some(t => t.nome === 'Tamanho ' + n)) n++
-    mudarTamanhos(ts => [...ts, { id, nome: 'Tamanho ' + n, lado, largura: 10, altura: 10, x: 50, y: 45 }])
+    /* nasce no grupo do tamanho escolhido */
+    mudarTamanhos(ts => [...ts, { id, nome: 'Tamanho ' + n, lado, largura: 10, altura: 10, x: 50, y: 45, grupo: atual?.grupo || '' }])
     escolher(id)
+  }
+
+  /* OS GRUPOS: uma caixa na lista, com o nome que se escreve no título */
+  const focoNoGrupo = useRef<string | null>(null)
+  useEffect(() => {
+    if (!focoNoGrupo.current) return
+    const campo = document.querySelector<HTMLInputElement>(`[data-grupo="${focoNoGrupo.current}"] .pr-tam-grupo-nome`)
+    focoNoGrupo.current = null
+    campo?.focus()
+    campo?.select()
+  })
+  function novoGrupo() {
+    const id = novoId(
+      'grupo-',
+      grupos.map(g => g.id),
+    )
+    let n = grupos.length + 1
+    while (grupos.some(g => g.nome === 'Grupo ' + n)) n++
+    mudarGrupos(gs => [...gs, { id, nome: 'Grupo ' + n }])
+    focoNoGrupo.current = id
+  }
+  function apagarGrupo(g: GrupoDeDtf) {
+    const n = tamanhos.filter(t => t.grupo === g.id).length
+    mudarGrupos(gs => gs.filter(x => x.id !== g.id))
+    avisar(`Grupo ${g.nome || 'sem nome'} apagado` + (n ? `: ${n === 1 ? 'o tamanho ficou' : 'os ' + n + ' tamanhos ficaram'} sem grupo` : ''), 'ok')
   }
 
   function duplicar() {
@@ -211,6 +274,59 @@ export function AbaTamanhos({
     escolher(id)
   }
 
+  const soltos = tamanhos.filter(t => !t.grupo)
+  const linha = (t: TamanhoDeDtf) => {
+    const n = usaram(t.id).length
+    return (
+      <div
+        role="listitem"
+        key={t.id}
+        data-tamanho={t.id}
+        className={'pr-tam-fila' + (t.id === atual?.id ? ' ligado' : '') + (presa === t.id ? ' presa' : '')}
+        onMouseEnter={() => setSobre(t.id)}
+        onMouseLeave={() => setSobre(undefined)}
+      >
+        {podeMexer ? (
+          <button
+            type="button"
+            className="pr-tam-pega"
+            aria-label={'Mudar a ordem de ' + (t.nome || 'sem nome') + '. Arraste, ou use as setas para cima e para baixo.'}
+            title="Arraste para mudar a ordem"
+            onPointerDown={e => pegar(e, t.id)}
+            onKeyDown={e => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault()
+                mover(t.id, e.key === 'ArrowUp' ? -1 : 1)
+              }
+            }}
+          >
+            <DotsSixVertical size={16} weight="bold" aria-hidden="true" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={'pr-dtf-item' + (t.id === atual?.id ? ' ligado' : '')}
+          aria-current={t.id === atual?.id}
+          onClick={() => escolher(t.id)}
+        >
+          <span className="dtf-par">
+            <CamisaDoDtf lado={t.lado} ligadas={[t.id]} tamanhos={tamanhos} />
+          </span>
+          <span className="pilha">
+            <b className="corta">{t.nome || 'Sem nome'}</b>
+            <small>
+              {medidaDoTamanho(t)} · {t.lado}
+            </small>
+          </span>
+          <span className="pilha pr-dtf-item-fim">
+            <span className="pr-dtf-preco">{dinheiro(custoDoTamanho(t, custo))}</span>
+            <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
+          </span>
+        </button>
+      </div>
+    )
+  }
+
   const lista = (
     <div className="pr-dtf-l">
       {topo}
@@ -219,60 +335,54 @@ export function AbaTamanhos({
           {tamanhos.length} {tamanhos.length === 1 ? 'tamanho' : 'tamanhos'}
         </b>
         {podeMexer ? (
-          <Botao tom="contorno" tamanho="sm" onClick={novo}>
-            <Plus size={15} />
-            Novo tamanho
-          </Botao>
+          <span className="fileira">
+            <Botao tom="contorno" tamanho="sm" onClick={novoGrupo} title="Uma caixa para juntar tamanhos">
+              <FolderSimplePlus size={15} />
+              Grupo
+            </Botao>
+            <Botao tom="contorno" tamanho="sm" onClick={novo}>
+              <Plus size={15} />
+              Novo tamanho
+            </Botao>
+          </span>
         ) : null}
       </div>
-      <div className="pr-dtf-lista" role="list" aria-label="Os tamanhos de DTF">
-        {tamanhos.map(t => {
-          const n = usaram(t.id).length
+      <div className="pr-dtf-lista">
+        <div className="pr-tam-soltos" role="list" aria-label="Os tamanhos sem grupo" data-grupo="">
+          {soltos.map(linha)}
+          {presa && grupos.length && !soltos.length ? <div className="pr-tam-vazio">Solte aqui para tirar do grupo</div> : null}
+        </div>
+        {grupos.map(g => {
+          const dele = tamanhos.filter(t => t.grupo === g.id)
           return (
-            <div
-              role="listitem"
-              key={t.id}
-              data-tamanho={t.id}
-              className={'pr-tam-fila' + (t.id === atual?.id ? ' ligado' : '') + (presa === t.id ? ' presa' : '')}
-            >
-              {podeMexer ? (
-                <button
-                  type="button"
-                  className="pr-tam-pega"
-                  aria-label={'Mudar a ordem de ' + (t.nome || 'sem nome') + '. Arraste, ou use as setas para cima e para baixo.'}
-                  title="Arraste para mudar a ordem"
-                  onPointerDown={e => pegar(e, t.id)}
-                  onKeyDown={e => {
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                      e.preventDefault()
-                      mover(t.id, e.key === 'ArrowUp' ? -1 : 1)
-                    }
-                  }}
-                >
-                  <DotsSixVertical size={16} weight="bold" aria-hidden="true" />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className={'pr-dtf-item' + (t.id === atual?.id ? ' ligado' : '')}
-                aria-current={t.id === atual?.id}
-                onClick={() => escolher(t.id)}
-              >
-                <span className="dtf-par">
-                  <CamisaDoDtf lado={t.lado} ligadas={[t.id]} tamanhos={tamanhos} />
-                </span>
-                <span className="pilha">
-                  <b className="corta">{t.nome || 'Sem nome'}</b>
-                  <small>
-                    {medidaDoTamanho(t)} · {t.lado}
-                  </small>
-                </span>
-                <span className="pilha pr-dtf-item-fim">
-                  <span className="pr-dtf-preco">{dinheiro(custoDoTamanho(t, custo))}</span>
-                  <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
-                </span>
-              </button>
-            </div>
+            <section key={g.id} className="pr-tam-grupo" data-grupo={g.id}>
+              <div className="pr-tam-grupo-cab">
+                <input
+                  className="pr-tam-grupo-nome"
+                  value={g.nome}
+                  readOnly={!podeMexer}
+                  placeholder="Nome do grupo"
+                  aria-label="Nome do grupo"
+                  onChange={e => mudarGrupos(gs => gs.map(x => (x.id === g.id ? { ...x, nome: e.target.value } : x)))}
+                />
+                <small>{dele.length}</small>
+                {podeMexer ? (
+                  <button
+                    type="button"
+                    className="pr-tam-grupo-x"
+                    aria-label={'Apagar o grupo ' + (g.nome || 'sem nome')}
+                    title="Apagar o grupo (os tamanhos ficam)"
+                    onClick={() => apagarGrupo(g)}
+                  >
+                    <Trash size={15} />
+                  </button>
+                ) : null}
+              </div>
+              <div role="list" aria-label={'Os tamanhos do grupo ' + (g.nome || 'sem nome')}>
+                {dele.map(linha)}
+              </div>
+              {!dele.length ? <div className="pr-tam-vazio">Arraste tamanhos para cá, ou escolha o grupo no tamanho</div> : null}
+            </section>
           )
         })}
       </div>
@@ -329,6 +439,22 @@ export function AbaTamanhos({
               <b>{atual.lado === 'frente' ? 'Frente' : 'Costas'}</b>
             )}
           </div>
+          {grupos.length ? (
+            <div className="campo">
+              <span className="campo-rotulo">Grupo</span>
+              {podeMexer ? (
+                <Seletor
+                  campo
+                  valor={atual.grupo || ''}
+                  vazio="Sem grupo"
+                  opcoes={grupos.map(g => ({ valor: g.id, rotulo: g.nome || 'Sem nome' }))}
+                  aoEscolher={g => mudarUm(atual.id, { grupo: g })}
+                />
+              ) : (
+                <b>{grupos.find(g => g.id === atual.grupo)?.nome || 'Sem grupo'}</b>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="pr-tam-corpo">
@@ -338,6 +464,7 @@ export function AbaTamanhos({
               tamanhos={tamanhos}
               escolhido={atual.id}
               aoEscolher={escolher}
+              destaque={sobre}
               aoMudar={podeMexer ? (id: string, m: MudancaDoTamanho) => mudarUm(id, m) : undefined}
             />
             <figcaption>

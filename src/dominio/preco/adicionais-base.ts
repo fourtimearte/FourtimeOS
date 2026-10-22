@@ -26,7 +26,23 @@ export type CombinacaoDeDtf = { id: string; nome: string; posicoes: string[]; va
    real em cm e o lugar no desenho (o centro, de 0 a 100). A combinação
    guarda os ids dos tamanhos em `posicoes`, como antes. */
 export type LadoDaCamisa = 'frente' | 'costas'
-export type TamanhoDeDtf = { id: string; nome: string; lado: LadoDaCamisa; largura: number; altura: number; x: number; y: number }
+export type TamanhoDeDtf = {
+  id: string
+  nome: string
+  lado: LadoDaCamisa
+  largura: number
+  altura: number
+  x: number
+  y: number
+  /** o id do grupo em que o tamanho mora; '' = sem grupo */
+  grupo?: string
+}
+
+/* --- os GRUPOS de estampa (22/10/2026, pedido dele: "quero poder criar
+   grupos de estampas na tela de tamanho; um botão + Grupo que cria uma caixa
+   para colocar os tamanhos dentro"). Só organizam a lista: não mudam preço
+   nem combinação. A ordem dos grupos é a da lista. */
+export type GrupoDeDtf = { id: string; nome: string }
 
 /** Os seis de partida, com os ids das posições fixas de antes da edição.
     Os lugares são em cm no desenho do molde M (camisa-molde.ts): o ombro
@@ -44,7 +60,13 @@ export function tamanhosPadrao(): TamanhoDeDtf[] {
 
 export type PrecoDoTecido = { tecido: string; valor: number | null }
 
-export type Adicionais = { materiais: PrecoDoTecido[]; extras: Extra[]; dtf: CombinacaoDeDtf[]; tamanhosDtf: TamanhoDeDtf[] }
+export type Adicionais = {
+  materiais: PrecoDoTecido[]
+  extras: Extra[]
+  dtf: CombinacaoDeDtf[]
+  tamanhosDtf: TamanhoDeDtf[]
+  gruposDtf: GrupoDeDtf[]
+}
 
 /* --- os extras de partida ------------------------------------------------------ */
 export function extrasPadrao(): Extra[] {
@@ -73,6 +95,6 @@ export function extrasPadrao(): Extra[] {
 }
 
 export function adicionaisEmBranco(): Adicionais {
-  return { materiais: [], extras: extrasPadrao(), dtf: [], tamanhosDtf: tamanhosPadrao() }
+  return { materiais: [], extras: extrasPadrao(), dtf: [], tamanhosDtf: tamanhosPadrao(), gruposDtf: [] }
 }
 

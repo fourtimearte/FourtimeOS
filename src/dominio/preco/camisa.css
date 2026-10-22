@@ -119,3 +119,14 @@
 .dtf-girar-ponta {
   fill: var(--tec-dtf);
 }
+
+/* o tracejado só aparece quando chamado (22/10/2026): o tamanho desligado fica
+   invisível, e aparece com o cartão dele em destaque ou com o mouse em cima */
+.dtf-pos:not(.dtf-pos-on):not(.dtf-pos-ve):not(:hover):not(:focus-visible) {
+  stroke: transparent;
+}
+.dtf-pos-ve:not(.dtf-pos-on) {
+  fill: var(--tec-dtf-soft);
+  stroke: var(--tec-dtf);
+  stroke-width: 1;
+}

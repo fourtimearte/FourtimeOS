@@ -33,12 +33,15 @@ export function CamisaDoDtf({
   ligadas,
   tamanhos = POSICOES_DE_DTF,
   aoAlternar,
+  destaque,
   className = '',
 }: {
   lado: LadoDaCamisa
   ligadas: string[]
   tamanhos?: TamanhoDeDtf[]
   aoAlternar?: (posicao: string) => void
+  /** o tamanho cujo cartão está com o mouse em cima: só ele mostra o tracejado */
+  destaque?: string
   className?: string
 }) {
   const nome = lado === 'frente' ? 'Frente' : 'Costas'
@@ -64,7 +67,10 @@ export function CamisaDoDtf({
         .map((p) => {
           const [x, y, w, h] = caixaDoTamanho(p)
           const on = ligadas.includes(p.id)
-          const cls = on ? 'dtf-pos dtf-pos-on' : 'dtf-pos'
+          /* o desligado não se desenha (22/10/2026, pedido dele: "só apareça a
+             linha pontilhada se passar o mouse em cima dos cartões"): o
+             tracejado vem com o destaque, ou com o mouse em cima dele */
+          const cls = (on ? 'dtf-pos dtf-pos-on' : 'dtf-pos') + (destaque === p.id ? ' dtf-pos-ve' : '')
           return aoAlternar ? (
             <rect
               key={p.id}
@@ -129,8 +135,11 @@ export function CamisaDosTamanhos({
   escolhido,
   aoEscolher,
   aoMudar,
+  destaque,
   className = '',
 }: {
+  /** o tamanho da lista com o mouse em cima: só ele mostra o tracejado */
+  destaque?: string
   lado: LadoDaCamisa
   tamanhos: TamanhoDeDtf[]
   escolhido: string
@@ -236,7 +245,7 @@ export function CamisaDosTamanhos({
       {outros.map((p) => {
         const [x, y, w, h] = caixaDoTamanho(p)
         return (
-          <rect key={p.id} x={x} y={y} width={w} height={h} rx={1.2} className="dtf-pos dtf-pos-outro" onClick={() => aoEscolher(p.id)}>
+          <rect key={p.id} x={x} y={y} width={w} height={h} rx={1.2} className={'dtf-pos dtf-pos-outro' + (destaque === p.id ? ' dtf-pos-ve' : '')} onClick={() => aoEscolher(p.id)}>
             <title>{p.nome + ', ' + medidaDoTamanho(p)}</title>
           </rect>
         )

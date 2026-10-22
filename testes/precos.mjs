@@ -10,7 +10,7 @@ import {
 import { aplicarTabelas, origemDoPreco, pecasPorTabela, SEM_TABELA } from './compilado/cotacao/tabela-de-preco.js'
 import { cotacaoEmBranco, totalDoProduto, precoNaGrade } from './compilado/cotacao/tipos.js'
 import { blocoEmBranco } from './compilado/layout/bloco.js'
-import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido, caixaDoTamanho, centroQueCabe, medidaDoTamanho, CUSTO_DO_DTF_PADRAO, custoPorCm2, custoDoTamanho, custoDaCombinacao, segueOCusto } from './compilado/preco/adicionais.js'
+import { adicionaisDe, tabelaCompleta, contaDosAdicionais, nomeDaCombinacao, tecnicaDoItem, valorDoTecido, comPrecoDoTecido, caixaDoTamanho, centroQueCabe, medidaDoTamanho, CUSTO_DO_DTF_PADRAO, custoPorCm2, custoDoTamanho, custoDaCombinacao, segueOCusto, naOrdemDosGrupos } from './compilado/preco/adicionais.js'
 import { escolhasDoLayout } from './compilado/cotacao/tabela-de-preco.js'
 
 let ruins = 0
@@ -190,6 +190,12 @@ console.log('os adicionais (083): a peça mais o material, a técnica e os extra
   ok(custoDaCombinacao(['peito-grande', 'costas-grande'], tp, cc) === 24.2 && custoDaCombinacao([], tp, cc) === null, 'a combinação soma as áreas e arredonda uma vez (A4 + A3 = 24,20); sem tamanho, sem custo')
   ok(custoDoTamanho({ largura: 21, altura: 29.7 }, { metro: 60, largura: 60, aproveitamento: 80 }) === 7.8, 'o filme de 60 cm muda a conta (A4 7,80)')
   ok(segueOCusto(8.07, 8.07) && segueOCusto(null, 8.07) && !segueOCusto(10, 8.07), 'o preço segue o custo quando é igual ou vazio; o escrito à mão não')
+  /* os grupos de estampa (22/10/2026) */
+  const gr = adicionaisDe({ gruposDtf: [{ id: 'g1', nome: 'Peito' }, { id: 'g2', nome: 'Mangas' }, { nome: 'sem id' }], tamanhosDtf: [
+    { id: 'a', nome: 'A', grupo: 'g2' }, { id: 'b', nome: 'B', grupo: 'g1' }, { id: 'c', nome: 'C' }, { id: 'd', nome: 'D', grupo: 'sumiu' }, { id: 'e', nome: 'E', grupo: 'g1' },
+  ] })
+  ok(gr.gruposDtf.map((g) => g.nome).join() === 'Peito,Mangas' && gr.tamanhosDtf.map((t) => t.id + ':' + (t.grupo || '-')).join() === 'c:-,d:-,b:g1,e:g1,a:g2', 'a lista volta na ordem da tela: sem grupo primeiro, depois grupo a grupo; grupo que sumiu vira sem grupo')
+  ok(adicionaisDe({}).gruposDtf.length === 0 && naOrdemDosGrupos([{ id: 'x', grupo: 'g' }], []).map((t) => t.grupo).join() === '', 'sem grupos guardados, nenhum; e ninguém fica preso a grupo que não existe')
   const tab = { ...tabelaEmBranco('A'), adicionais: ad, itens: [
     { codigo: 'CT01', tipo: 'referencia', base: 49.9, precos: [null, null, null, null], sub: 8, silk: 10 },
     { codigo: 'SH01', tipo: 'referencia', base: 39.9, precos: [null, null, null, null], sub: 6, silk: null },

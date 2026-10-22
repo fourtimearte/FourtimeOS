@@ -15,9 +15,21 @@
 
 import type { Contexto, ItemDaTabela, TabelaDePreco } from './tipos'
 
-export type { Adicionais, CombinacaoDeDtf, Extra, LadoDaCamisa, OpcaoDeExtra, PrecoDoTecido, TamanhoDeDtf, TecnicaDoExtra } from './adicionais-base'
+export type { Adicionais, CombinacaoDeDtf, Extra, GrupoDeDtf, LadoDaCamisa, OpcaoDeExtra, PrecoDoTecido, TamanhoDeDtf, TecnicaDoExtra } from './adicionais-base'
 export { adicionaisEmBranco, extrasPadrao, tamanhosPadrao } from './adicionais-base'
-import { extrasPadrao, tamanhosPadrao, type Adicionais, type Extra, type LadoDaCamisa, type TamanhoDeDtf } from './adicionais-base'
+import { extrasPadrao, tamanhosPadrao, type Adicionais, type Extra, type GrupoDeDtf, type LadoDaCamisa, type TamanhoDeDtf } from './adicionais-base'
+
+/** A lista na ordem da tela: primeiro os sem grupo, depois grupo a grupo, na
+    ordem dos grupos; dentro de cada um, a ordem de antes. O grupo que não
+    existe mais vira "sem grupo". Assim a ordem do array é a que se vê, e o
+    nome que se escreve sozinho nas combinações segue a mesma. */
+export function naOrdemDosGrupos(ts: TamanhoDeDtf[], grupos: GrupoDeDtf[]): TamanhoDeDtf[] {
+  const pos = new Map(grupos.map((g, i) => [g.id, i + 1]))
+  return ts
+    .map((t, i) => ({ t: t.grupo && pos.has(t.grupo) ? t : { ...t, grupo: '' }, i }))
+    .sort((a, b) => (pos.get(a.t.grupo || '') ?? 0) - (pos.get(b.t.grupo || '') ?? 0) || a.i - b.i)
+    .map((x) => x.t)
+}
 
 /* --- os tamanhos do DTF no desenho --------------------------------------------
    O desenho da camisa vai de 0 a 100 e é o molde M da camiseta tradicional
@@ -146,8 +158,16 @@ export function adicionaisDe(bruto: unknown): Adicionais {
     })),
     /* sem a lista guardada (toda tabela de antes de 22/10/2026), os seis de
        partida, que têm os mesmos ids das posições fixas de antes */
-    tamanhosDtf: Array.isArray(x.tamanhosDtf) ? lista(x.tamanhosDtf).map(tamanhoDe).filter((p) => p.id) : tamanhosPadrao(),
+    tamanhosDtf: naOrdemDosGrupos(
+      Array.isArray(x.tamanhosDtf) ? lista(x.tamanhosDtf).map(tamanhoDe).filter((p) => p.id) : tamanhosPadrao(),
+      gruposDe(x.gruposDtf),
+    ),
+    gruposDtf: gruposDe(x.gruposDtf),
   }
+}
+
+function gruposDe(v: unknown): GrupoDeDtf[] {
+  return (Array.isArray(v) ? (v as Record<string, unknown>[]) : []).map((g) => ({ id: texto(g?.id), nome: texto(g?.nome) })).filter((g) => g.id)
 }
 
 function tamanhoDe(p: Record<string, unknown>): TamanhoDeDtf {
@@ -156,7 +176,7 @@ function tamanhoDe(p: Record<string, unknown>): TamanhoDeDtf {
     return k != null && k > 0 ? k : reserva
   }
   const lado: LadoDaCamisa = p.lado === 'costas' ? 'costas' : 'frente'
-  return { id: texto(p.id), nome: texto(p.nome), lado, largura: n(p.largura, 10), altura: n(p.altura, 10), x: n(p.x, 50), y: n(p.y, 45) }
+  return { id: texto(p.id), nome: texto(p.nome), lado, largura: n(p.largura, 10), altura: n(p.altura, 10), x: n(p.x, 50), y: n(p.y, 45), grupo: texto(p.grupo) }
 }
 
 /* --- o tecido ------------------------------------------------------------------

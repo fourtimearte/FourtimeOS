@@ -113,6 +113,10 @@ function AbaCombinacoes({
   const custoDe = (posicoes: string[]) => custoDaCombinacao(posicoes, tamanhos, custo)
   const [escolhida, setEscolhida] = useState(combos[0]?.id ?? '')
   const [apagando, setApagando] = useState(false)
+  /* o cartão do tamanho com o mouse (ou o foco) em cima: só ele mostra o
+     tracejado na camisa; o resto da camisa fica limpo */
+  const [sobre, setSobre] = useState<string | undefined>()
+  const grupos = tabela.adicionais.gruposDtf
   const [copiarDe, setCopiarDe] = useState('')
   const atual = combos.find((c) => c.id === escolhida) ?? combos[0]
   const mudarCombos = (f: (cs: CombinacaoDeDtf[]) => CombinacaoDeDtf[]) => mudar((x) => ({ ...x, adicionais: { ...x.adicionais, dtf: f(x.adicionais.dtf) } }))
@@ -264,7 +268,7 @@ function AbaCombinacoes({
           <div className="pr-dtf-camisas">
             {(['frente', 'costas'] as const).map((lado) => (
               <figure key={lado} className="pr-dtf-camisa">
-                <CamisaDoDtf lado={lado} ligadas={atual.posicoes} tamanhos={tamanhos} aoAlternar={podeMexer ? alternar : undefined} />
+                <CamisaDoDtf lado={lado} ligadas={atual.posicoes} tamanhos={tamanhos} destaque={sobre} aoAlternar={podeMexer ? alternar : undefined} />
                 <figcaption>{lado === 'frente' ? 'Frente' : 'Costas'}</figcaption>
               </figure>
             ))}
@@ -278,31 +282,45 @@ function AbaCombinacoes({
             ) : null}
           </span>
           {!tamanhos.length ? <p className="pr-tam-uso nenhum">Esta tabela não tem tamanhos de DTF. Crie em Tamanhos, e eles aparecem aqui.</p> : null}
-          <div className="pr-dtf-pos">
-            {tamanhos.map((p) => {
-              const on = atual.posicoes.includes(p.id)
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={'pr-dtf-p' + (on ? ' ligado' : '')}
-                  aria-pressed={on}
-                  disabled={!podeMexer}
-                  onClick={() => alternar(p.id)}
-                >
-                  <span className="pr-dtf-ck" aria-hidden="true">
-                    {on ? <Check size={14} weight="bold" /> : null}
-                  </span>
-                  <span className="pilha">
-                    <b>{p.nome}</b>
-                    <small>
-                      {medidaDoTamanho(p)} · {p.lado} · {dinheiro(custoDoTamanho(p, custo))}
-                    </small>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          {/* os tamanhos em cartões, separados pelos grupos da aba Tamanhos */}
+          {[{ id: '', nome: '' }, ...grupos].map((g) => {
+            const deles = tamanhos.filter((t) => (t.grupo || '') === g.id)
+            if (!deles.length) return null
+            return (
+              <div key={g.id || 'soltos'} className="pilha pr-dtf-pos-grupo">
+                {g.id ? <span className="pr-dtf-pos-titulo">{g.nome || 'Sem nome'}</span> : null}
+                <div className="pr-dtf-pos">
+                  {deles.map((p) => {
+                    const on = atual.posicoes.includes(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={'pr-dtf-p' + (on ? ' ligado' : '')}
+                        aria-pressed={on}
+                        disabled={!podeMexer}
+                        onClick={() => alternar(p.id)}
+                        onMouseEnter={() => setSobre(p.id)}
+                        onMouseLeave={() => setSobre(undefined)}
+                        onFocus={() => setSobre(p.id)}
+                        onBlur={() => setSobre(undefined)}
+                      >
+                        <span className="pr-dtf-ck" aria-hidden="true">
+                          {on ? <Check size={14} weight="bold" /> : null}
+                        </span>
+                        <span className="pilha">
+                          <b>{p.nome}</b>
+                          <small>
+                            {medidaDoTamanho(p)} · {p.lado} · {dinheiro(custoDoTamanho(p, custo))}
+                          </small>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
           {podeMexer ? (
             apagando ? (
               <div className="pr-ex-pergunta" role="alert">

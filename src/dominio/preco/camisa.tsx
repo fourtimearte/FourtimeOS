@@ -108,7 +108,9 @@ export function CamisasDoDtf({ ligadas, tamanhos, className = '' }: { ligadas: s
    escolhido. O escolhido:
      arrastar muda o lugar;
      o quadradinho do canto muda a medida (Shift guarda a proporção);
-     as setas andam 1 (Shift + seta anda 5), para quem não usa o mouse.
+     as setas andam 1 (Shift + seta anda 5), para quem não usa o mouse;
+     a bolinha de girar (ou a tecla R) deita o que está em pé e levanta o
+     que está deitado: troca a largura pela altura, no mesmo lugar.
    A medida também se escreve nos campos ao lado: arrastar é atalho, nunca
    o único caminho.
    ========================================================================== */
@@ -190,8 +192,20 @@ export function CamisaDosTamanhos({
     arrasto.current = null
   }
 
+  /** girar 90 graus: a largura vira a altura, o centro fica onde está */
+  function girar() {
+    if (!atual || !aoMudar) return
+    const deitado = { ...atual, largura: atual.altura, altura: atual.largura }
+    aoMudar(atual.id, { largura: deitado.largura, altura: deitado.altura, ...centroQueCabe(deitado, atual.x, atual.y) })
+  }
+
   function tecla(e: EventoDeTecla<SVGElement>) {
     if (!atual || !aoMudar) return
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault()
+      girar()
+      return
+    }
     const passo = e.shiftKey ? 5 : 1
     const setas: Record<string, [number, number]> = {
       ArrowLeft: [-passo, 0],
@@ -234,7 +248,7 @@ export function CamisaDosTamanhos({
             className={'dtf-pos dtf-pos-on' + (aoMudar ? ' dtf-pos-arrasta' : '')}
             tabIndex={aoMudar ? 0 : -1}
             role={aoMudar ? 'slider' : 'img'}
-            aria-label={atual.nome + ', ' + medidaDoTamanho(atual) + (aoMudar ? '. Arraste ou use as setas para mudar o lugar' : '')}
+            aria-label={atual.nome + ', ' + medidaDoTamanho(atual) + (aoMudar ? '. Arraste ou use as setas para mudar o lugar; R gira' : '')}
             aria-valuetext={`lugar ${atual.x}, ${atual.y}`}
             onPointerDown={(e) => comecar(e, 'mover')}
             onPointerMove={mover}
@@ -242,6 +256,30 @@ export function CamisaDosTamanhos({
             onPointerCancel={soltar}
             onKeyDown={tecla}
           />
+          {aoMudar ? (
+            <g
+              className="dtf-girar"
+              role="button"
+              tabIndex={0}
+              aria-label="Girar o DTF: trocar a largura pela altura"
+              transform={`translate(${Math.min(96.5, caixa[0] + caixa[2] + 3)} ${Math.max(3.5, caixa[1] - 3)})`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={girar}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  girar()
+                }
+              }}
+            >
+              <circle r={5.5} className="dtf-girar-pega" />
+              <circle r={3.4} className="dtf-girar-ve" />
+              {/* três quartos de volta, com a ponta da seta na abertura */}
+              <path d="M0.9 -1.56 A1.8 1.8 0 1 0 1.56 0.9" className="dtf-girar-seta" />
+              <path d="M0.2 -2.4 L1.55 -1.6 L0.35 -0.75 Z" className="dtf-girar-ponta" />
+              <title>Girar: trocar a largura pela altura (tecla R)</title>
+            </g>
+          ) : null}
           {aoMudar ? (
             <g className="dtf-alca" onPointerDown={(e) => comecar(e, 'medir')} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}>
               {/* a área de pegar é maior que o quadradinho que se vê */}

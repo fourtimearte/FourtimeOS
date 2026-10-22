@@ -199,7 +199,16 @@ export function AbaTamanhos({
     )
 
   const combos = usaram(atual.id)
-  const pronta = MEDIDAS_PRONTAS.find(m => m.largura === atual.largura && m.altura === atual.altura)
+  /* a medida pronta vale em pé ou deitada: o chip acende nas duas */
+  const pronta = MEDIDAS_PRONTAS.find(m => (m.largura === atual.largura && m.altura === atual.altura) || (m.largura === atual.altura && m.altura === atual.largura))
+  const deitado = atual.largura > atual.altura
+  const posicao = atual.largura === atual.altura ? 'Quadrado' : deitado ? 'Deitado' : 'Em pé'
+  const girar = () => mudarUm(atual.id, { largura: atual.altura, altura: atual.largura })
+  /* a medida pronta entra na posição em que o DTF já está: deitado continua deitado */
+  const usarPronta = (m: { largura: number; altura: number }) => {
+    const [a, b] = [Math.min(m.largura, m.altura), Math.max(m.largura, m.altura)]
+    mudarUm(atual.id, deitado ? { largura: b, altura: a } : { largura: a, altura: b })
+  }
   return (
     <div className="pr-dtf">
       {lista}
@@ -236,24 +245,22 @@ export function AbaTamanhos({
             />
             <figcaption>
               {atual.lado === 'frente' ? 'Frente' : 'Costas'}
-              {podeMexer ? <small>Arraste para mudar o lugar; o canto muda a medida</small> : null}
+              {podeMexer ? <small>Arraste para mudar o lugar; o canto muda a medida; a bolinha (ou R) gira</small> : null}
             </figcaption>
           </figure>
 
           <div className="pilha pr-tam-medida">
-            <span className="pr-sobre">A medida</span>
+            <span className="fileira entre">
+              <span className="pr-sobre">A medida</span>
+              <span className={'pr-tam-pos' + (deitado ? ' deitado' : '')}>{posicao}</span>
+            </span>
             <div className="fileira dentro pr-tam-linha">
               <CampoCm valor={atual.largura} rotulo="Largura" podeMexer={podeMexer} aoMudar={largura => mudarUm(atual.id, { largura })} />
               <CampoCm valor={atual.altura} rotulo="Altura" podeMexer={podeMexer} aoMudar={altura => mudarUm(atual.id, { altura })} />
               {podeMexer ? (
-                <Botao
-                  tom="contorno"
-                  icone
-                  aria-label="Girar: trocar a largura pela altura"
-                  title="Girar: trocar a largura pela altura"
-                  onClick={() => mudarUm(atual.id, { largura: atual.altura, altura: atual.largura })}
-                >
-                  <ArrowsClockwise size={18} />
+                <Botao tom="contorno" title="Trocar a largura pela altura" disabled={atual.largura === atual.altura} onClick={girar}>
+                  <ArrowsClockwise size={16} />
+                  Girar
                 </Botao>
               ) : null}
             </div>
@@ -267,7 +274,7 @@ export function AbaTamanhos({
                       tamanho="sm"
                       ligado={pronta?.nome === m.nome}
                       title={medidaDoTamanho(m)}
-                      onClick={() => mudarUm(atual.id, { largura: m.largura, altura: m.altura })}
+                      onClick={() => usarPronta(m)}
                     >
                       {m.nome}
                     </Chip>

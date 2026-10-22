@@ -88,3 +88,34 @@
   stroke: var(--tec-dtf);
   stroke-width: 0.9;
 }
+
+/* a bolinha de girar, no canto de cima do escolhido */
+.dtf-girar {
+  cursor: pointer;
+}
+.dtf-girar-pega {
+  fill: transparent;
+}
+.dtf-girar-ve {
+  fill: var(--surface);
+  stroke: var(--tec-dtf);
+  stroke-width: 0.8;
+  transition: fill var(--t-fast) var(--ease-out);
+}
+.dtf-girar:hover .dtf-girar-ve {
+  fill: var(--tec-dtf-soft);
+}
+.dtf-girar:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.dtf-girar-seta {
+  fill: none;
+  stroke: var(--tec-dtf);
+  stroke-width: 0.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dtf-girar-ponta {
+  fill: var(--tec-dtf);
+}

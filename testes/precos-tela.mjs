@@ -564,6 +564,22 @@ const linhaDe = (pg, cod) => pg.evaluate((c) => !!document.querySelector(`.pr-gr
       await pg.screenshot({ path: `${PASTA}/precos-dtf-tamanhos-${tema}.png`, fullPage: true })
       conta(seis === 6 && cms.join() === '14,8,21' && antes !== depois && /Escudo costas 15 x 21 cm · costas/.test(itemTam),
         T + ' Novo tamanho: nome, lado, medida pronta, medida escrita e arrastar na camisa (' + [seis, cms.join('/'), antes, depois, itemTam].join(' · ') + ')')
+      /* girar: o botão e a bolinha na camisa trocam a largura pela altura */
+      await pg.locator('.pr-tam-linha button', { hasText: 'Girar' }).click()
+      await pg.waitForTimeout(120)
+      const girado = await pg.evaluate(() => [...document.querySelectorAll('.pr-cm input')].map((i) => i.value).join('x') + ' ' + document.querySelector('.pr-tam-pos')?.textContent)
+      await pg.locator('.pr-tam-medida .chip', { hasText: 'A4' }).click()
+      await pg.waitForTimeout(120)
+      const prontaDeitada = await pg.evaluate(() => [...document.querySelectorAll('.pr-cm input')].map((i) => i.value).join('x'))
+      await pg.locator('.dtf-girar').click()
+      await pg.waitForTimeout(120)
+      const deVolta = await pg.evaluate(() => [...document.querySelectorAll('.pr-cm input')].map((i) => i.value).join('x') + ' ' + document.querySelector('.pr-tam-pos')?.textContent)
+      await pg.locator('.pr-tam-medida .chip', { hasText: 'A5' }).click()
+      await pg.fill('.pr-cm input >> nth=0', '15')
+      await pg.keyboard.press('Enter')
+      await pg.waitForTimeout(120)
+      conta(girado === '21x15 Deitado' && prontaDeitada === '29,7x21' && deVolta === '21x29,7 Em pé',
+        T + ' girar o DTF: o botão deita, a medida pronta entra deitada, a bolinha da camisa levanta (' + [girado, prontaDeitada, deVolta].join(' · ') + ')')
       await pg.locator('.pr-tam-medida button', { hasText: 'Montar as combinações' }).click()
       await pg.waitForTimeout(150)
       await pg.locator('.pr-dtf-item').first().click()

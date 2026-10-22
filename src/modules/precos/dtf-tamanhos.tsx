@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
-import { ArrowsClockwise, CopySimple, Plus, Trash } from '@phosphor-icons/react'
+import { useEffect, useRef, useState } from 'react'
+import type { PointerEvent, ReactNode } from 'react'
+import { ArrowsClockwise, CopySimple, DotsSixVertical, Plus, Trash } from '@phosphor-icons/react'
 import { Botao, Campo, Chip, Entrada, Segmentado, Vazio, lerNumero } from '@ds'
 import { dinheiro } from './dtf-custo'
 import {
@@ -127,6 +127,62 @@ export function AbaTamanhos({
       }),
     )
 
+  /* A ORDEM DA LISTA (pedido dele em 22/10/2026: "alça de pegar e arrastar
+     para eu organizar essa lista"). É a ordem dos tamanhos da tabela, a mesma
+     das combinações e do nome que se escreve sozinho. Pela alça, arrastando
+     (quem ouve é a janela, porque a linha que muda de lugar perde o ponteiro),
+     ou pelo teclado, com as setas, e o foco fica na alça. */
+  const focoNaAlca = useRef<string | null>(null)
+  useEffect(() => {
+    if (!focoNaAlca.current) return
+    const alca = document.querySelector<HTMLButtonElement>(`[data-tamanho="${focoNaAlca.current}"] .pr-tam-pega`)
+    focoNaAlca.current = null
+    if (alca && document.activeElement !== alca) alca.focus()
+  })
+  const levar = (ts: TamanhoDeDtf[], id: string, para: number) => {
+    const de = ts.findIndex(t => t.id === id)
+    if (de < 0 || para < 0 || para >= ts.length || para === de) return ts
+    const nova = [...ts]
+    const [x] = nova.splice(de, 1)
+    nova.splice(para, 0, x)
+    return nova
+  }
+  function mover(id: string, passo: number) {
+    mudarTamanhos(ts => levar(ts, id, ts.findIndex(t => t.id === id) + passo))
+    focoNaAlca.current = id
+  }
+  const [presa, setPresa] = useState<string | null>(null)
+  const largar = useRef<(() => void) | null>(null)
+  useEffect(() => () => largar.current?.(), [])
+  function pegar(e: PointerEvent<HTMLButtonElement>, id: string) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    largar.current?.()
+    setPresa(id)
+    const aoMover = (ev: globalThis.PointerEvent) => {
+      const sobre = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('[data-tamanho]')?.dataset.tamanho
+      if (!sobre || sobre === id) return
+      mudarTamanhos(ts =>
+        levar(
+          ts,
+          id,
+          ts.findIndex(t => t.id === sobre),
+        ),
+      )
+    }
+    const aoLargar = () => {
+      window.removeEventListener('pointermove', aoMover)
+      window.removeEventListener('pointerup', aoLargar)
+      window.removeEventListener('pointercancel', aoLargar)
+      largar.current = null
+      setPresa(null)
+    }
+    largar.current = aoLargar
+    window.addEventListener('pointermove', aoMover)
+    window.addEventListener('pointerup', aoLargar)
+    window.addEventListener('pointercancel', aoLargar)
+  }
+
   function escolher(id: string) {
     setEscolhido(id)
     setApagando(false)
@@ -173,28 +229,50 @@ export function AbaTamanhos({
         {tamanhos.map(t => {
           const n = usaram(t.id).length
           return (
-            <button
-              type="button"
+            <div
               role="listitem"
               key={t.id}
-              className={'pr-dtf-item' + (t.id === atual?.id ? ' ligado' : '')}
-              aria-current={t.id === atual?.id}
-              onClick={() => escolher(t.id)}
+              data-tamanho={t.id}
+              className={'pr-tam-fila' + (t.id === atual?.id ? ' ligado' : '') + (presa === t.id ? ' presa' : '')}
             >
-              <span className="dtf-par">
-                <CamisaDoDtf lado={t.lado} ligadas={[t.id]} tamanhos={tamanhos} />
-              </span>
-              <span className="pilha">
-                <b className="corta">{t.nome || 'Sem nome'}</b>
-                <small>
-                  {medidaDoTamanho(t)} · {t.lado}
-                </small>
-              </span>
-              <span className="pilha pr-dtf-item-fim">
-                <span className="pr-dtf-preco">{dinheiro(custoDoTamanho(t, custo))}</span>
-                <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
-              </span>
-            </button>
+              {podeMexer ? (
+                <button
+                  type="button"
+                  className="pr-tam-pega"
+                  aria-label={'Mudar a ordem de ' + (t.nome || 'sem nome') + '. Arraste, ou use as setas para cima e para baixo.'}
+                  title="Arraste para mudar a ordem"
+                  onPointerDown={e => pegar(e, t.id)}
+                  onKeyDown={e => {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      mover(t.id, e.key === 'ArrowUp' ? -1 : 1)
+                    }
+                  }}
+                >
+                  <DotsSixVertical size={16} weight="bold" aria-hidden="true" />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={'pr-dtf-item' + (t.id === atual?.id ? ' ligado' : '')}
+                aria-current={t.id === atual?.id}
+                onClick={() => escolher(t.id)}
+              >
+                <span className="dtf-par">
+                  <CamisaDoDtf lado={t.lado} ligadas={[t.id]} tamanhos={tamanhos} />
+                </span>
+                <span className="pilha">
+                  <b className="corta">{t.nome || 'Sem nome'}</b>
+                  <small>
+                    {medidaDoTamanho(t)} · {t.lado}
+                  </small>
+                </span>
+                <span className="pilha pr-dtf-item-fim">
+                  <span className="pr-dtf-preco">{dinheiro(custoDoTamanho(t, custo))}</span>
+                  <span className={'pr-dtf-uso' + (n ? '' : ' nenhum')}>{n ? `em ${n}` : 'sem uso'}</span>
+                </span>
+              </button>
+            </div>
           )
         })}
       </div>
@@ -217,7 +295,9 @@ export function AbaTamanhos({
 
   const combos = usaram(atual.id)
   /* a medida pronta vale em pé ou deitada: o chip acende nas duas */
-  const pronta = MEDIDAS_PRONTAS.find(m => (m.largura === atual.largura && m.altura === atual.altura) || (m.largura === atual.altura && m.altura === atual.largura))
+  const pronta = MEDIDAS_PRONTAS.find(
+    m => (m.largura === atual.largura && m.altura === atual.altura) || (m.largura === atual.altura && m.altura === atual.largura),
+  )
   const deitado = atual.largura > atual.altura
   const posicao = atual.largura === atual.altura ? 'Quadrado' : deitado ? 'Deitado' : 'Em pé'
   const girar = () => mudarUm(atual.id, { largura: atual.altura, altura: atual.largura })
@@ -277,7 +357,11 @@ export function AbaTamanhos({
               {/* a calculadora: o custo deste tamanho, sozinho, pela área e pelo custo do cm² */}
               <div className="campo">
                 <span className="campo-rotulo">Custo</span>
-                <span className="pr-tam-custo" aria-live="polite" title={medidaDoTamanho(atual) + ' = ' + Math.round(atual.largura * atual.altura * 10) / 10 + ' cm²'}>
+                <span
+                  className="pr-tam-custo"
+                  aria-live="polite"
+                  title={medidaDoTamanho(atual) + ' = ' + Math.round(atual.largura * atual.altura * 10) / 10 + ' cm²'}
+                >
                   {dinheiro(custoDoTamanho(atual, custo))}
                 </span>
               </div>
@@ -293,13 +377,7 @@ export function AbaTamanhos({
                 <span className="pr-sobre">Medidas prontas</span>
                 <div className="fileira miuda">
                   {MEDIDAS_PRONTAS.map(m => (
-                    <Chip
-                      key={m.nome}
-                      tamanho="sm"
-                      ligado={pronta?.nome === m.nome}
-                      title={medidaDoTamanho(m)}
-                      onClick={() => usarPronta(m)}
-                    >
+                    <Chip key={m.nome} tamanho="sm" ligado={pronta?.nome === m.nome} title={medidaDoTamanho(m)} onClick={() => usarPronta(m)}>
                       {m.nome}
                     </Chip>
                   ))}

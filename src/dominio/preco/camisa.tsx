@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import type { KeyboardEvent as EventoDeTecla, PointerEvent as EventoDePonteiro } from 'react'
 import { ESCALA_DA_CAMISA, POSICOES_DE_DTF, caixaDoTamanho, centroQueCabe, medidaDoTamanho, type LadoDaCamisa, type TamanhoDeDtf } from './adicionais'
+import { DESENHO_DA_CAMISA } from './camisa-molde'
 import './camisa.css'
 
 /* ==========================================================================
@@ -13,13 +14,16 @@ import './camisa.css'
    valem os seis de partida.
    ========================================================================== */
 
-const CORPO = 'M30 10 L40 6 Q50 13 60 6 L70 10 L91 25 L83 39 L72 32 L72 94 L28 94 L28 32 L17 39 L9 25 Z'
-
+/* o desenho vem do molde M da camiseta tradicional (camisa-molde.ts): as
+   mangas por baixo, o corpo por cima, e a ribana da gola */
 function Corpo({ lado }: { lado: LadoDaCamisa }) {
+  const d = DESENHO_DA_CAMISA[lado]
   return (
     <>
-      <path d={CORPO} className="dtf-camisa-corpo" />
-      {lado === 'frente' ? <path d="M40 6 Q50 16 60 6" className="dtf-camisa-gola" /> : null}
+      <path d={d.mangaE} className="dtf-camisa-corpo" />
+      <path d={d.mangaD} className="dtf-camisa-corpo" />
+      <path d={d.corpo} className="dtf-camisa-corpo" />
+      <path d={d.gola} className="dtf-camisa-gola" />
     </>
   )
 }

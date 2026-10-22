@@ -179,9 +179,9 @@ console.log('os adicionais (083): a peça mais o material, a técnica e os extra
   ok(nomeDaCombinacao(['t1'], tam.tamanhosDtf) === 'Escudo', 'o nome da combinação sai dos tamanhos da tabela')
   ok(medidaDoTamanho({ largura: 21, altura: 29.7 }) === '21 x 29,7 cm', 'a medida mostrada em cm, com vírgula')
   const cx = caixaDoTamanho({ id: 'a', nome: 'A3', lado: 'costas', largura: 29.7, altura: 42, x: 50, y: 46 })
-  ok(Math.abs(cx[2] - 23.76) < 0.01 && Math.abs(cx[3] - 33.6) < 0.01 && Math.abs(cx[0] - 38.12) < 0.01, 'a caixa no desenho sai da medida real na escala da camisa')
+  ok(Math.abs(cx[2] - 29.7) < 0.01 && Math.abs(cx[3] - 42) < 0.01 && Math.abs(cx[0] - 35.15) < 0.01, 'a caixa no desenho é a medida real: o desenho é o molde em cm')
   const fora = centroQueCabe({ id: 'b', nome: 'B', lado: 'frente', largura: 20, altura: 20, x: 50, y: 50 }, 99, -5)
-  ok(fora.x === 92 && fora.y === 8, 'arrastar para fora para na borda do desenho (' + JSON.stringify(fora) + ')')
+  ok(fora.x === 90 && fora.y === 10, 'arrastar para fora para na borda do desenho (' + JSON.stringify(fora) + ')')
   /* o custo do DTF (22/10/2026): R$ 60 o metro, filme de 58 cm, 80% aproveitado */
   const cc = CUSTO_DO_DTF_PADRAO
   ok(Math.abs(custoPorCm2(cc) - 60 / 4640) < 1e-12, 'o cm² custa o metro dividido só pela área aproveitada (60 ÷ 4.640)')

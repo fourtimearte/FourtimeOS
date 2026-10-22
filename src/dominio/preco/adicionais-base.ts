@@ -28,16 +28,17 @@ export type CombinacaoDeDtf = { id: string; nome: string; posicoes: string[]; va
 export type LadoDaCamisa = 'frente' | 'costas'
 export type TamanhoDeDtf = { id: string; nome: string; lado: LadoDaCamisa; largura: number; altura: number; x: number; y: number }
 
-/** Os seis de partida: os mesmos lugares das posições fixas de antes da
-    edição, agora com a medida em cm. */
+/** Os seis de partida, com os ids das posições fixas de antes da edição.
+    Os lugares são em cm no desenho do molde M (camisa-molde.ts): o ombro
+    junto do pescoço em y = 12, o decote da frente desce até y = 22. */
 export function tamanhosPadrao(): TamanhoDeDtf[] {
   return [
-    { id: 'peito-pequeno', nome: 'Peito pequeno', lado: 'frente', largura: 10, altura: 10, x: 62, y: 30 },
+    { id: 'peito-pequeno', nome: 'Peito pequeno', lado: 'frente', largura: 10, altura: 10, x: 61, y: 33 },
     { id: 'peito-grande', nome: 'Peito grande', lado: 'frente', largura: 21, altura: 29.7, x: 50, y: 44 },
-    { id: 'manga-direita', nome: 'Manga direita', lado: 'frente', largura: 8, altura: 8, x: 17, y: 28 },
-    { id: 'manga-esquerda', nome: 'Manga esquerda', lado: 'frente', largura: 8, altura: 8, x: 83, y: 28 },
-    { id: 'nuca', nome: 'Nuca', lado: 'costas', largura: 10, altura: 4, x: 50, y: 16.5 },
-    { id: 'costas-grande', nome: 'Costas grande', lado: 'costas', largura: 29.7, altura: 42, x: 50, y: 46 },
+    { id: 'manga-direita', nome: 'Manga direita', lado: 'frente', largura: 8, altura: 8, x: 17.5, y: 28.5 },
+    { id: 'manga-esquerda', nome: 'Manga esquerda', lado: 'frente', largura: 8, altura: 8, x: 82.5, y: 28.5 },
+    { id: 'nuca', nome: 'Nuca', lado: 'costas', largura: 10, altura: 4, x: 50, y: 19 },
+    { id: 'costas-grande', nome: 'Costas grande', lado: 'costas', largura: 29.7, altura: 42, x: 50, y: 45 },
   ]
 }
 

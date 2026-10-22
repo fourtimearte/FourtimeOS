@@ -20,10 +20,11 @@ export { adicionaisEmBranco, extrasPadrao, tamanhosPadrao } from './adicionais-b
 import { extrasPadrao, tamanhosPadrao, type Adicionais, type Extra, type LadoDaCamisa, type TamanhoDeDtf } from './adicionais-base'
 
 /* --- os tamanhos do DTF no desenho --------------------------------------------
-   O desenho da camisa vai de 0 a 100; o corpo tem 44 de largura, o que dá
-   uma camisa adulta de uns 55 cm. A caixa de cada tamanho sai da medida real
-   nessa escala, centrada no lugar escolhido, e nunca sai do desenho. */
-export const ESCALA_DA_CAMISA = 0.8
+   O desenho da camisa vai de 0 a 100 e é o molde M da camiseta tradicional
+   (camisa-molde.ts), em cm: 1 unidade = 1 cm. A caixa de cada tamanho sai da
+   medida real, centrada no lugar escolhido, e nunca sai do desenho.
+   (Até 22/10/2026 o desenho era à mão e a escala era 0,8.) */
+export const ESCALA_DA_CAMISA = 1
 export type PosicaoDeDtf = TamanhoDeDtf
 /** Os tamanhos de partida (o que uma tabela sem tamanhos guardados usa). */
 export const POSICOES_DE_DTF: TamanhoDeDtf[] = tamanhosPadrao()

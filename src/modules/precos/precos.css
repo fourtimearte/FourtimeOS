@@ -1243,6 +1243,63 @@
   border-color: var(--tec-dtf);
   background: var(--tec-dtf);
 }
+/* a fila de um tamanho: a alça de arrastar e o item (22/10/2026). O fundo e
+   o filete do escolhido moram na fila, para a alça ficar junto. */
+.pr-tam-fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.pr-tam-fila.ligado {
+  border-left-color: var(--tec-dtf);
+  background: var(--tec-dtf-soft);
+}
+.pr-tam-fila.presa {
+  background: var(--surface-3);
+}
+.pr-tam-fila .pr-dtf-item {
+  border-bottom: 0;
+  border-left: 0;
+  background: transparent;
+}
+.pr-tam-fila .pr-dtf-item:hover {
+  background: var(--surface-2);
+}
+.pr-tam-fila.ligado .pr-dtf-item:hover {
+  background: transparent;
+}
+.pr-tam-pega {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  cursor: grab;
+  touch-action: none;
+}
+@media (pointer: coarse) {
+  .pr-tam-pega {
+    width: 44px;
+  }
+}
+.pr-tam-pega:hover {
+  color: var(--text);
+}
+.pr-tam-pega:active {
+  cursor: grabbing;
+}
+.pr-tam-pega:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+/* com a alça na frente, o item encosta nela */
+.pr-tam-fila .pr-tam-pega + .pr-dtf-item {
+  padding-left: var(--re-2);
+}
 /* a troca Combinações | Tamanhos, no alto da coluna da lista (22/10/2026) */
 .pr-dtf-parte {
   padding: var(--re-6) var(--re-9);

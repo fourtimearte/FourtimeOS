@@ -629,6 +629,39 @@ await secao(async () => {
   conta(!erros.length, 'sem erro de JavaScript (referências do banco): ' + erros.join(' | '))
 })
 
+/* 2e. (22/10/2026, achados dele) a dica da linha não fica presa depois de escolher a
+   referência; e o visor da arte fica por cima de tudo (camada do topo) e fecha no X */
+await secao(async () => {
+  const { pg, erros } = await abrir(nav, { largura: 1440, altura: 900 })
+  await ir(pg)
+  await pg.getByRole('button', { name: 'Trocar a referência ou o kit' }).click()
+  await pausa(pg, 400)
+  const linha = pg.locator('[popover]:popover-open .mn-g.aberto .mn-ref').nth(1)
+  await linha.hover()
+  await pausa(pg, 400)
+  const abriu = await pg.evaluate(() => !!document.querySelector('.mn-dica-linha.flutua'))
+  await linha.click()
+  await pausa(pg, 600)
+  const presa = await pg.evaluate(() => { const d = document.querySelector('.mn-dica-linha'); return !!d && (d.classList.contains('flutua') || d.matches(':popover-open')) })
+  conta(abriu && !presa, 'a dica da referência abre com o mouse e fecha quando a referência é escolhida (' + abriu + ', presa ' + presa + ')')
+  await pg.locator('.img-area input[type=file]').first().setInputFiles(process.env.ARTE_PROVA || '/tmp/claude-0/-home-claude/f18adb65-5652-572b-bfd1-d9502dce7de2/scratchpad/arte-prova.png')
+  await pausa(pg, 1200)
+  await pg.locator('.img-area.tem').first().click()
+  await pausa(pg, 500)
+  const visor = await pg.evaluate(() => {
+    const v = document.querySelector('.vs')
+    if (!v) return { aberto: false }
+    const pontos = [[innerWidth / 2, 20], [200, innerHeight / 2], [innerWidth - 40, innerHeight - 40], [innerWidth / 2, innerHeight / 2]]
+    return { aberto: v.matches(':popover-open'), noBody: v.parentElement === document.body, porCima: pontos.every(([x, y]) => v.contains(document.elementFromPoint(x, y))) }
+  })
+  await foto(pg, '1440-visor-da-arte', false)
+  await pg.locator('.vs-bt[title="Fechar (Esc)"]').click()
+  await pausa(pg, 400)
+  const fechou = await pg.evaluate(() => !document.querySelector('.vs'))
+  conta(visor.aberto && visor.noBody && visor.porCima && fechou, 'o visor da arte abre na camada do topo, nada da página fica por cima, e o X fecha de vez (' + JSON.stringify(visor) + ', fechou ' + fechou + ')')
+  conta(!erros.length, 'sem erro de JavaScript (dica e visor): ' + erros.join(' | '))
+})
+
 await secao(async () => {
   const { pg } = await abrir(nav, { largura: 1440, altura: 900, tema: 'dark' })
   await ir(pg)

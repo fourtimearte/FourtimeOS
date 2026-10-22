@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { PointerEvent as EventoDePonteiro } from 'react'
 
 /* ==========================================================================
@@ -47,6 +48,28 @@ export function VisorDeImagem({
   const gesto = useRef<{ mx: number; my: number; x: number; y: number; fora: boolean } | null>(null)
   const vista = useRef(v)
   vista.current = v
+
+  /* NA CAMADA DO TOPO (22/10/2026, achado dele: "vários elementos da página
+     estão por cima da imagem"). O visor nascia dentro do cartão da arte, e o
+     z-index dele valia só dentro do empilhamento do cartão: o topo do
+     sistema, a barra presa e as colunas passavam por cima. Agora ele vai
+     para o body e abre como popover, que o navegador desenha acima de tudo,
+     como o Modal. Só existe enquanto está aberto (o Bitwarden conta popover). */
+  useEffect(() => {
+    const el = caixa.current
+    try {
+      el?.showPopover()
+    } catch {
+      /* sem popover, o position fixed com z-index ainda vale */
+    }
+    return () => {
+      try {
+        if (el?.matches(':popover-open')) el.hidePopover()
+      } catch {
+        /* idem */
+      }
+    }
+  }, [])
 
   const caber = useCallback(() => {
     const im = img.current
@@ -140,12 +163,17 @@ export function VisorDeImagem({
     }
   }, [arrastando, aoFechar])
 
-  return (
+  return createPortal(
     <div
       ref={caixa}
+      popover="manual"
       className={arrastando ? 'vs arrastando' : 'vs'}
       role="presentation"
       onPointerDown={pegar}
+      /* no portal o evento do React ainda sobe para quem abriu o visor: o
+         clique no Fechar subia até a caixa da arte e abria o visor de novo */
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <img
         ref={img}
@@ -196,6 +224,7 @@ export function VisorDeImagem({
       </div>
 
       <span className="vs-zoom">{Math.round(v.escala * 100)}%</span>
-    </div>
+    </div>,
+    document.body,
   )
 }

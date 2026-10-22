@@ -1126,6 +1126,14 @@
   position: fixed;
   inset: 0;
   z-index: 950;
+  /* aberto como popover (camada do topo): sem a caixa que o navegador dá */
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   background: var(--veu-cheio);
   cursor: grab;

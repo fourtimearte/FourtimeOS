@@ -198,6 +198,7 @@ export function Flutuante({
    seguinte. 140 ms de espera para não piscar quando a pessoa só passa reto. */
 let dicaEl: HTMLDivElement | null = null
 let dicaT: number | undefined
+let dicaVigia: number | undefined
 
 function garantirDica() {
   if (dicaEl) return dicaEl
@@ -211,6 +212,8 @@ function garantirDica() {
 export function abrirDica(ancora: HTMLElement, html: string, espera = 140) {
   clearTimeout(dicaT)
   dicaT = window.setTimeout(() => {
+    /* a linha pode ter sumido na espera (o menu fechou com o clique) */
+    if (!ancora.isConnected) return
     const d = garantirDica()
     d.innerHTML = html
     d.classList.add('flutua')
@@ -237,11 +240,22 @@ export function abrirDica(ancora: HTMLElement, html: string, espera = 140) {
       '--seta',
       Math.round(Math.max(14, Math.min(r.left + r.width / 2 - l0, d.offsetWidth - 14))) + 'px',
     )
+    /* A DICA QUE FICAVA PRESA NA TELA (22/10/2026, achado dele: a pílula
+       "FT-010-000M CAMISETA MASC TRAD" parada em cima da arte). Escolher uma
+       referência fecha o menu, a linha some do DOM com o ponteiro em cima, e
+       o mouseleave dela nunca chega: a dica ficava aberta até a próxima. O
+       vigia confere a cada 250 ms se a linha ainda existe e ainda está com o
+       ponteiro; se não, fecha. */
+    clearInterval(dicaVigia)
+    dicaVigia = window.setInterval(() => {
+      if (!ancora.isConnected || !ancora.matches(':hover')) fecharDica()
+    }, 250)
   }, espera)
 }
 
 export function fecharDica() {
   clearTimeout(dicaT)
+  clearInterval(dicaVigia)
   if (!dicaEl) return
   dicaEl.classList.remove('flutua')
   try {

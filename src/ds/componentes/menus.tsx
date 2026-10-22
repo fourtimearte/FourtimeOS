@@ -213,6 +213,7 @@ export function MenuReferencia({
                       key={r.cod}
                       className={['mn-ref', r.cod === valor ? 'on' : ''].filter(Boolean).join(' ')}
                       onClick={() => {
+                        fecharDica()
                         aoEscolher(r)
                         aoFechar()
                       }}

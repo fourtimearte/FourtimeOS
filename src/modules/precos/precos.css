@@ -1045,20 +1045,6 @@
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
-/* a pergunta antes de apagar, na própria página (Kit, seção 7) */
-.pr-ex-pergunta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--gap-btn);
-  padding: var(--re-5) var(--re-7);
-  border: 1px solid var(--brand);
-  border-radius: var(--radius);
-  background: var(--brand-soft);
-  font-size: 13.5px;
-  color: var(--text);
-}
 
 /* --- a aba DTF: as combinações à esquerda, a escolhida à direita -------------------- */
 .pr-dtf {

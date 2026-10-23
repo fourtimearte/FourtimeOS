@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Check, Copy, Plus, Trash } from '@phosphor-icons/react'
-import { Botao, CampoDeCelula, Campo, Entrada, Segmentado, Seletor, Vazio, avisar, usarEdicaoDeCelulas } from '@ds'
+import { Botao, CampoDeCelula, Campo, Entrada, PerguntaDeApagar, Segmentado, Seletor, Vazio, avisar, usarEdicaoDeCelulas } from '@ds'
 import {
   CamisaDoDtf,
   CamisasDoDtf,
@@ -323,27 +323,16 @@ function AbaCombinacoes({
           })}
           {podeMexer ? (
             apagando ? (
-              <div className="pr-ex-pergunta" role="alert">
-                <span>
-                  Apagar a combinação <b>{atual.nome}</b>? O layout que usa ela fica pedindo outro DTF.
-                </span>
-                <span className="fileira">
-                  <Botao tom="contorno" tamanho="sm" onClick={() => setApagando(false)}>
-                    Manter
-                  </Botao>
-                  <Botao
-                    tom="perigo"
-                    tamanho="sm"
-                    onClick={() => {
-                      mudarCombos((cs) => cs.filter((c) => c.id !== atual.id))
-                      setApagando(false)
-                      setEscolhida('')
-                    }}
-                  >
-                    Apagar
-                  </Botao>
-                </span>
-              </div>
+              <PerguntaDeApagar
+                aoManter={() => setApagando(false)}
+                aoApagar={() => {
+                  mudarCombos((cs) => cs.filter((c) => c.id !== atual.id))
+                  setApagando(false)
+                  setEscolhida('')
+                }}
+              >
+                Apagar a combinação <b>{atual.nome}</b>? O layout que usa ela fica pedindo outro DTF.
+              </PerguntaDeApagar>
             ) : (
               <div className="fileira fim">
                 <Botao tom="contorno" tamanho="sm" onClick={() => setApagando(true)}>

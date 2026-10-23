@@ -11,6 +11,7 @@ export { BotaoComMenu } from './componentes/botao-menu'
 export { cliqueEmControle, useSelecaoDeLinhas } from './componentes/selecao'
 export { CampoDeCelula, lerNumero, usarAlcaDeCelulas, usarEdicaoDeCelulas } from './componentes/celula'
 export { Passo } from './componentes/passo'
+export { PerguntaDeApagar } from './componentes/pergunta'
 export type { AlcaDeCelulas, EdicaoDeCelulas, EstadoDaCelula, PontoDaGrade } from './componentes/celula'
 export {
   apagarRascunho,

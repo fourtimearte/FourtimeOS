@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FolderOpen, GraduationCap, Package, Palette, SoccerBall } from '@phosphor-icons/react'
+import { FolderOpen, GraduationCap, Package, Palette, SoccerBall, Trash } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import { Botao, Chip } from '../componentes/botao'
 import {
@@ -16,6 +16,7 @@ import { BuscaGlobal, usarAtalhoDaBusca, type ItemBusca } from '../componentes/b
 import { CampoDeData } from '../componentes/data'
 import { CampoDeCelula, usarAlcaDeCelulas, usarEdicaoDeCelulas, type EstadoDaCelula } from '../componentes/celula'
 import { Passo } from '../componentes/passo'
+import { PerguntaDeApagar } from '../componentes/pergunta'
 import { DemoMenusDoModulo } from './demo-menus'
 import { Kpi, Paginador, Seletor } from '../componentes/seletor'
 import { DataEmPilula } from '../componentes/data'
@@ -59,6 +60,7 @@ const SECOES: [string, string][] = [
   ['etiquetas', 'Etiquetas do cartão'],
   ['nivel', 'Barra de nível'],
   ['tabela', 'Tabela'],
+  ['comportamento', 'Comportamento'],
   ['sobreposicoes', 'Modal e gaveta'],
   ['recados', 'Recados'],
   ['buscaglobal', 'Busca global'],
@@ -654,6 +656,14 @@ export function TelaKit({ abas }: { abas?: ReactNode } = {}) {
           </Secao>
 
           <Secao
+            id="comportamento"
+            titulo="Comportamento: marcar linhas e apagar"
+            texto="Toda tabela que marca linhas para o lote se comporta igual (Kit de Comportamento, seção 1): a caixa, o clique na linha e o Ctrl alternam uma linha; o Shift pega a faixa desde a última clicada; Esc solta todas e Ctrl + A marca as que estão à vista, com o foco na tabela; a caixa do cabeçalho marca ou solta todas. Apagar nunca usa a caixa do navegador: a pergunta aparece na própria página, diz o que se perde, e oferece Manter e Apagar."
+          >
+            <ComportamentoDemo />
+          </Secao>
+
+          <Secao
             id="sobreposicoes"
             titulo="Modal e folha lateral"
             texto="As duas usam a camada do topo do navegador, acima de qualquer corte e de qualquer empilhamento. Foco preso dentro, Esc para sair, clique no escuro fecha (menos no modal de tela, que guarda um rascunho). No celular as duas viram folha de baixo, que é onde o polegar alcança."
@@ -978,44 +988,45 @@ const LINHAS: LinhaDemo[] = [
 const dinheiro = (n: number) =>
   n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 
+const COLUNAS_DEMO: Coluna<LinhaDemo>[] = [
+  {
+    chave: 'pedido',
+    titulo: 'Pedido',
+    ordenarPor: (l) => l.pedido,
+    celula: (l) => <b>{l.pedido}</b>,
+  },
+  {
+    chave: 'cliente',
+    titulo: 'Cliente',
+    ordenarPor: (l) => l.cliente,
+    celula: (l) => l.cliente,
+  },
+  {
+    chave: 'tecnica',
+    titulo: 'Técnica',
+    celula: (l) => <PilulaTecnica tecnica={l.tecnica}>{l.tecnica.toUpperCase()}</PilulaTecnica>,
+  },
+  {
+    chave: 'pecas',
+    titulo: 'Peças',
+    numero: true,
+    ordenarPor: (l) => l.pecas,
+    celula: (l) => l.pecas,
+  },
+  {
+    chave: 'valor',
+    titulo: 'Valor',
+    numero: true,
+    ordenarPor: (l) => l.valor,
+    celula: (l) => dinheiro(l.valor),
+  },
+]
+
 function TabelaDemo() {
   const [marcada, setMarcada] = useState<string[]>(['2480'])
-  const colunas: Coluna<LinhaDemo>[] = [
-    {
-      chave: 'pedido',
-      titulo: 'Pedido',
-      ordenarPor: (l) => l.pedido,
-      celula: (l) => <b>{l.pedido}</b>,
-    },
-    {
-      chave: 'cliente',
-      titulo: 'Cliente',
-      ordenarPor: (l) => l.cliente,
-      celula: (l) => l.cliente,
-    },
-    {
-      chave: 'tecnica',
-      titulo: 'Técnica',
-      celula: (l) => <PilulaTecnica tecnica={l.tecnica}>{l.tecnica.toUpperCase()}</PilulaTecnica>,
-    },
-    {
-      chave: 'pecas',
-      titulo: 'Peças',
-      numero: true,
-      ordenarPor: (l) => l.pecas,
-      celula: (l) => l.pecas,
-    },
-    {
-      chave: 'valor',
-      titulo: 'Valor',
-      numero: true,
-      ordenarPor: (l) => l.valor,
-      celula: (l) => dinheiro(l.valor),
-    },
-  ]
   return (
     <Tabela
-      colunas={colunas}
+      colunas={COLUNAS_DEMO}
       linhas={LINHAS}
       chaveDaLinha={(l) => l.id}
       marcadas={marcada}
@@ -1028,6 +1039,59 @@ function TabelaDemo() {
         dinheiro(LINHAS.reduce((s, l) => s + l.valor, 0)),
       ]}
     />
+  )
+}
+
+function ComportamentoDemo() {
+  const [linhas, setLinhas] = useState(LINHAS)
+  const [marcadas, setMarcadas] = useState<string[]>(['2480'])
+  const [apagando, setApagando] = useState(false)
+  const n = marcadas.length
+  const quais = linhas.filter((l) => marcadas.includes(l.id)).map((l) => l.pedido)
+  return (
+    <div className="pilha">
+      <div className="kit-bancada" style={{ display: 'block', padding: 0 }}>
+        <Tabela
+          colunas={COLUNAS_DEMO}
+          linhas={linhas}
+          chaveDaLinha={(l) => l.id}
+          selecao={{ marcadas, aoMudar: setMarcadas, nome: (l) => 'o pedido ' + l.pedido }}
+        />
+      </div>
+      <div className="kit-bancada" style={{ display: 'block' }}>
+        <div className="pilha">
+          <div className="fileira entre">
+            <span>{n ? (n === 1 ? '1 linha marcada' : n + ' linhas marcadas') : 'Nenhuma linha marcada'}</span>
+            <span className="fileira">
+              {linhas.length < LINHAS.length ? (
+                <Botao tom="limpo" tamanho="sm" onClick={() => setLinhas(LINHAS)}>
+                  Trazer o exemplo de volta
+                </Botao>
+              ) : null}
+              <Botao tom="contorno" tamanho="sm" disabled={!n} onClick={() => setMarcadas([])}>
+                Soltar
+              </Botao>
+              <Botao tom="perigo" tamanho="sm" disabled={!n || apagando} onClick={() => setApagando(true)}>
+                <Trash size={16} />
+                Apagar
+              </Botao>
+            </span>
+          </div>
+          {apagando && n ? (
+            <PerguntaDeApagar
+              aoManter={() => setApagando(false)}
+              aoApagar={() => {
+                setLinhas((ls) => ls.filter((l) => !marcadas.includes(l.id)))
+                setMarcadas([])
+                setApagando(false)
+              }}
+            >
+              Apagar {n === 1 ? 'o pedido' : 'os pedidos'} <b>{quais.join(', ')}</b>? Sai da lista e da soma do mês.
+            </PerguntaDeApagar>
+          ) : null}
+        </div>
+      </div>
+    </div>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListBullets, Plus, Trash, X } from '@phosphor-icons/react'
-import { Botao, CampoDeCelula, Entrada, PilulaTecnica, Selo, usarEdicaoDeCelulas } from '@ds'
+import { Botao, CampoDeCelula, Entrada, PerguntaDeApagar, PilulaTecnica, Selo, usarEdicaoDeCelulas } from '@ds'
 import { novoId, type Extra, type OpcaoDeExtra, type TabelaDePreco } from '@dominio/preco'
 
 /* ==========================================================================
@@ -135,19 +135,9 @@ function CartaoDoExtra({
         ) : null}
       </div>
       {apagando ? (
-        <div className="pr-ex-pergunta" role="alert">
-          <span>
-            Apagar o extra <b>{extra.nome}</b>? A cotação que já usa ele perde esta parte da conta.
-          </span>
-          <span className="fileira">
-            <Botao tom="contorno" tamanho="sm" onClick={aoDesistir}>
-              Manter
-            </Botao>
-            <Botao tom="perigo" tamanho="sm" onClick={aoApagar}>
-              Apagar
-            </Botao>
-          </span>
-        </div>
+        <PerguntaDeApagar aoManter={aoDesistir} aoApagar={aoApagar}>
+          Apagar o extra <b>{extra.nome}</b>? A cotação que já usa ele perde esta parte da conta.
+        </PerguntaDeApagar>
       ) : null}
       <p className="pr-ex-nota">
         <ListBullets size={16} />

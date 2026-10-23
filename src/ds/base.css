@@ -1138,6 +1138,12 @@ table.tabela tr.total td {
 table.tabela tr.marcada {
   background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
+/* a coluna das caixas de marcar (Tabela com `selecao`): só a largura da caixa */
+table.tabela th.ck-col,
+table.tabela td.ck-col {
+  width: 1%;
+  padding-right: 0;
+}
 
 /* --- estado vazio, esqueleto e aviso ------------------------------------ */
 .vazio {
@@ -2437,4 +2443,20 @@ dialog.cmdk .caixa {
     box-shadow: none !important;
     break-inside: avoid;
   }
+}
+
+/* A PERGUNTA ANTES DE APAGAR, na própria página (PerguntaDeApagar; Kit de
+   Comportamento, seção 7) */
+.pergunta-apagar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-btn);
+  padding: var(--re-5) var(--re-7);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+  font-size: 13.5px;
+  color: var(--text);
 }

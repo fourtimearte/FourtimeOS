@@ -102,6 +102,7 @@ const SECOES = [
   'cartoes',
   'selos',
   'tabela',
+  'comportamento',
   'sobreposicoes',
   'recados',
   'buscaglobal',

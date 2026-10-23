@@ -31,6 +31,7 @@
     "precos-tela": "node testes/precos-tela.mjs http://127.0.0.1:4173",
     "ferramentas": "node testes/ferramentas.mjs http://127.0.0.1:4173",
     "timeline": "node testes/timeline.mjs http://127.0.0.1:4173",
+    "kit-comportamento": "node testes/kit-comportamento.mjs http://127.0.0.1:4173",
     "cartao": "node testes/cartao.mjs",
     "boleto": "sh testes/boleto.sh",
     "produto": "sh testes/produto.sh",

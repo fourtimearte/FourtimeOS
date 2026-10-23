@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 import { ArrowsClockwise, CopySimple, DotsSixVertical, FolderSimplePlus, Plus, Trash } from '@phosphor-icons/react'
-import { Botao, Campo, Chip, Entrada, Segmentado, Seletor, Vazio, avisar, lerNumero } from '@ds'
+import { Botao, Campo, Chip, Entrada, PerguntaDeApagar, Segmentado, Seletor, Vazio, avisar, lerNumero } from '@ds'
 import { dinheiro } from './dtf-custo'
 import {
   CamisaDoDtf,
@@ -527,30 +527,19 @@ export function AbaTamanhos({
 
         {podeMexer ? (
           apagando ? (
-            <div className="pr-ex-pergunta" role="alert">
-              <span>
-                Apagar o tamanho <b>{atual.nome}</b>?
-                {combos.length
-                  ? ` Ele sai de ${combos.length === 1 ? '1 combinação' : combos.length + ' combinações'}: ${combos.map(c => c.nome).join('; ')}.`
-                  : ''}
-              </span>
-              <span className="fileira">
-                <Botao tom="contorno" tamanho="sm" onClick={() => setApagando(false)}>
-                  Manter
-                </Botao>
-                <Botao
-                  tom="perigo"
-                  tamanho="sm"
-                  onClick={() => {
-                    mudarTamanhos(ts => ts.filter(t => t.id !== atual.id))
-                    setApagando(false)
-                    setEscolhido('')
-                  }}
-                >
-                  Apagar
-                </Botao>
-              </span>
-            </div>
+            <PerguntaDeApagar
+              aoManter={() => setApagando(false)}
+              aoApagar={() => {
+                mudarTamanhos(ts => ts.filter(t => t.id !== atual.id))
+                setApagando(false)
+                setEscolhido('')
+              }}
+            >
+              Apagar o tamanho <b>{atual.nome}</b>?
+              {combos.length
+                ? ` Ele sai de ${combos.length === 1 ? '1 combinação' : combos.length + ' combinações'}: ${combos.map(c => c.nome).join('; ')}.`
+                : ''}
+            </PerguntaDeApagar>
           ) : (
             <div className="fileira fim">
               <Botao tom="contorno" tamanho="sm" onClick={duplicar}>

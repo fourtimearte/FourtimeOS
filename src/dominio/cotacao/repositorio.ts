@@ -1,5 +1,5 @@
 import { vinculo } from '@shared'
-import { chamar, tabela } from '@shared/supabase'
+import { chamar, lerTudo, tabela } from '@shared/supabase'
 import { VERSAO_DO_BLOCO } from '../layout/bloco'
 import { arrumarCotacao } from './arquivo'
 import { numerosDaFabrica } from './fabrica'
@@ -76,20 +76,30 @@ type LinhaDaLista = {
 }
 
 /* `de` filtra no banco: as cotacoes de um lead ou de um cliente (o painel do
-   WhatsApp, 151). Sem filtro, todas, como a lista da cotacao sempre leu. */
-export async function carregarCotacoes(de: { leadId?: string; clienteId?: string } = {}): Promise<CotacaoNaLista[]> {
-  const filtro =
-    de.leadId && de.clienteId
+   WhatsApp, 151), ou so as de uma lista de ids (as abas do editor, que dao
+   nome a no maximo seis e liam a casa inteira para isso, BANCO 08 secao 6).
+   Sem filtro, todas, como a lista da cotacao sempre leu. */
+export async function carregarCotacoes(
+  de: { leadId?: string; clienteId?: string; ids?: string[] } = {},
+): Promise<CotacaoNaLista[]> {
+  /* id vazio (cotacao nova, ainda sem gravar) ou com virgula e parentese
+     quebraria o filtro inteiro: fica de fora, e a aba dele fica sem nome */
+  const ids = de.ids?.filter((x) => /^[\w-]+$/.test(x))
+  if (ids && !ids.length) return []
+  const filtro = ids
+    ? `&id=in.(${ids.join(',')})`
+    : de.leadId && de.clienteId
       ? `&or=(lead_id.eq.${encodeURIComponent(de.leadId)},cliente_id.eq.${encodeURIComponent(de.clienteId)})`
       : de.leadId
         ? `&lead_id=eq.${encodeURIComponent(de.leadId)}`
         : de.clienteId
           ? `&cliente_id=eq.${encodeURIComponent(de.clienteId)}`
           : ''
-  const linhas = await tabela<LinhaDaLista[]>(
+  /* a lista inteira, de mil em mil (lerTudo): o banco corta em mil em silêncio */
+  const linhas = await lerTudo<LinhaDaLista>(
     'cotacao_na_lista?select=id,numero,cliente_id,cliente_nome,cliente_cidade,cliente_uf,' +
       'lead_id,estado,vendedor_nome,total,pecas,valida_ate,criada_em,atualizado_em,' +
-      'pedido_numero,teste' + filtro + '&order=criada_em.desc',
+      'pedido_numero,teste' + filtro + '&order=criada_em.desc,id.asc',
   )
   return linhas.map((l) => ({
     id: l.id,
@@ -333,8 +343,8 @@ const dePedido = (l: LinhaDoPedidoDaCotacao): PedidoDaCotacao => ({
 const COLUNAS_DO_PEDIDO = 'id,numero,cotacao_id,estado,aprovado_em,pecas,total,vendedor_nome'
 
 export async function carregarPedidosDasCotacoes(): Promise<PedidoDaCotacao[]> {
-  const linhas = await tabela<LinhaDoPedidoDaCotacao[]>(
-    'pedido?select=' + COLUNAS_DO_PEDIDO + '&cotacao_id=not.is.null&order=aprovado_em.desc',
+  const linhas = await lerTudo<LinhaDoPedidoDaCotacao>(
+    'pedido?select=' + COLUNAS_DO_PEDIDO + '&cotacao_id=not.is.null&order=aprovado_em.desc,id.asc',
   )
   return linhas.map(dePedido)
 }

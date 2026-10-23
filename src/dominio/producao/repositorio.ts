@@ -1,4 +1,4 @@
-import { chamar, tabela } from '@shared/supabase'
+import { chamar, lerTudo, tabela } from '@shared/supabase'
 import type { Aviso, Etapa, Pedido } from './tipos'
 
 /* ==========================================================================
@@ -60,16 +60,18 @@ const COLUNAS =
 const COLUNAS_075 = COLUNAS + ',nome,marcas,tem_fatias'
 let sem075 = false
 
-async function lerDaFabrica(filtro: string): Promise<LinhaDaFabrica[]> {
+/* `tudo`: a lista inteira, de mil em mil (lerTudo); o banco corta em mil em silêncio */
+async function lerDaFabrica(filtro: string, tudo = false): Promise<LinhaDaFabrica[]> {
+  const lerAs = (caminho: string) => (tudo ? lerTudo<LinhaDaFabrica>(caminho) : tabela<LinhaDaFabrica[]>(caminho))
   if (!sem075) {
     try {
-      return await tabela<LinhaDaFabrica[]>(`pedido_na_fabrica?select=${COLUNAS_075}${filtro}`)
+      return await lerAs(`pedido_na_fabrica?select=${COLUNAS_075}${filtro}`)
     } catch (e) {
       if (!(e instanceof Error && /42703|tem_fatias|marcas|does not exist|não existe/i.test(e.message))) throw e
       sem075 = true
     }
   }
-  return tabela<LinhaDaFabrica[]>(`pedido_na_fabrica?select=${COLUNAS}${filtro}`)
+  return lerAs(`pedido_na_fabrica?select=${COLUNAS}${filtro}`)
 }
 
 function deLinha(l: LinhaDaFabrica): Pedido {
@@ -160,13 +162,13 @@ function diaLocal(ts: string | null): string {
    O pedido não some do sistema: ele está no PCP, que é a tela onde ele espera
    e onde alguém precisa olhar para ele. */
 export async function carregarPedidos(): Promise<Pedido[]> {
-  const linhas = await lerDaFabrica('&estado=in.(producao,pronto)&order=entrega_em.asc.nullslast,numero.asc')
+  const linhas = await lerDaFabrica('&estado=in.(producao,pronto)&order=entrega_em.asc.nullslast,numero.asc,id.asc', true)
   return linhas.map(deLinha)
 }
 
 /** Tudo, inclusive o que já saiu. É o que o relatório mensal soma. */
 export async function carregarTodosOsPedidos(): Promise<Pedido[]> {
-  const linhas = await lerDaFabrica('&order=fechado_em.desc.nullslast,numero.desc')
+  const linhas = await lerDaFabrica('&order=fechado_em.desc.nullslast,numero.desc,id.asc', true)
   return linhas.map(deLinha)
 }
 

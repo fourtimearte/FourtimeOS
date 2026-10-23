@@ -164,3 +164,21 @@ export async function chamar<T>(
 ): Promise<T> {
   return tabela<T>(`rpc/${funcao}`, { metodo: 'POST', corpo: argumentos })
 }
+
+/* A LISTA INTEIRA, DE MIL EM MIL (23/10/2026; BANCO 08, seção 7). O PostgREST
+   do Supabase devolve no máximo mil linhas por pedido, e corta em SILÊNCIO:
+   a lista, a busca e as somas da tela saem erradas sem nenhum erro. Quem lê
+   uma lista que cresce (leads, clientes, cotações, pedidos) passa por aqui.
+   O caminho precisa ter uma ordem que não empata (termine com id), senão
+   uma linha pode cair entre duas páginas e aparecer duas vezes ou nenhuma. */
+export const LINHAS_POR_PAGINA = 1000
+
+export async function lerTudo<T>(caminho: string, porPagina = LINHAS_POR_PAGINA): Promise<T[]> {
+  const tudo: T[] = []
+  const junta = caminho.includes('?') ? '&' : '?'
+  for (let de = 0; ; de += porPagina) {
+    const parte = await tabela<T[]>(`${caminho}${junta}limit=${porPagina}&offset=${de}`)
+    tudo.push(...parte)
+    if (parte.length < porPagina) return tudo
+  }
+}

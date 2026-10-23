@@ -152,8 +152,16 @@ export function TelaKanban() {
   const oQueArrasta = useRef<FatiaNoQuadro | null>(null)
   const quadroDeVideo = useRef(0)
 
+  /* `quieto` e a releitura do relogio: so o quadro. Rotas e tags quase nunca
+     mudam (BANCO 08 secao 6, item 5) e voltam na abertura e a cada mexida
+     desta tela, que chamam sem `quieto`. */
   const carregar = useCallback(async (quieto = false) => {
     try {
+      if (quieto) {
+        setFatias(await carregarOQuadro())
+        setErro('')
+        return
+      }
       const [f, r, t] = await Promise.all([
         carregarOQuadro(),
         carregarAsRotas(),

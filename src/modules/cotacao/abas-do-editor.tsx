@@ -83,10 +83,12 @@ export function AbasDoEditor({
   }, [atual])
 
   /* os nomes vêm da VIEW, sem o corpo: desenhar seis nomes não pode baixar as
-     imagens dos layouts de seis orçamentos */
+     imagens dos layouts de seis orçamentos. E só as abertas (id=in.), e não a
+     lista inteira da casa, que cresce todo dia */
   useEffect(() => {
     let vivo = true
-    carregarCotacoes()
+    const abertas = lerAbertas()
+    carregarCotacoes({ ids: abertas.includes(atual) ? abertas : [...abertas, atual] })
       .then((l) => {
         if (!vivo) return
         const m = new Map(l.map((x) => [x.id, x]))

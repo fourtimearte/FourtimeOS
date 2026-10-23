@@ -39,7 +39,7 @@ export function TelaTabelaImpressa() {
 
   useEffect(() => {
     let vivo = true
-    carregarTabelasDePreco()
+    carregarTabelasDePreco(id)
       .then((r) => {
         if (!vivo) return
         setSemBanco(r.semBanco)

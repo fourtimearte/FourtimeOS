@@ -8,6 +8,7 @@ export {
   carregarDonosPossiveis,
   carregarLeads,
   carregarTrocasDeDono,
+  contarLeadsAbertos,
   leadViraCliente,
   marcarLido,
   moverLead,

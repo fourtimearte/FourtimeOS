@@ -122,10 +122,12 @@ function paraLinha(t: TabelaDePreco) {
 const semATabela = (e: unknown) =>
   e instanceof Error && /Não encontrei|schema cache|tabela_de_preco|PGRST205|42P01/i.test(e.message)
 
-/** Todas as tabelas, inclusive as arquivadas (a tela separa). */
-export async function carregarTabelasDePreco(): Promise<{ tabelas: TabelaDePreco[]; semBanco: boolean }> {
+/** Todas as tabelas, inclusive as arquivadas (a tela separa). Com `so`, so
+    aquela: a folha impressa pede uma e lia todas (BANCO 08 secao 6). */
+export async function carregarTabelasDePreco(so?: string): Promise<{ tabelas: TabelaDePreco[]; semBanco: boolean }> {
+  const filtro = so !== undefined ? `&id=eq.${encodeURIComponent(so)}` : ''
   try {
-    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${colunas()}&order=nome.asc`)
+    const linhas = await tabela<LinhaDaTabela[]>(`tabela_de_preco?select=${colunas()}${filtro}&order=nome.asc`)
     return { tabelas: linhas.map(deLinha), semBanco: false }
   } catch (e) {
     if (semATabela(e)) return { tabelas: [], semBanco: true }

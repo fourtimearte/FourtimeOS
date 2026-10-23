@@ -1,4 +1,4 @@
-import { chamar, tabela } from '@shared/supabase'
+import { chamar, lerTudo, tabela } from '@shared/supabase'
 import { semAcento } from '@shared/formatar'
 import {
   detalhesDaPecaDoKit,
@@ -407,19 +407,8 @@ export function salvarKit(kitId: string | null, kit: Kit): Promise<string> {
    A tela lê os layouts dos pedidos (a cópia da migração 053), as fatias do
    kanban e as peças de cada kit, e quem soma é vendas.ts. */
 
-const DE_CADA_VEZ = 1000
-
-/** Lê a lista inteira, de mil em mil: o banco devolve no máximo mil linhas por vez, e
-    uma lista cortada em silêncio daria uma soma errada sem ninguém ver.
-    O caminho precisa trazer uma ordem que não empata. */
-async function lerTudo<T>(caminho: string): Promise<T[]> {
-  const tudo: T[] = []
-  for (let de = 0; ; de += DE_CADA_VEZ) {
-    const parte = await tabela<T[]>(`${caminho}&limit=${DE_CADA_VEZ}&offset=${de}`)
-    tudo.push(...parte)
-    if (parte.length < DE_CADA_VEZ) return tudo
-  }
-}
+/* A lista inteira, de mil em mil: lerTudo, de @shared/supabase (era daqui e
+   subiu em 23/10/2026, quando as outras listas que crescem passaram a usar). */
 
 type LinhaDoLayout = {
   pedido_id: string

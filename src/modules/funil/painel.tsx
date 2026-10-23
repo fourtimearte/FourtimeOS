@@ -779,7 +779,7 @@ function AbaCliente({
       clienteId ? acharCliente(clienteId) : Promise.resolve(null),
       carregarCotacoes({ leadId, clienteId }),
       clienteId ? pedidosDoCliente(clienteId) : Promise.resolve([] as Pedido[]),
-      carregarConversa(leadId),
+      carregarConversa(leadId, 8),
     ]).then(([c, q, p, f]) => {
       if (!vivo) return
       if (c.status === 'fulfilled') setCliente(c.value ?? null)

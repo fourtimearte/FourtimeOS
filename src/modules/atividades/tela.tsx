@@ -123,7 +123,10 @@ export function TelaAtividades() {
   useEffect(() => aoVirarODia(setHoje), [])
 
   useEffect(() => {
-    const t = setInterval(() => void recarregar(), 30000)
+    /* aba escondida nao rele: ninguem esta olhando, e a volta rele na hora */
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') void recarregar()
+    }, 30000)
     const aoVoltar = () => {
       if (document.visibilityState !== 'visible') return
       setHoje(hojeISO())

@@ -24,7 +24,8 @@ const ts = require('typescript')
 const RAIZ = new URL('..', import.meta.url).pathname
 const PASTAS = ['src', 'supabase/functions', 'extensao']
 /* os ajudantes que levam um caminho do PostgREST como primeiro argumento */
-const DE_TABELA = new Set(['tabela', 'ler', 'lerDoBanco'])
+/* lerTudo (shared) e a tabela() de mil em mil: o mesmo GET, paginado */
+const DE_TABELA = new Set(['tabela', 'lerTudo', 'ler', 'lerDoBanco'])
 /* os que levam o nome de uma função do banco */
 const DE_FUNCAO = new Set(['chamar'])
 
@@ -189,7 +190,7 @@ export function usosDoBanco() {
       }
       const vale = (nome) => {
         if (rel.startsWith('src/shared/supabase/')) return false
-        if (rel.startsWith('src/')) return importados.has(nome) && (nome === 'tabela' || nome === 'chamar')
+        if (rel.startsWith('src/')) return importados.has(nome) && (nome === 'tabela' || nome === 'lerTudo' || nome === 'chamar')
         if (rel.startsWith('extensao/')) return nome === 'ler'
         if (rel.startsWith('supabase/')) return nome === 'lerDoBanco' || nome === 'chamar'
         return false

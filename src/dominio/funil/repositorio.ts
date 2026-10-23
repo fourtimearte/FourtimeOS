@@ -1,7 +1,7 @@
 import { paraLinha as cadastroParaBanco, type Cliente } from '@dominio/cliente'
 import { vinculo } from '@shared'
-import { chamar, tabela } from '@shared/supabase'
-import { ESTAGIOS, type Estagio, type Lead, type Mensagem } from './tipos'
+import { chamar, lerTudo, tabela } from '@shared/supabase'
+import { ESTAGIOS, ESTAGIO_FECHADO, type Estagio, type Lead, type Mensagem } from './tipos'
 
 /* ==========================================================================
    A conversa do funil com o Supabase.
@@ -68,16 +68,18 @@ let semA065 = false
 const naoConhece = (e: unknown) =>
   e instanceof Error && /42703|PGRST204|does not exist|não existe|column/i.test(e.message)
 
-async function lerLeads(filtro: string): Promise<LinhaDoLead[]> {
+/* `tudo`: a lista inteira, de mil em mil (lerTudo); o banco corta em mil em silêncio */
+async function lerLeads(filtro: string, tudo = false): Promise<LinhaDoLead[]> {
+  const lerAs = (caminho: string) => (tudo ? lerTudo<LinhaDoLead>(caminho) : tabela<LinhaDoLead[]>(caminho))
   if (!semA065) {
     try {
-      return await tabela<LinhaDoLead[]>(`lead?select=${COLUNAS_ANTES_DA_065}${COLUNAS_DA_065}${filtro}`)
+      return await lerAs(`lead?select=${COLUNAS_ANTES_DA_065}${COLUNAS_DA_065}${filtro}`)
     } catch (e) {
       if (!naoConhece(e)) throw e
       semA065 = true
     }
   }
-  return tabela<LinhaDoLead[]>(`lead?select=${COLUNAS_ANTES_DA_065}${filtro}`)
+  return lerAs(`lead?select=${COLUNAS_ANTES_DA_065}${filtro}`)
 }
 
 function deLinha(l: LinhaDoLead): Lead {
@@ -121,8 +123,18 @@ function paraLinha(l: Lead) {
 }
 
 export async function carregarLeads(): Promise<Lead[]> {
-  const linhas = await lerLeads('&order=ultima_msg_em.desc.nullslast,criado_em.desc')
+  const linhas = await lerLeads('&order=ultima_msg_em.desc.nullslast,criado_em.desc,id.asc', true)
   return linhas.map(deLinha)
+}
+
+/* O NUMERO DO MENU. Ele so conta os leads abertos e lia todos, com as
+   cotacoes e os pedidos de cada um (BANCO 08 secao 6, item 1). Aqui o banco ja
+   filtra os estagios fechados e manda so o id. */
+export async function contarLeadsAbertos(): Promise<number> {
+  const linhas = await lerTudo<{ id: string }>(
+    `lead?select=id&estagio=not.in.(${ESTAGIO_FECHADO.join(',')})&order=id.asc`,
+  )
+  return linhas.length
 }
 
 export async function acharLead(id: string): Promise<Lead | null> {
@@ -243,17 +255,28 @@ type LinhaDaMensagem = {
   canal?: 'whatsapp' | 'site' | 'whatsapp_vendedor'
 }
 
-export async function carregarConversa(leadId: string): Promise<Mensagem[]> {
+/* `ultimas` pede so as N mais novas ao banco (o painel do cliente mostra 8 e
+   baixava a conversa inteira, BANCO 08 secao 6). Sem ele, a conversa inteira,
+   de mil em mil: em ordem crescente, o corte de mil linhas do banco perderia
+   justamente as mensagens mais NOVAS de uma conversa longa. A volta e' sempre
+   da mais velha para a mais nova. */
+export async function carregarConversa(leadId: string, ultimas?: number): Promise<Mensagem[]> {
   if (!leadId) return []
-  const resto = '&lead_id=eq.' + encodeURIComponent(leadId) + '&order=em.asc'
+  const doLead = '&lead_id=eq.' + encodeURIComponent(leadId)
   const campos = 'id,quem,tipo,texto,arquivo,nome_do_arquivo,situacao,em'
+  const ler = (comCanal: boolean) => {
+    const base = 'mensagem?select=' + campos + (comCanal ? ',canal' : '') + doLead
+    return ultimas
+      ? tabela<LinhaDaMensagem[]>(base + '&order=em.desc,id.desc&limit=' + ultimas).then((l) => l.reverse())
+      : lerTudo<LinhaDaMensagem>(base + '&order=em.asc,id.asc')
+  }
   let linhas: LinhaDaMensagem[]
   try {
-    linhas = await tabela<LinhaDaMensagem[]>('mensagem?select=' + campos + (semA065 ? '' : ',canal') + resto)
+    linhas = await ler(!semA065)
   } catch (e) {
     if (semA065 || !naoConhece(e)) throw e
     semA065 = true
-    linhas = await tabela<LinhaDaMensagem[]>('mensagem?select=' + campos + resto)
+    linhas = await ler(false)
   }
   return linhas.map((m) => ({
     id: m.id,

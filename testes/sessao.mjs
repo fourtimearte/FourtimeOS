@@ -204,6 +204,33 @@ responder = () => resposta(200, [{ id: 1 }])
 const lido = await sb.tabela('cliente?select=id')
 conferir('a chamada que responde a tempo nao muda', Array.isArray(lido) && lido[0].id === 1, lido)
 
+console.log('\na lista inteira, de mil em mil (lerTudo)')
+{
+  const total = 2345
+  chamadas = []
+  responder = (endereco) => {
+    const u = new URL(endereco)
+    const lim = Number(u.searchParams.get('limit')), de = Number(u.searchParams.get('offset'))
+    /* o banco de verdade corta em mil, peça quanto pedir */
+    const n = Math.max(0, Math.min(lim, 1000, total - de))
+    return resposta(200, Array.from({ length: n }, (_, i) => ({ id: de + i })))
+  }
+  const todas = await sb.lerTudo('cliente_na_lista?select=id&order=nome.asc,id.asc')
+  const ids = new Set(todas.map((l) => l.id))
+  conferir('as 2.345 linhas chegam, sem faltar nem repetir', todas.length === total && ids.size === total, todas.length)
+  conferir('em três pedidos, com a ordem e o filtro de quem pediu', chamadas.length === 3 && chamadas.every((c) => c.endereco.includes('order=nome.asc,id.asc')) && chamadas[2].endereco.includes('offset=2000'), chamadas.map((c) => c.endereco.split('?')[1]))
+  chamadas = []
+  responder = () => resposta(200, Array.from({ length: 1000 }, (_, i) => ({ id: i })))
+  let vezes = 0
+  responder = (endereco) => {
+    vezes++
+    const de = Number(new URL(endereco).searchParams.get('offset'))
+    return resposta(200, de === 0 ? Array.from({ length: 1000 }, (_, i) => ({ id: i })) : [])
+  }
+  const exatas = await sb.lerTudo('lead?select=id&order=id.asc')
+  conferir('com mil cravadas, pergunta mais uma vez e para no vazio', exatas.length === 1000 && vezes === 2, [exatas.length, vezes])
+}
+
 console.log('\nsair')
 chamadas = []
 responder = () => resposta(204, null)

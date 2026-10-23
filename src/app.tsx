@@ -49,7 +49,7 @@ import {
 import { nomeDoPapel } from '@dominio/acessos'
 import type { Painel, Pessoa } from '@dominio/sessao'
 import { paginasEscondidas } from '@dominio/regulagem'
-import { ESTAGIO_FECHADO, NOME_DO_ESTAGIO, carregarLeads } from '@dominio/funil'
+import { NOME_DO_ESTAGIO, carregarLeads, contarLeadsAbertos } from '@dominio/funil'
 import { carregarClientes } from '@dominio/cliente'
 import { carregarEmpresa } from '@dominio/empresa'
 import { NOME_DO_ESTADO_DA_COTACAO, carregarCotacoes } from '@dominio/cotacao'
@@ -160,8 +160,8 @@ export function App() {
       /* o menu nao e o lugar de gritar que o banco caiu: a tela que a pessoa
          abrir vai dizer isso com todas as letras */
     }
-    carregarLeads()
-      .then((l) => vivo && setLeadsAtivos(l.filter((x) => !ESTAGIO_FECHADO.includes(x.estagio)).length))
+    contarLeadsAbertos()
+      .then((n) => vivo && setLeadsAtivos(n))
       .catch(calar)
     carregarMateriais()
       .then((m) => vivo && setFaltando(abaixoDoMinimo(m).length))

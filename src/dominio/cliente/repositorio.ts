@@ -1,5 +1,5 @@
 import { vinculo } from '@shared'
-import { tabela } from '@shared/supabase'
+import { lerTudo, tabela } from '@shared/supabase'
 import type { Cliente, Segmento, TipoDePessoa } from './tipos'
 
 /* ==========================================================================
@@ -123,7 +123,8 @@ async function comONomeDoVendedor(cs: Cliente[]): Promise<Cliente[]> {
 }
 
 export async function carregarClientes(): Promise<Cliente[]> {
-  const linhas = await tabela<LinhaDoCliente[]>(`cliente_na_lista?select=${COLUNAS}&order=nome.asc`)
+  /* a lista inteira, de mil em mil (lerTudo): o banco corta em mil em silêncio */
+  const linhas = await lerTudo<LinhaDoCliente>(`cliente_na_lista?select=${COLUNAS}&order=nome.asc,id.asc`)
   return comONomeDoVendedor(linhas.map(deLinha))
 }
 

@@ -100,12 +100,18 @@ export function apagarRascunho(chave: string): Promise<unknown> {
    lê, e a tela cai ("Cannot read properties of undefined"), de novo a cada
    vez que abre, porque o rascunho volta sempre. A rede de segurança pergunta
    aqui qual foi o último que voltou e oferece descartar só ele. */
-const voltaram = new Map<string, number>()
+const voltaram = new Map<string, { em: number; voltouEm: number }>()
 
-/** O último rascunho que voltou para a tela nesta visita, e de quando ele é. */
+/* Rascunho que voltou ha mais tempo que isto nao e suspeito: o tombo de um
+   rascunho torto acontece no primeiro desenho depois de ele voltar. Sem o
+   prazo, a mudanca nao salva de OUTRA tela, de uma hora atras, seria
+   oferecida para descarte num tombo que nao tem nada a ver com ela. */
+const SUSPEITO_POR = 60_000
+
+/** O último rascunho que voltou para a tela nesta visita (no último minuto), e de quando ele é. */
 export function ultimoRascunhoQueVoltou(): { chave: string; em: number } | null {
   let ultimo: { chave: string; em: number } | null = null
-  for (const [chave, em] of voltaram) ultimo = { chave, em }
+  for (const [chave, r] of voltaram) if (Date.now() - r.voltouEm <= SUSPEITO_POR) ultimo = { chave, em: r.em }
   return ultimo
 }
 
@@ -186,7 +192,7 @@ export function useRascunho<T>({
     void lerRascunho<T>(chave).then(r => {
       if (!vivo || !r) return
       voltaram.delete(chave)
-      voltaram.set(chave, r.em)
+      voltaram.set(chave, { em: r.em, voltouEm: Date.now() })
       try {
         voltar.current(r)
       } catch (e) {

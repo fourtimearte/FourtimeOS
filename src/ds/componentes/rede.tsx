@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { apagarRascunho, quandoFoiOrascunho, ultimoRascunhoQueVoltou } from './rascunho'
 
 /* ==========================================================================
    A rede de seguranca.
@@ -19,13 +20,17 @@ type Props = {
   /** chamado ao tentar de novo, para quem quiser desfazer o que causou o tombo */
   aoTentar?: () => void
 }
-type Estado = { erro: Error | null }
+/* `rascunho`: o ultimo rascunho que voltou nesta visita, lido na hora do
+   tombo. Um rascunho guardado por uma versao anterior pode derrubar a tela
+   toda vez que ela abre, porque ele volta sempre: "Tentar de novo" caia de
+   novo. Com ele, a rede oferece descartar SO aquele rascunho (19/10/2026). */
+type Estado = { erro: Error | null; rascunho: { chave: string; em: number } | null }
 
 export class RedeDeSeguranca extends Component<Props, Estado> {
-  state: Estado = { erro: null }
+  state: Estado = { erro: null, rascunho: null }
 
-  static getDerivedStateFromError(erro: Error): Estado {
-    return { erro }
+  static getDerivedStateFromError(erro: Error): Partial<Estado> {
+    return { erro, rascunho: ultimoRascunhoQueVoltou() }
   }
 
   componentDidCatch(erro: Error, info: ErrorInfo) {
@@ -44,13 +49,34 @@ export class RedeDeSeguranca extends Component<Props, Estado> {
           o tombo foi no desenho, não no dado.
         </p>
         <pre>{this.state.erro.message}</pre>
+        {this.state.rascunho ? (
+          <p>
+            Esta tela tinha uma mudança não salva de {quandoFoiOrascunho(this.state.rascunho.em)}, guardada pelo
+            navegador. Se ela for de uma versão anterior do sistema, pode ser o que derrubou a tela.
+          </p>
+        ) : null}
         <div className="rede-bts">
+          {this.state.rascunho ? (
+            <button
+              type="button"
+              className="btn btn-primario"
+              onClick={() => {
+                const { chave } = this.state.rascunho!
+                void apagarRascunho(chave).then(() => {
+                  this.props.aoTentar?.()
+                  this.setState({ erro: null, rascunho: null })
+                })
+              }}
+            >
+              Descartar a mudança não salva e abrir de novo
+            </button>
+          ) : null}
           <button
             type="button"
-            className="btn btn-primario"
+            className={this.state.rascunho ? 'btn btn-contorno' : 'btn btn-primario'}
             onClick={() => {
               this.props.aoTentar?.()
-              this.setState({ erro: null })
+              this.setState({ erro: null, rascunho: null })
             }}
           >
             Tentar de novo
@@ -59,7 +85,7 @@ export class RedeDeSeguranca extends Component<Props, Estado> {
             type="button"
             className="btn btn-contorno"
             onClick={() => {
-              this.setState({ erro: null })
+              this.setState({ erro: null, rascunho: null })
               this.props.aoVoltar?.()
             }}
           >

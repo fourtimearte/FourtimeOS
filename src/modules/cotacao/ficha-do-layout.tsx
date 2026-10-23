@@ -50,10 +50,13 @@ export function FichaDoLayout({
   bloco,
   travado,
   aoMudar,
+  tabelaId,
 }: {
   bloco: Bloco
   travado: boolean
   aoMudar: (b: Bloco) => void
+  /** a tabela de preço do layout (as opções do Patch e do Bordado) */
+  tabelaId?: string
 }) {
   const [menu, setMenu] = useState<'' | 'tecido'>('')
   /* o tecido e a cor vêm do que está cadastrado no Estoque (11/10/2026) */
@@ -177,7 +180,7 @@ export function FichaDoLayout({
       </div>
 
       {/* --- design ----------------------------------------------------------- */}
-      <EditorDoDesign bloco={bloco} travado={travado} aoMudar={aoMudar} />
+      <EditorDoDesign bloco={bloco} travado={travado} aoMudar={aoMudar} tabelaId={tabelaId} />
 
       <Construcao bloco={bloco} travado={travado} aoMudar={aoMudar} />
 

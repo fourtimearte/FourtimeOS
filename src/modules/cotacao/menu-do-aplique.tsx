@@ -4,11 +4,13 @@ import type { Design } from '@dominio/layout'
 import {
   TAMANHOS_DE_APLIQUE,
   TIPOS_DE_PATCH,
+  comOpcaoDoAplique,
   comQuantidade,
   comTamanho,
   comTipoDePatch,
   type DaTecnica,
 } from './design-do-layout'
+import { opcoesDoAplique, usarTabelasDaCotacao } from './tabelas-da-cotacao'
 
 /* ==========================================================================
    O BOTÃO DIREITO NO INTERRUPTOR DO BORDADO E DO PATCH, um só para a ficha
@@ -18,6 +20,12 @@ import {
    Henrique) escolhe o tipo, Liso, Relevo ou 3D. Os dois escolhem quantos vão
    em cada peça (o Passo do Design System); o preço de cada um mora na aba
    Extras da tabela de preço (083).
+
+   AS OPÇÕES SÃO AS DA TABELA (23/10/2026, pedido do Henrique): o menu lista
+   o que a aba Extras da tabela de preço do layout tem, com o nome e a medida
+   de lá, e não mais a lista fixa. Uma opção nova criada na tabela aparece
+   aqui sem mexer em código, e o que se escolhe é o id que a conta procura.
+   Sem tabela no layout (ou sem opção nela), vale a lista fixa de antes.
    ========================================================================== */
 
 export type AtualDoAplique = {
@@ -34,6 +42,7 @@ export function MenuDoAplique({
   atual,
   aplicar,
   nosMarcados,
+  tabelas,
 }: {
   t: DaTecnica | null
   ancora: RefObject<HTMLElement | null>
@@ -43,32 +52,53 @@ export function MenuDoAplique({
   aplicar: (muda: (design: Design[]) => Design[]) => void
   /** o lote diz em quantos vale */
   nosMarcados?: number
+  /** as tabelas de preço dos layouts que o menu muda (uma na ficha, as dos marcados no lote) */
+  tabelas?: string[]
 }) {
+  const { todas } = usarTabelasDaCotacao()
   const onde = nosMarcados ? ' nos ' + nosMarcados + ' marcados' : ''
   const patch = t?.menu === 'patch'
+  const daTabela = t ? opcoesDoAplique(todas, tabelas ?? [], patch ? 'patch' : 'bordado') : []
+  const escolhido = patch ? atual.tipo : atual.tamanho
   const itens = !t
     ? []
-    : patch
+    : daTabela.length
       ? [
-          ...TIPOS_DE_PATCH.map(x => ({
-            rotulo: x.nome,
-            on: atual.tipo === x.valor,
-            aoEscolher: () => aplicar(d => comTipoDePatch(d, t, x.valor)),
+          ...daTabela.map(o => ({
+            rotulo: o.medida ? `${o.nome}  ${o.medida}` : o.nome,
+            on: escolhido === o.id,
+            aoEscolher: () => aplicar(d => comOpcaoDoAplique(d, t, o.id, o.nome)),
           })),
-          ...(atual.tipo || nosMarcados
-            ? [{ rotulo: 'Sem tipo', aoEscolher: () => aplicar(d => comTipoDePatch(d, t, '')) }]
+          ...(escolhido || nosMarcados
+            ? [
+                {
+                  rotulo: patch ? 'Sem tipo' : 'Sem tamanho',
+                  aoEscolher: () => aplicar(d => (patch ? comTipoDePatch(d, t, '') : comTamanho(d, t, ''))),
+                },
+              ]
             : []),
         ]
-      : [
-          ...TAMANHOS_DE_APLIQUE.map(x => ({
-            rotulo: `${x.valor}  ${x.nome}`,
-            on: atual.tamanho === x.valor,
-            aoEscolher: () => aplicar(d => comTamanho(d, t, x.valor)),
-          })),
-          ...(atual.tamanho || nosMarcados
-            ? [{ rotulo: 'Sem tamanho', aoEscolher: () => aplicar(d => comTamanho(d, t, '')) }]
-            : []),
-        ]
+      : patch
+        ? [
+            ...TIPOS_DE_PATCH.map(x => ({
+              rotulo: x.nome,
+              on: atual.tipo === x.valor,
+              aoEscolher: () => aplicar(d => comTipoDePatch(d, t, x.valor)),
+            })),
+            ...(atual.tipo || nosMarcados
+              ? [{ rotulo: 'Sem tipo', aoEscolher: () => aplicar(d => comTipoDePatch(d, t, '')) }]
+              : []),
+          ]
+        : [
+            ...TAMANHOS_DE_APLIQUE.map(x => ({
+              rotulo: `${x.valor}  ${x.nome}`,
+              on: atual.tamanho === x.valor,
+              aoEscolher: () => aplicar(d => comTamanho(d, t, x.valor)),
+            })),
+            ...(atual.tamanho || nosMarcados
+              ? [{ rotulo: 'Sem tamanho', aoEscolher: () => aplicar(d => comTamanho(d, t, '')) }]
+              : []),
+          ]
   const q = atual.quantidade
   return (
     <MenuDeContexto

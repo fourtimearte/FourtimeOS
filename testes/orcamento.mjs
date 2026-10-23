@@ -482,7 +482,7 @@ await secao(async () => {
   const adicionais = {
     materiais: [{ tecido: 'Dryfit poliéster 100%', valor: 2.5 }],
     extras: [
-      { id: 'patch', nome: 'Patch', tecnica: 'patch', opcoes: [{ id: 'liso', nome: 'Liso', medida: '', valor: 3.5 }, { id: 'relevo', nome: 'Relevo', medida: '', valor: 5 }, { id: '3d', nome: '3D', medida: '', valor: 7.5 }] },
+      { id: 'patch', nome: 'Patch', tecnica: 'patch', opcoes: [{ id: 'liso', nome: 'Liso', medida: '', valor: 3.5 }, { id: 'relevo', nome: 'Relevo', medida: '', valor: 5 }, { id: '3d', nome: '3D', medida: '', valor: 7.5 }, { id: 'emborrachado', nome: 'Emborrachado', medida: '', valor: 6 }] },
       { id: 'bordado', nome: 'Bordado', tecnica: 'bordado', opcoes: [{ id: 'P', nome: 'P', medida: '3 x 3 cm', valor: 4 }, { id: 'M', nome: 'M', medida: '6 x 6 cm', valor: 7 }, { id: 'G', nome: 'G', medida: '9 x 9 cm', valor: 11 }] },
       { id: 'extra-1', nome: 'Etiqueta bordada', tecnica: '', opcoes: [{ id: 'op1', nome: 'Pequena', medida: '', valor: 2 }] },
     ],
@@ -569,6 +569,28 @@ await secao(async () => {
   const dtfD = p && p.bloco.design.find((d) => d.tecnica === 'dtf')
   conta(p && p.adicional > 0 && p.conta.length === 6 && dtfD.dtfPorPeca === 12 && !dtfD.combinacao && p.extras[0].extra === 'extra-1',
     'o banco recebe o adicional, a conta e as escolhas do layout: ' + (p && JSON.stringify({ adicional: p.adicional, partes: p.conta.length, dtf: dtfD, extras: p.extras })))
+  /* o botão direito no Patch e no Bordado lista as opções DA TABELA (23/10/2026):
+     a opção nova Emborrachado, que a lista fixa não tem, e o Bordado com a medida */
+  const chave = (nome) => pg.locator('.ct-ly-ficha .ct-chaves-5 .ct-chave', { hasText: nome }).first()
+  const itensDoMenu = async () => (await pg.locator('[popover]:popover-open .mn-item').allInnerTexts()).map((x) => x.replace(/\s+/g, ' ').trim())
+  await chave('Patch').click({ button: 'right' })
+  await pausa(pg, 250)
+  const doPatch = await itensDoMenu()
+  conta(doPatch.length === 4 && /^Liso/.test(doPatch[0]) && /^Emborrachado/.test(doPatch[3]),
+    'o botão direito no Patch lista as opções da tabela, com a nova Emborrachado: ' + doPatch.join(' | '))
+  await pg.locator('[popover]:popover-open .mn-item', { hasText: 'Emborrachado' }).click()
+  await pausa(pg, 300)
+  await pg.keyboard.press('Escape')
+  await pausa(pg, 200)
+  const pat = await texto(pg, '.ct-conta-p[data-parte="patch"]')
+  conta(await pg.locator('.ct-ly-ficha .ct-chaves-5 .ct-chave[aria-pressed="true"]', { hasText: 'Patch Emborrachado' }).count() === 1 && /6,00/.test(pat),
+    'escolher Emborrachado liga o Patch com o nome da tabela e o preço dela na conta: ' + pat)
+  await chave('Bordado').click({ button: 'right' })
+  await pausa(pg, 250)
+  const doBordado = await itensDoMenu()
+  conta(doBordado.length === 4 && /^P 3 x 3 cm/.test(doBordado[0]) && /^M 6 x 6 cm/.test(doBordado[1]) && /Sem tamanho/.test(doBordado[3]) && await pg.locator('[popover]:popover-open .mn-item.on', { hasText: 'M 6 x 6 cm' }).count() === 1,
+    'o botão direito no Bordado lista os tamanhos da tabela com a medida, e marca o M escolhido: ' + doBordado.join(' | '))
+  await pg.keyboard.press('Escape')
   conta(!erros.length, 'sem erro de JavaScript (conta da peça): ' + erros.join(' | '))
 })
 

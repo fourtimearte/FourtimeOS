@@ -91,10 +91,13 @@ export function EditorDoDesign({
   bloco,
   travado,
   aoMudar,
+  tabelaId,
 }: {
   bloco: Bloco
   travado: boolean
   aoMudar: (b: Bloco) => void
+  /** a tabela de preço do layout: o botão direito do Patch e do Bordado lista as opções dela */
+  tabelaId?: string
 }) {
   const [menu, setMenu] = useState<'' | 'codigo'>('')
   /* as cores de impressão do banco: 300 do DTF e 87 da sublimação */
@@ -227,6 +230,7 @@ export function EditorDoDesign({
           return { tamanho: d?.tamanho ?? '', tipo: d?.tipoDePatch ?? '', quantidade: quantidadeDe(d) }
         })()}
         aplicar={muda => mudar({ design: muda(bloco.design) })}
+        tabelas={tabelaId ? [tabelaId] : []}
       />
     </>
   )

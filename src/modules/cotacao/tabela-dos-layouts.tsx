@@ -23,6 +23,7 @@ import {
 import {
   SEM_TABELA,
   pecasDoProduto,
+  tabelaDoLayout,
   totalDoProduto,
   type Cotacao,
   type ProdutoCotado,
@@ -502,6 +503,7 @@ export function TabelaDosLayouts({
             produtos={produtos}
             indicesMarcados={indicesMarcados}
             aoMudarBloco={mudarBloco}
+            tabelaDe={i => (produtos[i] ? tabelaDoLayout(cotacao, produtos[i]) : '')}
           />
         ) : null}
       </Flutuante>
@@ -514,11 +516,14 @@ function ConteudoDoBalao({
   produtos,
   indicesMarcados,
   aoMudarBloco,
+  tabelaDe,
 }: {
   balao: Balao
   produtos: ProdutoCotado[]
   indicesMarcados: number[]
   aoMudarBloco: (i: number, b: Bloco) => void
+  /** a tabela de preço do layout i (as opções do Patch e do Bordado) */
+  tabelaDe: (i: number) => string
 }) {
   if (balao.tipo === 'etiqueta' || balao.tipo === 'design') {
     const p = produtos[balao.i]
@@ -535,7 +540,7 @@ function ConteudoDoBalao({
             aoMudar={b => aoMudarBloco(balao.i, b)}
           />
         ) : (
-          <EditorDoDesign bloco={p.bloco} travado={false} aoMudar={b => aoMudarBloco(balao.i, b)} />
+          <EditorDoDesign bloco={p.bloco} travado={false} aoMudar={b => aoMudarBloco(balao.i, b)} tabelaId={tabelaDe(balao.i)} />
         )}
       </div>
     )
@@ -564,6 +569,7 @@ function ConteudoDoBalao({
       indices={indicesMarcados}
       produtos={produtos}
       aoMudarBloco={aoMudarBloco}
+      tabelas={indicesMarcados.map(tabelaDe)}
     />
   )
 }
@@ -584,11 +590,14 @@ function DesignDoLote({
   indices,
   produtos,
   aoMudarBloco,
+  tabelas,
 }: {
   blocos: Bloco[]
   indices: number[]
   produtos: ProdutoCotado[]
   aoMudarBloco: (i: number, b: Bloco) => void
+  /** as tabelas de preço dos marcados (as opções do Patch e do Bordado) */
+  tabelas: string[]
 }) {
   const coresDoBanco = usarAbasDeCor()
   const [paleta, setPaleta] = useState<DaTecnica | null>(null)
@@ -774,6 +783,7 @@ function DesignDoLote({
         atual={doTamanho ? comum(doTamanho) : { tamanho: '', tipo: '', quantidade: 1 }}
         aplicar={muda => emTodos(muda)}
         nosMarcados={n}
+        tabelas={tabelas}
       />
     </div>
   )

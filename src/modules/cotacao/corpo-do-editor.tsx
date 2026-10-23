@@ -12,7 +12,7 @@ import {
   type Bloco,
   type Imagem,
 } from '@dominio/layout'
-import type { Cotacao, ProdutoCotado } from '@dominio/cotacao'
+import { tabelaDoLayout, type Cotacao, type ProdutoCotado } from '@dominio/cotacao'
 import { ColunaDosLayouts } from './coluna-dos-layouts'
 import { FichaDoLayout } from './ficha-do-layout'
 import { CartaoDaGrade } from './grade-deitada'
@@ -143,7 +143,7 @@ export function CorpoDoEditor({
             }
           />
           <div className="ct-ly-ficha">
-            <FichaDoLayout bloco={p.bloco} travado={travado} aoMudar={mudarBloco} />
+            <FichaDoLayout bloco={p.bloco} travado={travado} aoMudar={mudarBloco} tabelaId={tabelaDoLayout(cotacao, p)} />
           </div>
         </>
       ) : null}

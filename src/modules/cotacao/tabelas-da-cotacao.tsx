@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { Seletor } from '@ds'
 import { carregarKits } from '@dominio/produto'
-import { carregarTabelasDePreco, tabelasParaEscolher, type TabelaDePreco } from '@dominio/preco'
+import { carregarTabelasDePreco, tabelasParaEscolher, type OpcaoDeExtra, type TabelaDePreco } from '@dominio/preco'
 import {
   SEM_TABELA,
   type Cotacao,
@@ -31,6 +31,19 @@ export const ContextoDasTabelas = createContext<TabelasDaCotacao>(VAZIO)
 
 export function usarTabelasDaCotacao(): TabelasDaCotacao {
   return useContext(ContextoDasTabelas)
+}
+
+/* AS OPÇÕES DO PATCH E DO BORDADO, como a tabela de preço chama (aba
+   Extras, 083): o tipo do patch e o tamanho do bordado que o botão direito
+   oferece. Com vários layouts marcados em tabelas diferentes, a soma das
+   opções, sem repetir id (o preço é achado pelo id, na tabela de cada um). */
+export function opcoesDoAplique(todas: TabelaDePreco[], ids: string[], tecnica: 'patch' | 'bordado'): OpcaoDeExtra[] {
+  const vistas = new Map<string, OpcaoDeExtra>()
+  for (const id of new Set(ids)) {
+    const ex = todas.find((t) => t.id === id)?.adicionais.extras.find((e) => e.tecnica === tecnica)
+    for (const o of ex?.opcoes ?? []) if (o.id && o.nome && !vistas.has(o.id)) vistas.set(o.id, o)
+  }
+  return [...vistas.values()]
 }
 
 /** Lê as tabelas e as peças dos kits, uma vez por editor. */

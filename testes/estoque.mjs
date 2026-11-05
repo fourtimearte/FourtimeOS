@@ -413,8 +413,9 @@ for (const tema of ['light', 'dark']) {
     /* a cor sem ficha, e copiar de outra */
     await pg.locator(cor('DRYFIT POLIESTER 100% · Azul Marinho')).click(); await pausa(pg, 500)
     const vazia = await texto(pg, '[data-ficha-tecnica]')
-    conta(/ainda não tem ficha técnica/.test(vazia) && /Gramatura 160 g\/m² do catálogo de tecidos/.test(vazia) && await pg.locator('[data-ficha-tecnica] .ft-simbolo').count() === 0, `${T} ficha técnica: a cor sem ficha diz que não tem, e mostra a gramatura do catálogo dizendo de onde vem (${vazia.slice(0, 130)})`)
-    await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+    /* desde a 087 a cor sem ficha própria usa a do tecido, e diz isso */
+    conta(/usa a ficha de DRYFIT POLIESTER 100%/.test(vazia) && /Composição Falta/.test(vazia) && /Gramatura 160 g\/m² do catálogo de tecidos/.test(vazia) && await pg.locator('[data-ficha-tecnica] .ft-simbolo').count() === 0, `${T} ficha técnica: a cor sem ficha própria diz que usa a do tecido, que a composição falta, e mostra a gramatura do catálogo dizendo de onde vem (${vazia.slice(0, 160)})`)
+    await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Ficha da cor' }).click(); await pausa(pg, 600)
     conta((await ligados()).length === 0 && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '', `${T} ficha técnica: a ficha da cor que não tem nada abre vazia`)
     await pg.locator('dialog[open] [data-copiar] .sel-gatilho, dialog[open] [data-copiar] button').first().click(); await pausa(pg, 300)
     await pg.locator('.mn.flutua').getByText('Preto', { exact: true }).click(); await pausa(pg, 300)
@@ -435,8 +436,16 @@ for (const tema of ['light', 'dark']) {
 
     /* o tecido inteiro: várias cores de uma vez, e só muda o que for mexido */
     await pg.locator(`${DRY} .em-t-nome`).click(); await pausa(pg, 500)
-    const resumo = await texto(pg, '[data-fichas-das-cores]')
-    conta(/2 cores têm ficha técnica/.test(resumo) && /Faltam: Azul Marinho, Vermelho Fourtime/.test(resumo), `${T} ficha técnica: a ficha do tecido diz quantas cores têm ficha e quais faltam (${resumo.slice(0, 110)})`)
+    const resumo = await texto(pg, '[data-ficha-do-tecido]')
+    conta(/Vale para as 4 cores deste tecido/.test(resumo) && /Composição Falta/.test(resumo) && /2 cores com ficha própria: Branco, Preto/.test(resumo), `${T} ficha técnica: a ficha do tecido vale para as 4 cores, diz o que falta e quais cores têm ficha própria (${resumo.slice(0, 160)})`)
+    /* a ficha do tecido (087): marcar os cuidados grava no tecido, uma vez só */
+    await pg.locator('[data-ficha-do-tecido]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+    conta(/^Ficha de DRYFIT POLIESTER 100%/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] [data-editar-ficha-do-tecido] .ft-botao').count() === 38, `${T} ficha do tecido: "Editar a ficha" abre a ficha do tecido, com os 38 símbolos`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="lavar-30"]').click(); await pausa(pg, 150)
+    await pg.locator('dialog[open] .ft-botao[data-cod="nao-alvejar"]').click(); await pausa(pg, 150)
+    await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
+    g = gravados.filter((x) => x.u === 'rpc/definir_ficha_do_tecido').at(-1)
+    conta(g && g.corpo.p_tecido && JSON.stringify(g.corpo.p_mudanca) === '{"cuidados":["lavar-30","nao-alvejar"],"cuidados_a_confirmar":[]}' && await pg.locator('dialog[open]').count() === 0, `${T} ficha do tecido: só os cuidados mexidos vão para o tecido, sem nada a confirmar, e a ficha fecha (${g ? JSON.stringify(g.corpo).slice(0, 160) : 'nada gravado'})`)
     await pg.locator('[data-ficha] .em-ficha-topo').getByRole('button', { name: 'Editar', exact: true }).click(); await pausa(pg, 600)
     conta(/^Ficha das 4 cores de DRYFIT POLIESTER 100%/.test(await texto(pg, 'dialog[open] .sobre-topo')) && await pg.locator('dialog[open] [data-lote] .ft-lote-item').count() === 4 && await pg.locator('dialog[open] table').count() === 0, `${T} ficha técnica: "Editar" no tecido abre a ficha das 4 cores de uma vez (${await texto(pg, 'dialog[open] .sobre-topo')})`)
     const varia = await pg.locator('dialog[open] .es-campo-topo small', { hasText: 'varia' }).count()
@@ -1093,7 +1102,7 @@ await caso('ficha recusada', async () => {
   await abrirGrupo(pg)
   await pg.locator(`${DRY} .em-t-seta`).click(); await pausa(pg, 250)
   await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).click(); await pausa(pg, 500)
-  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Ficha da cor' }).click(); await pausa(pg, 600)
   await pg.locator('dialog[open] input[aria-label="Gramatura"]').fill('205'); await pausa(pg, 150)
   await pg.locator('dialog[open] .sobre-pe').getByRole('button', { name: 'Salvar a ficha' }).click(); await pausa(pg, 800)
   conta(await pg.locator('dialog[open] [data-editar-ficha]').count() === 1 && /A composição soma 90%, e tem de somar 100/.test(await texto(pg, 'dialog[open] [data-editar-ficha]')) && await pg.locator('dialog[open] input[aria-label="Gramatura"]').inputValue() === '205', `ficha recusada: quando o banco recusa, a ficha continua aberta, mostra o motivo e guarda o que foi escrito`)
@@ -1113,7 +1122,7 @@ await caso('ficha técnica 390', async () => {
   await pg.locator(cor('DRYFIT POLIESTER 100% · Preto')).click(); await pausa(pg, 500)
   conta(await pg.locator('[data-ficha-tecnica] .ft-simbolo').count() === 6 && (await sobra(pg)) <= 0, 'ficha técnica 390: o cartão da ficha cabe no celular, com os 6 símbolos')
   await pg.screenshot({ path: `${PASTA}/ficha-tecnica-390-dark.png`, fullPage: true })
-  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Editar a ficha' }).click(); await pausa(pg, 600)
+  await pg.locator('[data-ficha-tecnica]').getByRole('button', { name: 'Ficha da cor' }).click(); await pausa(pg, 600)
   const ed = await pg.locator('dialog[open] [data-editar-ficha]').evaluate((e) => ({ colunas: getComputedStyle(e).gridTemplateColumns.split(' ').length, sobra: e.scrollWidth - e.clientWidth, botao: Math.round(e.querySelector('.ft-botao').getBoundingClientRect().width) }))
   conta(ed.colunas === 1 && ed.sobra <= 0 && ed.botao >= 40 && await pg.locator('dialog[open] .ft-botao').count() === 38, `ficha técnica 390: no celular o editor fica em uma coluna, os 38 símbolos com 40 px de toque, sem rolar para o lado (${JSON.stringify(ed)})`)
   await pg.screenshot({ path: `${PASTA}/editar-ficha-390-dark.png`, fullPage: false })

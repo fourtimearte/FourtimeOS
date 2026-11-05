@@ -1,5 +1,5 @@
 {
- "migracoes": "c2bce462594f2d9f67fe4ebc768e68ac1d58ff5765794f4c485fc82193e2ca21",
+ "migracoes": "170dfbe13e0da10eea3692c3ecb0e852990f4a13351c409850a0df549bd6ac97",
  "relacoes": {
   "acao": {
    "tipo": "tabela",
@@ -2309,7 +2309,10 @@
     "ordem",
     "ativo",
     "gramatura",
-    "largura"
+    "largura",
+    "composicao",
+    "cuidados",
+    "cuidados_a_confirmar"
    ],
    "geradas": [],
    "chaves": {
@@ -2810,6 +2813,15 @@
     "anon": false
    }
   ],
+  "conferir_a_ficha_do_tecido": [
+   {
+    "args": [],
+    "padrao": [],
+    "retorna": "trigger",
+    "definer": false,
+    "anon": false
+   }
+  ],
   "conferir_a_saida": [
    {
     "args": [
@@ -2964,6 +2976,18 @@
     ],
     "padrao": [],
     "retorna": "integer",
+    "definer": true,
+    "anon": false
+   }
+  ],
+  "definir_ficha_do_tecido": [
+   {
+    "args": [
+     "p_tecido",
+     "p_mudanca"
+    ],
+    "padrao": [],
+    "retorna": "void",
     "definer": true,
     "anon": false
    }
@@ -4179,6 +4203,7 @@
   "cliente",
   "conferencia_de_boleto",
   "conferir_a_ficha_do_material",
+  "conferir_a_ficha_do_tecido",
   "consumo_da_peca",
   "consumo_da_referencia",
   "consumo_do_documento",

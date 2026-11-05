@@ -1,18 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { ClipboardText, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react'
-import { avisar, Aviso, Botao, Campo, Entrada, Marcacao, Modal, Seletor, TituloCartao } from '@ds'
+import {
+  avisar,
+  Aviso,
+  Botao,
+  Campo,
+  Entrada,
+  Marcacao,
+  Modal,
+  Selo,
+  Seletor,
+  TituloCartao,
+} from '@ds'
 import {
   composicaoPorExtenso,
   definirCadastro,
+  fichaQueVale,
+  temFichaPropria,
   minimoRecomendado,
   nomeInteiro,
   nomeNoGrupo,
   quantoNaUnidade,
   rendimento,
   salvarCadastroDoMaterial,
+  salvarFichaDoTecido,
   type Fibra,
+  type FichaDoTecido,
   type Material,
+  type MudancaDaFichaDoTecido,
   type MudancaDoCadastro,
+  type TecidoNaArvore,
   type UsoDoMaterial,
 } from '@dominio/estoque'
 import {
@@ -86,24 +104,192 @@ export function temFicha(m: Material): boolean {
 }
 
 /* --- o que a etiqueta diz: os símbolos e a frase de cada um ------------------ */
-export function EtiquetaDeCuidados({ cuidados }: { cuidados: string[] }) {
+export function EtiquetaDeCuidados({
+  cuidados,
+  aConfirmar = [],
+}: {
+  cuidados: string[]
+  /** os que ainda precisam ser conferidos: ganham o selo "A confirmar" (087) */
+  aConfirmar?: string[]
+}) {
   const lista = cuidadosEmOrdem(cuidados)
   if (!lista.length) return null
   return (
     <div className="ft-etiqueta" data-etiqueta="">
       <div className="ft-etiqueta-simbolos">
         {lista.map(c => (
-          <span key={c.cod} className="ft-simbolo" title={c.frase}>
+          <span
+            key={c.cod}
+            className={aConfirmar.includes(c.cod) ? 'ft-simbolo a-confirmar' : 'ft-simbolo'}
+            title={aConfirmar.includes(c.cod) ? c.frase + ' (a confirmar)' : c.frase}
+          >
             <SimboloDeCuidado cod={c.cod} />
           </span>
         ))}
       </div>
       <ul className="ft-etiqueta-frases">
         {lista.map(c => (
-          <li key={c.cod}>{c.frase}</li>
+          <li key={c.cod} data-a-confirmar={aConfirmar.includes(c.cod) ? '' : undefined}>
+            {c.frase}
+            {aConfirmar.includes(c.cod) ? <Selo tom="warn">A confirmar</Selo> : null}
+          </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+/* --- as peças que os dois editores dividem ------------------------------------
+   A composição em linhas (fibra e porcentagem) e a grade dos símbolos. O
+   editor da cor e o do tecido usam as mesmas, para a ficha se preencher do
+   mesmo jeito nos dois lugares. */
+type LinhaDeFibra = { fibra: string; pct: string }
+
+const emTexto = (n: number) => (n > 0 ? String(n).replace('.', ',') : '')
+
+/** as contas da composição escrita: a soma e se ela está boa */
+function contaDaComposicao(fibras: LinhaDeFibra[]) {
+  const linhasCheias = fibras.filter(f => f.fibra || f.pct.trim())
+  const soma = linhasCheias.reduce((s, f) => s + (lerNumero(f.pct) || 0), 0)
+  const fibraRuim = linhasCheias.some(f => {
+    const p = lerNumero(f.pct)
+    return !f.fibra || p === null || Number.isNaN(p) || p <= 0 || p > 100
+  })
+  const fibraRepetida =
+    new Set(linhasCheias.map(f => f.fibra.toLowerCase())).size !== linhasCheias.length
+  const ruim =
+    linhasCheias.length > 0 && (fibraRuim || fibraRepetida || Math.abs(soma - 100) > 0.01)
+  return { linhasCheias, soma, fibraRuim, fibraRepetida, ruim }
+}
+
+function EditorDaComposicao({
+  fibras,
+  aoMudar,
+  marca,
+  mostrarErro,
+}: {
+  fibras: LinhaDeFibra[]
+  aoMudar: (f: LinhaDeFibra[]) => void
+  /** o que vai ao lado do título: "varia", "do tecido" */
+  marca?: ReactNode
+  mostrarErro: boolean
+}) {
+  const c = contaDaComposicao(fibras)
+  return (
+    <div className="campo" data-composicao="">
+      <span className="es-campo-topo">
+        Composição
+        {marca ??
+          (c.linhasCheias.length ? (
+            <small className={mostrarErro && c.ruim ? 'ft-ruim' : ''}>
+              soma {String(Math.round(c.soma * 100) / 100).replace('.', ',')}%
+            </small>
+          ) : null)}
+      </span>
+      {fibras.map((f, i) => (
+        <div key={i} className="ft-fibra">
+          <Seletor
+            campo
+            bloco
+            comBusca
+            valor={f.fibra}
+            opcoes={[...new Set([...FIBRAS, ...(f.fibra ? [f.fibra] : [])])].map(x => ({
+              valor: x,
+              rotulo: x,
+            }))}
+            aoEscolher={v => aoMudar(fibras.map((x, k) => (k === i ? { ...x, fibra: v } : x)))}
+            vazio="Fibra"
+          />
+          <Entrada
+            inputMode="decimal"
+            value={f.pct}
+            onChange={e => {
+              const v = e.currentTarget.value
+              aoMudar(fibras.map((x, k) => (k === i ? { ...x, pct: v } : x)))
+            }}
+            placeholder="%"
+            aria-label={'Porcentagem de ' + (f.fibra || 'fibra')}
+          />
+          <Botao
+            tom="limpo"
+            icone
+            aria-label={'Tirar ' + (f.fibra || 'a fibra')}
+            onClick={() => aoMudar(fibras.filter((_, k) => k !== i))}
+          >
+            <Trash size={16} aria-hidden="true" />
+          </Botao>
+        </div>
+      ))}
+      <div className="fileira">
+        <Botao
+          tamanho="sm"
+          disabled={fibras.length >= 8}
+          onClick={() => {
+            const falta = Math.max(0, Math.round((100 - c.soma) * 100) / 100)
+            aoMudar([...fibras, { fibra: '', pct: fibras.length && falta ? emTexto(falta) : '' }])
+          }}
+        >
+          <Plus size={14} weight="bold" aria-hidden="true" />
+          {fibras.length ? 'Outra fibra' : 'Pôr a composição'}
+        </Botao>
+      </div>
+      {mostrarErro && c.ruim ? (
+        <span className="dica ft-ruim">
+          {c.fibraRepetida
+            ? 'A mesma fibra aparece duas vezes.'
+            : c.fibraRuim
+              ? 'Toda linha precisa da fibra e de uma porcentagem entre 0 e 100.'
+              : 'A composição tem de somar 100%.'}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+function GradeDeCuidados({
+  cuidados,
+  aConfirmar = [],
+  aoAlternar,
+}: {
+  cuidados: string[]
+  aConfirmar?: string[]
+  aoAlternar: (cod: string) => void
+}) {
+  return (
+    <>
+      {GRUPOS_DE_CUIDADO.map(grupo => (
+        <div
+          key={grupo}
+          className="ft-grupo"
+          role="group"
+          aria-label={NOME_DO_GRUPO_DE_CUIDADO[grupo]}
+        >
+          <span className="ft-grupo-nome">{NOME_DO_GRUPO_DE_CUIDADO[grupo]}</span>
+          <div className="ft-simbolos">
+            {CUIDADOS.filter(c => c.grupo === grupo).map(c => {
+              const ligado = cuidados.includes(c.cod)
+              const duvida = ligado && aConfirmar.includes(c.cod)
+              return (
+                <button
+                  type="button"
+                  key={c.cod}
+                  className={['ft-botao', ligado ? 'ligado' : '', duvida ? 'a-confirmar' : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-pressed={ligado}
+                  aria-label={c.frase + (duvida ? ', a confirmar' : '')}
+                  title={c.frase + (duvida ? ' (a confirmar)' : '')}
+                  data-cod={c.cod}
+                  onClick={() => aoAlternar(c.cod)}
+                >
+                  <SimboloDeCuidado cod={c.cod} mudo />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </>
   )
 }
 
@@ -111,18 +297,34 @@ export function EtiquetaDeCuidados({ cuidados }: { cuidados: string[] }) {
 export function CartaoDaFichaTecnica({
   m,
   doCatalogo,
+  doTecido,
+  nomeDoTecido,
   podeEditar,
   aoEditar,
+  aoEditarTecido,
 }: {
   m: Material
   /** a gramatura e a largura do tecido no catálogo, para quando a cor não tem a sua */
   doCatalogo: { gramatura: number; largura: number }
+  /** a ficha do tecido (087), que vale quando a cor não tem a sua; ausente antes da 087 */
+  doTecido?: FichaDoTecido
+  nomeDoTecido: string
   podeEditar: boolean
+  /** a ficha própria da cor */
   aoEditar: () => void
+  /** a ficha do tecido; ausente antes da 087 */
+  aoEditarTecido?: () => void
 }) {
   const gramatura = m.gramatura || doCatalogo.gramatura
   const largura = m.largura || doCatalogo.largura
-  const vazia = !temFicha(m)
+  const f = fichaQueVale(m, doTecido)
+  const propria = temFichaPropria(m)
+  const origem = (daCor: boolean) =>
+    doTecido ? (
+      <small className={daCor ? 'ft-origem ft-da-cor' : 'ft-origem'}>
+        {daCor ? 'só desta cor' : 'do tecido'}
+      </small>
+    ) : null
   return (
     <section className="cartao em-col" data-ficha-tecnica="">
       <div className="em-topo">
@@ -130,12 +332,33 @@ export function CartaoDaFichaTecnica({
         {podeEditar ? (
           <Botao tamanho="sm" onClick={aoEditar}>
             <PencilSimple size={15} aria-hidden="true" />
-            Editar a ficha
+            {doTecido ? 'Ficha da cor' : 'Editar a ficha'}
           </Botao>
         ) : null}
       </div>
       <div className="em-corpo">
-        {vazia ? (
+        {doTecido ? (
+          <p className="em-nota">
+            {propria
+              ? `Esta cor tem ${
+                  m.composicao.length && m.cuidados.length
+                    ? 'composição e cuidados próprios'
+                    : m.composicao.length
+                      ? 'composição própria'
+                      : 'cuidados próprios'
+                }, que passam por cima da ficha de ${nomeDoTecido}.`
+              : `Esta cor usa a ficha de ${nomeDoTecido}, que vale para todas as cores dele.`}
+          </p>
+        ) : null}
+        {doTecido && podeEditar && aoEditarTecido ? (
+          <div className="fileira dentro">
+            <Botao tamanho="sm" onClick={aoEditarTecido}>
+              <PencilSimple size={15} aria-hidden="true" />
+              Ficha do tecido
+            </Botao>
+          </div>
+        ) : null}
+        {!doTecido && !temFicha(m) ? (
           <p className="em-nota">
             Esta cor ainda não tem ficha técnica.
             {podeEditar
@@ -144,11 +367,20 @@ export function CartaoDaFichaTecnica({
           </p>
         ) : null}
         <dl className="ft-linhas">
-          {m.composicao.length ? (
+          {f.composicao.length ? (
             <div>
               <dt>Composição</dt>
               <dd>
-                <b>{composicaoPorExtenso(m.composicao)}</b>
+                <b>{composicaoPorExtenso(f.composicao)}</b>
+                {origem(f.composicaoDaCor)}
+              </dd>
+            </div>
+          ) : doTecido ? (
+            <div>
+              <dt>Composição</dt>
+              <dd>
+                <b className="em-falta">Falta</b>
+                <small>quem preenche é o estoque, na ficha do tecido</small>
               </dd>
             </div>
           ) : null}
@@ -191,11 +423,12 @@ export function CartaoDaFichaTecnica({
               </dd>
             </div>
           ) : null}
-          {m.cuidados.length ? (
+          {f.cuidados.length ? (
             <div>
               <dt>Cuidados</dt>
-              <dd>
-                <EtiquetaDeCuidados cuidados={m.cuidados} />
+              <dd className="ft-pilha">
+                {origem(f.cuidadosDaCor)}
+                <EtiquetaDeCuidados cuidados={f.cuidados} aConfirmar={f.aConfirmar} />
               </dd>
             </div>
           ) : null}
@@ -209,16 +442,12 @@ export function CartaoDaFichaTecnica({
    O EDITOR
    ========================================================================== */
 
-type LinhaDeFibra = { fibra: string; pct: string }
-
 /** o valor que todos têm, ou `undefined` quando diferem */
 function emComum<T>(lista: Material[], de: (m: Material) => T): T | undefined {
   if (!lista.length) return undefined
   const primeiro = JSON.stringify(de(lista[0]))
   return lista.every(m => JSON.stringify(de(m)) === primeiro) ? de(lista[0]) : undefined
 }
-
-const emTexto = (n: number) => (n > 0 ? String(n).replace('.', ',') : '')
 
 export function EditarFicha({
   materiais,
@@ -353,18 +582,8 @@ export function EditarFicha({
   /* --- as contas --- */
   const min = lerNumero(minimo)
   const minimoRuim = mexeu.has('minimo') && (min === null || Number.isNaN(min) || min < 0)
-  const linhasCheias = fibras.filter(f => f.fibra || f.pct.trim())
-  const soma = linhasCheias.reduce((s, f) => s + (lerNumero(f.pct) || 0), 0)
-  const fibraRuim = linhasCheias.some(f => {
-    const p = lerNumero(f.pct)
-    return !f.fibra || p === null || Number.isNaN(p) || p <= 0 || p > 100
-  })
-  const fibraRepetida =
-    new Set(linhasCheias.map(f => f.fibra.toLowerCase())).size !== linhasCheias.length
-  const composicaoRuim =
-    mexeu.has('composicao') &&
-    linhasCheias.length > 0 &&
-    (fibraRuim || fibraRepetida || Math.abs(soma - 100) > 0.01)
+  const { linhasCheias, ruim: composicaoRuimSemToque } = contaDaComposicao(fibras)
+  const composicaoRuim = mexeu.has('composicao') && composicaoRuimSemToque
   const g = lerNumero(gramatura)
   const gramaturaRuim =
     mexeu.has('gramatura') && g !== null && (Number.isNaN(g) || g < 20 || g > 1500)
@@ -483,7 +702,7 @@ export function EditarFicha({
           : (tituloDoLote ?? 'Ficha de ' + deQuem)
   const sub = um
     ? um.categoria === 'tecido'
-      ? 'Vale só para esta cor. Cada cor do tecido tem a sua ficha e o seu fornecedor.'
+      ? 'Vale só para esta cor: o fornecedor, o mínimo e o que for diferente da ficha do tecido. Composição e cuidados vazios usam os do tecido.'
       : 'O cadastro deste material: de quem vem e quanto tem de ficar no estoque.'
     : 'Só o que você mexer aqui muda. O que você não tocar fica como está em cada um.'
   const dica = (campo: keyof typeof varia) =>
@@ -691,84 +910,15 @@ export function EditarFicha({
 
             {soTecido ? (
               <>
-                <div className="campo" data-composicao="">
-                  <span className="es-campo-topo">
-                    Composição
-                    {dica('composicao') ??
-                      (linhasCheias.length ? (
-                        <small className={composicaoRuim ? 'ft-ruim' : ''}>
-                          soma {String(Math.round(soma * 100) / 100).replace('.', ',')}%
-                        </small>
-                      ) : null)}
-                  </span>
-                  {fibras.map((f, i) => (
-                    <div key={i} className="ft-fibra">
-                      <Seletor
-                        campo
-                        bloco
-                        comBusca
-                        valor={f.fibra}
-                        opcoes={[...new Set([...FIBRAS, ...(f.fibra ? [f.fibra] : [])])].map(x => ({
-                          valor: x,
-                          rotulo: x,
-                        }))}
-                        aoEscolher={v => {
-                          setFibras(a => a.map((x, k) => (k === i ? { ...x, fibra: v } : x)))
-                          tocar('composicao')
-                        }}
-                        vazio="Fibra"
-                      />
-                      <Entrada
-                        inputMode="decimal"
-                        value={f.pct}
-                        onChange={e => {
-                          const v = e.currentTarget.value
-                          setFibras(a => a.map((x, k) => (k === i ? { ...x, pct: v } : x)))
-                          tocar('composicao')
-                        }}
-                        placeholder="%"
-                        aria-label={'Porcentagem de ' + (f.fibra || 'fibra')}
-                      />
-                      <Botao
-                        tom="limpo"
-                        icone
-                        aria-label={'Tirar ' + (f.fibra || 'a fibra')}
-                        onClick={() => {
-                          setFibras(a => a.filter((_, k) => k !== i))
-                          tocar('composicao')
-                        }}
-                      >
-                        <Trash size={16} aria-hidden="true" />
-                      </Botao>
-                    </div>
-                  ))}
-                  <div className="fileira">
-                    <Botao
-                      tamanho="sm"
-                      disabled={fibras.length >= 8}
-                      onClick={() => {
-                        const falta = Math.max(0, Math.round((100 - soma) * 100) / 100)
-                        setFibras(a => [
-                          ...a,
-                          { fibra: '', pct: a.length && falta ? emTexto(falta) : '' },
-                        ])
-                        tocar('composicao')
-                      }}
-                    >
-                      <Plus size={14} weight="bold" aria-hidden="true" />
-                      {fibras.length ? 'Outra fibra' : 'Pôr a composição'}
-                    </Botao>
-                  </div>
-                  {composicaoRuim ? (
-                    <span className="dica ft-ruim">
-                      {fibraRepetida
-                        ? 'A mesma fibra aparece duas vezes.'
-                        : fibraRuim
-                          ? 'Toda linha precisa da fibra e de uma porcentagem entre 0 e 100.'
-                          : 'A composição tem de somar 100%.'}
-                    </span>
-                  ) : null}
-                </div>
+                <EditorDaComposicao
+                  fibras={fibras}
+                  aoMudar={f => {
+                    setFibras(f)
+                    tocar('composicao')
+                  }}
+                  marca={dica('composicao') ?? undefined}
+                  mostrarErro={mexeu.has('composicao')}
+                />
 
                 <div className="ft-dois">
                   <Campo
@@ -910,38 +1060,13 @@ export function EditarFicha({
                 Cuidados com o tecido
                 {dica('cuidados') ?? <small>{CUIDADOS.length} símbolos, um por grupo</small>}
               </span>
-              {GRUPOS_DE_CUIDADO.map(grupo => (
-                <div
-                  key={grupo}
-                  className="ft-grupo"
-                  role="group"
-                  aria-label={NOME_DO_GRUPO_DE_CUIDADO[grupo]}
-                >
-                  <span className="ft-grupo-nome">{NOME_DO_GRUPO_DE_CUIDADO[grupo]}</span>
-                  <div className="ft-simbolos">
-                    {CUIDADOS.filter(c => c.grupo === grupo).map(c => {
-                      const ligado = cuidados.includes(c.cod)
-                      return (
-                        <button
-                          type="button"
-                          key={c.cod}
-                          className={ligado ? 'ft-botao ligado' : 'ft-botao'}
-                          aria-pressed={ligado}
-                          aria-label={c.frase}
-                          title={c.frase}
-                          data-cod={c.cod}
-                          onClick={() => {
-                            setCuidados(a => alternarCuidado(a, c.cod))
-                            tocar('cuidados')
-                          }}
-                        >
-                          <SimboloDeCuidado cod={c.cod} mudo />
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+              <GradeDeCuidados
+                cuidados={cuidados}
+                aoAlternar={cod => {
+                  setCuidados(a => alternarCuidado(a, cod))
+                  tocar('cuidados')
+                }}
+              />
               <div className="campo">
                 <span className="es-campo-topo">Como fica na etiqueta</span>
                 <div className="ft-previa">
@@ -979,4 +1104,368 @@ const NOME_DO_CAMPO: Record<string, string> = {
   largura: 'a largura',
   detalhes: 'os detalhes',
   cuidados: 'os cuidados',
+}
+
+/* ==========================================================================
+   A FICHA DO TECIDO (087)
+
+   O Henrique, em 05/11/2026: "ficha técnica por categoria de tecido
+   universal, significa que composição e cuidados são para todas as cores
+   daquele tecido. Em caso de 1 tecido ter algum cuidado ou composição
+   específica, aí se usa a ficha interna da cor."
+
+   O CARTÃO mostra a ficha do tecido e quais cores fogem dela. O EDITOR muda
+   a composição, a gramatura, a largura e os cuidados do tecido. Os cuidados
+   de partida vieram de pesquisa, pela fibra do nome; os que ainda precisam de
+   conferência têm o selo "A confirmar", que sai quando alguém confere com a
+   etiqueta do fornecedor.
+   ========================================================================== */
+
+export function CartaoDaFichaDoTecido({
+  tecido,
+  fichaNoBanco,
+  podeEditar,
+  aoEditar,
+}: {
+  tecido: TecidoNaArvore
+  /** falso enquanto a 087 não rodou */
+  fichaNoBanco: boolean
+  podeEditar: boolean
+  aoEditar: () => void
+}) {
+  const f = tecido.ficha
+  const proprias = tecido.cores.filter(temFichaPropria)
+  const duvidas = f.aConfirmar.length
+  return (
+    <section className="cartao em-col" data-ficha-do-tecido="">
+      <div className="em-topo">
+        <TituloCartao icone={ClipboardText}>Ficha técnica do tecido</TituloCartao>
+        {podeEditar && fichaNoBanco ? (
+          <Botao tamanho="sm" onClick={aoEditar}>
+            <PencilSimple size={15} aria-hidden="true" />
+            Editar a ficha
+          </Botao>
+        ) : null}
+      </div>
+      <div className="em-corpo">
+        {!fichaNoBanco ? (
+          <p className="em-nota">
+            A ficha do tecido aparece depois que a migração 087 rodar no banco. Até lá, cada cor
+            continua com a sua.
+          </p>
+        ) : (
+          <>
+            {duvidas ? (
+              <div className="fileira dentro">
+                <Selo tom="warn">
+                  {plural(duvidas, 'cuidado a confirmar', 'cuidados a confirmar')}
+                </Selo>
+                <small className="ft-origem">conferir com a etiqueta do fornecedor</small>
+              </div>
+            ) : null}
+            <p className="em-nota">
+              Vale para {tecido.cores.length === 1 ? 'a cor' : `as ${tecido.cores.length} cores`}{' '}
+              deste tecido. A cor que foge da regra tem ficha própria, que passa por cima desta.
+            </p>
+            <dl className="ft-linhas">
+              <div>
+                <dt>Composição</dt>
+                <dd>
+                  {f.composicao.length ? (
+                    <b>{composicaoPorExtenso(f.composicao)}</b>
+                  ) : (
+                    <>
+                      <b className="em-falta">Falta</b>
+                      <small>quem preenche é o estoque</small>
+                    </>
+                  )}
+                </dd>
+              </div>
+              {tecido.gramatura > 0 ? (
+                <div>
+                  <dt>Gramatura</dt>
+                  <dd>
+                    <b>{gramaturaEmTexto(tecido.gramatura)}</b>
+                  </dd>
+                </div>
+              ) : null}
+              {tecido.largura > 0 ? (
+                <div>
+                  <dt>Largura</dt>
+                  <dd>
+                    <b>{larguraEmTexto(tecido.largura)}</b>
+                  </dd>
+                </div>
+              ) : null}
+              {rendimento(tecido.gramatura, tecido.largura) > 0 ? (
+                <div>
+                  <dt>Rendimento</dt>
+                  <dd>
+                    <b>{rendimentoEmTexto(tecido.gramatura, tecido.largura)}</b>
+                    <small>calculado</small>
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Cuidados</dt>
+                <dd>
+                  {f.cuidados.length ? (
+                    <EtiquetaDeCuidados cuidados={f.cuidados} aConfirmar={f.aConfirmar} />
+                  ) : (
+                    <b className="em-falta">Falta</b>
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {proprias.length ? (
+              <p className="em-nota" data-fichas-proprias="">
+                {proprias.length === 1
+                  ? 'Com ficha própria: '
+                  : `${proprias.length} cores com ficha própria: `}
+                {proprias.slice(0, 8).map(nomeNoGrupo).join(', ')}
+                {proprias.length > 8 ? ' e mais ' + (proprias.length - 8) : ''}.
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
+export function EditarFichaDoTecido({
+  tecido,
+  aoFechar,
+  aoSalvar,
+}: {
+  /** o tecido da ficha; nulo fecha */
+  tecido: TecidoNaArvore | null
+  aoFechar: () => void
+  aoSalvar: () => Promise<void>
+}) {
+  const [fibras, setFibras] = useState<LinhaDeFibra[]>([])
+  const [gramatura, setGramatura] = useState('')
+  const [largura, setLargura] = useState('')
+  const [cuidados, setCuidados] = useState<string[]>([])
+  const [aConfirmar, setAConfirmar] = useState<string[]>([])
+  const [mexeu, setMexeu] = useState<Set<string>>(new Set())
+  const [gravando, setGravando] = useState(false)
+  const [falha, setFalha] = useState('')
+  const tocar = (campo: string) => setMexeu(a => (a.has(campo) ? a : new Set([...a, campo])))
+
+  const aberto = useRef('')
+  useEffect(() => {
+    if (!tecido) {
+      aberto.current = ''
+      return
+    }
+    if (aberto.current === tecido.tecidoId) return
+    aberto.current = tecido.tecidoId
+    setFibras(tecido.ficha.composicao.map(f => ({ fibra: f.fibra, pct: emTexto(f.pct) })))
+    setGramatura(emTexto(tecido.gramatura))
+    setLargura(emTexto(tecido.largura))
+    setCuidados(tecido.ficha.cuidados)
+    setAConfirmar(tecido.ficha.aConfirmar)
+    setMexeu(new Set())
+    setFalha('')
+  }, [tecido])
+
+  const conta = contaDaComposicao(fibras)
+  const composicaoRuim = mexeu.has('composicao') && conta.ruim
+  const g = lerNumero(gramatura)
+  const gramaturaRuim =
+    mexeu.has('gramatura') && g !== null && (Number.isNaN(g) || g < 20 || g > 1500)
+  const l = lerNumero(largura)
+  const larguraRuim = mexeu.has('largura') && l !== null && (Number.isNaN(l) || l < 0.2 || l > 5)
+  const valido = !composicaoRuim && !gramaturaRuim && !larguraRuim
+  const duvidas = aConfirmar.filter(c => cuidados.includes(c))
+
+  async function salvar() {
+    if (!tecido || !valido || gravando || mexeu.size === 0) return
+    const m: MudancaDaFichaDoTecido = {}
+    if (mexeu.has('composicao')) {
+      m.composicao = conta.linhasCheias.map<Fibra>(f => ({
+        fibra: f.fibra.trim(),
+        pct: lerNumero(f.pct) ?? 0,
+      }))
+    }
+    if (mexeu.has('gramatura')) m.gramatura = g === null || Number.isNaN(g) ? null : g
+    if (mexeu.has('largura')) m.largura = l === null || Number.isNaN(l) ? null : l
+    if (mexeu.has('cuidados')) {
+      m.cuidados = cuidados
+      m.aConfirmar = duvidas
+    }
+    setGravando(true)
+    setFalha('')
+    try {
+      await salvarFichaDoTecido(tecido.tecidoId, m)
+      avisar(`Ficha de ${tecido.nome} salva. Vale para todas as cores dele.`, 'ok')
+      await aoSalvar()
+    } catch (e) {
+      setFalha(e instanceof Error ? e.message : 'Não consegui salvar a ficha do tecido.')
+    } finally {
+      setGravando(false)
+    }
+  }
+
+  return (
+    <Modal
+      aberto={!!tecido}
+      aoFechar={aoFechar}
+      largo
+      titulo={tecido ? 'Ficha de ' + tecido.nome : ''}
+      pe={
+        <>
+          <span className="ft-pe-nota">
+            {mexeu.size === 0
+              ? 'Nada mudou ainda.'
+              : tecido && tecido.cores.length > 1
+                ? `Vale para as ${tecido.cores.length} cores, menos as que têm ficha própria.`
+                : ''}
+          </span>
+          <Botao onClick={aoFechar}>Cancelar</Botao>
+          <Botao
+            tom="primario"
+            onClick={salvar}
+            disabled={!valido || gravando || mexeu.size === 0}
+            carregando={gravando}
+          >
+            {gravando ? 'Salvando' : 'Salvar a ficha'}
+          </Botao>
+        </>
+      }
+    >
+      {tecido ? (
+        <div className="ft-editor dois" data-editar-ficha-do-tecido="">
+          <div className="ft-coluna">
+            <p className="es-ajuda">
+              A ficha do tecido vale para todas as cores dele. Quando uma cor for diferente, o que
+              muda vai na ficha própria dela.
+            </p>
+            <EditorDaComposicao
+              fibras={fibras}
+              aoMudar={f => {
+                setFibras(f)
+                tocar('composicao')
+              }}
+              mostrarErro={mexeu.has('composicao')}
+            />
+            <div className="ft-dois">
+              <Campo rotulo="Gramatura (g/m²)" erro={gramaturaRuim}>
+                <Entrada
+                  inputMode="decimal"
+                  value={gramatura}
+                  onChange={e => {
+                    setGramatura(e.currentTarget.value)
+                    tocar('gramatura')
+                  }}
+                  placeholder="190"
+                  aria-label="Gramatura"
+                />
+              </Campo>
+              <Campo rotulo="Largura (m)" erro={larguraRuim}>
+                <Entrada
+                  inputMode="decimal"
+                  value={largura}
+                  onChange={e => {
+                    setLargura(e.currentTarget.value)
+                    tocar('largura')
+                  }}
+                  placeholder="1,20"
+                  aria-label="Largura"
+                />
+              </Campo>
+            </div>
+            {gramaturaRuim || larguraRuim ? (
+              <span className="dica ft-ruim">
+                {gramaturaRuim
+                  ? 'A gramatura fica entre 20 e 1.500 g/m².'
+                  : 'A largura fica entre 0,20 e 5 metros.'}
+              </span>
+            ) : null}
+            <div className="ft-rendimento" data-rendimento="">
+              <span>Rendimento</span>
+              <b>
+                {rendimentoEmTexto(g && !Number.isNaN(g) ? g : 0, l && !Number.isNaN(l) ? l : 0) ||
+                  'falta a gramatura ou a largura'}
+              </b>
+              <small>calculado</small>
+            </div>
+            <p className="es-ajuda">
+              A gramatura e a largura são as do catálogo de tecidos: a reserva usa as duas para ir
+              de metro para quilo.
+            </p>
+            {falha ? <Aviso tom="brand">{falha}</Aviso> : null}
+          </div>
+
+          <div className="ft-coluna" data-cuidados="">
+            <span className="es-campo-topo ft-titulo-da-coluna">
+              Cuidados com o tecido <small>um símbolo por grupo</small>
+            </span>
+            <GradeDeCuidados
+              cuidados={cuidados}
+              aConfirmar={duvidas}
+              aoAlternar={cod => {
+                setCuidados(a => alternarCuidado(a, cod))
+                /* quem marca um símbolo à mão está dizendo que é ele: não fica a confirmar */
+                setAConfirmar(a => a.filter(x => x !== cod))
+                tocar('cuidados')
+              }}
+            />
+            {duvidas.length ? (
+              <div className="campo ft-duvidas" data-a-confirmar="">
+                <span className="es-campo-topo">
+                  A confirmar <small>conferir com a etiqueta do fornecedor</small>
+                </span>
+                <div className="ft-tags">
+                  {duvidas.map(cod => (
+                    <span key={cod} className="ft-tag">
+                      {cuidadosEmOrdem([cod])[0]?.frase ?? cod}
+                      <button
+                        type="button"
+                        aria-label={'Confirmei: ' + (cuidadosEmOrdem([cod])[0]?.frase ?? cod)}
+                        title="Confirmei"
+                        onClick={() => {
+                          setAConfirmar(a => a.filter(x => x !== cod))
+                          tocar('cuidados')
+                        }}
+                      >
+                        <X size={12} weight="bold" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="fileira">
+                  <Botao
+                    tamanho="sm"
+                    onClick={() => {
+                      setAConfirmar([])
+                      tocar('cuidados')
+                    }}
+                  >
+                    Confirmei todos
+                  </Botao>
+                </div>
+              </div>
+            ) : null}
+            <div className="campo">
+              <span className="es-campo-topo">Como fica na etiqueta</span>
+              <div className="ft-previa">
+                {cuidados.length ? (
+                  <EtiquetaDeCuidados cuidados={cuidados} aConfirmar={duvidas} />
+                ) : (
+                  <p className="em-nota">
+                    Nenhum símbolo marcado. Clicar de novo num símbolo marcado tira ele.
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="es-ajuda">
+              Os símbolos são os da norma de etiqueta têxtil (ABNT NBR NM ISO 3758).
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </Modal>
+  )
 }

@@ -274,3 +274,38 @@
   line-height: 1.4;
   color: var(--text-2);
 }
+
+/* --- a ficha do tecido (087): de onde vem e o que falta conferir ---------------- */
+/* "do tecido" ou "só desta cor", ao lado do que a cor mostra */
+.ft-origem {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ft-origem.ft-da-cor {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.ft-linhas dd.ft-pilha {
+  flex-direction: column;
+  align-items: stretch;
+}
+.ft-etiqueta-frases li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--re-2) var(--re-4);
+}
+/* o símbolo que ainda precisa ser conferido: contorno tracejado na cor do aviso */
+.ft-simbolo.a-confirmar {
+  border-style: dashed;
+  border-color: var(--warn);
+}
+.ft-botao.a-confirmar,
+.ft-botao.a-confirmar:hover {
+  box-shadow: 0 0 0 2px var(--warn);
+}
+.ft-duvidas {
+  padding: var(--re-7);
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius);
+}

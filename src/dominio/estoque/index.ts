@@ -759,11 +759,85 @@ export type TecidoDoCatalogo = {
   ordem: number
   /** tecido desligado no catálogo só aparece se ainda tiver material */
   ativo: boolean
+  /** a ficha que vale para todas as cores (087) */
+  ficha: FichaDoTecido
 }
 
-export type Hierarquia = { grupos: GrupoDeTecido[]; tecidos: TecidoDoCatalogo[] }
+/* A FICHA DO TECIDO (087, pedido do Henrique de 05/11/2026): a composição e
+   os cuidados valem para todas as cores do tecido. A cor só tem ficha própria
+   quando foge da regra, e aí a dela passa por cima (fichaQueVale). */
+export type FichaDoTecido = {
+  composicao: Fibra[]
+  cuidados: string[]
+  /** os símbolos que alguém ainda precisa conferir com a etiqueta do fornecedor */
+  aConfirmar: string[]
+}
 
-export const SEM_HIERARQUIA: Hierarquia = { grupos: [], tecidos: [] }
+export const FICHA_VAZIA: FichaDoTecido = { composicao: [], cuidados: [], aConfirmar: [] }
+
+export type Hierarquia = {
+  grupos: GrupoDeTecido[]
+  tecidos: TecidoDoCatalogo[]
+  /** falso enquanto a 087 não rodou: a ficha do tecido não existe no banco */
+  fichaNoBanco: boolean
+}
+
+export const SEM_HIERARQUIA: Hierarquia = { grupos: [], tecidos: [], fichaNoBanco: false }
+
+/** De onde veio o que a cor mostra: da ficha dela ou da do tecido. */
+export type FichaQueVale = FichaDoTecido & {
+  composicaoDaCor: boolean
+  cuidadosDaCor: boolean
+}
+
+/* A REGRA DA 087: a cor que tem composição própria usa a dela; a que não tem,
+   a do tecido. O mesmo com os cuidados. O "a confirmar" é do tecido, então só
+   vale quando os cuidados são os do tecido. */
+export function fichaQueVale(
+  m: Pick<Material, 'composicao' | 'cuidados'>,
+  doTecido: FichaDoTecido | undefined,
+): FichaQueVale {
+  const t = doTecido ?? FICHA_VAZIA
+  const composicaoDaCor = m.composicao.length > 0
+  const cuidadosDaCor = m.cuidados.length > 0
+  return {
+    composicao: composicaoDaCor ? m.composicao : t.composicao,
+    cuidados: cuidadosDaCor ? m.cuidados : t.cuidados,
+    aConfirmar: cuidadosDaCor ? [] : t.aConfirmar,
+    composicaoDaCor,
+    cuidadosDaCor,
+  }
+}
+
+/** a cor tem ficha própria: composição ou cuidados que passam por cima do tecido */
+export function temFichaPropria(m: Pick<Material, 'composicao' | 'cuidados'>): boolean {
+  return m.composicao.length > 0 || m.cuidados.length > 0
+}
+
+/** O que muda na ficha do tecido. Só o que vem aqui muda. */
+export type MudancaDaFichaDoTecido = {
+  composicao?: Fibra[]
+  cuidados?: string[]
+  aConfirmar?: string[]
+  /** nulo apaga a do catálogo */
+  gramatura?: number | null
+  largura?: number | null
+}
+
+/* Muda a ficha de um tecido. Quem pode é quem tem "editar" no Estoque, e
+   quem pergunta é o banco (definir_ficha_do_tecido, 087). */
+export async function salvarFichaDoTecido(
+  tecidoId: string,
+  m: MudancaDaFichaDoTecido,
+): Promise<void> {
+  const mudanca: Record<string, unknown> = {}
+  if (m.composicao !== undefined) mudanca.composicao = m.composicao
+  if (m.cuidados !== undefined) mudanca.cuidados = m.cuidados
+  if (m.aConfirmar !== undefined) mudanca.cuidados_a_confirmar = m.aConfirmar
+  if (m.gramatura !== undefined) mudanca.gramatura = m.gramatura
+  if (m.largura !== undefined) mudanca.largura = m.largura
+  await chamar('definir_ficha_do_tecido', { p_tecido: tecidoId, p_mudanca: mudanca })
+}
 
 export const NOME_DO_SEM_TIPO = 'Sem tipo'
 
@@ -774,6 +848,8 @@ export type TecidoNaArvore = {
   nome: string
   gramatura: number
   largura: number
+  /** a ficha que vale para todas as cores (087) */
+  ficha: FichaDoTecido
   /** vazio quando o tecido é do catálogo e ainda não tem cor nenhuma no estoque */
   cores: Material[]
   livre: number
@@ -858,6 +934,7 @@ export function arvoreDeTecidos(
       nome: g.nome,
       gramatura: t?.gramatura ?? 0,
       largura: t?.largura ?? 0,
+      ficha: t?.ficha ?? FICHA_VAZIA,
       cores: g.itens,
       livre: g.livre,
       reservado: g.reservado,
@@ -881,6 +958,7 @@ export function arvoreDeTecidos(
         nome: t.nome,
         gramatura: t.gramatura,
         largura: t.largura,
+        ficha: t.ficha,
         cores: [],
         livre: 0,
         reservado: 0,
@@ -1000,6 +1078,7 @@ export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
         }[]
       >('tecido?select=id,nome,grupo,gramatura,largura,ordem,ativo&order=ordem.asc,nome.asc'),
     ])
+    const fichas = await carregarFichasDosTecidos()
     return {
       grupos: grupos
         .filter(g => g.cod)
@@ -1012,10 +1091,43 @@ export async function carregarHierarquiaDeTecido(): Promise<Hierarquia> {
         largura: numero(t.largura),
         ordem: Number(t.ordem) || 0,
         ativo: t.ativo !== false,
+        ficha: fichas?.get(t.id) ?? FICHA_VAZIA,
       })),
+      fichaNoBanco: fichas !== null,
     }
   } catch {
     return SEM_HIERARQUIA
+  }
+}
+
+/* A ficha dos tecidos (087) vem numa leitura à parte, e de propósito: até a
+   087 rodar, as colunas não existem, e pedir as três junto com o resto faria
+   a árvore inteira cair no "Sem tipo". Nulo quer dizer que o banco ainda não
+   tem a ficha do tecido. */
+async function carregarFichasDosTecidos(): Promise<Map<string, FichaDoTecido> | null> {
+  try {
+    const linhas = await tabela<
+      {
+        id: string
+        composicao: { fibra?: string; pct?: number | string }[] | null
+        cuidados: string[] | null
+        cuidados_a_confirmar: string[] | null
+      }[]
+    >('tecido?select=id,composicao,cuidados,cuidados_a_confirmar')
+    return new Map(
+      linhas.map(l => [
+        l.id,
+        {
+          composicao: (Array.isArray(l.composicao) ? l.composicao : [])
+            .map(f => ({ fibra: String(f.fibra ?? ''), pct: numero(f.pct ?? 0) }))
+            .filter(f => f.fibra && f.pct > 0),
+          cuidados: Array.isArray(l.cuidados) ? l.cuidados : [],
+          aConfirmar: Array.isArray(l.cuidados_a_confirmar) ? l.cuidados_a_confirmar : [],
+        },
+      ]),
+    )
+  } catch {
+    return null
   }
 }
 

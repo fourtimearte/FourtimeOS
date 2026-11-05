@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CalendarBlank, ListBullets, Plus, ShoppingCart, Stack, Table } from '@phosphor-icons/react'
+import {
+  ArrowLeft,
+  CalendarBlank,
+  FileXls,
+  ListBullets,
+  Plus,
+  ShoppingCart,
+  Stack,
+  Table,
+} from '@phosphor-icons/react'
 import { Botao, BotaoComMenu, Busca, Chip, Esqueleto, Pagina, Segmentado, Vazio, avisar } from '@ds'
 import { semAcento, usarConsulta } from '@shared'
 import {
@@ -24,6 +33,7 @@ import {
   type Categoria,
   type GrupoDoEstoque,
   type Hierarquia,
+  type TecidoNaArvore,
   type Material,
   type Motivo,
   type Movimento,
@@ -50,7 +60,8 @@ import { FolhaDeMovimento } from './folha-de-movimento'
 import { MarcarLugar } from './marcar-lugar'
 import { Materiais } from './materiais'
 import { Movimentacoes, type Agrupar } from './movimentacoes'
-import { EditarFicha, temFicha } from './ficha-tecnica'
+import { EditarFicha, EditarFichaDoTecido, temFicha } from './ficha-tecnica'
+import { baixarPlanilhaDosTecidos } from './planilha-dos-tecidos'
 import { NovoMaterial, type InicioDoNovo } from './novo-material'
 import { Estatisticas } from './estatisticas'
 import { TabelaDeMateriais, type FiltroDaTabela } from './tabela'
@@ -107,6 +118,8 @@ export function TelaEstoque() {
   const [reservas, setReservas] = useState<ReservaEmAberto[]>([])
   const [fornecimento, setFornecimento] = useState<Fornecimento>(SEM_FORNECIMENTO)
   const [hierarquia, setHierarquia] = useState<Hierarquia>(SEM_HIERARQUIA)
+  /* a ficha do tecido aberta no editor (087) */
+  const [fichaDoTecido, setFichaDoTecido] = useState<TecidoNaArvore | null>(null)
   const [fila, setFila] = useState<PedidoNaSeparacao[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -477,6 +490,17 @@ export function TelaEstoque() {
           sub,
           acoes: !celular ? (
             <>
+              {materiais.some(m => m.categoria === 'tecido') ? (
+                <Botao
+                  onClick={() =>
+                    baixarPlanilhaDosTecidos(materiais, hierarquia, fornecimento, guardado)
+                  }
+                  title="Baixa a planilha do Excel com todas as cores de tecido, a ficha e o saldo"
+                >
+                  <FileXls size={17} />
+                  Planilha dos tecidos
+                </Botao>
+              ) : null}
               {baixo.length ? (
                 <Botao onClick={() => setNaCompra(true)}>
                   <ShoppingCart size={17} />
@@ -843,6 +867,7 @@ export function TelaEstoque() {
           aoNovo={abrirNovo}
           aoEditar={setEditando}
           aoEditarFicha={(lista, titulo) => setFicha({ materiais: lista, titulo })}
+          aoEditarFichaDoTecido={t => setFichaDoTecido(t)}
           aoMarcar={(m, outro) => setMarcando({ m, outro })}
           aoVerNoDeposito={verNoDeposito}
           aoVerFornecedor={f => navegar(f ? '/fornecedores?abrir=' + f.id : '/fornecedores')}
@@ -930,6 +955,14 @@ export function TelaEstoque() {
           await Promise.all([recarregar(), recarregarFornecedores()])
         }}
         aoCriarFornecedor={recarregarFornecedores}
+      />
+      <EditarFichaDoTecido
+        tecido={fichaDoTecido}
+        aoFechar={() => setFichaDoTecido(null)}
+        aoSalvar={async () => {
+          setFichaDoTecido(null)
+          await lerApoio()
+        }}
       />
       <EditarGrupo
         grupo={editando}

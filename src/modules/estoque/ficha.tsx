@@ -4,7 +4,6 @@ import {
   ArrowsLeftRight,
   BookmarkSimple,
   ChatsCircle,
-  ClipboardText,
   Handshake,
   MapPin,
   Palette,
@@ -18,7 +17,6 @@ import {
   NOME_DA_CATEGORIA,
   NOME_DO_MOTIVO,
   carregarNegociado,
-  composicaoPorExtenso,
   faltaDoMaterial,
   medidasDoTecido,
   nomeNoGrupo,
@@ -47,7 +45,7 @@ import {
   type Guardado,
 } from './apoio'
 import { Codigo, chaveDoMaterial } from './arvore'
-import { CartaoDaFichaTecnica, EtiquetaDeCuidados, temFicha } from './ficha-tecnica'
+import { CartaoDaFichaDoTecido, CartaoDaFichaTecnica } from './ficha-tecnica'
 import { EtiquetaDoLugar } from './frente'
 import { PlantaDoDeposito, type EstadoDoLugar } from './planta'
 import { Bola, VaoDoMaterial } from './vao'
@@ -198,94 +196,6 @@ function Topo({
   )
 }
 
-/* A FICHA TÉCNICA VISTA DO TECIDO. A ficha é de cada cor (048), então a ficha
-   do tecido não tem uma: ela conta quantas cores já têm a sua, mostra a que
-   todas têm em comum quando é a mesma, e abre o editor nas cores todas. */
-function FichasDasCores({
-  cores,
-  podeEditar,
-  aoEditar,
-}: {
-  cores: Material[]
-  podeEditar: boolean
-  aoEditar: () => void
-}) {
-  const com = cores.filter(temFicha)
-  const sem = cores.filter(m => !temFicha(m))
-  const daFicha = (m: Material) =>
-    JSON.stringify([m.composicao, m.gramatura, m.largura, m.detalhes, m.cuidados])
-  const igual = com.length === cores.length && cores.every(m => daFicha(m) === daFicha(cores[0]))
-  const uma = cores[0]
-  return (
-    <section className="cartao em-col" data-fichas-das-cores="">
-      <div className="em-topo">
-        <TituloCartao icone={ClipboardText}>Ficha técnica das cores</TituloCartao>
-        {podeEditar ? (
-          <Botao tamanho="sm" onClick={aoEditar}>
-            <PencilSimple size={15} aria-hidden="true" />
-            {cores.length === 1 ? 'Editar a ficha' : `Editar as ${cores.length}`}
-          </Botao>
-        ) : (
-          <span className="em-topo-n">
-            {com.length} de {cores.length}
-          </span>
-        )}
-      </div>
-      <div className="em-corpo">
-        <p className="em-nota">
-          {com.length === 0
-            ? 'Nenhuma cor deste tecido tem ficha técnica ainda.'
-            : igual
-              ? cores.length === 1
-                ? 'A ficha da única cor deste tecido.'
-                : `As ${cores.length} cores têm a mesma ficha.`
-              : sem.length
-                ? `${plural(com.length, 'cor tem', 'cores têm')} ficha técnica. ${sem.length === 1 ? 'Falta' : 'Faltam'}: ${sem
-                    .slice(0, 6)
-                    .map(nomeNoGrupo)
-                    .join(', ')}${sem.length > 6 ? ' e mais ' + (sem.length - 6) : ''}.`
-                : 'Todas as cores têm ficha, e elas não são iguais: a de cada uma está na ficha da cor.'}{' '}
-          {podeEditar && cores.length > 1
-            ? 'A ficha é de cada cor. Editar abre todas de uma vez, e só o que você mexer muda.'
-            : ''}
-        </p>
-        {igual && uma ? (
-          <dl className="ft-linhas">
-            {uma.composicao.length ? (
-              <div>
-                <dt>Composição</dt>
-                <dd>
-                  <b>{composicaoPorExtenso(uma.composicao)}</b>
-                </dd>
-              </div>
-            ) : null}
-            {uma.detalhes.length ? (
-              <div>
-                <dt>Detalhes</dt>
-                <dd className="ft-tags">
-                  {uma.detalhes.map(d => (
-                    <span key={d} className="ft-tag">
-                      {d}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-            ) : null}
-            {uma.cuidados.length ? (
-              <div>
-                <dt>Cuidados</dt>
-                <dd>
-                  <EtiquetaDeCuidados cuidados={uma.cuidados} />
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-      </div>
-    </section>
-  )
-}
-
 /* o que andou: uma linha por movimento, o mais novo primeiro */
 function OQueAndou({
   movimentos,
@@ -382,6 +292,8 @@ export function FichaDoTecido({
   aoVerNoDeposito,
   aoVerFornecedor,
   aoVerMovimentos,
+  fichaNoBanco,
+  aoEditarFichaDoTecido,
 }: {
   tecido: TecidoNaArvore
   grupo: GrupoNaArvore | null
@@ -399,8 +311,19 @@ export function FichaDoTecido({
   aoVerNoDeposito: (ids: string[], rotulo: string) => void
   aoVerFornecedor: (f: Fornecedor | null) => void
   aoVerMovimentos: () => void
+  /** falso enquanto a 087 não rodou */
+  fichaNoBanco: boolean
+  aoEditarFichaDoTecido: () => void
 }) {
   const porId = new Map(tecido.cores.map(m => [m.id, m]))
+  const cartaoDaFicha = (
+    <CartaoDaFichaDoTecido
+      tecido={tecido}
+      fichaNoBanco={fichaNoBanco}
+      podeEditar={podeEditar}
+      aoEditar={aoEditarFichaDoTecido}
+    />
+  )
   const pedidos = new Set(reservas.map(r => r.pedidoId)).size
   const comprar = tecido.cores
     .filter(m => m.livre < m.minimo)
@@ -492,6 +415,7 @@ export function FichaDoTecido({
                 </div>
               ) : null}
             </section>
+            {cartaoDaFicha}
           </div>
           <div className="pilha larga">
             {fornecimento.disponivel ? (
@@ -610,7 +534,7 @@ export function FichaDoTecido({
             </div>
           </section>
 
-          <FichasDasCores cores={tecido.cores} podeEditar={podeEditar} aoEditar={aoEditar} />
+          {cartaoDaFicha}
 
           <OQueAndou
             movimentos={movimentos}
@@ -764,6 +688,8 @@ export function FichaDoMaterial({
   aoVerNoDeposito,
   aoVerFornecedor,
   aoVerMovimentos,
+  fichaNoBanco,
+  aoEditarFichaDoTecido,
 }: {
   m: Material
   /** o tecido da cor; nulo no aviamento e no insumo */
@@ -783,6 +709,9 @@ export function FichaDoMaterial({
   aoVerNoDeposito: (ids: string[], rotulo: string) => void
   aoVerFornecedor: (f: Fornecedor | null) => void
   aoVerMovimentos: () => void
+  /** falso enquanto a 087 não rodou */
+  fichaNoBanco: boolean
+  aoEditarFichaDoTecido: () => void
 }) {
   const comprar = m.livre < m.minimo
   const falta = faltaDoMaterial(m)
@@ -894,8 +823,11 @@ export function FichaDoMaterial({
             <CartaoDaFichaTecnica
               m={m}
               doCatalogo={{ gramatura: tecido?.gramatura ?? 0, largura: tecido?.largura ?? 0 }}
+              doTecido={tecido && fichaNoBanco ? tecido.ficha : undefined}
+              nomeDoTecido={tecido?.nome ?? ''}
               podeEditar={podeEditar}
               aoEditar={aoEditar}
+              aoEditarTecido={tecido && fichaNoBanco ? aoEditarFichaDoTecido : undefined}
             />
           ) : null}
 

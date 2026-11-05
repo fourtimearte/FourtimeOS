@@ -13,6 +13,7 @@ import {
   type Movimento,
   type PedidoNaSeparacao,
   type ReservaEmAberto,
+  type TecidoNaArvore,
 } from '@dominio/estoque'
 import type { Fornecedor } from '@dominio/fornecedor'
 import { semAcento } from '@shared'
@@ -72,6 +73,7 @@ export function Materiais({
   aoNovo,
   aoEditar,
   aoEditarFicha,
+  aoEditarFichaDoTecido,
   aoMarcar,
   aoVerNoDeposito,
   aoVerFornecedor,
@@ -105,6 +107,8 @@ export function Materiais({
   aoEditar: (g: GrupoDoEstoque) => void
   /** a ficha da cor, ou das cores de um tecido de uma vez (com o título do lote) */
   aoEditarFicha: (materiais: Material[], titulo?: string) => void
+  /** a ficha do tecido (087), que vale para todas as cores dele */
+  aoEditarFichaDoTecido: (t: TecidoNaArvore) => void
   aoMarcar: (m: Material, outroLugar: boolean) => void
   aoVerNoDeposito: (ids: string[], rotulo: string) => void
   aoVerFornecedor: (f: Fornecedor | null) => void
@@ -253,6 +257,10 @@ export function Materiais({
       aoVerNoDeposito={aoVerNoDeposito}
       aoVerFornecedor={aoVerFornecedor}
       aoVerMovimentos={() => aoVerMovimentos(material.nome)}
+      fichaNoBanco={hierarquia.fichaNoBanco}
+      aoEditarFichaDoTecido={() => {
+        if (doMaterial) aoEditarFichaDoTecido(doMaterial.tecido)
+      }}
     />
   ) : doTecido ? (
     <FichaDoTecido
@@ -280,6 +288,8 @@ export function Materiais({
       aoVerNoDeposito={aoVerNoDeposito}
       aoVerFornecedor={aoVerFornecedor}
       aoVerMovimentos={() => aoVerMovimentos(doTecido.tecido.nome)}
+      fichaNoBanco={hierarquia.fichaNoBanco}
+      aoEditarFichaDoTecido={() => aoEditarFichaDoTecido(doTecido.tecido)}
     />
   ) : null
 

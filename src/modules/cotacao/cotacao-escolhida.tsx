@@ -35,6 +35,7 @@ import {
 import { usarCotacao } from './usar-cotacao'
 import { BotoesDoCaminho } from './caminho'
 import './cotacao.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    73. A COTAÇÃO ESCOLHIDA, ao lado da lista.
@@ -275,7 +276,7 @@ export function CotacaoEscolhida({
             return (
               <div key={b.id} className="ct-es-lay">
                 <span className="ct-es-arte">
-                  {b.imagem ? <img src={b.imagem} alt={'Arte do layout ' + b.n} /> : <small>sem arte</small>}
+                  {b.imagem ? <img src={srcDaArte(b.imagem)} alt={'Arte do layout ' + b.n} /> : <small>sem arte</small>}
                 </span>
                 <span className="ct-es-lay-nome">
                   <b>

@@ -45,6 +45,7 @@ import { Chave, ChavesDaEtiqueta, EditorDoDesign } from './pecas-da-ficha'
 import { PrecoDoLayout, usarTabelasDaCotacao } from './tabelas-da-cotacao'
 import { usarTecidosDoEstoque } from './usar-tecidos-do-estoque'
 import './cotacao.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    O MODO TABELA DO EDITOR (14/10/2026, wireframe "Modo tabela da cotação").
@@ -322,7 +323,7 @@ export function TabelaDosLayouts({
                       aria-label={'Abrir o ' + codigoDoLayout(b.n) + ' no modo Lista'}
                       onClick={() => aoAbrir(i)}
                     >
-                      {b.imagem ? <img src={b.imagem} alt="" /> : <span>sem arte</span>}
+                      {b.imagem ? <img src={srcDaArte(b.imagem)} alt="" /> : <span>sem arte</span>}
                     </button>
                   </td>
                   <td className="ct-tb-ly">

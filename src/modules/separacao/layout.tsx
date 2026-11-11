@@ -3,6 +3,7 @@ import { ArrowsOut, CheckCircle, Circle, TShirt, WarningCircle } from '@phosphor
 import { Botao, Modal, PilulaTecnica } from '@ds'
 import { LayoutDeLeitura, tamanhosNaOrdem, totalDaGrade, type Bloco } from '@dominio/layout'
 import { numeroNaUnidade, type MaterialDoLayout, type ReservaDoPedido } from '@dominio/estoque'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    UM LAYOUT DO PEDIDO NA SEPARAÇÃO (prancha 83, parte S2).
@@ -69,7 +70,7 @@ export function CartaoDoLayout({
       </header>
       <div className="sp-lay-corpo">
         <div className="sp-lay-esq">
-          <div className="sp-lay-arte">{bloco.imagem ? <img src={bloco.imagem} alt={'Arte do layout ' + bloco.n} /> : <span>sem arte</span>}</div>
+          <div className="sp-lay-arte">{bloco.imagem ? <img src={srcDaArte(bloco.imagem)} alt={'Arte do layout ' + bloco.n} /> : <span>sem arte</span>}</div>
           <dl className="sp-lay-dados">
             <dt>Tecido</dt>
             <dd>

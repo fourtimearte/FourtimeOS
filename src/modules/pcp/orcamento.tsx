@@ -4,6 +4,7 @@ import { Esqueleto, PilulaTecnica, Selo, TituloCartao } from '@ds'
 import { COR_DA_MARCA, totalDoProduto, type Cotacao, type ProdutoCotado } from '@dominio/cotacao'
 import { tamanhosNaOrdem, totalDaGrade } from '@dominio/layout'
 import { dataCurta } from './fila'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    O ORÇAMENTO NO PCP (pranchas 88 e 89, parte P2).
@@ -125,7 +126,7 @@ export function CartaoDoLayoutNoPcp({ p }: { p: ProdutoCotado }) {
       </header>
       <div className="pc-lay-corpo">
         <div className="pc-lay-arte">
-          {b.imagem ? <img src={b.imagem} alt={'Arte do layout ' + b.n} /> : <span>sem arte</span>}
+          {b.imagem ? <img src={srcDaArte(b.imagem)} alt={'Arte do layout ' + b.n} /> : <span>sem arte</span>}
         </div>
         <dl className="pc-lay-dados">
           <dt>Tecido</dt>

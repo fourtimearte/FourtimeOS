@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { VisorDeImagem, avisar } from '@ds'
 import { IMG_LIMITE_BYTES, pesoDoDataUrl, prepararImagem } from './compressao'
 import './layout.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    A caixa de imagem do layout.
@@ -158,7 +159,7 @@ export function CaixaDeImagem({
         }}
       >
         {naTela ? (
-          <img src={naTela} alt={arte || 'arte do produto'} />
+          <img src={srcDaArte(naTela)} alt={arte || 'arte do produto'} />
         ) : leitura ? (
           /* EM LEITURA O CONVITE NÃO VALE. "Arraste, cole ou clique" numa
              folha impressa é uma instrução para alguém que está segurando
@@ -192,7 +193,7 @@ export function CaixaDeImagem({
       ) : null}
 
       {ampliada && naTela ? (
-        <VisorDeImagem src={naTela} nome={arte || 'arte'} aoFechar={() => setAmpliada(false)} />
+        <VisorDeImagem src={srcDaArte(naTela)} nome={arte || 'arte'} aoFechar={() => setAmpliada(false)} />
       ) : null}
     </div>
   )

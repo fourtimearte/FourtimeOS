@@ -22,6 +22,7 @@ import { PrecoDoLayout } from './tabelas-da-cotacao'
 import { TabelaDosLayouts } from './tabela-dos-layouts'
 import type { ModoDoEditor } from './modo-do-editor'
 import './cotacao.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    O CORPO DO EDITOR (prancha 109).
@@ -259,7 +260,7 @@ function CartaoDaArte({ bloco, travado, aoMudar }: { bloco: Bloco; travado: bool
     let vivo = true
     const im = new Image()
     im.onload = () => vivo && setDim(imagemDe(im.naturalWidth, im.naturalHeight))
-    im.src = bloco.imagem
+    im.src = srcDaArte(bloco.imagem)
     return () => {
       vivo = false
     }

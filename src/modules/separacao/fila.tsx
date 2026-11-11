@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { TShirt } from '@phosphor-icons/react'
 import { LINHA_ESCOLHIDA } from '@ds'
 import type { PedidoNaSeparacao, PedidoSeparado } from '@dominio/estoque'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    A FILA DA SEPARAÇÃO (prancha 82): os pedidos em dois grupos, Separando (já
@@ -29,7 +30,7 @@ const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um :
 export function Miniatura({ src }: { src?: string }) {
   return (
     <span className="sp-mini" aria-hidden="true">
-      {src ? <img src={src} alt="" loading="lazy" /> : <TShirt size={20} />}
+      {src ? <img src={srcDaArte(src)} alt="" loading="lazy" /> : <TShirt size={20} />}
     </span>
   )
 }

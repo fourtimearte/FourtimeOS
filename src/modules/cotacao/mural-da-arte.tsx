@@ -13,6 +13,7 @@ import {
   type Regiao,
 } from '@dominio/layout'
 import './cotacao.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    O HIGHLIGHT DO MOCKUP NO EDITOR (decisão 164; comportamento e código de
@@ -225,7 +226,7 @@ export function MuralDaArte({
             <img
               className="ct-hl-arte"
               alt=""
-              src={imagem}
+              src={srcDaArte(imagem)}
               draggable={false}
               style={{ left: ar.arte.x, top: ar.arte.y, width: ar.arte.w, height: ar.arte.h }}
             />
@@ -259,7 +260,7 @@ export function MuralDaArte({
                       top: b.y,
                       width: b.w,
                       height: b.h,
-                      backgroundImage: `url("${imagem}")`,
+                      backgroundImage: `url("${srcDaArte(imagem)}")`,
                       backgroundSize: f.size,
                       backgroundPosition: f.pos,
                     } as CSSProperties

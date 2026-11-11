@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { emEnsaio } from '@dominio/regulagem'
 import { souAdmin, useSessao } from '@dominio/sessao'
@@ -36,6 +36,7 @@ import { TopoDoEditor, type Porta } from './topo-do-editor'
 import './cotacao.css'
 import { usarCotacao } from './usar-cotacao'
 import { ContextoDasTabelas, usarCarregarTabelas } from './tabelas-da-cotacao'
+import { usarArtesNoDrive } from './artes-no-drive'
 
 /* ==========================================================================
    O editor de cotação, no desenho fechado em 08/10/2026 (decisão 163,
@@ -171,6 +172,16 @@ function Editor({ inicial }: { inicial: Cotacao }) {
       setSujo(true)
     }
   }, [c, tabelasDePreco])
+
+  /* as artes sobem para o Drive sozinhas (artes-no-drive.ts) */
+  const trocarArte = useCallback((antiga: string, nova: string) => {
+    setC((x) => ({
+      ...x,
+      produtos: x.produtos.map((p) => (p.bloco.imagem === antiga ? { ...p, bloco: { ...p.bloco, imagem: nova } } : p)),
+    }))
+    setSujo(true)
+  }, [])
+  usarArtesNoDrive(c, trocarArte, travada(c))
 
   const mudar = (parte: Partial<Cotacao>) => {
     setC((x) => ({ ...x, ...parte }))

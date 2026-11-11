@@ -71,7 +71,29 @@ function ler(): Cracha | null {
   return arrumar(cru)
 }
 
+/* O CRACHÁ DAS ARTES (11/11/2026). A arte que mora no Google Drive é
+   entregue pela ponte da Cloudflare em /api/arte/<id>, e quem pede é um
+   <img>, que não manda cabeçalho. Por isso o crachá de acesso vai também num
+   cookie só daquele caminho, com o mesmo vencimento. Nenhum outro endereço
+   recebe esse cookie. */
+function cookieDaArte(c: Cracha | null) {
+  try {
+    if (typeof document === 'undefined') return
+    const segura = location.protocol === 'https:' ? '; Secure' : ''
+    if (!c) {
+      document.cookie = 'ft_arte=; Path=/api/arte; Max-Age=0; SameSite=Strict' + segura
+      return
+    }
+    const segundos = Math.max(0, Math.floor((c.venceEm - Date.now()) / 1000))
+    document.cookie =
+      'ft_arte=' + encodeURIComponent(c.acesso) + '; Path=/api/arte; Max-Age=' + segundos + '; SameSite=Strict' + segura
+  } catch {
+    /* sem cookie a arte do Drive não aparece, mas nada mais quebra */
+  }
+}
+
 function gravar(c: Cracha | null) {
+  cookieDaArte(c)
   try {
     if (c) localStorage.setItem(CHAVE_GUARDADA, JSON.stringify(c))
     else localStorage.removeItem(CHAVE_GUARDADA)
@@ -179,8 +201,16 @@ export function renovarAgora(): Promise<Cracha | null> {
 /** O cracha valido, renovando se estiver perto de vencer. Nulo: nao entrou. */
 export function crachaValido(): Promise<Cracha | null> {
   const guardado = ler()
-  if (!guardado) return Promise.resolve(null)
-  if (guardado.venceEm - Date.now() > FOLGA) return Promise.resolve(guardado)
+  if (!guardado) {
+    cookieDaArte(null)
+    return Promise.resolve(null)
+  }
+  if (guardado.venceEm - Date.now() > FOLGA) {
+    /* quem já estava dentro antes de existir o cookie (ou outra aba renovou)
+       também precisa dele para ver as artes do Drive */
+    cookieDaArte(guardado)
+    return Promise.resolve(guardado)
+  }
   return renovarAgora()
 }
 

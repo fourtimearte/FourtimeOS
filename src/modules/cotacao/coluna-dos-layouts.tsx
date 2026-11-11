@@ -7,6 +7,7 @@ import { pecasDoProduto, totalDoProduto, type ProdutoCotado } from '@dominio/cot
 import { carregarNegociadoDaCotacao, quantoNaUnidade } from '@dominio/estoque'
 import './cotacao.css'
 import { SeletorDoModo, type ModoDoEditor } from './modo-do-editor'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    A COLUNA DOS LAYOUTS, na extrema direita do editor (decisões 162 e 163).
@@ -105,7 +106,7 @@ export function ColunaDosLayouts({
                 className={sel ? 'ct-ly-linha ct-ly-sel ' + LINHA_ESCOLHIDA : 'ct-ly-linha'}
                 onClick={() => aoEscolher(i)}
               >
-                <span className="ct-ly-mini">{p.bloco.imagem ? <img src={p.bloco.imagem} alt="" /> : null}</span>
+                <span className="ct-ly-mini">{p.bloco.imagem ? <img src={srcDaArte(p.bloco.imagem)} alt="" /> : null}</span>
                 <span className="ct-ly-txt">
                   <b>
                     {codigoDoLayout(p.bloco.n)} · {p.bloco.nomeDaReferencia || p.bloco.referencia || 'sem referência'}

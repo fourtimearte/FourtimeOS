@@ -6,6 +6,7 @@ import { tamanhosNaOrdem, totalDaGrade } from './grade'
 import { sanitizarTextoRico } from './texto'
 import { usarCoresDeImpressao } from './usar-cores-de-impressao'
 import './leitura.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    O LAYOUT EM LEITURA, do jeito do wireframe aprovado em 01/10/2026.
@@ -79,7 +80,7 @@ export function LayoutDeLeitura({
             onClick={() => setAmpliada(true)}
             aria-label="Ampliar a arte"
           >
-            <img src={bloco.imagem} alt={bloco.arte || 'arte do layout'} />
+            <img src={srcDaArte(bloco.imagem)} alt={bloco.arte || 'arte do layout'} />
           </button>
         ) : (
           <div className="lr-arte vazia">
@@ -160,7 +161,7 @@ export function LayoutDeLeitura({
 
       {ampliada && bloco.imagem ? (
         <VisorDeImagem
-          src={bloco.imagem}
+          src={srcDaArte(bloco.imagem)}
           nome={bloco.arte || 'L-' + String(bloco.n).padStart(2, '0')}
           aoFechar={() => setAmpliada(false)}
         />

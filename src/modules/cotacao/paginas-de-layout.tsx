@@ -24,6 +24,7 @@ import { construcaoDe } from './ficha-do-layout'
 import { construcaoDoLayout } from './fabricacao-do-layout'
 import { n2, pecas, reais, Rotulo, Titulo } from './pagina-um'
 import './documento.css'
+import { srcDaArte } from '@shared/arte'
 
 /* ==========================================================================
    AS PÁGINAS DE LAYOUT NO TEMPLATE PADRÃO (FOURTIME OS - 14, seções 5 a 9).
@@ -109,7 +110,7 @@ export function usarImagens(srcs: string[]): Record<string, Imagem> {
           setMapa((m) => ({ ...m, [src]: imagemDe(im.naturalWidth, im.naturalHeight) }))
         }
       }
-      im.src = src
+      im.src = srcDaArte(src)
     }
     return () => {
       vivo = false
@@ -176,7 +177,7 @@ function Destaque({ b, im, i, c, dx = 0, dy = 0 }: { b: Bloco; im: Imagem; i: nu
         top: c.y + dy,
         width: c.w,
         height: c.h,
-        backgroundImage: 'url("' + b.imagem.replace(/"/g, '%22') + '")',
+        backgroundImage: 'url("' + srcDaArte(b.imagem).replace(/"/g, '%22') + '")',
         backgroundSize: f.size,
         backgroundPosition: f.pos,
       }}
@@ -224,7 +225,7 @@ function ArteDoLayout({
       <div className="dc-arte" data-id={b.id} style={{ height: altura }}>
         <div className="dc-mural">
           <img
-            src={b.imagem}
+            src={srcDaArte(b.imagem)}
             alt={'Arte do layout ' + b.n}
             style={{ left: 0, top: (H - hA) / 2, width: wA, height: hA }}
           />
@@ -237,7 +238,7 @@ function ArteDoLayout({
   }
   return (
     <div className="dc-arte" data-id={b.id} style={{ height: altura }}>
-      <img src={b.imagem} alt={'Arte do layout ' + b.n} />
+      <img src={srcDaArte(b.imagem)} alt={'Arte do layout ' + b.n} />
     </div>
   )
 }

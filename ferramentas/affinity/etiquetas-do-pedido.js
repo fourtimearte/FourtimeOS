@@ -1,5 +1,5 @@
 'use strict';
-// ETIQUETAS DO PEDIDO v1
+// ETIQUETAS DO PEDIDO v1.1
 //
 // Monta as etiquetas de composicao de um pedido a partir do JSON "PEDIDO
 // INTEIRO" do editor V4 (botao Copiar do HTML do Trello, formato
@@ -26,8 +26,8 @@
 //   composicao        de canto a canto
 //   simbolos          de canto a canto, com o mesmo vao entre eles
 //   tamanho           sempre no mesmo lugar, preso pela esquerda
-//   genero            preso na parede direita; infantil ou sem genero: sem
-//                     simbolo
+//   genero            preso na parede direita; sem genero no JSON, vale o
+//                     FEM, MASC ou INF da referencia; infantil: sem simbolo
 
 const { Document } = require('/document.js');
 const { Selection, TextSelection } = require('/selections.js');
@@ -36,7 +36,7 @@ const { Transform, Rectangle } = require('/geometry.js');
 const { Dialog, DialogResult } = require('/dialog.js');
 const { app } = require('/application.js');
 
-const TITULO = 'Etiquetas do pedido v1';
+const TITULO = 'Etiquetas do pedido v1.1';
 const VAO_PRANCHETAS_MM = 100;      // 10 cm entre as pranchetas
 const VAO_ETIQUETAS_MM = 10;        // entre as etiquetas de uma prancheta
 const VAO_MINIMO_SIMBOLOS_MM = 1;   // se os simbolos nao couberem, encolhem
@@ -130,6 +130,24 @@ function lerDocumento(doc) {
 }
 
 // ---------- o JSON do editor V4 ---------------------------------------------
+/* O GENERO (v1.1). Vem do campo genero do layout. Quando ele esta vazio, a
+   propria referencia diz: FEM, MASC ou INF no nome (ex.: "CAMISETA POLO
+   FEM SEM PUNHO"), ou a letra no fim do codigo (FT-010-013F). Infantil
+   continua sem simbolo. */
+function generoDoLayout(L) {
+  const g = chave(L.genero);
+  if (g) return g;
+  const ref = chave([L.ref, L.nome, L.categoria].filter(Boolean).join(' '));
+  if (/(^| )FEM/.test(ref)) return 'FEMININO';
+  if (/(^| )MASC/.test(ref)) return 'MASCULINO';
+  if (/(^| )INF/.test(ref)) return 'INFANTIL';
+  /* o codigo da referencia termina com a letra do genero: FT-010-000M,
+     FT-010-013F, FT-010-008C (crianca) */
+  const fim = /\d([MFC])$/.exec(String(L.ref || '').trim().toUpperCase());
+  if (fim) return { M: 'MASCULINO', F: 'FEMININO', C: 'INFANTIL' }[fim[1]];
+  return '';
+}
+
 function lerPedido(txt, D) {
   let j;
   try { j = JSON.parse(String(txt || '').trim()); } catch (e) { throw new Error('O texto colado nao e um JSON valido.'); }
@@ -155,9 +173,9 @@ function lerPedido(txt, D) {
     }
     const outros = [...new Set((L.tecidos || []).filter(Boolean).map(chave))];
     if (outros.length > 1) console.log(rot + ': o layout tem ' + outros.length + ' tecidos; a etiqueta usa o primeiro (' + nomeTec + ')');
-    const gen = chave(L.genero);
+    const gen = generoDoLayout(L);
     layouts.push({ n: L.n, ref: L.ref || '', nome: L.nome || '', rot: rot, tecido: tec, tamanhos: tams,
-      genero: D.generos.get(gen) || null, generoNome: L.genero || '' });
+      genero: D.generos.get(gen) || null, generoNome: gen });
   }
   if (!layouts.length) problemas.push('Nenhum layout com peca no JSON.');
   return { pedido: (j.pedido && j.pedido.numero) || '', cliente: (j.pedido && j.pedido.cliente) || '', layouts, problemas };

@@ -398,6 +398,16 @@ for (const tema of ['light', 'dark']) {
     await pg.locator('dialog[open] .ft-botao[data-cod="nao-seco"]').click(); await pausa(pg, 200)
     conta((await ligados()).length === 5, `${T} ficha técnica: clicar de novo num símbolo marcado tira ele`)
     await pg.locator('dialog[open] .ft-botao[data-cod="nao-seco"]').click(); await pausa(pg, 200)
+    /* a limpeza profissional tem duas vagas (088): um a seco e um a úmido */
+    await pg.locator('dialog[open] .ft-botao[data-cod="umido-w"]').click(); await pausa(pg, 200)
+    l = await ligados()
+    conta(l.includes('nao-seco') && l.includes('umido-w') && l.length === 7, `${T} ficha técnica: na limpeza profissional entram dois, um a seco e um a úmido (${l.join(' ')})`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="seco-p"]').click(); await pausa(pg, 200)
+    l = await ligados()
+    conta(l.includes('seco-p') && !l.includes('nao-seco') && l.includes('umido-w') && l.length === 7, `${T} ficha técnica: outro a seco troca o a seco e deixa o a úmido (${l.join(' ')})`)
+    await pg.locator('dialog[open] .ft-botao[data-cod="umido-w"]').click(); await pausa(pg, 200)
+    await pg.locator('dialog[open] .ft-botao[data-cod="nao-seco"]').click(); await pausa(pg, 200)
+    conta((await ligados()).join(' ') === 'lavar-30 nao-alvejar nao-tambor varal-sombra passar-1 nao-seco', `${T} ficha técnica: e volta ao que estava (${(await ligados()).join(' ')})`)
 
     /* a conta do rendimento e a trava da composição */
     await pg.locator('dialog[open] input[aria-label="Gramatura"]').fill('200'); await pausa(pg, 200)
@@ -706,6 +716,8 @@ await caso('catálogo inteiro', async () => {
   const ficha = await texto(pg, '[data-ficha="tecido"]')
   const botoes = (await pg.locator('[data-ficha] .em-ficha-topo .btn').allInnerTexts()).map((b) => b.trim()).join('|')
   conta(await pg.locator('[data-ficha="tecido"][data-sem-estoque]').count() === 1 && /DRY FIT › tecido DRYFIT JAKAR 100% sem estoque/.test(ficha) && /nenhuma cor dele foi cadastrada no estoque/.test(ficha), `${T}: o nome abre a ficha, que diz que o tecido é do catálogo e não tem cor no estoque (${ficha.slice(0, 90)})`)
+  const fichaVazia = await texto(pg, '[data-ficha="tecido"][data-sem-estoque] [data-ficha-do-tecido]')
+  conta(/Vale para todas as cores deste tecido/.test(fichaVazia) && /antes de cadastrar a primeira cor/.test(fichaVazia) && !/0 cores/.test(fichaVazia) && await pg.locator('[data-ficha="tecido"][data-sem-estoque] [data-ficha-do-tecido]').getByRole('button', { name: 'Editar a ficha' }).count() === 1, `${T}: o tecido sem cor tem a ficha do tecido, com "Editar a ficha", e não diz "0 cores" (${fichaVazia.slice(0, 120)})`)
   conta(botoes === 'Nova cor|Fechar' && await pg.locator('[data-ficha] .em-nums').count() === 0 && await pg.locator('[data-ficha] .em-cor-nova').count() === 1, `${T}: a ficha vazia tem Nova cor e Fechar, sem Editar, sem Registrar movimento e sem os quatro números (${botoes})`)
   const sel = await pg.locator(`${SEM('DRYFIT JAKAR 100%')}`).evaluate((e) => ({ c: e.className, f: getComputedStyle(e).backgroundImage }))
   conta(/em-sel/.test(sel.c) && /tinta-linha/.test(sel.c) && sel.f.includes('gradient'), `${T}: o tecido vazio escolhido fica marcado na árvore como os outros`)

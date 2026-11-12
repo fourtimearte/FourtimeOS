@@ -12,6 +12,7 @@
 import { readFileSync } from 'node:fs'
 
 const sql = readFileSync('banco/048-a-ficha-tecnica-da-cor.sql', 'utf8')
+const sql088 = readFileSync('banco/088-limpeza-profissional-e-o-tecido-sem-elastano.sql', 'utf8')
 const tsx = readFileSync('src/dominio/estoque/cuidados.tsx', 'utf8')
 
 const doBanco = [...sql.matchAll(/\('([a-z0-9-]+)',\s*'([a-z]+)',\s*(\d+)\)/g)].map((m) => ({ cod: m[1], grupo: m[2], ordem: Number(m[3]) }))
@@ -37,6 +38,13 @@ daTela.forEach((t) => { porGrupo[t.grupo] = (porGrupo[t.grupo] ?? 0) + 1 })
 conta(Object.keys(porGrupo).every((g) => gruposDaTela.includes(g)), `nenhum símbolo num grupo que não existe (${Object.entries(porGrupo).map(([g, n]) => g + ' ' + n).join(', ')})`)
 const repetidos = daTela.map((t) => t.cod).filter((c, i, l) => l.indexOf(c) !== i)
 conta(repetidos.length === 0, `nenhum código repetido (${repetidos.join(', ') || 'nenhum'})`)
+
+/* as duas vagas da limpeza profissional (088): a lista do úmido é a mesma */
+const umidoDoBanco = [...(sql088.match(/cod in \(([^)]+)\)\s*then 'profissional-umido'/)?.[1] ?? '').matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1])
+const umidoDaTela = [...(tsx.match(/CUIDADOS_A_UMIDO = \[([^\]]+)\]/)?.[1] ?? '').matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1])
+conta(umidoDoBanco.length === 4 && umidoDoBanco.join(',') === umidoDaTela.join(','), `os 4 símbolos a úmido iguais no banco (088) e na tela (${umidoDaTela.join(', ')})`)
+const profissionais = daTela.filter((t) => t.grupo === 'profissional').map((t) => t.cod)
+conta(umidoDaTela.every((c) => profissionais.includes(c)) && profissionais.length - umidoDaTela.length === 5, `a limpeza profissional: 5 a seco e 4 a úmido (${profissionais.length} no grupo)`)
 
 const ruins = achados.filter((a) => !a).length
 console.log(ruins ? `\n${ruins} conferência(s) reprovada(s).` : '\ncuidados ok: a lista da tela e a do banco são a mesma')

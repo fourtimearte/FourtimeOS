@@ -1058,7 +1058,11 @@ export function EditarFicha({
             <div className="ft-coluna" data-cuidados="">
               <span className="es-campo-topo ft-titulo-da-coluna">
                 Cuidados com o tecido
-                {dica('cuidados') ?? <small>{CUIDADOS.length} símbolos, um por grupo</small>}
+                {dica('cuidados') ?? (
+                  <small>
+                    {CUIDADOS.length} símbolos, um por grupo (dois na limpeza profissional)
+                  </small>
+                )}
               </span>
               <GradeDeCuidados
                 cuidados={cuidados}
@@ -1164,8 +1168,9 @@ export function CartaoDaFichaDoTecido({
               </div>
             ) : null}
             <p className="em-nota">
-              Vale para {tecido.cores.length === 1 ? 'a cor' : `as ${tecido.cores.length} cores`}{' '}
-              deste tecido. A cor que foge da regra tem ficha própria, que passa por cima desta.
+              {tecido.cores.length === 0
+                ? 'Vale para todas as cores deste tecido, inclusive as que ainda vão entrar no estoque. Dá para preencher antes de cadastrar a primeira cor.'
+                : `Vale para ${tecido.cores.length === 1 ? 'a cor' : `as ${tecido.cores.length} cores`} deste tecido. A cor que foge da regra tem ficha própria, que passa por cima desta.`}
             </p>
             <dl className="ft-linhas">
               <div>
@@ -1400,7 +1405,8 @@ export function EditarFichaDoTecido({
 
           <div className="ft-coluna" data-cuidados="">
             <span className="es-campo-topo ft-titulo-da-coluna">
-              Cuidados com o tecido <small>um símbolo por grupo</small>
+              Cuidados com o tecido{' '}
+              <small>um símbolo por grupo (na limpeza profissional, um a seco e um a úmido)</small>
             </span>
             <GradeDeCuidados
               cuidados={cuidados}

@@ -5,8 +5,11 @@ import type { ReactNode } from 'react'
 
    São os 38 da norma de etiqueta têxtil (ABNT NBR NM ISO 3758), em seis
    grupos: lavagem, alvejamento, secagem em tambor, secagem natural,
-   passadoria e limpeza profissional. A etiqueta leva UM de cada grupo, e quem
-   confere isso é o banco (048).
+   passadoria e limpeza profissional. A etiqueta leva UM símbolo por VAGA, e
+   quem confere isso é o banco (048, 087 e 088). A vaga é o grupo, menos na
+   limpeza profissional, que tem duas: a seco e a úmido (088, pedido do
+   Henrique: "na parte limpeza profissional ... eu tenho que poder selecionar
+   mais de um").
 
    O DESENHO É PRÓPRIO, em linha, numa grade de 24. O Design System usa
    Phosphor, que não tem estes símbolos; é a única exceção, e só para eles. As
@@ -91,6 +94,19 @@ export const CUIDADOS: Cuidado[] = [
   { cod: 'nao-umido', grupo: 'profissional', frase: 'Não limpar a úmido' },
 ]
 
+/* A LIMPEZA PROFISSIONAL TEM DUAS VAGAS (088). A norma faz ali duas perguntas
+   diferentes, a limpeza a seco (P, F) e a limpeza a úmido (W), e a etiqueta
+   pode responder as duas. Esta lista é a mesma do banco
+   (banco/088-limpeza-profissional-e-o-tecido-sem-elastano.sql), e
+   testes/cuidados.mjs reprova quando as duas se separam. */
+export const CUIDADOS_A_UMIDO = ['umido-w', 'umido-w-suave', 'umido-w-muito-suave', 'nao-umido']
+
+/** Onde o símbolo disputa lugar: a ficha leva um por vaga. */
+export function vagaDoCuidado(c: Cuidado): string {
+  if (c.grupo !== 'profissional') return c.grupo
+  return CUIDADOS_A_UMIDO.includes(c.cod) ? 'profissional-umido' : 'profissional-seco'
+}
+
 const POR_COD = new Map(CUIDADOS.map(c => [c.cod, c]))
 
 export function cuidadoDe(cod: string): Cuidado | undefined {
@@ -102,13 +118,17 @@ export function cuidadosEmOrdem(cods: string[]): Cuidado[] {
   return CUIDADOS.filter(c => cods.includes(c.cod))
 }
 
-/** Marca um símbolo: tira o outro do mesmo grupo, e marcar de novo o mesmo tira ele. */
+/** Marca um símbolo: tira o outro da mesma vaga, e marcar de novo o mesmo tira ele. */
 export function alternarCuidado(cods: string[], cod: string): string[] {
   const novo = cuidadoDe(cod)
   if (!novo) return cods
   if (cods.includes(cod)) return cods.filter(c => c !== cod)
-  const semOGrupo = cods.filter(c => cuidadoDe(c)?.grupo !== novo.grupo)
-  return cuidadosEmOrdem([...semOGrupo, cod]).map(c => c.cod)
+  const vaga = vagaDoCuidado(novo)
+  const semAVaga = cods.filter(c => {
+    const ja = cuidadoDe(c)
+    return !ja || vagaDoCuidado(ja) !== vaga
+  })
+  return cuidadosEmOrdem([...semAVaga, cod]).map(c => c.cod)
 }
 
 /* ---------- o desenho ------------------------------------------------------ */

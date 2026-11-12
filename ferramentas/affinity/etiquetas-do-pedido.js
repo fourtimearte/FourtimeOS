@@ -277,9 +277,12 @@ function montar(doc, D, ped) {
     if (!ab) throw new Error('Nao consegui criar a prancheta do ' + L.rot);
     const pecas = L.tamanhos.reduce((s, t) => s + t.qtd, 0);
     renomear(doc, ab, prefixo + L.rot + (L.nome ? ' ' + L.nome : '') + ' (' + pecas + ' pc)');
-    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, x - BA.x, j * passo, L, item));
+    /* a prancheta nasce no pixel inteiro: o deslocamento vem da caixa real
+       dela, e nao do retangulo pedido, para nada andar meio pixel */
+    const real = caixa(ab);
+    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, real.x - BA.x, real.y - BA.y + j * passo, L, item));
     feitas.push(nome(ab));
-    x += BA.width + VAO_PRANCHETAS_MM * mm;
+    x = real.x + real.width + VAO_PRANCHETAS_MM * mm;
   }
   return feitas;
 }

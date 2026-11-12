@@ -277,9 +277,12 @@ function montar(doc, D, ped) {
     if (!ab) throw new Error('Nao consegui criar a prancheta do ' + L.rot);
     const pecas = L.tamanhos.reduce((s, t) => s + t.qtd, 0);
     renomear(doc, ab, prefixo + L.rot + (L.nome ? ' ' + L.nome : '') + ' (' + pecas + ' pc)');
-    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, x - BA.x, j * passo, L, item));
+    /* a prancheta nasce no pixel inteiro: o deslocamento vem da caixa real
+       dela, e nao do retangulo pedido, para nada andar meio pixel */
+    const real = caixa(ab);
+    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, real.x - BA.x, real.y - BA.y + j * passo, L, item));
     feitas.push(nome(ab));
-    x += BA.width + VAO_PRANCHETAS_MM * mm;
+    x = real.x + real.width + VAO_PRANCHETAS_MM * mm;
   }
   return feitas;
 }
@@ -318,7 +321,6 @@ function main() {
 }
 
 module.exports.main = main;
-
 const __J = {"formato": "FOURTIME_DTF", "versao": 1, "editor": "3.382", "tecnica": "PEDIDO", "escopo": "pedido", "pedido": {"numero": "PD009999", "cliente": "TESTE CLAUDE"}, "layouts": [{"n": 1, "ref": "FT-010", "nome": "CAMISETA", "genero": "masculino", "tecidos": ["DRYFIT C/ ELASTANO PROTEÇÃO UV50"], "tamanhos": {"M": 3, "PP": 2, "P": 5}, "pecas": 10}, {"n": 2, "ref": "FT-020", "nome": "BABY LOOK", "genero": "feminino", "tecidos": ["POLIAMIDA COM ELASTANO"], "tamanhos": {"G": 2, "M": 1}, "pecas": 3}, {"n": 3, "ref": "FT-030", "nome": "INFANTIL", "genero": "infantil", "tecidos": ["SUPLEX POLIAMIDA"], "tamanhos": {"4A": 3}, "pecas": 3}, {"n": 4, "ref": "", "nome": "INFO", "genero": "", "tecidos": [], "tamanhos": {}, "pecas": 0}]};
 const __D = require('/dialog.js');
 const __orig = __D.Dialog.prototype.runModal;

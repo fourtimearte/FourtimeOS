@@ -1,5 +1,5 @@
 'use strict';
-// ETIQUETAS DO PEDIDO v2
+// ETIQUETAS DO PEDIDO v3
 //
 // Monta as etiquetas de composicao de um pedido a partir do JSON "PEDIDO
 // INTEIRO" do editor V4 (botao Copiar do HTML do Trello, formato
@@ -16,12 +16,15 @@
 // Nada vem do Fourtime OS na hora de rodar: para mudar os cuidados de um
 // tecido, edite o texto "CUIDADOS DE <NOME>" na prancheta TECIDOS.
 //
-// Cria UMA prancheta grande "ETQ <pedido>", a direita das que ja existem.
-// Dentro dela, uma coluna por layout, uma ao lado da outra com 10 cm entre
-// elas, com o titulo do layout em cima. Em cada coluna, uma etiqueta por
-// tamanho, uma embaixo da outra. Cada etiqueta e um grupo com o nome
-// "L1 PP x5" e tem ao lado o texto da quantidade ("x5"), para o script do
-// gang sheet. Rodar de novo para o mesmo pedido apaga a prancheta antiga.
+// Cria UMA prancheta "ETQ <pedido>", a direita das que ja existem, no
+// mesmo modelo da prancheta DTF ORGANIZADO, que o script do gang sheet le:
+// uma fileira por etiqueta, em tres colunas, nesta ordem:
+//   LAYOUT       texto "L1"  (camada "L1 TAG")
+//   QUANTIDADE   texto "5x"  (camada "L1 QTD")
+//   ARTE         a etiqueta, num grupo "L1-PP"
+// As fileiras seguem a ordem dos layouts e, dentro do layout, a da grade,
+// com 10 cm entre elas. Rodar de novo para o mesmo pedido apaga a prancheta
+// antiga.
 //
 // A ETIQUETA BASE precisa ter o desenho dentro de UM grupo (Ctrl+G).
 //
@@ -33,20 +36,31 @@
 //                     FEM, MASC ou INF da referencia; infantil: sem simbolo
 
 const { Document } = require('/document.js');
+const { AddChildNodesCommandBuilder } = require('/commands.js');
+const { ArtTextNodeDefinition } = require('/nodes.js');
+const { StoryBuilder } = require('/storybuilder.js');
+const { GlyphAttDoubleType } = require('/glyphatts.js');
+const { FontFamily } = require('/fonts.js');
+const { FillDescriptor } = require('/fills.js');
+const { Colour } = require('/colours.js');
 const { Selection, TextSelection } = require('/selections.js');
 const { DocumentCommand, NodeMoveType, NodeChildType } = require('/commands.js');
 const { Transform, Rectangle } = require('/geometry.js');
 const { Dialog, DialogResult } = require('/dialog.js');
 const { app } = require('/application.js');
 
-const TITULO = 'Etiquetas do pedido v2';
+const TITULO = 'Etiquetas do pedido v3';
 const VAO_PRANCHETAS_MM = 100;      // da prancheta nova para as que ja existem
-const VAO_LAYOUTS_MM = 100;         // 10 cm entre as colunas de layout
-const VAO_ETIQUETAS_MM = 10;        // entre as etiquetas de uma coluna
-const MARGEM_MM = 20;               // em volta de tudo, dentro da prancheta
-const VAO_QTD_MM = 5;               // da etiqueta ate o texto da quantidade
-const LARGURA_QTD_MM = 25;          // espaco reservado para o "x120"
-const ALTURA_TITULO_MM = 18;        // faixa do titulo do layout
+/* o modelo da prancheta DTF ORGANIZADO, medido nela (12/11/2026), em mm a
+   partir do canto de cima-esquerda da prancheta */
+const COL_LAYOUT_MM = 300;          // texto "L1"
+const COL_QTD_MM = 736;             // texto "22x"
+const COL_ARTE_MM = 1088;           // a arte
+const MARGEM_MM = 300;              // em cima, embaixo e a direita da arte
+const VAO_FILEIRAS_MM = 100;        // entre uma fileira e a outra
+const FONTE_TEXTO = 'Montserrat-Bold';
+const ALTURA_FONTE_MM = 120;        // 340 pt, como no DTF ORGANIZADO
+const COR_TEXTO = { r: 198, g: 22, b: 27, alpha: 255 };
 const VAO_MINIMO_SIMBOLOS_MM = 1;   // se os simbolos nao couberem, encolhem
 const ALTURA_MAX_COMPOSICAO = 1.25; // o texto curto estica na largura, nao na altura
 const ORDEM_TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4',
@@ -275,16 +289,48 @@ function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
   colocarDentro(doc, novos, grupo);
   apagar(doc, velhos);
 
-  // o nome do grupo e a quantidade ao lado, para o gang sheet
-  const rotulo = 'L' + L.n + ' ' + item.tam + ' x' + item.qtd;
-  renomear(doc, copia, rotulo);
-  const eb = caixa(copia);
-  const qtd = B.filhos[B.iTam].duplicate(Transform.createTranslate(dx, dy));
-  colocarDentro(doc, [qtd], alvo);
-  trocarTexto(doc, qtd, 'x' + item.qtd);
-  const qb = caixa(qtd);
-  mover(doc, qtd, Transform.createTranslate(eb.x + eb.width + VAO_QTD_MM * G.mm - qb.x, eb.y + eb.height / 2 - (qb.y + qb.height / 2)));
-  renomear(doc, qtd, 'QTD ' + rotulo);
+  // o nome da arte, como no DTF ORGANIZADO (L1-F1, L1-C1...)
+  renomear(doc, copia, 'L' + L.n + '-' + item.tam);
+  return copia;
+}
+
+// ---------- os textos de LAYOUT e QUANTIDADE ---------------------------------
+let FONTE = null;
+function fonte() {
+  if (FONTE === null) {
+    FONTE = undefined;
+    try {
+      for (const fam of FontFamily.all) {
+        const f = [...fam.fonts].find(x => x.postscriptName === FONTE_TEXTO);
+        if (f) { FONTE = f; break; }
+      }
+    } catch (e) { console.log('fonte: ' + e.message); }
+  }
+  return FONTE;
+}
+// cria o texto com a borda esquerda em x e o centro vertical em cy (spread)
+function criarTexto(doc, alvo, str, x, cy, nomeCamada) {
+  const sb = StoryBuilder.create();
+  sb.setToArtisticTextDefaultStyle(doc.dpi, doc.format);
+  const ga = sb.glyphAtts.clone();
+  const f = fonte(); if (f) ga.font = f;
+  ga.setDoubleValue(GlyphAttDoubleType.Height, ALTURA_FONTE_MM * doc.dpi / 25.4);
+  ga.brushFill = FillDescriptor.createSolid(Colour.createRGBA8(COR_TEXTO));
+  sb.setGlyphAtts(ga);
+  sb.addText(str);
+  const def = ArtTextNodeDefinition.createFromStoryBuilder({ x: x, y: cy }, sb);
+  try { def.userDescription = nomeCamada; } catch (e) {}
+  const antes = [...alvo.children];
+  const b = AddChildNodesCommandBuilder.create();
+  b.setInsertionTarget(alvo);
+  b.addNode(def);
+  doc.executeCommand(b.createCommand(false, NodeChildType.Main));
+  const novo = [...alvo.children].find(n => !antes.some(a => a.isSameNode(n)));
+  if (!novo) throw new Error('Nao consegui escrever "' + str + '"');
+  const nb = caixa(novo);
+  mover(doc, novo, Transform.createTranslate(x - nb.x, cy - (nb.y + nb.height / 2)));
+  renomear(doc, novo, nomeCamada);
+  return novo;
 }
 
 // ---------- o pedido inteiro ------------------------------------------------
@@ -298,11 +344,15 @@ function montar(doc, D, ped) {
     mm: mm, L: cuid.x, R: cuid.x + cuid.width, cy: cuid.y + cuid.height / 2,
     k: cuid.height / D.maiorSimbolo,
   };
-  const margem = MARGEM_MM * mm, faixa = ALTURA_TITULO_MM * mm;
-  const colLarg = ET.width + (VAO_QTD_MM + LARGURA_QTD_MM) * mm;
-  const passo = ET.height + VAO_ETIQUETAS_MM * mm;
-  const maisAlta = Math.max(...ped.layouts.map(L => L.tamanhos.length));
-  const nCol = ped.layouts.length;
+
+  // as fileiras: layout por layout, tamanho por tamanho
+  const fileiras = [];
+  for (const L of ped.layouts) for (const item of L.tamanhos) fileiras.push({ L, item });
+
+  // a altura da fileira: a maior entre a etiqueta e o texto "L1"
+  const altTexto = 0.72 * ALTURA_FONTE_MM * mm;
+  const altFileira = Math.max(ET.height, altTexto);
+  const vao = VAO_FILEIRAS_MM * mm, margem = MARGEM_MM * mm;
 
   // apaga a prancheta deste pedido feita antes (e as de uma prancheta por layout, da v1)
   const prefixo = 'ETQ ' + (ped.pedido || 'SEM NUMERO');
@@ -311,34 +361,26 @@ function montar(doc, D, ped) {
   const resto = D.pranchetas.filter(p => !antigas.some(a => a.isSameNode(p)));
   const x0 = Math.max(...resto.map(p => caixa(p).x + caixa(p).width)) + VAO_PRANCHETAS_MM * mm;
 
-  const r = new Rectangle(x0, BA.y,
-    2 * margem + nCol * colLarg + (nCol - 1) * VAO_LAYOUTS_MM * mm,
-    2 * margem + faixa + maisAlta * ET.height + (maisAlta - 1) * VAO_ETIQUETAS_MM * mm);
+  const n = fileiras.length;
+  const r = new Rectangle(x0, BA.y, COL_ARTE_MM * mm + ET.width + margem, 2 * margem + n * altFileira + (n - 1) * vao);
   doc.addRectangularArtboard(r, false, false);
   const ab = [...D.spread.children].filter(ehPrancheta).find(p => {
     const b = caixa(p); return Math.abs(b.x - r.x) < 2 && Math.abs(b.y - r.y) < 2 && Math.abs(b.width - r.width) < 2;
   });
   if (!ab) throw new Error('Nao consegui criar a prancheta do pedido');
-  const total = ped.layouts.reduce((s, L) => s + L.tamanhos.reduce((a, t) => a + t.qtd, 0), 0);
   renomear(doc, ab, prefixo);
   /* a prancheta nasce no pixel inteiro: tudo sai da caixa real dela */
   const real = caixa(ab);
 
-  ped.layouts.forEach((L, i) => {
-    const cx = real.x + margem + i * (colLarg + VAO_LAYOUTS_MM * mm);
-    const cy = real.y + margem + faixa;
-    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, cx - ET.x, cy + j * passo - ET.y, L, item));
-    // o titulo da coluna, com a fonte da composicao
-    const pecas = L.tamanhos.reduce((s, t) => s + t.qtd, 0);
-    const t = B.filhos[B.iComp].duplicate(Transform.createTranslate(0, 0));
-    colocarDentro(doc, [t], ab);
-    trocarTexto(doc, t, L.rot + (L.nome ? ' ' + L.nome : '') + ' (' + pecas + ' pc)');
-    const tb = caixa(t);
-    const s = Math.min(1, colLarg / tb.width);
-    mover(doc, t, Transform.createTranslate(cx - s * tb.x, cy - faixa / 2 - s * (tb.y + tb.height / 2)).multiply(Transform.createScale(s, s)));
-    renomear(doc, t, 'LAYOUT ' + L.rot);
+  fileiras.forEach(({ L, item }, i) => {
+    const cy = real.y + margem + i * (altFileira + vao) + altFileira / 2;
+    const tag = 'L' + L.n;
+    montarEtiqueta(doc, D, G, ab, real.x + COL_ARTE_MM * mm - ET.x, cy - ET.height / 2 - ET.y, L, item);
+    criarTexto(doc, ab, tag, real.x + COL_LAYOUT_MM * mm, cy, tag + ' TAG');
+    criarTexto(doc, ab, item.qtd + 'x', real.x + COL_QTD_MM * mm, cy, tag + ' QTD');
   });
-  return { nome: prefixo, layouts: nCol, etiquetas: ped.layouts.reduce((s, L) => s + L.tamanhos.length, 0), pecas: total };
+  const total = fileiras.reduce((s, f) => s + f.item.qtd, 0);
+  return { nome: prefixo, layouts: ped.layouts.length, etiquetas: n, pecas: total };
 }
 
 function main() {
@@ -349,7 +391,7 @@ function main() {
 
   const dlg = Dialog.create(TITULO);
   const g = dlg.addColumn().addGroup();
-  g.addStaticText(null, 'Cole o JSON do PEDIDO INTEIRO (editor V4, HTML do Trello, botao Copiar). Uma prancheta so, uma coluna por layout, uma etiqueta por tamanho com a quantidade ao lado. Os cuidados vem do texto "CUIDADOS DE <tecido>" na prancheta TECIDOS.').setIsFullWidth();
+  g.addStaticText(null, 'Cole o JSON do PEDIDO INTEIRO (editor V4, HTML do Trello, botao Copiar). Uma prancheta no modelo do DTF ORGANIZADO: uma fileira por etiqueta, com LAYOUT, QUANTIDADE e ARTE. Os cuidados vem do texto "CUIDADOS DE <tecido>" na prancheta TECIDOS.').setIsFullWidth();
   const caixaJson = g.addTextBox('', '');
   caixaJson.setIsMultiLine(true);
   try { caixaJson.setRowSpan(14); } catch (e) {}
@@ -365,7 +407,7 @@ function main() {
   }
   try {
     const f = montar(doc, D, ped);
-    const msg = 'Feito: prancheta ' + f.nome + ' com ' + f.layouts + ' layouts, ' + f.etiquetas + ' etiquetas diferentes e ' + f.pecas + ' etiquetas no total.';
+    const msg = 'Feito: prancheta ' + f.nome + ' com ' + f.layouts + ' layouts, ' + f.etiquetas + ' fileiras e ' + f.pecas + ' etiquetas no total.';
     console.log(msg);
     aviso(msg);
   } catch (e) {

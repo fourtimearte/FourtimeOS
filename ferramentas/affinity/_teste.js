@@ -1,5 +1,5 @@
 'use strict';
-// ETIQUETAS DO PEDIDO v1.1
+// ETIQUETAS DO PEDIDO v2
 //
 // Monta as etiquetas de composicao de um pedido a partir do JSON "PEDIDO
 // INTEIRO" do editor V4 (botao Copiar do HTML do Trello, formato
@@ -16,11 +16,14 @@
 // Nada vem do Fourtime OS na hora de rodar: para mudar os cuidados de um
 // tecido, edite o texto "CUIDADOS DE <NOME>" na prancheta TECIDOS.
 //
-// Cria uma prancheta por layout (L1, L2...), uma ao lado da outra com 10 cm
-// entre elas, a direita das pranchetas que ja existem. Dentro de cada uma,
-// uma etiqueta por tamanho, uma embaixo da outra, com a quantidade no nome.
-// Rodar de novo para o mesmo pedido apaga as pranchetas "ETQ <pedido>" e
-// cria de novo.
+// Cria UMA prancheta grande "ETQ <pedido>", a direita das que ja existem.
+// Dentro dela, uma coluna por layout, uma ao lado da outra com 10 cm entre
+// elas, com o titulo do layout em cima. Em cada coluna, uma etiqueta por
+// tamanho, uma embaixo da outra. Cada etiqueta e um grupo com o nome
+// "L1 PP x5" e tem ao lado o texto da quantidade ("x5"), para o script do
+// gang sheet. Rodar de novo para o mesmo pedido apaga a prancheta antiga.
+//
+// A ETIQUETA BASE precisa ter o desenho dentro de UM grupo (Ctrl+G).
 //
 // Regras do desenho:
 //   composicao        de canto a canto
@@ -36,9 +39,14 @@ const { Transform, Rectangle } = require('/geometry.js');
 const { Dialog, DialogResult } = require('/dialog.js');
 const { app } = require('/application.js');
 
-const TITULO = 'Etiquetas do pedido v1.1';
-const VAO_PRANCHETAS_MM = 100;      // 10 cm entre as pranchetas
-const VAO_ETIQUETAS_MM = 10;        // entre as etiquetas de uma prancheta
+const TITULO = 'Etiquetas do pedido v2';
+const VAO_PRANCHETAS_MM = 100;      // da prancheta nova para as que ja existem
+const VAO_LAYOUTS_MM = 100;         // 10 cm entre as colunas de layout
+const VAO_ETIQUETAS_MM = 10;        // entre as etiquetas de uma coluna
+const MARGEM_MM = 20;               // em volta de tudo, dentro da prancheta
+const VAO_QTD_MM = 5;               // da etiqueta ate o texto da quantidade
+const LARGURA_QTD_MM = 25;          // espaco reservado para o "x120"
+const ALTURA_TITULO_MM = 18;        // faixa do titulo do layout
 const VAO_MINIMO_SIMBOLOS_MM = 1;   // se os simbolos nao couberem, encolhem
 const ALTURA_MAX_COMPOSICAO = 1.25; // o texto curto estica na largura, nao na altura
 const ORDEM_TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4',
@@ -113,11 +121,17 @@ function lerDocumento(doc) {
   }
   for (const [k, cods] of cuidadosDe) if (tecidos.has(k)) tecidos.get(k).cuidados = cods;
 
-  // a etiqueta base
-  const filhos = [...P.base.children];
+  // a etiqueta base: o desenho dentro de UM grupo
+  const grupos = [...P.base.children].filter(n => n.isGroupNode === true);
+  if (grupos.length !== 1 || [...P.base.children].length !== 1) {
+    throw new Error('A ETIQUETA BASE precisa ter o desenho inteiro dentro de UM grupo (selecione tudo e Ctrl+G).');
+  }
+  const etiqueta = grupos[0];
+  const filhos = [...etiqueta.children];
   const tamanhosDaGrade = new Set(todos(P.grade).map(n => chave(texto(n))).filter(Boolean));
   const B = {
     prancheta: P.base,
+    etiqueta: etiqueta,
     filhos: filhos,
     iComp: filhos.findIndex(n => n.constructor.name === 'ArtTextNode' && texto(n).includes('%')),
     iTam: filhos.findIndex(n => n.constructor.name === 'ArtTextNode' && tamanhosDaGrade.has(chave(texto(n)))),
@@ -203,11 +217,12 @@ function copiarEm(fonte, s, x, y) {
 // ---------- uma etiqueta ----------------------------------------------------
 function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
   const B = D.B;
-  const copias = B.filhos.map(n => n.duplicate(Transform.createTranslate(dx, dy)));
-  colocarDentro(doc, copias, alvo);
+  const copia = B.etiqueta.duplicate(Transform.createTranslate(dx, dy));
+  colocarDentro(doc, [copia], alvo);
+  const partes = [...copia.children];
 
   // composicao: de canto a canto
-  const comp = copias[B.iComp];
+  const comp = partes[B.iComp];
   const cb0 = caixa(B.filhos[B.iComp]);
   trocarTexto(doc, comp, L.tecido.composicao);
   const cb = caixa(comp);
@@ -217,26 +232,26 @@ function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
   mover(doc, comp, Transform.createTranslate(G.L + dx - sx * cb.x, cyAlvo - sy * (cb.y + cb.height / 2)).multiply(Transform.createScale(sx, sy)));
 
   // tamanho: preso pela esquerda
-  const tam = copias[B.iTam];
+  const tam = partes[B.iTam];
   const tb0 = caixa(B.filhos[B.iTam]);
   trocarTexto(doc, tam, item.tam);
   const tb = caixa(tam);
   mover(doc, tam, Transform.createTranslate(tb0.x + dx - tb.x, 0));
-  renomear(doc, tam, item.tam + ' x' + item.qtd);
+  renomear(doc, tam, item.tam);
 
   // genero: preso na parede direita
   const gb0 = caixa(B.filhos[B.iGen]);
-  apagar(doc, [copias[B.iGen]]);
+  apagar(doc, [partes[B.iGen]]);
   if (L.genero) {
     const fonte = L.genero;
     const fb = caixa(fonte);
     const s = gb0.height / fb.height;
     const g = copiarEm(fonte, s, gb0.x + gb0.width - s * fb.width + dx, gb0.y + dy);
-    colocarDentro(doc, [g], alvo);
+    colocarDentro(doc, [g], copia);
   }
 
   // simbolos de cuidado: de canto a canto
-  const grupo = copias[B.iCuid];
+  const grupo = partes[B.iCuid];
   const velhos = [...grupo.children];
   const fontes = L.tecido.cuidados.map(c => D.simbolos.get(c));
   let k = G.k;
@@ -259,6 +274,17 @@ function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
   }
   colocarDentro(doc, novos, grupo);
   apagar(doc, velhos);
+
+  // o nome do grupo e a quantidade ao lado, para o gang sheet
+  const rotulo = 'L' + L.n + ' ' + item.tam + ' x' + item.qtd;
+  renomear(doc, copia, rotulo);
+  const eb = caixa(copia);
+  const qtd = B.filhos[B.iTam].duplicate(Transform.createTranslate(dx, dy));
+  colocarDentro(doc, [qtd], alvo);
+  trocarTexto(doc, qtd, 'x' + item.qtd);
+  const qb = caixa(qtd);
+  mover(doc, qtd, Transform.createTranslate(eb.x + eb.width + VAO_QTD_MM * G.mm - qb.x, eb.y + eb.height / 2 - (qb.y + qb.height / 2)));
+  renomear(doc, qtd, 'QTD ' + rotulo);
 }
 
 // ---------- o pedido inteiro ------------------------------------------------
@@ -266,43 +292,53 @@ function montar(doc, D, ped) {
   const B = D.B;
   const mm = doc.dpi / 25.4;
   const BA = caixa(B.prancheta);
+  const ET = caixa(B.etiqueta);
   const cuid = caixa(B.filhos[B.iCuid]);
   const G = {
     mm: mm, L: cuid.x, R: cuid.x + cuid.width, cy: cuid.y + cuid.height / 2,
     k: cuid.height / D.maiorSimbolo,
   };
-  // a area do desenho dentro da prancheta base
-  const bx = B.filhos.map(caixa);
-  const topo = Math.min(...bx.map(b => b.y)), fundo = Math.max(...bx.map(b => b.y + b.height));
-  const alto = fundo - topo, margemCima = topo - BA.y, margemBaixo = BA.y + BA.height - fundo;
-  const passo = alto + VAO_ETIQUETAS_MM * mm;
+  const margem = MARGEM_MM * mm, faixa = ALTURA_TITULO_MM * mm;
+  const colLarg = ET.width + (VAO_QTD_MM + LARGURA_QTD_MM) * mm;
+  const passo = ET.height + VAO_ETIQUETAS_MM * mm;
+  const maisAlta = Math.max(...ped.layouts.map(L => L.tamanhos.length));
+  const nCol = ped.layouts.length;
 
-  // apaga as pranchetas deste pedido feitas antes
-  const prefixo = 'ETQ ' + (ped.pedido ? ped.pedido + ' ' : '');
-  const antigas = D.pranchetas.filter(p => nome(p).startsWith(prefixo));
+  // apaga a prancheta deste pedido feita antes (e as de uma prancheta por layout, da v1)
+  const prefixo = 'ETQ ' + (ped.pedido || 'SEM NUMERO');
+  const antigas = D.pranchetas.filter(p => nome(p) === prefixo || nome(p).startsWith(prefixo + ' '));
   apagar(doc, antigas);
   const resto = D.pranchetas.filter(p => !antigas.some(a => a.isSameNode(p)));
-  let x = Math.max(...resto.map(p => caixa(p).x + caixa(p).width)) + VAO_PRANCHETAS_MM * mm;
+  const x0 = Math.max(...resto.map(p => caixa(p).x + caixa(p).width)) + VAO_PRANCHETAS_MM * mm;
 
-  const feitas = [];
-  for (const L of ped.layouts) {
-    const n = L.tamanhos.length;
-    const r = new Rectangle(x, BA.y, BA.width, margemCima + n * alto + (n - 1) * VAO_ETIQUETAS_MM * mm + margemBaixo);
-    doc.addRectangularArtboard(r, false, false);
-    const ab = [...D.spread.children].filter(ehPrancheta).find(p => {
-      const b = caixa(p); return Math.abs(b.x - r.x) < 2 && Math.abs(b.y - r.y) < 2 && Math.abs(b.width - r.width) < 2;
-    });
-    if (!ab) throw new Error('Nao consegui criar a prancheta do ' + L.rot);
+  const r = new Rectangle(x0, BA.y,
+    2 * margem + nCol * colLarg + (nCol - 1) * VAO_LAYOUTS_MM * mm,
+    2 * margem + faixa + maisAlta * ET.height + (maisAlta - 1) * VAO_ETIQUETAS_MM * mm);
+  doc.addRectangularArtboard(r, false, false);
+  const ab = [...D.spread.children].filter(ehPrancheta).find(p => {
+    const b = caixa(p); return Math.abs(b.x - r.x) < 2 && Math.abs(b.y - r.y) < 2 && Math.abs(b.width - r.width) < 2;
+  });
+  if (!ab) throw new Error('Nao consegui criar a prancheta do pedido');
+  const total = ped.layouts.reduce((s, L) => s + L.tamanhos.reduce((a, t) => a + t.qtd, 0), 0);
+  renomear(doc, ab, prefixo);
+  /* a prancheta nasce no pixel inteiro: tudo sai da caixa real dela */
+  const real = caixa(ab);
+
+  ped.layouts.forEach((L, i) => {
+    const cx = real.x + margem + i * (colLarg + VAO_LAYOUTS_MM * mm);
+    const cy = real.y + margem + faixa;
+    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, cx - ET.x, cy + j * passo - ET.y, L, item));
+    // o titulo da coluna, com a fonte da composicao
     const pecas = L.tamanhos.reduce((s, t) => s + t.qtd, 0);
-    renomear(doc, ab, prefixo + L.rot + (L.nome ? ' ' + L.nome : '') + ' (' + pecas + ' pc)');
-    /* a prancheta nasce no pixel inteiro: o deslocamento vem da caixa real
-       dela, e nao do retangulo pedido, para nada andar meio pixel */
-    const real = caixa(ab);
-    L.tamanhos.forEach((item, j) => montarEtiqueta(doc, D, G, ab, real.x - BA.x, real.y - BA.y + j * passo, L, item));
-    feitas.push(nome(ab));
-    x = real.x + real.width + VAO_PRANCHETAS_MM * mm;
-  }
-  return feitas;
+    const t = B.filhos[B.iComp].duplicate(Transform.createTranslate(0, 0));
+    colocarDentro(doc, [t], ab);
+    trocarTexto(doc, t, L.rot + (L.nome ? ' ' + L.nome : '') + ' (' + pecas + ' pc)');
+    const tb = caixa(t);
+    const s = Math.min(1, colLarg / tb.width);
+    mover(doc, t, Transform.createTranslate(cx - s * tb.x, cy - faixa / 2 - s * (tb.y + tb.height / 2)).multiply(Transform.createScale(s, s)));
+    renomear(doc, t, 'LAYOUT ' + L.rot);
+  });
+  return { nome: prefixo, layouts: nCol, etiquetas: ped.layouts.reduce((s, L) => s + L.tamanhos.length, 0), pecas: total };
 }
 
 function main() {
@@ -313,7 +349,7 @@ function main() {
 
   const dlg = Dialog.create(TITULO);
   const g = dlg.addColumn().addGroup();
-  g.addStaticText(null, 'Cole o JSON do PEDIDO INTEIRO (editor V4, HTML do Trello, botao Copiar). Uma prancheta por layout, uma etiqueta por tamanho. Os cuidados vem do texto "CUIDADOS DE <tecido>" na prancheta TECIDOS.').setIsFullWidth();
+  g.addStaticText(null, 'Cole o JSON do PEDIDO INTEIRO (editor V4, HTML do Trello, botao Copiar). Uma prancheta so, uma coluna por layout, uma etiqueta por tamanho com a quantidade ao lado. Os cuidados vem do texto "CUIDADOS DE <tecido>" na prancheta TECIDOS.').setIsFullWidth();
   const caixaJson = g.addTextBox('', '');
   caixaJson.setIsMultiLine(true);
   try { caixaJson.setRowSpan(14); } catch (e) {}
@@ -328,10 +364,10 @@ function main() {
     return;
   }
   try {
-    const feitas = montar(doc, D, ped);
-    const etiquetas = ped.layouts.reduce((s, L) => s + L.tamanhos.length, 0);
-    console.log('Feito: ' + feitas.length + ' pranchetas, ' + etiquetas + ' etiquetas.\n' + feitas.join('\n'));
-    aviso('Feito: ' + feitas.length + ' pranchetas e ' + etiquetas + ' etiquetas do pedido ' + (ped.pedido || '') + '.\n\n' + feitas.join('\n'));
+    const f = montar(doc, D, ped);
+    const msg = 'Feito: prancheta ' + f.nome + ' com ' + f.layouts + ' layouts, ' + f.etiquetas + ' etiquetas diferentes e ' + f.pecas + ' etiquetas no total.';
+    console.log(msg);
+    aviso(msg);
   } catch (e) {
     aviso('Parou no meio: ' + e.message + '\nUse Desfazer para limpar o que foi criado.');
     console.log(e.stack || e.message);
@@ -340,7 +376,7 @@ function main() {
 
 module.exports.main = main;
 
-const __J = {"formato": "FOURTIME_DTF", "pedido": {"numero": "PD009997"}, "layouts": [{"n": 1, "ref": "FT-010-013F", "nome": "CAMISETA POLO FEM SEM PUNHO", "genero": "", "tecidos": ["POLIAMIDA COM ELASTANO"], "tamanhos": {"P": 1}}, {"n": 2, "ref": "FT-010-000M", "nome": "CAMISETA MASC TRAD", "tecidos": ["SUPLEX POLIAMIDA"], "tamanhos": {"M": 1}}, {"n": 3, "ref": "FT-010-008C", "nome": "CAMISETA INFANTIL UNISSEX", "genero": "", "tecidos": ["DRYFIT C/ ELASTANO PROTEÇÃO UV50"], "tamanhos": {"6A": 1}}]};
+const __J = {"formato": "FOURTIME_DTF", "pedido": {"numero": "PD009999"}, "layouts": [{"n": 1, "ref": "FT-010-000M", "nome": "CAMISETA MASC TRAD", "genero": "", "tecidos": ["DRYFIT C/ ELASTANO PROTEÇÃO UV50"], "tamanhos": {"M": 3, "PP": 2, "P": 5}}, {"n": 2, "ref": "FT-030-007F", "nome": "REGATÃO FEM RANI", "tecidos": ["POLIAMIDA COM ELASTANO"], "tamanhos": {"G": 2, "M": 1, "P": 10, "PP": 120}}, {"n": 3, "ref": "FT-010-008C", "nome": "CAMISETA INFANTIL UNISSEX", "genero": "", "tecidos": ["SUPLEX POLIAMIDA"], "tamanhos": {"4A": 3}}]};
 const __D = require('/dialog.js');
 const __orig = __D.Dialog.prototype.runModal;
 __D.Dialog.prototype.runModal = function(){ for (const c of Array.from(this.controls)) { if (c.constructor.name === 'DialogTextBox') c.text = JSON.stringify(__J); } return __D.DialogResult.Ok; };

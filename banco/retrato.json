@@ -1,5 +1,5 @@
 {
- "migracoes": "170dfbe13e0da10eea3692c3ecb0e852990f4a13351c409850a0df549bd6ac97",
+ "migracoes": "a6141facb758a8056a4688ef33a40d0304141ffa42e8c3de30146fd42954d9c1",
  "relacoes": {
   "acao": {
    "tipo": "tabela",
@@ -2226,7 +2226,8 @@
    "colunas": [
     "cod",
     "grupo",
-    "ordem"
+    "ordem",
+    "vaga"
    ],
    "geradas": [],
    "chaves": {},

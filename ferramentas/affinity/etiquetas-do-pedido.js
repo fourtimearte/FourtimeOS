@@ -1,5 +1,10 @@
 'use strict';
-// ETIQUETAS DO PEDIDO v3
+// ETIQUETAS DO PEDIDO v4
+//
+// v4 (12/11/2026): os simbolos de cuidado e o de genero saem na COR EXATA dos
+// que estao na ETIQUETA BASE (antes saiam com a cor da prancheta CUIDADOS e
+// GENEROS, preta). A prancheta passou a se chamar
+// "DTF ETQ <cliente> <pedido> <DDMMAA>", ex.: DTF ETQ Supere Sports LTDA EPP PD004430 121126
 //
 // Monta as etiquetas de composicao de um pedido a partir do JSON "PEDIDO
 // INTEIRO" do editor V4 (botao Copiar do HTML do Trello, formato
@@ -16,7 +21,7 @@
 // Nada vem do Fourtime OS na hora de rodar: para mudar os cuidados de um
 // tecido, edite o texto "CUIDADOS DE <NOME>" na prancheta TECIDOS.
 //
-// Cria UMA prancheta "ETQ <pedido>", a direita das que ja existem, no
+// Cria UMA prancheta "DTF ETQ <cliente> <pedido> <DDMMAA>", a direita das que ja existem, no
 // mesmo modelo da prancheta DTF ORGANIZADO, que o script do gang sheet le:
 // uma fileira por etiqueta, em tres colunas, nesta ordem:
 //   LAYOUT       texto "L1"  (camada "L1 TAG")
@@ -49,7 +54,7 @@ const { Transform, Rectangle } = require('/geometry.js');
 const { Dialog, DialogResult } = require('/dialog.js');
 const { app } = require('/application.js');
 
-const TITULO = 'Etiquetas do pedido v3';
+const TITULO = 'Etiquetas do pedido v4';
 const VAO_PRANCHETAS_MM = 100;      // da prancheta nova para as que ja existem
 /* o modelo da prancheta DTF ORGANIZADO, medido nela (12/11/2026), em mm a
    partir do canto de cima-esquerda da prancheta */
@@ -143,6 +148,10 @@ function lerDocumento(doc) {
   const etiqueta = grupos[0];
   const filhos = [...etiqueta.children];
   const tamanhosDaGrade = new Set(todos(P.grade).map(n => chave(texto(n))).filter(Boolean));
+  // v4: a cor da ETIQUETA BASE. Os simbolos copiados da CUIDADOS e da GENEROS
+  // recebem exatamente o preenchimento dos que estao desenhados na base.
+  const corDe = n => { try { const f = n.brushFillDescriptor; return f && f.fill && f.fill.colour ? f : null; } catch (e) { return null; } };
+  const folhas = n => { const l = todos(n).filter(c => !(c.children && c.children.length)); return l.length ? l : [n]; };
   const B = {
     prancheta: P.base,
     etiqueta: etiqueta,
@@ -153,6 +162,11 @@ function lerDocumento(doc) {
     iCuid: filhos.findIndex(n => chave(nome(n)) === 'CUIDADOS'),
   };
   const semPeca = ['iComp', 'iTam', 'iGen', 'iCuid'].filter(k => B[k] < 0);
+  if (!semPeca.length) {
+    const fCuid = folhas(filhos[B.iCuid]).map(corDe).find(Boolean) || corDe(filhos[B.iCuid]);
+    const fGen = folhas(filhos[B.iGen]).map(corDe).find(Boolean) || corDe(filhos[B.iGen]);
+    B.corCuid = fCuid; B.corGen = fGen || fCuid;
+  }
   if (semPeca.length) throw new Error('Na ETIQUETA BASE nao achei: ' + semPeca.map(k => ({ iComp: 'a composicao (texto com %)', iTam: 'o tamanho', iGen: 'o simbolo GENERO', iCuid: 'o grupo CUIDADOS' }[k])).join(', '));
   return { spread, pranchetas, P, simbolos, maiorSimbolo, generos, tecidos, B };
 }
@@ -221,6 +235,13 @@ function apagar(doc, nos) { if (nos.length) doc.executeCommand(DocumentCommand.c
 function colocarDentro(doc, nos, alvo) {
   doc.executeCommand(DocumentCommand.createMoveNodes(Selection.create(doc, nos), alvo, NodeMoveType.Inside, NodeChildType.Main));
 }
+// v4: pinta com o preenchimento da ETIQUETA BASE (em grupo, pinta cada pedaco)
+function pintar(doc, nos, fill) {
+  if (!fill || !nos.length) return;
+  const alvos = [];
+  for (const n of nos) { const l = todos(n).filter(c => !(c.children && c.children.length)); alvos.push(...(l.length ? l : [n])); }
+  doc.executeCommand(DocumentCommand.createSetBrushFill(Selection.create(doc, alvos), fill));
+}
 function renomear(doc, no, n) { doc.executeCommand(DocumentCommand.createSetDescription(Selection.create(doc, [no]), n)); }
 // copia "fonte" com escala s e o canto de cima-esquerda em (x, y), coords de spread
 function copiarEm(fonte, s, x, y) {
@@ -261,6 +282,7 @@ function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
     const fb = caixa(fonte);
     const s = gb0.height / fb.height;
     const g = copiarEm(fonte, s, gb0.x + gb0.width - s * fb.width + dx, gb0.y + dy);
+    pintar(doc, [g], B.corGen);
     colocarDentro(doc, [g], copia);
   }
 
@@ -286,6 +308,7 @@ function montarEtiqueta(doc, D, G, alvo, dx, dy, L, item) {
     novos.push(n);
     x += fb.width * k + vao;
   }
+  pintar(doc, novos, B.corCuid);
   colocarDentro(doc, novos, grupo);
   apagar(doc, velhos);
 
@@ -354,9 +377,16 @@ function montar(doc, D, ped) {
   const altFileira = Math.max(ET.height, altTexto);
   const vao = VAO_FILEIRAS_MM * mm, margem = MARGEM_MM * mm;
 
-  // apaga a prancheta deste pedido feita antes (e as de uma prancheta por layout, da v1)
-  const prefixo = 'ETQ ' + (ped.pedido || 'SEM NUMERO');
-  const antigas = D.pranchetas.filter(p => nome(p) === prefixo || nome(p).startsWith(prefixo + ' '));
+  // v4: "DTF ETQ <cliente> <pedido> <DDMMAA>"
+  const hoje = new Date();
+  const dois = v => String(v).padStart(2, '0');
+  const data = dois(hoje.getDate()) + dois(hoje.getMonth() + 1) + dois(hoje.getFullYear() % 100);
+  const numero = ped.pedido || 'SEM NUMERO';
+  const prefixo = ['DTF ETQ', String(ped.cliente || '').trim(), numero, data].filter(Boolean).join(' ').replace(/\s+/g, ' ');
+  // apaga a prancheta de etiquetas DESTE pedido feita antes, com qualquer data
+  // ou nome antigo ("ETQ PD004430", "DTF ETQ PD004430", "DTF ETQ Cliente PD004430 111126")
+  const doPedido = new RegExp('(^|\\s)' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\s|$)', 'i');
+  const antigas = D.pranchetas.filter(p => /(^|\s)ETQ(\s|$)/i.test(nome(p)) && doPedido.test(nome(p)));
   apagar(doc, antigas);
   const resto = D.pranchetas.filter(p => !antigas.some(a => a.isSameNode(p)));
   const x0 = Math.max(...resto.map(p => caixa(p).x + caixa(p).width)) + VAO_PRANCHETAS_MM * mm;

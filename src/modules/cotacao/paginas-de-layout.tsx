@@ -270,7 +270,7 @@ function FaixaDeDestaques({ b, im, largura, modo }: { b: Bloco; im: Imagem | und
    valor em R$ de cada tamanho e o total uma vez só, sob a soma.
 
    As fileiras: a adulta (PP a XG) sempre; a plus (G1 a G4) e a infantil (2A
-   a 14A) só com peça; adulta e plus na MESMA fileira; a infantil só se
+   a 16A) só com peça; adulta e plus na MESMA fileira; a infantil só se
    diferencia pelo verde, e desce para uma fileira própria quando não cabe
    (mais de 12 tamanhos na coluna, mais de 24 na página inteira). Com até 3
    peças infantis, tudo numa fileira só, e da infantil só os tamanhos com peça.

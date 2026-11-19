@@ -53,7 +53,7 @@ function pesoBase(nome: string): number {
 const FATOR: Record<string, number> = {
   PP: 0.86, P: 0.93, M: 1, G: 1.07, GG: 1.14, XG: 1.21,
   G1: 1.28, G2: 1.35, G3: 1.42, G4: 1.5,
-  '2A': 0.34, '4A': 0.42, '6A': 0.5, '8A': 0.58, '10A': 0.66, '12A': 0.74, '14A': 0.84,
+  '2A': 0.34, '4A': 0.42, '6A': 0.5, '8A': 0.58, '10A': 0.66, '12A': 0.74, '14A': 0.84, '16A': 0.94,
 }
 
 type LinhaDeReferencia = { id: string; nome: string; genero: string }

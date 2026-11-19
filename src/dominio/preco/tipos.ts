@@ -89,7 +89,7 @@ export const NOME_DA_SITUACAO: Record<SituacaoDaTabela, string> = {
 }
 
 export const TAMANHOS_PLUS = ['G1', 'G2', 'G3', 'G4']
-export const TAMANHOS_INFANTIS = ['2A', '4A', '6A', '8A', '10A', '12A', '14A']
+export const TAMANHOS_INFANTIS = ['2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A']
 
 export function tabelaEmBranco(nome = ''): TabelaDePreco {
   return {

@@ -37,7 +37,7 @@ export const COLUNAS_DO_DEPOSITO: [string, string][] = [
   ['GG', '10A'],
   ['XG', '12A'],
   ['G1', '14A'],
-  ['G2', ''],
+  ['G2', '16A'],
   ['G3', ''],
   ['G4', ''],
 ]
@@ -46,7 +46,7 @@ export const TAMANHOS_INFANTIS = COLUNAS_DO_DEPOSITO.map(([, i]) => i).filter(Bo
 
 export const totalDoLote = (l: Pick<LoteDePecas, 'grade'>) => Object.values(l.grade).reduce((s, n) => s + (Number(n) || 0), 0)
 
-/** O lote e infantil quando os tamanhos dele sao os de crianca (2A a 14A). */
+/** O lote e infantil quando os tamanhos dele sao os de crianca (2A a 16A). */
 export const loteInfantil = (l: Pick<LoteDePecas, 'grade'>) => {
   const t = Object.keys(l.grade).filter((k) => l.grade[k] > 0)
   return t.length > 0 && t.every((k) => TAMANHOS_INFANTIS.includes(k))

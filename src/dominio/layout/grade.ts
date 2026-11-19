@@ -13,14 +13,14 @@
    fora de faixa por acidente: quando acontece, e de proposito, e precisa
    aparecer. Na grade adulta, tamanho infantil preenchido sobe para o topo,
    antes do PP. Na grade infantil, tamanho adulto desce para o fim, depois do
-   14A. E o que esta fora da faixa ganha fundo colorido, para ser visto de
+   16A. E o que esta fora da faixa ganha fundo colorido, para ser visto de
    longe na mesa de corte.
    ========================================================================== */
 
 export type Faixa = 'adulto' | 'infantil'
 
 export const TAMANHOS_ADULTO = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4'] as const
-export const TAMANHOS_INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A'] as const
+export const TAMANHOS_INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A'] as const
 
 export type Tamanho = (typeof TAMANHOS_ADULTO)[number] | (typeof TAMANHOS_INFANTIL)[number]
 

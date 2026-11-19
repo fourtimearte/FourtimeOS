@@ -152,7 +152,7 @@ export function faixasDaGrade(tamanhos: string[]): Faixa[] {
   return sai
 }
 
-/** "grade adulta, PP a G4", "grade infantil, 2A a 14A", "PP a G4 e 2A a 14A" */
+/** "grade adulta, PP a G4", "grade infantil, 2A a 16A", "PP a G4 e 2A a 16A" */
 export function gradeEmPalavras(tamanhos: string[]): string {
   const a = tamanhosDaFaixa(tamanhos, 'adulto')
   const i = tamanhosDaFaixa(tamanhos, 'infantil')

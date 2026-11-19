@@ -30,10 +30,10 @@ const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const perto = (a, b, folga = 1e-9) => typeof a === 'number' && Math.abs(a - b) <= folga
 
 const ADULTA = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4']
-const INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A']
+const INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A']
 
 /* ---- a grade ------------------------------------------------------------- */
-conta(igual(p.TODOS_OS_TAMANHOS, [...ADULTA, ...INFANTIL]), 'a grade: dez tamanhos de adulto e sete de infantil, nesta ordem')
+conta(igual(p.TODOS_OS_TAMANHOS, [...ADULTA, ...INFANTIL]), 'a grade: dez tamanhos de adulto e oito de infantil (16A na 090), nesta ordem')
 conta(p.ehInfantil({ genero: 'C', nome: 'CAMISETA' }), 'infantil: pelo gênero C')
 conta(p.ehInfantil({ genero: 'U', nome: 'CAMISETA INFANTIL UNISSEX' }), 'infantil: pelo nome, mesmo marcada como unissex')
 conta(p.ehInfantil({ genero: 'U', nome: 'CALÇAO INF SEM BOLSO' }), 'infantil: pelo INF abreviado')
@@ -44,6 +44,7 @@ conta(igual(p.tamanhosDaReferencia({ tamanhos: ['G', '2A', 'P'], genero: 'M', no
 conta(igual(p.faixasDaGrade(['P', 'G']), ['adulto']) && igual(p.faixasDaGrade(['4A']), ['infantil']) && igual(p.faixasDaGrade(['P', '4A']), ['adulto', 'infantil']), 'as faixas da grade: só adulta, só infantil e as duas')
 conta(p.gradeEmPalavras(ADULTA) === 'grade adulta, PP a G4', 'grade em palavras: adulta inteira')
 conta(p.gradeEmPalavras(['4A', '6A', '8A']) === 'grade infantil, 4A a 8A', 'grade em palavras: infantil pela metade')
+conta(p.gradeEmPalavras(INFANTIL) === 'grade infantil, 2A a 16A', 'grade em palavras: infantil inteira, até o 16A')
 conta(p.gradeEmPalavras(['M', '2A', '14A', 'G']) === 'M a G e 2A a 14A', 'grade em palavras: as duas faixas')
 conta(p.gradeEmPalavras(['M']) === 'grade adulta, M', 'grade em palavras: um tamanho só')
 conta(p.gradeEmPalavras([]) === 'sem tamanho', 'grade em palavras: nenhum')
@@ -480,7 +481,7 @@ conta(p.moldeComoImagem('<svg id="a#b"></svg>').startsWith('data:image/svg+xml;c
   conta(d.loteInfantil(ls[1]) && !d.loteInfantil(ls[0]) && !d.loteInfantil(ls[3]), 'depósito: o lote é infantil pelos tamanhos (2A a 14A)')
   conta(d.textoDaOrigem(ls[1]) === 'sobra do PD-1' && d.textoDaOrigem(ls[2]) === 'mostruário' && d.textoDaOrigem(ls[0]) === 'pronta entrega', 'depósito: o texto da origem')
   conta(d.baixaPossivel(ls[0], { M: 13 }) === 'O lote só tem 12 no tamanho M.' && d.baixaPossivel(ls[0], { G: 1 }) === 'O lote só tem 0 no tamanho G.' && d.baixaPossivel(ls[0], {}) === 'Escreva quantas peças saem.' && d.baixaPossivel(ls[0], { M: 2 }) === '', 'depósito: a baixa não passa do que o lote tem')
-  conta(d.COLUNAS_DO_DEPOSITO.length === 10 && d.COLUNAS_DO_DEPOSITO[0].join() === 'PP,2A' && d.COLUNAS_DO_DEPOSITO[6].join() === 'G1,14A', 'depósito: as colunas dividem adulto e infantil (PP com 2A, G1 com 14A)')
+  conta(d.COLUNAS_DO_DEPOSITO.length === 10 && d.COLUNAS_DO_DEPOSITO[0].join() === 'PP,2A' && d.COLUNAS_DO_DEPOSITO[6].join() === 'G1,14A' && d.COLUNAS_DO_DEPOSITO[7].join() === 'G2,16A', 'depósito: as colunas dividem adulto e infantil (PP com 2A, G1 com 14A)')
 }
 
 console.log('')

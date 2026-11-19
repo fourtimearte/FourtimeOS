@@ -11,7 +11,7 @@
 import * as D from './materiais-dados.mjs'
 
 export const ADULTA = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'G1', 'G2', 'G3', 'G4']
-export const INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A']
+export const INFANTIL = ['2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A']
 
 export const grupos = [
   { cod: '010', nome: 'Camisetas e polos', ordem: 10 },

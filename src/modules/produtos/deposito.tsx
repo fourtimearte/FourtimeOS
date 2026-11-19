@@ -260,7 +260,7 @@ export function Deposito({
               ))}
             </table>
             <p className="pd-nota pd-dp-legenda">
-              <span className="pd-dp-inf">2A</span> Peça infantil usa a mesma linha da grade: o número em vermelho claro vale para o tamanho de baixo do cabeçalho (2A a 14A).
+              <span className="pd-dp-inf">2A</span> Peça infantil usa a mesma linha da grade: o número em vermelho claro vale para o tamanho de baixo do cabeçalho (2A a 16A).
             </p>
           </div>
         )}

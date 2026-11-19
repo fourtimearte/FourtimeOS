@@ -1283,7 +1283,7 @@ await secao(async () => {
   conta(l1.arte >= 150 && l2.arte >= 150, `a arte não fica abaixo do piso de 150 px (${l1.arte}, ${l2.arte})`)
   conta(l1.soma.join() === 'SOMA 89' && l1.vt.join() === 'R$ 5.536,00' && l1.precos.includes('62,00') && l1.precos.includes('68,00'), 'grade 21: o preço inteiro na célula, a soma em tinta e o total embaixo (' + l1.vt + ')')
   conta(/R\$ 620/.test(l1.texto), 'grade 21: o valor de cada tamanho embaixo, com R$')
-  conta(l3.fams.join('|').toUpperCase() === 'ADULTA|INFANTIL' && l3.inf === 7 && l3.soma.length === 2, `grade com infantil: duas fileiras, a infantil em verde, a soma no fim de cada uma (${l3.fams.join(', ')}, ${l3.inf} verdes)`)
+  conta(l3.fams.join('|').toUpperCase() === 'ADULTA|INFANTIL' && l3.inf === 8 && l3.soma.length === 2, `grade com infantil: duas fileiras, a infantil em verde, a soma no fim de cada uma (${l3.fams.join(', ')}, ${l3.inf} verdes)`)
   conta(l1.pils.join(',').toUpperCase() === 'FOURTIME,SILK' && l2.pils.join(',').toUpperCase() === 'CLIENTE,DTF', 'a etiqueta em pílulas: ' + l1.pils.join(' + ') + ' e ' + l2.pils.join(' + '))
   conta(l1.caixas.join(',').toUpperCase() === 'SUBLIMAÇÃO' && l1.cartoes.join(',') === 'S14,S03,S40', 'a Sublimação em caixa com os cartões de cor: ' + l1.cartoes.join(', '))
   conta(l1.pilsTec.join(',').toUpperCase() === 'SILK,BORDADO' && !l1.deitada, 'Silk e Bordado em pílulas ao lado da caixa, empilhadas')
